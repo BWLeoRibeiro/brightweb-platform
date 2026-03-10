@@ -10,6 +10,7 @@
     "db:plan": "node ./scripts/plan-client-migrations.mjs",
     "dev": "pnpm --filter starter-site dev",
     "build": "pnpm --filter starter-site build",
+    "release:check": "changeset status --verbose",
     "release:version": "changeset version",
     "release:publish": "changeset publish",
     "start": "pnpm --filter starter-site start",
