@@ -4,8 +4,16 @@
   "version": "0.0.0",
   "main": "./src/server.ts",
   "types": "./src/server.ts",
+  "files": [
+    "src"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/BWLeoRibeiro/brightweb-platform.git"
+  },
   "publishConfig": {
-    "access": "restricted"
+    "access": "public"
   },
   "exports": {
     ".": "./src/server.ts",

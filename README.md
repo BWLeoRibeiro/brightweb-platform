@@ -1,9 +1,37 @@
-# BeGreen Platform Seed
+# Brightweb Platform
 
-This directory is a local bootstrap for the future shared platform repository.
+Shared platform monorepo for Brightweb client apps.
 
-It is intentionally kept inside the client repository during extraction prep so package ownership and boundaries can be defined before code is split into a separate repository.
+## Workspace
 
-## Intended next step
+- `apps/starter-site`: reference Next.js client app
+- `packages/*`: shared platform modules
+- `supabase/*`: shared database ownership model and migration planning
 
-After the first shared slices are stable, move this directory into its own Git repository and make the BeGreen client app consume the packages from there.
+## Starter app
+
+Run the reference app:
+
+```bash
+pnpm dev
+```
+
+## Create a new client app
+
+Scaffold a new app from the starter template:
+
+```bash
+pnpm create:client
+```
+
+The installer will ask for:
+
+- app slug
+- company name
+- product name
+- tagline
+- support emails
+- brand color
+- which modules to enable
+
+It creates a new app under `apps/<slug>` and writes a starter `.env.local` for that client.

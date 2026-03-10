@@ -4,14 +4,22 @@
   "version": "0.0.0",
   "main": "./src/index.ts",
   "types": "./src/index.ts",
+  "files": [
+    "src"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/BWLeoRibeiro/brightweb-platform.git"
+  },
   "publishConfig": {
-    "access": "restricted"
+    "access": "public"
   },
   "exports": {
     ".": "./src/index.ts"
   },
   "dependencies": {
-    "@brightweb/ui": "file:../ui",
+    "@brightweb/ui": "workspace:*",
     "clsx": "^2.1.1",
     "lucide-react": "^0.562.0",
     "motion": "^12.31.0",

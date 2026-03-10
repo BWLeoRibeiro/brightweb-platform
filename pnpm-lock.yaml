@@ -61,7 +61,7 @@ importers:
   packages/app-shell:
     dependencies:
       '@brightweb/ui':
-        specifier: file:../ui
+        specifier: workspace:*
         version: link:../ui
       clsx:
         specifier: ^2.1.1
@@ -98,7 +98,7 @@ importers:
   packages/core-auth:
     dependencies:
       '@brightweb/infra':
-        specifier: file:../infra
+        specifier: workspace:*
         version: link:../infra
       '@supabase/supabase-js':
         specifier: ^2.89.0
@@ -131,16 +131,16 @@ importers:
   packages/module-admin:
     dependencies:
       '@brightweb/app-shell':
-        specifier: file:../app-shell
+        specifier: workspace:*
         version: link:../app-shell
       '@brightweb/core-auth':
-        specifier: file:../core-auth
+        specifier: workspace:*
         version: link:../core-auth
       '@brightweb/infra':
-        specifier: file:../infra
+        specifier: workspace:*
         version: link:../infra
       '@brightweb/ui':
-        specifier: file:../ui
+        specifier: workspace:*
         version: link:../ui
       lucide-react:
         specifier: ^0.562.0
@@ -165,10 +165,10 @@ importers:
   packages/module-crm:
     dependencies:
       '@brightweb/app-shell':
-        specifier: file:../app-shell
-        version: file:packages/app-shell(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)
+        specifier: workspace:*
+        version: link:../app-shell
       '@brightweb/infra':
-        specifier: file:../infra
+        specifier: workspace:*
         version: link:../infra
       lucide-react:
         specifier: ^0.562.0
@@ -180,10 +180,10 @@ importers:
   packages/module-projects:
     dependencies:
       '@brightweb/app-shell':
-        specifier: file:../app-shell
-        version: file:packages/app-shell(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)
+        specifier: workspace:*
+        version: link:../app-shell
       '@brightweb/infra':
-        specifier: file:../infra
+        specifier: workspace:*
         version: link:../infra
       '@supabase/supabase-js':
         specifier: ^2.89.0
@@ -264,12 +264,6 @@ packages:
   '@babel/runtime@7.28.6':
     resolution: {integrity: sha512-05WQkdpL9COIMz4LjTxGpPNCdlpyimKppYNoJ5Di5EUObifl8t4tuLuUBBZEpoLYOmfvIWrsp9fCl0HoPRVTdA==}
     engines: {node: '>=6.9.0'}
-
-  '@brightweb/app-shell@file:packages/app-shell':
-    resolution: {directory: packages/app-shell, type: directory}
-
-  '@brightweb/ui@file:packages/ui':
-    resolution: {directory: packages/ui, type: directory}
 
   '@changesets/apply-release-plan@7.1.0':
     resolution: {integrity: sha512-yq8ML3YS7koKQ/9bk1PqO0HMzApIFNwjlwCnwFEXMzNe8NpzeeYYKCmnhWJGkN8g7E51MnWaSbqRcTcdIxUgnQ==}
@@ -2044,59 +2038,6 @@ packages:
 snapshots:
 
   '@babel/runtime@7.28.6': {}
-
-  '@brightweb/app-shell@file:packages/app-shell(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)':
-    dependencies:
-      '@brightweb/ui': file:packages/ui(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)
-      clsx: 2.1.1
-      lucide-react: 0.562.0(react@19.2.3)
-      motion: 12.35.2(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      next: 16.1.1(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      next-themes: 0.4.6(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      react: 19.2.3
-      react-dom: 19.2.3(react@19.2.3)
-      tailwind-merge: 3.5.0
-    transitivePeerDependencies:
-      - '@babel/core'
-      - '@emotion/is-prop-valid'
-      - '@opentelemetry/api'
-      - '@playwright/test'
-      - '@types/react'
-      - '@types/react-dom'
-      - babel-plugin-macros
-      - babel-plugin-react-compiler
-      - sass
-
-  '@brightweb/ui@file:packages/ui(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)':
-    dependencies:
-      '@radix-ui/react-dialog': 1.1.15(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      '@radix-ui/react-dropdown-menu': 2.1.16(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      '@radix-ui/react-label': 2.1.8(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      '@radix-ui/react-popover': 1.1.15(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      '@radix-ui/react-separator': 1.1.8(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      '@radix-ui/react-slot': 1.2.4(@types/react@19.2.14)(react@19.2.3)
-      class-variance-authority: 0.7.1
-      clsx: 2.1.1
-      date-fns: 4.1.0
-      lucide-react: 0.562.0(react@19.2.3)
-      next: 16.1.1(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      next-themes: 0.4.6(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      radix-ui: 1.4.3(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      react: 19.2.3
-      react-day-picker: 9.14.0(react@19.2.3)
-      react-dom: 19.2.3(react@19.2.3)
-      recharts: 2.15.4(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      sonner: 2.0.7(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      tailwind-merge: 3.5.0
-    transitivePeerDependencies:
-      - '@babel/core'
-      - '@opentelemetry/api'
-      - '@playwright/test'
-      - '@types/react'
-      - '@types/react-dom'
-      - babel-plugin-macros
-      - babel-plugin-react-compiler
-      - sass
 
   '@changesets/apply-release-plan@7.1.0':
     dependencies:
