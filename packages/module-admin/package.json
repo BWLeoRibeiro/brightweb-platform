@@ -1,0 +1,32 @@
+{
+  "name": "@brightweb/module-admin",
+  "private": false,
+  "version": "0.0.0",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "publishConfig": {
+    "access": "restricted"
+  },
+  "exports": {
+    ".": "./src/index.ts",
+    "./events": "./src/events.ts",
+    "./registration": "./src/registration.ts",
+    "./roles": "./src/roles.ts",
+    "./users": "./src/users.ts",
+    "./users-client": "./src/users-client.tsx"
+  },
+  "dependencies": {
+    "@brightweb/app-shell": "file:../app-shell",
+    "@brightweb/core-auth": "file:../core-auth",
+    "@brightweb/infra": "file:../infra",
+    "@brightweb/ui": "file:../ui",
+    "lucide-react": "^0.562.0",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "sonner": "^2.0.7"
+  },
+  "devDependencies": {
+    "@types/react": "^19",
+    "@types/react-dom": "^19"
+  }
+}

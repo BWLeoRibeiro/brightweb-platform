@@ -1,0 +1,11 @@
+{
+  "name": "@brightweb/core-marketing",
+  "private": false,
+  "version": "0.0.0",
+  "main": "src/index.ts",
+  "types": "src/index.ts"
+  ,
+  "publishConfig": {
+    "access": "restricted"
+  }
+}

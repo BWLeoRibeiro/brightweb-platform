@@ -1,0 +1,15 @@
+{
+  "client": {
+    "slug": "begreen",
+    "label": "BeGreen"
+  },
+  "historyMode": "legacy-flat",
+  "futureMode": "forward-only-modular",
+  "enabledModules": ["core", "admin", "crm", "projects"],
+  "clientMigrationPath": "supabase/clients/begreen/migrations",
+  "notes": [
+    "BeGreen currently acts as the first real client implementation.",
+    "Historical migration replay still lives in the BeGreen repo flat migration folder.",
+    "This stack file defines Brightweb-owned module intent for future provisioning."
+  ]
+}

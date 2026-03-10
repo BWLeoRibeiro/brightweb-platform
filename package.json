@@ -1,0 +1,20 @@
+{
+  "name": "brightweb-platform",
+  "private": true,
+  "version": "0.0.0",
+  "packageManager": "pnpm@10.28.1",
+  "scripts": {
+    "changeset": "changeset",
+    "db:new": "node ./scripts/new-migration.mjs",
+    "db:plan": "node ./scripts/plan-client-migrations.mjs",
+    "dev": "pnpm --filter starter-site dev",
+    "build": "pnpm --filter starter-site build",
+    "release:version": "changeset version",
+    "release:publish": "changeset publish",
+    "start": "pnpm --filter starter-site start",
+    "lint": "pnpm --filter starter-site lint"
+  },
+  "devDependencies": {
+    "@changesets/cli": "^2.29.7"
+  }
+}

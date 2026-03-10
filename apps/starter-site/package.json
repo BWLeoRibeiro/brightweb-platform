@@ -1,0 +1,29 @@
+{
+  "name": "starter-site",
+  "private": true,
+  "version": "0.0.0",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@brightweb/app-shell": "workspace:*",
+    "@brightweb/core-auth": "workspace:*",
+    "@brightweb/infra": "workspace:*",
+    "@brightweb/module-admin": "workspace:*",
+    "@brightweb/module-crm": "workspace:*",
+    "@brightweb/module-projects": "workspace:*",
+    "lucide-react": "^0.562.0",
+    "next": "16.1.1",
+    "react": "19.2.3",
+    "react-dom": "19.2.3"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "typescript": "^5"
+  }
+}

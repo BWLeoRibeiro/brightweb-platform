@@ -1,0 +1,28 @@
+{
+  "modules": {
+    "core": {
+      "label": "Core",
+      "path": "supabase/modules/core/migrations",
+      "dependsOn": [],
+      "description": "Shared auth/profile, events, rate limits, and always-on platform foundations."
+    },
+    "admin": {
+      "label": "Admin",
+      "path": "supabase/modules/admin/migrations",
+      "dependsOn": ["core"],
+      "description": "RBAC, user governance, and privileged role-management behavior."
+    },
+    "crm": {
+      "label": "CRM",
+      "path": "supabase/modules/crm/migrations",
+      "dependsOn": ["core", "admin"],
+      "description": "Organizations, CRM contacts, org membership, and invitation flows."
+    },
+    "projects": {
+      "label": "Projects",
+      "path": "supabase/modules/projects/migrations",
+      "dependsOn": ["core", "admin", "crm"],
+      "description": "Projects, tasks, milestones, members, links, and project activity policies."
+    }
+  }
+}
