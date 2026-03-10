@@ -1,5 +1,5 @@
 {
-  "name": "@brightweb/ui",
+  "name": "@brightweblabs/ui",
   "private": false,
   "version": "0.0.0",
   "main": "./src/index.ts",
@@ -38,9 +38,5 @@
     "recharts": "^2.15.4",
     "sonner": "^2.0.7",
     "tailwind-merge": "^3.4.0"
-  },
-  "devDependencies": {
-    "@types/react": "^19",
-    "@types/react-dom": "^19"
   }
 }

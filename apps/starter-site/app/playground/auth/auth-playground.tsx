@@ -8,10 +8,10 @@ import {
   useCooldownTimer,
   validateEmail,
   validatePassword,
-} from "@brightweb/core-auth/client";
+} from "@brightweblabs/core-auth/client";
 
 export function AuthPlayground() {
-  const [email, setEmail] = useState("hello@brightweb.pt");
+  const [email, setEmail] = useState("hello@brightweblabs.pt");
   const [password, setPassword] = useState("Brightweb2026");
   const passwordResult = useMemo(() => validatePassword(password), [password]);
   const emailIsValid = useMemo(() => validateEmail(email), [email]);
@@ -39,7 +39,7 @@ export function AuthPlayground() {
           <p className="eyebrow">Core Auth</p>
           <h1>Auth package playground</h1>
           <p className="muted">
-            This page exercises the external `@brightweb/core-auth` client package directly.
+            This page exercises the external `@brightweblabs/core-auth` client package directly.
           </p>
         </div>
       </article>

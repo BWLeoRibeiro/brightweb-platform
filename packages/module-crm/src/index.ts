@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { createServerSupabase } from "@brightweb/infra/server";
+import { createServerSupabase } from "@brightweblabs/infra/server";
 
 export type CrmContact = {
   id: string;

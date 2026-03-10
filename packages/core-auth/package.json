@@ -1,5 +1,5 @@
 {
-  "name": "@brightweb/core-auth",
+  "name": "@brightweblabs/core-auth",
   "private": false,
   "version": "0.0.0",
   "main": "./src/index.ts",
@@ -21,14 +21,10 @@
     "./server": "./src/server.ts"
   },
   "dependencies": {
-    "@brightweb/infra": "workspace:*",
+    "@brightweblabs/infra": "workspace:*",
     "@supabase/supabase-js": "^2.89.0"
   },
   "peerDependencies": {
     "react": "^19.0.0"
-  },
-  "devDependencies": {
-    "@types/react": "^19",
-    "@types/react-dom": "^19"
   }
 }

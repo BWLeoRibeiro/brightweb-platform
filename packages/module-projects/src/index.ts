@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { createServerSupabase } from "@brightweb/infra/server";
+import { createServerSupabase } from "@brightweblabs/infra/server";
 
 export const PROJECT_STATUSES = ["planned", "active", "blocked", "completed", "canceled"] as const;
 export const PROJECT_HEALTH_STATES = ["on_track", "at_risk", "off_track"] as const;

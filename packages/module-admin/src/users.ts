@@ -1,5 +1,5 @@
-import { normalizeGlobalRole } from "@brightweb/core-auth/server";
-import { createServerSupabase } from "@brightweb/infra/server";
+import { normalizeGlobalRole } from "@brightweblabs/core-auth/server";
+import { createServerSupabase } from "@brightweblabs/infra/server";
 
 export type AdminManagedRole = "client" | "staff" | "admin";
 

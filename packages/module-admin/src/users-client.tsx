@@ -24,7 +24,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@brightweb/ui";
+} from "@brightweblabs/ui";
 import {
   ADMIN_EVENTS,
   dispatchAdminCustomEvent,

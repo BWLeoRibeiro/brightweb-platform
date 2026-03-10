@@ -10,7 +10,7 @@ function formatError(error: unknown) {
 
 export default async function CrmPlaygroundPage() {
   try {
-    const { getCrmDashboardData } = await import("@brightweb/module-crm");
+    const { getCrmDashboardData } = await import("@brightweblabs/module-crm");
     const data = await getCrmDashboardData();
 
     return (
@@ -20,7 +20,7 @@ export default async function CrmPlaygroundPage() {
             <p className="eyebrow">CRM Module</p>
             <h1>CRM server/data playground</h1>
             <p className="muted">
-              This route calls the external `@brightweb/module-crm` package directly and shows a thin data summary.
+              This route calls the external `@brightweblabs/module-crm` package directly and shows a thin data summary.
             </p>
           </div>
         </article>

@@ -9,12 +9,12 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@brightweb/app-shell": "workspace:*",
-    "@brightweb/core-auth": "workspace:*",
-    "@brightweb/infra": "workspace:*",
-    "@brightweb/module-admin": "workspace:*",
-    "@brightweb/module-crm": "workspace:*",
-    "@brightweb/module-projects": "workspace:*",
+    "@brightweblabs/app-shell": "workspace:*",
+    "@brightweblabs/core-auth": "workspace:*",
+    "@brightweblabs/infra": "workspace:*",
+    "@brightweblabs/module-admin": "workspace:*",
+    "@brightweblabs/module-crm": "workspace:*",
+    "@brightweblabs/module-projects": "workspace:*",
     "lucide-react": "^0.562.0",
     "next": "16.1.1",
     "react": "19.2.3",

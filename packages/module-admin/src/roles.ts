@@ -1,4 +1,4 @@
-import { createServerSupabase } from "@brightweb/infra/server";
+import { createServerSupabase } from "@brightweblabs/infra/server";
 import type { AdminManagedRole } from "./users";
 
 export type RoleChangeResult = {

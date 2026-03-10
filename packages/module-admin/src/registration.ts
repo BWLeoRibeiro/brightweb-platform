@@ -1,7 +1,7 @@
 "use client";
 
 import { ShieldCheck } from "lucide-react";
-import type { ShellContextualAction, ShellModuleRegistration } from "@brightweb/app-shell";
+import type { ShellContextualAction, ShellModuleRegistration } from "@brightweblabs/app-shell";
 
 export const adminModuleRegistration: ShellModuleRegistration<ShellContextualAction> = {
   key: "admin",

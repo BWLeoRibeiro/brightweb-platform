@@ -1,7 +1,7 @@
 "use client";
 
 import { ArrowLeft, BriefcaseBusiness, Eye, KanbanSquare, Plus, RotateCcw } from "lucide-react";
-import type { ShellContextualAction, ShellModuleRegistration } from "@brightweb/app-shell";
+import type { ShellContextualAction, ShellModuleRegistration } from "@brightweblabs/app-shell";
 
 export const projectsModuleRegistration: ShellModuleRegistration<ShellContextualAction> = {
   key: "projects",

@@ -10,7 +10,7 @@ function formatError(error: unknown) {
 
 export default async function ProjectsPlaygroundPage() {
   try {
-    const { getProjectsPortfolioPageData } = await import("@brightweb/module-projects");
+    const { getProjectsPortfolioPageData } = await import("@brightweblabs/module-projects");
     const data = await getProjectsPortfolioPageData();
 
     return (
@@ -20,7 +20,7 @@ export default async function ProjectsPlaygroundPage() {
             <p className="eyebrow">Projects Module</p>
             <h1>Projects portfolio playground</h1>
             <p className="muted">
-              This route calls the external `@brightweb/module-projects` package directly and shows a thin portfolio
+              This route calls the external `@brightweblabs/module-projects` package directly and shows a thin portfolio
               snapshot for a starter client.
             </p>
           </div>

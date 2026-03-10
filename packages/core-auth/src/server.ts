@@ -1,5 +1,5 @@
 import type { User } from "@supabase/supabase-js";
-import { createServerSupabase } from "@brightweb/infra/server";
+import { createServerSupabase } from "@brightweblabs/infra/server";
 
 export type GlobalRole = "client" | "staff" | "admin";
 

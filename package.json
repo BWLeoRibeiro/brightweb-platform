@@ -17,6 +17,8 @@
     "lint": "pnpm --filter starter-site lint"
   },
   "devDependencies": {
-    "@changesets/cli": "^2.29.7"
+    "@changesets/cli": "^2.29.7",
+    "@types/react": "^19",
+    "@types/react-dom": "^19"
   }
 }

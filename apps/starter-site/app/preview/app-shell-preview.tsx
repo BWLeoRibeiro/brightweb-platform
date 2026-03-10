@@ -10,7 +10,7 @@ import {
   getShellNavGroup,
   type NavGroupConfig,
   type ResolvedClientAppShellConfig,
-} from "@brightweb/app-shell";
+} from "@brightweblabs/app-shell";
 import { LayoutTemplate, Sparkles, Users } from "lucide-react";
 import { starterBrandConfig } from "../../config/brand";
 import { getStarterShellConfig } from "../../config/shell";
@@ -31,7 +31,7 @@ const mockSurfaceCards = [
   },
   {
     title: "Shared updates",
-    description: "The shell primitives come from `@brightweb/app-shell`, so new clients keep the same integration contract.",
+    description: "The shell primitives come from `@brightweblabs/app-shell`, so new clients keep the same integration contract.",
     icon: Sparkles,
   },
   {

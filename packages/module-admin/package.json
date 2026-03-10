@@ -1,5 +1,5 @@
 {
-  "name": "@brightweb/module-admin",
+  "name": "@brightweblabs/module-admin",
   "private": false,
   "version": "0.0.0",
   "main": "./src/index.ts",
@@ -24,17 +24,13 @@
     "./users-client": "./src/users-client.tsx"
   },
   "dependencies": {
-    "@brightweb/app-shell": "workspace:*",
-    "@brightweb/core-auth": "workspace:*",
-    "@brightweb/infra": "workspace:*",
-    "@brightweb/ui": "workspace:*",
+    "@brightweblabs/app-shell": "workspace:*",
+    "@brightweblabs/core-auth": "workspace:*",
+    "@brightweblabs/infra": "workspace:*",
+    "@brightweblabs/ui": "workspace:*",
     "lucide-react": "^0.562.0",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "sonner": "^2.0.7"
-  },
-  "devDependencies": {
-    "@types/react": "^19",
-    "@types/react-dom": "^19"
   }
 }

@@ -11,25 +11,31 @@ importers:
       '@changesets/cli':
         specifier: ^2.29.7
         version: 2.30.0(@types/node@20.19.37)
+      '@types/react':
+        specifier: ^19
+        version: 19.2.14
+      '@types/react-dom':
+        specifier: ^19
+        version: 19.2.3(@types/react@19.2.14)
 
   apps/starter-site:
     dependencies:
-      '@brightweb/app-shell':
+      '@brightweblabs/app-shell':
         specifier: workspace:*
         version: link:../../packages/app-shell
-      '@brightweb/core-auth':
+      '@brightweblabs/core-auth':
         specifier: workspace:*
         version: link:../../packages/core-auth
-      '@brightweb/infra':
+      '@brightweblabs/infra':
         specifier: workspace:*
         version: link:../../packages/infra
-      '@brightweb/module-admin':
+      '@brightweblabs/module-admin':
         specifier: workspace:*
         version: link:../../packages/module-admin
-      '@brightweb/module-crm':
+      '@brightweblabs/module-crm':
         specifier: workspace:*
         version: link:../../packages/module-crm
-      '@brightweb/module-projects':
+      '@brightweblabs/module-projects':
         specifier: workspace:*
         version: link:../../packages/module-projects
       lucide-react:
@@ -60,7 +66,7 @@ importers:
 
   packages/app-shell:
     dependencies:
-      '@brightweb/ui':
+      '@brightweblabs/ui':
         specifier: workspace:*
         version: link:../ui
       clsx:
@@ -87,17 +93,10 @@ importers:
       tailwind-merge:
         specifier: ^3.4.0
         version: 3.5.0
-    devDependencies:
-      '@types/react':
-        specifier: ^19
-        version: 19.2.14
-      '@types/react-dom':
-        specifier: ^19
-        version: 19.2.3(@types/react@19.2.14)
 
   packages/core-auth:
     dependencies:
-      '@brightweb/infra':
+      '@brightweblabs/infra':
         specifier: workspace:*
         version: link:../infra
       '@supabase/supabase-js':
@@ -106,13 +105,6 @@ importers:
       react:
         specifier: ^19.0.0
         version: 19.2.3
-    devDependencies:
-      '@types/react':
-        specifier: ^19
-        version: 19.2.14
-      '@types/react-dom':
-        specifier: ^19
-        version: 19.2.3(@types/react@19.2.14)
 
   packages/core-marketing: {}
 
@@ -130,16 +122,16 @@ importers:
 
   packages/module-admin:
     dependencies:
-      '@brightweb/app-shell':
+      '@brightweblabs/app-shell':
         specifier: workspace:*
         version: link:../app-shell
-      '@brightweb/core-auth':
+      '@brightweblabs/core-auth':
         specifier: workspace:*
         version: link:../core-auth
-      '@brightweb/infra':
+      '@brightweblabs/infra':
         specifier: workspace:*
         version: link:../infra
-      '@brightweb/ui':
+      '@brightweblabs/ui':
         specifier: workspace:*
         version: link:../ui
       lucide-react:
@@ -154,20 +146,13 @@ importers:
       sonner:
         specifier: ^2.0.7
         version: 2.0.7(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-    devDependencies:
-      '@types/react':
-        specifier: ^19
-        version: 19.2.14
-      '@types/react-dom':
-        specifier: ^19
-        version: 19.2.3(@types/react@19.2.14)
 
   packages/module-crm:
     dependencies:
-      '@brightweb/app-shell':
+      '@brightweblabs/app-shell':
         specifier: workspace:*
         version: link:../app-shell
-      '@brightweb/infra':
+      '@brightweblabs/infra':
         specifier: workspace:*
         version: link:../infra
       lucide-react:
@@ -179,10 +164,10 @@ importers:
 
   packages/module-projects:
     dependencies:
-      '@brightweb/app-shell':
+      '@brightweblabs/app-shell':
         specifier: workspace:*
         version: link:../app-shell
-      '@brightweb/infra':
+      '@brightweblabs/infra':
         specifier: workspace:*
         version: link:../infra
       '@supabase/supabase-js':
@@ -251,13 +236,6 @@ importers:
       tailwind-merge:
         specifier: ^3.4.0
         version: 3.5.0
-    devDependencies:
-      '@types/react':
-        specifier: ^19
-        version: 19.2.14
-      '@types/react-dom':
-        specifier: ^19
-        version: 19.2.3(@types/react@19.2.14)
 
 packages:
 

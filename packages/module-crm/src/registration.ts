@@ -1,7 +1,7 @@
 "use client";
 
 import { ArrowUpDown, BarChart2, Mail, Plus, SlidersHorizontal, UserRound, Users } from "lucide-react";
-import type { ShellContextualAction, ShellModuleRegistration } from "@brightweb/app-shell";
+import type { ShellContextualAction, ShellModuleRegistration } from "@brightweblabs/app-shell";
 
 export const crmModuleRegistration: ShellModuleRegistration<ShellContextualAction> = {
   key: "crm",

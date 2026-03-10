@@ -1,5 +1,5 @@
 {
-  "name": "@brightweb/core-marketing",
+  "name": "@brightweblabs/core-marketing",
   "private": false,
   "version": "0.0.0",
   "main": "src/index.ts",

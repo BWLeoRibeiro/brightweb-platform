@@ -5,10 +5,10 @@ import {
   type ClientAppShellRegistration,
   type ShellContextualAction,
   type ShellModuleRegistration,
-} from "@brightweb/app-shell";
-import { adminModuleRegistration } from "@brightweb/module-admin/registration";
-import { crmModuleRegistration } from "@brightweb/module-crm/registration";
-import { projectsModuleRegistration } from "@brightweb/module-projects/registration";
+} from "@brightweblabs/app-shell";
+import { adminModuleRegistration } from "@brightweblabs/module-admin/registration";
+import { crmModuleRegistration } from "@brightweblabs/module-crm/registration";
+import { projectsModuleRegistration } from "@brightweblabs/module-projects/registration";
 import { starterBrandConfig } from "./brand";
 import { getEnabledStarterModules } from "./modules";
 

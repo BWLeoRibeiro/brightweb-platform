@@ -11,8 +11,8 @@ function formatError(error: unknown) {
 export default async function AdminPlaygroundPage() {
   try {
     const [{ ADMIN_USERS_DEFAULT_PAGE_SIZE, listAdminUsers }, { createServerSupabase }] = await Promise.all([
-      import("@brightweb/module-admin"),
-      import("@brightweb/infra/server"),
+      import("@brightweblabs/module-admin"),
+      import("@brightweblabs/infra/server"),
     ]);
 
     const supabase = await createServerSupabase();

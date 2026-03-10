@@ -1,5 +1,5 @@
 {
-  "name": "@brightweb/module-projects",
+  "name": "@brightweblabs/module-projects",
   "private": false,
   "version": "0.0.0",
   "main": "./src/index.ts",
@@ -20,8 +20,8 @@
     "./registration": "./src/registration.ts"
   },
   "dependencies": {
-    "@brightweb/app-shell": "workspace:*",
-    "@brightweb/infra": "workspace:*",
+    "@brightweblabs/app-shell": "workspace:*",
+    "@brightweblabs/infra": "workspace:*",
     "@supabase/supabase-js": "^2.89.0",
     "lucide-react": "^0.562.0"
   }
