@@ -76,7 +76,7 @@ export default async function AdminPlaygroundPage() {
             <p className="eyebrow">Admin Module</p>
             <h1>Admin users and roles playground</h1>
             <p className="muted">
-              The admin package is wired, but this starter app still needs a configured client database and admin-ready
+              The admin package is wired, but this preview app still needs a configured client database and admin-ready
               auth environment.
             </p>
           </div>

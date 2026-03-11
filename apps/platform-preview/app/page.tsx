@@ -3,41 +3,44 @@ import { getStarterClientConfig } from "../config/client";
 
 export default function HomePage() {
   const config = getStarterClientConfig();
+  const configuredEnvCount = config.envStatus.filter((item) => item.present).length;
 
   return (
     <main className="shell starter-home">
       <div className="frame">
         <section className="starter-hero">
           <div className="starter-hero-copy">
-            <span className="eyebrow">{config.brand.companyName}</span>
-            <h1 className="title">{config.brand.productName}</h1>
-            <p className="lead">{config.brand.tagline}</p>
+            <span className="eyebrow">Platform Preview</span>
+            <h1 className="title">Internal sandbox for {config.brand.companyName}</h1>
+            <p className="lead">
+              Use this app to try platform features locally before deciding what should ship in the generated platform scaffold.
+            </p>
             <div className="actions">
               <Link href="/preview/app-shell" className="action">Preview App Shell</Link>
-              <Link href="/bootstrap" className="action secondary">Open Bootstrap Checklist</Link>
-              <Link href="/playground/auth" className="action secondary">Open Module Playgrounds</Link>
+              <Link href="/playground/crm" className="action secondary">Open CRM Playground</Link>
+              <Link href="/bootstrap" className="action secondary">Open Preview Checklist</Link>
             </div>
           </div>
 
           <div className="starter-hero-card panel">
             <div className="panel-inner">
               <p className={`status ${config.envReadiness.allReady ? "ok" : "warn"}`}>
-                {config.envReadiness.allReady ? "Starter ready" : "Setup in progress"}
+                {config.envReadiness.allReady ? "Preview ready" : "Preview setup in progress"}
               </p>
               <div className="starter-stat-grid">
                 <div>
                   <span className="stat-number">{config.enabledModules.length}</span>
-                  <p className="muted">enabled modules</p>
+                  <p className="muted">active module previews</p>
                 </div>
                 <div>
-                  <span className="stat-number">{config.envStatus.filter((item) => item.present).length}</span>
+                  <span className="stat-number">{configuredEnvCount}</span>
                   <p className="muted">configured env keys</p>
                 </div>
               </div>
               <div className="starter-hero-note">
-                <strong>What this template gives you</strong>
+                <strong>How to use this app</strong>
                 <p className="muted">
-                  One place to brand, provision, preview, and validate a new client before the first deployment.
+                  Treat this as a proving ground for package work. Promote only settled behavior into the platform scaffold.
                 </p>
               </div>
             </div>
@@ -47,21 +50,19 @@ export default function HomePage() {
         <section className="grid starter-signal-grid">
           <article className="panel preview-glass-card">
             <div className="panel-inner">
-              <p className="eyebrow">Brand</p>
-              <h2>{config.brand.companyName}</h2>
-              <p className="muted">{config.brand.contactEmail} · {config.brand.supportEmail}</p>
-              <p className="package-name">{config.brand.slug}</p>
+              <p className="eyebrow">Preview role</p>
+              <h2>Local integration surface</h2>
+              <p className="muted">Exercise shared packages and routes without editing a generated client app.</p>
+              <p className="package-name">apps/platform-preview</p>
             </div>
           </article>
 
           <article className="panel preview-glass-card">
             <div className="panel-inner">
-              <p className="eyebrow">Infrastructure</p>
-              <h2>{config.envReadiness.allReady ? "Ready to validate" : "Needs provisioning"}</h2>
+              <p className="eyebrow">Template ownership</p>
+              <h2>`create-bw-app` stays canonical</h2>
               <p className="muted">
-                {config.envReadiness.allReady
-                  ? "Core env and service wiring are present."
-                  : `${config.envReadiness.missing.length} required environment key(s) are still missing.`}
+                Platform apps scaffold from `packages/create-bw-app/template/base`. This preview app can diverge while you test new work.
               </p>
             </div>
           </article>
@@ -69,7 +70,7 @@ export default function HomePage() {
 
         <section className="panel" style={{ marginTop: 18 }}>
           <div className="panel-inner">
-            <h2>Enabled platform modules</h2>
+            <h2>Active module previews</h2>
             <div className="grid">
               {config.enabledModules.map((moduleConfig) => (
                 <article key={moduleConfig.key} className="panel preview-glass-card" style={{ background: "rgba(255,255,255,0.72)" }}>
@@ -110,12 +111,12 @@ export default function HomePage() {
 
           <article className="panel preview-glass-card">
             <div className="panel-inner">
-              <h2>Starter controls</h2>
+              <h2>Preview controls</h2>
               <ul className="list">
-                <li>`config/brand.ts` for client identity and contact details.</li>
-                <li>`config/modules.ts` for enabled platform modules.</li>
-                <li>`config/env.ts` for infra requirements and readiness checks.</li>
-                <li>`.env.local` from `.env.example` for per-client secrets and flags.</li>
+                <li>`config/modules.ts` controls which module playgrounds are wired into the preview app.</li>
+                <li>`config/env.ts` exposes readiness checks so preview routes fail fast when services are missing.</li>
+                <li>`config/shell.ts` assembles the package-based app-shell registration used by preview surfaces.</li>
+                <li>Update `template/base` only when a feature should ship in newly scaffolded platform apps.</li>
               </ul>
             </div>
           </article>
@@ -123,7 +124,7 @@ export default function HomePage() {
 
         <section className="panel" style={{ marginTop: 18 }}>
           <div className="panel-inner">
-            <h2>Infrastructure checklist</h2>
+            <h2>Preview environment checklist</h2>
             <div className="grid">
               {config.envStatus.map((item) => (
                 <article key={item.key} className="panel preview-glass-card" style={{ background: "rgba(255,255,255,0.72)" }}>

@@ -4,13 +4,13 @@ Shared platform monorepo for Brightweb client apps.
 
 ## Workspace
 
-- `apps/starter-site`: reference Next.js client app
+- `apps/platform-preview`: internal Next.js preview app for platform work
 - `packages/*`: shared platform modules
 - `supabase/*`: shared database ownership model and migration planning
 
-## Starter app
+## Platform preview app
 
-Run the reference app:
+Run the internal preview app:
 
 ```bash
 pnpm dev
@@ -27,6 +27,12 @@ pnpm create:client -- --template site
 ```
 
 The local wrapper now delegates to the publishable workspace CLI package at `packages/create-bw-app`.
+
+Template ownership is intentionally separate from the preview app:
+
+- `packages/create-bw-app/template/base`: canonical platform-app scaffold
+- `packages/create-bw-app/template/site/base`: canonical site scaffold
+- `apps/platform-preview`: sandbox for trying shell, CRM, admin, auth, and projects features locally
 
 The installer can:
 

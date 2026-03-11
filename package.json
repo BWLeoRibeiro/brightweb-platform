@@ -8,13 +8,13 @@
     "create:client": "node ./scripts/create-brightweb-client.mjs",
     "db:new": "node ./scripts/new-migration.mjs",
     "db:plan": "node ./scripts/plan-client-migrations.mjs",
-    "dev": "pnpm --filter starter-site dev",
-    "build": "pnpm --filter starter-site build",
+    "dev": "pnpm --filter platform-preview dev",
+    "build": "pnpm --filter platform-preview build",
     "release:check": "changeset status --verbose",
     "release:version": "changeset version && pnpm install --lockfile-only",
     "release:publish": "changeset publish",
-    "start": "pnpm --filter starter-site start",
-    "lint": "pnpm --filter starter-site lint"
+    "start": "pnpm --filter platform-preview start",
+    "lint": "pnpm --filter platform-preview lint"
   },
   "devDependencies": {
     "@changesets/cli": "^2.29.7",

@@ -14,7 +14,7 @@ export const starterBrandConfig: StarterBrandConfig = {
   slug: process.env.NEXT_PUBLIC_CLIENT_SLUG?.trim() || "starter-client",
   tagline:
     process.env.NEXT_PUBLIC_CLIENT_TAGLINE?.trim()
-    || "A configurable Brightweb starter app for shipping new client instances without rebuilding the platform.",
+    || "A configurable Brightweb platform preview for validating package work before it lands in client scaffolds.",
   contactEmail: process.env.NEXT_PUBLIC_CLIENT_CONTACT_EMAIL?.trim() || "hello@example.com",
   supportEmail: process.env.NEXT_PUBLIC_CLIENT_SUPPORT_EMAIL?.trim() || "support@example.com",
   primaryHex: process.env.NEXT_PUBLIC_CLIENT_PRIMARY_HEX?.trim() || "#1f7a45",

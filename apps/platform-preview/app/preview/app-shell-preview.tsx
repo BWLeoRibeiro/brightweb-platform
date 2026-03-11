@@ -61,11 +61,9 @@ export function AppShellPreview() {
   const collapsedToolsHref = config.toolsSection.items[0]?.href ?? "/";
   const displayName = "Starter Admin";
   const userInitials = computeInitials(displayName);
-  const isNavItemActive = (href: string) => activeHref === href;
-  const isToolLinkActive = (href: string) => activeHref === href;
-  const isCrmChildActive = (href: string) => activeHref === href;
-  const isCrmGroupActive = crmNavGroup.children.some((item) => activeHref === item.href);
-  const isToolActive = config.toolsSection.items.some((item) => activeHref === item.href);
+  const isActiveLink = (href: string) => activeHref === href;
+  const isCrmGroupActive = crmNavGroup.children.some((item) => isActiveLink(item.href));
+  const isToolActive = config.toolsSection.items.some((item) => isActiveLink(item.href));
 
   return (
     <div className="app-preview-shell">
@@ -82,9 +80,9 @@ export function AppShellPreview() {
         crmNavGroup={crmNavGroup}
         crmGroupExpanded={crmExpanded}
         isCrmGroupActive={isCrmGroupActive}
-        isNavItemActive={isNavItemActive}
-        isToolLinkActive={isToolLinkActive}
-        isCrmChildActive={isCrmChildActive}
+        isNavItemActive={isActiveLink}
+        isToolLinkActive={isActiveLink}
+        isCrmChildActive={isActiveLink}
         onToggleSidebar={() => setIsSidebarCollapsed((current) => !current)}
         onToggleTools={() => setToolsExpanded((current) => !current)}
         onToggleCrmGroup={() => setCrmExpanded((current) => !current)}
@@ -95,7 +93,7 @@ export function AppShellPreview() {
           <div className="app-preview-header-copy">
             <span className="eyebrow">{starterBrandConfig.companyName}</span>
             <h1>Logged-in shell preview</h1>
-            <p className="muted">This is the packaged shell running with the starter client registration.</p>
+            <p className="muted">This is the packaged shell running with the preview app registration.</p>
           </div>
           <div className="app-preview-header-actions">
             <div className="status ok">Admin preview</div>
@@ -115,8 +113,8 @@ export function AppShellPreview() {
             toolsExpanded={toolsExpanded}
             visiblePrimaryNav={config.primaryNav}
             visibleToolNav={config.toolsSection.items}
-            isNavItemActive={isNavItemActive}
-            isToolLinkActive={isToolLinkActive}
+            isNavItemActive={isActiveLink}
+            isToolLinkActive={isActiveLink}
             onToggleTools={() => setToolsExpanded((current) => !current)}
           />
         </div>

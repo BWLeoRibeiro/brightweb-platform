@@ -1,5 +1,5 @@
 import { Moon, Sun, SunMoon } from "lucide-react";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@brightweblabs/ui";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@brightweblabs/ui/dropdown-menu";
 import type { ThemeMenuProps } from "../types";
 
 export function ThemeMenu({ onThemeChange }: ThemeMenuProps) {

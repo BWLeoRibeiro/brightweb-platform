@@ -21,7 +21,7 @@ export default async function ProjectsPlaygroundPage() {
             <h1>Projects portfolio playground</h1>
             <p className="muted">
               This route calls the external `@brightweblabs/module-projects` package directly and shows a thin portfolio
-              snapshot for a starter client.
+              snapshot for a preview client.
             </p>
           </div>
         </article>
@@ -68,7 +68,7 @@ export default async function ProjectsPlaygroundPage() {
             <p className="eyebrow">Projects Module</p>
             <h1>Projects portfolio playground</h1>
             <p className="muted">
-              The package is wired, but this starter app still needs the client project infrastructure configured.
+              The package is wired, but this preview app still needs the client project infrastructure configured.
             </p>
           </div>
         </article>

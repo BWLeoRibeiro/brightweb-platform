@@ -8,13 +8,13 @@ export default function BootstrapPage() {
     <main className="shell">
       <div className="frame">
         <section className="hero">
-          <span className="eyebrow">Client Bootstrap</span>
-          <h1 className="title">Launch checklist for {checklist.client.brand.companyName}</h1>
+          <span className="eyebrow">Preview Bootstrap</span>
+          <h1 className="title">Preview checklist for {checklist.client.brand.companyName}</h1>
           <p className="lead">
-            This page turns the starter config into an operational checklist for provisioning a new client instance.
+            This page turns the preview config into an operational checklist for validating the local sandbox before promoting work into the scaffold.
           </p>
           <div className="actions">
-            <Link href="/" className="action">Back to overview</Link>
+            <Link href="/" className="action">Back to preview overview</Link>
             <Link href="/playground/auth" className="action secondary">Open playgrounds</Link>
           </div>
         </section>

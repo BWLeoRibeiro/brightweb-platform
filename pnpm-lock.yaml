@@ -18,7 +18,7 @@ importers:
         specifier: ^19
         version: 19.2.3(@types/react@19.2.14)
 
-  apps/starter-site:
+  apps/platform-preview:
     dependencies:
       '@brightweblabs/app-shell':
         specifier: workspace:*

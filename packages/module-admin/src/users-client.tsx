@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useEffectEvent, useRef, useState } from "react";
 import { Users } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -12,19 +12,23 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  Badge,
-  Button,
+} from "@brightweblabs/ui/alert-dialog";
+import { Badge } from "@brightweblabs/ui/badge";
+import { Button } from "@brightweblabs/ui/button";
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+} from "@brightweblabs/ui/dropdown-menu";
+import {
   Table,
   TableBody,
   TableCell,
   TableHead,
   TableHeader,
   TableRow,
-} from "@brightweblabs/ui";
+} from "@brightweblabs/ui/table";
 import {
   ADMIN_EVENTS,
   dispatchAdminCustomEvent,
@@ -69,6 +73,31 @@ function formatAdminDate(value: string | null, fallback = "-") {
     month: "2-digit",
     year: "numeric",
   });
+}
+
+function getBulkRoleSelectionSummary(
+  rows: AdminUserRow[],
+  selectedIds: string[],
+  bulkTargetRole: AdminManagedRole,
+) {
+  const selectedIdSet = new Set(selectedIds);
+  const profileIdsToChange: string[] = [];
+  let unchangedCount = 0;
+
+  for (const row of rows) {
+    if (!selectedIdSet.has(row.profileId)) {
+      continue;
+    }
+
+    if (row.role === bulkTargetRole) {
+      unchangedCount += 1;
+      continue;
+    }
+
+    profileIdsToChange.push(row.profileId);
+  }
+
+  return { profileIdsToChange, unchangedCount };
 }
 
 export function AdminUsersClient({ initialUsers }: AdminUsersClientProps) {
@@ -137,75 +166,77 @@ export function AdminUsersClient({ initialUsers }: AdminUsersClientProps) {
     void loadUsers();
   }, [loadUsers]);
 
+  const handleSetSearch = useEffectEvent((event: Event) => {
+    const customEvent = event as CustomEvent<AdminSetSearchEventDetail>;
+    setSearch(customEvent.detail?.query ?? "");
+  });
+
+  const handleSetRoleFilter = useEffectEvent((event: Event) => {
+    const customEvent = event as CustomEvent<AdminSetRoleFilterEventDetail>;
+    setRoleFilter(customEvent.detail?.role ?? "all");
+    setPage(1);
+  });
+
+  const handleSetBulkRole = useEffectEvent((event: Event) => {
+    const customEvent = event as CustomEvent<AdminSetBulkRoleEventDetail>;
+    if (customEvent.detail?.role) {
+      setBulkTargetRole(customEvent.detail.role);
+    }
+  });
+
+  const handleApplyBulk = useEffectEvent(() => {
+    if (selectedIds.length === 0) {
+      toast.error("Selecione pelo menos um utilizador.");
+      return;
+    }
+
+    const { profileIdsToChange, unchangedCount } = getBulkRoleSelectionSummary(rows, selectedIds, bulkTargetRole);
+
+    if (profileIdsToChange.length === 0) {
+      const targetRoleLabel = roleLabelByValue.get(bulkTargetRole) ?? bulkTargetRole;
+      toast.error(`Os utilizadores selecionados já têm a função ${targetRoleLabel}.`);
+      return;
+    }
+
+    if (unchangedCount > 0) {
+      toast.error(
+        `${unchangedCount} utilizador${unchangedCount > 1 ? "es" : ""} já tinha${unchangedCount > 1 ? "m" : ""} esta função e será ignorado.`,
+      );
+    }
+
+    setPendingRoleAction({
+      profileIds: profileIdsToChange,
+      newRole: bulkTargetRole,
+      mode: "bulk",
+    });
+    setReason("");
+  });
+
+  const handleRefresh = useEffectEvent(() => {
+    void loadUsers();
+  });
+
   useEffect(() => {
-    const handleSetSearch = (event: Event) => {
-      const customEvent = event as CustomEvent<AdminSetSearchEventDetail>;
-      setSearch(customEvent.detail?.query ?? "");
-    };
+    const onSetSearch = (event: Event) => handleSetSearch(event);
+    const onSetRoleFilter = (event: Event) => handleSetRoleFilter(event);
+    const onSetBulkRole = (event: Event) => handleSetBulkRole(event);
+    const onApplyBulk = () => handleApplyBulk();
+    const onRefresh = () => handleRefresh();
 
-    const handleSetRoleFilter = (event: Event) => {
-      const customEvent = event as CustomEvent<AdminSetRoleFilterEventDetail>;
-      setRoleFilter(customEvent.detail?.role ?? "all");
-      setPage(1);
-    };
-
-    const handleSetBulkRole = (event: Event) => {
-      const customEvent = event as CustomEvent<AdminSetBulkRoleEventDetail>;
-      if (customEvent.detail?.role) {
-        setBulkTargetRole(customEvent.detail.role);
-      }
-    };
-
-    const handleApplyBulk = () => {
-      if (selectedIds.length === 0) {
-        toast.error("Selecione pelo menos um utilizador.");
-        return;
-      }
-
-      const selectedRows = rows.filter((row) => selectedIds.includes(row.profileId));
-      const profileIdsToChange = selectedRows
-        .filter((row) => row.role !== bulkTargetRole)
-        .map((row) => row.profileId);
-
-      if (profileIdsToChange.length === 0) {
-        const targetRoleLabel = roleLabelByValue.get(bulkTargetRole) ?? bulkTargetRole;
-        toast.error(`Os utilizadores selecionados já têm a função ${targetRoleLabel}.`);
-        return;
-      }
-
-      const unchangedCount = selectedRows.length - profileIdsToChange.length;
-      if (unchangedCount > 0) {
-        toast.error(
-          `${unchangedCount} utilizador${unchangedCount > 1 ? "es" : ""} já tinha${unchangedCount > 1 ? "m" : ""} esta função e será ignorado.`,
-        );
-      }
-
-      setPendingRoleAction({
-        profileIds: profileIdsToChange,
-        newRole: bulkTargetRole,
-        mode: "bulk",
-      });
-      setReason("");
-    };
-
-    const handleRefresh = () => {
-      void loadUsers();
-    };
-
-    window.addEventListener(ADMIN_EVENTS.setSearch, handleSetSearch as EventListener);
-    window.addEventListener(ADMIN_EVENTS.setRoleFilter, handleSetRoleFilter as EventListener);
-    window.addEventListener(ADMIN_EVENTS.setBulkRole, handleSetBulkRole as EventListener);
-    window.addEventListener(ADMIN_EVENTS.applyBulk, handleApplyBulk);
-    window.addEventListener(ADMIN_EVENTS.refresh, handleRefresh);
+    window.addEventListener(ADMIN_EVENTS.setSearch, onSetSearch as EventListener);
+    window.addEventListener(ADMIN_EVENTS.setRoleFilter, onSetRoleFilter as EventListener);
+    window.addEventListener(ADMIN_EVENTS.setBulkRole, onSetBulkRole as EventListener);
+    window.addEventListener(ADMIN_EVENTS.applyBulk, onApplyBulk);
+    window.addEventListener(ADMIN_EVENTS.refresh, onRefresh);
 
     return () => {
-      window.removeEventListener(ADMIN_EVENTS.setSearch, handleSetSearch as EventListener);
-      window.removeEventListener(ADMIN_EVENTS.setRoleFilter, handleSetRoleFilter as EventListener);
-      window.removeEventListener(ADMIN_EVENTS.setBulkRole, handleSetBulkRole as EventListener);
-      window.removeEventListener(ADMIN_EVENTS.applyBulk, handleApplyBulk);
-      window.removeEventListener(ADMIN_EVENTS.refresh, handleRefresh);
+      window.removeEventListener(ADMIN_EVENTS.setSearch, onSetSearch as EventListener);
+      window.removeEventListener(ADMIN_EVENTS.setRoleFilter, onSetRoleFilter as EventListener);
+      window.removeEventListener(ADMIN_EVENTS.setBulkRole, onSetBulkRole as EventListener);
+      window.removeEventListener(ADMIN_EVENTS.applyBulk, onApplyBulk);
+      window.removeEventListener(ADMIN_EVENTS.refresh, onRefresh);
     };
-  }, [bulkTargetRole, loadUsers, rows, selectedIds]);
+  }, []);
 
   useEffect(() => {
     dispatchAdminCustomEvent(ADMIN_EVENTS.state, {

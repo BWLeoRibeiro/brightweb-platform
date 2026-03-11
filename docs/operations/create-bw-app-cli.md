@@ -6,14 +6,14 @@ The old local generator lived in:
 
 - `package.json` as `pnpm create:client`
 - `scripts/create-brightweb-client.mjs`
-- `apps/starter-site` as its implicit template source
+- the live preview app as its implicit template source
 
 What it already did:
 
 - prompted for app slug
 - prompted for company name, product name, tagline, contact email, support email, and primary brand color
 - prompted module enablement with separate yes/no questions for `crm`, `projects`, and `admin`
-- copied the full `apps/starter-site` folder into `apps/<slug>`
+- copied the full preview app folder into `apps/<slug>`
 - rewrote the generated app `package.json` name
 - rewrote the generated app `README.md`
 - generated `.env.local` with brand values, service keys, and module flags
@@ -51,11 +51,13 @@ packages/create-bw-app/
   template/site/base/
 ```
 
+The live preview app now lives separately at `apps/platform-preview`. It is a sandbox for local package work, not the scaffold source for generated apps.
+
 ## What the refactor improves
 
 - generator logic is owned by a dedicated workspace package
 - the package has a publishable `bin` entry
-- the template is isolated from the live starter app
+- the template is isolated from the live preview app
 - the CLI now supports two scaffold types:
   - `platform`: auth-first BrightWeb app with optional `crm`, `projects`, and `admin`
   - `site`: standalone Next.js + Tailwind site starter with local UI primitives

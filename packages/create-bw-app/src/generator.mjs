@@ -115,10 +115,10 @@ async function getVersionMap(workspaceRoot) {
     return versionMap;
   }
 
-  const starterManifestPath = path.join(workspaceRoot, "apps", "starter-site", "package.json");
-  const starterManifest = await readJsonIfPresent(starterManifestPath);
-  if (starterManifest) {
-    Object.assign(versionMap, starterManifest.dependencies || {}, starterManifest.devDependencies || {});
+  const previewManifestPath = path.join(workspaceRoot, "apps", "platform-preview", "package.json");
+  const previewManifest = await readJsonIfPresent(previewManifestPath);
+  if (previewManifest) {
+    Object.assign(versionMap, previewManifest.dependencies || {}, previewManifest.devDependencies || {});
   }
 
   for (const packageName of [

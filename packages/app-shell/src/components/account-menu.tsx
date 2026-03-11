@@ -7,7 +7,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@brightweblabs/ui";
+} from "@brightweblabs/ui/dropdown-menu";
 import type { AccountMenuProps } from "../types";
 
 export function AccountMenu({ displayName, isStaff, onSignOut, user, userInitials }: AccountMenuProps) {

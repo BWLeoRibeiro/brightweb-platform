@@ -1,8 +1,12 @@
 import type { User } from "@supabase/supabase-js";
 import { redirect } from "next/navigation";
 import { createServerSupabase } from "@brightweblabs/infra/server";
-
-export type GlobalRole = "client" | "staff" | "admin";
+import {
+  canAccessInsightsCms,
+  normalizeGlobalRole,
+  resolvePostLoginPath,
+  type GlobalRole,
+} from "./shared";
 
 type Profile = {
   id: string;
@@ -43,30 +47,6 @@ type ServerUserAccess =
     status: number;
     error: string;
   };
-
-const INSIGHTS_CMS_ALLOWED_ROLES: GlobalRole[] = ["admin"];
-const DASHBOARD_LANDING_ROLES: GlobalRole[] = ["staff", "admin"];
-
-export function normalizeGlobalRole(value: string | null | undefined): GlobalRole | null {
-  const normalizedValue = (value ?? "").trim().toLowerCase();
-  if (normalizedValue === "client" || normalizedValue === "staff" || normalizedValue === "admin") {
-    return normalizedValue;
-  }
-
-  return null;
-}
-
-export function canAccessInsightsCms(role: string | null | undefined): boolean {
-  const normalizedRole = normalizeGlobalRole(role);
-  return normalizedRole !== null && INSIGHTS_CMS_ALLOWED_ROLES.some((allowedRole) => allowedRole === normalizedRole);
-}
-
-export function resolvePostLoginPath(role: string | null | undefined): "/dashboard" | "/account" {
-  const normalizedRole = normalizeGlobalRole(role);
-  const shouldLandOnDashboard = normalizedRole !== null
-    && DASHBOARD_LANDING_ROLES.some((allowedRole) => allowedRole === normalizedRole);
-  return shouldLandOnDashboard ? "/dashboard" : "/account";
-}
 
 export async function requireServerUserAccess(): Promise<ServerUserAccess> {
   const supabase = await createServerSupabase();

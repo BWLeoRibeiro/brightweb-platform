@@ -2,8 +2,6 @@
   "name": "@brightweblabs/core-auth",
   "private": false,
   "version": "0.1.2",
-  "main": "./src/index.ts",
-  "types": "./src/index.ts",
   "files": [
     "src"
   ],
@@ -16,9 +14,9 @@
     "access": "public"
   },
   "exports": {
-    ".": "./src/index.ts",
     "./client": "./src/client.ts",
-    "./server": "./src/server.ts"
+    "./server": "./src/server.ts",
+    "./shared": "./src/shared.ts"
   },
   "dependencies": {
     "@brightweblabs/infra": "workspace:*",

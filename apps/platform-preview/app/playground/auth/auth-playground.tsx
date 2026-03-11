@@ -5,10 +5,10 @@ import {
   AUTH_RESEND_COOLDOWN_SECONDS,
   buildResetPasswordRedirectUrl,
   buildSignupCallbackUrl,
-  useCooldownTimer,
   validateEmail,
   validatePassword,
-} from "@brightweblabs/core-auth/client";
+} from "@brightweblabs/core-auth/shared";
+import { useCooldownTimer } from "@brightweblabs/core-auth/client";
 
 export function AuthPlayground() {
   const [email, setEmail] = useState("hello@brightweblabs.pt");
@@ -39,7 +39,7 @@ export function AuthPlayground() {
           <p className="eyebrow">Core Auth</p>
           <h1>Auth package playground</h1>
           <p className="muted">
-            This page exercises the external `@brightweblabs/core-auth` client package directly.
+            This page exercises the external `@brightweblabs/core-auth` shared and client entrypoints directly.
           </p>
         </div>
       </article>

@@ -2,7 +2,9 @@
 
 import type { LucideIcon } from "lucide-react";
 import { ChevronDown, ListFilter, RotateCcw } from "lucide-react";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, Input, Tooltip, TooltipContent, TooltipTrigger } from "@brightweblabs/ui";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@brightweblabs/ui/dropdown-menu";
+import { Input } from "@brightweblabs/ui/input";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@brightweblabs/ui/tooltip";
 import { cn } from "../lib/utils";
 
 type NewMenuItem = {

@@ -1,4 +1,5 @@
-import { normalizeGlobalRole, requireServerPageRoleAccess } from "@brightweblabs/core-auth/server";
+import { requireServerPageRoleAccess } from "@brightweblabs/core-auth/server";
+import { normalizeGlobalRole } from "@brightweblabs/core-auth/shared";
 import { createServerSupabase } from "@brightweblabs/infra/server";
 
 export type AdminManagedRole = "client" | "staff" | "admin";

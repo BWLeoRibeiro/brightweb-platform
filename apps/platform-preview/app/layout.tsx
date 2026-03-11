@@ -3,8 +3,8 @@ import { starterBrandConfig } from "../config/brand";
 import "./globals.css";
 
 export const metadata = {
-  title: `${starterBrandConfig.companyName} Starter`,
-  description: starterBrandConfig.tagline,
+  title: `${starterBrandConfig.companyName} Platform Preview`,
+  description: `Internal preview app for ${starterBrandConfig.companyName} platform features.`,
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
