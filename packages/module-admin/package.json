@@ -24,10 +24,10 @@
     "./users-client": "./src/users-client.tsx"
   },
   "dependencies": {
-    "@brightweblabs/app-shell": "workspace:*",
-    "@brightweblabs/core-auth": "workspace:*",
-    "@brightweblabs/infra": "workspace:*",
-    "@brightweblabs/ui": "workspace:*",
+    "@brightweblabs/app-shell": "^0.1.0",
+    "@brightweblabs/core-auth": "^0.1.0",
+    "@brightweblabs/infra": "^0.1.0",
+    "@brightweblabs/ui": "^0.1.0",
     "lucide-react": "^0.562.0",
     "react": "19.2.3",
     "react-dom": "19.2.3",

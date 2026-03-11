@@ -19,7 +19,7 @@
     ".": "./src/index.ts"
   },
   "dependencies": {
-    "@brightweblabs/ui": "workspace:*",
+    "@brightweblabs/ui": "^0.1.0",
     "clsx": "^2.1.1",
     "lucide-react": "^0.562.0",
     "motion": "^12.31.0",
