@@ -1,4 +1,5 @@
 import type { User } from "@supabase/supabase-js";
+import { redirect } from "next/navigation";
 import { createServerSupabase } from "@brightweblabs/infra/server";
 
 export type GlobalRole = "client" | "staff" | "admin";
@@ -22,6 +23,20 @@ type ServerRoleAccess =
     supabase: Awaited<ReturnType<typeof createServerSupabase>>;
     user: User;
     role: GlobalRole;
+  }
+  | {
+    ok: false;
+    status: number;
+    error: string;
+  };
+
+type ServerUserAccess =
+  | {
+    ok: true;
+    supabase: Awaited<ReturnType<typeof createServerSupabase>>;
+    user: User;
+    profileId: string;
+    role: GlobalRole | null;
   }
   | {
     ok: false;
@@ -53,7 +68,7 @@ export function resolvePostLoginPath(role: string | null | undefined): "/dashboa
   return shouldLandOnDashboard ? "/dashboard" : "/account";
 }
 
-export async function requireServerRoleAccess(allowedRoles: GlobalRole | GlobalRole[]): Promise<ServerRoleAccess> {
+export async function requireServerUserAccess(): Promise<ServerUserAccess> {
   const supabase = await createServerSupabase();
   const {
     data: { user },
@@ -64,8 +79,80 @@ export async function requireServerRoleAccess(allowedRoles: GlobalRole | GlobalR
     return { ok: false, status: 401, error: "Não autorizado." };
   }
 
+  const { profileId, error: profileError } = await getProfileIdForUser(supabase, user.id);
+  if (!profileId) {
+    return { ok: false, status: 409, error: profileError ?? "Perfil em falta." };
+  }
+
   const { data: roleRaw } = await supabase.rpc("current_global_role");
   const role = normalizeGlobalRole(typeof roleRaw === "string" ? roleRaw : null);
+
+  return { ok: true, supabase, user, profileId, role };
+}
+
+export async function requireServerPageAccess(): Promise<{
+  supabase: Awaited<ReturnType<typeof createServerSupabase>>;
+  user: User;
+  profileId: string;
+  role: GlobalRole | null;
+}> {
+  const access = await requireServerUserAccess();
+
+  if (!access.ok) {
+    if (access.status === 401) {
+      redirect("/login");
+    }
+
+    if (access.status === 409) {
+      redirect("/account");
+    }
+
+    throw new Error(access.error);
+  }
+
+  return access;
+}
+
+export async function requireServerPageRoleAccess(
+  allowedRoles: GlobalRole | GlobalRole[],
+): Promise<{
+  supabase: Awaited<ReturnType<typeof createServerSupabase>>;
+  user: User;
+  role: GlobalRole;
+}> {
+  const access = await requireServerUserAccess();
+
+  if (!access.ok) {
+    if (access.status === 401) {
+      redirect("/login");
+    }
+
+    if (access.status === 409) {
+      redirect("/account");
+    }
+
+    throw new Error(access.error);
+  }
+
+  const allowed = Array.isArray(allowedRoles) ? allowedRoles : [allowedRoles];
+  if (!access.role || !allowed.includes(access.role)) {
+    redirect(resolvePostLoginPath(access.role));
+  }
+
+  return {
+    supabase: access.supabase,
+    user: access.user,
+    role: access.role,
+  };
+}
+
+export async function requireServerRoleAccess(allowedRoles: GlobalRole | GlobalRole[]): Promise<ServerRoleAccess> {
+  const access = await requireServerUserAccess();
+  if (!access.ok) {
+    return access;
+  }
+
+  const { supabase, user, role } = access;
 
   if (!role) {
     return { ok: false, status: 403, error: "Acesso proibido." };

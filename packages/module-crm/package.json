@@ -20,8 +20,9 @@
     "./registration": "./src/registration.ts"
   },
   "dependencies": {
-    "@brightweblabs/app-shell": "^0.1.1",
-    "@brightweblabs/infra": "^0.1.0",
+    "@brightweblabs/app-shell": "workspace:*",
+    "@brightweblabs/core-auth": "workspace:*",
+    "@brightweblabs/infra": "workspace:*",
     "lucide-react": "^0.562.0",
     "next": "16.1.1"
   }

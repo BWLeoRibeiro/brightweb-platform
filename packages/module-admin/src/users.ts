@@ -1,4 +1,4 @@
-import { normalizeGlobalRole } from "@brightweblabs/core-auth/server";
+import { normalizeGlobalRole, requireServerPageRoleAccess } from "@brightweblabs/core-auth/server";
 import { createServerSupabase } from "@brightweblabs/infra/server";
 
 export type AdminManagedRole = "client" | "staff" | "admin";
@@ -25,6 +25,10 @@ export type AdminUsersPagination = {
 export type AdminUsersListResult = {
   data: AdminUserRow[];
   pagination: AdminUsersPagination;
+};
+
+export type AdminUsersPageData = {
+  users: AdminUsersListResult;
 };
 
 type ListAdminUsersParams = {
@@ -115,4 +119,17 @@ export async function listAdminUsers({
       totalPages: Math.max(1, Math.ceil(total / pageSize)),
     },
   };
+}
+
+export async function getAdminUsersPageData(): Promise<AdminUsersPageData> {
+  const { supabase } = await requireServerPageRoleAccess("admin");
+  const users = await listAdminUsers({
+    supabase,
+    search: "",
+    roleFilter: null,
+    page: 1,
+    pageSize: ADMIN_USERS_DEFAULT_PAGE_SIZE,
+  });
+
+  return { users };
 }

@@ -1,0 +1,29 @@
+{
+  "name": "create-brightweblabs",
+  "private": false,
+  "version": "0.1.0",
+  "type": "module",
+  "bin": {
+    "create-brightweblabs": "./bin/create-brightweblabs.mjs"
+  },
+  "files": [
+    "bin",
+    "src",
+    "template",
+    "README.md"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/BWLeoRibeiro/brightweb-platform.git"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@inquirer/prompts": "^7.0.0"
+  }
+}

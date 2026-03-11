@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { createServerSupabase } from "@brightweblabs/infra/server";
+import { requireServerPageAccess } from "@brightweblabs/core-auth/server";
 
 export const PROJECT_STATUSES = ["planned", "active", "blocked", "completed", "canceled"] as const;
 export const PROJECT_HEALTH_STATES = ["on_track", "at_risk", "off_track"] as const;
@@ -351,14 +351,14 @@ export async function listProjects(
 }
 
 export async function getProjectsPortfolioPageData(): Promise<ProjectsPortfolioPageData> {
-  const supabase = await createServerSupabase();
+  const { supabase } = await requireServerPageAccess();
   const { data: organizations } = await supabase
     .from("organizations")
     .select("id, name")
     .order("name", { ascending: true })
     .limit(500);
 
-  const organizationOptions = (organizations ?? []).map((organization) => ({
+  const organizationOptions = ((organizations ?? []) as { id: string; name: string }[]).map((organization) => ({
     id: organization.id,
     name: organization.name,
   }));

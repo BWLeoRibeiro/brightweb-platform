@@ -1,5 +1,4 @@
-import { redirect } from "next/navigation";
-import { createServerSupabase } from "@brightweblabs/infra/server";
+import { requireServerPageAccess } from "@brightweblabs/core-auth/server";
 
 export type CrmContact = {
   id: string;
@@ -67,6 +66,31 @@ export type CrmDashboardData = {
   stats: { total: number; byStatus: Record<string, number> };
 };
 
+type CrmOwnerAssignment = {
+  profile_id: string | null;
+  role_code: string | null;
+  profile:
+    | {
+      id?: string | null;
+      first_name?: string | null;
+      last_name?: string | null;
+      email?: string | null;
+    }
+    | Array<{
+      id?: string | null;
+      first_name?: string | null;
+      last_name?: string | null;
+      email?: string | null;
+    }>
+    | null;
+};
+
+type CrmChangedByProfile = {
+  user_id: string | null;
+  first_name: string | null;
+  last_name: string | null;
+};
+
 function normalizeOrganization<T extends Record<string, unknown>>(raw: T) {
   const primaryContact = raw.primary_contact;
   return {
@@ -76,8 +100,8 @@ function normalizeOrganization<T extends Record<string, unknown>>(raw: T) {
 }
 
 function buildProfileDisplayName(profile: {
-  first_name: string | null;
-  last_name: string | null;
+  first_name?: string | null;
+  last_name?: string | null;
 }) {
   const isEmailLike = (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
   const combinedFirstLast = [profile.first_name, profile.last_name].filter(Boolean).join(" ").trim();
@@ -86,28 +110,9 @@ function buildProfileDisplayName(profile: {
 }
 
 export async function getCrmDashboardData(): Promise<CrmDashboardData> {
-  const supabase = await createServerSupabase();
+  const { supabase, user, profileId } = await requireServerPageAccess();
   const sevenDaysAgo = new Date();
   sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser();
-
-  if (authError || !user) {
-    redirect("/login");
-  }
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("id")
-    .eq("user_id", user.id)
-    .maybeSingle();
-
-  if (!profile?.id) {
-    redirect("/account");
-  }
 
   const [{ data: organizations }, { data: contacts }, { data: statusLog }, { data: primaryContacts }, { data: ownerAssignments }] = await Promise.all([
     supabase
@@ -143,7 +148,7 @@ export async function getCrmDashboardData(): Promise<CrmDashboardData> {
       .limit(500),
   ]);
 
-  const ownerOptions = (ownerAssignments ?? []).reduce<CrmDashboardData["ownerOptions"]>((acc, assignment) => {
+  const ownerOptions = ((ownerAssignments ?? []) as CrmOwnerAssignment[]).reduce<CrmDashboardData["ownerOptions"]>((acc, assignment) => {
     const roleCode = assignment.role_code;
     if (roleCode !== "staff" && roleCode !== "admin") return acc;
     if (typeof assignment.profile_id !== "string") return acc;
@@ -165,7 +170,9 @@ export async function getCrmDashboardData(): Promise<CrmDashboardData> {
     return acc;
   }, []);
 
-  const safeContacts = (contacts ?? []).map((contact) => ({
+  const safeContacts: CrmContact[] = ((contacts ?? []) as Array<CrmContact | (Omit<CrmContact, "organizations"> & {
+    organizations?: Array<{ name: string | null }> | { name: string | null } | null;
+  })>).map((contact) => ({
     ...contact,
     organizations: Array.isArray(contact.organizations)
       ? contact.organizations[0] ?? null
@@ -189,7 +196,7 @@ export async function getCrmDashboardData(): Promise<CrmDashboardData> {
   );
 
   const changedByIds = Array.from(
-    new Set((statusLog ?? []).map((entry) => entry.changed_by_user_id).filter((value): value is string => Boolean(value))),
+    new Set(((statusLog ?? []) as CrmStatusLog[]).map((entry) => entry.changed_by_user_id).filter((value): value is string => Boolean(value))),
   );
 
   const changedByMap = new Map<string, string>();
@@ -199,7 +206,7 @@ export async function getCrmDashboardData(): Promise<CrmDashboardData> {
       .select("user_id, first_name, last_name")
       .in("user_id", changedByIds);
 
-    (changedByProfiles ?? []).forEach((profile) => {
+    ((changedByProfiles ?? []) as CrmChangedByProfile[]).forEach((profile) => {
       const userId = profile.user_id;
       const label = buildProfileDisplayName(profile);
       if (userId && label) {
@@ -210,12 +217,12 @@ export async function getCrmDashboardData(): Promise<CrmDashboardData> {
 
   return {
     userId: user.id,
-    profileId: profile.id,
+    profileId,
     organizations: (organizations ?? []).map(normalizeOrganization),
-    primaryContacts: primaryContacts ?? [],
+    primaryContacts: (primaryContacts ?? []) as CrmPrimaryContact[],
     ownerOptions,
     contacts: safeContacts,
-    statusLog: (statusLog ?? []).map((entry) => ({
+    statusLog: ((statusLog ?? []) as CrmStatusLog[]).map((entry) => ({
       ...entry,
       contact_label: contactMap.get(entry.contact_id) ?? "Contacto",
       changed_by_label: entry.changed_by_user_id ? (changedByMap.get(entry.changed_by_user_id) ?? null) : null,

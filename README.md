@@ -16,29 +16,45 @@ Run the reference app:
 pnpm dev
 ```
 
-## Create a new client app
+## Create a new app
 
-Scaffold a new app from the starter template:
+Scaffold either a platform app or a standalone site:
 
 ```bash
 pnpm create:client
+pnpm create:client -- --help
+pnpm create:client -- --template site
 ```
 
-The installer will ask for:
+The local wrapper now delegates to the publishable workspace CLI package at `packages/create-brightweblabs`.
 
-- app slug
-- company name
-- product name
-- tagline
-- support emails
-- brand color
-- which modules to enable
+The installer can:
 
-It creates a new app under `apps/<slug>` and writes a starter `.env.local` for that client.
+- ask which app type to create: `platform` or `site`
+- ask for the project name
+- ask yes/no questions for optional modules when creating a platform app
+- ask whether dependencies should be installed immediately
+- generate `package.json`, `next.config.ts`, `.gitignore`, and `README.md` for both templates
+- generate `.env.example`, `.env.local`, and module wiring for platform apps
+- generate a Tailwind-based site starter with local shadcn-style components for site apps
+- keep repo-local apps wired to `workspace:*` dependencies
+
+It creates a new app under `apps/<slug>`.
+
+Future public commands after npm publish:
+
+```bash
+pnpm dlx create-brightweblabs
+npm create brightweblabs@latest
+```
+
+Detailed generator notes:
+
+- [docs/operations/create-brightweblabs-cli.md](/Users/leoribeiro/Documents/02_Projects/brightweb-platform/docs/operations/create-brightweblabs-cli.md)
 
 ## Public npm publishing
 
-This repo is prepared for public npm publishing of the `@brightweblabs/*` packages.
+This repo is prepared for public npm publishing of the `@brightweblabs/*` packages and the unscoped `create-brightweblabs` CLI.
 
 Release flow:
 

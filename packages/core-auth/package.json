@@ -21,7 +21,8 @@
     "./server": "./src/server.ts"
   },
   "dependencies": {
-    "@brightweblabs/infra": "^0.1.0",
+    "@brightweblabs/infra": "workspace:*",
+    "next": "16.1.1",
     "@supabase/supabase-js": "^2.89.0"
   },
   "peerDependencies": {
