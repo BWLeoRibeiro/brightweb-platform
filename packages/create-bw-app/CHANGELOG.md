@@ -1,5 +1,11 @@
 # create-bw-app
 
+## 0.3.0
+
+### Minor Changes
+
+- 27d13af: Rename the public CLI package from `create-brightweblabs` to `create-bw-app` and update the executable, docs, and local wrapper references.
+
 ## 0.2.0
 
 ### Minor Changes

@@ -30,7 +30,7 @@ export type CrmOrganization = {
   budget_range: string | null;
   website_url: string | null;
   address: string | null;
-  nif: string | null;
+  taxIdentifierValue: string | null;
   primary_contact_id: string | null;
   primary_contact?: CrmPrimaryContact | null;
   created_at: string;
@@ -95,6 +95,7 @@ function normalizeOrganization<T extends Record<string, unknown>>(raw: T) {
   const primaryContact = raw.primary_contact;
   return {
     ...raw,
+    taxIdentifierValue: typeof raw.tax_identifier_value === "string" ? raw.tax_identifier_value : null,
     primary_contact: Array.isArray(primaryContact) ? primaryContact[0] ?? null : primaryContact ?? null,
   };
 }
@@ -118,7 +119,7 @@ export async function getCrmDashboardData(): Promise<CrmDashboardData> {
     supabase
       .from("organizations")
       .select(
-        "id, name, industry, company_size, budget_range, website_url, address, nif, primary_contact_id, created_at, primary_contact:profiles!organizations_primary_contact_id_fkey(id, first_name, last_name, email)",
+        "id, name, industry, company_size, budget_range, website_url, address, tax_identifier_value, primary_contact_id, created_at, primary_contact:profiles!organizations_primary_contact_id_fkey(id, first_name, last_name, email)",
       )
       .order("created_at", { ascending: false })
       .limit(12),
