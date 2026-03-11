@@ -111,7 +111,7 @@ importers:
 
   packages/core-marketing: {}
 
-  packages/create-brightweblabs:
+  packages/create-bw-app:
     dependencies:
       '@inquirer/prompts':
         specifier: ^7.0.0

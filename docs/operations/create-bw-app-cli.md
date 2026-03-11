@@ -22,7 +22,7 @@ What it did not do:
 
 - isolate a publishable template inside a package
 - generate a package with a real `bin` entry
-- support external usage like `pnpm dlx create-brightweblabs`
+- support external usage like `pnpm dlx create-bw-app`
 - install dependencies
 - distinguish workspace dependencies from published npm versions
 - make module selection affect actual dependency wiring
@@ -32,18 +32,18 @@ What it did not do:
 
 ## Current package layout
 
-The new generator now lives in `packages/create-brightweblabs`.
+The new generator now lives in `packages/create-bw-app`.
 
 Why this name:
 
-- it maps directly to `pnpm dlx create-brightweblabs`
-- it also maps to `npm create brightweblabs`
+- it maps directly to `pnpm dlx create-bw-app`
+- it also maps to `npm create bw-app`
 - it keeps the public npm package name obvious and avoids a second renaming step later
 
 Structure:
 
 ```text
-packages/create-brightweblabs/
+packages/create-bw-app/
   bin/
   src/
   template/base/
@@ -86,11 +86,11 @@ Local repo behavior:
 
 ## Future published usage
 
-Once `create-brightweblabs` is published to npm:
+Once `create-bw-app` is published to npm:
 
 ```bash
-pnpm dlx create-brightweblabs
-npm create brightweblabs@latest
+pnpm dlx create-bw-app
+npm create bw-app@latest
 ```
 
 Published behavior:
@@ -102,8 +102,8 @@ Published behavior:
 
 ## Remaining gaps before true public rollout
 
-- publish `create-brightweblabs` to npm
-- confirm the unscoped npm package name `create-brightweblabs` is available
+- publish `create-bw-app` to npm
+- confirm the unscoped npm package name `create-bw-app` is available
 - add CI smoke tests that scaffold and build a sample app in both workspace and published modes
 - decide how internal package version bumps should automatically update the CLI’s fallback dependency map over time
 - decide whether the site template should keep the default Turbopack production build or pin `next build --webpack` until Tailwind/PostCSS validation is covered in CI

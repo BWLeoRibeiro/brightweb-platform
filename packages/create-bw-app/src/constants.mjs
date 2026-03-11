@@ -1,5 +1,5 @@
-export const CLI_PACKAGE_NAME = "create-brightweblabs";
-export const CLI_DISPLAY_NAME = "create-brightweblabs";
+export const CLI_PACKAGE_NAME = "create-bw-app";
+export const CLI_DISPLAY_NAME = "create-bw-app";
 
 export const TEMPLATE_OPTIONS = [
   {
@@ -96,7 +96,7 @@ export const DEFAULTS = {
 
 export const HELP_TEXT = `
 Usage:
-  create-brightweblabs [options]
+  create-bw-app [options]
 
 Options:
   --template <platform|site>    Scaffold a platform app or a standalone site

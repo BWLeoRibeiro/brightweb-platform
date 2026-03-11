@@ -55,7 +55,7 @@ function parseArgv(argv) {
   return options;
 }
 
-export async function runCreateBrightweblabsCli(argv = process.argv.slice(2), runtimeOptions = {}) {
+export async function runCreateBwAppCli(argv = process.argv.slice(2), runtimeOptions = {}) {
   const argvOptions = parseArgv(argv);
 
   if (argvOptions.help) {
@@ -72,7 +72,7 @@ export async function runCreateBrightweblabsCli(argv = process.argv.slice(2), ru
       process.exitCode = 1;
       return;
     }
-    console.error(`\n${runtimeOptions.failurePrefix || "create-brightweblabs failed"}: ${message}`);
+    console.error(`\n${runtimeOptions.failurePrefix || "create-bw-app failed"}: ${message}`);
     process.exitCode = 1;
   }
 }

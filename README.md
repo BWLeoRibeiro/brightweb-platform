@@ -26,7 +26,7 @@ pnpm create:client -- --help
 pnpm create:client -- --template site
 ```
 
-The local wrapper now delegates to the publishable workspace CLI package at `packages/create-brightweblabs`.
+The local wrapper now delegates to the publishable workspace CLI package at `packages/create-bw-app`.
 
 The installer can:
 
@@ -44,17 +44,17 @@ It creates a new app under `apps/<slug>`.
 Future public commands after npm publish:
 
 ```bash
-pnpm dlx create-brightweblabs
-npm create brightweblabs@latest
+pnpm dlx create-bw-app
+npm create bw-app@latest
 ```
 
 Detailed generator notes:
 
-- [docs/operations/create-brightweblabs-cli.md](/Users/leoribeiro/Documents/02_Projects/brightweb-platform/docs/operations/create-brightweblabs-cli.md)
+- [docs/operations/create-bw-app-cli.md](/Users/leoribeiro/Documents/02_Projects/brightweb-platform/docs/operations/create-bw-app-cli.md)
 
 ## Public npm publishing
 
-This repo is prepared for public npm publishing of the `@brightweblabs/*` packages and the unscoped `create-brightweblabs` CLI.
+This repo is prepared for public npm publishing of the `@brightweblabs/*` packages and the unscoped `create-bw-app` CLI.
 
 Release flow:
 

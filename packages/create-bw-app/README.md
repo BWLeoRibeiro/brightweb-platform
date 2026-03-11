@@ -1,4 +1,4 @@
-# create-brightweblabs
+# create-bw-app
 
 Create a new BrightWeb app from either the platform or site starter.
 
@@ -16,8 +16,8 @@ pnpm create:client -- --template site
 Once this package is published to npm:
 
 ```bash
-pnpm dlx create-brightweblabs
-npm create brightweblabs@latest
+pnpm dlx create-bw-app
+npm create bw-app@latest
 ```
 
 ## Template behavior
