@@ -1,5 +1,14 @@
 # @brightweblabs/module-admin
 
+## 0.1.1
+
+### Patch Changes
+
+- a36ed3b: Replace internal workspace protocol dependencies with published version ranges.
+- Updated dependencies [a36ed3b]
+  - @brightweblabs/app-shell@0.1.1
+  - @brightweblabs/core-auth@0.1.1
+
 ## 0.1.0
 
 ### Minor Changes

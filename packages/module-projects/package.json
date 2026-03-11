@@ -1,7 +1,7 @@
 {
   "name": "@brightweblabs/module-projects",
   "private": false,
-  "version": "0.1.0",
+  "version": "0.1.1",
   "main": "./src/index.ts",
   "types": "./src/index.ts",
   "files": [
@@ -20,7 +20,7 @@
     "./registration": "./src/registration.ts"
   },
   "dependencies": {
-    "@brightweblabs/app-shell": "^0.1.0",
+    "@brightweblabs/app-shell": "^0.1.1",
     "@brightweblabs/infra": "^0.1.0",
     "@supabase/supabase-js": "^2.89.0",
     "lucide-react": "^0.562.0"
