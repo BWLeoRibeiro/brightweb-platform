@@ -67,8 +67,8 @@ importers:
   packages/app-shell:
     dependencies:
       '@brightweblabs/ui':
-        specifier: workspace:*
-        version: link:../ui
+        specifier: ^0.1.0
+        version: 0.1.0(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
@@ -97,8 +97,8 @@ importers:
   packages/core-auth:
     dependencies:
       '@brightweblabs/infra':
-        specifier: workspace:*
-        version: link:../infra
+        specifier: ^0.1.0
+        version: 0.1.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       '@supabase/supabase-js':
         specifier: ^2.89.0
         version: 2.99.0
@@ -123,17 +123,17 @@ importers:
   packages/module-admin:
     dependencies:
       '@brightweblabs/app-shell':
-        specifier: workspace:*
-        version: link:../app-shell
+        specifier: ^0.1.0
+        version: 0.1.0
       '@brightweblabs/core-auth':
-        specifier: workspace:*
-        version: link:../core-auth
+        specifier: ^0.1.0
+        version: 0.1.0(react@19.2.3)
       '@brightweblabs/infra':
-        specifier: workspace:*
-        version: link:../infra
+        specifier: ^0.1.0
+        version: 0.1.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       '@brightweblabs/ui':
-        specifier: workspace:*
-        version: link:../ui
+        specifier: ^0.1.0
+        version: 0.1.0(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)
       lucide-react:
         specifier: ^0.562.0
         version: 0.562.0(react@19.2.3)
@@ -150,11 +150,11 @@ importers:
   packages/module-crm:
     dependencies:
       '@brightweblabs/app-shell':
-        specifier: workspace:*
-        version: link:../app-shell
+        specifier: ^0.1.0
+        version: 0.1.0
       '@brightweblabs/infra':
-        specifier: workspace:*
-        version: link:../infra
+        specifier: ^0.1.0
+        version: 0.1.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       lucide-react:
         specifier: ^0.562.0
         version: 0.562.0(react@19.2.3)
@@ -165,11 +165,11 @@ importers:
   packages/module-projects:
     dependencies:
       '@brightweblabs/app-shell':
-        specifier: workspace:*
-        version: link:../app-shell
+        specifier: ^0.1.0
+        version: 0.1.0
       '@brightweblabs/infra':
-        specifier: workspace:*
-        version: link:../infra
+        specifier: ^0.1.0
+        version: 0.1.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       '@supabase/supabase-js':
         specifier: ^2.89.0
         version: 2.99.0
@@ -242,6 +242,20 @@ packages:
   '@babel/runtime@7.28.6':
     resolution: {integrity: sha512-05WQkdpL9COIMz4LjTxGpPNCdlpyimKppYNoJ5Di5EUObifl8t4tuLuUBBZEpoLYOmfvIWrsp9fCl0HoPRVTdA==}
     engines: {node: '>=6.9.0'}
+
+  '@brightweblabs/app-shell@0.1.0':
+    resolution: {integrity: sha512-QtcPTZxS5wQD6TtPwzn1z146k3eLwm2jVPRWLZNNq5BVMRVN9RR+BsMAqwbobg21+4XimOmIB2PNLaF3Jyo7RQ==}
+
+  '@brightweblabs/core-auth@0.1.0':
+    resolution: {integrity: sha512-bZ9OLT0rXneoCC2hEP0VG8YGmjEeiMyM8nt64XemVLz0tnvi7hKr2y91BRS1wptzyjtVzariW63DnivDLu2iFw==}
+    peerDependencies:
+      react: ^19.0.0
+
+  '@brightweblabs/infra@0.1.0':
+    resolution: {integrity: sha512-BvSQ+Y1ftYR+MhXJTlA9HaQdt+OvNP4BH6m/3saDJX4pNw5jGmKuZYmDnUhG3E3fdllaQvlrYfgcpQO4BjXCwA==}
+
+  '@brightweblabs/ui@0.1.0':
+    resolution: {integrity: sha512-0sayOLYkcZQH+45nsBg+sX7lHVDJbOmiNsKDL+l3qJ4BA/w4pSHVJXY631tnh29Ju17UMGQnkFbMLm+aS6Iphw==}
 
   '@changesets/apply-release-plan@7.1.0':
     resolution: {integrity: sha512-yq8ML3YS7koKQ/9bk1PqO0HMzApIFNwjlwCnwFEXMzNe8NpzeeYYKCmnhWJGkN8g7E51MnWaSbqRcTcdIxUgnQ==}
@@ -2016,6 +2030,83 @@ packages:
 snapshots:
 
   '@babel/runtime@7.28.6': {}
+
+  '@brightweblabs/app-shell@0.1.0':
+    dependencies:
+      '@brightweblabs/ui': link:packages/ui
+      clsx: 2.1.1
+      lucide-react: 0.562.0(react@19.2.3)
+      motion: 12.35.2(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      next: 16.1.1(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      next-themes: 0.4.6(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      react: 19.2.3
+      react-dom: 19.2.3(react@19.2.3)
+      tailwind-merge: 3.5.0
+    transitivePeerDependencies:
+      - '@babel/core'
+      - '@emotion/is-prop-valid'
+      - '@opentelemetry/api'
+      - '@playwright/test'
+      - babel-plugin-macros
+      - babel-plugin-react-compiler
+      - sass
+
+  '@brightweblabs/core-auth@0.1.0(react@19.2.3)':
+    dependencies:
+      '@brightweblabs/infra': link:packages/infra
+      '@supabase/supabase-js': 2.99.0
+      react: 19.2.3
+    transitivePeerDependencies:
+      - bufferutil
+      - utf-8-validate
+
+  '@brightweblabs/infra@0.1.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)':
+    dependencies:
+      '@supabase/ssr': 0.8.0(@supabase/supabase-js@2.99.0)
+      '@supabase/supabase-js': 2.99.0
+      next: 16.1.1(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+    transitivePeerDependencies:
+      - '@babel/core'
+      - '@opentelemetry/api'
+      - '@playwright/test'
+      - babel-plugin-macros
+      - babel-plugin-react-compiler
+      - bufferutil
+      - react
+      - react-dom
+      - sass
+      - utf-8-validate
+
+  '@brightweblabs/ui@0.1.0(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)':
+    dependencies:
+      '@radix-ui/react-dialog': 1.1.15(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      '@radix-ui/react-dropdown-menu': 2.1.16(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      '@radix-ui/react-label': 2.1.8(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      '@radix-ui/react-popover': 1.1.15(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      '@radix-ui/react-separator': 1.1.8(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      '@radix-ui/react-slot': 1.2.4(@types/react@19.2.14)(react@19.2.3)
+      class-variance-authority: 0.7.1
+      clsx: 2.1.1
+      date-fns: 4.1.0
+      lucide-react: 0.562.0(react@19.2.3)
+      next: 16.1.1(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      next-themes: 0.4.6(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      radix-ui: 1.4.3(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      react: 19.2.3
+      react-day-picker: 9.14.0(react@19.2.3)
+      react-dom: 19.2.3(react@19.2.3)
+      recharts: 2.15.4(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      sonner: 2.0.7(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      tailwind-merge: 3.5.0
+    transitivePeerDependencies:
+      - '@babel/core'
+      - '@opentelemetry/api'
+      - '@playwright/test'
+      - '@types/react'
+      - '@types/react-dom'
+      - babel-plugin-macros
+      - babel-plugin-react-compiler
+      - sass
 
   '@changesets/apply-release-plan@7.1.0':
     dependencies:
