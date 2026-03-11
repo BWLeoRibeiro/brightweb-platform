@@ -1,5 +1,11 @@
 # @brightweblabs/module-crm
 
+## 0.1.2
+
+### Patch Changes
+
+- 98baa62: Change the CRM organization tax identifier field from `nif` to `taxIdentifierValue`.
+
 ## 0.1.1
 
 ### Patch Changes
