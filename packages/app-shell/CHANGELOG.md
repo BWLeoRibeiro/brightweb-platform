@@ -1,5 +1,11 @@
 # @brightweblabs/app-shell
 
+## 0.1.1
+
+### Patch Changes
+
+- a36ed3b: Replace internal workspace protocol dependencies with published version ranges.
+
 ## 0.1.0
 
 ### Minor Changes
