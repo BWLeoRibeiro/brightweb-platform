@@ -1,5 +1,13 @@
 # @brightweblabs/core-auth
 
+## 0.1.2
+
+### Patch Changes
+
+- ec7ca19: Minor changes to all modules.
+- Updated dependencies [ec7ca19]
+  - @brightweblabs/infra@0.1.1
+
 ## 0.1.1
 
 ### Patch Changes
