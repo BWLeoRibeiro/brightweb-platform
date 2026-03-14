@@ -1,5 +1,11 @@
 # create-bw-app
 
+## 0.6.0
+
+### Minor Changes
+
+- 4053ddd: Refresh the generated starters to the current Next.js baseline, align starter design tokens across the site and platform templates, and add Tailwind CSS support to the platform starter.
+
 ## 0.5.0
 
 ### Minor Changes
