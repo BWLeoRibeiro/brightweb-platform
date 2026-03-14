@@ -54,7 +54,7 @@ export const APP_DEPENDENCY_DEFAULTS = {
   "@brightweblabs/module-projects": "^0.1.1",
   "@brightweblabs/ui": "^0.1.0",
   "lucide-react": "^0.562.0",
-  "next": "16.1.1",
+  "next": "16.1.6",
   "react": "19.2.3",
   "react-dom": "19.2.3",
 };
@@ -63,7 +63,7 @@ export const SITE_DEPENDENCY_DEFAULTS = {
   "class-variance-authority": "^0.7.1",
   "clsx": "^2.1.1",
   "lucide-react": "^0.562.0",
-  "next": "16.1.1",
+  "next": "16.1.6",
   "react": "19.2.3",
   "react-dom": "19.2.3",
   "tailwind-merge": "^3.4.0",
@@ -77,12 +77,11 @@ export const APP_DEV_DEPENDENCY_DEFAULTS = {
 };
 
 export const SITE_DEV_DEPENDENCY_DEFAULTS = {
-  "@tailwindcss/postcss": "^4.0.0",
+  "@tailwindcss/postcss": "^4",
   "@types/node": "^20",
   "@types/react": "^19",
   "@types/react-dom": "^19",
-  "postcss": "^8.4.31",
-  "tailwindcss": "^4.0.0",
+  "tailwindcss": "^4",
   "typescript": "^5",
 };
 
