@@ -7,3 +7,4 @@ coverage/
 *.log
 *.tsbuildinfo
 apps/__smoke-*/
+supabase/.generated/

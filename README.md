@@ -47,6 +47,12 @@ The installer can:
 
 It creates a new app under `apps/<slug>`.
 
+When you scaffold a platform app in workspace mode, the generator also creates
+`supabase/clients/<slug>/stack.json` plus a client-only migrations folder so the
+database module plan stays aligned with the app modules you selected. The stack
+keeps RBAC/admin governance enabled for platform auth even if the admin UI
+module is not selected.
+
 Future public commands after npm publish:
 
 ```bash
@@ -57,6 +63,15 @@ npm create bw-app@latest
 Detailed generator notes:
 
 - [docs/operations/create-bw-app-cli.md](/Users/leoribeiro/Documents/02_Projects/brightweb-platform/docs/operations/create-bw-app-cli.md)
+
+## Database modules
+
+Plan or materialize the database schema for a client stack:
+
+```bash
+pnpm db:plan begreen
+pnpm db:materialize begreen
+```
 
 ## Public npm publishing
 

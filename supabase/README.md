@@ -18,15 +18,16 @@ Shared database changes should be authored by ownership area, not by client app:
 - Module migrations are applied only when that module is enabled for the client.
 - Client-specific migrations are the exception, not the default.
 
-## Current transition state
+## Historical source
 
-The historical migrations still live in BeGreen under:
+The original shared migration history still lives in BeGreen under:
 
 - `/Users/leoribeiro/Documents/02_Projects/BeGreen/2025-12_FullIdentity/03_Work/Website/Development/be-green/supabase/migrations`
 
 That folder remains the source of the already-shipped SQL history for BeGreen.
 
-This `platform/supabase` structure is the new canonical shape for Brightweb v1 onward.
+This `platform/supabase` structure now contains the Brightweb-owned greenfield module migrations plus
+the planning/materialization workflow for composing client-specific install order.
 
 See:
 
@@ -57,3 +58,15 @@ Print the effective apply order for a client:
 ```bash
 pnpm db:plan begreen
 ```
+
+Materialize an installable Supabase workdir for a client stack:
+
+```bash
+pnpm db:materialize begreen
+```
+
+This writes a generated workdir under `supabase/.generated/<client-slug>` with:
+
+- ordered migrations merged from `core`, enabled modules, and client-only deltas
+- a generated `config.toml`
+- a `manifest.json` showing the source file for each materialized migration

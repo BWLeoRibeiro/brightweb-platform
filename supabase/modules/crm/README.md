@@ -9,7 +9,6 @@
 - `crm_status_log`
 - `organization_members`
 - `organization_invitations`
-- `org_courses`
 - CRM/org helper functions like `is_org_admin()` and `set_crm_status(...)`
 - CRM/org RLS and triggers
 

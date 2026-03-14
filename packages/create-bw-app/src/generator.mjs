@@ -19,6 +19,14 @@ import {
 const PACKAGE_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const TEMPLATE_ROOT = path.join(PACKAGE_ROOT, "template");
 const TEMPLATE_KEY_SET = new Set(TEMPLATE_OPTIONS.map((templateOption) => templateOption.key));
+const DEFAULT_DB_MODULE_REGISTRY = {
+  modules: {
+    core: { label: "Core", dependsOn: [] },
+    admin: { label: "Admin", dependsOn: ["core"] },
+    crm: { label: "CRM", dependsOn: ["core", "admin"] },
+    projects: { label: "Projects", dependsOn: ["core", "admin", "crm"] },
+  },
+};
 
 function slugify(value) {
   return value
@@ -101,6 +109,113 @@ async function readJsonIfPresent(filePath) {
   }
 
   return JSON.parse(await fs.readFile(filePath, "utf8"));
+}
+
+async function getDbModuleRegistry(workspaceRoot) {
+  if (!workspaceRoot) {
+    return DEFAULT_DB_MODULE_REGISTRY;
+  }
+
+  const registryPath = path.join(workspaceRoot, "supabase", "module-registry.json");
+  return (await readJsonIfPresent(registryPath)) || DEFAULT_DB_MODULE_REGISTRY;
+}
+
+function resolveModuleOrder(registry, enabledModules) {
+  const resolved = [];
+  const visited = new Set();
+  const visiting = new Set();
+
+  function visit(moduleKey) {
+    if (visited.has(moduleKey)) return;
+    if (visiting.has(moduleKey)) {
+      throw new Error(`Circular module dependency detected at "${moduleKey}".`);
+    }
+
+    const moduleConfig = registry.modules?.[moduleKey];
+    if (!moduleConfig) {
+      throw new Error(`Unknown database module "${moduleKey}".`);
+    }
+
+    visiting.add(moduleKey);
+    for (const dependency of moduleConfig.dependsOn || []) {
+      visit(dependency);
+    }
+    visiting.delete(moduleKey);
+    visited.add(moduleKey);
+    resolved.push(moduleKey);
+  }
+
+  for (const moduleKey of enabledModules) {
+    visit(moduleKey);
+  }
+
+  return resolved;
+}
+
+function getSelectedModuleLabels(selectedModules) {
+  return selectedModules.map((moduleKey) => {
+    return getModuleLabel(moduleKey);
+  });
+}
+
+function getModuleLabel(moduleKey) {
+  const moduleDefinition = SELECTABLE_MODULES.find((candidate) => candidate.key === moduleKey);
+  if (moduleDefinition) {
+    return moduleDefinition.label;
+  }
+
+  if (moduleKey === "core") {
+    return "Core";
+  }
+
+  return titleizeSlug(moduleKey);
+}
+
+function createDbInstallPlan({ selectedModules, workspaceMode, registry }) {
+  if (!workspaceMode) {
+    return {
+      selectedLabels: getSelectedModuleLabels(selectedModules),
+      resolvedOrder: [],
+      notes: [],
+    };
+  }
+
+  const requestedModules = Array.from(new Set(["core", ...selectedModules]));
+  if (!requestedModules.includes("admin")) {
+    requestedModules.push("admin");
+  }
+
+  const resolvedOrder = resolveModuleOrder(registry, requestedModules);
+  const notes = [];
+
+  if (!selectedModules.includes("admin") && resolvedOrder.includes("admin")) {
+    notes.push("Admin governance stays enabled for platform auth/RBAC even if the admin UI module is not selected.");
+  }
+
+  for (const moduleKey of resolvedOrder) {
+    if (moduleKey === "core" || selectedModules.includes(moduleKey) || moduleKey === "admin") {
+      continue;
+    }
+
+    const dependents = resolvedOrder.filter((candidateKey) => {
+      const dependencyList = registry.modules?.[candidateKey]?.dependsOn || [];
+      return dependencyList.includes(moduleKey);
+    });
+
+    if (dependents.length === 0) continue;
+
+    const dependentLabels = dependents
+      .map((candidateKey) => registry.modules?.[candidateKey]?.label || getModuleLabel(candidateKey))
+      .join(", ");
+    const moduleLabel = registry.modules?.[moduleKey]?.label || getModuleLabel(moduleKey);
+    notes.push(`${moduleLabel} is included because ${dependentLabels} depends on it.`);
+  }
+
+  return {
+    selectedLabels: getSelectedModuleLabels(selectedModules),
+    resolvedOrder,
+    notes,
+  };
 }
 
 async function getVersionMap(workspaceRoot) {
@@ -237,11 +352,14 @@ function createPlatformReadme({
   selectedModules,
   workspaceMode,
   packageManager,
+  dbInstallPlan,
 }) {
   const moduleLines = SELECTABLE_MODULES.map((moduleDefinition) => {
     const enabled = selectedModules.includes(moduleDefinition.key);
     return `- ${moduleDefinition.key}: ${enabled ? "enabled" : "disabled"}`;
   });
+  const resolvedDbStackLines = dbInstallPlan.resolvedOrder.map((moduleKey) => `- ${getModuleLabel(moduleKey)}`);
+  const dependencyNotes = dbInstallPlan.notes.map((note) => `- ${note}`);
 
   const localSteps = workspaceMode
     ? [
@@ -268,6 +386,22 @@ function createPlatformReadme({
     "",
     ...moduleLines,
     "",
+    ...(workspaceMode
+      ? [
+          "## Resolved database stack",
+          "",
+          ...resolvedDbStackLines,
+          "",
+          ...(dependencyNotes.length > 0
+            ? [
+                "## Dependency notes",
+                "",
+                ...dependencyNotes,
+                "",
+              ]
+            : []),
+        ]
+      : []),
     "## Starter routes",
     "",
     "- `/`",
@@ -548,6 +682,50 @@ async function ensureDirectory(targetDir) {
   await fs.mkdir(targetDir, { recursive: true });
 }
 
+async function writeWorkspaceClientStack(workspaceRoot, slug, selectedModules) {
+  const clientDir = path.join(workspaceRoot, "supabase", "clients", slug);
+  const stackPath = path.join(clientDir, "stack.json");
+  const migrationsDir = path.join(clientDir, "migrations");
+  const registry = await getDbModuleRegistry(workspaceRoot);
+  const dbInstallPlan = createDbInstallPlan({
+    selectedModules,
+    workspaceMode: true,
+    registry,
+  });
+  const enabledModules = dbInstallPlan.resolvedOrder;
+
+  if (await pathExists(stackPath)) {
+    throw new Error(`Client stack already exists: ${stackPath}`);
+  }
+
+  await ensureDirectory(migrationsDir);
+  await fs.writeFile(path.join(migrationsDir, ".gitkeep"), "", "utf8");
+  await fs.writeFile(
+    stackPath,
+    `${JSON.stringify(
+      {
+        client: {
+          slug,
+          label: titleizeSlug(slug),
+        },
+        historyMode: "greenfield-modular",
+        futureMode: "forward-only-modular",
+        enabledModules,
+        clientMigrationPath: `supabase/clients/${slug}/migrations`,
+        notes: [
+          "Generated by create-bw-app in workspace mode.",
+          `Selected app modules: ${dbInstallPlan.selectedLabels.length > 0 ? dbInstallPlan.selectedLabels.join(", ") : "none"}.`,
+          `Resolved database stack: ${enabledModules.map((moduleKey) => getModuleLabel(moduleKey)).join(" -> ")}.`,
+          "Admin governance stays enabled for platform auth/RBAC even if the admin UI module is not selected.",
+          "The database install order is resolved from supabase/module-registry.json.",
+        ],
+      },
+      null,
+      2,
+    )}\n`,
+  );
+}
+
 async function runInstall(command, cwd) {
   return new Promise((resolve, reject) => {
     const child = spawn(command, ["install"], {
@@ -568,15 +746,36 @@ async function runInstall(command, cwd) {
   });
 }
 
-function renderPlanSummary({ targetDir, dependencyMode, selectedModules, packageManager, workspaceMode, install, template }) {
+function renderPlanSummary({
+  targetDir,
+  dependencyMode,
+  selectedModules,
+  packageManager,
+  workspaceMode,
+  install,
+  template,
+  dbInstallPlan,
+}) {
   const installLocation = workspaceMode ? "workspace root" : "project directory";
   const templateLabel = TEMPLATE_OPTIONS.find((templateOption) => templateOption.key === template)?.label || template;
+  const selectedModuleSummary =
+    template === "platform"
+      ? dbInstallPlan.selectedLabels.length > 0
+        ? dbInstallPlan.selectedLabels.join(", ")
+        : "none"
+      : "n/a";
 
   return [
     `Template: ${templateLabel}`,
     `Target directory: ${targetDir}`,
     `Dependency mode: ${dependencyMode}`,
-    `Selected modules: ${template === "platform" ? (selectedModules.length > 0 ? selectedModules.join(", ") : "none") : "n/a"}`,
+    `Selected modules: ${selectedModuleSummary}`,
+    ...(template === "platform" && workspaceMode
+      ? [
+          `Resolved database stack: ${dbInstallPlan.resolvedOrder.map((moduleKey) => getModuleLabel(moduleKey)).join(" -> ")}`,
+          ...dbInstallPlan.notes.map((note) => `- ${note}`),
+        ]
+      : []),
     `Install dependencies: ${install ? `yes (${packageManager} in ${installLocation})` : "no"}`,
   ].join("\n");
 }
@@ -668,7 +867,9 @@ async function scaffoldPlatformProject({
   dependencyMode,
   packageManager,
   workspaceMode,
+  workspaceRoot,
   answers,
+  dbInstallPlan,
 }) {
   const moduleFlags = createModuleFlags(selectedModules);
   const brandValues = createDerivedBrandValues(answers.slug);
@@ -712,8 +913,13 @@ async function scaffoldPlatformProject({
       selectedModules,
       workspaceMode,
       packageManager,
+      dbInstallPlan,
     }),
   );
+
+  if (workspaceMode) {
+    await writeWorkspaceClientStack(workspaceRoot, answers.slug, selectedModules);
+  }
 }
 
 async function scaffoldSiteProject({
@@ -799,6 +1005,12 @@ export async function createBrightwebClientApp(argvOptions, runtimeOptions = {})
   }
 
   const versionMap = await getVersionMap(workspaceRoot);
+  const dbModuleRegistry = await getDbModuleRegistry(workspaceRoot);
+  const dbInstallPlan = createDbInstallPlan({
+    selectedModules: answers.selectedModules,
+    workspaceMode,
+    registry: dbModuleRegistry,
+  });
   const install = answers.install && !argvOptions.dryRun;
 
   if (argvOptions.dryRun) {
@@ -810,6 +1022,7 @@ export async function createBrightwebClientApp(argvOptions, runtimeOptions = {})
       workspaceMode,
       install: answers.install,
       template: answers.template,
+      dbInstallPlan,
     })}\n\n`);
     return {
       answers,
@@ -820,6 +1033,17 @@ export async function createBrightwebClientApp(argvOptions, runtimeOptions = {})
       dryRun: true,
     };
   }
+
+  output.write(`${renderPlanSummary({
+    targetDir,
+    dependencyMode,
+    selectedModules: answers.selectedModules,
+    packageManager,
+    workspaceMode,
+    install: answers.install,
+    template: answers.template,
+    dbInstallPlan,
+  })}\n\n`);
 
   if (answers.template === "site") {
     await scaffoldSiteProject({
@@ -838,7 +1062,9 @@ export async function createBrightwebClientApp(argvOptions, runtimeOptions = {})
       dependencyMode,
       packageManager,
       workspaceMode,
+      workspaceRoot,
       answers,
+      dbInstallPlan,
     });
   }
 

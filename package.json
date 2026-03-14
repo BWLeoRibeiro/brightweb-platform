@@ -6,6 +6,7 @@
   "scripts": {
     "changeset": "changeset",
     "create:client": "node ./scripts/create-brightweb-client.mjs",
+    "db:materialize": "node ./scripts/materialize-client-migrations.mjs",
     "db:new": "node ./scripts/new-migration.mjs",
     "db:plan": "node ./scripts/plan-client-migrations.mjs",
     "dev": "pnpm --filter platform-preview dev",

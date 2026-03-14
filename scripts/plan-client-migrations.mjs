@@ -1,44 +1,4 @@
-import fs from "node:fs";
-import path from "node:path";
-
-const rootDir = path.resolve(import.meta.dirname, "..");
-const registryPath = path.join(rootDir, "supabase", "module-registry.json");
-
-function readJson(filePath) {
-  return JSON.parse(fs.readFileSync(filePath, "utf8"));
-}
-
-function resolveModuleOrder(registry, enabledModules) {
-  const resolved = [];
-  const visiting = new Set();
-  const visited = new Set();
-
-  function visit(key) {
-    if (visited.has(key)) return;
-    if (visiting.has(key)) {
-      throw new Error(`Circular module dependency detected at "${key}".`);
-    }
-
-    const moduleConfig = registry.modules[key];
-    if (!moduleConfig) {
-      throw new Error(`Unknown module "${key}" in client stack.`);
-    }
-
-    visiting.add(key);
-    for (const dependency of moduleConfig.dependsOn ?? []) {
-      visit(dependency);
-    }
-    visiting.delete(key);
-    visited.add(key);
-    resolved.push(key);
-  }
-
-  for (const key of enabledModules) {
-    visit(key);
-  }
-
-  return resolved;
-}
+import { collectMaterializedFiles } from "./_db-modules.mjs";
 
 function main() {
   const clientSlug = process.argv[2];
@@ -48,36 +8,18 @@ function main() {
     process.exit(1);
   }
 
-  const stackPath = path.join(rootDir, "supabase", "clients", clientSlug, "stack.json");
-  if (!fs.existsSync(stackPath)) {
-    console.error(`Client stack file not found: ${stackPath}`);
-    process.exit(1);
-  }
-
-  const registry = readJson(registryPath);
-  const stack = readJson(stackPath);
-  const moduleOrder = resolveModuleOrder(registry, stack.enabledModules ?? []);
-
-  const plan = {
-    client: stack.client,
-    moduleOrder,
-    steps: [
-      ...moduleOrder.map((key) => ({
-        type: "module",
-        key,
-        path: registry.modules[key].path,
-        description: registry.modules[key].description,
-      })),
-      {
-        type: "client",
-        key: stack.client.slug,
-        path: stack.clientMigrationPath,
-        description: "Client-only migrations, if any.",
-      },
-    ],
+  const plan = collectMaterializedFiles(clientSlug);
+  const output = {
+    client: plan.stack.client,
+    moduleOrder: plan.moduleOrder,
+    steps: [...plan.steps],
+    files: plan.files.map((file) => ({
+      module: file.step.key,
+      path: file.relativePath,
+    })),
   };
 
-  console.log(JSON.stringify(plan, null, 2));
+  console.log(JSON.stringify(output, null, 2));
 }
 
 main();
