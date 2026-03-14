@@ -13,6 +13,7 @@
     "release:check": "changeset status --verbose",
     "release:version": "changeset version && pnpm install --lockfile-only",
     "release:publish": "changeset publish",
+    "smoke:create-client": "node ./scripts/smoke-create-brightweb-client.mjs",
     "start": "pnpm --filter platform-preview start",
     "lint": "pnpm --filter platform-preview lint"
   },

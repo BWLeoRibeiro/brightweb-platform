@@ -384,9 +384,11 @@ function createPackageJson({
     },
     dependencies: sortObjectKeys(dependencies),
     devDependencies: sortObjectKeys({
+      "@tailwindcss/postcss": versionMap["@tailwindcss/postcss"],
       "@types/node": versionMap["@types/node"],
       "@types/react": versionMap["@types/react"],
       "@types/react-dom": versionMap["@types/react-dom"],
+      tailwindcss: versionMap.tailwindcss,
       typescript: versionMap.typescript,
     }),
   };
