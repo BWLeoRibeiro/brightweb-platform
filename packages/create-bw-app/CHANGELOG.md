@@ -1,5 +1,11 @@
 # create-bw-app
 
+## 0.5.0
+
+### Minor Changes
+
+- 6923aeb: Update latest Next release.
+
 ## 0.4.0
 
 ### Minor Changes
