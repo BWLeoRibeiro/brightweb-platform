@@ -1,5 +1,16 @@
 # @brightweblabs/app-shell
 
+## 0.3.0
+
+### Minor Changes
+
+- 6923aeb: Update latest Next release.
+
+### Patch Changes
+
+- Updated dependencies [6923aeb]
+  - @brightweblabs/ui@0.3.0
+
 ## 0.2.0
 
 ### Minor Changes
