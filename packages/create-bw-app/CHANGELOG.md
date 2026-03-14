@@ -1,5 +1,11 @@
 # create-bw-app
 
+## 0.7.0
+
+### Minor Changes
+
+- a94eabd: Updated to generate proper DB schema/migrations in the proper folders.
+
 ## 0.6.0
 
 ### Minor Changes
