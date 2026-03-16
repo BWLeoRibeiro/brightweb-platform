@@ -4,16 +4,25 @@ Shared platform monorepo for Brightweb client apps.
 
 ## Workspace
 
+- `apps/dev-docs`: internal docs app that renders the root `docs/` folder
 - `apps/platform-preview`: internal Next.js preview app for platform work
 - `packages/*`: shared platform modules
 - `supabase/*`: shared database ownership model and migration planning
 
-## Platform preview app
+The tracked apps in this repo are the internal docs surface and the internal preview surface. Generated client apps are scaffolds, not long-lived repo apps.
+
+## Internal apps
 
 Run the internal preview app:
 
 ```bash
 pnpm dev
+```
+
+Run the internal docs app:
+
+```bash
+pnpm dev:docs
 ```
 
 ## Create a new app
@@ -33,6 +42,7 @@ Template ownership is intentionally separate from the preview app:
 - `packages/create-bw-app/template/base`: canonical platform-app scaffold
 - `packages/create-bw-app/template/site/base`: canonical site scaffold
 - `apps/platform-preview`: sandbox for trying shell, CRM, admin, auth, and projects features locally
+- `apps/dev-docs`: internal documentation shell for repo-level markdown
 
 The installer can:
 

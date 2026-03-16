@@ -10,13 +10,17 @@
     "db:new": "node ./scripts/new-migration.mjs",
     "db:plan": "node ./scripts/plan-client-migrations.mjs",
     "dev": "pnpm --filter platform-preview dev",
+    "dev:docs": "pnpm --filter dev-docs dev",
     "build": "pnpm --filter platform-preview build",
+    "build:docs": "pnpm --filter dev-docs build",
     "release:check": "changeset status --verbose",
     "release:version": "changeset version && pnpm install --lockfile-only",
     "release:publish": "changeset publish",
     "smoke:create-client": "node ./scripts/smoke-create-brightweb-client.mjs",
     "start": "pnpm --filter platform-preview start",
-    "lint": "pnpm --filter platform-preview lint"
+    "start:docs": "pnpm --filter dev-docs start",
+    "lint": "pnpm --filter platform-preview lint",
+    "lint:docs": "pnpm --filter dev-docs lint"
   },
   "devDependencies": {
     "@changesets/cli": "^2.29.7",

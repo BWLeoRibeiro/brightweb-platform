@@ -76,6 +76,8 @@ async function scaffoldPlatformSmoke(platformDir, platformName) {
 
   await runCommand("pnpm", ["install"], { cwd: repoRoot });
   await runCommand("pnpm", ["--filter", result.answers.slug, "build"], { cwd: repoRoot });
+
+  return result;
 }
 
 async function main() {
@@ -83,6 +85,7 @@ async function main() {
   const siteDir = path.join(os.tmpdir(), `bw-site-smoke-${suffix}`);
   const platformName = `__smoke-platform-${suffix}`;
   const platformDir = path.join(repoRoot, "apps", platformName);
+  let platformStackDir = null;
 
   try {
     await removeIfPresent(siteDir);
@@ -92,12 +95,16 @@ async function main() {
     await scaffoldSiteSmoke(siteDir);
 
     console.log(`\n[smoke] scaffolding platform starter in ${platformDir}`);
-    await scaffoldPlatformSmoke(platformDir, platformName);
+    const platformResult = await scaffoldPlatformSmoke(platformDir, platformName);
+    platformStackDir = path.join(repoRoot, "supabase", "clients", platformResult.answers.slug);
 
     console.log("\n[smoke] site and platform scaffolds built successfully");
   } finally {
     await removeIfPresent(siteDir);
     await removeIfPresent(platformDir);
+    if (platformStackDir) {
+      await removeIfPresent(platformStackDir);
+    }
     await runCommand("pnpm", ["install"], { cwd: repoRoot });
   }
 }

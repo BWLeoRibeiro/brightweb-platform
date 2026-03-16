@@ -15,4 +15,6 @@ Only place SQL here when the change:
 - `clients/begreen/...`
 - `clients/<future-client-slug>/...`
 
+Temporary smoke-test client stacks should be removed after generator verification. This directory is for real client-specific deltas only.
+
 If a client-specific migration later proves reusable, move the concept into the appropriate shared module and stop extending the client-only path.
