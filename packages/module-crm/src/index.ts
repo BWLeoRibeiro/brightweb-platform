@@ -1,59 +1,42 @@
 import { requireServerPageAccess } from "@brightweblabs/core-auth/server";
-
-export type CrmContact = {
-  id: string;
-  first_name: string | null;
-  last_name: string | null;
-  email: string | null;
-  phone: string | null;
-  status: string;
-  source: string | null;
-  owner_id: string | null;
-  organization_id: string | null;
-  created_at: string;
-  updated_at: string;
-  organizations?: { name: string | null } | null;
-};
-
-export type CrmPrimaryContact = {
-  id: string;
-  first_name: string | null;
-  last_name: string | null;
-  email: string | null;
-};
-
-export type CrmOrganization = {
-  id: string;
-  name: string;
-  industry: string | null;
-  company_size: string | null;
-  budget_range: string | null;
-  website_url: string | null;
-  address: string | null;
-  taxIdentifierValue: string | null;
-  primary_contact_id: string | null;
-  primary_contact?: CrmPrimaryContact | null;
-  created_at: string;
-};
-
-export type CrmOwnerOption = {
-  id: string;
-  label: string;
-  email: string | null;
-  role: "staff" | "admin";
-};
-
-export type CrmStatusLog = {
-  id: string;
-  contact_id: string;
-  previous_status: string | null;
-  new_status: string;
-  reason: string | null;
-  changed_at: string;
-  changed_by_user_id: string | null;
-  changed_by_label: string | null;
-  contact_label: string;
-};
+export {
+  CRM_CONTACTS_DEFAULT_PAGE_SIZE,
+  CRM_CONTACTS_MAX_PAGE_SIZE,
+  CRM_ORGANIZATIONS_DEFAULT_PAGE_SIZE,
+  CRM_ORGANIZATIONS_MAX_PAGE_SIZE,
+  getCrmContactStatusStats,
+  listCrmContacts,
+  listCrmOrganizations,
+  listCrmOwnerOptions,
+  type CrmContact,
+  type CrmContactStatusStats,
+  type CrmContactsListParams,
+  type CrmContactsListResult,
+  type CrmOrganization,
+  type CrmOrganizationsListParams,
+  type CrmOrganizationsListResult,
+  type CrmOwnerOption,
+  type CrmPrimaryContact,
+  type CrmStatusLog,
+} from "./data.ts";
+export {
+  handleCrmContactsGetRequest,
+  handleCrmOrganizationsGetRequest,
+  handleCrmOwnersGetRequest,
+  handleCrmStatsGetRequest,
+} from "./handlers.ts";
+import {
+  getCrmContactStatusStats,
+  listCrmContacts,
+  listCrmOrganizations,
+  listCrmOwnerOptions,
+  type CrmContact,
+  type CrmContactStatusStats,
+  type CrmOrganization,
+  type CrmOwnerOption,
+  type CrmPrimaryContact,
+  type CrmStatusLog,
+} from "./data.ts";
 
 export type CrmDashboardData = {
   userId: string;
@@ -63,26 +46,7 @@ export type CrmDashboardData = {
   ownerOptions: CrmOwnerOption[];
   contacts: CrmContact[];
   statusLog: CrmStatusLog[];
-  stats: { total: number; byStatus: Record<string, number> };
-};
-
-type CrmOwnerAssignment = {
-  profile_id: string | null;
-  role_code: string | null;
-  profile:
-    | {
-      id?: string | null;
-      first_name?: string | null;
-      last_name?: string | null;
-      email?: string | null;
-    }
-    | Array<{
-      id?: string | null;
-      first_name?: string | null;
-      last_name?: string | null;
-      email?: string | null;
-    }>
-    | null;
+  stats: CrmContactStatusStats;
 };
 
 type CrmChangedByProfile = {
@@ -90,15 +54,6 @@ type CrmChangedByProfile = {
   first_name: string | null;
   last_name: string | null;
 };
-
-function normalizeOrganization<T extends Record<string, unknown>>(raw: T) {
-  const primaryContact = raw.primary_contact;
-  return {
-    ...raw,
-    taxIdentifierValue: typeof raw.tax_identifier_value === "string" ? raw.tax_identifier_value : null,
-    primary_contact: Array.isArray(primaryContact) ? primaryContact[0] ?? null : primaryContact ?? null,
-  };
-}
 
 function buildProfileDisplayName(profile: {
   first_name?: string | null;
@@ -115,21 +70,11 @@ export async function getCrmDashboardData(): Promise<CrmDashboardData> {
   const sevenDaysAgo = new Date();
   sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
-  const [{ data: organizations }, { data: contacts }, { data: statusLog }, { data: primaryContacts }, { data: ownerAssignments }] = await Promise.all([
-    supabase
-      .from("organizations")
-      .select(
-        "id, name, industry, company_size, budget_range, website_url, address, tax_identifier_value, primary_contact_id, created_at, primary_contact:profiles!organizations_primary_contact_id_fkey(id, first_name, last_name, email)",
-      )
-      .order("created_at", { ascending: false })
-      .limit(12),
-    supabase
-      .from("crm_contacts")
-      .select(
-        "id, first_name, last_name, email, phone, status, source, owner_id, organization_id, created_at, updated_at, organizations(name)",
-      )
-      .order("updated_at", { ascending: false })
-      .limit(100),
+  const [{ items: organizations }, { items: contacts }, stats, ownerOptions, { data: statusLog }, { data: primaryContacts }] = await Promise.all([
+    listCrmOrganizations(supabase, { page: 1, pageSize: 12 }),
+    listCrmContacts(supabase, { page: 1, pageSize: 100 }),
+    getCrmContactStatusStats(supabase),
+    listCrmOwnerOptions(supabase),
     supabase
       .from("crm_status_log")
       .select("id, contact_id, previous_status, new_status, reason, changed_at, changed_by_user_id")
@@ -141,59 +86,12 @@ export async function getCrmDashboardData(): Promise<CrmDashboardData> {
       .select("id, first_name, last_name, email")
       .order("created_at", { ascending: false })
       .limit(200),
-    supabase
-      .from("user_role_assignments")
-      .select("profile_id, role_code, profile:profiles!user_role_assignments_profile_id_fkey(id, first_name, last_name, email)")
-      .in("role_code", ["staff", "admin"])
-      .order("assigned_at", { ascending: false })
-      .limit(500),
   ]);
-
-  const ownerOptions = ((ownerAssignments ?? []) as CrmOwnerAssignment[]).reduce<CrmDashboardData["ownerOptions"]>((acc, assignment) => {
-    const roleCode = assignment.role_code;
-    if (roleCode !== "staff" && roleCode !== "admin") return acc;
-    if (typeof assignment.profile_id !== "string") return acc;
-    if (acc.some((item) => item.id === assignment.profile_id)) return acc;
-
-    const profileRaw = assignment.profile;
-    const ownerProfile = Array.isArray(profileRaw) ? profileRaw[0] ?? null : profileRaw ?? null;
-    if (!ownerProfile) return acc;
-
-    const label = buildProfileDisplayName(ownerProfile) ?? ownerProfile.email ?? "Utilizador sem nome";
-    const email = typeof ownerProfile.email === "string" ? ownerProfile.email : null;
-
-    acc.push({
-      id: assignment.profile_id,
-      label,
-      email,
-      role: roleCode,
-    });
-    return acc;
-  }, []);
-
-  const safeContacts: CrmContact[] = ((contacts ?? []) as Array<CrmContact | (Omit<CrmContact, "organizations"> & {
-    organizations?: Array<{ name: string | null }> | { name: string | null } | null;
-  })>).map((contact) => ({
-    ...contact,
-    organizations: Array.isArray(contact.organizations)
-      ? contact.organizations[0] ?? null
-      : contact.organizations ?? null,
-  }));
   const contactMap = new Map(
-    safeContacts.map((contact) => [
+    contacts.map((contact) => [
       contact.id,
       [contact.first_name, contact.last_name].filter(Boolean).join(" ") || contact.email || "Contacto",
     ]),
-  );
-
-  const stats = safeContacts.reduce(
-    (acc, contact) => {
-      const status = contact.status ?? "lead";
-      acc.total += 1;
-      acc.byStatus[status] = (acc.byStatus[status] ?? 0) + 1;
-      return acc;
-    },
-    { total: 0, byStatus: {} as Record<string, number> },
   );
 
   const changedByIds = Array.from(
@@ -219,10 +117,10 @@ export async function getCrmDashboardData(): Promise<CrmDashboardData> {
   return {
     userId: user.id,
     profileId,
-    organizations: (organizations ?? []).map(normalizeOrganization),
+    organizations,
     primaryContacts: (primaryContacts ?? []) as CrmPrimaryContact[],
     ownerOptions,
-    contacts: safeContacts,
+    contacts,
     statusLog: ((statusLog ?? []) as CrmStatusLog[]).map((entry) => ({
       ...entry,
       contact_label: contactMap.get(entry.contact_id) ?? "Contacto",

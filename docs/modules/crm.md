@@ -16,7 +16,8 @@ Use [Base Contract](./base-contract.md) for the support-tier rules and [base-con
 | Concern | Current behavior |
 | --- | --- |
 | CRM package | `@brightweblabs/module-crm` exports shell registration for CRM nav groups and toolbar routes. |
-| Server helpers | The package exports server-side CRM data helpers such as `getCrmDashboardData()`. |
+| Server helpers | The package exports reusable CRM list and stats helpers plus the starter `getCrmDashboardData()` helper. |
+| Route handlers | The package exports package-owned GET handlers for CRM contacts, organizations, stats, and owner options. |
 | Shared dependencies | The package reads shared platform tables such as `profiles` and `user_role_assignments` in addition to CRM-owned tables. |
 
 ## Whether it adds starter routes and wiring
@@ -24,7 +25,7 @@ Use [Base Contract](./base-contract.md) for the support-tier rules and [base-con
 | Concern | Current behavior |
 | --- | --- |
 | Scaffold wiring | Selecting CRM adds the package dependency and enables CRM-related shell/config wiring in generated platform apps. |
-| Starter routes | The current module template contributes the `/playground/crm` starter surface in the scaffold. |
+| Starter routes | The current module template contributes the `/playground/crm` starter surface plus `/api/crm/contacts`, `/api/crm/organizations`, `/api/crm/stats`, and `/api/crm/owners`. |
 | Shell behavior | The module registration adds CRM navigation groups and toolbar route definitions. |
 | Dependency behavior | CRM resolves on top of the existing `Core + Admin` platform baseline because its current policies and privileged workflows assume RBAC is present. |
 
@@ -37,12 +38,20 @@ The current CRM contract is intentionally small:
 ### Stable
 
 - `@brightweblabs/module-crm/registration`: `crmModuleRegistration`
+- `@brightweblabs/module-crm`: `listCrmContacts()`
+- `@brightweblabs/module-crm`: `listCrmOrganizations()`
+- `@brightweblabs/module-crm`: `getCrmContactStatusStats()`
+- `@brightweblabs/module-crm`: `listCrmOwnerOptions()`
+- `@brightweblabs/module-crm`: `handleCrmContactsGetRequest()`
+- `@brightweblabs/module-crm`: `handleCrmOrganizationsGetRequest()`
+- `@brightweblabs/module-crm`: `handleCrmStatsGetRequest()`
+- `@brightweblabs/module-crm`: `handleCrmOwnersGetRequest()`
 
 ### Starter
 
 - `@brightweblabs/module-crm`: `getCrmDashboardData()`
 
-The starter helper is public because it helps a new app move quickly, but it is not the recommended long-term contract for app-owned CRM product logic.
+The starter helper is public because it helps a new app move quickly, but it is not the recommended long-term contract for app-owned CRM product logic. The stable CRM contract is now the smaller list/stats/owner helper set plus the package-owned GET handlers.
 
 ## How to use it in an app
 
@@ -65,6 +74,44 @@ Use `getCrmDashboardData()` when you want the package to load and normalize the 
 
 Treat this helper as starter page glue. It is the fastest way to prove the CRM module is wired, not the long-term reusable CRM contract.
 
+### Build on the stable CRM helpers
+
+```ts
+import {
+  getCrmContactStatusStats,
+  listCrmContacts,
+  listCrmOrganizations,
+  listCrmOwnerOptions,
+} from "@brightweblabs/module-crm";
+
+const [contacts, organizations, stats, owners] = await Promise.all([
+  listCrmContacts(supabase, { page: 1, pageSize: 50 }),
+  listCrmOrganizations(supabase, { page: 1, pageSize: 20 }),
+  getCrmContactStatusStats(supabase),
+  listCrmOwnerOptions(supabase),
+]);
+```
+
+Use these helpers when you want reusable CRM primitives that an app or AI agent can compose into its own tables, dashboards, filters, and ownership flows.
+
+### Mount the CRM GET handlers
+
+```ts
+export const dynamic = "force-dynamic";
+
+export async function GET(request: Request) {
+  const { handleCrmContactsGetRequest } = await import("@brightweblabs/module-crm");
+  return handleCrmContactsGetRequest(request);
+}
+```
+
+The current starter mounts:
+
+- `/api/crm/contacts`
+- `/api/crm/organizations`
+- `/api/crm/stats`
+- `/api/crm/owners`
+
 ### Register CRM in the app shell
 
 ```ts
@@ -79,6 +126,7 @@ The generated starter only proves that the package is connected. You are still e
 
 ## How To Build On This
 
+- Build on the `stable` CRM helpers and handlers first when you want reusable contacts, organizations, stats, and owner options.
 - Build on the `stable` CRM shell registration when you want shared CRM navigation and toolbar wiring.
 - Use `getCrmDashboardData()` when you want the current scaffolded CRM page payload quickly.
 - Replace or wrap the starter helper once the client app needs different CRM slices, workflows, or page composition.
@@ -98,6 +146,8 @@ For a broader integration overview, see [Using BrightWeb Modules](./using-module
 
 - `supabase/modules/crm/migrations`
 - `packages/module-crm/src/index.ts`
+- `packages/module-crm/src/data.ts`
+- `packages/module-crm/src/handlers.ts`
 - `packages/module-crm/src/registration.ts`
 - `packages/create-bw-app/template/modules/crm`
 - `supabase/module-registry.json`

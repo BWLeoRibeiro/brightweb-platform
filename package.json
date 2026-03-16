@@ -20,6 +20,7 @@
     "smoke:create-client": "node ./scripts/smoke-create-brightweb-client.mjs",
     "start": "pnpm --filter platform-preview start",
     "start:docs": "pnpm --filter dev-docs start",
+    "test": "node --experimental-strip-types --test ./tests/base-contract-contracts.test.ts",
     "lint": "pnpm --filter platform-preview lint",
     "lint:docs": "pnpm --filter dev-docs lint"
   },

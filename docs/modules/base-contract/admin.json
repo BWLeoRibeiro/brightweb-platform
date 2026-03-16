@@ -10,7 +10,10 @@
     "auth": "admin visibility applies inside the shell",
     "inputs": [],
     "outputs": [
-      "ShellModuleRegistration"
+      {
+        "type": "ShellModuleRegistration",
+        "description": "Shell registration object for admin navigation and actions."
+      }
     ],
     "notes": [
       "Use when wiring the admin starter into app-shell."
@@ -27,15 +30,53 @@
     "summary": "Lists admin-managed users with pagination, search, and role filtering.",
     "auth": "admin role required in the caller context",
     "inputs": [
-      "{ supabase, search?, roleFilter?, page, pageSize }"
+      {
+        "name": "params.supabase",
+        "type": "SupabaseClient",
+        "required": true,
+        "description": "Server-side Supabase client with admin access."
+      },
+      {
+        "name": "params.search",
+        "type": "string",
+        "required": false,
+        "description": "Optional case-insensitive name and email search."
+      },
+      {
+        "name": "params.roleFilter",
+        "type": "\"client\" | \"staff\" | \"admin\" | null",
+        "required": false,
+        "description": "Optional role filter."
+      },
+      {
+        "name": "params.page",
+        "type": "number",
+        "required": true,
+        "description": "1-based page number."
+      },
+      {
+        "name": "params.pageSize",
+        "type": "number",
+        "required": true,
+        "description": "Page size capped at 100."
+      }
     ],
     "outputs": [
-      "AdminUsersListResult"
+      {
+        "type": "AdminUsersListResult",
+        "description": "Admin users table data with pagination metadata."
+      }
     ],
     "notes": [
       "Use when building app-owned admin tables or user management screens."
     ],
-    "source": "packages/module-admin/src/users.ts"
+    "examples": [
+      {
+        "label": "List admin users",
+        "code": "const users = await listAdminUsers({ supabase, page: 1, pageSize: 10, roleFilter: \"staff\" });"
+      }
+    ],
+    "source": "packages/module-admin/src/users-data.ts"
   },
   {
     "moduleKey": "admin",
@@ -47,14 +88,65 @@
     "summary": "Package-owned GET handler for the starter admin users endpoint.",
     "auth": "admin role required",
     "inputs": [
-      "request: Request"
+      {
+        "name": "request",
+        "type": "Request",
+        "required": true,
+        "description": "Incoming request with optional admin user list query parameters."
+      }
     ],
     "outputs": [
-      "Response"
+      {
+        "type": "Response",
+        "description": "JSON response containing admin users list data or an error envelope."
+      }
     ],
     "notes": [
       "Mount from a Next.js route when the package should own the HTTP contract."
     ],
+    "http": {
+      "method": "GET",
+      "path": "/api/admin/users",
+      "query": [
+        {
+          "name": "page",
+          "type": "number",
+          "required": false,
+          "description": "1-based page number. Defaults to 1."
+        },
+        {
+          "name": "pageSize",
+          "type": "number",
+          "required": false,
+          "description": "Page size capped at 100. Defaults to 10."
+        },
+        {
+          "name": "search",
+          "type": "string",
+          "required": false,
+          "description": "Case-insensitive user search."
+        },
+        {
+          "name": "role",
+          "type": "\"client\" | \"staff\" | \"admin\"",
+          "required": false,
+          "description": "Optional role filter."
+        }
+      ],
+      "body": [],
+      "success": [
+        {
+          "type": "AdminUsersListResult",
+          "description": "Admin users list response."
+        }
+      ],
+      "errors": [
+        {
+          "type": "{ error: string }",
+          "description": "Authentication or server error envelope."
+        }
+      ]
+    },
     "source": "packages/module-admin/src/handlers.ts"
   },
   {
@@ -67,14 +159,59 @@
     "summary": "Package-owned POST handler for bulk admin role changes.",
     "auth": "admin role required",
     "inputs": [
-      "request: Request"
+      {
+        "name": "request",
+        "type": "Request",
+        "required": true,
+        "description": "Incoming request with a bulk role change payload."
+      }
     ],
     "outputs": [
-      "Response"
+      {
+        "type": "Response",
+        "description": "JSON response containing role change results or an error envelope."
+      }
     ],
     "notes": [
       "Mount from a Next.js route when the package should own the HTTP contract."
     ],
+    "http": {
+      "method": "POST",
+      "path": "/api/admin/users/roles",
+      "query": [],
+      "body": [
+        {
+          "name": "profileIds",
+          "type": "string[]",
+          "required": true,
+          "description": "One or more profile ids to update."
+        },
+        {
+          "name": "newRole",
+          "type": "\"client\" | \"staff\" | \"admin\"",
+          "required": true,
+          "description": "Target role for the selected profiles."
+        },
+        {
+          "name": "reason",
+          "type": "string",
+          "required": true,
+          "description": "Audit reason for the role change."
+        }
+      ],
+      "success": [
+        {
+          "type": "AdminRoleChangeResult",
+          "description": "Changed and skipped results plus summary counters."
+        }
+      ],
+      "errors": [
+        {
+          "type": "{ error: string }",
+          "description": "Validation, authentication, or server error envelope."
+        }
+      ]
+    },
     "source": "packages/module-admin/src/handlers.ts"
   },
   {
@@ -88,10 +225,18 @@
     "auth": "admin role required",
     "inputs": [],
     "outputs": [
-      "AdminUsersPageData"
+      {
+        "type": "AdminUsersPageData",
+        "description": "Starter admin page payload containing the first users list."
+      }
     ],
     "notes": [
       "Replace or compose this helper when a project needs its own admin page shape."
+    ],
+    "buildOn": [
+      "listAdminUsers",
+      "handleAdminUsersGetRequest",
+      "handleAdminUsersRoleChangeRequest"
     ],
     "source": "packages/module-admin/src/users.ts"
   },
@@ -106,7 +251,10 @@
     "auth": "none",
     "inputs": [],
     "outputs": [
-      "{ state, setSearch, setRoleFilter, setBulkRole, applyBulk, refresh, refreshComplete }"
+      {
+        "type": "Record<string, string>",
+        "description": "Packaged event names for admin UI wiring."
+      }
     ],
     "notes": [
       "Do not couple app-owned UI to this event bus in v1."
@@ -123,10 +271,18 @@
     "summary": "Dispatches a packaged admin browser event.",
     "auth": "none",
     "inputs": [
-      "name: string"
+      {
+        "name": "name",
+        "type": "string",
+        "required": true,
+        "description": "Packaged admin event name."
+      }
     ],
     "outputs": [
-      "void"
+      {
+        "type": "void",
+        "description": "No return value."
+      }
     ],
     "notes": [
       "Treat as internal UI wiring for the packaged admin client."
@@ -143,11 +299,24 @@
     "summary": "Dispatches a packaged admin browser custom event with detail payload.",
     "auth": "none",
     "inputs": [
-      "name: string",
-      "detail: T"
+      {
+        "name": "name",
+        "type": "string",
+        "required": true,
+        "description": "Packaged admin event name."
+      },
+      {
+        "name": "detail",
+        "type": "unknown",
+        "required": true,
+        "description": "Event detail payload."
+      }
     ],
     "outputs": [
-      "void"
+      {
+        "type": "void",
+        "description": "No return value."
+      }
     ],
     "notes": [
       "Treat as internal UI wiring for the packaged admin client."
@@ -164,10 +333,36 @@
     "summary": "Lower-level role mutation helper used by the packaged admin handlers.",
     "auth": "admin role required in the caller context",
     "inputs": [
-      "{ supabase, profileIds, newRole, reason }"
+      {
+        "name": "params.supabase",
+        "type": "SupabaseClient",
+        "required": true,
+        "description": "Server-side Supabase client with admin access."
+      },
+      {
+        "name": "params.profileIds",
+        "type": "string[]",
+        "required": true,
+        "description": "Profile ids to update."
+      },
+      {
+        "name": "params.newRole",
+        "type": "\"client\" | \"staff\" | \"admin\"",
+        "required": true,
+        "description": "Target role."
+      },
+      {
+        "name": "params.reason",
+        "type": "string",
+        "required": true,
+        "description": "Audit reason for the change."
+      }
     ],
     "outputs": [
-      "AdminRoleChangeResult"
+      {
+        "type": "AdminRoleChangeResult",
+        "description": "Changed and skipped results plus summary counters."
+      }
     ],
     "notes": [
       "Treat as internal server composition in v1."
@@ -184,10 +379,18 @@
     "summary": "Packaged admin users table UI used by the current starter surface.",
     "auth": "admin role required for the mounted route",
     "inputs": [
-      "initialUsers: AdminUsersListResult"
+      {
+        "name": "initialUsers",
+        "type": "AdminUsersListResult",
+        "required": true,
+        "description": "Initial admin users payload."
+      }
     ],
     "outputs": [
-      "React component"
+      {
+        "type": "React component",
+        "description": "Packaged starter UI component."
+      }
     ],
     "notes": [
       "App-owned admin UI should not depend on this packaged client component in v1."

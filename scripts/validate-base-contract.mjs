@@ -16,9 +16,11 @@ async function main() {
 
   const packageMap = await loadPackageMap();
   const seen = new Set();
+  const knownSymbols = new Set();
 
   for (const [index, entry] of manifest.entries()) {
     validateManifestEntry(entry, index);
+    knownSymbols.add(entry.symbol);
 
     const duplicateKey = `${entry.packageName}::${entry.symbol}`;
     if (seen.has(duplicateKey)) {
@@ -32,6 +34,16 @@ async function main() {
     const exportNames = await getExportNamesForSpecifier(entry.packageName, packageMap);
     if (!exportNames.has(entry.symbol)) {
       throw new Error(`Symbol "${entry.symbol}" is not exported from "${entry.packageName}".`);
+    }
+  }
+
+  for (const [index, entry] of manifest.entries()) {
+    for (const field of ["buildOn", "replaces"]) {
+      for (const symbol of entry[field] ?? []) {
+        if (!knownSymbols.has(symbol)) {
+          throw new Error(`Invalid manifest entry at index ${index}: "${field}" references unknown symbol "${symbol}".`);
+        }
+      }
     }
   }
 
@@ -139,11 +151,19 @@ function validateManifestEntry(entry, index) {
     }
   }
 
-  for (const field of ["inputs", "outputs", "notes"]) {
-    if (!Array.isArray(entry[field]) || entry[field].some((value) => typeof value !== "string")) {
-      throw new Error(`${prefix}: "${field}" must be an array of strings.`);
-    }
+  if (!Array.isArray(entry.notes) || entry.notes.some((value) => typeof value !== "string")) {
+    throw new Error(`${prefix}: "notes" must be an array of strings.`);
   }
+
+  if (!Array.isArray(entry.inputs)) {
+    throw new Error(`${prefix}: "inputs" must be an array.`);
+  }
+  entry.inputs.forEach((value, inputIndex) => validateInputDescriptor(value, `${prefix}: inputs[${inputIndex}]`));
+
+  if (!Array.isArray(entry.outputs)) {
+    throw new Error(`${prefix}: "outputs" must be an array.`);
+  }
+  entry.outputs.forEach((value, outputIndex) => validateOutputDescriptor(value, `${prefix}: outputs[${outputIndex}]`));
 
   if (!allowedKinds.has(entry.kind)) {
     throw new Error(`${prefix}: unsupported kind "${entry.kind}".`);
@@ -153,6 +173,88 @@ function validateManifestEntry(entry, index) {
   }
   if (!allowedRuntimes.has(entry.runtime)) {
     throw new Error(`${prefix}: unsupported runtime "${entry.runtime}".`);
+  }
+
+  if (entry.examples !== undefined) {
+    if (!Array.isArray(entry.examples)) {
+      throw new Error(`${prefix}: "examples" must be an array when provided.`);
+    }
+    for (const [exampleIndex, example] of entry.examples.entries()) {
+      if (!example || typeof example !== "object" || Array.isArray(example)) {
+        throw new Error(`${prefix}: examples[${exampleIndex}] must be an object.`);
+      }
+      for (const field of ["label", "code"]) {
+        if (typeof example[field] !== "string" || example[field].trim().length === 0) {
+          throw new Error(`${prefix}: examples[${exampleIndex}].${field} must be a non-empty string.`);
+        }
+      }
+    }
+  }
+
+  for (const field of ["buildOn", "replaces"]) {
+    if (entry[field] !== undefined) {
+      if (!Array.isArray(entry[field]) || entry[field].some((value) => typeof value !== "string" || value.trim().length === 0)) {
+        throw new Error(`${prefix}: "${field}" must be an array of non-empty strings when provided.`);
+      }
+    }
+  }
+
+  if (entry.http !== undefined) {
+    validateHttpDescriptor(entry.http, `${prefix}: http`);
+  }
+}
+
+function validateInputDescriptor(descriptor, prefix) {
+  if (!descriptor || typeof descriptor !== "object" || Array.isArray(descriptor)) {
+    throw new Error(`${prefix} must be an object.`);
+  }
+
+  for (const field of ["name", "type", "description"]) {
+    if (typeof descriptor[field] !== "string" || descriptor[field].trim().length === 0) {
+      throw new Error(`${prefix}.${field} must be a non-empty string.`);
+    }
+  }
+
+  if (typeof descriptor.required !== "boolean") {
+    throw new Error(`${prefix}.required must be a boolean.`);
+  }
+}
+
+function validateOutputDescriptor(descriptor, prefix) {
+  if (!descriptor || typeof descriptor !== "object" || Array.isArray(descriptor)) {
+    throw new Error(`${prefix} must be an object.`);
+  }
+
+  for (const field of ["type", "description"]) {
+    if (typeof descriptor[field] !== "string" || descriptor[field].trim().length === 0) {
+      throw new Error(`${prefix}.${field} must be a non-empty string.`);
+    }
+  }
+}
+
+function validateHttpDescriptor(descriptor, prefix) {
+  if (!descriptor || typeof descriptor !== "object" || Array.isArray(descriptor)) {
+    throw new Error(`${prefix} must be an object.`);
+  }
+
+  for (const field of ["method", "path"]) {
+    if (typeof descriptor[field] !== "string" || descriptor[field].trim().length === 0) {
+      throw new Error(`${prefix}.${field} must be a non-empty string.`);
+    }
+  }
+
+  for (const field of ["query", "body"]) {
+    if (!Array.isArray(descriptor[field])) {
+      throw new Error(`${prefix}.${field} must be an array.`);
+    }
+    descriptor[field].forEach((value, index) => validateInputDescriptor(value, `${prefix}.${field}[${index}]`));
+  }
+
+  for (const field of ["success", "errors"]) {
+    if (!Array.isArray(descriptor[field])) {
+      throw new Error(`${prefix}.${field} must be an array.`);
+    }
+    descriptor[field].forEach((value, index) => validateOutputDescriptor(value, `${prefix}.${field}[${index}]`));
   }
 }
 

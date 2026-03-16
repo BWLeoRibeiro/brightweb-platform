@@ -23,8 +23,8 @@
       "title": "CRM",
       "file": "crm.json",
       "doc": "../crm.md",
-      "entryCount": 2,
-      "summary": "CRM shell registration plus starter CRM page helper."
+      "entryCount": 10,
+      "summary": "CRM shell registration, stable list/stats helpers, package-owned GET handlers, and starter dashboard glue."
     },
     {
       "moduleKey": "projects",

@@ -10,7 +10,10 @@
     "auth": "route-level visibility applies inside the shell",
     "inputs": [],
     "outputs": [
-      "ShellModuleRegistration"
+      {
+        "type": "ShellModuleRegistration",
+        "description": "Shell registration object for projects navigation and actions."
+      }
     ],
     "notes": [
       "Use when wiring Projects into the shared shell."
@@ -27,16 +30,29 @@
     "summary": "Lists projects with reusable filters, pagination, and derived task and milestone stats.",
     "auth": "signed-in user with project access required in the caller context",
     "inputs": [
-      "supabase",
-      "params: ListProjectsParams"
+      {
+        "name": "supabase",
+        "type": "SupabaseClient",
+        "required": true,
+        "description": "Server-side Supabase client with project schema access."
+      },
+      {
+        "name": "params",
+        "type": "ListProjectsParams",
+        "required": true,
+        "description": "Project filters including search, status, health, owner, dueWindow, page, and pageSize."
+      }
     ],
     "outputs": [
-      "ProjectsListResult"
+      {
+        "type": "ProjectsListResult",
+        "description": "Paginated projects list with derived task and milestone stats."
+      }
     ],
     "notes": [
       "Use when building app-owned portfolio tables, boards, and project queries."
     ],
-    "source": "packages/module-projects/src/index.ts"
+    "source": "packages/module-projects/src/data.ts"
   },
   {
     "moduleKey": "projects",
@@ -48,15 +64,23 @@
     "summary": "Returns reusable portfolio-level project counters for the current project schema.",
     "auth": "signed-in user with project access required in the caller context",
     "inputs": [
-      "supabase"
+      {
+        "name": "supabase",
+        "type": "SupabaseClient",
+        "required": true,
+        "description": "Server-side Supabase client with project schema access."
+      }
     ],
     "outputs": [
-      "ProjectsPortfolioStats"
+      {
+        "type": "ProjectsPortfolioStats",
+        "description": "Portfolio totals for active, planned, at-risk, and overdue projects."
+      }
     ],
     "notes": [
       "Use when building app-owned dashboards and portfolio summaries."
     ],
-    "source": "packages/module-projects/src/index.ts"
+    "source": "packages/module-projects/src/data.ts"
   },
   {
     "moduleKey": "projects",
@@ -69,10 +93,17 @@
     "auth": "signed-in user required",
     "inputs": [],
     "outputs": [
-      "ProjectsPortfolioPageData"
+      {
+        "type": "ProjectsPortfolioPageData",
+        "description": "Starter projects page payload with organization options, stats, and the initial list."
+      }
     ],
     "notes": [
       "Replace or compose this helper when a project needs a different portfolio page shape."
+    ],
+    "buildOn": [
+      "listProjects",
+      "getProjectPortfolioStats"
     ],
     "source": "packages/module-projects/src/index.ts"
   },
@@ -86,14 +117,22 @@
     "summary": "Detects missing-table and missing-column errors for the current starter schema fallback.",
     "auth": "none",
     "inputs": [
-      "error: unknown"
+      {
+        "name": "error",
+        "type": "unknown",
+        "required": true,
+        "description": "Thrown error or message-like value."
+      }
     ],
     "outputs": [
-      "boolean"
+      {
+        "type": "boolean",
+        "description": "True when the error matches the current schema-missing fallback cases."
+      }
     ],
     "notes": [
       "Treat as internal fallback logic for the current starter helpers."
     ],
-    "source": "packages/module-projects/src/index.ts"
+    "source": "packages/module-projects/src/data.ts"
   }
 ]

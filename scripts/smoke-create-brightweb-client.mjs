@@ -36,6 +36,14 @@ async function removeIfPresent(targetPath) {
   await fs.rm(targetPath, { recursive: true, force: true });
 }
 
+async function assertExists(targetPath) {
+  try {
+    await fs.access(targetPath);
+  } catch {
+    throw new Error(`Expected generated file to exist: ${targetPath}`);
+  }
+}
+
 async function scaffoldSiteSmoke(siteDir) {
   await createBrightwebClientApp(
     {
@@ -73,6 +81,9 @@ async function scaffoldPlatformSmoke(platformDir, platformName) {
       dependencyMode: "workspace",
     },
   );
+
+  await assertExists(path.join(platformDir, "AGENTS.md"));
+  await assertExists(path.join(platformDir, "docs", "ai", "README.md"));
 
   await runCommand("pnpm", ["install"], { cwd: repoRoot });
   await runCommand("pnpm", ["--filter", result.answers.slug, "build"], { cwd: repoRoot });

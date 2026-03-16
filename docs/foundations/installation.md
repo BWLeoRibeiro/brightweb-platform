@@ -7,6 +7,8 @@ Use the public CLI when you want a new project quickly without manual starter wi
 Both templates generate normal Next.js App Router projects. After scaffolding, you work in the generated app like any
 other Next.js project, including the usual `app/` route and page structure.
 
+Generated platform apps also include local AI-agent entrypoints in `AGENTS.md` and `docs/ai/README.md` so coding agents can orient themselves inside the scaffold without relying on repo-internal docs.
+
 ## Quick start
 
 Start the interactive scaffold:

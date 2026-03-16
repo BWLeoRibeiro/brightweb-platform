@@ -22,6 +22,7 @@ Use this recipe when the generated starter routes have done their job and you ar
    - `app/preview/app-shell/*`
    - `app/playground/*`
    - `app/api/admin/users/*` if you are moving away from the starter admin routes
+   - `app/api/crm/*` if you are moving away from the starter CRM routes
 2. Build the replacement pages or handlers first, while the starter routes still exist as a safety net.
 3. Prefer the longer-lived public contracts from [Using BrightWeb Modules](../modules/using-modules.md) over starter-only page helpers when you design the replacement data flow.
 4. Update the home page, bootstrap links, and shell navigation so the app points at your new routes instead of the starter validation paths.
@@ -34,7 +35,8 @@ Use this recipe when the generated starter routes have done their job and you ar
 | `/bootstrap` and `config/bootstrap.ts` | A launch checklist for a new instance | Project-owned provisioning or admin flows once the client setup stabilizes |
 | `/preview/app-shell` | A shell wiring preview | Your real app routes driven by the long-lived shell configuration |
 | `/playground/auth` | Auth validation surface | Your own sign-in, callback, and account-management experience |
-| `/playground/crm` with `getCrmDashboardData()` | Starter CRM page glue | App-owned CRM UI and queries built on the installed schema and supported contracts |
+| `/playground/crm` with `getCrmDashboardData()` | Starter CRM page glue | App-owned CRM UI built on `listCrmContacts()`, `listCrmOrganizations()`, `getCrmContactStatusStats()`, and `listCrmOwnerOptions()` |
+| `/api/crm/contacts`, `/api/crm/organizations`, `/api/crm/stats`, `/api/crm/owners` | Starter CRM HTTP routes | App-owned routes or direct package mounting built on the stable CRM handlers |
 | `/playground/projects` with `getProjectsPortfolioPageData()` | Starter portfolio glue | App-owned project pages built on `listProjects()` and `getProjectPortfolioStats()` |
 | `/playground/admin` with `getAdminUsersPageData()` | Starter admin page glue | App-owned admin pages built on `listAdminUsers()` and the stable admin handlers |
 

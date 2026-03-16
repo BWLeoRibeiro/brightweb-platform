@@ -10,7 +10,10 @@
     "auth": "none",
     "inputs": [],
     "outputs": [
-      "number"
+      {
+        "type": "number",
+        "description": "Cooldown duration in seconds."
+      }
     ],
     "notes": [
       "Use with stable auth form and cooldown behavior."
@@ -28,7 +31,10 @@
     "auth": "none",
     "inputs": [],
     "outputs": [
-      "string"
+      {
+        "type": "string",
+        "description": "Absolute callback URL for signup confirmation."
+      }
     ],
     "notes": [
       "Use for app-owned signup and invitation flows."
@@ -46,7 +52,10 @@
     "auth": "none",
     "inputs": [],
     "outputs": [
-      "string"
+      {
+        "type": "string",
+        "description": "Absolute callback URL for password reset."
+      }
     ],
     "notes": [
       "Use for app-owned password reset flows."
@@ -63,10 +72,18 @@
     "summary": "Validates email input for shared auth forms.",
     "auth": "none",
     "inputs": [
-      "email: string"
+      {
+        "name": "email",
+        "type": "string",
+        "required": true,
+        "description": "Email input to validate."
+      }
     ],
     "outputs": [
-      "boolean"
+      {
+        "type": "boolean",
+        "description": "True when the email matches the shared BrightWeb validation rules."
+      }
     ],
     "notes": [
       "Use for starter and app-owned auth form validation."
@@ -83,10 +100,18 @@
     "summary": "Validates password input against the shared BrightWeb starter rules.",
     "auth": "none",
     "inputs": [
-      "password: string"
+      {
+        "name": "password",
+        "type": "string",
+        "required": true,
+        "description": "Password input to validate."
+      }
     ],
     "outputs": [
-      "PasswordValidationResult"
+      {
+        "type": "PasswordValidationResult",
+        "description": "Boolean validity plus the current rule failures."
+      }
     ],
     "notes": [
       "Use for starter and app-owned auth form validation."
@@ -104,7 +129,10 @@
     "auth": "none",
     "inputs": [],
     "outputs": [
-      "string"
+      {
+        "type": "string",
+        "description": "Configured auth base URL."
+      }
     ],
     "notes": [
       "Do not build app code directly on this helper in v1."
@@ -121,10 +149,18 @@
     "summary": "Normalizes raw role values into the shared BrightWeb role union.",
     "auth": "none",
     "inputs": [
-      "value: string | null | undefined"
+      {
+        "name": "value",
+        "type": "string | null | undefined",
+        "required": true,
+        "description": "Raw role-like value."
+      }
     ],
     "outputs": [
-      "GlobalRole | null"
+      {
+        "type": "GlobalRole | null",
+        "description": "Normalized role or null."
+      }
     ],
     "notes": [
       "Used internally by server auth and admin helpers."
@@ -141,10 +177,18 @@
     "summary": "Determines access to the current Insights CMS surface.",
     "auth": "none",
     "inputs": [
-      "role: string | null | undefined"
+      {
+        "name": "role",
+        "type": "string | null | undefined",
+        "required": true,
+        "description": "Raw role-like value."
+      }
     ],
     "outputs": [
-      "boolean"
+      {
+        "type": "boolean",
+        "description": "True when the role can access the current Insights CMS surface."
+      }
     ],
     "notes": [
       "Treat this as internal route policy logic in v1."
@@ -161,10 +205,18 @@
     "summary": "Chooses the current post-login landing path from the user's role.",
     "auth": "none",
     "inputs": [
-      "role: string | null | undefined"
+      {
+        "name": "role",
+        "type": "string | null | undefined",
+        "required": true,
+        "description": "Raw role-like value."
+      }
     ],
     "outputs": [
-      "\"/dashboard\" | \"/account\""
+      {
+        "type": "\"/dashboard\" | \"/account\"",
+        "description": "Current post-login destination."
+      }
     ],
     "notes": [
       "Treat this as internal route policy logic in v1."
@@ -181,10 +233,18 @@
     "summary": "Client hook for resend cooldown and timer state in auth flows.",
     "auth": "none",
     "inputs": [
-      "durationSeconds: number"
+      {
+        "name": "durationSeconds",
+        "type": "number",
+        "required": true,
+        "description": "Cooldown duration in seconds."
+      }
     ],
     "outputs": [
-      "CooldownTimerResult"
+      {
+        "type": "CooldownTimerResult",
+        "description": "Cooldown state and restart controls."
+      }
     ],
     "notes": [
       "Use for app-owned auth forms and resend flows."
@@ -202,7 +262,10 @@
     "auth": "signed-in user required",
     "inputs": [],
     "outputs": [
-      "{ supabase, user, profileId, role }"
+      {
+        "type": "{ supabase, user, profileId, role }",
+        "description": "Authenticated user context for server components and pages."
+      }
     ],
     "notes": [
       "Use as the default server entrypoint for authenticated page data."
@@ -219,10 +282,18 @@
     "summary": "Guards a server page or component for one or more allowed roles.",
     "auth": "allowed role required",
     "inputs": [
-      "allowedRoles: GlobalRole | GlobalRole[]"
+      {
+        "name": "allowedRoles",
+        "type": "GlobalRole | GlobalRole[]",
+        "required": true,
+        "description": "Allowed role or roles."
+      }
     ],
     "outputs": [
-      "{ supabase, user, role }"
+      {
+        "type": "{ supabase, user, role }",
+        "description": "Authenticated server context for the allowed role set."
+      }
     ],
     "notes": [
       "Use for role-gated dashboard pages and layouts."
@@ -240,7 +311,10 @@
     "auth": "optional signed-in user",
     "inputs": [],
     "outputs": [
-      "ServerAccess"
+      {
+        "type": "ServerAccess",
+        "description": "Current auth and role state for the request."
+      }
     ],
     "notes": [
       "Use when an app needs read-only access to current auth state."
@@ -258,7 +332,10 @@
     "auth": "signed-in user required",
     "inputs": [],
     "outputs": [
-      "ServerUserAccess"
+      {
+        "type": "ServerUserAccess",
+        "description": "Low-level server user access result."
+      }
     ],
     "notes": [
       "Treat as internal composition for the stable server helpers."
@@ -275,10 +352,18 @@
     "summary": "Lower-level role access helper used by the current admin handlers.",
     "auth": "allowed role required",
     "inputs": [
-      "allowedRoles: GlobalRole | GlobalRole[]"
+      {
+        "name": "allowedRoles",
+        "type": "GlobalRole | GlobalRole[]",
+        "required": true,
+        "description": "Allowed role or roles."
+      }
     ],
     "outputs": [
-      "ServerRoleAccess"
+      {
+        "type": "ServerRoleAccess",
+        "description": "Low-level server role access result."
+      }
     ],
     "notes": [
       "Treat as internal server composition in v1."
@@ -295,11 +380,24 @@
     "summary": "Looks up the profile record for a Supabase user.",
     "auth": "server context required",
     "inputs": [
-      "supabase",
-      "userId: string"
+      {
+        "name": "supabase",
+        "type": "SupabaseClient",
+        "required": true,
+        "description": "Server-side Supabase client."
+      },
+      {
+        "name": "userId",
+        "type": "string",
+        "required": true,
+        "description": "Supabase user id to resolve."
+      }
     ],
     "outputs": [
-      "{ profileId, error }"
+      {
+        "type": "{ profileId, error }",
+        "description": "Resolved profile id or lookup error."
+      }
     ],
     "notes": [
       "Treat as internal server composition in v1."
@@ -317,7 +415,10 @@
     "auth": "admin visibility applies inside the shell",
     "inputs": [],
     "outputs": [
-      "ShellModuleRegistration"
+      {
+        "type": "ShellModuleRegistration",
+        "description": "Shell registration object for admin navigation and actions."
+      }
     ],
     "notes": [
       "Use when wiring the admin starter into app-shell."
@@ -334,15 +435,53 @@
     "summary": "Lists admin-managed users with pagination, search, and role filtering.",
     "auth": "admin role required in the caller context",
     "inputs": [
-      "{ supabase, search?, roleFilter?, page, pageSize }"
+      {
+        "name": "params.supabase",
+        "type": "SupabaseClient",
+        "required": true,
+        "description": "Server-side Supabase client with admin access."
+      },
+      {
+        "name": "params.search",
+        "type": "string",
+        "required": false,
+        "description": "Optional case-insensitive name and email search."
+      },
+      {
+        "name": "params.roleFilter",
+        "type": "\"client\" | \"staff\" | \"admin\" | null",
+        "required": false,
+        "description": "Optional role filter."
+      },
+      {
+        "name": "params.page",
+        "type": "number",
+        "required": true,
+        "description": "1-based page number."
+      },
+      {
+        "name": "params.pageSize",
+        "type": "number",
+        "required": true,
+        "description": "Page size capped at 100."
+      }
     ],
     "outputs": [
-      "AdminUsersListResult"
+      {
+        "type": "AdminUsersListResult",
+        "description": "Admin users table data with pagination metadata."
+      }
     ],
     "notes": [
       "Use when building app-owned admin tables or user management screens."
     ],
-    "source": "packages/module-admin/src/users.ts"
+    "examples": [
+      {
+        "label": "List admin users",
+        "code": "const users = await listAdminUsers({ supabase, page: 1, pageSize: 10, roleFilter: \"staff\" });"
+      }
+    ],
+    "source": "packages/module-admin/src/users-data.ts"
   },
   {
     "moduleKey": "admin",
@@ -354,14 +493,65 @@
     "summary": "Package-owned GET handler for the starter admin users endpoint.",
     "auth": "admin role required",
     "inputs": [
-      "request: Request"
+      {
+        "name": "request",
+        "type": "Request",
+        "required": true,
+        "description": "Incoming request with optional admin user list query parameters."
+      }
     ],
     "outputs": [
-      "Response"
+      {
+        "type": "Response",
+        "description": "JSON response containing admin users list data or an error envelope."
+      }
     ],
     "notes": [
       "Mount from a Next.js route when the package should own the HTTP contract."
     ],
+    "http": {
+      "method": "GET",
+      "path": "/api/admin/users",
+      "query": [
+        {
+          "name": "page",
+          "type": "number",
+          "required": false,
+          "description": "1-based page number. Defaults to 1."
+        },
+        {
+          "name": "pageSize",
+          "type": "number",
+          "required": false,
+          "description": "Page size capped at 100. Defaults to 10."
+        },
+        {
+          "name": "search",
+          "type": "string",
+          "required": false,
+          "description": "Case-insensitive user search."
+        },
+        {
+          "name": "role",
+          "type": "\"client\" | \"staff\" | \"admin\"",
+          "required": false,
+          "description": "Optional role filter."
+        }
+      ],
+      "body": [],
+      "success": [
+        {
+          "type": "AdminUsersListResult",
+          "description": "Admin users list response."
+        }
+      ],
+      "errors": [
+        {
+          "type": "{ error: string }",
+          "description": "Authentication or server error envelope."
+        }
+      ]
+    },
     "source": "packages/module-admin/src/handlers.ts"
   },
   {
@@ -374,14 +564,59 @@
     "summary": "Package-owned POST handler for bulk admin role changes.",
     "auth": "admin role required",
     "inputs": [
-      "request: Request"
+      {
+        "name": "request",
+        "type": "Request",
+        "required": true,
+        "description": "Incoming request with a bulk role change payload."
+      }
     ],
     "outputs": [
-      "Response"
+      {
+        "type": "Response",
+        "description": "JSON response containing role change results or an error envelope."
+      }
     ],
     "notes": [
       "Mount from a Next.js route when the package should own the HTTP contract."
     ],
+    "http": {
+      "method": "POST",
+      "path": "/api/admin/users/roles",
+      "query": [],
+      "body": [
+        {
+          "name": "profileIds",
+          "type": "string[]",
+          "required": true,
+          "description": "One or more profile ids to update."
+        },
+        {
+          "name": "newRole",
+          "type": "\"client\" | \"staff\" | \"admin\"",
+          "required": true,
+          "description": "Target role for the selected profiles."
+        },
+        {
+          "name": "reason",
+          "type": "string",
+          "required": true,
+          "description": "Audit reason for the role change."
+        }
+      ],
+      "success": [
+        {
+          "type": "AdminRoleChangeResult",
+          "description": "Changed and skipped results plus summary counters."
+        }
+      ],
+      "errors": [
+        {
+          "type": "{ error: string }",
+          "description": "Validation, authentication, or server error envelope."
+        }
+      ]
+    },
     "source": "packages/module-admin/src/handlers.ts"
   },
   {
@@ -395,10 +630,18 @@
     "auth": "admin role required",
     "inputs": [],
     "outputs": [
-      "AdminUsersPageData"
+      {
+        "type": "AdminUsersPageData",
+        "description": "Starter admin page payload containing the first users list."
+      }
     ],
     "notes": [
       "Replace or compose this helper when a project needs its own admin page shape."
+    ],
+    "buildOn": [
+      "listAdminUsers",
+      "handleAdminUsersGetRequest",
+      "handleAdminUsersRoleChangeRequest"
     ],
     "source": "packages/module-admin/src/users.ts"
   },
@@ -413,7 +656,10 @@
     "auth": "none",
     "inputs": [],
     "outputs": [
-      "{ state, setSearch, setRoleFilter, setBulkRole, applyBulk, refresh, refreshComplete }"
+      {
+        "type": "Record<string, string>",
+        "description": "Packaged event names for admin UI wiring."
+      }
     ],
     "notes": [
       "Do not couple app-owned UI to this event bus in v1."
@@ -430,10 +676,18 @@
     "summary": "Dispatches a packaged admin browser event.",
     "auth": "none",
     "inputs": [
-      "name: string"
+      {
+        "name": "name",
+        "type": "string",
+        "required": true,
+        "description": "Packaged admin event name."
+      }
     ],
     "outputs": [
-      "void"
+      {
+        "type": "void",
+        "description": "No return value."
+      }
     ],
     "notes": [
       "Treat as internal UI wiring for the packaged admin client."
@@ -450,11 +704,24 @@
     "summary": "Dispatches a packaged admin browser custom event with detail payload.",
     "auth": "none",
     "inputs": [
-      "name: string",
-      "detail: T"
+      {
+        "name": "name",
+        "type": "string",
+        "required": true,
+        "description": "Packaged admin event name."
+      },
+      {
+        "name": "detail",
+        "type": "unknown",
+        "required": true,
+        "description": "Event detail payload."
+      }
     ],
     "outputs": [
-      "void"
+      {
+        "type": "void",
+        "description": "No return value."
+      }
     ],
     "notes": [
       "Treat as internal UI wiring for the packaged admin client."
@@ -471,10 +738,36 @@
     "summary": "Lower-level role mutation helper used by the packaged admin handlers.",
     "auth": "admin role required in the caller context",
     "inputs": [
-      "{ supabase, profileIds, newRole, reason }"
+      {
+        "name": "params.supabase",
+        "type": "SupabaseClient",
+        "required": true,
+        "description": "Server-side Supabase client with admin access."
+      },
+      {
+        "name": "params.profileIds",
+        "type": "string[]",
+        "required": true,
+        "description": "Profile ids to update."
+      },
+      {
+        "name": "params.newRole",
+        "type": "\"client\" | \"staff\" | \"admin\"",
+        "required": true,
+        "description": "Target role."
+      },
+      {
+        "name": "params.reason",
+        "type": "string",
+        "required": true,
+        "description": "Audit reason for the change."
+      }
     ],
     "outputs": [
-      "AdminRoleChangeResult"
+      {
+        "type": "AdminRoleChangeResult",
+        "description": "Changed and skipped results plus summary counters."
+      }
     ],
     "notes": [
       "Treat as internal server composition in v1."
@@ -491,10 +784,18 @@
     "summary": "Packaged admin users table UI used by the current starter surface.",
     "auth": "admin role required for the mounted route",
     "inputs": [
-      "initialUsers: AdminUsersListResult"
+      {
+        "name": "initialUsers",
+        "type": "AdminUsersListResult",
+        "required": true,
+        "description": "Initial admin users payload."
+      }
     ],
     "outputs": [
-      "React component"
+      {
+        "type": "React component",
+        "description": "Packaged starter UI component."
+      }
     ],
     "notes": [
       "App-owned admin UI should not depend on this packaged client component in v1."
@@ -512,12 +813,397 @@
     "auth": "mixed visibility inside the shell",
     "inputs": [],
     "outputs": [
-      "ShellModuleRegistration"
+      {
+        "type": "ShellModuleRegistration",
+        "description": "Shell registration object for CRM navigation and actions."
+      }
     ],
     "notes": [
       "Use when wiring CRM into the shared shell."
     ],
+    "examples": [
+      {
+        "label": "Register CRM in the shell",
+        "code": "import { crmModuleRegistration } from \"@brightweblabs/module-crm/registration\";"
+      }
+    ],
     "source": "packages/module-crm/src/registration.ts"
+  },
+  {
+    "moduleKey": "crm",
+    "packageName": "@brightweblabs/module-crm",
+    "symbol": "listCrmContacts",
+    "kind": "helper",
+    "status": "stable",
+    "runtime": "server",
+    "summary": "Lists CRM contacts with reusable filtering and pagination.",
+    "auth": "signed-in user required in the caller context",
+    "inputs": [
+      {
+        "name": "supabase",
+        "type": "SupabaseClient",
+        "required": true,
+        "description": "Server-side Supabase client with CRM schema access."
+      },
+      {
+        "name": "params",
+        "type": "CrmContactsListParams",
+        "required": false,
+        "description": "Optional page, pageSize, search, status, organizationId, and ownerProfileId filters."
+      }
+    ],
+    "outputs": [
+      {
+        "type": "CrmContactsListResult",
+        "description": "Paginated CRM contacts plus total counters."
+      }
+    ],
+    "notes": [
+      "Prefer this helper over dashboard-shaped CRM payloads when building app-owned contact tables and search."
+    ],
+    "examples": [
+      {
+        "label": "Load the first page of contacts",
+        "code": "const result = await listCrmContacts(supabase, { page: 1, pageSize: 50, status: \"lead\" });"
+      }
+    ],
+    "source": "packages/module-crm/src/data.ts"
+  },
+  {
+    "moduleKey": "crm",
+    "packageName": "@brightweblabs/module-crm",
+    "symbol": "listCrmOrganizations",
+    "kind": "helper",
+    "status": "stable",
+    "runtime": "server",
+    "summary": "Lists CRM organizations with reusable search and pagination.",
+    "auth": "signed-in user required in the caller context",
+    "inputs": [
+      {
+        "name": "supabase",
+        "type": "SupabaseClient",
+        "required": true,
+        "description": "Server-side Supabase client with CRM schema access."
+      },
+      {
+        "name": "params",
+        "type": "CrmOrganizationsListParams",
+        "required": false,
+        "description": "Optional page, pageSize, and search filters."
+      }
+    ],
+    "outputs": [
+      {
+        "type": "CrmOrganizationsListResult",
+        "description": "Paginated organizations plus total counters."
+      }
+    ],
+    "notes": [
+      "Use for app-owned CRM organization lists and selectors."
+    ],
+    "source": "packages/module-crm/src/data.ts"
+  },
+  {
+    "moduleKey": "crm",
+    "packageName": "@brightweblabs/module-crm",
+    "symbol": "getCrmContactStatusStats",
+    "kind": "helper",
+    "status": "stable",
+    "runtime": "server",
+    "summary": "Returns contact counts grouped by status.",
+    "auth": "signed-in user required in the caller context",
+    "inputs": [
+      {
+        "name": "supabase",
+        "type": "SupabaseClient",
+        "required": true,
+        "description": "Server-side Supabase client with CRM schema access."
+      }
+    ],
+    "outputs": [
+      {
+        "type": "CrmContactStatusStats",
+        "description": "Total CRM contact count plus counts by status."
+      }
+    ],
+    "notes": [
+      "Use for app-owned CRM overview cards and summaries."
+    ],
+    "source": "packages/module-crm/src/data.ts"
+  },
+  {
+    "moduleKey": "crm",
+    "packageName": "@brightweblabs/module-crm",
+    "symbol": "listCrmOwnerOptions",
+    "kind": "helper",
+    "status": "stable",
+    "runtime": "server",
+    "summary": "Lists staff and admin owner options for CRM assignment flows.",
+    "auth": "signed-in user required in the caller context",
+    "inputs": [
+      {
+        "name": "supabase",
+        "type": "SupabaseClient",
+        "required": true,
+        "description": "Server-side Supabase client with CRM schema access."
+      }
+    ],
+    "outputs": [
+      {
+        "type": "CrmOwnerOption[]",
+        "description": "Deduplicated owner options derived from staff and admin role assignments."
+      }
+    ],
+    "notes": [
+      "Use for app-owned CRM filters, assignment pickers, and ownership forms."
+    ],
+    "source": "packages/module-crm/src/data.ts"
+  },
+  {
+    "moduleKey": "crm",
+    "packageName": "@brightweblabs/module-crm",
+    "symbol": "handleCrmContactsGetRequest",
+    "kind": "handler",
+    "status": "stable",
+    "runtime": "server",
+    "summary": "Package-owned GET handler for CRM contact listing.",
+    "auth": "signed-in user required",
+    "inputs": [
+      {
+        "name": "request",
+        "type": "Request",
+        "required": true,
+        "description": "Incoming request with optional CRM contact query parameters."
+      }
+    ],
+    "outputs": [
+      {
+        "type": "Response",
+        "description": "JSON response containing a CRM contacts list payload or an error envelope."
+      }
+    ],
+    "notes": [
+      "Mount from a Next.js route when the package should own the HTTP contract."
+    ],
+    "examples": [
+      {
+        "label": "Mount the contacts endpoint",
+        "code": "export async function GET(request: Request) { const { handleCrmContactsGetRequest } = await import(\"@brightweblabs/module-crm\"); return handleCrmContactsGetRequest(request); }"
+      }
+    ],
+    "http": {
+      "method": "GET",
+      "path": "/api/crm/contacts",
+      "query": [
+        {
+          "name": "page",
+          "type": "number",
+          "required": false,
+          "description": "1-based page number. Defaults to 1."
+        },
+        {
+          "name": "pageSize",
+          "type": "number",
+          "required": false,
+          "description": "Page size capped at 100. Defaults to 50."
+        },
+        {
+          "name": "search",
+          "type": "string",
+          "required": false,
+          "description": "Case-insensitive search across first name, last name, email, and phone."
+        },
+        {
+          "name": "status",
+          "type": "string",
+          "required": false,
+          "description": "Optional CRM contact status filter."
+        },
+        {
+          "name": "organizationId",
+          "type": "string",
+          "required": false,
+          "description": "Optional organization filter."
+        },
+        {
+          "name": "ownerProfileId",
+          "type": "string",
+          "required": false,
+          "description": "Optional owner profile filter."
+        }
+      ],
+      "body": [],
+      "success": [
+        {
+          "type": "CrmContactsListResult",
+          "description": "Paginated CRM contacts list."
+        }
+      ],
+      "errors": [
+        {
+          "type": "{ error: string }",
+          "description": "Authentication or server error envelope."
+        }
+      ]
+    },
+    "source": "packages/module-crm/src/handlers.ts"
+  },
+  {
+    "moduleKey": "crm",
+    "packageName": "@brightweblabs/module-crm",
+    "symbol": "handleCrmOrganizationsGetRequest",
+    "kind": "handler",
+    "status": "stable",
+    "runtime": "server",
+    "summary": "Package-owned GET handler for CRM organization listing.",
+    "auth": "signed-in user required",
+    "inputs": [
+      {
+        "name": "request",
+        "type": "Request",
+        "required": true,
+        "description": "Incoming request with optional organization query parameters."
+      }
+    ],
+    "outputs": [
+      {
+        "type": "Response",
+        "description": "JSON response containing a CRM organizations payload or an error envelope."
+      }
+    ],
+    "notes": [
+      "Mount from a Next.js route when the package should own the HTTP contract."
+    ],
+    "http": {
+      "method": "GET",
+      "path": "/api/crm/organizations",
+      "query": [
+        {
+          "name": "page",
+          "type": "number",
+          "required": false,
+          "description": "1-based page number. Defaults to 1."
+        },
+        {
+          "name": "pageSize",
+          "type": "number",
+          "required": false,
+          "description": "Page size capped at 100. Defaults to 20."
+        },
+        {
+          "name": "search",
+          "type": "string",
+          "required": false,
+          "description": "Case-insensitive organization name search."
+        }
+      ],
+      "body": [],
+      "success": [
+        {
+          "type": "CrmOrganizationsListResult",
+          "description": "Paginated CRM organizations list."
+        }
+      ],
+      "errors": [
+        {
+          "type": "{ error: string }",
+          "description": "Authentication or server error envelope."
+        }
+      ]
+    },
+    "source": "packages/module-crm/src/handlers.ts"
+  },
+  {
+    "moduleKey": "crm",
+    "packageName": "@brightweblabs/module-crm",
+    "symbol": "handleCrmStatsGetRequest",
+    "kind": "handler",
+    "status": "stable",
+    "runtime": "server",
+    "summary": "Package-owned GET handler for CRM contact status stats.",
+    "auth": "signed-in user required",
+    "inputs": [
+      {
+        "name": "request",
+        "type": "Request",
+        "required": true,
+        "description": "Incoming request for CRM stats."
+      }
+    ],
+    "outputs": [
+      {
+        "type": "Response",
+        "description": "JSON response containing CRM status stats or an error envelope."
+      }
+    ],
+    "notes": [
+      "Mount from a Next.js route when the package should own the HTTP contract."
+    ],
+    "http": {
+      "method": "GET",
+      "path": "/api/crm/stats",
+      "query": [],
+      "body": [],
+      "success": [
+        {
+          "type": "CrmContactStatusStats",
+          "description": "Total CRM contacts plus counts by status."
+        }
+      ],
+      "errors": [
+        {
+          "type": "{ error: string }",
+          "description": "Authentication or server error envelope."
+        }
+      ]
+    },
+    "source": "packages/module-crm/src/handlers.ts"
+  },
+  {
+    "moduleKey": "crm",
+    "packageName": "@brightweblabs/module-crm",
+    "symbol": "handleCrmOwnersGetRequest",
+    "kind": "handler",
+    "status": "stable",
+    "runtime": "server",
+    "summary": "Package-owned GET handler for CRM owner options.",
+    "auth": "signed-in user required",
+    "inputs": [
+      {
+        "name": "request",
+        "type": "Request",
+        "required": true,
+        "description": "Incoming request for CRM owner options."
+      }
+    ],
+    "outputs": [
+      {
+        "type": "Response",
+        "description": "JSON response containing owner options or an error envelope."
+      }
+    ],
+    "notes": [
+      "Mount from a Next.js route when the package should own the HTTP contract."
+    ],
+    "http": {
+      "method": "GET",
+      "path": "/api/crm/owners",
+      "query": [],
+      "body": [],
+      "success": [
+        {
+          "type": "CrmOwnerOption[]",
+          "description": "Deduplicated owner options for staff and admin profiles."
+        }
+      ],
+      "errors": [
+        {
+          "type": "{ error: string }",
+          "description": "Authentication or server error envelope."
+        }
+      ]
+    },
+    "source": "packages/module-crm/src/handlers.ts"
   },
   {
     "moduleKey": "crm",
@@ -530,10 +1216,19 @@
     "auth": "signed-in user required",
     "inputs": [],
     "outputs": [
-      "CrmDashboardData"
+      {
+        "type": "CrmDashboardData",
+        "description": "Starter CRM dashboard payload for the current scaffolded page."
+      }
     ],
     "notes": [
       "Replace or compose this helper when a project needs a different CRM page shape."
+    ],
+    "buildOn": [
+      "listCrmContacts",
+      "listCrmOrganizations",
+      "getCrmContactStatusStats",
+      "listCrmOwnerOptions"
     ],
     "source": "packages/module-crm/src/index.ts"
   },
@@ -548,7 +1243,10 @@
     "auth": "route-level visibility applies inside the shell",
     "inputs": [],
     "outputs": [
-      "ShellModuleRegistration"
+      {
+        "type": "ShellModuleRegistration",
+        "description": "Shell registration object for projects navigation and actions."
+      }
     ],
     "notes": [
       "Use when wiring Projects into the shared shell."
@@ -565,16 +1263,29 @@
     "summary": "Lists projects with reusable filters, pagination, and derived task and milestone stats.",
     "auth": "signed-in user with project access required in the caller context",
     "inputs": [
-      "supabase",
-      "params: ListProjectsParams"
+      {
+        "name": "supabase",
+        "type": "SupabaseClient",
+        "required": true,
+        "description": "Server-side Supabase client with project schema access."
+      },
+      {
+        "name": "params",
+        "type": "ListProjectsParams",
+        "required": true,
+        "description": "Project filters including search, status, health, owner, dueWindow, page, and pageSize."
+      }
     ],
     "outputs": [
-      "ProjectsListResult"
+      {
+        "type": "ProjectsListResult",
+        "description": "Paginated projects list with derived task and milestone stats."
+      }
     ],
     "notes": [
       "Use when building app-owned portfolio tables, boards, and project queries."
     ],
-    "source": "packages/module-projects/src/index.ts"
+    "source": "packages/module-projects/src/data.ts"
   },
   {
     "moduleKey": "projects",
@@ -586,15 +1297,23 @@
     "summary": "Returns reusable portfolio-level project counters for the current project schema.",
     "auth": "signed-in user with project access required in the caller context",
     "inputs": [
-      "supabase"
+      {
+        "name": "supabase",
+        "type": "SupabaseClient",
+        "required": true,
+        "description": "Server-side Supabase client with project schema access."
+      }
     ],
     "outputs": [
-      "ProjectsPortfolioStats"
+      {
+        "type": "ProjectsPortfolioStats",
+        "description": "Portfolio totals for active, planned, at-risk, and overdue projects."
+      }
     ],
     "notes": [
       "Use when building app-owned dashboards and portfolio summaries."
     ],
-    "source": "packages/module-projects/src/index.ts"
+    "source": "packages/module-projects/src/data.ts"
   },
   {
     "moduleKey": "projects",
@@ -607,10 +1326,17 @@
     "auth": "signed-in user required",
     "inputs": [],
     "outputs": [
-      "ProjectsPortfolioPageData"
+      {
+        "type": "ProjectsPortfolioPageData",
+        "description": "Starter projects page payload with organization options, stats, and the initial list."
+      }
     ],
     "notes": [
       "Replace or compose this helper when a project needs a different portfolio page shape."
+    ],
+    "buildOn": [
+      "listProjects",
+      "getProjectPortfolioStats"
     ],
     "source": "packages/module-projects/src/index.ts"
   },
@@ -624,14 +1350,22 @@
     "summary": "Detects missing-table and missing-column errors for the current starter schema fallback.",
     "auth": "none",
     "inputs": [
-      "error: unknown"
+      {
+        "name": "error",
+        "type": "unknown",
+        "required": true,
+        "description": "Thrown error or message-like value."
+      }
     ],
     "outputs": [
-      "boolean"
+      {
+        "type": "boolean",
+        "description": "True when the error matches the current schema-missing fallback cases."
+      }
     ],
     "notes": [
       "Treat as internal fallback logic for the current starter helpers."
     ],
-    "source": "packages/module-projects/src/index.ts"
+    "source": "packages/module-projects/src/data.ts"
   }
 ]

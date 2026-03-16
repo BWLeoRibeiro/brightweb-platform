@@ -63,6 +63,7 @@ The live preview app now lives separately at `apps/platform-preview`. It is a sa
   - `site`: standalone Next.js + Tailwind site starter with local UI primitives
 - module selection now controls copied module playground files, generated `next.config.ts`, generated `config/shell.ts`, and dependency wiring
 - generated apps now get `.env.local`, generated config files, `.gitignore`, `README.md`, `package.json`, and `next.config.ts`
+- generated platform apps also get `AGENTS.md` and `docs/ai/README.md` so local coding agents have an app-scoped entrypoint after scaffold time
 - the CLI supports flags, `--help`, and `--dry-run`
 - the interactive flow is simplified to app type, project name, template-specific prompts, and install confirmation
 - the CLI supports two dependency modes:
@@ -77,6 +78,7 @@ The live preview app now lives separately at `apps/platform-preview`. It is a sa
 | Modules | For platform apps, prompts for optional modules: CRM, Projects, and Admin. |
 | Dependency wiring | Selected modules affect package dependencies, copied module starter files, generated `next.config.ts`, and generated shell/config wiring. |
 | Environment scaffold | Platform apps generate `.env.local` for service values, while starter identity and module state live in generated config files. |
+| Agent docs | Platform apps copy `AGENTS.md` and `docs/ai/README.md` into the generated project for local AI-agent orientation. |
 | Install mode | Can install dependencies immediately or skip install during scaffolding. |
 | Output location | In normal external usage, the generated app is written to `./<slug>` unless you override the target directory. |
 

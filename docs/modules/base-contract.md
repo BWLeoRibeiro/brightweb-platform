@@ -4,6 +4,8 @@ BrightWeb ships a **base contract** for fast project starts. This page defines w
 
 The canonical full manifest lives in [base-contract.json](./base-contract.json). If you want to load only the relevant contract slice, start with [base-contract/index.json](./base-contract/index.json) and then open the module-specific JSON file you need. Use [Using BrightWeb Modules](./using-modules.md) when you need the practical integration patterns in a generated app.
 
+Each manifest entry uses structured fields for `inputs`, `outputs`, and, where relevant, `http` request and response details. That makes the split JSON files the best entrypoint for AI agents and for engineers who only need one module slice at a time.
+
 ## Support tiers
 
 | Tier | What it means | What to do with it |

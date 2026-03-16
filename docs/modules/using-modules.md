@@ -37,6 +37,8 @@ That means BrightWeb module usage is primarily a package and wiring model. The s
 | `@brightweblabs/module-admin` | `listAdminUsers()`, `handleAdminUsersGetRequest()`, `handleAdminUsersRoleChangeRequest()` | `stable` | Reusable admin listing plus package-owned admin HTTP handlers. |
 | `@brightweblabs/module-admin` | `getAdminUsersPageData()` | `starter` | Starter admin page payload for the scaffolded users screen. |
 | `@brightweblabs/module-admin/registration` | `adminModuleRegistration` | `stable` | Admin app-shell navigation and toolbar registration. |
+| `@brightweblabs/module-crm` | `listCrmContacts()`, `listCrmOrganizations()`, `getCrmContactStatusStats()`, `listCrmOwnerOptions()` | `stable` | Reusable CRM list, stats, and owner-option primitives for app-owned CRM UIs and workflows. |
+| `@brightweblabs/module-crm` | `handleCrmContactsGetRequest()`, `handleCrmOrganizationsGetRequest()`, `handleCrmStatsGetRequest()`, `handleCrmOwnersGetRequest()` | `stable` | Package-owned CRM GET handlers that can be mounted directly from Next.js routes. |
 | `@brightweblabs/module-crm` | `getCrmDashboardData()` | `starter` | Starter CRM dashboard payload for the scaffolded CRM page. |
 | `@brightweblabs/module-crm/registration` | `crmModuleRegistration` | `stable` | CRM app-shell navigation groups and toolbar registration. |
 | `@brightweblabs/module-projects` | `listProjects()`, `getProjectPortfolioStats()` | `stable` | Reusable project portfolio listing and metrics helpers. |
@@ -78,6 +80,17 @@ Use these helpers when you want the package to own the initial query and normali
 
 If you need a longer-lived reusable surface, prefer the `stable` helpers from the manifest over starter page helpers.
 
+For CRM specifically, the stable path is now the smaller helper set:
+
+```ts
+const [contacts, organizations, stats, owners] = await Promise.all([
+  listCrmContacts(supabase, { page: 1, pageSize: 50 }),
+  listCrmOrganizations(supabase, { page: 1, pageSize: 20 }),
+  getCrmContactStatusStats(supabase),
+  listCrmOwnerOptions(supabase),
+]);
+```
+
 ### 2. Register module navigation and toolbar behavior in the shell
 
 If your app uses `@brightweblabs/app-shell`, wire the module registrations into your shell config.
@@ -106,7 +119,7 @@ This is the current mechanism for getting module-owned nav items, nav groups, an
 
 ### 3. Mount starter API routes by delegating to package handlers
 
-Admin currently exposes route-handler helpers that can be re-exported from your Next.js route files.
+Admin and CRM expose route-handler helpers that can be re-exported from your Next.js route files.
 
 ```ts
 export const dynamic = "force-dynamic";
@@ -127,6 +140,24 @@ export async function POST(request: Request) {
 ```
 
 Use this pattern when a package already owns the HTTP handling contract and your app just needs to mount it under a route.
+
+CRM follows the same pattern:
+
+```ts
+export const dynamic = "force-dynamic";
+
+export async function GET(request: Request) {
+  const { handleCrmContactsGetRequest } = await import("@brightweblabs/module-crm");
+  return handleCrmContactsGetRequest(request);
+}
+```
+
+The current CRM starter mounts these package-owned GET handlers at:
+
+- `/api/crm/contacts`
+- `/api/crm/organizations`
+- `/api/crm/stats`
+- `/api/crm/owners`
 
 ### 4. Consume auth from the shared, client, and server entrypoints
 
@@ -173,7 +204,8 @@ Use `shared` for runtime-independent logic, `client` for React hooks, and `serve
 
 ### CRM
 
-- Build on the `stable` CRM shell registration when you want CRM navigation groups and toolbar routes in the app shell.
+- Build on `listCrmContacts()`, `listCrmOrganizations()`, `getCrmContactStatusStats()`, and `listCrmOwnerOptions()` when you need reusable CRM data primitives.
+- Mount the package-owned CRM GET handlers when you want the package to own the initial HTTP contract.
 - Treat `getCrmDashboardData()` as `starter` page glue for the scaffolded CRM screen.
 - Build your own forms, tables, actions, and workflows on top of the CRM schema and replace the starter page payload when needed.
 
@@ -212,6 +244,10 @@ Use `shared` for runtime-independent logic, `client` for React hooks, and `serve
 - `packages/create-bw-app/template/base/app/playground/auth/auth-playground.tsx`
 - `packages/create-bw-app/template/modules/admin/app/api/admin/users/route.ts`
 - `packages/create-bw-app/template/modules/admin/app/api/admin/users/roles/route.ts`
+- `packages/create-bw-app/template/modules/crm/app/api/crm/contacts/route.ts`
+- `packages/create-bw-app/template/modules/crm/app/api/crm/organizations/route.ts`
+- `packages/create-bw-app/template/modules/crm/app/api/crm/stats/route.ts`
+- `packages/create-bw-app/template/modules/crm/app/api/crm/owners/route.ts`
 - `packages/create-bw-app/template/modules/admin/app/playground/admin/page.tsx`
 - `packages/create-bw-app/template/modules/crm/app/playground/crm/page.tsx`
 - `packages/create-bw-app/template/modules/projects/app/playground/projects/page.tsx`

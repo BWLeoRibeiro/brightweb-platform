@@ -10,7 +10,10 @@
     "auth": "none",
     "inputs": [],
     "outputs": [
-      "number"
+      {
+        "type": "number",
+        "description": "Cooldown duration in seconds."
+      }
     ],
     "notes": [
       "Use with stable auth form and cooldown behavior."
@@ -28,7 +31,10 @@
     "auth": "none",
     "inputs": [],
     "outputs": [
-      "string"
+      {
+        "type": "string",
+        "description": "Absolute callback URL for signup confirmation."
+      }
     ],
     "notes": [
       "Use for app-owned signup and invitation flows."
@@ -46,7 +52,10 @@
     "auth": "none",
     "inputs": [],
     "outputs": [
-      "string"
+      {
+        "type": "string",
+        "description": "Absolute callback URL for password reset."
+      }
     ],
     "notes": [
       "Use for app-owned password reset flows."
@@ -63,10 +72,18 @@
     "summary": "Validates email input for shared auth forms.",
     "auth": "none",
     "inputs": [
-      "email: string"
+      {
+        "name": "email",
+        "type": "string",
+        "required": true,
+        "description": "Email input to validate."
+      }
     ],
     "outputs": [
-      "boolean"
+      {
+        "type": "boolean",
+        "description": "True when the email matches the shared BrightWeb validation rules."
+      }
     ],
     "notes": [
       "Use for starter and app-owned auth form validation."
@@ -83,10 +100,18 @@
     "summary": "Validates password input against the shared BrightWeb starter rules.",
     "auth": "none",
     "inputs": [
-      "password: string"
+      {
+        "name": "password",
+        "type": "string",
+        "required": true,
+        "description": "Password input to validate."
+      }
     ],
     "outputs": [
-      "PasswordValidationResult"
+      {
+        "type": "PasswordValidationResult",
+        "description": "Boolean validity plus the current rule failures."
+      }
     ],
     "notes": [
       "Use for starter and app-owned auth form validation."
@@ -104,7 +129,10 @@
     "auth": "none",
     "inputs": [],
     "outputs": [
-      "string"
+      {
+        "type": "string",
+        "description": "Configured auth base URL."
+      }
     ],
     "notes": [
       "Do not build app code directly on this helper in v1."
@@ -121,10 +149,18 @@
     "summary": "Normalizes raw role values into the shared BrightWeb role union.",
     "auth": "none",
     "inputs": [
-      "value: string | null | undefined"
+      {
+        "name": "value",
+        "type": "string | null | undefined",
+        "required": true,
+        "description": "Raw role-like value."
+      }
     ],
     "outputs": [
-      "GlobalRole | null"
+      {
+        "type": "GlobalRole | null",
+        "description": "Normalized role or null."
+      }
     ],
     "notes": [
       "Used internally by server auth and admin helpers."
@@ -141,10 +177,18 @@
     "summary": "Determines access to the current Insights CMS surface.",
     "auth": "none",
     "inputs": [
-      "role: string | null | undefined"
+      {
+        "name": "role",
+        "type": "string | null | undefined",
+        "required": true,
+        "description": "Raw role-like value."
+      }
     ],
     "outputs": [
-      "boolean"
+      {
+        "type": "boolean",
+        "description": "True when the role can access the current Insights CMS surface."
+      }
     ],
     "notes": [
       "Treat this as internal route policy logic in v1."
@@ -161,10 +205,18 @@
     "summary": "Chooses the current post-login landing path from the user's role.",
     "auth": "none",
     "inputs": [
-      "role: string | null | undefined"
+      {
+        "name": "role",
+        "type": "string | null | undefined",
+        "required": true,
+        "description": "Raw role-like value."
+      }
     ],
     "outputs": [
-      "\"/dashboard\" | \"/account\""
+      {
+        "type": "\"/dashboard\" | \"/account\"",
+        "description": "Current post-login destination."
+      }
     ],
     "notes": [
       "Treat this as internal route policy logic in v1."
@@ -181,10 +233,18 @@
     "summary": "Client hook for resend cooldown and timer state in auth flows.",
     "auth": "none",
     "inputs": [
-      "durationSeconds: number"
+      {
+        "name": "durationSeconds",
+        "type": "number",
+        "required": true,
+        "description": "Cooldown duration in seconds."
+      }
     ],
     "outputs": [
-      "CooldownTimerResult"
+      {
+        "type": "CooldownTimerResult",
+        "description": "Cooldown state and restart controls."
+      }
     ],
     "notes": [
       "Use for app-owned auth forms and resend flows."
@@ -202,7 +262,10 @@
     "auth": "signed-in user required",
     "inputs": [],
     "outputs": [
-      "{ supabase, user, profileId, role }"
+      {
+        "type": "{ supabase, user, profileId, role }",
+        "description": "Authenticated user context for server components and pages."
+      }
     ],
     "notes": [
       "Use as the default server entrypoint for authenticated page data."
@@ -219,10 +282,18 @@
     "summary": "Guards a server page or component for one or more allowed roles.",
     "auth": "allowed role required",
     "inputs": [
-      "allowedRoles: GlobalRole | GlobalRole[]"
+      {
+        "name": "allowedRoles",
+        "type": "GlobalRole | GlobalRole[]",
+        "required": true,
+        "description": "Allowed role or roles."
+      }
     ],
     "outputs": [
-      "{ supabase, user, role }"
+      {
+        "type": "{ supabase, user, role }",
+        "description": "Authenticated server context for the allowed role set."
+      }
     ],
     "notes": [
       "Use for role-gated dashboard pages and layouts."
@@ -240,7 +311,10 @@
     "auth": "optional signed-in user",
     "inputs": [],
     "outputs": [
-      "ServerAccess"
+      {
+        "type": "ServerAccess",
+        "description": "Current auth and role state for the request."
+      }
     ],
     "notes": [
       "Use when an app needs read-only access to current auth state."
@@ -258,7 +332,10 @@
     "auth": "signed-in user required",
     "inputs": [],
     "outputs": [
-      "ServerUserAccess"
+      {
+        "type": "ServerUserAccess",
+        "description": "Low-level server user access result."
+      }
     ],
     "notes": [
       "Treat as internal composition for the stable server helpers."
@@ -275,10 +352,18 @@
     "summary": "Lower-level role access helper used by the current admin handlers.",
     "auth": "allowed role required",
     "inputs": [
-      "allowedRoles: GlobalRole | GlobalRole[]"
+      {
+        "name": "allowedRoles",
+        "type": "GlobalRole | GlobalRole[]",
+        "required": true,
+        "description": "Allowed role or roles."
+      }
     ],
     "outputs": [
-      "ServerRoleAccess"
+      {
+        "type": "ServerRoleAccess",
+        "description": "Low-level server role access result."
+      }
     ],
     "notes": [
       "Treat as internal server composition in v1."
@@ -295,11 +380,24 @@
     "summary": "Looks up the profile record for a Supabase user.",
     "auth": "server context required",
     "inputs": [
-      "supabase",
-      "userId: string"
+      {
+        "name": "supabase",
+        "type": "SupabaseClient",
+        "required": true,
+        "description": "Server-side Supabase client."
+      },
+      {
+        "name": "userId",
+        "type": "string",
+        "required": true,
+        "description": "Supabase user id to resolve."
+      }
     ],
     "outputs": [
-      "{ profileId, error }"
+      {
+        "type": "{ profileId, error }",
+        "description": "Resolved profile id or lookup error."
+      }
     ],
     "notes": [
       "Treat as internal server composition in v1."
