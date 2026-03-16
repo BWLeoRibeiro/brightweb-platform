@@ -16,8 +16,8 @@ import {
   TEMPLATE_OPTIONS,
 } from "./constants.mjs";
 
-const PACKAGE_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const TEMPLATE_ROOT = path.join(PACKAGE_ROOT, "template");
+export const PACKAGE_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+export const TEMPLATE_ROOT = path.join(PACKAGE_ROOT, "template");
 const TEMPLATE_KEY_SET = new Set(TEMPLATE_OPTIONS.map((templateOption) => templateOption.key));
 const DEFAULT_DB_MODULE_REGISTRY = {
   modules: {
@@ -77,7 +77,7 @@ function parseTemplateInput(rawValue) {
   throw new Error(`Unknown template: ${rawValue}`);
 }
 
-function detectPackageManager(explicitManager) {
+export function detectPackageManager(explicitManager) {
   if (explicitManager) return explicitManager;
 
   const userAgent = process.env.npm_config_user_agent || "";
@@ -88,13 +88,13 @@ function detectPackageManager(explicitManager) {
   return "pnpm";
 }
 
-function sortObjectKeys(inputObject) {
+export function sortObjectKeys(inputObject) {
   return Object.fromEntries(
     Object.entries(inputObject).sort(([leftKey], [rightKey]) => leftKey.localeCompare(rightKey)),
   );
 }
 
-async function pathExists(targetPath) {
+export async function pathExists(targetPath) {
   try {
     await fs.access(targetPath);
     return true;
@@ -103,7 +103,7 @@ async function pathExists(targetPath) {
   }
 }
 
-async function readJsonIfPresent(filePath) {
+export async function readJsonIfPresent(filePath) {
   if (!(await pathExists(filePath))) {
     return null;
   }
@@ -111,7 +111,7 @@ async function readJsonIfPresent(filePath) {
   return JSON.parse(await fs.readFile(filePath, "utf8"));
 }
 
-async function getDbModuleRegistry(workspaceRoot) {
+export async function getDbModuleRegistry(workspaceRoot) {
   if (!workspaceRoot) {
     return DEFAULT_DB_MODULE_REGISTRY;
   }
@@ -171,7 +171,7 @@ function getModuleLabel(moduleKey) {
   return titleizeSlug(moduleKey);
 }
 
-function createDbInstallPlan({ selectedModules, workspaceMode, registry }) {
+export function createDbInstallPlan({ selectedModules, workspaceMode, registry }) {
   if (!workspaceMode) {
     return {
       selectedLabels: getSelectedModuleLabels(selectedModules),
@@ -218,7 +218,7 @@ function createDbInstallPlan({ selectedModules, workspaceMode, registry }) {
   };
 }
 
-async function getVersionMap(workspaceRoot) {
+export async function getVersionMap(workspaceRoot) {
   const versionMap = {
     ...APP_DEPENDENCY_DEFAULTS,
     ...APP_DEV_DEPENDENCY_DEFAULTS,
@@ -294,7 +294,7 @@ function createPlatformBrandConfigFile({ slug, brandValues }) {
   ].join("\n");
 }
 
-function createPlatformModulesConfigFile(selectedModules) {
+export function createPlatformModulesConfigFile(selectedModules) {
   const selected = new Set(selectedModules);
 
   return [
@@ -515,7 +515,7 @@ function createSiteReadme({ slug, workspaceMode, packageManager }) {
   ].join("\n");
 }
 
-function createPackageJson({
+export function createPackageJson({
   slug,
   dependencyMode,
   selectedModules,
@@ -595,7 +595,7 @@ function createPackageJson({
   };
 }
 
-function createNextConfig({ template, selectedModules }) {
+export function createNextConfig({ template, selectedModules }) {
   if (template === "site") {
     return [
       'import type { NextConfig } from "next";',
@@ -629,7 +629,7 @@ function createNextConfig({ template, selectedModules }) {
   ].join("\n");
 }
 
-function createShellConfig(selectedModules) {
+export function createShellConfig(selectedModules) {
   const importLines = [];
   const registrationLines = [];
 
@@ -745,7 +745,7 @@ async function copyDirectory(sourceDir, targetDir) {
   await fs.cp(sourceDir, targetDir, { recursive: true });
 }
 
-async function ensureDirectory(targetDir) {
+export async function ensureDirectory(targetDir) {
   await fs.mkdir(targetDir, { recursive: true });
 }
 
@@ -793,7 +793,7 @@ async function writeWorkspaceClientStack(workspaceRoot, slug, selectedModules) {
   );
 }
 
-async function runInstall(command, cwd) {
+export async function runInstall(command, cwd) {
   return new Promise((resolve, reject) => {
     const child = spawn(command, ["install"], {
       cwd,
@@ -1140,7 +1140,8 @@ export async function createBrightwebClientApp(argvOptions, runtimeOptions = {})
 
   if (install) {
     const installCwd = workspaceMode ? workspaceRoot : targetDir;
-    await runInstall(packageManager, installCwd);
+    const installRunner = runtimeOptions.installRunner || runInstall;
+    await installRunner(packageManager, installCwd);
   }
 
   printCompletionMessage({

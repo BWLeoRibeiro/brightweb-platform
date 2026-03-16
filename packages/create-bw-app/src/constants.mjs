@@ -42,6 +42,29 @@ export const CORE_PACKAGES = [
   "@brightweblabs/ui",
 ];
 
+export const BRIGHTWEB_PACKAGE_NAMES = [
+  ...CORE_PACKAGES,
+  ...SELECTABLE_MODULES.map((moduleDefinition) => moduleDefinition.packageName),
+];
+
+export const MODULE_STARTER_FILES = {
+  admin: [
+    "app/api/admin/users/route.ts",
+    "app/api/admin/users/roles/route.ts",
+    "app/playground/admin/page.tsx",
+  ],
+  crm: [
+    "app/api/crm/contacts/route.ts",
+    "app/api/crm/organizations/route.ts",
+    "app/api/crm/owners/route.ts",
+    "app/api/crm/stats/route.ts",
+    "app/playground/crm/page.tsx",
+  ],
+  projects: [
+    "app/playground/projects/page.tsx",
+  ],
+};
+
 export const APP_DEPENDENCY_DEFAULTS = {
   "@brightweblabs/app-shell": "^0.1.1",
   "@brightweblabs/core-auth": "^0.1.1",
@@ -93,8 +116,9 @@ export const DEFAULTS = {
 export const HELP_TEXT = `
 Usage:
   create-bw-app [options]
+  create-bw-app update [options]
 
-Options:
+Scaffold options:
   --template <platform|site>    Scaffold a platform app or a standalone site
   --name, --slug <name>          Project name and default directory name
   --modules <list>               Comma-separated modules: crm,projects,admin
@@ -107,4 +131,12 @@ Options:
   --yes                          Accept defaults for any missing optional prompt
   --dry-run                      Print planned actions without writing files
   --help                         Show this help message
+
+Update options:
+  --target-dir <path>            Existing app directory to update (defaults to cwd)
+  --workspace-root <path>        BrightWeb workspace root for workspace:* apps
+  --package-manager <name>       Override package manager: pnpm, npm, yarn, or bun
+  --install                      Run install after writing package changes
+  --refresh-starters             Rewrite starter route files from the latest template
+  --dry-run                      Print the update plan without writing files
 `.trim();

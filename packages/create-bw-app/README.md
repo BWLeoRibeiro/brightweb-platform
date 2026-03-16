@@ -2,6 +2,8 @@
 
 Scaffold a new BrightWeb app from either the `platform` or `site` starter.
 
+The CLI can also update an existing generated platform app in place.
+
 ## Workspace usage
 
 From the BrightWeb platform repo root:
@@ -21,8 +23,28 @@ Once this package is published to npm:
 ```bash
 pnpm dlx create-bw-app
 pnpm dlx create-bw-app --template site
+pnpm dlx create-bw-app update
 npm create bw-app@latest
 ```
+
+## Update existing apps
+
+Run the updater from an existing generated app directory, or point it at one with `--target-dir`:
+
+```bash
+pnpm dlx create-bw-app update
+pnpm dlx create-bw-app update --dry-run
+pnpm dlx create-bw-app update --refresh-starters
+pnpm dlx create-bw-app update --target-dir ./apps/client-portal
+```
+
+Current updater behavior:
+
+- updates installed `@brightweblabs/*` packages only
+- re-syncs managed BrightWeb config files such as `next.config.ts`, `config/modules.ts`, and `config/shell.ts`
+- reports missing or drifted starter files and only rewrites them with `--refresh-starters`
+- prints the follow-up install command unless `--install` is passed
+- preserves unrelated third-party dependencies and app-owned product pages
 
 ## Template behavior
 

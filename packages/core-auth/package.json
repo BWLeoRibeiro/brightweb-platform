@@ -20,8 +20,8 @@
   },
   "dependencies": {
     "@brightweblabs/infra": "workspace:*",
-    "next": "16.1.6",
-    "@supabase/supabase-js": "^2.89.0"
+    "@supabase/supabase-js": "^2.99.2",
+    "next": "16.1.6"
   },
   "peerDependencies": {
     "react": "^19.0.0"

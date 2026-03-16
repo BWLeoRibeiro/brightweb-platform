@@ -1,5 +1,6 @@
 import { HELP_TEXT } from "./constants.mjs";
 import { createBrightwebClientApp } from "./generator.mjs";
+import { updateBrightwebApp } from "./update.mjs";
 
 function toCamelCase(flagName) {
   return flagName.replace(/-([a-z])/g, (_, letter) => letter.toUpperCase());
@@ -56,7 +57,8 @@ function parseArgv(argv) {
 }
 
 export async function runCreateBwAppCli(argv = process.argv.slice(2), runtimeOptions = {}) {
-  const argvOptions = parseArgv(argv);
+  const isUpdateCommand = argv[0] === "update";
+  const argvOptions = parseArgv(isUpdateCommand ? argv.slice(1) : argv);
 
   if (argvOptions.help) {
     process.stdout.write(`${HELP_TEXT}\n`);
@@ -64,6 +66,11 @@ export async function runCreateBwAppCli(argv = process.argv.slice(2), runtimeOpt
   }
 
   try {
+    if (isUpdateCommand) {
+      await updateBrightwebApp(argvOptions, runtimeOptions);
+      return;
+    }
+
     await createBrightwebClientApp(argvOptions, runtimeOptions);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";

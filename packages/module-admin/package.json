@@ -28,9 +28,9 @@
     "@brightweblabs/core-auth": "workspace:*",
     "@brightweblabs/infra": "workspace:*",
     "@brightweblabs/ui": "workspace:*",
-    "lucide-react": "^0.562.0",
-    "react": "19.2.3",
-    "react-dom": "19.2.3",
+    "lucide-react": "^0.577.0",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
     "sonner": "^2.0.7"
   }
 }
