@@ -8,11 +8,24 @@ export type DocPageDefinition = {
   filePath: string;
   slug: string[];
   sectionKey: string;
+  visibleInNav: boolean;
+  lastUpdated: string;
+};
+
+const docRedirects: Record<string, string> = {
+  "/docs/foundations/create-an-app": "/docs/foundations/installation",
+  "/docs/foundations/create-an-app-templates": "/docs/foundations",
+  "/docs/foundations/create-an-app-workspace-mode": "/docs/foundations/installation",
+  "/docs/foundations/platform-base": "/docs/modules/platform-base",
 };
 
 export type DocSectionDefinition = {
+  key: string;
   title: string;
   eyebrow: string;
+  href: string;
+  summary: string;
+  page: DocPageDefinition | null;
   links: DocPageDefinition[];
 };
 
@@ -28,33 +41,35 @@ function resolveRepoDocsRoot() {
   return candidates.find((candidate) => existsSync(candidate)) ?? candidates[0];
 }
 
+function resolveWorkspaceRoot() {
+  const candidates = [path.resolve(process.cwd(), "../.."), process.cwd()];
+  return candidates.find((candidate) => existsSync(path.join(candidate, "package.json"))) ?? candidates[0];
+}
+
 export const repoDocsRoot = resolveRepoDocsRoot();
+const workspaceRoot = resolveWorkspaceRoot();
 
 const sectionMetaByKey: Record<string, SectionMeta> = {
-  root: { title: "Overview", eyebrow: "Start here" },
-  foundations: { title: "Foundations", eyebrow: "Platform basics" },
+  root: { title: "Docs Index", eyebrow: "Overview" },
+  foundations: { title: "Getting Started", eyebrow: "Platform basics" },
   modules: { title: "Modules", eyebrow: "Shared modules" },
-  architecture: { title: "Architecture", eyebrow: "System model" },
-  operations: { title: "Operations", eyebrow: "Runbooks" },
   recipes: { title: "Recipes", eyebrow: "How-to" },
 };
 
-const sectionOrder = ["root", "foundations", "modules", "architecture", "operations", "recipes"];
+const sectionOrder = ["root", "foundations", "modules", "recipes"];
 
 const docOrderByHref: Record<string, number> = {
   "/docs": 0,
   "/docs/foundations": 10,
-  "/docs/foundations/getting-started": 20,
-  "/docs/foundations/platform-base": 30,
-  "/docs/modules": 40,
-  "/docs/modules/crm": 50,
-  "/docs/modules/projects": 60,
-  "/docs/architecture": 70,
-  "/docs/architecture/dependency-resolution": 80,
-  "/docs/architecture/database-flow": 90,
-  "/docs/architecture/ui-vs-domain-modules": 100,
-  "/docs/operations": 110,
-  "/docs/recipes": 120,
+  "/docs/foundations/installation": 20,
+  "/docs/foundations/create-an-app-templates": 30,
+  "/docs/foundations/project-structure": 40,
+  "/docs/modules": 50,
+  "/docs/modules/using-modules": 55,
+  "/docs/modules/platform-base": 60,
+  "/docs/modules/crm": 70,
+  "/docs/modules/projects": 80,
+  "/docs/recipes": 90,
 };
 
 function startCase(value: string) {
@@ -164,6 +179,11 @@ function getSectionKey(relativePath: string) {
   return segments[0];
 }
 
+function isVisibleInNav(relativePath: string) {
+  const normalized = relativePath.replace(/\\/g, "/");
+  return normalized !== "README.md" && normalized !== "foundations/create-an-app-templates.md";
+}
+
 function collectDocFiles(currentDirectory: string, bucket: string[] = []) {
   for (const entry of readdirSync(currentDirectory)) {
     if (entry.startsWith(".")) {
@@ -174,6 +194,10 @@ function collectDocFiles(currentDirectory: string, bucket: string[] = []) {
     const stats = statSync(absolutePath);
 
     if (stats.isDirectory()) {
+      if (entry === "internal" && currentDirectory === repoDocsRoot) {
+        continue;
+      }
+
       collectDocFiles(absolutePath, bucket);
       continue;
     }
@@ -191,6 +215,7 @@ function getAllDocs(): DocPageDefinition[] {
     .map((absolutePath) => {
       const relativePath = path.relative(repoDocsRoot, absolutePath);
       const markdown = readFileSync(absolutePath, "utf8");
+      const stats = statSync(absolutePath);
       const { href, slug } = toDocHref(relativePath);
       const { title, summary } = extractTitleAndSummary(markdown, relativePath);
 
@@ -201,6 +226,8 @@ function getAllDocs(): DocPageDefinition[] {
         filePath: `docs/${relativePath.replace(/\\/g, "/")}`,
         slug,
         sectionKey: getSectionKey(relativePath),
+        visibleInNav: isVisibleInNav(relativePath),
+        lastUpdated: stats.mtime.toISOString(),
       };
     })
     .sort(compareDocs);
@@ -208,34 +235,66 @@ function getAllDocs(): DocPageDefinition[] {
 
 export const allDocLinks = getAllDocs();
 
-export const docsSections: DocSectionDefinition[] = Object.entries(
-  allDocLinks.reduce<Record<string, DocPageDefinition[]>>((groups, doc) => {
-    groups[doc.sectionKey] ??= [];
-    groups[doc.sectionKey].push(doc);
-    return groups;
-  }, {}),
-)
-  .sort(([left], [right]) => {
-    return sectionOrder.indexOf(left) - sectionOrder.indexOf(right);
+const navigableDocLinks = allDocLinks.filter((doc) => doc.visibleInNav);
+
+export const docsSections: DocSectionDefinition[] = sectionOrder
+  .filter((sectionKey) => sectionKey !== "root")
+  .map((sectionKey) => {
+    const href = `/docs/${sectionKey}`;
+    const sectionPage = allDocLinks.find((doc) => doc.href === href) ?? null;
+    const childLinks = navigableDocLinks
+      .filter((doc) => doc.sectionKey === sectionKey && doc.href !== href)
+      .sort(compareDocs);
+
+    if (!sectionPage && childLinks.length === 0) {
+      return null;
+    }
+
+    return {
+      key: sectionKey,
+      ...getSectionMeta(sectionKey),
+      href,
+      summary: sectionPage?.summary ?? childLinks[0]?.summary ?? "",
+      page: sectionPage,
+      links: childLinks,
+    };
   })
-  .map(([sectionKey, links]) => ({
-    ...getSectionMeta(sectionKey),
-    links: links.sort(compareDocs),
-  }));
+  .filter((section): section is DocSectionDefinition => section !== null);
+
+function readBrightwebVersion() {
+  const packageJsonPath = path.join(workspaceRoot, "packages/create-bw-app/package.json");
+
+  if (!existsSync(packageJsonPath)) {
+    return "0.0.0";
+  }
+
+  const packageJson = JSON.parse(readFileSync(packageJsonPath, "utf8")) as { version?: string };
+  return packageJson.version ?? "0.0.0";
+}
+
+export const brightwebVersion = readBrightwebVersion();
 
 export function getDocByHref(href: string) {
   return allDocLinks.find((entry) => entry.href === href) ?? null;
 }
 
+export function getDocSectionByHref(href: string) {
+  return docsSections.find((section) => section.href === href) ?? null;
+}
+
+export function getDocRedirect(href: string) {
+  return docRedirects[href] ?? null;
+}
+
 export function getDocNeighbors(href: string) {
-  const index = allDocLinks.findIndex((entry) => entry.href === href);
+  const index = navigableDocLinks.findIndex((entry) => entry.href === href);
   if (index === -1) {
     return { previous: null, next: null };
   }
 
   return {
-    previous: index > 0 ? allDocLinks[index - 1] : null,
-    next: index < allDocLinks.length - 1 ? allDocLinks[index + 1] : null,
+    previous: index > 0 ? navigableDocLinks[index - 1] : null,
+    next: index < navigableDocLinks.length - 1 ? navigableDocLinks[index + 1] : null,
   };
 }
 
@@ -286,6 +345,10 @@ function rewriteMarkdownLinks(markdown: string, currentRelativePath: string) {
   });
 }
 
+function stripLeadingTitle(markdown: string) {
+  return markdown.replace(/^#\s+.+?(?:\r?\n){1,2}/, "");
+}
+
 export function getDocPage(slug: string[]) {
   const absolutePath = resolveDocFilePath(slug);
 
@@ -305,7 +368,7 @@ export function getDocPage(slug: string[]) {
 
   return {
     doc,
-    markdown,
+    markdown: stripLeadingTitle(markdown),
   };
 }
 

@@ -1,10 +1,10 @@
 import { evaluate } from "@mdx-js/mdx";
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import * as runtime from "react/jsx-runtime";
 import remarkGfm from "remark-gfm";
-import { DocNeighbors, SourceNote } from "../../../components/docs/primitives";
-import { getDocNeighbors, getDocPage, getDocStaticParams } from "../../../lib/docs";
+import { DocNeighbors } from "../../../components/docs/primitives";
+import { getDocNeighbors, getDocPage, getDocRedirect, getDocStaticParams } from "../../../lib/docs";
 import { useMDXComponents } from "../../../mdx-components";
 
 type PageProps = {
@@ -15,7 +15,15 @@ type PageProps = {
 
 async function getPageData(props: PageProps) {
   const params = await props.params;
-  const page = getDocPage(params.slug ?? []);
+  const slug = params.slug ?? [];
+  const href = slug.length === 0 ? "/docs" : `/docs/${slug.join("/")}`;
+  const redirectTarget = getDocRedirect(href);
+
+  if (redirectTarget) {
+    redirect(redirectTarget);
+  }
+
+  const page = getDocPage(slug);
 
   if (!page) {
     notFound();
@@ -46,23 +54,28 @@ export default async function Page(props: PageProps) {
   });
 
   const MDXContent = evaluated.default;
+  const lastUpdated = new Intl.DateTimeFormat("en", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  }).format(new Date(doc.lastUpdated));
 
   return (
     <>
+      <header className="doc-page-header">
+        <h1 className="doc-prose-heading doc-prose-h1">{doc.title}</h1>
+        <p className="doc-page-meta">
+          <span className="doc-page-meta-label">Last updated</span>
+          <time dateTime={doc.lastUpdated}>{lastUpdated}</time>
+        </p>
+      </header>
+
       <div className="docs-repo-doc-meta">
         <p className="docs-repo-doc-label">Source file</p>
         <code>{doc.filePath}</code>
       </div>
 
       <MDXContent components={useMDXComponents({})} />
-
-      <SourceNote
-        title="Repo source"
-        items={[
-          doc.filePath,
-          "This page is rendered directly from the root docs folder. Edit the markdown there, not inside the app.",
-        ]}
-      />
 
       <DocNeighbors previous={neighbors.previous} next={neighbors.next} />
     </>

@@ -12,8 +12,7 @@ Only place SQL here when the change:
 
 ## Expected shape
 
-- `clients/begreen/...`
-- `clients/<future-client-slug>/...`
+- `clients/<slug>/...`
 
 Temporary smoke-test client stacks should be removed after generator verification. This directory is for real client-specific deltas only.
 

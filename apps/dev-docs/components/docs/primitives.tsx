@@ -1,7 +1,8 @@
 import Link from "next/link";
-import type { ReactNode } from "react";
+import { Children, cloneElement, isValidElement, type ReactElement, type ReactNode } from "react";
 import { ArrowRight, GitBranchPlus, Link2, TerminalSquare } from "lucide-react";
-import type { DocPageDefinition } from "../../lib/docs";
+import { docsSections, type DocPageDefinition } from "../../lib/docs";
+import { CopyButton } from "./copyable-code";
 
 type ClassNameProps = {
   className?: string;
@@ -34,6 +35,11 @@ type InstallOrderExamplesProps = {
 
 type DocCardGridProps = {
   items: DocPageDefinition[];
+  showSummary?: boolean;
+};
+
+type SectionCardGridProps = {
+  section: string;
 };
 
 type SourceNoteProps = {
@@ -41,14 +47,94 @@ type SourceNoteProps = {
   items: string[];
 };
 
-export function DocCardGrid({ items }: DocCardGridProps) {
+const INLINE_TAGS = new Set([
+  "a",
+  "abbr",
+  "b",
+  "br",
+  "code",
+  "em",
+  "i",
+  "kbd",
+  "mark",
+  "small",
+  "span",
+  "strong",
+  "sub",
+  "sup",
+  "time",
+  "u",
+  "var",
+  "wbr",
+]);
+
+type ParagraphLikeProps = ClassNameProps & {
+  children?: ReactNode;
+};
+
+function isParagraphLikeElement(child: ReactNode): child is ReactElement<ParagraphLikeProps> {
+  return isValidElement<ParagraphLikeProps>(child)
+    && (child.type === "p" || (child.props.className ?? "").includes("doc-prose-paragraph"));
+}
+
+function hasBlockLevelContent(children: ReactNode[]) {
+  return children.some((child) => {
+    if (!isValidElement<ClassNameProps>(child)) {
+      return false;
+    }
+
+    if ((child.props.className ?? "").includes("doc-prose-paragraph")) {
+      return true;
+    }
+
+    return typeof child.type === "string" && !INLINE_TAGS.has(child.type);
+  });
+}
+
+function normalizeCalloutChild(child: ReactNode): ReactNode {
+  if (!isParagraphLikeElement(child)) {
+    return child;
+  }
+
+  const children = Children.toArray(child.props.children).filter((nestedChild) => {
+    return typeof nestedChild !== "string" || nestedChild.trim().length > 0;
+  });
+  const normalizedChildren = children.map(normalizeCalloutChild);
+
+  if (normalizedChildren.length === 1 && isParagraphLikeElement(normalizedChildren[0])) {
+    const nestedParagraph = normalizedChildren[0];
+    const mergedClassName = [child.props.className, nestedParagraph.props.className].filter(Boolean).join(" ");
+
+    return normalizeCalloutChild(cloneElement(nestedParagraph, {
+      className: mergedClassName || undefined,
+    }));
+  }
+
+  if (hasBlockLevelContent(normalizedChildren)) {
+    return (
+      <div key={child.key ?? undefined} className={child.props.className}>
+        {normalizedChildren}
+      </div>
+    );
+  }
+
+  return cloneElement(child, {
+    children: normalizedChildren,
+  });
+}
+
+function normalizeCalloutChildren(children: ReactNode) {
+  return Children.toArray(children).map(normalizeCalloutChild);
+}
+
+export function DocCardGrid({ items, showSummary = true }: DocCardGridProps) {
   return (
     <div className="doc-card-grid">
       {items.map((item) => (
         <Link key={item.href} href={item.href} className="doc-link-card">
           <div>
             <p className="doc-link-card-title">{item.title}</p>
-            <p className="doc-link-card-summary">{item.summary}</p>
+            {showSummary ? <p className="doc-link-card-summary">{item.summary}</p> : null}
           </div>
           <ArrowRight className="doc-link-card-icon" aria-hidden="true" />
         </Link>
@@ -57,11 +143,21 @@ export function DocCardGrid({ items }: DocCardGridProps) {
   );
 }
 
+export function SectionCardGrid({ section }: SectionCardGridProps) {
+  const sectionDefinition = docsSections.find((entry) => entry.key === section || entry.href === section) ?? null;
+
+  if (!sectionDefinition || sectionDefinition.links.length === 0) {
+    return null;
+  }
+
+  return <DocCardGrid items={sectionDefinition.links} showSummary={false} />;
+}
+
 export function Callout({ title, tone = "note", children }: CalloutProps) {
   return (
     <aside className={`doc-callout ${tone}`}>
       {title ? <p className="doc-callout-title">{title}</p> : null}
-      <div className="doc-callout-body">{children}</div>
+      <div className="doc-callout-body">{normalizeCalloutChildren(children)}</div>
     </aside>
   );
 }
@@ -70,10 +166,11 @@ export function CommandBlock({ command, title, note }: CommandBlockProps) {
   return (
     <div className="doc-command-block">
       <div className="doc-command-topline">
-        <span>
+        <span className="doc-command-topline-label">
           <TerminalSquare className="doc-inline-icon" aria-hidden="true" />
           {title ?? "Command"}
         </span>
+        <CopyButton value={command} label="Copy command" className="doc-copy-button-block" />
       </div>
       <pre>
         <code>{command}</code>
@@ -193,5 +290,22 @@ export function DocNeighbors({
 }
 
 export function Lead({ children, className }: { children: ReactNode } & ClassNameProps) {
-  return <p className={`doc-lead ${className ?? ""}`.trim()}>{children}</p>;
+  const resolvedClassName = `doc-lead ${className ?? ""}`.trim();
+  const childNodes = Children.toArray(children).filter((child) => {
+    return typeof child !== "string" || child.trim().length > 0;
+  });
+
+  if (childNodes.length === 1 && isValidElement<{ className?: string }>(childNodes[0])) {
+    const child = childNodes[0];
+    const childClassName = child.props.className ?? "";
+    const isParagraph = child.type === "p" || childClassName.includes("doc-prose-paragraph");
+
+    if (isParagraph) {
+      return cloneElement(child, {
+        className: `${resolvedClassName} ${childClassName}`.trim(),
+      });
+    }
+  }
+
+  return <div className={resolvedClassName}>{children}</div>;
 }

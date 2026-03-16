@@ -1,17 +1,20 @@
 # Brightweb Platform
 
-Shared platform monorepo for Brightweb client apps.
+BrightWeb's platform source monorepo. This repo owns the internal preview apps, the shared packages, the scaffold generator, and the Supabase module planning model used to create client applications.
 
-## Workspace
+## Workspace map
 
-- `apps/dev-docs`: internal docs app that renders the root `docs/` folder
-- `apps/platform-preview`: internal Next.js preview app for platform work
-- `packages/*`: shared platform modules
-- `supabase/*`: shared database ownership model and migration planning
+- `apps/platform-preview`: internal sandbox app for validating shell, auth, admin, CRM, and projects behavior
+- `apps/dev-docs`: internal docs app that renders the public docs from the root `docs/` folder
+- `packages/*`: shared BrightWeb runtime, UI, and module packages
+- `packages/create-bw-app`: publishable scaffold CLI plus the canonical platform and site templates
+- `supabase/*`: shared database module ownership, client stack plans, and materialization scripts
+- `docs/`: public product and scaffold docs
+- `docs/internal/`: maintainer-only architecture notes and operational runbooks that stay in the repo
 
-The tracked apps in this repo are the internal docs surface and the internal preview surface. Generated client apps are scaffolds, not long-lived repo apps.
+The long-lived apps in this repo are the internal preview and docs surfaces. Generated client apps are scaffold outputs, not primary repo apps.
 
-## Internal apps
+## Common commands
 
 Run the internal preview app:
 
@@ -25,6 +28,23 @@ Run the internal docs app:
 pnpm dev:docs
 ```
 
+Build the internal apps:
+
+```bash
+pnpm build
+pnpm build:docs
+```
+
+## Documentation map
+
+Public docs live under `docs/` and are organized into:
+
+- `docs/foundations`: install flow, template choice, and generated project structure
+- `docs/modules`: platform base behavior plus CRM and Projects module boundaries
+- `docs/recipes`: practical workflows and manual follow-up tasks
+
+Maintainer-only notes live under `docs/internal/` and are intentionally excluded from the normal docs app navigation.
+
 ## Create a new app
 
 Scaffold either a platform app or a standalone site:
@@ -35,57 +55,58 @@ pnpm create:client -- --help
 pnpm create:client -- --template site
 ```
 
-The local wrapper now delegates to the publishable workspace CLI package at `packages/create-bw-app`.
+The workspace wrapper delegates to the publishable CLI package in `packages/create-bw-app`.
 
 Template ownership is intentionally separate from the preview app:
 
 - `packages/create-bw-app/template/base`: canonical platform-app scaffold
-- `packages/create-bw-app/template/site/base`: canonical site scaffold
-- `apps/platform-preview`: sandbox for trying shell, CRM, admin, auth, and projects features locally
-- `apps/dev-docs`: internal documentation shell for repo-level markdown
+- `packages/create-bw-app/template/site/base`: canonical standalone site scaffold
+- `packages/create-bw-app/template/modules/*`: optional module template overlays
+- `apps/platform-preview`: sandbox for package behavior, not the source of truth for generated apps
 
-The installer can:
+Current scaffold behavior:
 
-- ask which app type to create: `platform` or `site`
-- ask for the project name
-- ask yes/no questions for optional modules when creating a platform app
-- ask whether dependencies should be installed immediately
-- generate `package.json`, `next.config.ts`, `.gitignore`, and `README.md` for both templates
-- generate `.env.example`, `.env.local`, and module wiring for platform apps
-- generate a Tailwind-based site starter with local shadcn-style components for site apps
-- keep repo-local apps wired to `workspace:*` dependencies
+- prompts for `platform` or `site`
+- prompts for the project name
+- supports optional platform module selection for `admin`, `crm`, and `projects`
+- writes `package.json`, `next.config.ts`, `.gitignore`, and `README.md` for both templates
+- writes `.env.example`, shell wiring, and module flags for platform apps
+- keeps repo-local generated apps on `workspace:*` dependencies in workspace mode
 
-It creates a new app under `apps/<slug>`.
+In workspace mode the generator creates the app under `apps/<slug>`. For platform apps it also creates `supabase/clients/<slug>/stack.json` plus a client-only migrations folder so the database install plan stays aligned with the selected modules.
 
-When you scaffold a platform app in workspace mode, the generator also creates
-`supabase/clients/<slug>/stack.json` plus a client-only migrations folder so the
-database module plan stays aligned with the app modules you selected. The stack
-keeps RBAC/admin governance enabled for platform auth even if the admin UI
-module is not selected.
+Platform mode always resolves to the `Core + Admin` database baseline. Selecting `admin` only controls whether the Admin starter UI and package wiring are scaffolded.
 
-Future public commands after npm publish:
+Published usage after npm release:
 
 ```bash
 pnpm dlx create-bw-app
 npm create bw-app@latest
 ```
 
-Detailed generator notes:
-
-- [docs/operations/create-bw-app-cli.md](/Users/leoribeiro/Documents/02_Projects/brightweb-platform/docs/operations/create-bw-app-cli.md)
+Maintainer notes for the generator live in [docs/internal/operations/create-bw-app-cli.md](/Users/leoribeiro/Documents/02_Projects/brightweb-platform/docs/internal/operations/create-bw-app-cli.md).
 
 ## Database modules
 
-Plan or materialize the database schema for a client stack:
+Plan or materialize the database install order for a client stack:
 
 ```bash
-pnpm db:plan begreen
-pnpm db:materialize begreen
+pnpm db:plan acme
+pnpm db:materialize acme
 ```
 
-## Public npm publishing
+Other common database commands:
 
-This repo is prepared for public npm publishing of the `@brightweblabs/*` packages and the unscoped `create-bw-app` CLI.
+```bash
+pnpm db:new core profile_notification_cursor
+pnpm db:new client:acme bespoke_reporting_table
+```
+
+The shared registry lives in `supabase/module-registry.json`. Client-specific plans live under `supabase/clients/<slug>`.
+
+## Publishing
+
+This repo is prepared to publish the `@brightweblabs/*` packages and the unscoped `create-bw-app` CLI.
 
 Release flow:
 
@@ -98,10 +119,9 @@ git commit -m "Version packages"
 git push
 ```
 
-GitHub Actions then publishes packages from `main` when a release PR is merged.
+GitHub Actions then publishes packages from `main` when the release PR lands.
 
-Because the current packages publish TypeScript source, consuming Next.js apps should keep the
-`transpilePackages` entries for the `@brightweblabs/*` packages they install.
+Because the current packages publish TypeScript source, consuming Next.js apps should keep the relevant `transpilePackages` entries for the `@brightweblabs/*` packages they install.
 
 Before the first publish, you still need to:
 

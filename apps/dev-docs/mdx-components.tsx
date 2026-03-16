@@ -1,5 +1,5 @@
 import Link from "next/link";
-import type { ComponentPropsWithoutRef, ReactNode } from "react";
+import { isValidElement, type ComponentPropsWithoutRef, type ReactNode } from "react";
 import {
   Callout,
   CommandBlock,
@@ -8,11 +8,29 @@ import {
   FactTable,
   InstallOrderExamples,
   Lead,
+  SectionCardGrid,
   SourceNote,
 } from "./components/docs/primitives";
+import { CopyableCodeBlock, InlineCode } from "./components/docs/copyable-code";
 
 type MdxComponent = (props: any) => ReactNode;
 type MdxComponents = Record<string, MdxComponent>;
+
+function flattenText(value: ReactNode): string {
+  if (typeof value === "string" || typeof value === "number") {
+    return String(value);
+  }
+
+  if (Array.isArray(value)) {
+    return value.map(flattenText).join("");
+  }
+
+  if (value && typeof value === "object" && "props" in value) {
+    return flattenText((value as { props?: { children?: ReactNode } }).props?.children ?? "");
+  }
+
+  return "";
+}
 
 function createHeading(level: "h1" | "h2" | "h3") {
   const Tag = level;
@@ -32,7 +50,9 @@ export function useMDXComponents(components: MdxComponents): MdxComponents {
     h1: createHeading("h1"),
     h2: createHeading("h2"),
     h3: createHeading("h3"),
-    p: (props: ComponentPropsWithoutRef<"p">) => <p {...props} className="doc-prose-paragraph" />,
+    p: ({ className, ...props }: ComponentPropsWithoutRef<"p">) => (
+      <p {...props} className={["doc-prose-paragraph", className].filter(Boolean).join(" ")} />
+    ),
     ul: (props: ComponentPropsWithoutRef<"ul">) => <ul {...props} className="doc-prose-list" />,
     ol: (props: ComponentPropsWithoutRef<"ol">) => <ol {...props} className="doc-prose-list ordered" />,
     li: (props: ComponentPropsWithoutRef<"li">) => <li {...props} className="doc-prose-list-item" />,
@@ -58,8 +78,17 @@ export function useMDXComponents(components: MdxComponents): MdxComponents {
     tr: (props: ComponentPropsWithoutRef<"tr">) => <tr {...props} />,
     th: (props: ComponentPropsWithoutRef<"th">) => <th {...props} />,
     td: (props: ComponentPropsWithoutRef<"td">) => <td {...props} />,
-    pre: (props: ComponentPropsWithoutRef<"pre">) => <pre {...props} className="doc-code-block" />,
-    code: (props: ComponentPropsWithoutRef<"code">) => <code {...props} className="doc-inline-code" />,
+    pre: (props: ComponentPropsWithoutRef<"pre">) => {
+      const child = props.children;
+
+      if (isValidElement<{ children?: ReactNode; className?: string }>(child)) {
+        const code = flattenText(child.props.children);
+        return <CopyableCodeBlock code={code} language={child.props.className} />;
+      }
+
+      return <CopyableCodeBlock code={flattenText(child)} />;
+    },
+    code: (props: ComponentPropsWithoutRef<"code">) => <InlineCode {...props} />,
     Callout,
     CommandBlock,
     DependencyGraph,
@@ -67,6 +96,7 @@ export function useMDXComponents(components: MdxComponents): MdxComponents {
     FactTable,
     InstallOrderExamples,
     Lead,
+    SectionCardGrid,
     SourceNote,
     ...components,
   };

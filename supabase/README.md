@@ -1,40 +1,34 @@
 # Brightweb Supabase Structure
 
-This directory is the canonical home for shared database architecture owned by `brightweb-platform`.
+This directory is the canonical home for the Brightweb database baseline and its forward migrations.
 
-## Goal
+## Directory map
+
+- `module-registry.json`: shared module dependency graph and migration source paths
+- `modules/core`: always-on platform foundations
+- `modules/admin`: RBAC and privileged governance behavior
+- `modules/crm`: organizations, CRM contacts, and invitation flows
+- `modules/projects`: project and work-management data
+- `clients/<client-slug>`: true client-only schema deltas plus the client stack plan
+- `.generated/<client-slug>`: materialized Supabase workdirs produced by `pnpm db:materialize`
+
+## Ownership rule
 
 Shared database changes should be authored by ownership area, not by client app:
 
-- `modules/core`
-- `modules/admin`
-- `modules/crm`
-- `modules/projects`
-- `clients/<client-slug>`
+- `core` is applied to every client
+- shared module migrations are applied only when that module is enabled for the client
+- client-specific migrations are the exception, not the default
 
-## Rule
+In workspace scaffold mode, `create-bw-app` writes `supabase/clients/<slug>/stack.json` so the generated app modules and the database install plan stay aligned.
 
-- `core` is applied to every client.
-- Module migrations are applied only when that module is enabled for the client.
-- Client-specific migrations are the exception, not the default.
+The module baselines in this repo are the canonical Brightweb v1 install path. Future schema work should extend them with forward migrations instead of carrying historical cleanup sequences.
 
-## Historical source
+Maintainer references:
 
-The original shared migration history still lives in BeGreen under:
-
-- `/Users/leoribeiro/Documents/02_Projects/BeGreen/2025-12_FullIdentity/03_Work/Website/Development/be-green/supabase/migrations`
-
-That folder remains the source of the already-shipped SQL history for BeGreen.
-
-This `platform/supabase` structure now contains the Brightweb-owned greenfield module migrations plus
-the planning/materialization workflow for composing client-specific install order.
-
-See:
-
-- `docs/architecture/database-module-migration-structure.md`
-- `docs/architecture/database-migration-classification.md`
-- `docs/architecture/database-migration-authoring-workflow.md`
-- `docs/architecture/database-migration-safety-policy.md`
+- `docs/internal/architecture/database-module-migration-structure.md`
+- `docs/internal/architecture/database-migration-authoring-workflow.md`
+- `docs/internal/architecture/database-migration-safety-policy.md`
 
 ## Authoring workflow
 
@@ -50,19 +44,19 @@ pnpm db:new projects task_due_date_index
 Create a client-only migration:
 
 ```bash
-pnpm db:new client:begreen bespoke_reporting_table
+pnpm db:new client:acme bespoke_reporting_table
 ```
 
 Print the effective apply order for a client:
 
 ```bash
-pnpm db:plan begreen
+pnpm db:plan acme
 ```
 
 Materialize an installable Supabase workdir for a client stack:
 
 ```bash
-pnpm db:materialize begreen
+pnpm db:materialize acme
 ```
 
 This writes a generated workdir under `supabase/.generated/<client-slug>` with:
@@ -70,3 +64,11 @@ This writes a generated workdir under `supabase/.generated/<client-slug>` with:
 - ordered migrations merged from `core`, enabled modules, and client-only deltas
 - a generated `config.toml`
 - a `manifest.json` showing the source file for each materialized migration
+
+## Related READMEs
+
+- `supabase/modules/core/README.md`
+- `supabase/modules/admin/README.md`
+- `supabase/modules/crm/README.md`
+- `supabase/modules/projects/README.md`
+- `supabase/clients/README.md`

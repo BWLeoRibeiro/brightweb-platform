@@ -69,7 +69,7 @@ export function getStarterBootstrapChecklist() {
       {
         label: "Create per-client environment variables",
         done: config.envReadiness.allReady,
-        detail: "Copy `.env.example` into `.env.local` and fill the real values.",
+        detail: "Copy `.env.example` to `.env.local` and fill the real values.",
       },
     ],
   };

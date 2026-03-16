@@ -2,37 +2,73 @@
 
 The Projects module extends the platform with work-management data and project access rules. It depends on CRM because projects are attached to organizations, and it inherits the Admin and RBAC layer through that dependency chain.
 
+> Projects builds on top of the `Core + Admin + CRM` platform baseline; selecting Projects adds Projects-owned schema, package wiring, and the starter projects surface.
+
 ## What schema it installs
 
-- `projects` as the main project record table.
-- `project_members` for project team membership and role scope.
-- `project_milestones` and `project_tasks` for work-tracking structure.
-- `project_links` and `project_status_log` for supporting resources and status history.
-- Later migrations tighten team and observer RLS, organization-access contracts, lifecycle fields, and project activity payload behavior.
+- Baseline tables: `projects`, `project_members`, `project_milestones`, `project_tasks`, `project_links`, and `project_status_log`
+- Follow-up migrations: tighter team and observer RLS, organization-access contracts, lifecycle fields, and project activity payload behavior
 
 ## What package and domain logic it provides
 
-- `@brightweblabs/module-projects` exports shell registration for project navigation and toolbar behavior.
-- It exports server-side portfolio helpers such as project listing, project stats, and schema-missing detection behavior.
-- The package reads shared CRM-owned organization data and shared profile/auth state to assemble project views.
+| Concern | Current behavior |
+| --- | --- |
+| Projects package | `@brightweblabs/module-projects` exports shell registration for project navigation and toolbar behavior. |
+| Server helpers | The package exports server-side portfolio helpers such as project listing, project stats, and schema-missing detection behavior. |
+| Shared dependencies | The package reads shared CRM-owned organization data and shared profile/auth state to assemble project views. |
 
 ## Whether it adds starter routes and wiring
 
-| Area | Current behavior |
+| Concern | Current behavior |
 | --- | --- |
 | Scaffold wiring | Selecting Projects adds the package dependency and enables project-related shell/config wiring in generated platform apps. |
 | Starter routes | The current module template contributes the `/playground/projects` starter surface in the scaffold. |
 | Shell behavior | The module registration adds project navigation items and project-specific toolbar surfaces. |
+| Dependency behavior | Projects resolves on top of the existing `Core + Admin + CRM` platform baseline because projects are attached to organizations and inherit that dependency chain. |
 
-> Projects does **not** install a full project management frontend product into client apps. It mainly installs shared schema, access rules, and server and domain contracts that client apps build on top of.
+> Projects does **not** install a full project management frontend product on its own. It mainly installs shared schema, access rules, and server and domain contracts that applications build on top of.
+
+## How to use it in an app
+
+The current Projects package is mainly consumed through server helpers plus shell registration.
+
+### Load portfolio data in a server page
+
+```tsx
+export const dynamic = "force-dynamic";
+
+export default async function ProjectsPage() {
+  const { getProjectsPortfolioPageData } = await import("@brightweblabs/module-projects");
+  const data = await getProjectsPortfolioPageData();
+
+  return <pre>{JSON.stringify(data.portfolioStats, null, 2)}</pre>;
+}
+```
+
+Use `getProjectsPortfolioPageData()` when you want a starter portfolio payload for a page, and use lower-level helpers such as `listProjects()` when you need more custom filtering or pagination behavior.
+
+### Register Projects in the app shell
+
+```ts
+import { projectsModuleRegistration } from "@brightweblabs/module-projects/registration";
+```
+
+Wire that registration into your app shell when you want the Projects navigation item plus project-specific toolbar surfaces.
+
+### Build application-owned project UI
+
+The package gives you shared schema, access rules, and server-side data helpers. The actual portfolio screens, detail pages, boards, forms, and workflow UI remain application-owned.
+
+For a broader integration overview, see [Using BrightWeb Modules](./using-modules.md).
 
 ## Related docs
 
 - [Modules](./README.md)
+- [Using BrightWeb Modules](./using-modules.md)
 - [CRM](./crm.md)
-- [UI vs Domain Modules](../ui-vs-domain-modules.md)
+- [Platform Base](./platform-base.md)
 
-## Repo sources
+## Implementation references
 
 - `supabase/modules/projects/migrations`
 - `packages/module-projects/src/index.ts`

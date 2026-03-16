@@ -20,7 +20,7 @@ export default async function AdminPlaygroundPage() {
             <p className="eyebrow">Admin Module</p>
             <h1>Admin users and roles playground</h1>
             <p className="muted">
-              This route previews the shared admin governance module without relying on the BeGreen client app.
+              This route previews the shared admin governance module without relying on any client-specific app.
             </p>
           </div>
         </article>

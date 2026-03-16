@@ -1,36 +1,33 @@
-# BrightWeb Platform Docs
+# BrightWeb Stack Docs
 
-This `docs/` folder is the single source of truth for BrightWeb documentation.
+BrightWeb Stack is the shared foundation for building authenticated platform apps and standalone sites with a common scaffold, shared packages, and durable module boundaries.
 
-- Humans should be able to read it directly in the repo.
-- The `dev-docs` app renders the same files online.
-- Agents should read and update docs here, not in `apps/dev-docs/app/docs`.
+The markdown in this folder is the source of truth for both the repository docs and the `apps/dev-docs` site.
 
-## Fast map
+## Public docs sections
 
-- Start at [Foundations](./foundations/README.md)
-- Then read [Modules](./modules/README.md)
-- Then use [Architecture reference](./architecture/README.md) and [Operations reference](./operations/README.md) as needed
-- Treat this file as the docs index for both humans and agents
+- [Getting Started](./foundations/README.md): how to install the scaffold, choose between `platform` and `site`, and read the generated project structure
+- [Modules](./modules/README.md): what the platform base includes and how CRM and Projects extend that baseline
+- [Recipes](./recipes/README.md): practical workflows for common BrightWeb tasks that still require manual follow-up
 
-## Sections
+## How to read the docs
 
-- [Foundations](./foundations/README.md)
-- [Modules](./modules/README.md)
-- [Architecture reference](./architecture/README.md)
-- [Operations reference](./operations/README.md)
-- [Recipes](./recipes/README.md)
+If you are new to the stack, start in this order:
 
-## Recommended read order
-
-1. [Foundations](./foundations/README.md)
+1. [Getting Started](./foundations/README.md)
 2. [Modules](./modules/README.md)
-3. [Architecture reference](./architecture/README.md)
-4. [Operations reference](./operations/README.md)
-5. [Recipes](./recipes/README.md)
+3. [Recipes](./recipes/README.md)
 
-## How this repo should use docs
+Maintainer-only notes, architecture decisions, and operational runbooks live in the repo under `docs/internal/`. They are intentionally excluded from the public docs app navigation.
 
-1. Put durable product, architecture, and operations knowledge in `docs/`.
-2. Keep app-only documentation logic out of `apps/dev-docs` when possible.
-3. Treat the docs app as a presentation layer over this folder, not a separate content system.
+## Assumed background
+
+The public docs assume working familiarity with:
+
+- HTML
+- CSS
+- JavaScript or TypeScript
+- React
+- Next.js
+
+If you are working with module-backed platform apps, basic Supabase familiarity is also useful.

@@ -5,10 +5,10 @@ import "./globals.css";
 export const metadata: Metadata = {
   metadataBase: new URL("https://dev.brightweb.pt"),
   title: {
-    default: "BrightWeb Platform Docs",
-    template: "%s | BrightWeb Platform Docs",
+    default: "BrightWeb Stack Docs",
+    template: "%s | BrightWeb Stack Docs",
   },
-  description: "Internal developer documentation for how the BrightWeb platform currently works.",
+  description: "Public, repo-backed documentation for how BrightWeb Stack works.",
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {

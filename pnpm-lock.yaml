@@ -20,6 +20,9 @@ importers:
 
   apps/dev-docs:
     dependencies:
+      '@brightweblabs/ui':
+        specifier: workspace:*
+        version: link:../../packages/ui
       '@mdx-js/loader':
         specifier: ^3.1.1
         version: 3.1.1
@@ -32,6 +35,12 @@ importers:
       '@next/mdx':
         specifier: ^16.1.6
         version: 16.1.6(@mdx-js/loader@3.1.1)(@mdx-js/react@3.1.1(@types/react@19.2.14)(react@19.2.3))
+      '@radix-ui/react-accordion':
+        specifier: ^1.2.12
+        version: 1.2.12(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      clsx:
+        specifier: ^2.1.1
+        version: 2.1.1
       lucide-react:
         specifier: ^0.562.0
         version: 0.562.0(react@19.2.3)
@@ -47,6 +56,9 @@ importers:
       remark-gfm:
         specifier: ^4.0.1
         version: 4.0.1
+      tailwind-merge:
+        specifier: ^3.5.0
+        version: 3.5.0
     devDependencies:
       '@tailwindcss/postcss':
         specifier: ^4
