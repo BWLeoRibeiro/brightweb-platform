@@ -1,5 +1,15 @@
 # create-bw-app
 
+## 0.9.0
+
+### Minor Changes
+
+- 2adbe49: Expand the CRM package from a starter dashboard helper into a broader stable base contract with reusable CRM list and stats helpers, package-owned GET handlers, mounted CRM starter routes, structured base-contract manifests, and updated docs for the new supported CRM surfaces.
+
+### Patch Changes
+
+- d1fe3af: Generate `.env.local` for platform starters instead of `.env.example`, move generated brand and module state into `config/brand.ts` and `config/modules.ts`, and update the scaffold docs to match the new config ownership model.
+
 ## 0.8.0
 
 ### Minor Changes
