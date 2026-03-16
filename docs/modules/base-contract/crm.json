@@ -1,0 +1,38 @@
+[
+  {
+    "moduleKey": "crm",
+    "packageName": "@brightweblabs/module-crm/registration",
+    "symbol": "crmModuleRegistration",
+    "kind": "registration",
+    "status": "stable",
+    "runtime": "shell",
+    "summary": "Registers CRM navigation groups and toolbar surfaces in the app shell.",
+    "auth": "mixed visibility inside the shell",
+    "inputs": [],
+    "outputs": [
+      "ShellModuleRegistration"
+    ],
+    "notes": [
+      "Use when wiring CRM into the shared shell."
+    ],
+    "source": "packages/module-crm/src/registration.ts"
+  },
+  {
+    "moduleKey": "crm",
+    "packageName": "@brightweblabs/module-crm",
+    "symbol": "getCrmDashboardData",
+    "kind": "helper",
+    "status": "starter",
+    "runtime": "server",
+    "summary": "Starter dashboard helper that bundles the current CRM page payload.",
+    "auth": "signed-in user required",
+    "inputs": [],
+    "outputs": [
+      "CrmDashboardData"
+    ],
+    "notes": [
+      "Replace or compose this helper when a project needs a different CRM page shape."
+    ],
+    "source": "packages/module-crm/src/index.ts"
+  }
+]

@@ -1,0 +1,197 @@
+[
+  {
+    "moduleKey": "admin",
+    "packageName": "@brightweblabs/module-admin/registration",
+    "symbol": "adminModuleRegistration",
+    "kind": "registration",
+    "status": "stable",
+    "runtime": "shell",
+    "summary": "Registers the admin navigation and toolbar surfaces in the app shell.",
+    "auth": "admin visibility applies inside the shell",
+    "inputs": [],
+    "outputs": [
+      "ShellModuleRegistration"
+    ],
+    "notes": [
+      "Use when wiring the admin starter into app-shell."
+    ],
+    "source": "packages/module-admin/src/registration.ts"
+  },
+  {
+    "moduleKey": "admin",
+    "packageName": "@brightweblabs/module-admin",
+    "symbol": "listAdminUsers",
+    "kind": "helper",
+    "status": "stable",
+    "runtime": "server",
+    "summary": "Lists admin-managed users with pagination, search, and role filtering.",
+    "auth": "admin role required in the caller context",
+    "inputs": [
+      "{ supabase, search?, roleFilter?, page, pageSize }"
+    ],
+    "outputs": [
+      "AdminUsersListResult"
+    ],
+    "notes": [
+      "Use when building app-owned admin tables or user management screens."
+    ],
+    "source": "packages/module-admin/src/users.ts"
+  },
+  {
+    "moduleKey": "admin",
+    "packageName": "@brightweblabs/module-admin",
+    "symbol": "handleAdminUsersGetRequest",
+    "kind": "handler",
+    "status": "stable",
+    "runtime": "server",
+    "summary": "Package-owned GET handler for the starter admin users endpoint.",
+    "auth": "admin role required",
+    "inputs": [
+      "request: Request"
+    ],
+    "outputs": [
+      "Response"
+    ],
+    "notes": [
+      "Mount from a Next.js route when the package should own the HTTP contract."
+    ],
+    "source": "packages/module-admin/src/handlers.ts"
+  },
+  {
+    "moduleKey": "admin",
+    "packageName": "@brightweblabs/module-admin",
+    "symbol": "handleAdminUsersRoleChangeRequest",
+    "kind": "handler",
+    "status": "stable",
+    "runtime": "server",
+    "summary": "Package-owned POST handler for bulk admin role changes.",
+    "auth": "admin role required",
+    "inputs": [
+      "request: Request"
+    ],
+    "outputs": [
+      "Response"
+    ],
+    "notes": [
+      "Mount from a Next.js route when the package should own the HTTP contract."
+    ],
+    "source": "packages/module-admin/src/handlers.ts"
+  },
+  {
+    "moduleKey": "admin",
+    "packageName": "@brightweblabs/module-admin",
+    "symbol": "getAdminUsersPageData",
+    "kind": "helper",
+    "status": "starter",
+    "runtime": "server",
+    "summary": "Starter page helper that loads the first admin users payload for the scaffolded page.",
+    "auth": "admin role required",
+    "inputs": [],
+    "outputs": [
+      "AdminUsersPageData"
+    ],
+    "notes": [
+      "Replace or compose this helper when a project needs its own admin page shape."
+    ],
+    "source": "packages/module-admin/src/users.ts"
+  },
+  {
+    "moduleKey": "admin",
+    "packageName": "@brightweblabs/module-admin/events",
+    "symbol": "ADMIN_EVENTS",
+    "kind": "helper",
+    "status": "internal",
+    "runtime": "client",
+    "summary": "Event names for the packaged admin client surface.",
+    "auth": "none",
+    "inputs": [],
+    "outputs": [
+      "{ state, setSearch, setRoleFilter, setBulkRole, applyBulk, refresh, refreshComplete }"
+    ],
+    "notes": [
+      "Do not couple app-owned UI to this event bus in v1."
+    ],
+    "source": "packages/module-admin/src/events.ts"
+  },
+  {
+    "moduleKey": "admin",
+    "packageName": "@brightweblabs/module-admin/events",
+    "symbol": "dispatchAdminEvent",
+    "kind": "helper",
+    "status": "internal",
+    "runtime": "client",
+    "summary": "Dispatches a packaged admin browser event.",
+    "auth": "none",
+    "inputs": [
+      "name: string"
+    ],
+    "outputs": [
+      "void"
+    ],
+    "notes": [
+      "Treat as internal UI wiring for the packaged admin client."
+    ],
+    "source": "packages/module-admin/src/events.ts"
+  },
+  {
+    "moduleKey": "admin",
+    "packageName": "@brightweblabs/module-admin/events",
+    "symbol": "dispatchAdminCustomEvent",
+    "kind": "helper",
+    "status": "internal",
+    "runtime": "client",
+    "summary": "Dispatches a packaged admin browser custom event with detail payload.",
+    "auth": "none",
+    "inputs": [
+      "name: string",
+      "detail: T"
+    ],
+    "outputs": [
+      "void"
+    ],
+    "notes": [
+      "Treat as internal UI wiring for the packaged admin client."
+    ],
+    "source": "packages/module-admin/src/events.ts"
+  },
+  {
+    "moduleKey": "admin",
+    "packageName": "@brightweblabs/module-admin/roles",
+    "symbol": "applyAdminRoleChanges",
+    "kind": "helper",
+    "status": "internal",
+    "runtime": "server",
+    "summary": "Lower-level role mutation helper used by the packaged admin handlers.",
+    "auth": "admin role required in the caller context",
+    "inputs": [
+      "{ supabase, profileIds, newRole, reason }"
+    ],
+    "outputs": [
+      "AdminRoleChangeResult"
+    ],
+    "notes": [
+      "Treat as internal server composition in v1."
+    ],
+    "source": "packages/module-admin/src/roles.ts"
+  },
+  {
+    "moduleKey": "admin",
+    "packageName": "@brightweblabs/module-admin/users-client",
+    "symbol": "AdminUsersClient",
+    "kind": "helper",
+    "status": "internal",
+    "runtime": "client",
+    "summary": "Packaged admin users table UI used by the current starter surface.",
+    "auth": "admin role required for the mounted route",
+    "inputs": [
+      "initialUsers: AdminUsersListResult"
+    ],
+    "outputs": [
+      "React component"
+    ],
+    "notes": [
+      "App-owned admin UI should not depend on this packaged client component in v1."
+    ],
+    "source": "packages/module-admin/src/users-client.tsx"
+  }
+]

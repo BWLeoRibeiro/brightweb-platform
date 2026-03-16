@@ -4,6 +4,7 @@
   "version": "0.0.0",
   "packageManager": "pnpm@10.28.1",
   "scripts": {
+    "check:base-contract": "node ./scripts/validate-base-contract.mjs",
     "changeset": "changeset",
     "create:client": "node ./scripts/create-brightweb-client.mjs",
     "db:materialize": "node ./scripts/materialize-client-migrations.mjs",

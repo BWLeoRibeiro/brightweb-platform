@@ -1,8 +1,8 @@
 # Modules
 
-BrightWeb modules currently extend the platform mostly through shared schema, domain logic, package helpers, and light starter wiring. They should not be treated as fully packaged frontend products that drop a finished UI into each application.
+BrightWeb modules extend the platform through shared schema, domain logic, package helpers, shell registrations, and light starter wiring. The public promise for those modules is the **base contract** documented in this section.
 
-> The current shared modules are primarily schema and domain modules. Applications built on BrightWeb are still expected to build their own product UI on top of the shared database and package contracts.
+> The shared modules are primarily schema and domain modules. Applications built on BrightWeb are still expected to build their own product UI on top of the stable base contract and replace starter scaffolding as needed.
 
 ## Read this section with the right mental model
 
@@ -12,6 +12,16 @@ The `platform` template has two layers:
 - optional starter surfaces and package wiring, which may add `admin`, `crm`, and `projects`
 
 Selecting `admin` in the scaffold affects the Admin starter UI and package wiring. It does not remove the Admin database baseline from platform mode.
+
+## Support tiers
+
+The current base contract uses three support tiers:
+
+- `stable`: supported base surface intended for reuse across projects
+- `starter`: starter-facing convenience surface that proves the module is wired and can be replaced later
+- `internal`: exported or repo-visible surface that is not part of the supported public promise
+
+Use [Base Contract](./base-contract.md) for the canonical support-tier rules and [base-contract.json](./base-contract.json) for the machine-readable inventory.
 
 ## Module overview
 
@@ -24,6 +34,7 @@ Selecting `admin` in the scaffold affects the Admin starter UI and package wirin
 
 ## Pages in this section
 
+- [Base Contract](./base-contract.md): support tiers, extension rules, and the canonical contract inventory.
 - [Using BrightWeb Modules](./using-modules.md): integration entrypoints, code-level usage patterns, and current package contracts.
 - [Platform Base](./platform-base.md)
 - [CRM](./crm.md): CRM-owned schema, runtime wiring, and CRM package behavior.
@@ -39,6 +50,7 @@ Selecting `admin` in the scaffold affects the Admin starter UI and package wirin
 ## Related docs
 
 - [Getting Started](../foundations/README.md)
+- [Base Contract](./base-contract.md)
 - [Using BrightWeb Modules](./using-modules.md)
 - [Examples and Recipes](../recipes/README.md)
 

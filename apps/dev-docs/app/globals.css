@@ -976,6 +976,24 @@ a {
   word-break: normal;
 }
 
+.doc-table th:nth-child(3),
+.doc-table td:nth-child(3) {
+  width: 8.5rem;
+  min-width: 8.5rem;
+  white-space: nowrap;
+}
+
+.doc-table th:nth-child(3) {
+  text-wrap: nowrap;
+}
+
+.doc-table td .doc-inline-code {
+  white-space: nowrap;
+  text-wrap: nowrap;
+  overflow-wrap: normal;
+  word-break: normal;
+}
+
 .dependency-graph {
   display: grid;
   gap: 0.7rem;

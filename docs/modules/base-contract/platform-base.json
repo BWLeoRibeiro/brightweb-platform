@@ -1,0 +1,309 @@
+[
+  {
+    "moduleKey": "platform-base",
+    "packageName": "@brightweblabs/core-auth/shared",
+    "symbol": "AUTH_RESEND_COOLDOWN_SECONDS",
+    "kind": "shared-helper",
+    "status": "stable",
+    "runtime": "shared",
+    "summary": "Shared resend cooldown constant used by auth UIs and hooks.",
+    "auth": "none",
+    "inputs": [],
+    "outputs": [
+      "number"
+    ],
+    "notes": [
+      "Use with stable auth form and cooldown behavior."
+    ],
+    "source": "packages/core-auth/src/shared.ts"
+  },
+  {
+    "moduleKey": "platform-base",
+    "packageName": "@brightweblabs/core-auth/shared",
+    "symbol": "buildSignupCallbackUrl",
+    "kind": "shared-helper",
+    "status": "stable",
+    "runtime": "shared",
+    "summary": "Builds the default signup callback URL from the configured app base URL.",
+    "auth": "none",
+    "inputs": [],
+    "outputs": [
+      "string"
+    ],
+    "notes": [
+      "Use for app-owned signup and invitation flows."
+    ],
+    "source": "packages/core-auth/src/shared.ts"
+  },
+  {
+    "moduleKey": "platform-base",
+    "packageName": "@brightweblabs/core-auth/shared",
+    "symbol": "buildResetPasswordRedirectUrl",
+    "kind": "shared-helper",
+    "status": "stable",
+    "runtime": "shared",
+    "summary": "Builds the default password reset redirect URL from the configured app base URL.",
+    "auth": "none",
+    "inputs": [],
+    "outputs": [
+      "string"
+    ],
+    "notes": [
+      "Use for app-owned password reset flows."
+    ],
+    "source": "packages/core-auth/src/shared.ts"
+  },
+  {
+    "moduleKey": "platform-base",
+    "packageName": "@brightweblabs/core-auth/shared",
+    "symbol": "validateEmail",
+    "kind": "shared-helper",
+    "status": "stable",
+    "runtime": "shared",
+    "summary": "Validates email input for shared auth forms.",
+    "auth": "none",
+    "inputs": [
+      "email: string"
+    ],
+    "outputs": [
+      "boolean"
+    ],
+    "notes": [
+      "Use for starter and app-owned auth form validation."
+    ],
+    "source": "packages/core-auth/src/shared.ts"
+  },
+  {
+    "moduleKey": "platform-base",
+    "packageName": "@brightweblabs/core-auth/shared",
+    "symbol": "validatePassword",
+    "kind": "shared-helper",
+    "status": "stable",
+    "runtime": "shared",
+    "summary": "Validates password input against the shared BrightWeb starter rules.",
+    "auth": "none",
+    "inputs": [
+      "password: string"
+    ],
+    "outputs": [
+      "PasswordValidationResult"
+    ],
+    "notes": [
+      "Use for starter and app-owned auth form validation."
+    ],
+    "source": "packages/core-auth/src/shared.ts"
+  },
+  {
+    "moduleKey": "platform-base",
+    "packageName": "@brightweblabs/core-auth/shared",
+    "symbol": "getAuthBaseUrl",
+    "kind": "shared-helper",
+    "status": "internal",
+    "runtime": "shared",
+    "summary": "Resolves the configured auth base URL for other shared auth helpers.",
+    "auth": "none",
+    "inputs": [],
+    "outputs": [
+      "string"
+    ],
+    "notes": [
+      "Do not build app code directly on this helper in v1."
+    ],
+    "source": "packages/core-auth/src/shared.ts"
+  },
+  {
+    "moduleKey": "platform-base",
+    "packageName": "@brightweblabs/core-auth/shared",
+    "symbol": "normalizeGlobalRole",
+    "kind": "shared-helper",
+    "status": "internal",
+    "runtime": "shared",
+    "summary": "Normalizes raw role values into the shared BrightWeb role union.",
+    "auth": "none",
+    "inputs": [
+      "value: string | null | undefined"
+    ],
+    "outputs": [
+      "GlobalRole | null"
+    ],
+    "notes": [
+      "Used internally by server auth and admin helpers."
+    ],
+    "source": "packages/core-auth/src/shared.ts"
+  },
+  {
+    "moduleKey": "platform-base",
+    "packageName": "@brightweblabs/core-auth/shared",
+    "symbol": "canAccessInsightsCms",
+    "kind": "shared-helper",
+    "status": "internal",
+    "runtime": "shared",
+    "summary": "Determines access to the current Insights CMS surface.",
+    "auth": "none",
+    "inputs": [
+      "role: string | null | undefined"
+    ],
+    "outputs": [
+      "boolean"
+    ],
+    "notes": [
+      "Treat this as internal route policy logic in v1."
+    ],
+    "source": "packages/core-auth/src/shared.ts"
+  },
+  {
+    "moduleKey": "platform-base",
+    "packageName": "@brightweblabs/core-auth/shared",
+    "symbol": "resolvePostLoginPath",
+    "kind": "shared-helper",
+    "status": "internal",
+    "runtime": "shared",
+    "summary": "Chooses the current post-login landing path from the user's role.",
+    "auth": "none",
+    "inputs": [
+      "role: string | null | undefined"
+    ],
+    "outputs": [
+      "\"/dashboard\" | \"/account\""
+    ],
+    "notes": [
+      "Treat this as internal route policy logic in v1."
+    ],
+    "source": "packages/core-auth/src/shared.ts"
+  },
+  {
+    "moduleKey": "platform-base",
+    "packageName": "@brightweblabs/core-auth/client",
+    "symbol": "useCooldownTimer",
+    "kind": "hook",
+    "status": "stable",
+    "runtime": "client",
+    "summary": "Client hook for resend cooldown and timer state in auth flows.",
+    "auth": "none",
+    "inputs": [
+      "durationSeconds: number"
+    ],
+    "outputs": [
+      "CooldownTimerResult"
+    ],
+    "notes": [
+      "Use for app-owned auth forms and resend flows."
+    ],
+    "source": "packages/core-auth/src/client.ts"
+  },
+  {
+    "moduleKey": "platform-base",
+    "packageName": "@brightweblabs/core-auth/server",
+    "symbol": "requireServerPageAccess",
+    "kind": "helper",
+    "status": "stable",
+    "runtime": "server",
+    "summary": "Guards a server page or component and returns the signed-in user context.",
+    "auth": "signed-in user required",
+    "inputs": [],
+    "outputs": [
+      "{ supabase, user, profileId, role }"
+    ],
+    "notes": [
+      "Use as the default server entrypoint for authenticated page data."
+    ],
+    "source": "packages/core-auth/src/server.ts"
+  },
+  {
+    "moduleKey": "platform-base",
+    "packageName": "@brightweblabs/core-auth/server",
+    "symbol": "requireServerPageRoleAccess",
+    "kind": "helper",
+    "status": "stable",
+    "runtime": "server",
+    "summary": "Guards a server page or component for one or more allowed roles.",
+    "auth": "allowed role required",
+    "inputs": [
+      "allowedRoles: GlobalRole | GlobalRole[]"
+    ],
+    "outputs": [
+      "{ supabase, user, role }"
+    ],
+    "notes": [
+      "Use for role-gated dashboard pages and layouts."
+    ],
+    "source": "packages/core-auth/src/server.ts"
+  },
+  {
+    "moduleKey": "platform-base",
+    "packageName": "@brightweblabs/core-auth/server",
+    "symbol": "getServerAccess",
+    "kind": "helper",
+    "status": "stable",
+    "runtime": "server",
+    "summary": "Returns the current server-side auth and role state without redirecting.",
+    "auth": "optional signed-in user",
+    "inputs": [],
+    "outputs": [
+      "ServerAccess"
+    ],
+    "notes": [
+      "Use when an app needs read-only access to current auth state."
+    ],
+    "source": "packages/core-auth/src/server.ts"
+  },
+  {
+    "moduleKey": "platform-base",
+    "packageName": "@brightweblabs/core-auth/server",
+    "symbol": "requireServerUserAccess",
+    "kind": "helper",
+    "status": "internal",
+    "runtime": "server",
+    "summary": "Lower-level user access helper used by the current server auth surface.",
+    "auth": "signed-in user required",
+    "inputs": [],
+    "outputs": [
+      "ServerUserAccess"
+    ],
+    "notes": [
+      "Treat as internal composition for the stable server helpers."
+    ],
+    "source": "packages/core-auth/src/server.ts"
+  },
+  {
+    "moduleKey": "platform-base",
+    "packageName": "@brightweblabs/core-auth/server",
+    "symbol": "requireServerRoleAccess",
+    "kind": "helper",
+    "status": "internal",
+    "runtime": "server",
+    "summary": "Lower-level role access helper used by the current admin handlers.",
+    "auth": "allowed role required",
+    "inputs": [
+      "allowedRoles: GlobalRole | GlobalRole[]"
+    ],
+    "outputs": [
+      "ServerRoleAccess"
+    ],
+    "notes": [
+      "Treat as internal server composition in v1."
+    ],
+    "source": "packages/core-auth/src/server.ts"
+  },
+  {
+    "moduleKey": "platform-base",
+    "packageName": "@brightweblabs/core-auth/server",
+    "symbol": "getProfileIdForUser",
+    "kind": "helper",
+    "status": "internal",
+    "runtime": "server",
+    "summary": "Looks up the profile record for a Supabase user.",
+    "auth": "server context required",
+    "inputs": [
+      "supabase",
+      "userId: string"
+    ],
+    "outputs": [
+      "{ profileId, error }"
+    ],
+    "notes": [
+      "Treat as internal server composition in v1."
+    ],
+    "source": "packages/core-auth/src/server.ts"
+  }
+]

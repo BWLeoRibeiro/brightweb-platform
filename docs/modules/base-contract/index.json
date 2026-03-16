@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "canonicalManifest": "../base-contract.json",
+  "moduleFiles": [
+    {
+      "moduleKey": "platform-base",
+      "title": "Platform Base",
+      "file": "platform-base.json",
+      "doc": "../platform-base.md",
+      "entryCount": 16,
+      "summary": "Core auth and admin-backed platform base surfaces."
+    },
+    {
+      "moduleKey": "admin",
+      "title": "Admin",
+      "file": "admin.json",
+      "doc": "../platform-base.md",
+      "entryCount": 10,
+      "summary": "Admin server helpers, handlers, and packaged admin internals."
+    },
+    {
+      "moduleKey": "crm",
+      "title": "CRM",
+      "file": "crm.json",
+      "doc": "../crm.md",
+      "entryCount": 2,
+      "summary": "CRM shell registration plus starter CRM page helper."
+    },
+    {
+      "moduleKey": "projects",
+      "title": "Projects",
+      "file": "projects.json",
+      "doc": "../projects.md",
+      "entryCount": 5,
+      "summary": "Projects shell registration, stable portfolio helpers, and starter portfolio helper."
+    }
+  ]
+}

@@ -1,0 +1,99 @@
+[
+  {
+    "moduleKey": "projects",
+    "packageName": "@brightweblabs/module-projects/registration",
+    "symbol": "projectsModuleRegistration",
+    "kind": "registration",
+    "status": "stable",
+    "runtime": "shell",
+    "summary": "Registers the projects navigation and toolbar surfaces in the app shell.",
+    "auth": "route-level visibility applies inside the shell",
+    "inputs": [],
+    "outputs": [
+      "ShellModuleRegistration"
+    ],
+    "notes": [
+      "Use when wiring Projects into the shared shell."
+    ],
+    "source": "packages/module-projects/src/registration.ts"
+  },
+  {
+    "moduleKey": "projects",
+    "packageName": "@brightweblabs/module-projects",
+    "symbol": "listProjects",
+    "kind": "helper",
+    "status": "stable",
+    "runtime": "server",
+    "summary": "Lists projects with reusable filters, pagination, and derived task and milestone stats.",
+    "auth": "signed-in user with project access required in the caller context",
+    "inputs": [
+      "supabase",
+      "params: ListProjectsParams"
+    ],
+    "outputs": [
+      "ProjectsListResult"
+    ],
+    "notes": [
+      "Use when building app-owned portfolio tables, boards, and project queries."
+    ],
+    "source": "packages/module-projects/src/index.ts"
+  },
+  {
+    "moduleKey": "projects",
+    "packageName": "@brightweblabs/module-projects",
+    "symbol": "getProjectPortfolioStats",
+    "kind": "helper",
+    "status": "stable",
+    "runtime": "server",
+    "summary": "Returns reusable portfolio-level project counters for the current project schema.",
+    "auth": "signed-in user with project access required in the caller context",
+    "inputs": [
+      "supabase"
+    ],
+    "outputs": [
+      "ProjectsPortfolioStats"
+    ],
+    "notes": [
+      "Use when building app-owned dashboards and portfolio summaries."
+    ],
+    "source": "packages/module-projects/src/index.ts"
+  },
+  {
+    "moduleKey": "projects",
+    "packageName": "@brightweblabs/module-projects",
+    "symbol": "getProjectsPortfolioPageData",
+    "kind": "helper",
+    "status": "starter",
+    "runtime": "server",
+    "summary": "Starter page helper that assembles the current projects portfolio payload.",
+    "auth": "signed-in user required",
+    "inputs": [],
+    "outputs": [
+      "ProjectsPortfolioPageData"
+    ],
+    "notes": [
+      "Replace or compose this helper when a project needs a different portfolio page shape."
+    ],
+    "source": "packages/module-projects/src/index.ts"
+  },
+  {
+    "moduleKey": "projects",
+    "packageName": "@brightweblabs/module-projects",
+    "symbol": "isProjectsSchemaMissingError",
+    "kind": "helper",
+    "status": "internal",
+    "runtime": "server",
+    "summary": "Detects missing-table and missing-column errors for the current starter schema fallback.",
+    "auth": "none",
+    "inputs": [
+      "error: unknown"
+    ],
+    "outputs": [
+      "boolean"
+    ],
+    "notes": [
+      "Treat as internal fallback logic for the current starter helpers."
+    ],
+    "source": "packages/module-projects/src/index.ts"
+  }
+]

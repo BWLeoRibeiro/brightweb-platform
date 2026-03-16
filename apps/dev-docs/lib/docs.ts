@@ -65,10 +65,11 @@ const docOrderByHref: Record<string, number> = {
   "/docs/foundations/create-an-app-templates": 30,
   "/docs/foundations/project-structure": 40,
   "/docs/modules": 50,
-  "/docs/modules/using-modules": 55,
+  "/docs/modules/base-contract": 55,
   "/docs/modules/platform-base": 60,
   "/docs/modules/crm": 70,
   "/docs/modules/projects": 80,
+  "/docs/modules/using-modules": 90,
   "/docs/recipes": 90,
 };
 

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { isValidElement, type ComponentPropsWithoutRef, type ReactNode } from "react";
+import { MdxParagraph } from "./components/docs/mdx-elements";
 import {
   Callout,
   CommandBlock,
@@ -50,9 +51,7 @@ export function useMDXComponents(components: MdxComponents): MdxComponents {
     h1: createHeading("h1"),
     h2: createHeading("h2"),
     h3: createHeading("h3"),
-    p: ({ className, ...props }: ComponentPropsWithoutRef<"p">) => (
-      <p {...props} className={["doc-prose-paragraph", className].filter(Boolean).join(" ")} />
-    ),
+    p: MdxParagraph,
     ul: (props: ComponentPropsWithoutRef<"ul">) => <ul {...props} className="doc-prose-list" />,
     ol: (props: ComponentPropsWithoutRef<"ol">) => <ol {...props} className="doc-prose-list ordered" />,
     li: (props: ComponentPropsWithoutRef<"li">) => <li {...props} className="doc-prose-list-item" />,

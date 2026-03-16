@@ -4,6 +4,8 @@ The Projects module extends the platform with work-management data and project a
 
 > Projects builds on top of the `Core + Admin + CRM` platform baseline; selecting Projects adds Projects-owned schema, package wiring, and the starter projects surface.
 
+Use [Base Contract](./base-contract.md) for the support-tier rules and [base-contract.json](./base-contract.json) for the canonical symbol inventory.
+
 ## What schema it installs
 
 - Baseline tables: `projects`, `project_members`, `project_milestones`, `project_tasks`, `project_links`, and `project_status_log`
@@ -28,6 +30,24 @@ The Projects module extends the platform with work-management data and project a
 
 > Projects does **not** install a full project management frontend product on its own. It mainly installs shared schema, access rules, and server and domain contracts that applications build on top of.
 
+## Supported base contract
+
+The current Projects contract splits reusable portfolio primitives from starter-facing page assembly.
+
+### Stable
+
+- `@brightweblabs/module-projects`: `listProjects()`
+- `@brightweblabs/module-projects`: `getProjectPortfolioStats()`
+- `@brightweblabs/module-projects/registration`: `projectsModuleRegistration`
+
+### Starter
+
+- `@brightweblabs/module-projects`: `getProjectsPortfolioPageData()`
+
+### Internal
+
+- `@brightweblabs/module-projects`: `isProjectsSchemaMissingError()`
+
 ## How to use it in an app
 
 The current Projects package is mainly consumed through server helpers plus shell registration.
@@ -47,6 +67,8 @@ export default async function ProjectsPage() {
 
 Use `getProjectsPortfolioPageData()` when you want a starter portfolio payload for a page, and use lower-level helpers such as `listProjects()` when you need more custom filtering or pagination behavior.
 
+Treat the portfolio page helper as starter page glue. Build app-owned project surfaces on the lower-level stable helpers when you need a longer-lived contract.
+
 ### Register Projects in the app shell
 
 ```ts
@@ -59,11 +81,18 @@ Wire that registration into your app shell when you want the Projects navigation
 
 The package gives you shared schema, access rules, and server-side data helpers. The actual portfolio screens, detail pages, boards, forms, and workflow UI remain application-owned.
 
+## How To Build On This
+
+- Build on `stable` helpers such as `listProjects()` and `getProjectPortfolioStats()` for app-owned project pages and flows.
+- Use `getProjectsPortfolioPageData()` when you want the current starter portfolio screen quickly.
+- Do not depend on `isProjectsSchemaMissingError()` for app-owned contracts; it is internal fallback logic for the current starter helper.
+
 For a broader integration overview, see [Using BrightWeb Modules](./using-modules.md).
 
 ## Related docs
 
 - [Modules](./README.md)
+- [Base Contract](./base-contract.md)
 - [Using BrightWeb Modules](./using-modules.md)
 - [CRM](./crm.md)
 - [Platform Base](./platform-base.md)

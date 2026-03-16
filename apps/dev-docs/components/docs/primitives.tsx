@@ -1,7 +1,8 @@
 import Link from "next/link";
-import { Children, cloneElement, isValidElement, type ReactElement, type ReactNode } from "react";
+import { Children, cloneElement, isValidElement, type ReactNode } from "react";
 import { ArrowRight, GitBranchPlus, Link2, TerminalSquare } from "lucide-react";
 import { docsSections, type DocPageDefinition } from "../../lib/docs";
+import { hasParagraphClassName, isParagraphLikeElement, joinClassNames } from "./mdx-elements";
 import { CopyButton } from "./copyable-code";
 
 type ClassNameProps = {
@@ -68,22 +69,13 @@ const INLINE_TAGS = new Set([
   "wbr",
 ]);
 
-type ParagraphLikeProps = ClassNameProps & {
-  children?: ReactNode;
-};
-
-function isParagraphLikeElement(child: ReactNode): child is ReactElement<ParagraphLikeProps> {
-  return isValidElement<ParagraphLikeProps>(child)
-    && (child.type === "p" || (child.props.className ?? "").includes("doc-prose-paragraph"));
-}
-
 function hasBlockLevelContent(children: ReactNode[]) {
   return children.some((child) => {
     if (!isValidElement<ClassNameProps>(child)) {
       return false;
     }
 
-    if ((child.props.className ?? "").includes("doc-prose-paragraph")) {
+    if (hasParagraphClassName(child.props.className)) {
       return true;
     }
 
@@ -103,10 +95,11 @@ function normalizeCalloutChild(child: ReactNode): ReactNode {
 
   if (normalizedChildren.length === 1 && isParagraphLikeElement(normalizedChildren[0])) {
     const nestedParagraph = normalizedChildren[0];
-    const mergedClassName = [child.props.className, nestedParagraph.props.className].filter(Boolean).join(" ");
+    const mergedClassName = joinClassNames(child.props.className, nestedParagraph.props.className);
 
     return normalizeCalloutChild(cloneElement(nestedParagraph, {
-      className: mergedClassName || undefined,
+      className: mergedClassName,
+      key: child.key ?? nestedParagraph.key,
     }));
   }
 
@@ -297,12 +290,11 @@ export function Lead({ children, className }: { children: ReactNode } & ClassNam
 
   if (childNodes.length === 1 && isValidElement<{ className?: string }>(childNodes[0])) {
     const child = childNodes[0];
-    const childClassName = child.props.className ?? "";
-    const isParagraph = child.type === "p" || childClassName.includes("doc-prose-paragraph");
+    const isParagraph = isParagraphLikeElement(child);
 
     if (isParagraph) {
       return cloneElement(child, {
-        className: `${resolvedClassName} ${childClassName}`.trim(),
+        className: joinClassNames(resolvedClassName, child.props.className),
       });
     }
   }

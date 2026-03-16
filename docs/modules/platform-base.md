@@ -10,6 +10,8 @@ The practical platform base is currently **Core + Admin**.
 
 That means the baseline platform install is already module-backed before optional business modules such as CRM or Projects are added.
 
+Use [Base Contract](./base-contract.md) for the support-tier rules and [base-contract.json](./base-contract.json) for the canonical symbol inventory.
+
 ## What schema it installs
 
 ### Core
@@ -39,6 +41,28 @@ That means the baseline platform install is already module-backed before optiona
 | Starter routes | The platform starter includes `/playground/auth` for the Core auth layer. If Admin is selected, the module template also contributes `/playground/admin` plus the starter admin API routes. |
 | Database behavior | Platform always resolves to the `Core + Admin` database baseline; selecting Admin only controls whether the Admin starter UI and package wiring are scaffolded. |
 | Site template | The standalone `site` template does not receive this platform base. |
+
+## Supported base contract
+
+The current platform-base contract is intentionally split into reusable and starter-facing surfaces.
+
+### Stable
+
+- `@brightweblabs/core-auth/shared`: shared validation, URL helpers, and auth constants
+- `@brightweblabs/core-auth/client`: `useCooldownTimer()`
+- `@brightweblabs/core-auth/server`: `requireServerPageAccess()`, `requireServerPageRoleAccess()`, `getServerAccess()`
+- `@brightweblabs/module-admin`: `listAdminUsers()`, `handleAdminUsersGetRequest()`, `handleAdminUsersRoleChangeRequest()`
+- `@brightweblabs/module-admin/registration`: `adminModuleRegistration`
+
+### Starter
+
+- `@brightweblabs/module-admin`: `getAdminUsersPageData()`
+
+### Internal
+
+- Lower-level auth helpers such as `requireServerUserAccess()` and `requireServerRoleAccess()`
+- Packaged admin UI and event helpers such as `AdminUsersClient`, `ADMIN_EVENTS`, and the admin event dispatch helpers
+- Lower-level admin mutation composition such as `applyAdminRoleChanges()`
 
 ## How to use it in an app
 
@@ -73,9 +97,17 @@ const { getAdminUsersPageData } = await import("@brightweblabs/module-admin");
 const { users } = await getAdminUsersPageData();
 ```
 
+Treat `getAdminUsersPageData()` as starter page glue. Build app-owned admin pages on `listAdminUsers()` and the stable handlers when you need a longer-lived contract.
+
 ### Shell registration
 
 If your app uses `@brightweblabs/app-shell`, the Admin starter also wires `adminModuleRegistration` into the shell configuration so admin nav and toolbar surfaces appear in the platform runtime.
+
+## How To Build On This
+
+- Build on `stable` auth helpers, admin handlers, and admin listing helpers for project-owned server logic.
+- Use `starter` helpers like `getAdminUsersPageData()` when you want the scaffolded screen quickly.
+- Do not depend on `internal` auth or packaged admin UI helpers for app-owned contracts.
 
 For a broader integration overview, see [Using BrightWeb Modules](./using-modules.md).
 
@@ -83,6 +115,7 @@ For a broader integration overview, see [Using BrightWeb Modules](./using-module
 
 - [Installation](../foundations/installation.md)
 - [Modules](./README.md)
+- [Base Contract](./base-contract.md)
 - [Using BrightWeb Modules](./using-modules.md)
 - [CRM](./crm.md)
 - [Projects](./projects.md)
