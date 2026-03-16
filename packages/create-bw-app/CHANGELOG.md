@@ -1,5 +1,12 @@
 # create-bw-app
 
+## 0.8.0
+
+### Minor Changes
+
+- 7527b84: Stop generating `.env.local` in platform app scaffolds and keep `.env.example` as the single generated environment template. Update the generated starter copy and docs to instruct developers to copy `.env.example` to `.env.local` when they need local credentials or overrides.
+- 7527b84: Refresh the Brightweb database scaffold to use a clean v1 module baseline instead of carrying legacy transitional migration history. Remove BeGreen-specific database references from the generated platform surfaces and align the repo docs with Brightweb-owned forward migration history.
+
 ## 0.7.0
 
 ### Minor Changes
