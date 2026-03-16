@@ -9,13 +9,11 @@ export type StarterBrandConfig = {
 };
 
 export const starterBrandConfig: StarterBrandConfig = {
-  companyName: process.env.NEXT_PUBLIC_CLIENT_COMPANY_NAME?.trim() || "Starter Client",
-  productName: process.env.NEXT_PUBLIC_CLIENT_PRODUCT_NAME?.trim() || "Operations Platform",
-  slug: process.env.NEXT_PUBLIC_CLIENT_SLUG?.trim() || "starter-client",
-  tagline:
-    process.env.NEXT_PUBLIC_CLIENT_TAGLINE?.trim()
-    || "A configurable Brightweb platform preview for validating package work before it lands in client scaffolds.",
-  contactEmail: process.env.NEXT_PUBLIC_CLIENT_CONTACT_EMAIL?.trim() || "hello@example.com",
-  supportEmail: process.env.NEXT_PUBLIC_CLIENT_SUPPORT_EMAIL?.trim() || "support@example.com",
-  primaryHex: process.env.NEXT_PUBLIC_CLIENT_PRIMARY_HEX?.trim() || "#1f7a45",
+  companyName: "Starter Client",
+  productName: "Operations Platform",
+  slug: "starter-client",
+  tagline: "A configurable Brightweb platform preview for validating package work before it lands in client scaffolds.",
+  contactEmail: "hello@example.com",
+  supportEmail: "support@example.com",
+  primaryHex: "#1f7a45",
 };

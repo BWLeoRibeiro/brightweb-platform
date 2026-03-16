@@ -21,7 +21,7 @@ Use [Base Contract](./base-contract.md) for the support-tier rules and [base-con
 
 In a generated platform app, module usage usually happens in 3 places:
 
-1. `config/modules.ts` and environment flags decide which modules are enabled.
+1. `config/modules.ts` decides which modules are enabled.
 2. `config/shell.ts` wires each enabled module registration into `@brightweblabs/app-shell`.
 3. App routes call the module package directly for server data, route handlers, or auth helpers.
 

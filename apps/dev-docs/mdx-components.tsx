@@ -13,6 +13,7 @@ import {
   SourceNote,
 } from "./components/docs/primitives";
 import { CopyableCodeBlock, InlineCode } from "./components/docs/copyable-code";
+import { getTableMetadataFromChildren } from "./components/docs/table-metadata";
 
 type MdxComponent = (props: any) => ReactNode;
 type MdxComponents = Record<string, MdxComponent>;
@@ -67,11 +68,20 @@ export function useMDXComponents(components: MdxComponents): MdxComponents {
     strong: (props: ComponentPropsWithoutRef<"strong">) => <strong {...props} className="doc-prose-strong" />,
     blockquote: (props: ComponentPropsWithoutRef<"blockquote">) => <blockquote {...props} className="doc-prose-quote" />,
     hr: (props: ComponentPropsWithoutRef<"hr">) => <hr {...props} className="doc-prose-rule" />,
-    table: (props: ComponentPropsWithoutRef<"table">) => (
-      <div className="doc-table-wrap">
-        <table {...props} className="doc-table" />
-      </div>
-    ),
+    table: (props: ComponentPropsWithoutRef<"table">) => {
+      const metadata = getTableMetadataFromChildren(props.children);
+
+      return (
+        <div className="doc-table-wrap">
+          <table
+            {...props}
+            className="doc-table"
+            data-columns={String(metadata.columns)}
+            data-variant={metadata.variant}
+          />
+        </div>
+      );
+    },
     thead: (props: ComponentPropsWithoutRef<"thead">) => <thead {...props} />,
     tbody: (props: ComponentPropsWithoutRef<"tbody">) => <tbody {...props} />,
     tr: (props: ComponentPropsWithoutRef<"tr">) => <tr {...props} />,

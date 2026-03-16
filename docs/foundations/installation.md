@@ -1,6 +1,6 @@
 # Installation
 
-`create-bw-app` is the BrightWeb scaffold for starting either a platform app or a standalone site.
+`create-bw-app` is the public BrightWeb scaffold for starting either a platform app or a standalone site.
 
 Use the public CLI when you want a new project quickly without manual starter wiring.
 
@@ -29,17 +29,20 @@ Common variants:
 
 If you are unsure, start with `platform` only when you need shared platform auth, shell, or module-backed product work. Otherwise choose `site`.
 
-## Typical flow
+## Immediate next steps
 
 1. From the parent directory where you want the new app to live, run `pnpm dlx create-bw-app` and choose the template.
-2. If creating a platform app, choose optional modules based on the product scope.
-3. Change into the generated app directory and install dependencies if you skipped install during scaffolding.
-4. Review `.env.example`, copy it to `.env.local`, and fill in real credentials.
-5. Run the app from the generated project with `pnpm dev`.
+2. If creating a platform app, choose optional modules based on the product scope you want to validate right away.
+3. If you skipped install during scaffolding, change into the generated app directory and run your package manager install command.
+4. For platform apps, review `config/brand.ts`, `config/modules.ts`, and `.env.local`, then fill in the real service values described in [Environment and Services](./environment-and-services.md).
+5. Run the app and follow [Validate Your Starter](./validate-your-starter.md) before you start customizing the generated routes.
 
 ## Related
 
+- [Prerequisites](./prerequisites.md)
+- [Environment and Services](./environment-and-services.md)
 - [Project Structure](./project-structure.md)
+- [Validate Your Starter](./validate-your-starter.md)
 - [Platform Base](../modules/platform-base.md)
 - [Modules](../modules/README.md)
 - [Examples and Recipes](../recipes/README.md)

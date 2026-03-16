@@ -38,4 +38,4 @@ Preview app config files:
 - `config/brand.ts`
 - `config/modules.ts`
 - `config/env.ts`
-- `.env.example`
+- `.env.local` when local service values are needed

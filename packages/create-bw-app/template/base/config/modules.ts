@@ -10,14 +10,6 @@ export type StarterModuleConfig = {
   placement: "core" | "primary" | "admin";
 };
 
-function envFlag(value: string | undefined, defaultValue: boolean) {
-  if (typeof value !== "string") return defaultValue;
-  const normalized = value.trim().toLowerCase();
-  if (["1", "true", "yes", "on"].includes(normalized)) return true;
-  if (["0", "false", "no", "off"].includes(normalized)) return false;
-  return defaultValue;
-}
-
 export const starterModuleConfig: StarterModuleConfig[] = [
   {
     key: "core-auth",
@@ -32,7 +24,7 @@ export const starterModuleConfig: StarterModuleConfig[] = [
     key: "crm",
     label: "CRM",
     description: "Contacts, marketing audience, and CRM server/data layer.",
-    enabled: envFlag(process.env.NEXT_PUBLIC_ENABLE_CRM, true),
+    enabled: true,
     packageName: "@brightweblabs/module-crm",
     playgroundHref: "/playground/crm",
     placement: "primary",
@@ -41,7 +33,7 @@ export const starterModuleConfig: StarterModuleConfig[] = [
     key: "projects",
     label: "Projects",
     description: "Project portfolio, detail routes, and work-management server logic.",
-    enabled: envFlag(process.env.NEXT_PUBLIC_ENABLE_PROJECTS, true),
+    enabled: true,
     packageName: "@brightweblabs/module-projects",
     playgroundHref: "/playground/projects",
     placement: "primary",
@@ -50,7 +42,7 @@ export const starterModuleConfig: StarterModuleConfig[] = [
     key: "admin",
     label: "Admin",
     description: "User role governance, admin tools, and access-control surfaces.",
-    enabled: envFlag(process.env.NEXT_PUBLIC_ENABLE_ADMIN, true),
+    enabled: true,
     packageName: "@brightweblabs/module-admin",
     playgroundHref: "/playground/admin",
     placement: "admin",

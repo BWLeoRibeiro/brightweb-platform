@@ -34,7 +34,7 @@ npm create bw-app@latest
 - platform apps include BrightWeb auth, shell wiring, and optional module starter surfaces
 - site apps include Next.js, Tailwind CSS v4, and local component primitives
 - writes `package.json`, `next.config.ts`, `.gitignore`, and `README.md` for both templates
-- platform apps also write `.env.example`, generated config files, and module feature flags
+- platform apps also write `.env.local` plus generated config files for brand and module state
 - supports repo-local `workspace:*` wiring and future published dependency wiring
 
 ## Workspace mode extras

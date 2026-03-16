@@ -937,7 +937,8 @@ a {
 
 .doc-table {
   width: 100%;
-  min-width: 40rem;
+  min-width: 46rem;
+  table-layout: auto;
   border-collapse: collapse;
   border-spacing: 0;
   overflow: hidden;
@@ -968,30 +969,175 @@ a {
   line-height: 1.65;
 }
 
-.doc-table th:first-child,
-.doc-table td:first-child {
-  width: 12rem;
-  min-width: 12rem;
+.doc-table[data-variant="template-choice"] {
+  min-width: 52rem;
+  table-layout: fixed;
+}
+
+.doc-table[data-variant="template-choice"] th:first-child,
+.doc-table[data-variant="template-choice"] td:first-child {
+  width: 9rem;
+  min-width: 9rem;
   overflow-wrap: normal;
   word-break: normal;
 }
 
-.doc-table th:nth-child(3),
-.doc-table td:nth-child(3) {
-  width: 8.5rem;
-  min-width: 8.5rem;
-  white-space: nowrap;
+.doc-table[data-variant="template-choice"] th:nth-child(2),
+.doc-table[data-variant="template-choice"] td:nth-child(2) {
+  width: 24%;
 }
 
-.doc-table th:nth-child(3) {
+.doc-table[data-variant="template-choice"] th:nth-child(3),
+.doc-table[data-variant="template-choice"] td:nth-child(3) {
+  width: 33%;
+}
+
+.doc-table[data-variant="template-choice"] th:nth-child(4),
+.doc-table[data-variant="template-choice"] td:nth-child(4) {
+  width: 22%;
+}
+
+.doc-table[data-variant="service-keys"] {
+  min-width: 76rem;
+  table-layout: fixed;
+}
+
+.doc-table[data-variant="service-keys"] th:first-child,
+.doc-table[data-variant="service-keys"] td:first-child {
+  width: 28%;
+}
+
+.doc-table[data-variant="service-keys"] th:nth-child(2),
+.doc-table[data-variant="service-keys"] td:nth-child(2) {
+  width: 9%;
+}
+
+.doc-table[data-variant="service-keys"] th:nth-child(3),
+.doc-table[data-variant="service-keys"] td:nth-child(3) {
+  width: 14%;
+}
+
+.doc-table[data-variant="service-keys"] th:nth-child(4),
+.doc-table[data-variant="service-keys"] td:nth-child(4) {
+  width: 24%;
+}
+
+.doc-table[data-variant="service-keys"] th:nth-child(5),
+.doc-table[data-variant="service-keys"] td:nth-child(5) {
+  width: 25%;
+}
+
+.doc-table[data-variant="generated-config"] {
+  min-width: 72rem;
+  table-layout: fixed;
+}
+
+.doc-table[data-variant="generated-config"] th:first-child,
+.doc-table[data-variant="generated-config"] td:first-child {
+  width: 24rem;
+  min-width: 24rem;
+  overflow-wrap: normal;
+  word-break: normal;
+}
+
+.doc-table[data-variant="generated-config"] th:nth-child(2),
+.doc-table[data-variant="generated-config"] td:nth-child(2) {
+  width: 7rem;
+  min-width: 7rem;
+}
+
+.doc-table[data-variant="generated-config"] th:nth-child(3),
+.doc-table[data-variant="generated-config"] td:nth-child(3) {
+  width: 18rem;
+}
+
+.doc-table[data-variant="generated-config"] th:nth-child(4),
+.doc-table[data-variant="generated-config"] td:nth-child(4) {
+  width: calc(100% - 49rem);
+}
+
+.doc-table[data-variant="module-flags"] {
+  min-width: 68rem;
+  table-layout: fixed;
+}
+
+.doc-table[data-variant="module-flags"] th:first-child,
+.doc-table[data-variant="module-flags"] td:first-child {
+  width: 20rem;
+  min-width: 20rem;
+  overflow-wrap: normal;
+  word-break: normal;
+}
+
+.doc-table[data-variant="module-flags"] th:nth-child(2),
+.doc-table[data-variant="module-flags"] td:nth-child(2) {
+  width: 7rem;
+  min-width: 7rem;
+}
+
+.doc-table[data-variant="module-flags"] th:nth-child(3),
+.doc-table[data-variant="module-flags"] td:nth-child(3) {
+  width: 21rem;
+}
+
+.doc-table[data-variant="module-flags"] th:nth-child(4),
+.doc-table[data-variant="module-flags"] td:nth-child(4) {
+  width: calc(100% - 48rem);
+}
+
+.doc-table[data-variant="validation-routes"] {
+  min-width: 54rem;
+  table-layout: fixed;
+}
+
+.doc-table[data-variant="validation-routes"] th:first-child,
+.doc-table[data-variant="validation-routes"] td:first-child {
+  width: 12rem;
+}
+
+.doc-table[data-variant="validation-routes"] th:nth-child(2),
+.doc-table[data-variant="validation-routes"] td:nth-child(2) {
+  width: 42%;
+}
+
+.doc-table[data-variant="validation-routes"] th:nth-child(3),
+.doc-table[data-variant="validation-routes"] td:nth-child(3) {
+  width: calc(58% - 12rem);
+}
+
+.doc-table[data-variant="surface-replacements"] {
+  min-width: 62rem;
+  table-layout: fixed;
+}
+
+.doc-table[data-variant="surface-replacements"] th:first-child,
+.doc-table[data-variant="surface-replacements"] td:first-child {
+  width: 21rem;
+}
+
+.doc-table[data-variant="surface-replacements"] th:nth-child(2),
+.doc-table[data-variant="surface-replacements"] td:nth-child(2) {
+  width: 15rem;
+}
+
+.doc-table[data-variant="surface-replacements"] th:nth-child(3),
+.doc-table[data-variant="surface-replacements"] td:nth-child(3) {
+  width: calc(100% - 36rem);
+}
+
+.doc-table[data-variant="service-keys"] td .doc-inline-code,
+.doc-table[data-variant="generated-config"] td .doc-inline-code,
+.doc-table[data-variant="module-flags"] td .doc-inline-code,
+.doc-table[data-variant="validation-routes"] td .doc-inline-code,
+.doc-table[data-variant="surface-replacements"] td .doc-inline-code {
+  white-space: nowrap;
   text-wrap: nowrap;
+  overflow-wrap: normal;
+  word-break: normal;
 }
 
 .doc-table td .doc-inline-code {
-  white-space: nowrap;
-  text-wrap: nowrap;
-  overflow-wrap: normal;
-  word-break: normal;
+  font-size: 0.95em;
 }
 
 .dependency-graph {

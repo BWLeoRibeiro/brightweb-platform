@@ -1,5 +1,7 @@
 # Project Structure
 
+This page is the generated-file map for `create-bw-app`. Read it after [Installation](./installation.md) and [Environment and Services](./environment-and-services.md) when you want to translate the starter into normal Next.js folders, routes, and config files.
+
 <Lead>
 Use this page as the generated-file map for <code>create-bw-app</code>. It is intentionally closer to a framework
 reference page: start with the top-level folders and files, then scan the template-specific routes.
@@ -49,18 +51,17 @@ reference page: start with the top-level folders and files, then scan the templa
     ["`package.json`", "platform and site", "Project manifest with Next.js scripts and template-specific dependencies."],
     ["`next.config.ts`", "platform and site", "Next.js config. Platform also writes `transpilePackages` for BrightWeb runtime packages and selected modules."],
     ["`README.md`", "platform and site", "Generated local setup notes tailored to the chosen template."],
-    ["`.gitignore`", "platform and site", "Shared ignore rules, including `.env*` with `.env.example` explicitly kept."],
+    ["`.gitignore`", "platform and site", "Shared ignore rules, including local environment files."],
     ["`next-env.d.ts`", "platform and site", "Standard Next.js TypeScript declarations copied from the template."],
     ["`postcss.config.mjs`", "platform and site", "Tailwind/PostCSS setup copied from the selected starter template."],
     ["`tsconfig.json`", "platform and site", "TypeScript base config copied from the selected starter template."],
-    ["`.env.example`", "platform only", "Generated starter environment keys, brand defaults, and module feature flags."],
-    ["`.env.local`", "platform only (optional local file)", "Developer-created local copy of `.env.example` for real credentials and overrides."],
+    ["`.env.local`", "platform only", "Generated local environment file for service values and runtime overrides."],
     ["`components.json`", "site only", "Local component registry config for the standalone site starter."],
     ["`config/site.ts`", "site only", "Single place to edit site name, description, eyebrow, and starter CTAs."],
-    ["`config/brand.ts`", "platform only", "Client identity and contact defaults used across the starter app."],
+    ["`config/brand.ts`", "platform only", "Generated client identity and contact defaults used across the starter app."],
     ["`config/client.ts`", "platform only", "Aggregates starter-facing state for the home page, env readiness, and enabled modules."],
     ["`config/env.ts`", "platform only", "Environment key definitions and readiness checks for the starter platform app."],
-    ["`config/modules.ts`", "platform only", "Module metadata and runtime enablement derived from generated env flags."],
+    ["`config/modules.ts`", "platform only", "Generated module metadata and runtime enablement based on scaffold selection."],
     ["`config/bootstrap.ts`", "platform only", "Bootstrap checklist content and starter provisioning references."],
     ["`config/shell.ts`", "platform only", "Generated app-shell registration that wires dashboard plus selected module navigation."],
   ]}
@@ -120,7 +121,7 @@ reference page: start with the top-level folders and files, then scan the templa
 │   ├── logo-dark.svg
 │   ├── logo-light.svg
 │   └── logo-mark.svg
-├── .env.example
+├── .env.local
 ├── next.config.ts
 └── package.json
 ```
@@ -157,10 +158,13 @@ reference page: start with the top-level folders and files, then scan the templa
 
 ## How to read this structure
 
-1. If you are generating a <strong>platform</strong> app, start with <code>config/brand.ts</code>, <code>config/modules.ts</code>, and <code>.env.example</code>. Copy it to <code>.env.local</code> when you need local credentials or overrides.
+1. If you are generating a <strong>platform</strong> app, start with <code>config/brand.ts</code>, <code>config/modules.ts</code>, and <code>.env.local</code>.
 2. If you are generating a <strong>site</strong> app, start with <code>config/site.ts</code>, <code>app/page.tsx</code>, and <code>app/globals.css</code>.
 
 ## Related docs
 
+- [Prerequisites](./prerequisites.md)
 - [Installation](./installation.md)
+- [Environment and Services](./environment-and-services.md)
+- [Validate Your Starter](./validate-your-starter.md)
 - [Platform Base](../modules/platform-base.md)

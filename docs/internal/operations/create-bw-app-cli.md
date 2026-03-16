@@ -26,7 +26,7 @@ Gaps it still had:
 - install dependencies
 - distinguish workspace dependencies from published npm versions
 - make module selection affect actual dependency wiring
-- generate `.env.example`
+- generate `.env.local`
 - generate `.gitignore`
 - provide CLI help or argument flags
 
@@ -62,7 +62,7 @@ The live preview app now lives separately at `apps/platform-preview`. It is a sa
   - `platform`: auth-first BrightWeb app with optional `crm`, `projects`, and `admin`
   - `site`: standalone Next.js + Tailwind site starter with local UI primitives
 - module selection now controls copied module playground files, generated `next.config.ts`, generated `config/shell.ts`, and dependency wiring
-- generated apps now get `.env.example`, `.gitignore`, `README.md`, `package.json`, and `next.config.ts`
+- generated apps now get `.env.local`, generated config files, `.gitignore`, `README.md`, `package.json`, and `next.config.ts`
 - the CLI supports flags, `--help`, and `--dry-run`
 - the interactive flow is simplified to app type, project name, template-specific prompts, and install confirmation
 - the CLI supports two dependency modes:
@@ -76,7 +76,7 @@ The live preview app now lives separately at `apps/platform-preview`. It is a sa
 | Templates | Prompts for either a platform app or a standalone site starter. |
 | Modules | For platform apps, prompts for optional modules: CRM, Projects, and Admin. |
 | Dependency wiring | Selected modules affect package dependencies, copied module starter files, generated `next.config.ts`, and generated shell/config wiring. |
-| Environment scaffold | Platform apps generate `.env.example`; copy it to `.env.local` only when you need local credentials or overrides. |
+| Environment scaffold | Platform apps generate `.env.local` for service values, while starter identity and module state live in generated config files. |
 | Install mode | Can install dependencies immediately or skip install during scaffolding. |
 | Output location | In normal external usage, the generated app is written to `./<slug>` unless you override the target directory. |
 

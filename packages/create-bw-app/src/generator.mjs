@@ -256,13 +256,6 @@ async function getVersionMap(workspaceRoot) {
   return versionMap;
 }
 
-function createModuleFlags(selectedModules) {
-  const selected = new Set(selectedModules);
-  return Object.fromEntries(
-    SELECTABLE_MODULES.map((moduleDefinition) => [moduleDefinition.key, selected.has(moduleDefinition.key)]),
-  );
-}
-
 function createDerivedBrandValues(slug) {
   const projectName = titleizeSlug(slug);
 
@@ -276,25 +269,100 @@ function createDerivedBrandValues(slug) {
   };
 }
 
-function createEnvFileContent({ slug, brandValues, moduleFlags }) {
+function createPlatformBrandConfigFile({ slug, brandValues }) {
+  return [
+    "export type StarterBrandConfig = {",
+    "  companyName: string;",
+    "  productName: string;",
+    "  slug: string;",
+    "  tagline: string;",
+    "  contactEmail: string;",
+    "  supportEmail: string;",
+    "  primaryHex: string;",
+    "};",
+    "",
+    "export const starterBrandConfig: StarterBrandConfig = {",
+    `  companyName: ${JSON.stringify(brandValues.companyName)},`,
+    `  productName: ${JSON.stringify(brandValues.productName)},`,
+    `  slug: ${JSON.stringify(slug)},`,
+    `  tagline: ${JSON.stringify(brandValues.tagline)},`,
+    `  contactEmail: ${JSON.stringify(brandValues.contactEmail)},`,
+    `  supportEmail: ${JSON.stringify(brandValues.supportEmail)},`,
+    `  primaryHex: ${JSON.stringify(brandValues.primaryHex)},`,
+    "};",
+    "",
+  ].join("\n");
+}
+
+function createPlatformModulesConfigFile(selectedModules) {
+  const selected = new Set(selectedModules);
+
+  return [
+    'export type StarterModuleKey = "core-auth" | "crm" | "projects" | "admin";',
+    "",
+    "export type StarterModuleConfig = {",
+    "  key: StarterModuleKey;",
+    "  label: string;",
+    "  description: string;",
+    "  enabled: boolean;",
+    "  packageName: string;",
+    "  playgroundHref?: string;",
+    '  placement: "core" | "primary" | "admin";',
+    "};",
+    "",
+    "export const starterModuleConfig: StarterModuleConfig[] = [",
+    "  {",
+    '    key: "core-auth",',
+    '    label: "Core Auth",',
+    '    description: "Login, reset-password, callback URLs, and shared auth validation utilities.",',
+    "    enabled: true,",
+    '    packageName: "@brightweblabs/core-auth",',
+    '    playgroundHref: "/playground/auth",',
+    '    placement: "core",',
+    "  },",
+    "  {",
+    '    key: "crm",',
+    '    label: "CRM",',
+    '    description: "Contacts, marketing audience, and CRM server/data layer.",',
+    `    enabled: ${String(selected.has("crm"))},`,
+    '    packageName: "@brightweblabs/module-crm",',
+    '    playgroundHref: "/playground/crm",',
+    '    placement: "primary",',
+    "  },",
+    "  {",
+    '    key: "projects",',
+    '    label: "Projects",',
+    '    description: "Project portfolio, detail routes, and work-management server logic.",',
+    `    enabled: ${String(selected.has("projects"))},`,
+    '    packageName: "@brightweblabs/module-projects",',
+    '    playgroundHref: "/playground/projects",',
+    '    placement: "primary",',
+    "  },",
+    "  {",
+    '    key: "admin",',
+    '    label: "Admin",',
+    '    description: "User role governance, admin tools, and access-control surfaces.",',
+    `    enabled: ${String(selected.has("admin"))},`,
+    '    packageName: "@brightweblabs/module-admin",',
+    '    playgroundHref: "/playground/admin",',
+    '    placement: "admin",',
+    "  },",
+    "];",
+    "",
+    "export function getEnabledStarterModules() {",
+    "  return starterModuleConfig.filter((moduleConfig) => moduleConfig.enabled);",
+    "}",
+    "",
+  ].join("\n");
+}
+
+function createEnvFileContent() {
   return [
     "NEXT_PUBLIC_APP_URL=http://localhost:3000",
     "NEXT_PUBLIC_SUPABASE_URL=",
     "NEXT_PUBLIC_SUPABASE_ANON_KEY=",
     "SUPABASE_SERVICE_ROLE_KEY=",
     "RESEND_API_KEY=",
-    "",
-    `NEXT_PUBLIC_CLIENT_COMPANY_NAME=${brandValues.companyName}`,
-    `NEXT_PUBLIC_CLIENT_PRODUCT_NAME=${brandValues.productName}`,
-    `NEXT_PUBLIC_CLIENT_SLUG=${slug}`,
-    `NEXT_PUBLIC_CLIENT_TAGLINE=${brandValues.tagline}`,
-    `NEXT_PUBLIC_CLIENT_CONTACT_EMAIL=${brandValues.contactEmail}`,
-    `NEXT_PUBLIC_CLIENT_SUPPORT_EMAIL=${brandValues.supportEmail}`,
-    `NEXT_PUBLIC_CLIENT_PRIMARY_HEX=${brandValues.primaryHex}`,
-    "",
-    `NEXT_PUBLIC_ENABLE_CRM=${String(moduleFlags.crm)}`,
-    `NEXT_PUBLIC_ENABLE_PROJECTS=${String(moduleFlags.projects)}`,
-    `NEXT_PUBLIC_ENABLE_ADMIN=${String(moduleFlags.admin)}`,
     "",
   ].join("\n");
 }
@@ -333,9 +401,8 @@ function createGitignore() {
     "yarn-error.log*",
     ".pnpm-debug.log*",
     "",
-    "# env files (can opt-in for committing if needed)",
+    "# env files",
     ".env*",
-    "!.env.example",
     "",
     "# vercel",
     ".vercel",
@@ -363,12 +430,12 @@ function createPlatformReadme({
 
   const localSteps = workspaceMode
     ? [
-        "1. Review `.env.example`, then copy it to `.env.local` and fill in real service credentials.",
+        "1. Review `.env.local` and fill in real service credentials.",
         "2. Run `pnpm install` from the BrightWeb workspace root.",
         `3. Run \`pnpm --filter ${slug} dev\`.`,
       ]
     : [
-        "1. Review `.env.example`, then copy it to `.env.local` and fill in real service credentials.",
+        "1. Review `.env.local` and fill in real service credentials.",
         `2. Run \`${packageManager} install\`.`,
         `3. Run \`${packageManager} dev\`.`,
       ];
@@ -871,7 +938,6 @@ async function scaffoldPlatformProject({
   answers,
   dbInstallPlan,
 }) {
-  const moduleFlags = createModuleFlags(selectedModules);
   const brandValues = createDerivedBrandValues(answers.slug);
   const baseTemplateDir = path.join(TEMPLATE_ROOT, "base");
 
@@ -899,11 +965,16 @@ async function scaffoldPlatformProject({
     )}\n`,
   );
   await fs.writeFile(path.join(targetDir, "next.config.ts"), createNextConfig({ template: "platform", selectedModules }));
+  await fs.writeFile(
+    path.join(targetDir, "config", "brand.ts"),
+    createPlatformBrandConfigFile({ slug: answers.slug, brandValues }),
+  );
+  await fs.writeFile(path.join(targetDir, "config", "modules.ts"), createPlatformModulesConfigFile(selectedModules));
   await fs.writeFile(path.join(targetDir, "config", "shell.ts"), createShellConfig(selectedModules));
 
-  const envFileContent = createEnvFileContent({ slug: answers.slug, brandValues, moduleFlags });
+  const envFileContent = createEnvFileContent();
 
-  await fs.writeFile(path.join(targetDir, ".env.example"), envFileContent);
+  await fs.writeFile(path.join(targetDir, ".env.local"), envFileContent);
   await fs.writeFile(path.join(targetDir, ".gitignore"), createGitignore());
   await fs.writeFile(
     path.join(targetDir, "README.md"),

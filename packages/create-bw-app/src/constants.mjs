@@ -20,21 +20,18 @@ export const SELECTABLE_MODULES = [
     label: "CRM",
     packageName: "@brightweblabs/module-crm",
     templateFolder: "crm",
-    envKey: "NEXT_PUBLIC_ENABLE_CRM",
   },
   {
     key: "projects",
     label: "Projects",
     packageName: "@brightweblabs/module-projects",
     templateFolder: "projects",
-    envKey: "NEXT_PUBLIC_ENABLE_PROJECTS",
   },
   {
     key: "admin",
     label: "Admin",
     packageName: "@brightweblabs/module-admin",
     templateFolder: "admin",
-    envKey: "NEXT_PUBLIC_ENABLE_ADMIN",
   },
 ];
 

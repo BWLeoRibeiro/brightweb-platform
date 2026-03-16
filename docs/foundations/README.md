@@ -1,14 +1,16 @@
 # Getting Started
 
-This section is the public onboarding path for `create-bw-app`.
+This section is the external-first onboarding path for `create-bw-app`. Use it to get from local prerequisites to a validated starter before you start replacing the generated surfaces with app-owned product work.
 
-Start here when you need to choose the right template, understand the generated file structure, or translate BrightWeb terms into normal Next.js project shape.
+Start here when you need to choose the right template, understand the generated file structure, configure the starter environment, and verify that the generated routes behave the way the scaffold promises.
 
 ## Recommended read path
 
-1. [Installation](./installation.md) for the scaffold workflow and common CLI variants.
-2. [Project Structure](./project-structure.md) for the generated files, folders, and starter routes.
-3. [Platform Base](../modules/platform-base.md) when you are building a `platform` app and need to understand the default runtime and database baseline.
+1. [Prerequisites](./prerequisites.md) for supported local setup and template choice.
+2. [Installation](./installation.md) for the scaffold workflow and common CLI variants.
+3. [Environment and Services](./environment-and-services.md) for `.env.local`, service ownership, and platform config ownership.
+4. [Project Structure](./project-structure.md) for the generated files, folders, and starter routes.
+5. [Validate Your Starter](./validate-your-starter.md) for the first-run route checks.
 
 ## Platform app vs standalone site
 
@@ -21,6 +23,8 @@ Do not assume the `site` template includes platform auth, shared shell behavior,
 
 ## Pages in this section
 
+- [Prerequisites](./prerequisites.md)
 - [Installation](./installation.md)
-- [Template Selection Redirect](./create-an-app-templates.md)
+- [Environment and Services](./environment-and-services.md)
 - [Project Structure](./project-structure.md)
+- [Validate Your Starter](./validate-your-starter.md)

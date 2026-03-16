@@ -1,41 +1,35 @@
 # Examples and Recipes
 
-This section stays intentionally practical. When BrightWeb does not expose a one-command workflow, the recipe is written as a manual checklist instead of pretending more automation exists than it does.
+This section stays intentionally practical. Each page documents a real public workflow that exists today, including the parts that are still manual.
 
 ## What these pages are for
 
 - starting from the public scaffold and validating the starter routes
-- understanding what still needs manual work after generation
-- extending a generated app with shared modules after the first scaffold
+- customizing the generated platform or site starter without guessing where the key files live
+- documenting the manual workflows that still exist after generation
 
-## Baseline scaffold example
+## Recipes in this section
 
-```bash
-pnpm dlx create-bw-app
-# choose: platform
-# choose: no optional modules
-# then run the generated app with:
-cd <slug>
-pnpm dev
-```
+- [Platform First Run](./platform-first-run.md): scaffold a platform app, configure its environment, and verify the generated routes.
+- [Site First Customization](./site-first-customization.md): scaffold the site starter and make the first round of copy, CTA, and visual changes.
+- [Add Modules After Scaffold](./add-modules-after-scaffold.md): follow the current manual path for adding a module to an existing platform app.
+- [Replace Starter Surfaces](./replace-starter-surfaces.md): move from starter pages and starter helpers to app-owned product routes.
 
-Some BrightWeb workspaces also provide `pnpm create:client` as a wrapper and `pnpm --filter <slug> dev` as the workspace-specific run command.
+## How to use these recipes
 
-## Manual follow-up reality
-
-- There is no documented one-command installer today for adding CRM to an existing app after scaffold time.
-- There is no documented one-command installer today for adding Projects to an existing app after scaffold time.
-- Treat both as manual extensions of package wiring, env/config changes, and app-owned product UI work.
+- Start in [Getting Started](../foundations/README.md) if you have not scaffolded the app yet.
+- Use recipe pages when you already have a generated project and need task-level guidance.
+- Expect manual steps where BrightWeb does not yet expose a one-command workflow.
 
 ## Related docs
 
 - [Getting Started](../foundations/README.md)
 - [Installation](../foundations/installation.md)
+- [Validate Your Starter](../foundations/validate-your-starter.md)
 - [Modules](../modules/README.md)
 
 ## Implementation references
 
-- `supabase/README.md`
-- `scripts/_db-modules.mjs`
 - `packages/create-bw-app/src/generator.mjs`
-- `packages/create-bw-app/template/base/config/modules.ts`
+- `packages/create-bw-app/template/base`
+- `packages/create-bw-app/template/modules`

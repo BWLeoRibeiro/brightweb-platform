@@ -4,6 +4,7 @@ import { ArrowRight, GitBranchPlus, Link2, TerminalSquare } from "lucide-react";
 import { docsSections, type DocPageDefinition } from "../../lib/docs";
 import { hasParagraphClassName, isParagraphLikeElement, joinClassNames } from "./mdx-elements";
 import { CopyButton } from "./copyable-code";
+import { getTableMetadata } from "./table-metadata";
 
 type ClassNameProps = {
   className?: string;
@@ -174,9 +175,11 @@ export function CommandBlock({ command, title, note }: CommandBlockProps) {
 }
 
 export function FactTable({ columns, rows }: FactTableProps) {
+  const metadata = getTableMetadata(columns);
+
   return (
     <div className="doc-table-wrap">
-      <table className="doc-table">
+      <table className="doc-table" data-columns={String(metadata.columns)} data-variant={metadata.variant}>
         <thead>
           <tr>
             {columns.map((column) => (

@@ -115,7 +115,7 @@ export default function HomePage() {
                 <li>`config/brand.ts` for client identity and contact details.</li>
                 <li>`config/modules.ts` for enabled platform modules.</li>
                 <li>`config/env.ts` for infra requirements and readiness checks.</li>
-                <li>`.env.example` for starter defaults; copy it to `.env.local` for per-client secrets and flags.</li>
+                <li>`.env.local` for per-client service credentials and local runtime overrides.</li>
               </ul>
             </div>
           </article>
