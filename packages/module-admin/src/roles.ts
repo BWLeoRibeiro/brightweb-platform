@@ -1,5 +1,5 @@
 import type { createServerSupabase } from "@brightweblabs/infra/server";
-import type { AdminManagedRole } from "./users.ts";
+import type { AdminManagedRole } from "./users";
 
 export type RoleChangeResult = {
   profileId: string;

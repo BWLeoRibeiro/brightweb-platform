@@ -2,9 +2,9 @@ import {
   ADMIN_USERS_DEFAULT_PAGE_SIZE,
   ADMIN_USERS_MAX_PAGE_SIZE,
   type AdminManagedRole,
-} from "./users-data.ts";
-import type { applyAdminRoleChanges } from "./roles.ts";
-import type { listAdminUsers } from "./users-data.ts";
+} from "./users-data";
+import type { applyAdminRoleChanges } from "./roles";
+import type { listAdminUsers } from "./users-data";
 
 export function json(body: unknown, init?: ResponseInit) {
   return new Response(JSON.stringify(body), {

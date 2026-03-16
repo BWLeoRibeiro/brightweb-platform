@@ -640,6 +640,13 @@ a {
   font-size: 0.95rem;
 }
 
+.doc-page-meta-pair {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.55rem;
+}
+
 .doc-page-meta-label {
   display: inline-flex;
   padding: 0.22rem 0.55rem;

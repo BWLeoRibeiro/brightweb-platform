@@ -110,6 +110,23 @@ type CrmOwnerAssignment = {
     | null;
 };
 
+type RawCrmOrganization = {
+  id: string;
+  name: string;
+  industry: string | null;
+  company_size: string | null;
+  budget_range: string | null;
+  website_url: string | null;
+  address: string | null;
+  tax_identifier_value?: string | null;
+  primary_contact_id: string | null;
+  primary_contact?:
+    | CrmPrimaryContact
+    | CrmPrimaryContact[]
+    | null;
+  created_at: string;
+};
+
 export const CRM_CONTACTS_DEFAULT_PAGE_SIZE = 50;
 export const CRM_CONTACTS_MAX_PAGE_SIZE = 100;
 export const CRM_ORGANIZATIONS_DEFAULT_PAGE_SIZE = 20;
@@ -124,12 +141,20 @@ function normalizePageSize(pageSize: number | undefined, fallback: number, max: 
   return Math.min(normalized, max);
 }
 
-function normalizeOrganization<T extends Record<string, unknown>>(raw: T) {
+function normalizeOrganization(raw: RawCrmOrganization): CrmOrganization {
   const primaryContact = raw.primary_contact;
   return {
-    ...raw,
+    id: raw.id,
+    name: raw.name,
+    industry: raw.industry,
+    company_size: raw.company_size,
+    budget_range: raw.budget_range,
+    website_url: raw.website_url,
+    address: raw.address,
     taxIdentifierValue: typeof raw.tax_identifier_value === "string" ? raw.tax_identifier_value : null,
+    primary_contact_id: raw.primary_contact_id,
     primary_contact: Array.isArray(primaryContact) ? primaryContact[0] ?? null : primaryContact ?? null,
+    created_at: raw.created_at,
   };
 }
 
@@ -241,7 +266,7 @@ export async function listCrmOrganizations(
   }
 
   return {
-    items: ((data ?? []) as Array<Record<string, unknown>>).map(normalizeOrganization),
+    items: ((data ?? []) as RawCrmOrganization[]).map(normalizeOrganization),
     page,
     pageSize,
     total: count ?? 0,

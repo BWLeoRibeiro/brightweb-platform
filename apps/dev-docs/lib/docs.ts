@@ -269,19 +269,6 @@ export const docsSections: DocSectionDefinition[] = sectionOrder
   })
   .filter((section): section is DocSectionDefinition => section !== null);
 
-function readBrightwebVersion() {
-  const packageJsonPath = path.join(workspaceRoot, "packages/create-bw-app/package.json");
-
-  if (!existsSync(packageJsonPath)) {
-    return "0.0.0";
-  }
-
-  const packageJson = JSON.parse(readFileSync(packageJsonPath, "utf8")) as { version?: string };
-  return packageJson.version ?? "0.0.0";
-}
-
-export const brightwebVersion = readBrightwebVersion();
-
 export function getDocByHref(href: string) {
   return allDocLinks.find((entry) => entry.href === href) ?? null;
 }

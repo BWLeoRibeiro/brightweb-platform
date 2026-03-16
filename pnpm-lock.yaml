@@ -234,6 +234,9 @@ importers:
       '@brightweblabs/infra':
         specifier: workspace:*
         version: link:../infra
+      '@supabase/supabase-js':
+        specifier: ^2.89.0
+        version: 2.99.0
       lucide-react:
         specifier: ^0.562.0
         version: 0.562.0(react@19.2.3)

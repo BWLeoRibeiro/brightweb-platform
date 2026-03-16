@@ -5,6 +5,7 @@ import * as runtime from "react/jsx-runtime";
 import remarkGfm from "remark-gfm";
 import { DocNeighbors } from "../../../components/docs/primitives";
 import { getDocNeighbors, getDocPage, getDocRedirect, getDocStaticParams } from "../../../lib/docs";
+import { getDocModuleVersions } from "../../../lib/version";
 import { useMDXComponents } from "../../../mdx-components";
 
 type PageProps = {
@@ -48,6 +49,7 @@ export async function generateMetadata(props: PageProps): Promise<Metadata> {
 export default async function Page(props: PageProps) {
   const { doc, markdown } = await getPageData(props);
   const neighbors = getDocNeighbors(doc.href);
+  const moduleVersions = await getDocModuleVersions(doc.href);
   const evaluated = await evaluate(markdown, {
     ...runtime,
     remarkPlugins: [remarkGfm],
@@ -65,8 +67,16 @@ export default async function Page(props: PageProps) {
       <header className="doc-page-header">
         <h1 className="doc-prose-heading doc-prose-h1">{doc.title}</h1>
         <p className="doc-page-meta">
-          <span className="doc-page-meta-label">Last updated</span>
-          <time dateTime={doc.lastUpdated}>{lastUpdated}</time>
+          <span className="doc-page-meta-pair">
+            <span className="doc-page-meta-label">Last updated</span>
+            <time dateTime={doc.lastUpdated}>{lastUpdated}</time>
+          </span>
+          {moduleVersions.map((entry) => (
+            <span key={entry.packageName} className="doc-page-meta-pair">
+              <span className="doc-page-meta-label">{entry.label}</span>
+              <span>{entry.version}</span>
+            </span>
+          ))}
         </p>
       </header>
 

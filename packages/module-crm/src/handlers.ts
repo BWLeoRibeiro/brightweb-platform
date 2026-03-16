@@ -4,13 +4,13 @@ import {
   createCrmOrganizationsGetHandler,
   createCrmOwnersGetHandler,
   createCrmStatsGetHandler,
-} from "./http.ts";
+} from "./http";
 import {
   getCrmContactStatusStats,
   listCrmContacts,
   listCrmOrganizations,
   listCrmOwnerOptions,
-} from "./data.ts";
+} from "./data";
 
 export const handleCrmContactsGetRequest = createCrmContactsGetHandler({
   getAccess: requireServerUserAccess,

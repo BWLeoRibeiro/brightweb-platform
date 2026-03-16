@@ -7,7 +7,7 @@ import {
   listCrmContacts,
   listCrmOrganizations,
   listCrmOwnerOptions,
-} from "./data.ts";
+} from "./data";
 
 export function json(body: unknown, init?: ResponseInit) {
   return new Response(JSON.stringify(body), {

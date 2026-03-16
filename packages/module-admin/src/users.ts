@@ -8,8 +8,8 @@ export {
   type AdminUsersListResult,
   type AdminUsersPageData,
   type AdminUsersPagination,
-} from "./users-data.ts";
-import { ADMIN_USERS_DEFAULT_PAGE_SIZE, listAdminUsers, type AdminUsersPageData } from "./users-data.ts";
+} from "./users-data";
+import { ADMIN_USERS_DEFAULT_PAGE_SIZE, listAdminUsers, type AdminUsersPageData } from "./users-data";
 
 export async function getAdminUsersPageData(): Promise<AdminUsersPageData> {
   const { supabase } = await requireServerPageRoleAccess("admin");

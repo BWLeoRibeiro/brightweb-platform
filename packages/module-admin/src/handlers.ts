@@ -1,7 +1,7 @@
 import { requireServerRoleAccess } from "@brightweblabs/core-auth/server";
-import { createAdminUsersGetHandler, createAdminUsersRoleChangeHandler } from "./http.ts";
-import { applyAdminRoleChanges } from "./roles.ts";
-import { listAdminUsers } from "./users-data.ts";
+import { createAdminUsersGetHandler, createAdminUsersRoleChangeHandler } from "./http";
+import { applyAdminRoleChanges } from "./roles";
+import { listAdminUsers } from "./users-data";
 
 export const handleAdminUsersGetRequest = createAdminUsersGetHandler({
   getAccess: () => requireServerRoleAccess("admin"),

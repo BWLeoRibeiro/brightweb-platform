@@ -4,6 +4,7 @@ node_modules/
 .turbo/
 dist/
 coverage/
+.test-dist/
 *.log
 *.tsbuildinfo
 apps/__smoke-*/

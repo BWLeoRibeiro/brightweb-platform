@@ -13,7 +13,7 @@ export {
   type ProjectsListResult,
   type ProjectsPortfolioPageData,
   type ProjectsPortfolioStats,
-} from "./data.ts";
+} from "./data";
 import {
   getProjectPortfolioStats,
   isProjectsSchemaMissingError,
@@ -21,7 +21,7 @@ import {
   type ProjectsListResult,
   type ProjectsPortfolioPageData,
   type ProjectsPortfolioStats,
-} from "./data.ts";
+} from "./data";
 
 export async function getProjectsPortfolioPageData(): Promise<ProjectsPortfolioPageData> {
   const { supabase } = await requireServerPageAccess();

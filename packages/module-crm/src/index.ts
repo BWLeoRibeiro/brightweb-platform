@@ -18,13 +18,13 @@ export {
   type CrmOwnerOption,
   type CrmPrimaryContact,
   type CrmStatusLog,
-} from "./data.ts";
+} from "./data";
 export {
   handleCrmContactsGetRequest,
   handleCrmOrganizationsGetRequest,
   handleCrmOwnersGetRequest,
   handleCrmStatsGetRequest,
-} from "./handlers.ts";
+} from "./handlers";
 import {
   getCrmContactStatusStats,
   listCrmContacts,
@@ -36,7 +36,7 @@ import {
   type CrmOwnerOption,
   type CrmPrimaryContact,
   type CrmStatusLog,
-} from "./data.ts";
+} from "./data";
 
 export type CrmDashboardData = {
   userId: string;
