@@ -69,6 +69,12 @@ async function readJson(filePath: string) {
   return JSON.parse(await fs.readFile(filePath, "utf8"));
 }
 
+async function readWorkspacePackageVersion(packageName: string) {
+  const folderName = packageName.replace("@brightweblabs/", "");
+  const manifest = await readJson(path.join(REPO_ROOT, "packages", folderName, "package.json"));
+  return `^${manifest.version}`;
+}
+
 async function updateBrightwebDependencyVersion(targetDir: string, packageName: string, version: string) {
   const packageJsonPath = path.join(targetDir, "package.json");
   const manifest = await readJson(packageJsonPath);
@@ -115,6 +121,30 @@ test("detects a published platform app with installed crm module", async (t) => 
   assert.equal(plan.dependencyMode, "published");
   assert.deepEqual(plan.installedModules, ["crm"]);
   assert.equal(plan.packageUpdates.length, 0);
+});
+
+test("published platform scaffolds pin current brightweb package versions", async (t) => {
+  const { tempRoot, targetDir } = await scaffoldPlatformApp({
+    modules: ["crm", "projects"],
+  });
+  t.after(async () => fs.rm(tempRoot, { recursive: true, force: true }));
+
+  const manifest = await readJson(path.join(targetDir, "package.json"));
+
+  for (const packageName of [
+    "@brightweblabs/app-shell",
+    "@brightweblabs/core-auth",
+    "@brightweblabs/infra",
+    "@brightweblabs/module-crm",
+    "@brightweblabs/module-projects",
+    "@brightweblabs/ui",
+  ]) {
+    assert.equal(
+      manifest.dependencies[packageName],
+      await readWorkspacePackageVersion(packageName),
+      `expected ${packageName} to stay aligned with the current published workspace version`,
+    );
+  }
 });
 
 test("scaffolds platform AI handoff files with platform-specific context", async (t) => {
