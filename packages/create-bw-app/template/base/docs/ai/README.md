@@ -15,6 +15,8 @@ This app is a normal Next.js App Router project with BrightWeb runtime wiring la
 
 ## Fast routing map
 
+- `docs/ai/app-context.json`: machine-readable summary of this app's template, starter routes, and first-read files.
+- `docs/ai/examples.md`: common setup and customization workflows.
 - `README.md`: first-run setup steps.
 - `config/brand.ts`: client name, product name, support inboxes, and brand color.
 - `config/modules.ts`: module metadata and enablement flags for CRM, Projects, and Admin.

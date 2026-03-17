@@ -117,6 +117,31 @@ test("detects a published platform app with installed crm module", async (t) => 
   assert.equal(plan.packageUpdates.length, 0);
 });
 
+test("scaffolds platform AI handoff files with platform-specific context", async (t) => {
+  const { tempRoot, targetDir } = await scaffoldPlatformApp({
+    modules: ["crm", "projects"],
+    workspaceRoot: REPO_ROOT,
+  });
+  t.after(async () => fs.rm(tempRoot, { recursive: true, force: true }));
+
+  const context = await readJson(path.join(targetDir, "docs", "ai", "app-context.json"));
+  const examples = await fs.readFile(path.join(targetDir, "docs", "ai", "examples.md"), "utf8");
+  const agents = await fs.readFile(path.join(targetDir, "AGENTS.md"), "utf8");
+
+  assert.equal(context.template, "platform");
+  assert.deepEqual(context.modules.enabled, ["crm", "projects"]);
+  assert.deepEqual(context.starterRoutes, [
+    "/",
+    "/bootstrap",
+    "/preview/app-shell",
+    "/playground/auth",
+    "/playground/crm",
+    "/playground/projects",
+  ]);
+  assert.match(examples, /First local setup/);
+  assert.match(agents, /docs\/ai\/app-context\.json/);
+});
+
 test("detects workspace dependency mode from installed brightweb packages", async (t) => {
   const { tempRoot, targetDir } = await scaffoldPlatformApp({
     modules: ["crm", "projects"],
@@ -144,6 +169,22 @@ test("detects a site app as a no-op update target", async (t) => {
   assert.equal(plan.template, "site");
   assert.equal(plan.packageUpdates.length, 0);
   assert.equal(plan.fileWrites.length, 0);
+});
+
+test("scaffolds site AI handoff files with site-specific context", async (t) => {
+  const { tempRoot, targetDir } = await scaffoldSiteApp();
+  t.after(async () => fs.rm(tempRoot, { recursive: true, force: true }));
+
+  const context = await readJson(path.join(targetDir, "docs", "ai", "app-context.json"));
+  const examples = await fs.readFile(path.join(targetDir, "docs", "ai", "examples.md"), "utf8");
+  const agents = await fs.readFile(path.join(targetDir, "AGENTS.md"), "utf8");
+
+  assert.equal(context.template, "site");
+  assert.equal(context.modules, undefined);
+  assert.deepEqual(context.starterRoutes, ["/"]);
+  assert.equal(context.paths.uiComponentsRoot, "components/ui");
+  assert.match(examples, /Change site identity/);
+  assert.match(agents, /config\/site\.ts/);
 });
 
 test("reports mismatch between installed modules and config/modules.ts", async (t) => {

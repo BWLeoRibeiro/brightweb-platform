@@ -56,7 +56,8 @@ Current updater behavior:
 - platform apps include BrightWeb auth, shell wiring, and optional module starter surfaces
 - site apps include Next.js, Tailwind CSS v4, and local component primitives
 - writes `package.json`, `next.config.ts`, `.gitignore`, and `README.md` for both templates
-- platform apps also write `.env.local`, `AGENTS.md`, `docs/ai/README.md`, and generated config files for brand and module state
+- platform apps also write `.env.local`, `AGENTS.md`, `docs/ai/README.md`, `docs/ai/examples.md`, `docs/ai/app-context.json`, and generated config files for brand and module state
+- site apps also write `AGENTS.md`, `docs/ai/README.md`, `docs/ai/examples.md`, and `docs/ai/app-context.json` for app-local AI handoff
 - supports repo-local `workspace:*` wiring and future published dependency wiring
 
 ## Workspace mode extras

@@ -9,6 +9,7 @@ import {
 } from "./constants.mjs";
 import {
   TEMPLATE_ROOT,
+  createAppContextFile,
   createDbInstallPlan,
   createNextConfig,
   createPackageJson,
@@ -26,6 +27,11 @@ const MANAGED_PLATFORM_FILES = [
   "next.config.ts",
   path.join("config", "modules.ts"),
   path.join("config", "shell.ts"),
+  path.join("docs", "ai", "app-context.json"),
+];
+
+const MANAGED_SITE_FILES = [
+  path.join("docs", "ai", "app-context.json"),
 ];
 
 function resolveUpdateTargetDirectory(runtimeOptions, argvOptions) {
@@ -337,7 +343,7 @@ export async function buildBrightwebAppUpdatePlan(argvOptions = {}, runtimeOptio
   const dbInstallPlan = template === "platform"
     ? createDbInstallPlan({
       selectedModules: installedModules,
-      workspaceMode: true,
+      workspaceMode: dependencyMode === "workspace",
       registry: dbRegistry,
     })
     : {
@@ -373,9 +379,37 @@ export async function buildBrightwebAppUpdatePlan(argvOptions = {}, runtimeOptio
       "next.config.ts": createNextConfig({ template: "platform", selectedModules: installedModules }),
       [path.join("config", "modules.ts")]: createPlatformModulesConfigFile(installedModules),
       [path.join("config", "shell.ts")]: createShellConfig(installedModules),
+      [path.join("docs", "ai", "app-context.json")]: createAppContextFile({
+        slug: manifest.name || path.basename(targetDir),
+        template: "platform",
+        selectedModules: installedModules,
+        dbInstallPlan,
+      }),
     };
 
     for (const relativePath of MANAGED_PLATFORM_FILES) {
+      const targetPath = path.join(targetDir, relativePath);
+      const currentContent = (await pathExists(targetPath)) ? await fs.readFile(targetPath, "utf8") : null;
+      const nextContent = canonicalConfigFiles[relativePath];
+
+      if (currentContent !== nextContent) {
+        fileWrites.push({
+          relativePath,
+          targetPath,
+          content: nextContent,
+          type: "config",
+        });
+      }
+    }
+  } else {
+    const canonicalConfigFiles = {
+      [path.join("docs", "ai", "app-context.json")]: createAppContextFile({
+        slug: manifest.name || path.basename(targetDir),
+        template: "site",
+      }),
+    };
+
+    for (const relativePath of MANAGED_SITE_FILES) {
       const targetPath = path.join(targetDir, relativePath);
       const currentContent = (await pathExists(targetPath)) ? await fs.readFile(targetPath, "utf8") : null;
       const nextContent = canonicalConfigFiles[relativePath];

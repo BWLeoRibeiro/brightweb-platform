@@ -414,6 +414,20 @@ function createGitignore() {
   ].join("\n");
 }
 
+function getPlatformStarterRoutes(selectedModules) {
+  return [
+    "/",
+    "/bootstrap",
+    "/preview/app-shell",
+    "/playground/auth",
+    ...selectedModules.map((moduleKey) => `/playground/${moduleKey}`),
+  ];
+}
+
+function getSiteStarterRoutes() {
+  return ["/"];
+}
+
 function createPlatformReadme({
   slug,
   selectedModules,
@@ -471,11 +485,14 @@ function createPlatformReadme({
       : []),
     "## Starter routes",
     "",
-    "- `/`",
-    "- `/bootstrap`",
-    "- `/preview/app-shell`",
-    "- `/playground/auth`",
-    ...selectedModules.map((moduleKey) => `- /playground/${moduleKey}`),
+    ...getPlatformStarterRoutes(selectedModules).map((route) => `- \`${route}\``),
+    "",
+    "## AI handoff",
+    "",
+    "- `AGENTS.md`",
+    "- `docs/ai/README.md`",
+    "- `docs/ai/examples.md`",
+    "- `docs/ai/app-context.json`",
     "",
   ].join("\n");
 }
@@ -508,11 +525,141 @@ function createSiteReadme({ slug, workspaceMode, packageManager }) {
     "",
     "## Starter surfaces",
     "",
-    "- `/`",
+    ...getSiteStarterRoutes().map((route) => `- \`${route}\``),
     "",
     "Edit `config/site.ts` to change the site name, copy, and public links.",
     "",
+    "## AI handoff",
+    "",
+    "- `AGENTS.md`",
+    "- `docs/ai/README.md`",
+    "- `docs/ai/examples.md`",
+    "- `docs/ai/app-context.json`",
+    "",
   ].join("\n");
+}
+
+export function createAppContextFile({
+  slug,
+  template,
+  selectedModules = [],
+  dbInstallPlan = { resolvedOrder: [] },
+}) {
+  if (template === "site") {
+    return `${JSON.stringify(
+      {
+        schemaVersion: 1,
+        template: "site",
+        app: {
+          slug,
+          name: titleizeSlug(slug),
+        },
+        docs: {
+          agentGuide: "AGENTS.md",
+          routingGuide: "docs/ai/README.md",
+          setupGuide: "README.md",
+          examples: "docs/ai/examples.md",
+        },
+        paths: {
+          readFirst: [
+            "AGENTS.md",
+            "docs/ai/README.md",
+            "README.md",
+            "config/site.ts",
+            "app/page.tsx",
+            "app/globals.css",
+          ],
+          appRoutesRoot: "app",
+          configRoot: "config",
+          componentsRoot: "components",
+          uiComponentsRoot: "components/ui",
+          libRoot: "lib",
+        },
+        starterRoutes: getSiteStarterRoutes(),
+        ownership: {
+          appOwned: [
+            "app/**",
+            "components/**",
+            "config/**",
+            "docs/ai/**",
+            "lib/**",
+            "public/**",
+            "AGENTS.md",
+            "README.md",
+          ],
+          packageOwned: [],
+        },
+        agentRules: {
+          editConfigBeforeCopyTweaks: true,
+          keepUiPrimitiveChangesLocal: true,
+          treatStarterHomeAsAppOwned: true,
+        },
+      },
+      null,
+      2,
+    )}\n`;
+  }
+
+  return `${JSON.stringify(
+    {
+      schemaVersion: 1,
+      template: "platform",
+      app: {
+        slug,
+        name: titleizeSlug(slug),
+      },
+      modules: {
+        enabled: selectedModules,
+        resolvedDatabaseStack: dbInstallPlan.resolvedOrder,
+      },
+      docs: {
+        agentGuide: "AGENTS.md",
+        routingGuide: "docs/ai/README.md",
+        setupGuide: "README.md",
+        examples: "docs/ai/examples.md",
+      },
+      paths: {
+        readFirst: [
+          "AGENTS.md",
+          "docs/ai/README.md",
+          "README.md",
+          "config/brand.ts",
+          "config/modules.ts",
+          "config/client.ts",
+          "config/bootstrap.ts",
+          "config/shell.ts",
+          ".env.local",
+        ],
+        appRoutesRoot: "app",
+        configRoot: "config",
+        brandAssetsRoot: "public/brand",
+      },
+      starterRoutes: getPlatformStarterRoutes(selectedModules),
+      ownership: {
+        appOwned: [
+          "app/**",
+          "config/**",
+          "docs/ai/**",
+          "public/brand/**",
+          "AGENTS.md",
+          "README.md",
+        ],
+        packageOwned: [
+          ...CORE_PACKAGES,
+          ...SELECTABLE_MODULES
+            .filter((moduleDefinition) => selectedModules.includes(moduleDefinition.key))
+            .map((moduleDefinition) => moduleDefinition.packageName),
+        ],
+      },
+      agentRules: {
+        checkModulesBeforeEditing: true,
+        preferAppLevelCompositionOverPackageForks: true,
+        treatStarterRoutesAsRemovable: true,
+      },
+    },
+    null,
+    2,
+  )}\n`;
 }
 
 export function createPackageJson({
@@ -971,6 +1118,15 @@ async function scaffoldPlatformProject({
   );
   await fs.writeFile(path.join(targetDir, "config", "modules.ts"), createPlatformModulesConfigFile(selectedModules));
   await fs.writeFile(path.join(targetDir, "config", "shell.ts"), createShellConfig(selectedModules));
+  await fs.writeFile(
+    path.join(targetDir, "docs", "ai", "app-context.json"),
+    createAppContextFile({
+      slug: answers.slug,
+      template: "platform",
+      selectedModules,
+      dbInstallPlan,
+    }),
+  );
 
   const envFileContent = createEnvFileContent();
 
@@ -1007,6 +1163,7 @@ async function scaffoldSiteProject({
   await ensureDirectory(path.dirname(targetDir));
   await copyDirectory(baseTemplateDir, targetDir);
   await ensureDirectory(path.join(targetDir, "config"));
+  await ensureDirectory(path.join(targetDir, "docs", "ai"));
 
   await fs.writeFile(
     path.join(targetDir, "package.json"),
@@ -1025,6 +1182,13 @@ async function scaffoldSiteProject({
   await fs.writeFile(path.join(targetDir, "next.config.ts"), createNextConfig({ template: "site", selectedModules: [] }));
   await fs.writeFile(path.join(targetDir, ".gitignore"), createGitignore());
   await fs.writeFile(path.join(targetDir, "config", "site.ts"), createSiteConfigFile(answers.slug));
+  await fs.writeFile(
+    path.join(targetDir, "docs", "ai", "app-context.json"),
+    createAppContextFile({
+      slug: answers.slug,
+      template: "site",
+    }),
+  );
   await fs.writeFile(
     path.join(targetDir, "README.md"),
     createSiteReadme({

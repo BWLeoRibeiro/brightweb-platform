@@ -37,7 +37,7 @@ reference page: start with the top-level folders and files, then scan the templa
   rows={[
     ["`app/`", "platform and site", "Standard Next.js App Router entrypoint for layouts, pages, route segments, previews, and starter routes."],
     ["`config/`", "platform and site", "Generated project configuration. Platform uses multiple runtime config files; site starts with `config/site.ts`."],
-    ["`docs/ai/`", "platform only", "Local agent-facing routing guide for AI assistants working inside the generated app."],
+    ["`docs/ai/`", "platform and site", "Local agent-facing routing guides, examples, and machine-readable app context for AI assistants working inside the generated app."],
     ["`public/brand/`", "platform only", "Starter logos for the app shell brand lockups and collapsed mark."],
     ["`components/ui/`", "site only", "Local UI primitives for the standalone site starter."],
     ["`lib/`", "site only", "Local helpers such as `lib/utils.ts` for class merging and component ergonomics."],
@@ -52,13 +52,15 @@ reference page: start with the top-level folders and files, then scan the templa
     ["`package.json`", "platform and site", "Project manifest with Next.js scripts and template-specific dependencies."],
     ["`next.config.ts`", "platform and site", "Next.js config. Platform also writes `transpilePackages` for BrightWeb runtime packages and selected modules."],
     ["`README.md`", "platform and site", "Generated local setup notes tailored to the chosen template."],
-    ["`AGENTS.md`", "platform only", "Local entrypoint for AI agents with project-specific working rules and starting files."],
+    ["`AGENTS.md`", "platform and site", "Local entrypoint for AI agents with project-specific working rules and starting files."],
     ["`.gitignore`", "platform and site", "Shared ignore rules, including local environment files."],
     ["`next-env.d.ts`", "platform and site", "Standard Next.js TypeScript declarations copied from the template."],
     ["`postcss.config.mjs`", "platform and site", "Tailwind/PostCSS setup copied from the selected starter template."],
     ["`tsconfig.json`", "platform and site", "TypeScript base config copied from the selected starter template."],
     ["`.env.local`", "platform only", "Generated local environment file for service values and runtime overrides."],
-    ["`docs/ai/README.md`", "platform only", "App-scoped routing map for AI agents working on the generated starter."],
+    ["`docs/ai/README.md`", "platform and site", "App-scoped routing map for AI agents working on the generated starter."],
+    ["`docs/ai/examples.md`", "platform and site", "Common setup and customization workflows for AI agents working in the generated app."],
+    ["`docs/ai/app-context.json`", "platform and site", "Machine-readable AI handoff file describing template shape, starter routes, and first-read files."],
     ["`components.json`", "site only", "Local component registry config for the standalone site starter."],
     ["`config/site.ts`", "site only", "Single place to edit site name, description, eyebrow, and starter CTAs."],
     ["`config/brand.ts`", "platform only", "Generated client identity and contact defaults used across the starter app."],
@@ -119,6 +121,8 @@ reference page: start with the top-level folders and files, then scan the templa
 │   └── preview/app-shell/page.tsx
 ├── docs/
 │   └── ai/
+│       ├── app-context.json
+│       ├── examples.md
 │       └── README.md
 ├── config/
 │   ├── bootstrap.ts
@@ -145,6 +149,11 @@ reference page: start with the top-level folders and files, then scan the templa
 │   ├── globals.css
 │   ├── layout.tsx
 │   └── page.tsx
+├── docs/
+│   └── ai/
+│       ├── app-context.json
+│       ├── examples.md
+│       └── README.md
 ├── components/
 │   └── ui/
 │       ├── badge.tsx
@@ -154,6 +163,7 @@ reference page: start with the top-level folders and files, then scan the templa
 │   └── site.ts
 ├── lib/
 │   └── utils.ts
+├── AGENTS.md
 ├── components.json
 ├── next.config.ts
 └── package.json
