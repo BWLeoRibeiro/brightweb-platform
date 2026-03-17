@@ -1,5 +1,11 @@
 # create-bw-app
 
+## 0.9.3
+
+### Patch Changes
+
+- de3f14a: Align published Brightweb dependency defaults with the current package versions so newly scaffolded platform apps do not install stale package releases that are missing supported subpath exports such as `@brightweblabs/core-auth/shared`.
+
 ## 0.9.2
 
 ### Patch Changes
