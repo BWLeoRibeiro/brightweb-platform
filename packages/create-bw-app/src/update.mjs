@@ -76,6 +76,62 @@ function collectInstalledBrightwebPackages(manifest) {
   return installed;
 }
 
+async function resolvePublishedBrightwebVersions(installedBrightwebPackages, options = {}) {
+  const packageNames = Array.from(installedBrightwebPackages.keys()).sort();
+
+  if (packageNames.length === 0) {
+    return {};
+  }
+
+  const fetchImpl = options.fetchImpl ?? globalThis.fetch;
+  if (typeof fetchImpl !== "function") {
+    throw new Error("Published updates require fetch support to resolve BrightWeb package versions from npm.");
+  }
+
+  const fallbackVersionMap = options.fallbackVersionMap || {};
+  const allowStaleFallback = options.allowStaleFallback === true;
+  const resolvedVersions = {};
+  const failures = [];
+
+  await Promise.all(
+    packageNames.map(async (packageName) => {
+      try {
+        const response = await fetchImpl(`https://registry.npmjs.org/${encodeURIComponent(packageName)}/latest`);
+        if (!response?.ok) {
+          throw new Error(`npm registry responded with ${response?.status ?? "an unknown error"}`);
+        }
+
+        const payload = await response.json();
+        if (!payload?.version || typeof payload.version !== "string") {
+          throw new Error("npm registry response did not include a version");
+        }
+
+        resolvedVersions[packageName] = `^${payload.version}`;
+      } catch (error) {
+        const fallbackVersion = fallbackVersionMap[packageName];
+        if (allowStaleFallback && fallbackVersion) {
+          resolvedVersions[packageName] = fallbackVersion;
+          return;
+        }
+
+        const message = error instanceof Error ? error.message : "Unknown error";
+        failures.push(`${packageName}: ${message}`);
+      }
+    }),
+  );
+
+  if (failures.length > 0) {
+    const fallbackHint = allowStaleFallback
+      ? "No baked-in fallback version was available for at least one package."
+      : "Re-run with --allow-stale-fallback to use the CLI's baked-in BrightWeb package versions instead.";
+    throw new Error(
+      `Failed to resolve published BrightWeb package versions from npm.\n${failures.join("\n")}\n${fallbackHint}`,
+    );
+  }
+
+  return resolvedVersions;
+}
+
 function parseConfiguredModules(content) {
   const enabledModules = [];
 
@@ -339,6 +395,13 @@ export async function buildBrightwebAppUpdatePlan(argvOptions = {}, runtimeOptio
   const packageManager = detectPackageManager(argvOptions.packageManager || runtimeOptions.packageManager);
   const installedModules = detectInstalledModules(installedBrightwebPackagesMap);
   const versionMap = await getVersionMap(workspaceRoot);
+  const brightwebVersionOverrides = dependencyMode === "published"
+    ? await resolvePublishedBrightwebVersions(installedBrightwebPackagesMap, {
+      fetchImpl: runtimeOptions.fetchImpl,
+      fallbackVersionMap: versionMap,
+      allowStaleFallback: argvOptions.allowStaleFallback || runtimeOptions.allowStaleFallback,
+    })
+    : {};
   const dbRegistry = await getDbModuleRegistry(workspaceRoot);
   const dbInstallPlan = template === "platform"
     ? createDbInstallPlan({
@@ -356,7 +419,10 @@ export async function buildBrightwebAppUpdatePlan(argvOptions = {}, runtimeOptio
     template,
     dependencyMode,
     installedModules,
-    versionMap,
+    versionMap: {
+      ...versionMap,
+      ...brightwebVersionOverrides,
+    },
   });
   const packageJsonUpdate = mergeManagedPackageUpdates({
     manifest,

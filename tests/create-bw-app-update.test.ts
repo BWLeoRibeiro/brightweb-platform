@@ -12,6 +12,15 @@ import {
 import { buildBrightwebAppUpdatePlan, updateBrightwebApp } from "../packages/create-bw-app/src/update.mjs";
 
 const REPO_ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), "..");
+const BRIGHTWEB_PACKAGES = [
+  "@brightweblabs/app-shell",
+  "@brightweblabs/core-auth",
+  "@brightweblabs/infra",
+  "@brightweblabs/module-admin",
+  "@brightweblabs/module-crm",
+  "@brightweblabs/module-projects",
+  "@brightweblabs/ui",
+];
 
 async function makeTempDir(prefix: string) {
   return fs.mkdtemp(path.join(os.tmpdir(), prefix));
@@ -75,6 +84,52 @@ async function readWorkspacePackageVersion(packageName: string) {
   return `^${manifest.version}`;
 }
 
+async function createMockNpmFetch(options: {
+  versions?: Record<string, string>;
+  failingPackages?: string[];
+} = {}) {
+  const versionMap: Record<string, string> = {};
+
+  for (const packageName of BRIGHTWEB_PACKAGES) {
+    versionMap[packageName] = (await readWorkspacePackageVersion(packageName)).slice(1);
+  }
+
+  Object.assign(versionMap, options.versions || {});
+  const failingPackages = new Set(options.failingPackages || []);
+
+  return async (url: string) => {
+    const packageName = decodeURIComponent(url.split("/").slice(-2, -1)[0] || "");
+    if (failingPackages.has(packageName)) {
+      return {
+        ok: false,
+        status: 503,
+        async json() {
+          return {};
+        },
+      };
+    }
+
+    const version = versionMap[packageName];
+    if (!version) {
+      return {
+        ok: false,
+        status: 404,
+        async json() {
+          return {};
+        },
+      };
+    }
+
+    return {
+      ok: true,
+      status: 200,
+      async json() {
+        return { version };
+      },
+    };
+  };
+}
+
 async function updateBrightwebDependencyVersion(targetDir: string, packageName: string, version: string) {
   const packageJsonPath = path.join(targetDir, "package.json");
   const manifest = await readJson(packageJsonPath);
@@ -114,7 +169,10 @@ test("detects a published platform app with installed crm module", async (t) => 
 
   const plan = await buildBrightwebAppUpdatePlan(
     { targetDir },
-    { workspaceRoot: REPO_ROOT },
+    {
+      workspaceRoot: REPO_ROOT,
+      fetchImpl: await createMockNpmFetch(),
+    },
   );
 
   assert.equal(plan.template, "platform");
@@ -220,6 +278,71 @@ test("detects a site app as a no-op update target", async (t) => {
   assert.equal(plan.fileWrites.length, 0);
 });
 
+test("published updates resolve installed brightweb packages from npm and leave third-party deps alone", async (t) => {
+  const { tempRoot, targetDir } = await scaffoldPlatformApp({
+    modules: ["crm"],
+  });
+  t.after(async () => fs.rm(tempRoot, { recursive: true, force: true }));
+
+  await updateBrightwebDependencyVersion(targetDir, "@brightweblabs/core-auth", "^0.0.1");
+  const before = await readJson(path.join(targetDir, "package.json"));
+  await updateBrightwebApp(
+    { targetDir },
+    {
+      fetchImpl: await createMockNpmFetch({
+        versions: {
+          "@brightweblabs/core-auth": "9.9.9",
+        },
+      }),
+    },
+  );
+
+  const after = await readJson(path.join(targetDir, "package.json"));
+  assert.equal(after.dependencies["@brightweblabs/core-auth"], "^9.9.9");
+  assert.equal(after.dependencies.next, before.dependencies.next);
+  assert.equal(after.dependencies.react, before.dependencies.react);
+});
+
+test("published updates fail when npm lookup fails", async (t) => {
+  const { tempRoot, targetDir } = await scaffoldPlatformApp({
+    modules: ["crm"],
+  });
+  t.after(async () => fs.rm(tempRoot, { recursive: true, force: true }));
+  const fetchImpl = await createMockNpmFetch({
+    failingPackages: ["@brightweblabs/core-auth"],
+  });
+
+  await assert.rejects(
+    () => buildBrightwebAppUpdatePlan(
+      { targetDir },
+      {
+        fetchImpl,
+      },
+    ),
+    /Failed to resolve published BrightWeb package versions from npm/,
+  );
+});
+
+test("published updates can fall back to baked-in brightweb versions when explicitly allowed", async (t) => {
+  const { tempRoot, targetDir } = await scaffoldPlatformApp({
+    modules: ["crm"],
+  });
+  t.after(async () => fs.rm(tempRoot, { recursive: true, force: true }));
+
+  await updateBrightwebDependencyVersion(targetDir, "@brightweblabs/core-auth", "^0.0.1");
+  const plan = await buildBrightwebAppUpdatePlan(
+    { targetDir, allowStaleFallback: true },
+    {
+      fetchImpl: await createMockNpmFetch({
+        failingPackages: ["@brightweblabs/core-auth"],
+      }),
+    },
+  );
+
+  const coreAuthUpdate = plan.packageUpdates.find((entry) => entry.packageName === "@brightweblabs/core-auth");
+  assert.equal(coreAuthUpdate?.to, "^0.3.0");
+});
+
 test("scaffolds site AI handoff files with site-specific context", async (t) => {
   const { tempRoot, targetDir } = await scaffoldSiteApp();
   t.after(async () => fs.rm(tempRoot, { recursive: true, force: true }));
@@ -251,7 +374,10 @@ test("reports mismatch between installed modules and config/modules.ts", async (
 
   const plan = await buildBrightwebAppUpdatePlan(
     { targetDir },
-    { workspaceRoot: REPO_ROOT },
+    {
+      workspaceRoot: REPO_ROOT,
+      fetchImpl: await createMockNpmFetch(),
+    },
   );
 
   assert.deepEqual(plan.modulesConfigMismatch?.installedModules, ["crm"]);
@@ -268,7 +394,10 @@ test("detects package-only changes", async (t) => {
   await updateBrightwebDependencyVersion(targetDir, "@brightweblabs/core-auth", "^0.0.1");
   const plan = await buildBrightwebAppUpdatePlan(
     { targetDir },
-    { workspaceRoot: REPO_ROOT },
+    {
+      workspaceRoot: REPO_ROOT,
+      fetchImpl: await createMockNpmFetch(),
+    },
   );
 
   assert.deepEqual(
@@ -293,7 +422,10 @@ test("detects config-only changes", async (t) => {
 
   const plan = await buildBrightwebAppUpdatePlan(
     { targetDir },
-    { workspaceRoot: REPO_ROOT },
+    {
+      workspaceRoot: REPO_ROOT,
+      fetchImpl: await createMockNpmFetch(),
+    },
   );
 
   assert.equal(plan.packageUpdates.length, 0);
@@ -312,11 +444,17 @@ test("reports missing and drifted starter files and only refreshes them with the
 
   const dryPlan = await buildBrightwebAppUpdatePlan(
     { targetDir },
-    { workspaceRoot: REPO_ROOT },
+    {
+      workspaceRoot: REPO_ROOT,
+      fetchImpl: await createMockNpmFetch(),
+    },
   );
   const refreshPlan = await buildBrightwebAppUpdatePlan(
     { targetDir, refreshStarters: true },
-    { workspaceRoot: REPO_ROOT },
+    {
+      workspaceRoot: REPO_ROOT,
+      fetchImpl: await createMockNpmFetch(),
+    },
   );
 
   assert.deepEqual(dryPlan.starterFilesMissing, ["app/playground/crm/page.tsx"]);
@@ -339,7 +477,10 @@ test("cli dry-run does not write files", async (t) => {
 
   await runCreateBwAppCli(
     ["update", "--target-dir", targetDir, "--dry-run"],
-    { workspaceRoot: REPO_ROOT },
+    {
+      workspaceRoot: REPO_ROOT,
+      fetchImpl: await createMockNpmFetch(),
+    },
   );
 
   const after = await fs.readFile(path.join(targetDir, "package.json"), "utf8");
@@ -363,7 +504,10 @@ test("apply rewrites only managed files and leaves app-owned pages alone", async
 
   await updateBrightwebApp(
     { targetDir },
-    { workspaceRoot: REPO_ROOT },
+    {
+      workspaceRoot: REPO_ROOT,
+      fetchImpl: await createMockNpmFetch(),
+    },
   );
 
   const manifest = await readJson(path.join(targetDir, "package.json"));
@@ -392,6 +536,7 @@ test("install runner is called only when requested and package.json changed", as
     { targetDir, install: true },
     {
       workspaceRoot: REPO_ROOT,
+      fetchImpl: await createMockNpmFetch(),
       installRunner: async (packageManager: string, cwd: string) => {
         calls.push({ packageManager, cwd });
       },
