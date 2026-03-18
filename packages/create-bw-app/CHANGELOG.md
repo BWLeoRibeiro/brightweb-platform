@@ -1,5 +1,13 @@
 # create-bw-app
 
+## 0.9.5
+
+### Patch Changes
+
+- b6cb74a: Resolve published `@brightweblabs/*` update targets from npm at update time.
+
+  `create-bw-app update` now looks up installed BrightWeb package versions from the npm registry when it runs in published mode, instead of relying only on the CLI's baked-in version map. Published updates now fail fast when registry resolution fails, with an explicit `--allow-stale-fallback` escape hatch for intentionally using the baked-in fallback versions.
+
 ## 0.9.4
 
 ### Patch Changes
