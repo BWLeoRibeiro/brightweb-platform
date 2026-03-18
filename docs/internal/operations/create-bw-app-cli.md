@@ -113,6 +113,7 @@ Published behavior:
 
 - target directory defaults to `./<slug>`
 - platform apps write internal BrightWeb dependencies with published semver ranges
+- `create-bw-app update` resolves installed `@brightweblabs/*` package targets from npm in published mode and fails unless `--allow-stale-fallback` is set
 - site apps stay standalone and do not depend on internal BrightWeb runtime packages
 - the generated app is intended to run as a standalone Next.js project
 
@@ -121,5 +122,4 @@ Published behavior:
 - publish `create-bw-app` to npm
 - confirm the unscoped npm package name `create-bw-app` is available
 - add CI smoke tests that scaffold and build a sample app in both workspace and published modes
-- decide how internal package version bumps should automatically update the CLI’s fallback dependency map over time
 - decide whether the site template should keep the default Turbopack production build or pin `next build --webpack` until Tailwind/PostCSS validation is covered in CI

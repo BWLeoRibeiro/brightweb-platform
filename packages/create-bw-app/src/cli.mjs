@@ -42,6 +42,11 @@ function parseArgv(argv) {
       continue;
     }
 
+    if (token === "--allow-stale-fallback") {
+      options.allowStaleFallback = true;
+      continue;
+    }
+
     const [rawKey, inlineValue] = token.slice(2).split("=", 2);
     const key = toCamelCase(rawKey);
     const nextValue = inlineValue ?? argv[index + 1];

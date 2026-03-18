@@ -136,6 +136,7 @@ Update options:
   --target-dir <path>            Existing app directory to update (defaults to cwd)
   --workspace-root <path>        BrightWeb workspace root for workspace:* apps
   --package-manager <name>       Override package manager: pnpm, npm, yarn, or bun
+  --allow-stale-fallback         Use baked-in BrightWeb package versions if npm lookup fails
   --install                      Run install after writing package changes
   --refresh-starters             Rewrite starter route files from the latest template
   --dry-run                      Print the update plan without writing files

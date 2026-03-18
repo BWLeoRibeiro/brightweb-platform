@@ -41,6 +41,8 @@ pnpm dlx create-bw-app update --target-dir ./apps/client-portal
 Current updater behavior:
 
 - updates installed `@brightweblabs/*` packages only
+- in published mode, resolves those `@brightweblabs/*` target versions from npm at update time
+- fails the update if npm resolution fails unless you pass `--allow-stale-fallback`
 - re-syncs managed BrightWeb config files such as `next.config.ts`, `config/modules.ts`, and `config/shell.ts`
 - reports missing or drifted starter files and only rewrites them with `--refresh-starters`
 - prints the follow-up install command unless `--install` is passed
