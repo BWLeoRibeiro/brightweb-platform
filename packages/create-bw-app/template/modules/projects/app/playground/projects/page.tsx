@@ -81,8 +81,8 @@ export default async function ProjectsPlaygroundPage() {
               <p>{formatError(error)}</p>
             </div>
             <ul className="list">
-              <li>Set the Supabase public URL and anon key.</li>
-              <li>Set the Supabase service role key for server access.</li>
+              <li>Set the Supabase public URL and publishable key.</li>
+              <li>Set the Supabase secret key for server access.</li>
               <li>Ensure the projects schema exists in the target client database.</li>
             </ul>
           </div>

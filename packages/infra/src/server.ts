@@ -4,17 +4,17 @@ import { createClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+const supabasePublishableKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY!;
 
-if (!supabaseUrl || !supabaseAnonKey) {
+if (!supabaseUrl || !supabasePublishableKey) {
   throw new Error("Variáveis de ambiente do Supabase em falta.");
 }
 
-if (supabaseAnonKey.startsWith("sb_secret_") || supabaseAnonKey.includes("service_role")) {
+if (supabasePublishableKey.startsWith("sb_secret_") || supabasePublishableKey.includes("service_role")) {
   throw new Error(
-    "Chave Supabase inválida: está a usar uma chave service role (secreta) em NEXT_PUBLIC_SUPABASE_ANON_KEY. " +
-      "Use a chave anon/pública do painel do Supabase (Settings > API > anon public key). " +
-      "A chave anon deve começar por 'eyJ' (é um token JWT).",
+    "Chave Supabase inválida: está a usar uma chave secreta em NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY. " +
+      "Use a chave publishable/pública do painel do Supabase. " +
+      "A chave publishable deve começar por 'sb_publishable_' (não a chave secreta).",
   );
 }
 
@@ -52,7 +52,7 @@ function getEnv(name: string): string {
 export async function createServerSupabase() {
   const cookieStore = await cookies();
 
-  return createServerClient(supabaseUrl, supabaseAnonKey, {
+  return createServerClient(supabaseUrl, supabasePublishableKey, {
     cookies: {
       getAll() {
         return cookieStore.getAll();
@@ -69,10 +69,17 @@ export async function createServerSupabase() {
 }
 
 export function createServiceRoleClient() {
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const serviceRoleKey = process.env.SUPABASE_SECRET_DEFAULT_KEY;
 
   if (!supabaseUrl || !serviceRoleKey) {
     return null;
+  }
+
+  if (!serviceRoleKey.startsWith("sb_secret_")) {
+    throw new Error(
+      "Chave Supabase inválida: SUPABASE_SECRET_DEFAULT_KEY deve usar a chave secreta do Supabase. " +
+        "A chave secreta deve começar por 'sb_secret_'.",
+    );
   }
 
   return createClient(supabaseUrl, serviceRoleKey, {

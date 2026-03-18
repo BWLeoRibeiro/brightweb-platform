@@ -90,8 +90,8 @@ export default async function AdminPlaygroundPage() {
               <p>{formatError(error)}</p>
             </div>
             <ul className="list">
-              <li>Set the Supabase public URL and anon key.</li>
-              <li>Set the Supabase service role key.</li>
+              <li>Set the Supabase public URL and publishable key.</li>
+              <li>Set the Supabase secret key.</li>
               <li>Ensure the client database includes the admin role assignment tables and RPCs.</li>
             </ul>
           </div>

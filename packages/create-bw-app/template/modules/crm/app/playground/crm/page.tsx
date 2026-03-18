@@ -92,7 +92,7 @@ export default async function CrmPlaygroundPage() {
             <ul className="list">
               <li>Set `NEXT_PUBLIC_APP_URL`.</li>
               <li>Set `NEXT_PUBLIC_SUPABASE_URL`.</li>
-              <li>Set `NEXT_PUBLIC_SUPABASE_ANON_KEY`.</li>
+              <li>Set `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY`.</li>
               <li>If you need CRM writes or email flows, also set the server-only keys in the platform repo.</li>
             </ul>
           </div>

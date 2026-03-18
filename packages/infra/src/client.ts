@@ -1,20 +1,20 @@
 import { createBrowserClient } from "@supabase/ssr";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+const supabasePublishableKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY!;
 
-if (!supabaseUrl || !supabaseAnonKey) {
+if (!supabaseUrl || !supabasePublishableKey) {
   throw new Error("Variáveis de ambiente do Supabase em falta.");
 }
 
-if (supabaseAnonKey.startsWith("sb_secret_") || supabaseAnonKey.includes("service_role")) {
+if (supabasePublishableKey.startsWith("sb_secret_") || supabasePublishableKey.includes("service_role")) {
   throw new Error(
-    "Chave Supabase inválida: está a usar uma chave service role (secreta) em NEXT_PUBLIC_SUPABASE_ANON_KEY. " +
-      "Use a chave anon/pública do painel do Supabase (Settings > API > anon public key). " +
-      "A chave anon deve começar por 'eyJ' (é um token JWT).",
+    "Chave Supabase inválida: está a usar uma chave secreta em NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY. " +
+      "Use a chave publishable/pública do painel do Supabase. " +
+      "A chave publishable deve começar por 'sb_publishable_' (não a chave secreta).",
   );
 }
 
-export const createClient = () => createBrowserClient(supabaseUrl, supabaseAnonKey);
+export const createClient = () => createBrowserClient(supabaseUrl, supabasePublishableKey);
 
 export const createBrowserSupabaseClient = createClient;

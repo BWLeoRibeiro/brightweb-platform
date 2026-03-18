@@ -25,15 +25,15 @@ export const starterEnvRequirements: StarterEnvRequirement[] = [
     requiredFor: ["crm", "projects", "admin"],
   },
   {
-    key: "NEXT_PUBLIC_SUPABASE_ANON_KEY",
+    key: "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY",
     scope: "public",
-    description: "Supabase anonymous key for browser auth and RPC calls.",
+    description: "Supabase publishable key for browser auth and RPC calls.",
     requiredFor: ["crm", "projects", "admin"],
   },
   {
-    key: "SUPABASE_SERVICE_ROLE_KEY",
+    key: "SUPABASE_SECRET_DEFAULT_KEY",
     scope: "server",
-    description: "Server role key for privileged admin, CRM, and project actions.",
+    description: "Supabase secret key for privileged admin, CRM, and project actions.",
     requiredFor: ["crm", "projects", "admin"],
   },
   {
