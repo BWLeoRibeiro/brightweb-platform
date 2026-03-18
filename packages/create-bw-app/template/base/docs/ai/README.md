@@ -9,6 +9,7 @@ It is intentionally app-scoped. It explains the generated project you are in, no
 This app is a normal Next.js App Router project with BrightWeb runtime wiring layered on top.
 
 - `app/`: route tree, layouts, pages, starter previews, and playground routes.
+- `components/`: local React components used by starter routes and app-owned product work.
 - `config/`: generated app configuration for brand, env readiness, enabled modules, bootstrap content, and shell registration.
 - `public/brand/`: starter logos used by the shell lockups.
 - `.env.local`: local service configuration for Supabase, Resend, and runtime URLs.
@@ -18,6 +19,7 @@ This app is a normal Next.js App Router project with BrightWeb runtime wiring la
 - `docs/ai/app-context.json`: machine-readable summary of this app's template, starter routes, and first-read files.
 - `docs/ai/examples.md`: common setup and customization workflows.
 - `README.md`: first-run setup steps.
+- `components/`: local app component layer for starter surfaces and future product UI.
 - `config/brand.ts`: client name, product name, support inboxes, and brand color.
 - `config/modules.ts`: module metadata and enablement flags for CRM, Projects, and Admin.
 - `config/client.ts`: aggregated state consumed by starter pages.
@@ -33,6 +35,7 @@ This app is a normal Next.js App Router project with BrightWeb runtime wiring la
 
 - Change client identity first in `config/brand.ts`.
 - Check module presence in `config/modules.ts` before editing or creating module-specific routes.
+- Add app-specific UI in `components/` before forking shared package code.
 - Use `config/shell.ts` when navigation or toolbar behavior needs to change.
 - Use `config/bootstrap.ts` and `config/client.ts` when the setup checklist or readiness messaging is wrong.
 - Keep starter validation routes until the real product routes replace their purpose.

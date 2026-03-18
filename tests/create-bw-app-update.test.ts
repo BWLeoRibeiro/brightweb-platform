@@ -160,6 +160,7 @@ test("scaffolds platform AI handoff files with platform-specific context", async
 
   assert.equal(context.template, "platform");
   assert.deepEqual(context.modules.enabled, ["crm", "projects"]);
+  assert.equal(context.paths.componentsRoot, "components");
   assert.deepEqual(context.starterRoutes, [
     "/",
     "/bootstrap",
@@ -170,6 +171,24 @@ test("scaffolds platform AI handoff files with platform-specific context", async
   ]);
   assert.match(examples, /First local setup/);
   assert.match(agents, /docs\/ai\/app-context\.json/);
+});
+
+test("scaffolds platform starter components into a local components folder", async (t) => {
+  const { tempRoot, targetDir } = await scaffoldPlatformApp({
+    modules: ["crm"],
+  });
+  t.after(async () => fs.rm(tempRoot, { recursive: true, force: true }));
+
+  const componentsDirEntries = await fs.readdir(path.join(targetDir, "components"));
+  const previewPage = await fs.readFile(path.join(targetDir, "app", "preview", "app-shell", "page.tsx"), "utf8");
+  const authPage = await fs.readFile(path.join(targetDir, "app", "playground", "auth", "page.tsx"), "utf8");
+
+  assert.deepEqual(
+    componentsDirEntries.sort(),
+    ["app-shell-preview.tsx", "auth-playground.tsx"],
+  );
+  assert.match(previewPage, /components\/app-shell-preview/);
+  assert.match(authPage, /components\/auth-playground/);
 });
 
 test("detects workspace dependency mode from installed brightweb packages", async (t) => {

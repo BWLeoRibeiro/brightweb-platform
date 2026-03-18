@@ -1,10 +1,9 @@
 ---
-"@brightweblabs/infra": patch
 "create-bw-app": patch
 ---
 
-Update Supabase environment variable names to use the new publishable and secret key defaults.
+Improve the platform starter structure and CRM route scaffolding.
 
-`@brightweblabs/infra` now reads `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY` for browser and SSR clients, rejects `sb_secret_` keys with updated validation messaging, and reads `SUPABASE_SECRET_DEFAULT_KEY` for privileged server access while enforcing the `sb_secret_` prefix.
+`create-bw-app` now scaffolds a top-level `components/` folder for app-owned starter UI, updates the generated AI handoff docs and app context to point agents at that layer, and moves the preview and auth playground components out of route folders.
 
-`create-bw-app` now scaffolds the new Supabase env variable names in starter env requirements, generated `.env.local` files, and starter setup guidance.
+The CRM starter routes also now share a reusable lazy-loaded module route handler helper instead of repeating the same dynamic import wrapper in each route file.

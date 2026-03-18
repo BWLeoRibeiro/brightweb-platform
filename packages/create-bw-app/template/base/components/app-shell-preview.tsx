@@ -12,8 +12,8 @@ import {
   type ResolvedClientAppShellConfig,
 } from "@brightweblabs/app-shell";
 import { LayoutTemplate, Sparkles, Users } from "lucide-react";
-import { starterBrandConfig } from "../../config/brand";
-import { getStarterShellConfig } from "../../config/shell";
+import { starterBrandConfig } from "../config/brand";
+import { getStarterShellConfig } from "../config/shell";
 
 const mockUser = {
   email: "admin@starter-client.test",

@@ -631,6 +631,7 @@ export function createAppContextFile({
           ".env.local",
         ],
         appRoutesRoot: "app",
+        componentsRoot: "components",
         configRoot: "config",
         brandAssetsRoot: "public/brand",
       },
@@ -638,6 +639,7 @@ export function createAppContextFile({
       ownership: {
         appOwned: [
           "app/**",
+          "components/**",
           "config/**",
           "docs/ai/**",
           "public/brand/**",

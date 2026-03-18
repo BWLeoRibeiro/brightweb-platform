@@ -36,6 +36,7 @@ reference page: start with the top-level folders and files, then scan the templa
   columns={["Path", "When it exists", "Purpose"]}
   rows={[
     ["`app/`", "platform and site", "Standard Next.js App Router entrypoint for layouts, pages, route segments, previews, and starter routes."],
+    ["`components/`", "platform and site", "Local React components for starter surfaces and app-owned UI composition."],
     ["`config/`", "platform and site", "Generated project configuration. Platform uses multiple runtime config files; site starts with `config/site.ts`."],
     ["`docs/ai/`", "platform and site", "Local agent-facing routing guides, examples, and machine-readable app context for AI assistants working inside the generated app."],
     ["`public/brand/`", "platform only", "Starter logos for the app shell brand lockups and collapsed mark."],
@@ -131,6 +132,9 @@ reference page: start with the top-level folders and files, then scan the templa
 │   ├── env.ts
 │   ├── modules.ts
 │   └── shell.ts
+├── components/
+│   ├── app-shell-preview.tsx
+│   └── auth-playground.tsx
 ├── public/brand/
 │   ├── logo-dark.svg
 │   ├── logo-light.svg
@@ -171,9 +175,9 @@ reference page: start with the top-level folders and files, then scan the templa
 
 <Callout title="What changes between templates?" tone="success">
   <p>
-    Both templates are App Router starters, but the platform starter is opinionated about BrightWeb runtime wiring,
-    while the site starter is opinionated about local presentation primitives. That split is reflected directly in the
-    generated top-level folders.
+    Both templates are App Router starters, and both now include a local <code>components/</code> layer. The platform
+    starter is still opinionated about BrightWeb runtime wiring, while the site starter adds a dedicated
+    <code>components/ui/</code> primitive set for standalone presentation work.
   </p>
 </Callout>
 

@@ -1,4 +1,4 @@
-import { AppShellPreview } from "../app-shell-preview";
+import { AppShellPreview } from "../../../components/app-shell-preview";
 
 export default function AppShellPreviewPage() {
   return (

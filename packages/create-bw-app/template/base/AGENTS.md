@@ -8,6 +8,7 @@ This generated project is a BrightWeb platform starter. Use this file as the loc
 - `docs/ai/README.md`: app-specific routing guide for agents.
 - `docs/ai/examples.md`: common setup and customization flows.
 - `docs/ai/app-context.json`: machine-readable app summary for quick discovery.
+- `components/`: local app components used by starter routes and future product surfaces.
 - `config/brand.ts`: client identity, naming, and contact defaults.
 - `config/modules.ts`: selected module set and runtime enablement.
 - `config/client.ts`: starter-facing derived state used by the home page and setup surfaces.

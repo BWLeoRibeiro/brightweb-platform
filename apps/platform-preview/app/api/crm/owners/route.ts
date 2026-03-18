@@ -1,6 +1,8 @@
+import { createModuleRouteHandler } from "../_shared/create-module-route-handler";
+
 export const dynamic = "force-dynamic";
 
-export async function GET(request: Request) {
-  const { handleCrmOwnersGetRequest } = await import("@brightweblabs/module-crm");
-  return handleCrmOwnersGetRequest(request);
-}
+export const GET = createModuleRouteHandler(
+  () => import("@brightweblabs/module-crm"),
+  "handleCrmOwnersGetRequest",
+);
