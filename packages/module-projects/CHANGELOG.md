@@ -1,5 +1,11 @@
 # @brightweblabs/module-projects
 
+## 0.2.1
+
+### Patch Changes
+
+- 1c51e1c: Avoid requiring `public.profiles.phone` in project portfolio queries so the package works with the current core profile schema.
+
 ## 0.2.0
 
 ### Minor Changes

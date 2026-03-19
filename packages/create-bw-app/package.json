@@ -1,7 +1,7 @@
 {
   "name": "create-bw-app",
   "private": false,
-  "version": "0.9.6",
+  "version": "0.9.7",
   "type": "module",
   "bin": "bin/create-bw-app.mjs",
   "files": [
