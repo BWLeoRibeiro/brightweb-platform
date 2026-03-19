@@ -1,5 +1,11 @@
 # @brightweblabs/infra
 
+## 0.2.2
+
+### Patch Changes
+
+- 097992c: Align the published BrightWeb package line for platform scaffolds and move Supabase env validation to lazy runtime factories in infra.
+
 ## 0.2.1
 
 ### Patch Changes

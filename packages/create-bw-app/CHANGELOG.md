@@ -1,5 +1,11 @@
 # create-bw-app
 
+## 0.9.9
+
+### Patch Changes
+
+- 097992c: Align the published BrightWeb package line for platform scaffolds and move Supabase env validation to lazy runtime factories in infra.
+
 ## 0.9.8
 
 ### Patch Changes
