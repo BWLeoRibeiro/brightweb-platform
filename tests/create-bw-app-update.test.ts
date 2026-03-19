@@ -205,6 +205,25 @@ test("published platform scaffolds pin current brightweb package versions", asyn
   }
 });
 
+test("published platform scaffolds resolved supabase migrations for the selected modules", async (t) => {
+  const { tempRoot, targetDir } = await scaffoldPlatformApp({
+    modules: ["crm"],
+  });
+  t.after(async () => fs.rm(tempRoot, { recursive: true, force: true }));
+
+  const registry = await readJson(path.join(targetDir, "supabase", "module-registry.json"));
+  const stack = await readJson(path.join(targetDir, "supabase", "clients", "sample-platform", "stack.json"));
+
+  assert.deepEqual(Object.keys(registry.modules), ["core", "admin", "crm"]);
+  assert.deepEqual(stack.enabledModules, ["core", "admin", "crm"]);
+
+  await fs.access(path.join(targetDir, "supabase", "modules", "core", "migrations", "20260316090000_core_v1.sql"));
+  await fs.access(path.join(targetDir, "supabase", "modules", "admin", "migrations", "20260316091000_admin_v1.sql"));
+  await fs.access(path.join(targetDir, "supabase", "modules", "crm", "migrations", "20260316092000_crm_v1.sql"));
+  await assert.rejects(() =>
+    fs.access(path.join(targetDir, "supabase", "modules", "projects", "migrations", "20260316093000_projects_v1.sql")));
+});
+
 test("scaffolds platform AI handoff files with platform-specific context", async (t) => {
   const { tempRoot, targetDir } = await scaffoldPlatformApp({
     modules: ["crm", "projects"],

@@ -18,6 +18,7 @@ import {
 
 export const PACKAGE_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 export const TEMPLATE_ROOT = path.join(PACKAGE_ROOT, "template");
+const TEMPLATE_SUPABASE_ROOT = path.join(TEMPLATE_ROOT, "supabase");
 const TEMPLATE_KEY_SET = new Set(TEMPLATE_OPTIONS.map((templateOption) => templateOption.key));
 const DEFAULT_DB_MODULE_REGISTRY = {
   modules: {
@@ -112,12 +113,22 @@ export async function readJsonIfPresent(filePath) {
 }
 
 export async function getDbModuleRegistry(workspaceRoot) {
-  if (!workspaceRoot) {
-    return DEFAULT_DB_MODULE_REGISTRY;
+  const candidatePaths = [];
+
+  if (workspaceRoot) {
+    candidatePaths.push(path.join(workspaceRoot, "supabase", "module-registry.json"));
   }
 
-  const registryPath = path.join(workspaceRoot, "supabase", "module-registry.json");
-  return (await readJsonIfPresent(registryPath)) || DEFAULT_DB_MODULE_REGISTRY;
+  candidatePaths.push(path.join(TEMPLATE_SUPABASE_ROOT, "module-registry.json"));
+
+  for (const registryPath of candidatePaths) {
+    const registry = await readJsonIfPresent(registryPath);
+    if (registry) {
+      return registry;
+    }
+  }
+
+  return DEFAULT_DB_MODULE_REGISTRY;
 }
 
 function resolveModuleOrder(registry, enabledModules) {
@@ -172,20 +183,14 @@ function getModuleLabel(moduleKey) {
 }
 
 export function createDbInstallPlan({ selectedModules, workspaceMode, registry }) {
-  if (!workspaceMode) {
-    return {
-      selectedLabels: getSelectedModuleLabels(selectedModules),
-      resolvedOrder: [],
-      notes: [],
-    };
-  }
-
+  void workspaceMode;
+  const activeRegistry = registry?.modules ? registry : DEFAULT_DB_MODULE_REGISTRY;
   const requestedModules = Array.from(new Set(["core", ...selectedModules]));
   if (!requestedModules.includes("admin")) {
     requestedModules.push("admin");
   }
 
-  const resolvedOrder = resolveModuleOrder(registry, requestedModules);
+  const resolvedOrder = resolveModuleOrder(activeRegistry, requestedModules);
   const notes = [];
 
   if (!selectedModules.includes("admin") && resolvedOrder.includes("admin")) {
@@ -198,16 +203,16 @@ export function createDbInstallPlan({ selectedModules, workspaceMode, registry }
     }
 
     const dependents = resolvedOrder.filter((candidateKey) => {
-      const dependencyList = registry.modules?.[candidateKey]?.dependsOn || [];
+      const dependencyList = activeRegistry.modules?.[candidateKey]?.dependsOn || [];
       return dependencyList.includes(moduleKey);
     });
 
     if (dependents.length === 0) continue;
 
     const dependentLabels = dependents
-      .map((candidateKey) => registry.modules?.[candidateKey]?.label || getModuleLabel(candidateKey))
+      .map((candidateKey) => activeRegistry.modules?.[candidateKey]?.label || getModuleLabel(candidateKey))
       .join(", ");
-    const moduleLabel = registry.modules?.[moduleKey]?.label || getModuleLabel(moduleKey);
+    const moduleLabel = activeRegistry.modules?.[moduleKey]?.label || getModuleLabel(moduleKey);
     notes.push(`${moduleLabel} is included because ${dependentLabels} depends on it.`);
   }
 
@@ -467,20 +472,22 @@ function createPlatformReadme({
     "",
     ...moduleLines,
     "",
+    "## Resolved database stack",
+    "",
+    ...resolvedDbStackLines,
+    "",
     ...(workspaceMode
+      ? []
+      : [
+          "Bundled Supabase SQL migrations live under `supabase/modules/<module>/migrations`.",
+          "",
+        ]),
+    ...(dependencyNotes.length > 0
       ? [
-          "## Resolved database stack",
+          "## Dependency notes",
           "",
-          ...resolvedDbStackLines,
+          ...dependencyNotes,
           "",
-          ...(dependencyNotes.length > 0
-            ? [
-                "## Dependency notes",
-                "",
-                ...dependencyNotes,
-                "",
-              ]
-            : []),
         ]
       : []),
     "## Starter routes",
@@ -894,20 +901,34 @@ async function copyDirectory(sourceDir, targetDir) {
   await fs.cp(sourceDir, targetDir, { recursive: true });
 }
 
+async function copyFileIfPresent(sourcePath, targetPath) {
+  if (!(await pathExists(sourcePath))) {
+    return;
+  }
+
+  await ensureDirectory(path.dirname(targetPath));
+  await fs.copyFile(sourcePath, targetPath);
+}
+
 export async function ensureDirectory(targetDir) {
   await fs.mkdir(targetDir, { recursive: true });
 }
 
-async function writeWorkspaceClientStack(workspaceRoot, slug, selectedModules) {
-  const clientDir = path.join(workspaceRoot, "supabase", "clients", slug);
+function createScopedDbModuleRegistry(registry, moduleKeys) {
+  return {
+    modules: Object.fromEntries(
+      moduleKeys
+        .map((moduleKey) => [moduleKey, registry.modules?.[moduleKey]])
+        .filter(([, moduleConfig]) => Boolean(moduleConfig)),
+    ),
+  };
+}
+
+async function writeClientStack(baseRoot, slug, dbInstallPlan, options = {}) {
+  const generatedInWorkspaceMode = options.workspaceMode === true;
+  const clientDir = path.join(baseRoot, "supabase", "clients", slug);
   const stackPath = path.join(clientDir, "stack.json");
   const migrationsDir = path.join(clientDir, "migrations");
-  const registry = await getDbModuleRegistry(workspaceRoot);
-  const dbInstallPlan = createDbInstallPlan({
-    selectedModules,
-    workspaceMode: true,
-    registry,
-  });
   const enabledModules = dbInstallPlan.resolvedOrder;
 
   if (await pathExists(stackPath)) {
@@ -929,7 +950,9 @@ async function writeWorkspaceClientStack(workspaceRoot, slug, selectedModules) {
         enabledModules,
         clientMigrationPath: `supabase/clients/${slug}/migrations`,
         notes: [
-          "Generated by create-bw-app in workspace mode.",
+          generatedInWorkspaceMode
+            ? "Generated by create-bw-app in workspace mode."
+            : "Generated by create-bw-app in published mode.",
           `Selected app modules: ${dbInstallPlan.selectedLabels.length > 0 ? dbInstallPlan.selectedLabels.join(", ") : "none"}.`,
           `Resolved database stack: ${enabledModules.map((moduleKey) => getModuleLabel(moduleKey)).join(" -> ")}.`,
           "Platform always resolves to the Core + Admin database baseline; selecting Admin only controls whether the Admin starter UI and package wiring are scaffolded.",
@@ -940,6 +963,38 @@ async function writeWorkspaceClientStack(workspaceRoot, slug, selectedModules) {
       2,
     )}\n`,
   );
+}
+
+async function writeBundledSupabaseBaseline({ targetDir, slug, dbInstallPlan, registry }) {
+  const shippedModuleKeys = dbInstallPlan.resolvedOrder;
+  if (shippedModuleKeys.length === 0) {
+    return;
+  }
+
+  const targetSupabaseDir = path.join(targetDir, "supabase");
+  const targetModulesDir = path.join(targetSupabaseDir, "modules");
+  const scopedRegistry = createScopedDbModuleRegistry(registry, shippedModuleKeys);
+
+  await ensureDirectory(targetModulesDir);
+  await copyFileIfPresent(path.join(TEMPLATE_SUPABASE_ROOT, "README.md"), path.join(targetSupabaseDir, "README.md"));
+  await copyFileIfPresent(
+    path.join(TEMPLATE_SUPABASE_ROOT, "clients", "README.md"),
+    path.join(targetSupabaseDir, "clients", "README.md"),
+  );
+  await fs.writeFile(
+    path.join(targetSupabaseDir, "module-registry.json"),
+    `${JSON.stringify(scopedRegistry, null, 2)}\n`,
+    "utf8",
+  );
+
+  for (const moduleKey of shippedModuleKeys) {
+    await copyDirectory(
+      path.join(TEMPLATE_SUPABASE_ROOT, "modules", moduleKey),
+      path.join(targetModulesDir, moduleKey),
+    );
+  }
+
+  await writeClientStack(targetDir, slug, dbInstallPlan);
 }
 
 export async function runInstall(command, cwd) {
@@ -1086,6 +1141,7 @@ async function scaffoldPlatformProject({
   workspaceRoot,
   answers,
   dbInstallPlan,
+  dbRegistry,
 }) {
   const brandValues = createDerivedBrandValues(answers.slug);
   const baseTemplateDir = path.join(TEMPLATE_ROOT, "base");
@@ -1146,7 +1202,14 @@ async function scaffoldPlatformProject({
   );
 
   if (workspaceMode) {
-    await writeWorkspaceClientStack(workspaceRoot, answers.slug, selectedModules);
+    await writeClientStack(workspaceRoot, answers.slug, dbInstallPlan, { workspaceMode: true });
+  } else {
+    await writeBundledSupabaseBaseline({
+      targetDir,
+      slug: answers.slug,
+      dbInstallPlan,
+      registry: dbRegistry,
+    });
   }
 }
 
@@ -1301,6 +1364,7 @@ export async function createBrightwebClientApp(argvOptions, runtimeOptions = {})
       workspaceRoot,
       answers,
       dbInstallPlan,
+      dbRegistry: dbModuleRegistry,
     });
   }
 
