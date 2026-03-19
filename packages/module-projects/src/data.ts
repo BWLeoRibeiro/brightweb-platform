@@ -79,8 +79,9 @@ export type ProjectsPortfolioPageData = {
 };
 
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
-const PROJECT_SELECT_COLUMNS = "id, organization_id, name, code, status, health, owner_profile_id, activated_at, target_date, completed_at, cancellation_reason, summary, created_at, updated_at, organizations(name, primary_contact:profiles!organizations_primary_contact_id_fkey(first_name, last_name, email, phone)), owner:profiles!projects_owner_profile_id_fkey(first_name, last_name, email, phone)";
-const PROJECT_SELECT_COLUMNS_LEGACY = "id, organization_id, name, code, status, health, owner_profile_id, activated_at, target_date, completed_at, summary, created_at, updated_at, organizations(name, primary_contact:profiles!organizations_primary_contact_id_fkey(first_name, last_name, email, phone)), owner:profiles!projects_owner_profile_id_fkey(first_name, last_name, email, phone)";
+const PROJECT_PROFILE_SELECT_COLUMNS = "first_name, last_name, email";
+const PROJECT_SELECT_COLUMNS = `id, organization_id, name, code, status, health, owner_profile_id, activated_at, target_date, completed_at, cancellation_reason, summary, created_at, updated_at, organizations(name, primary_contact:profiles!organizations_primary_contact_id_fkey(${PROJECT_PROFILE_SELECT_COLUMNS})), owner:profiles!projects_owner_profile_id_fkey(${PROJECT_PROFILE_SELECT_COLUMNS})`;
+const PROJECT_SELECT_COLUMNS_LEGACY = `id, organization_id, name, code, status, health, owner_profile_id, activated_at, target_date, completed_at, summary, created_at, updated_at, organizations(name, primary_contact:profiles!organizations_primary_contact_id_fkey(${PROJECT_PROFILE_SELECT_COLUMNS})), owner:profiles!projects_owner_profile_id_fkey(${PROJECT_PROFILE_SELECT_COLUMNS})`;
 
 export function isProjectsSchemaMissingError(error: unknown): boolean {
   const message = error instanceof Error ? error.message.toLowerCase() : String(error).toLowerCase();
