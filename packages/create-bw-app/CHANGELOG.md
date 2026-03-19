@@ -1,5 +1,11 @@
 # create-bw-app
 
+## 0.9.6
+
+### Patch Changes
+
+- e319fc0: Ship the selected platform Supabase migration baseline in published `create-bw-app` scaffolds, including the module registry, resolved shared SQL migrations, and generated client stack metadata.
+
 ## 0.9.5
 
 ### Patch Changes
