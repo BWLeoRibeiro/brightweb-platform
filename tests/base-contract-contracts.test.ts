@@ -247,6 +247,49 @@ function createAdminSupabase() {
   });
 }
 
+test("infra supabase clients validate env lazily and keep legacy aliases as fallback", async (t) => {
+  const originalEnv = {
+    NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
+    NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY: process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY,
+    NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+    SUPABASE_SECRET_DEFAULT_KEY: process.env.SUPABASE_SECRET_DEFAULT_KEY,
+    SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
+  };
+
+  t.after(() => {
+    for (const [key, value] of Object.entries(originalEnv)) {
+      if (value === undefined) {
+        delete process.env[key];
+      } else {
+        process.env[key] = value;
+      }
+    }
+  });
+
+  delete process.env.NEXT_PUBLIC_SUPABASE_URL;
+  delete process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY;
+  delete process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  delete process.env.SUPABASE_SECRET_DEFAULT_KEY;
+  delete process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  const envModule = await import("../packages/infra/src/supabase-env.ts");
+  const clientModule = await import("../packages/infra/src/client.ts");
+
+  assert.equal(envModule.resolveSupabaseServiceRoleKey(), null);
+  assert.throws(() => clientModule.createClient(), /Variáveis de ambiente do Supabase em falta/);
+
+  process.env.NEXT_PUBLIC_SUPABASE_URL = "https://example.supabase.co";
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = "sb_publishable_legacy";
+  process.env.SUPABASE_SERVICE_ROLE_KEY = "sb_secret_legacy";
+
+  assert.deepEqual(envModule.resolveSupabasePublicEnv(), {
+    supabaseUrl: "https://example.supabase.co",
+    supabasePublishableKey: "sb_publishable_legacy",
+  });
+  assert.equal(envModule.resolveSupabaseServiceRoleKey(), "sb_secret_legacy");
+  assert.doesNotThrow(() => clientModule.createClient());
+});
+
 function createCrmSupabase() {
   return new FakeSupabase({
     crm_contacts: [

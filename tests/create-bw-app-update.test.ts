@@ -369,7 +369,7 @@ test("published updates can fall back to baked-in brightweb versions when explic
   );
 
   const coreAuthUpdate = plan.packageUpdates.find((entry) => entry.packageName === "@brightweblabs/core-auth");
-  assert.equal(coreAuthUpdate?.to, "^0.3.0");
+  assert.equal(coreAuthUpdate?.to, "^0.3.1");
 });
 
 test("scaffolds site AI handoff files with site-specific context", async (t) => {

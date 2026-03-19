@@ -1,5 +1,11 @@
 # create-bw-app
 
+## 0.9.8
+
+### Patch Changes
+
+- Refresh the published BrightWeb package defaults so newly scaffolded platform apps start from the current `core-auth`, `infra`, and `module-projects` release line instead of stale fallback versions.
+
 ## 0.9.7
 
 ### Patch Changes

@@ -1,5 +1,14 @@
 # @brightweblabs/module-projects
 
+## 0.2.2
+
+### Patch Changes
+
+- Keep the current projects portfolio profile query compatible with the current profile schema and republish the package against the aligned auth and infra package line.
+- Updated dependencies
+  - @brightweblabs/core-auth@0.3.1
+  - @brightweblabs/infra@0.2.1
+
 ## 0.2.1
 
 ### Patch Changes
