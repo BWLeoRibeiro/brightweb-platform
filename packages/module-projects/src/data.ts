@@ -13,7 +13,6 @@ export type ProjectListItem = {
   organizationName: string;
   organizationOwnerLabel: string | null;
   organizationOwnerEmail: string | null;
-  organizationOwnerPhone: string | null;
   name: string;
   code: string | null;
   status: ProjectStatus;
@@ -21,7 +20,6 @@ export type ProjectListItem = {
   ownerProfileId: string | null;
   ownerLabel: string | null;
   ownerEmail: string | null;
-  ownerPhone: string | null;
   activatedAt: string | null;
   targetDate: string | null;
   completedAt: string | null;
@@ -178,7 +176,6 @@ function normalizeProjectRow(row: Record<string, unknown>): ProjectListItem {
       organizationPrimaryContact?.email,
     ),
     organizationOwnerEmail: typeof organizationPrimaryContact?.email === "string" ? organizationPrimaryContact.email : null,
-    organizationOwnerPhone: typeof organizationPrimaryContact?.phone === "string" ? organizationPrimaryContact.phone : null,
     name: typeof row.name === "string" ? row.name : "Projeto",
     code: typeof row.code === "string" ? row.code : null,
     status: String(row.status) as ProjectStatus,
@@ -186,7 +183,6 @@ function normalizeProjectRow(row: Record<string, unknown>): ProjectListItem {
     ownerProfileId: typeof row.owner_profile_id === "string" ? row.owner_profile_id : null,
     ownerLabel: profileLabel(owner?.first_name, owner?.last_name, owner?.email),
     ownerEmail: typeof owner?.email === "string" ? owner.email : null,
-    ownerPhone: typeof owner?.phone === "string" ? owner.phone : null,
     activatedAt: toDateString(row.activated_at),
     targetDate: toDateString(row.target_date),
     completedAt: toDateString(row.completed_at),
