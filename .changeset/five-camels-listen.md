@@ -1,6 +1,6 @@
 ---
 "@brightweblabs/core-auth": patch
-"@brightweblabs/create-bw-app": patch
+"create-bw-app": patch
 "@brightweblabs/infra": patch
 "@brightweblabs/module-projects": patch
 ---
