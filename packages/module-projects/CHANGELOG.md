@@ -4,7 +4,7 @@
 
 ### Patch Changes
 
-- Keep the current projects portfolio profile query compatible with the current profile schema and republish the package against the aligned auth and infra package line.
+- Keep the current projects portfolio profile query compatible with the current profile schema (stop exposing profile `phone` fields from project portfolio data when `public.profiles.phone` does not exist) and republish the package against the aligned auth and infra package line.
 - Updated dependencies
   - @brightweblabs/core-auth@0.3.1
   - @brightweblabs/infra@0.2.1
