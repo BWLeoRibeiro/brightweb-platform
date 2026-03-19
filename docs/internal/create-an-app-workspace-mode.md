@@ -11,14 +11,16 @@ This page covers BrightWeb workspace-specific scaffold behavior that should stay
 
 ## Database follow-up
 
-If your BrightWeb environment supports client stack planning, use these commands after scaffolding:
+Workspace mode still writes stack metadata, but database assembly belongs to each generated project. Use the generated Supabase files directly.
+
+Legacy compatibility commands that may still appear in older workspace notes:
 
 ```bash
 pnpm db:plan <slug>
 pnpm db:materialize <slug>
 ```
 
-Materialization writes the generated Supabase workdir under `supabase/.generated/<client-slug>`.
+`db:materialize` is deprecated and should not be treated as the normal flow for new projects.
 
 ## When to use this flow
 

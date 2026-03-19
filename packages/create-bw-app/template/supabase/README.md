@@ -1,16 +1,18 @@
 # Brightweb Supabase Structure
 
-This directory is the canonical home for the Brightweb database baseline and its forward migrations.
+This directory is the scaffold-owned home for the Brightweb shared database module baselines and forward migrations that were selected for this project.
 
 ## Directory map
 
 - `module-registry.json`: shared module dependency graph and migration source paths
+- `config.toml`: standard Supabase CLI config for this project
+- `migrations/*.sql`: CLI-ready ordered migrations for `supabase db push`
 - `modules/core`: always-on platform foundations
 - `modules/admin`: RBAC and privileged governance behavior
 - `modules/crm`: organizations, CRM contacts, and invitation flows
 - `modules/projects`: project and work-management data
 - `clients/<client-slug>`: true client-only schema deltas plus the client stack plan
-- `.generated/<client-slug>`: materialized Supabase workdirs produced by `pnpm db:materialize`
+- `clients/<client-slug>`: client stack metadata and client-only migrations for this project
 
 ## Ownership rule
 
@@ -20,9 +22,9 @@ Shared database changes should be authored by ownership area, not by client app:
 - shared module migrations are applied only when that module is enabled for the client
 - client-specific migrations are the exception, not the default
 
-In workspace scaffold mode, `create-bw-app` writes `supabase/clients/<slug>/stack.json` so the generated app modules and the database install plan stay aligned.
+`create-bw-app` writes `supabase/clients/<slug>/stack.json` so the generated app modules and the database install plan stay aligned.
 
-The module baselines in this repo are the canonical Brightweb v1 install path. Future schema work should extend them with forward migrations instead of carrying historical cleanup sequences.
+These module baselines are the project-local Brightweb install path for the selected stack. Future schema work should extend them with forward migrations instead of carrying historical cleanup sequences.
 
 Maintainer references:
 
@@ -47,23 +49,9 @@ Create a client-only migration:
 pnpm db:new client:acme bespoke_reporting_table
 ```
 
-Print the effective apply order for a client:
+The shipped `module-registry.json` records the shared module dependency graph for this project.
 
-```bash
-pnpm db:plan acme
-```
-
-Materialize an installable Supabase workdir for a client stack:
-
-```bash
-pnpm db:materialize acme
-```
-
-This writes a generated workdir under `supabase/.generated/<client-slug>` with:
-
-- ordered migrations merged from `core`, enabled modules, and client-only deltas
-- a generated `config.toml`
-- a `manifest.json` showing the source file for each materialized migration
+Projects created from the published scaffold should use the Supabase files in this folder directly. `supabase/migrations/*.sql` is the flat ordered layout that Supabase CLI reads, while `supabase/modules/*/migrations` remains the project-local modular source layout. Repo-level `db:materialize` is a deprecated Brightweb workspace compatibility command and is not the intended workflow for standalone generated apps.
 
 ## Related READMEs
 

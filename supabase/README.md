@@ -1,6 +1,6 @@
 # Brightweb Supabase Structure
 
-This directory is the canonical home for the Brightweb database baseline and its forward migrations.
+This directory is the canonical home for the Brightweb shared database module baselines and forward migrations.
 
 ## Directory map
 
@@ -10,7 +10,7 @@ This directory is the canonical home for the Brightweb database baseline and its
 - `modules/crm`: organizations, CRM contacts, and invitation flows
 - `modules/projects`: project and work-management data
 - `clients/<client-slug>`: true client-only schema deltas plus the client stack plan
-- `.generated/<client-slug>`: materialized Supabase workdirs produced by `pnpm db:materialize`
+- `.generated/<client-slug>`: legacy materialized Supabase workdirs produced by the deprecated `pnpm db:materialize` compatibility script
 
 ## Ownership rule
 
@@ -21,6 +21,8 @@ Shared database changes should be authored by ownership area, not by client app:
 - client-specific migrations are the exception, not the default
 
 In workspace scaffold mode, `create-bw-app` writes `supabase/clients/<slug>/stack.json` so the generated app modules and the database install plan stay aligned.
+
+Generated client projects own their own database assembly. This repo only owns the shared module sources and migration authoring workflow.
 
 The module baselines in this repo are the canonical Brightweb v1 install path. Future schema work should extend them with forward migrations instead of carrying historical cleanup sequences.
 
@@ -53,7 +55,7 @@ Print the effective apply order for a client:
 pnpm db:plan acme
 ```
 
-Materialize an installable Supabase workdir for a client stack:
+Legacy compatibility: materialize an installable Supabase workdir for a client stack:
 
 ```bash
 pnpm db:materialize acme
@@ -64,6 +66,8 @@ This writes a generated workdir under `supabase/.generated/<client-slug>` with:
 - ordered migrations merged from `core`, enabled modules, and client-only deltas
 - a generated `config.toml`
 - a `manifest.json` showing the source file for each materialized migration
+
+This flow is deprecated. Prefer the scaffold-owned Supabase files in generated projects instead of relying on repo-level materialization.
 
 ## Related READMEs
 

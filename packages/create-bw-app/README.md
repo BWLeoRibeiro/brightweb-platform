@@ -57,7 +57,7 @@ Current updater behavior:
 - copies a clean Next.js App Router starter template
 - platform apps include BrightWeb auth, shell wiring, and optional module starter surfaces
 - platform apps include a local `components/` folder for app-owned UI alongside the shared BrightWeb packages
-- platform apps in published mode also write `supabase/module-registry.json`, `supabase/clients/<slug>/stack.json`, and the resolved shared SQL migrations under `supabase/modules/<module>/migrations`
+- platform apps in published mode also write `supabase/config.toml`, a CLI-ready flat `supabase/migrations/` folder, `supabase/module-registry.json`, `supabase/clients/<slug>/stack.json`, and the resolved shared SQL migrations under `supabase/modules/<module>/migrations`
 - site apps include Next.js, Tailwind CSS v4, and local component primitives
 - writes `package.json`, `next.config.ts`, `.gitignore`, and `README.md` for both templates
 - platform apps also write `.env.local`, `AGENTS.md`, `docs/ai/README.md`, `docs/ai/examples.md`, `docs/ai/app-context.json`, and generated config files for brand and module state

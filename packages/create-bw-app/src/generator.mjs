@@ -914,6 +914,24 @@ export async function ensureDirectory(targetDir) {
   await fs.mkdir(targetDir, { recursive: true });
 }
 
+function createGeneratedSupabaseConfig(projectId) {
+  return [
+    `project_id = "${projectId}"`,
+    "",
+    "[db]",
+    "major_version = 17",
+    "",
+    "[db.migrations]",
+    "enabled = true",
+    'schema_paths = []',
+    "",
+    "[db.seed]",
+    "enabled = false",
+    'sql_paths = []',
+    "",
+  ].join("\n");
+}
+
 function createScopedDbModuleRegistry(registry, moduleKeys) {
   return {
     modules: Object.fromEntries(
@@ -965,6 +983,35 @@ async function writeClientStack(baseRoot, slug, dbInstallPlan, options = {}) {
   );
 }
 
+async function writeSupabaseCliMigrations({ targetDir, dbInstallPlan }) {
+  const targetSupabaseDir = path.join(targetDir, "supabase");
+  const targetMigrationsDir = path.join(targetSupabaseDir, "migrations");
+
+  await ensureDirectory(targetMigrationsDir);
+  await fs.writeFile(path.join(targetSupabaseDir, "config.toml"), createGeneratedSupabaseConfig(path.basename(targetDir)), "utf8");
+
+  let sequence = 1;
+  for (const moduleKey of dbInstallPlan.resolvedOrder) {
+    const sourceModuleDir = path.join(TEMPLATE_SUPABASE_ROOT, "modules", moduleKey, "migrations");
+    if (!(await pathExists(sourceModuleDir))) {
+      continue;
+    }
+
+    const fileNames = (await fs.readdir(sourceModuleDir))
+      .filter((fileName) => fileName.endsWith(".sql"))
+      .sort();
+
+    for (const fileName of fileNames) {
+      const targetFileName = `${String(sequence).padStart(4, "0")}_${moduleKey}__${fileName}`;
+      await fs.copyFile(
+        path.join(sourceModuleDir, fileName),
+        path.join(targetMigrationsDir, targetFileName),
+      );
+      sequence += 1;
+    }
+  }
+}
+
 async function writeBundledSupabaseBaseline({ targetDir, slug, dbInstallPlan, registry }) {
   const shippedModuleKeys = dbInstallPlan.resolvedOrder;
   if (shippedModuleKeys.length === 0) {
@@ -995,6 +1042,7 @@ async function writeBundledSupabaseBaseline({ targetDir, slug, dbInstallPlan, re
   }
 
   await writeClientStack(targetDir, slug, dbInstallPlan);
+  await writeSupabaseCliMigrations({ targetDir, dbInstallPlan });
 }
 
 export async function runInstall(command, cwd) {

@@ -1,6 +1,6 @@
 # Database Flow
 
-BrightWeb uses a modular database ownership model. Shared migrations live under module folders, client stacks declare enabled modules, and compatible tooling can plan or materialize an installable Supabase workdir from that resolved stack.
+BrightWeb uses a modular database ownership model. Shared migrations live under module folders, client stacks declare enabled modules, and generated projects own their own database assembly from the selected module sources.
 
 ## Module migrations
 
@@ -13,16 +13,20 @@ BrightWeb uses a modular database ownership model. Shared migrations live under 
 
 > In workspace mode, a new platform app can get `supabase/clients/<slug>/stack.json` plus a client-only migrations folder. The stack records enabled modules, client migration path, and notes about the resolved database stack.
 
-## Materialization
+## Legacy materialization
 
-Materialization writes a generated Supabase workdir under `supabase/.generated/<client-slug>`. That workdir includes ordered migrations merged from Core, enabled modules, and client-only deltas, plus a generated `config.toml` and a `manifest.json` mapping the source of each migration.
+The old repo-level materialization flow writes a generated Supabase workdir under `supabase/.generated/<client-slug>`. That workdir includes ordered migrations merged from Core, enabled modules, and client-only deltas, plus a generated `config.toml` and a `manifest.json` mapping the source of each migration.
 
-## Use the existing commands
+This flow is deprecated. It remains only as a Brightweb workspace compatibility step.
+
+## Existing commands
 
 ```bash
 pnpm db:plan acme
 pnpm db:materialize acme
 ```
+
+Treat `db:materialize` as deprecated.
 
 ```bash
 pnpm db:new core profile_notification_cursor
@@ -43,7 +47,7 @@ pnpm db:new client:acme bespoke_reporting_table
 
 1. Choose the client and confirm its enabled modules.
 2. Resolve apply order from the module registry and stack file.
-3. Plan or materialize the generated Supabase workdir.
+3. Use the generated project's Supabase files as the install baseline.
 4. Apply new changes as forward migrations only.
 5. Keep client-only migrations rare and isolated.
 

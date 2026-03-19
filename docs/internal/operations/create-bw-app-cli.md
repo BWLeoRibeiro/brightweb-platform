@@ -49,9 +49,10 @@ packages/create-bw-app/
   template/base/
   template/modules/
   template/site/base/
+  template/supabase/
 ```
 
-The live preview app now lives separately at `apps/platform-preview`. It is a sandbox for local package work, not the scaffold source for generated apps.
+The live preview app now lives separately at `apps/platform-preview`. It is a smoke app for local package work, not the scaffold source for generated apps and not the place where project database assembly should happen.
 
 ## What the refactor improves
 
@@ -62,6 +63,7 @@ The live preview app now lives separately at `apps/platform-preview`. It is a sa
   - `platform`: auth-first BrightWeb app with optional `crm`, `projects`, and `admin`
   - `site`: standalone Next.js + Tailwind site starter with local UI primitives
 - module selection now controls copied module playground files, generated `next.config.ts`, generated `config/shell.ts`, and dependency wiring
+- published platform scaffolds also ship the resolved Supabase module baseline and client stack metadata for the selected modules
 - generated apps now get generated config files, `.gitignore`, `README.md`, `package.json`, and `next.config.ts`
 - platform apps also get `.env.local` for service values
 - generated apps also get `AGENTS.md`, `docs/ai/README.md`, `docs/ai/examples.md`, and `docs/ai/app-context.json` so local coding agents have an app-scoped handoff after scaffold time
@@ -99,6 +101,7 @@ Workspace behavior:
 - target directory defaults to `apps/<slug>`
 - internal BrightWeb dependencies are written as `workspace:*`
 - the old entrypoint still works through a thin compatibility wrapper
+- stack metadata may still be written under `supabase/clients/<slug>`, but repo-level `db:materialize` is deprecated
 
 ## Future published usage
 

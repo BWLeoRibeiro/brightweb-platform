@@ -50,6 +50,11 @@ function main() {
     process.exit(1);
   }
 
+  console.warn(
+    "[deprecated] db:materialize is a legacy Brightweb workspace compatibility step. " +
+      "Generated projects now own database assembly and should use their scaffolded Supabase files directly.",
+  );
+
   const plan = collectMaterializedFiles(clientSlug);
   const targetDir = path.resolve(outputDir ?? path.join(rootDir, "supabase", ".generated", clientSlug));
   const supabaseDir = path.join(targetDir, "supabase");

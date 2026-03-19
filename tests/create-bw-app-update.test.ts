@@ -217,6 +217,16 @@ test("published platform scaffolds resolved supabase migrations for the selected
   assert.deepEqual(Object.keys(registry.modules), ["core", "admin", "crm"]);
   assert.deepEqual(stack.enabledModules, ["core", "admin", "crm"]);
 
+  assert.match(await fs.readFile(path.join(targetDir, "supabase", "config.toml"), "utf8"), /project_id = "app"/);
+  assert.deepEqual(
+    (await fs.readdir(path.join(targetDir, "supabase", "migrations"))).filter((fileName) => fileName.endsWith(".sql")),
+    [
+      "0001_core__20260316090000_core_v1.sql",
+      "0002_admin__20260316091000_admin_v1.sql",
+      "0003_crm__20260316092000_crm_v1.sql",
+    ],
+  );
+
   await fs.access(path.join(targetDir, "supabase", "modules", "core", "migrations", "20260316090000_core_v1.sql"));
   await fs.access(path.join(targetDir, "supabase", "modules", "admin", "migrations", "20260316091000_admin_v1.sql"));
   await fs.access(path.join(targetDir, "supabase", "modules", "crm", "migrations", "20260316092000_crm_v1.sql"));

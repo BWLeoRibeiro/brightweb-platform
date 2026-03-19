@@ -1,10 +1,10 @@
 # Brightweb Platform
 
-BrightWeb's platform source monorepo. This repo owns the internal preview apps, the shared packages, the scaffold generator, and the Supabase module planning model used to create client applications.
+BrightWeb's platform source monorepo. This repo owns the shared packages, the scaffold generator, the internal smoke apps, and the shared Supabase module sources used by generated client projects.
 
 ## Workspace map
 
-- `apps/platform-preview`: internal sandbox app for validating shell, auth, admin, CRM, and projects behavior
+- `apps/platform-preview`: internal smoke app for validating package integration, not the source of truth for generated projects
 - `apps/dev-docs`: internal docs app that renders the public docs from the root `docs/` folder
 - `packages/*`: shared BrightWeb runtime, UI, and module packages
 - `packages/create-bw-app`: publishable scaffold CLI plus the canonical platform and site templates
@@ -12,7 +12,7 @@ BrightWeb's platform source monorepo. This repo owns the internal preview apps, 
 - `docs/`: public product and scaffold docs
 - `docs/internal/`: maintainer-only architecture notes and operational runbooks that stay in the repo
 
-The long-lived apps in this repo are the internal preview and docs surfaces. Generated client apps are scaffold outputs, not primary repo apps.
+The long-lived apps in this repo are the internal smoke and docs surfaces. Generated client apps are scaffold outputs, not primary repo apps, and they own their own runtime and database assembly.
 
 ## Common commands
 
@@ -62,7 +62,7 @@ Template ownership is intentionally separate from the preview app:
 - `packages/create-bw-app/template/base`: canonical platform-app scaffold
 - `packages/create-bw-app/template/site/base`: canonical standalone site scaffold
 - `packages/create-bw-app/template/modules/*`: optional module template overlays
-- `apps/platform-preview`: sandbox for package behavior, not the source of truth for generated apps
+- `apps/platform-preview`: smoke app for package behavior, not the source of truth for generated apps
 
 Current scaffold behavior:
 
@@ -88,12 +88,16 @@ Maintainer notes for the generator live in [docs/internal/operations/create-bw-a
 
 ## Database modules
 
-Plan or materialize the database install order for a client stack:
+This repo owns shared module migrations and database authoring helpers. Generated client projects own their own database assembly.
+
+Legacy compatibility commands that still exist in this repo:
 
 ```bash
 pnpm db:plan acme
 pnpm db:materialize acme
 ```
+
+`db:materialize` is deprecated. It only exists as a workspace compatibility step for older BrightWeb flows and should not be treated as the normal product workflow.
 
 Other common database commands:
 
