@@ -1,5 +1,11 @@
 # @brightweblabs/module-projects
 
+## 0.2.2
+
+### Patch Changes
+
+- db7bcb4: Stop exposing profile phone fields from project portfolio data because `public.profiles` does not include a `phone` column in the current schema.
+
 ## 0.2.1
 
 ### Patch Changes
