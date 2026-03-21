@@ -1,5 +1,11 @@
 # @brightweblabs/module-projects
 
+## 0.2.4
+
+### Patch Changes
+
+- 74144ef: Fix project portfolio queries to gracefully handle deployments where `public.profiles.phone` is missing by retrying without phone columns, while keeping `ownerPhone` and `organizationOwnerPhone` in the returned shape.
+
 ## 0.2.3
 
 ### Patch Changes
