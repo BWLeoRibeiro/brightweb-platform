@@ -28,33 +28,49 @@ import {
 
 type Row = Record<string, unknown>;
 type TableMap = Record<string, Row[]>;
+type SelectError = { message: string };
+type SelectErrorFactory = (context: { table: string; columns: string }) => SelectError | null;
+type SelectSpy = (context: { table: string; columns: string }) => void;
+type FakeSupabaseOptions = {
+  selectErrorFactory?: SelectErrorFactory;
+  selectSpy?: SelectSpy;
+};
 
 class FakeSupabase {
   private readonly tables: TableMap;
+  private readonly options: FakeSupabaseOptions;
 
-  constructor(tables: TableMap) {
+  constructor(tables: TableMap, options: FakeSupabaseOptions = {}) {
     this.tables = tables;
+    this.options = options;
   }
 
   from(table: string) {
-    return new FakeQuery(this.tables[table] ?? []);
+    return new FakeQuery(table, this.tables[table] ?? [], this.options);
   }
 }
 
 class FakeQuery {
+  private readonly table: string;
   private readonly rows: Row[];
+  private readonly options: FakeSupabaseOptions;
   private filters: Array<(row: Row) => boolean> = [];
   private orderRules: Array<{ field: string; ascending: boolean }> = [];
   private rangeStart = 0;
   private rangeEnd = Number.POSITIVE_INFINITY;
   private exactCount = false;
   private head = false;
+  private selectError: SelectError | null = null;
 
-  constructor(rows: Row[]) {
+  constructor(table: string, rows: Row[], options: FakeSupabaseOptions) {
+    this.table = table;
     this.rows = rows;
+    this.options = options;
   }
 
-  select(_columns: string, options?: { count?: string; head?: boolean }) {
+  select(columns: string, options?: { count?: string; head?: boolean }) {
+    this.selectError = this.options.selectErrorFactory?.({ table: this.table, columns }) ?? null;
+    this.options.selectSpy?.({ table: this.table, columns });
     this.exactCount = options?.count === "exact";
     this.head = Boolean(options?.head);
     return this;
@@ -126,13 +142,21 @@ class FakeQuery {
   }
 
   then<TResult1 = unknown, TResult2 = never>(
-    onfulfilled?: ((value: { data: Row[] | null; error: null; count: number | null }) => TResult1 | PromiseLike<TResult1>) | null,
+    onfulfilled?: ((value: { data: Row[] | null; error: SelectError | null; count: number | null }) => TResult1 | PromiseLike<TResult1>) | null,
     onrejected?: ((reason: unknown) => TResult2 | PromiseLike<TResult2>) | null,
   ) {
     return Promise.resolve(this.execute()).then(onfulfilled, onrejected);
   }
 
   private execute() {
+    if (this.selectError) {
+      return {
+        data: null,
+        error: this.selectError,
+        count: null,
+      };
+    }
+
     let data = [...this.rows];
 
     for (const filter of this.filters) {
@@ -406,7 +430,13 @@ function createCrmSupabase() {
   });
 }
 
-function createProjectsSupabase() {
+type CreateProjectsSupabaseOptions = {
+  includePhoneData?: boolean;
+  simulateMissingProfilesPhone?: boolean;
+  projectSelectColumnsLog?: string[];
+};
+
+function createProjectsSupabase(options: CreateProjectsSupabaseOptions = {}) {
   const today = new Date();
   const iso = (date: Date) => date.toISOString().slice(0, 10);
   const yesterday = new Date(today);
@@ -415,6 +445,23 @@ function createProjectsSupabase() {
   inThreeDays.setDate(today.getDate() + 3);
   const inTenDays = new Date(today);
   inTenDays.setDate(today.getDate() + 10);
+  const includePhoneData = options.includePhoneData !== false;
+
+  const primaryContact1 = includePhoneData
+    ? { first_name: "Ana", last_name: "Silva", email: "ana@acme.com", phone: "111" }
+    : { first_name: "Ana", last_name: "Silva", email: "ana@acme.com" };
+  const primaryContact2 = includePhoneData
+    ? { first_name: "Bruno", last_name: "Matos", email: "bruno@bright.com", phone: "222" }
+    : { first_name: "Bruno", last_name: "Matos", email: "bruno@bright.com" };
+  const owner1 = includePhoneData
+    ? { first_name: "Sara", last_name: "Costa", email: "sara@example.com", phone: "911" }
+    : { first_name: "Sara", last_name: "Costa", email: "sara@example.com" };
+  const owner2 = includePhoneData
+    ? { first_name: "Tom", last_name: "Pires", email: "tom@example.com", phone: "922" }
+    : { first_name: "Tom", last_name: "Pires", email: "tom@example.com" };
+  const owner3 = includePhoneData
+    ? { first_name: "Eva", last_name: "Melo", email: "eva@example.com", phone: "933" }
+    : { first_name: "Eva", last_name: "Melo", email: "eva@example.com" };
 
   return new FakeSupabase({
     projects: [
@@ -433,8 +480,8 @@ function createProjectsSupabase() {
         summary: "Main rollout",
         created_at: "2026-01-01T12:00:00.000Z",
         updated_at: "2026-03-10T12:00:00.000Z",
-        organizations: [{ name: "Acme Labs", primary_contact: [{ first_name: "Ana", last_name: "Silva", email: "ana@acme.com", phone: "111" }] }],
-        owner: [{ first_name: "Sara", last_name: "Costa", email: "sara@example.com", phone: "911" }],
+        organizations: [{ name: "Acme Labs", primary_contact: [primaryContact1] }],
+        owner: [owner1],
       },
       {
         id: "project-2",
@@ -451,8 +498,8 @@ function createProjectsSupabase() {
         summary: "Migration prep",
         created_at: "2026-01-02T12:00:00.000Z",
         updated_at: "2026-03-09T12:00:00.000Z",
-        organizations: [{ name: "Bright Systems", primary_contact: [{ first_name: "Bruno", last_name: "Matos", email: "bruno@bright.com", phone: "222" }] }],
-        owner: [{ first_name: "Tom", last_name: "Pires", email: "tom@example.com", phone: "922" }],
+        organizations: [{ name: "Bright Systems", primary_contact: [primaryContact2] }],
+        owner: [owner2],
       },
       {
         id: "project-3",
@@ -470,7 +517,7 @@ function createProjectsSupabase() {
         created_at: "2026-01-03T12:00:00.000Z",
         updated_at: "2026-03-08T12:00:00.000Z",
         organizations: [{ name: "Bright Growth", primary_contact: [] }],
-        owner: [{ first_name: "Tom", last_name: "Pires", email: "tom@example.com", phone: "922" }],
+        owner: [owner2],
       },
       {
         id: "project-4",
@@ -488,7 +535,7 @@ function createProjectsSupabase() {
         created_at: "2026-01-04T12:00:00.000Z",
         updated_at: "2026-03-07T12:00:00.000Z",
         organizations: [{ name: "Archive Org", primary_contact: [] }],
-        owner: [{ first_name: "Eva", last_name: "Melo", email: "eva@example.com", phone: "933" }],
+        owner: [owner3],
       },
     ],
     project_tasks: [
@@ -502,6 +549,17 @@ function createProjectsSupabase() {
       { project_id: "project-1", status: "delayed" },
       { project_id: "project-3", status: "delayed" },
     ],
+  }, {
+    selectErrorFactory: ({ table, columns }) => {
+      if (!options.simulateMissingProfilesPhone) return null;
+      if (table === "projects" && columns.includes("phone")) {
+        return { message: "column profiles_2.phone does not exist" };
+      }
+      return null;
+    },
+    selectSpy: ({ table, columns }) => {
+      if (table === "projects") options.projectSelectColumnsLog?.push(columns);
+    },
   });
 }
 
@@ -584,9 +642,38 @@ test("listProjects and getProjectPortfolioStats preserve stable project behavior
   assert.equal(result.total, 1);
   assert.equal(result.items.length, 1);
   assert.equal(result.items[0]?.id, "project-1");
+  assert.equal(result.items[0]?.organizationOwnerPhone, "111");
+  assert.equal(result.items[0]?.ownerPhone, "911");
   assert.deepEqual(result.items[0]?.taskStats, { total: 3, done: 1, overdue: 1, blocked: 1 });
   assert.deepEqual(result.items[0]?.milestoneStats, { total: 2, achieved: 1, delayed: 1 });
   assert.equal(result.items[0]?.health, "at_risk");
+});
+
+test("listProjects retries without profile phone when schema does not include profiles.phone", async () => {
+  const projectSelectColumnsLog: string[] = [];
+  const supabase = createProjectsSupabase({
+    includePhoneData: false,
+    simulateMissingProfilesPhone: true,
+    projectSelectColumnsLog,
+  });
+
+  const result = await listProjects(supabase as never, {
+    search: "Alpha",
+    page: 1,
+    pageSize: 10,
+    dueWindow: "all",
+  });
+
+  assert.equal(result.total, 1);
+  assert.equal(result.items.length, 1);
+  assert.equal(result.items[0]?.id, "project-1");
+  assert.equal(result.items[0]?.organizationOwnerPhone, null);
+  assert.equal(result.items[0]?.ownerPhone, null);
+  assert.equal(projectSelectColumnsLog.some((columns) => columns.includes("phone")), true);
+  assert.equal(
+    projectSelectColumnsLog.some((columns) => columns.includes("first_name, last_name, email)") && !columns.includes("phone")),
+    true,
+  );
 });
 
 test("CRM stable helpers return filtered, paginated, and summarized results", async () => {

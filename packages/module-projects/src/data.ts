@@ -13,6 +13,7 @@ export type ProjectListItem = {
   organizationName: string;
   organizationOwnerLabel: string | null;
   organizationOwnerEmail: string | null;
+  organizationOwnerPhone: string | null;
   name: string;
   code: string | null;
   status: ProjectStatus;
@@ -20,6 +21,7 @@ export type ProjectListItem = {
   ownerProfileId: string | null;
   ownerLabel: string | null;
   ownerEmail: string | null;
+  ownerPhone: string | null;
   activatedAt: string | null;
   targetDate: string | null;
   completedAt: string | null;
@@ -77,12 +79,46 @@ export type ProjectsPortfolioPageData = {
 };
 
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
-const PROJECT_PROFILE_SELECT_COLUMNS = "first_name, last_name, email";
-const PROJECT_SELECT_COLUMNS = `id, organization_id, name, code, status, health, owner_profile_id, activated_at, target_date, completed_at, cancellation_reason, summary, created_at, updated_at, organizations(name, primary_contact:profiles!organizations_primary_contact_id_fkey(${PROJECT_PROFILE_SELECT_COLUMNS})), owner:profiles!projects_owner_profile_id_fkey(${PROJECT_PROFILE_SELECT_COLUMNS})`;
-const PROJECT_SELECT_COLUMNS_LEGACY = `id, organization_id, name, code, status, health, owner_profile_id, activated_at, target_date, completed_at, summary, created_at, updated_at, organizations(name, primary_contact:profiles!organizations_primary_contact_id_fkey(${PROJECT_PROFILE_SELECT_COLUMNS})), owner:profiles!projects_owner_profile_id_fkey(${PROJECT_PROFILE_SELECT_COLUMNS})`;
+const PROJECT_PROFILE_SELECT_COLUMNS = "first_name, last_name, email, phone";
+const PROJECT_PROFILE_SELECT_COLUMNS_NO_PHONE = "first_name, last_name, email";
+
+function buildProjectSelectColumns(profileColumns: string, includeCancellationReason: boolean) {
+  const columns = [
+    "id",
+    "organization_id",
+    "name",
+    "code",
+    "status",
+    "health",
+    "owner_profile_id",
+    "activated_at",
+    "target_date",
+    "completed_at",
+    ...(includeCancellationReason ? ["cancellation_reason"] : []),
+    "summary",
+    "created_at",
+    "updated_at",
+  ];
+
+  return `${columns.join(", ")}, organizations(name, primary_contact:profiles!organizations_primary_contact_id_fkey(${profileColumns})), owner:profiles!projects_owner_profile_id_fkey(${profileColumns})`;
+}
+
+const PROJECT_SELECT_COLUMNS = buildProjectSelectColumns(PROJECT_PROFILE_SELECT_COLUMNS, true);
+const PROJECT_SELECT_COLUMNS_LEGACY = buildProjectSelectColumns(PROJECT_PROFILE_SELECT_COLUMNS, false);
+const PROJECT_SELECT_COLUMNS_NO_PHONE = buildProjectSelectColumns(PROJECT_PROFILE_SELECT_COLUMNS_NO_PHONE, true);
+const PROJECT_SELECT_COLUMNS_LEGACY_NO_PHONE = buildProjectSelectColumns(PROJECT_PROFILE_SELECT_COLUMNS_NO_PHONE, false);
+
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) return error.message.toLowerCase();
+  if (typeof error === "object" && error !== null && "message" in error) {
+    const message = (error as { message?: unknown }).message;
+    if (typeof message === "string") return message.toLowerCase();
+  }
+  return String(error).toLowerCase();
+}
 
 export function isProjectsSchemaMissingError(error: unknown): boolean {
-  const message = error instanceof Error ? error.message.toLowerCase() : String(error).toLowerCase();
+  const message = getErrorMessage(error);
   return (
     message.includes("could not find the table 'public.projects' in the schema cache")
     || message.includes("relation \"projects\" does not exist")
@@ -94,11 +130,34 @@ export function isProjectsSchemaMissingError(error: unknown): boolean {
 }
 
 function isMissingProjectCancellationReasonColumnError(error: unknown): boolean {
-  const message = error instanceof Error ? error.message.toLowerCase() : String(error).toLowerCase();
+  const message = getErrorMessage(error);
   return (
     message.includes("column projects.cancellation_reason does not exist")
     || message.includes("column \"cancellation_reason\" does not exist")
   );
+}
+
+function isMissingProfilesPhoneColumnError(error: unknown): boolean {
+  const message = getErrorMessage(error);
+  return (
+    message.includes("column profiles.phone does not exist")
+    || message.includes("column profiles_2.phone does not exist")
+    || message.includes("column \"phone\" does not exist")
+  );
+}
+
+function nextProjectsSelectColumnsForRecoverableError(currentColumns: string, error: unknown): string | null {
+  if (isMissingProjectCancellationReasonColumnError(error)) {
+    if (currentColumns === PROJECT_SELECT_COLUMNS) return PROJECT_SELECT_COLUMNS_LEGACY;
+    if (currentColumns === PROJECT_SELECT_COLUMNS_NO_PHONE) return PROJECT_SELECT_COLUMNS_LEGACY_NO_PHONE;
+  }
+
+  if (isMissingProfilesPhoneColumnError(error)) {
+    if (currentColumns === PROJECT_SELECT_COLUMNS) return PROJECT_SELECT_COLUMNS_NO_PHONE;
+    if (currentColumns === PROJECT_SELECT_COLUMNS_LEGACY) return PROJECT_SELECT_COLUMNS_LEGACY_NO_PHONE;
+  }
+
+  return null;
 }
 
 function toDateString(value: unknown): string | null {
@@ -176,6 +235,7 @@ function normalizeProjectRow(row: Record<string, unknown>): ProjectListItem {
       organizationPrimaryContact?.email,
     ),
     organizationOwnerEmail: typeof organizationPrimaryContact?.email === "string" ? organizationPrimaryContact.email : null,
+    organizationOwnerPhone: typeof organizationPrimaryContact?.phone === "string" ? organizationPrimaryContact.phone : null,
     name: typeof row.name === "string" ? row.name : "Projeto",
     code: typeof row.code === "string" ? row.code : null,
     status: String(row.status) as ProjectStatus,
@@ -183,6 +243,7 @@ function normalizeProjectRow(row: Record<string, unknown>): ProjectListItem {
     ownerProfileId: typeof row.owner_profile_id === "string" ? row.owner_profile_id : null,
     ownerLabel: profileLabel(owner?.first_name, owner?.last_name, owner?.email),
     ownerEmail: typeof owner?.email === "string" ? owner.email : null,
+    ownerPhone: typeof owner?.phone === "string" ? owner.phone : null,
     activatedAt: toDateString(row.activated_at),
     targetDate: toDateString(row.target_date),
     completedAt: toDateString(row.completed_at),
@@ -292,10 +353,18 @@ export async function listProjects(
     return query;
   };
 
-  let { data, error, count } = await runProjectsListQuery(PROJECT_SELECT_COLUMNS);
-  if (error && isMissingProjectCancellationReasonColumnError(error)) {
-    ({ data, error, count } = await runProjectsListQuery(PROJECT_SELECT_COLUMNS_LEGACY));
+  let columns = PROJECT_SELECT_COLUMNS;
+  const attemptedColumns = new Set<string>();
+  let { data, error, count } = await runProjectsListQuery(columns);
+
+  while (error) {
+    const nextColumns = nextProjectsSelectColumnsForRecoverableError(columns, error);
+    if (!nextColumns || attemptedColumns.has(nextColumns)) break;
+    attemptedColumns.add(columns);
+    columns = nextColumns;
+    ({ data, error, count } = await runProjectsListQuery(columns));
   }
+
   if (error) throw new Error(error.message);
 
   const items = mapRows(data, normalizeProjectRow);
