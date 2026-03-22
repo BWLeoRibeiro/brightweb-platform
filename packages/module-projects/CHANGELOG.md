@@ -1,5 +1,11 @@
 # @brightweblabs/module-projects
 
+## 0.3.1
+
+### Patch Changes
+
+- 8f595e8: Route project activity logging through `@brightweblabs/infra/server` `createServiceRoleClient()` so the module no longer directly reads legacy Supabase service-role environment variable names.
+
 ## 0.3.0
 
 ### Minor Changes
