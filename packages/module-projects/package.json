@@ -1,7 +1,7 @@
 {
   "name": "@brightweblabs/module-projects",
   "private": false,
-  "version": "0.2.4",
+  "version": "0.3.0",
   "main": "./src/index.ts",
   "types": "./src/index.ts",
   "files": [
@@ -17,12 +17,15 @@
   },
   "exports": {
     ".": "./src/index.ts",
-    "./registration": "./src/registration.ts"
+    "./contracts": "./src/contracts.ts",
+    "./registration": "./src/registration.ts",
+    "./server": "./src/server.ts",
+    "./types": "./src/types.ts"
   },
   "dependencies": {
-    "@brightweblabs/app-shell": "workspace:*",
-    "@brightweblabs/core-auth": "workspace:*",
-    "@brightweblabs/infra": "workspace:*",
+    "@brightweblabs/app-shell": "^0.3.0",
+    "@brightweblabs/core-auth": "^0.3.2",
+    "@brightweblabs/infra": "^0.2.2",
     "@supabase/supabase-js": "^2.99.2",
     "lucide-react": "^0.577.0"
   }

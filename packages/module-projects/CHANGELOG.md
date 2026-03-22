@@ -1,5 +1,17 @@
 # @brightweblabs/module-projects
 
+## 0.3.0
+
+### Minor Changes
+
+- Expand the projects module with full server-side project APIs (dashboard/detail retrieval, create/update/delete flows, tasks, milestones, links, member sync and assignable members) so consuming apps can drop duplicated local projects service layers.
+- Add dedicated `contracts`, `types`, and `server` export entrypoints for module-only consumption in app code.
+
+### Patch Changes
+
+- Keep project queries safe for deployments where `public.profiles.phone` is absent by using phone-safe profile selects across the expanded server API.
+- Switch package dependencies to published semver ranges so apps can consume the module as a direct package dependency outside the monorepo.
+
 ## 0.2.4
 
 ### Patch Changes
