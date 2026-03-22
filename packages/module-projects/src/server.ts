@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { createClient } from "@supabase/supabase-js";
+import { createServiceRoleClient } from "@brightweblabs/infra/server";
 import {
   type CreateProjectInput,
   type CreateProjectOrganizationInput,
@@ -26,13 +26,7 @@ const PROJECT_SELECT_COLUMNS = "id, organization_id, name, code, status, health,
 const PROJECT_SELECT_COLUMNS_LEGACY = "id, organization_id, name, code, status, health, owner_profile_id, activated_at, target_date, completed_at, summary, created_at, updated_at, organizations(name, primary_contact:profiles!organizations_primary_contact_id_fkey(first_name, last_name, email)), owner:profiles!projects_owner_profile_id_fkey(first_name, last_name, email)";
 
 function createProjectsServiceRoleClient() {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!supabaseUrl || !serviceRoleKey) return null;
-
-  return createClient(supabaseUrl, serviceRoleKey, {
-    auth: { autoRefreshToken: false, persistSession: false },
-  });
+  return createServiceRoleClient();
 }
 
 async function logProjectActivityEvent(input: {
