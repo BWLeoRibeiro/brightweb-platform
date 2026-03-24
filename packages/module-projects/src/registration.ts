@@ -8,7 +8,7 @@ export const projectsModuleRegistration: ShellModuleRegistration<ShellContextual
   placement: "primary",
   navItems: [{ href: "/projetos", label: "Projetos", icon: BriefcaseBusiness }],
   toolbarRoutes: [
-    { surface: "project-board", match: { prefixes: ["/projetos/"], includes: ["/tarefas", "/quadro"] } },
+    { surface: "project-board", match: { includes: ["/tarefas", "/quadro"] } },
     { surface: "project-detail", match: { prefixes: ["/projetos/"] } },
     { surface: "projects", match: { exact: ["/projetos"] } },
   ],
