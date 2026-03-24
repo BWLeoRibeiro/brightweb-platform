@@ -34,6 +34,7 @@ That means BrightWeb module usage is primarily a package and wiring model. The s
 | `@brightweblabs/core-auth/shared` | `AUTH_RESEND_COOLDOWN_SECONDS`, `validateEmail()`, `validatePassword()`, `buildSignupCallbackUrl()`, `buildResetPasswordRedirectUrl()` | `stable` | Shared auth validation, constants, and URL derivation. |
 | `@brightweblabs/core-auth/client` | `useCooldownTimer()` | `stable` | Client-side auth UI behavior such as resend cooldowns. |
 | `@brightweblabs/core-auth/server` | `requireServerPageAccess()`, `requireServerPageRoleAccess()`, `getServerAccess()` | `stable` | Server-side auth and role gating in pages, layouts, and handlers. |
+| `@brightweblabs/infra/server` | `resendApiRequest()`, `verifyResendWebhookSignature()`, `getTransactionalSender()`, `getMarketingSender()`, `getContactDestination()`, `getResendWebhookSecret()` | `stable` | Canonical app-owned Resend transport and webhook verification helpers. |
 | `@brightweblabs/module-admin` | `listAdminUsers()`, `handleAdminUsersGetRequest()`, `handleAdminUsersRoleChangeRequest()` | `stable` | Reusable admin listing plus package-owned admin HTTP handlers. |
 | `@brightweblabs/module-admin` | `getAdminUsersPageData()` | `starter` | Starter admin page payload for the scaffolded users screen. |
 | `@brightweblabs/module-admin/registration` | `adminModuleRegistration` | `stable` | Admin app-shell navigation and toolbar registration. |
@@ -193,6 +194,20 @@ const adminAccess = await requireServerPageRoleAccess("admin");
 ```
 
 Use `shared` for runtime-independent logic, `client` for React hooks, and `server` for page and route protection.
+
+### 5. Use infra transport helpers for app-owned email flows
+
+For app-owned email behavior (contact forms, invites, campaigns, and webhook verification), use `@brightweblabs/infra/server`.
+
+```ts
+import {
+  getMarketingSender,
+  resendApiRequest,
+  verifyResendWebhookSignature,
+} from "@brightweblabs/infra/server";
+```
+
+Auth email flows should stay on `supabase.auth.*` and Supabase Auth SMTP/project settings.
 
 ## Module-specific usage notes
 

@@ -39,8 +39,44 @@ export const starterEnvRequirements: StarterEnvRequirement[] = [
   {
     key: "RESEND_API_KEY",
     scope: "server",
-    description: "Email delivery key for auth and marketing-related server flows.",
-    requiredFor: ["core-auth"],
+    description: "Email delivery key for app-owned transactional and marketing server flows.",
+    requiredFor: ["admin"],
+  },
+  {
+    key: "RESEND_FROM_TRANSACTIONAL",
+    scope: "server",
+    description: "Default transactional sender used by app-owned invite/contact email flows.",
+    requiredFor: ["admin"],
+  },
+  {
+    key: "RESEND_FROM_MARKETING",
+    scope: "server",
+    description: "Default marketing sender used by campaign and workflow email flows.",
+    requiredFor: ["admin"],
+  },
+  {
+    key: "CONTACT_TO_EMAIL",
+    scope: "server",
+    description: "Destination inbox for app-owned contact notifications.",
+    requiredFor: ["admin"],
+  },
+  {
+    key: "RESEND_WEBHOOK_SECRET",
+    scope: "server",
+    description: "Webhook signing secret used to verify inbound Resend event payloads.",
+    requiredFor: ["admin"],
+  },
+  {
+    key: "MARKETING_WORKER_SECRET",
+    scope: "server",
+    description: "Shared secret required to trigger internal marketing worker endpoints.",
+    requiredFor: ["admin"],
+  },
+  {
+    key: "MARKETING_TEST_EMAIL",
+    scope: "server",
+    description: "Inbox used by admin marketing test send actions.",
+    requiredFor: ["admin"],
   },
 ];
 

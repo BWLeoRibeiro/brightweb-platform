@@ -3,6 +3,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
+import { pathToFileURL } from "node:url";
 import { runCreateBwAppCli } from "../packages/create-bw-app/src/cli.mjs";
 import {
   createBrightwebClientApp,
@@ -276,6 +277,91 @@ test("scaffolds platform starter components into a local components folder", asy
   );
   assert.match(previewPage, /components\/app-shell-preview/);
   assert.match(authPage, /components\/auth-playground/);
+});
+
+test("scaffolds platform env defaults with expanded resend keys and local resend adapter", async (t) => {
+  const { tempRoot, targetDir } = await scaffoldPlatformApp({
+    modules: ["admin"],
+  });
+  t.after(async () => fs.rm(tempRoot, { recursive: true, force: true }));
+
+  const envFile = await fs.readFile(path.join(targetDir, ".env.local"), "utf8");
+  const adapter = await fs.readFile(path.join(targetDir, "lib", "email", "resend-base.ts"), "utf8");
+
+  assert.match(envFile, /^RESEND_API_KEY=$/m);
+  assert.match(envFile, /^RESEND_FROM_TRANSACTIONAL=$/m);
+  assert.match(envFile, /^RESEND_FROM_MARKETING=$/m);
+  assert.match(envFile, /^CONTACT_TO_EMAIL=$/m);
+  assert.match(envFile, /^RESEND_WEBHOOK_SECRET=$/m);
+  assert.match(envFile, /^MARKETING_WORKER_SECRET=$/m);
+  assert.match(envFile, /^MARKETING_TEST_EMAIL=$/m);
+  assert.match(adapter, /from "@brightweblabs\/infra\/server"/);
+  assert.match(adapter, /verifyResendWebhookSignature/);
+});
+
+test("starter env readiness requires resend keys only for admin-enabled stacks", async (t) => {
+  const { tempRoot, targetDir } = await scaffoldPlatformApp({
+    modules: ["crm"],
+  });
+  t.after(async () => fs.rm(tempRoot, { recursive: true, force: true }));
+
+  const envModule = await import(pathToFileURL(path.join(targetDir, "config", "env.ts")).href);
+
+  const keysToManage = [
+    "NEXT_PUBLIC_APP_URL",
+    "NEXT_PUBLIC_SUPABASE_URL",
+    "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY",
+    "SUPABASE_SECRET_DEFAULT_KEY",
+    "RESEND_API_KEY",
+    "RESEND_FROM_TRANSACTIONAL",
+    "RESEND_FROM_MARKETING",
+    "CONTACT_TO_EMAIL",
+    "RESEND_WEBHOOK_SECRET",
+    "MARKETING_WORKER_SECRET",
+    "MARKETING_TEST_EMAIL",
+  ] as const;
+
+  const originalEnv = Object.fromEntries(keysToManage.map((key) => [key, process.env[key]]));
+  t.after(() => {
+    for (const key of keysToManage) {
+      const value = originalEnv[key];
+      if (value === undefined) {
+        delete process.env[key];
+      } else {
+        process.env[key] = value;
+      }
+    }
+  });
+
+  process.env.NEXT_PUBLIC_APP_URL = "http://localhost:3000";
+  process.env.NEXT_PUBLIC_SUPABASE_URL = "https://example.supabase.co";
+  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY = "sb_publishable_test";
+  process.env.SUPABASE_SECRET_DEFAULT_KEY = "sb_secret_test";
+  delete process.env.RESEND_API_KEY;
+  delete process.env.RESEND_FROM_TRANSACTIONAL;
+  delete process.env.RESEND_FROM_MARKETING;
+  delete process.env.CONTACT_TO_EMAIL;
+  delete process.env.RESEND_WEBHOOK_SECRET;
+  delete process.env.MARKETING_WORKER_SECRET;
+  delete process.env.MARKETING_TEST_EMAIL;
+
+  const crmReadiness = envModule.isStarterEnvReady(["core-auth", "crm"]);
+  assert.equal(crmReadiness.allReady, true);
+
+  const adminReadiness = envModule.isStarterEnvReady(["core-auth", "admin"]);
+  assert.equal(adminReadiness.allReady, false);
+  assert.deepEqual(
+    adminReadiness.missing.map((item: { key: string }) => item.key).sort(),
+    [
+      "CONTACT_TO_EMAIL",
+      "MARKETING_TEST_EMAIL",
+      "MARKETING_WORKER_SECRET",
+      "RESEND_API_KEY",
+      "RESEND_FROM_MARKETING",
+      "RESEND_FROM_TRANSACTIONAL",
+      "RESEND_WEBHOOK_SECRET",
+    ],
+  );
 });
 
 test("detects workspace dependency mode from installed brightweb packages", async (t) => {

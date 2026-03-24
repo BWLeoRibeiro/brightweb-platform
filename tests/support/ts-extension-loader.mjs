@@ -1,6 +1,20 @@
 const CANDIDATE_SUFFIXES = [".ts", ".tsx", "/index.ts", "/index.tsx"];
 
 export async function resolve(specifier, context, defaultResolve) {
+  if (specifier === "server-only") {
+    return {
+      shortCircuit: true,
+      url: "data:text/javascript,export default undefined;",
+    };
+  }
+
+  if (specifier === "next/headers") {
+    return {
+      shortCircuit: true,
+      url: "data:text/javascript,export async function cookies(){return {getAll(){return []},set(){},setAll(){}}};",
+    };
+  }
+
   try {
     return await defaultResolve(specifier, context, defaultResolve);
   } catch (error) {
