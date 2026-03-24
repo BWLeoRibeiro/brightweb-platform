@@ -30,6 +30,7 @@ Use [Base Contract](./base-contract.md) for the support-tier rules and [base-con
 | --- | --- |
 | Core helpers | The Core layer provides shared database helpers such as `current_profile_id()`, plus placeholder role helpers later replaced by Admin. |
 | Auth package | `@brightweblabs/core-auth` provides the shared auth package used by platform apps for callback flows, reset-password flows, shared auth validation utilities, and shared client/server auth helpers. |
+| Infra package | `@brightweblabs/infra` provides shared Supabase clients plus the canonical app-owned Resend transport and webhook signature verification helpers. |
 | Admin package | `@brightweblabs/module-admin` provides the admin package for governance surfaces, admin handlers, and role-aware server helpers. |
 | Shell runtime | The baseline platform shell wiring is composed around `@brightweblabs/app-shell`, with Core auth and optional Admin UI surfaces attached to that runtime. |
 
@@ -73,6 +74,9 @@ The platform base is mostly consumed through package entrypoints rather than thr
 - `@brightweblabs/core-auth/shared` is for shared validation and redirect URL helpers.
 - `@brightweblabs/core-auth/client` is for client-only React hooks such as resend cooldown behavior.
 - `@brightweblabs/core-auth/server` is for page guards and current-user access on the server.
+- `@brightweblabs/infra/server` is for app-owned Resend transport and webhook verification.
+
+Auth email sending remains Supabase-owned (`supabase.auth.*` + Supabase Auth SMTP settings).
 
 ```ts
 import { requireServerPageAccess, requireServerPageRoleAccess } from "@brightweblabs/core-auth/server";

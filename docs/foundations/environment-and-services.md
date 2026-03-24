@@ -20,9 +20,21 @@ The current public scaffold only generates `.env.local` for the `platform` templ
 | --- | --- | --- | --- | --- |
 | `NEXT_PUBLIC_APP_URL` | public | `core-auth` | Canonical base URL used by auth callbacks and platform links. | Your local or deployed app URL, such as `http://localhost:3000` during local development. |
 | `NEXT_PUBLIC_SUPABASE_URL` | public | `crm`, `projects`, `admin` | Supabase project URL used by client-side and server-side API access. | The target Supabase project settings. |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | public | `crm`, `projects`, `admin` | Browser-safe Supabase key for auth and RPC access. | The target Supabase project settings. |
-| `SUPABASE_SERVICE_ROLE_KEY` | server | `crm`, `projects`, `admin` | Privileged server key for admin, CRM, and projects actions. | The target Supabase project settings. |
-| `RESEND_API_KEY` | server | `core-auth` | Email delivery key for auth and other server email flows. | Your Resend account. |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY` | public | `crm`, `projects`, `admin` | Browser-safe Supabase key for auth and RPC access. | The target Supabase project settings. |
+| `SUPABASE_SECRET_DEFAULT_KEY` | server | `crm`, `projects`, `admin` | Privileged server key for admin, CRM, and projects actions. | The target Supabase project settings. |
+| `RESEND_API_KEY` | server | `admin` | API key used by app-owned email transport calls. | Your Resend account. |
+| `RESEND_FROM_TRANSACTIONAL` | server | `admin` | Sender identity for app-owned transactional flows. | A verified sender/domain in Resend. |
+| `RESEND_FROM_MARKETING` | server | `admin` | Sender identity for app-owned marketing flows. | A verified sender/domain in Resend. |
+| `CONTACT_TO_EMAIL` | server | `admin` | Destination inbox for app-owned contact notifications. | Inbox address owned by the client. |
+| `RESEND_WEBHOOK_SECRET` | server | `admin` | Secret used to verify inbound Resend webhook signatures. | The webhook secret configured in Resend. |
+| `MARKETING_WORKER_SECRET` | server | `admin` | Shared secret for internal marketing worker endpoints. | A project-owned random secret. |
+| `MARKETING_TEST_EMAIL` | server | `admin` | Recipient for admin marketing test sends. | A test mailbox controlled by the project team. |
+
+## Auth email delivery vs app-owned email delivery
+
+- Auth email flows (`signUp`, resend confirmation, reset password) are Supabase-owned and use `supabase.auth.*`.
+- Auth provider and SMTP behavior are configured in Supabase Auth settings, not in the app transport layer.
+- App-owned transactional, contact, invite, and marketing flows should call Resend via `@brightweblabs/infra/server`.
 
 ## Generated platform config files
 

@@ -1,4 +1,5 @@
 import "server-only";
+import { createHmac, timingSafeEqual } from "crypto";
 import { createServerClient } from "@supabase/ssr";
 import { createClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
@@ -33,6 +34,13 @@ function getEnv(name: string): string {
     throw new ResendConfigError(`Missing required environment variable: ${name}`);
   }
   return value;
+}
+
+function compareSecret(expected: string, provided: string): boolean {
+  const a = Buffer.from(expected);
+  const b = Buffer.from(provided);
+  if (a.length !== b.length) return false;
+  return timingSafeEqual(a, b);
 }
 
 export async function createServerSupabase() {
@@ -97,6 +105,27 @@ export function getContactDestination(): string {
 
 export function getResendWebhookSecret(): string {
   return getEnv("RESEND_WEBHOOK_SECRET");
+}
+
+export function verifyResendWebhookSignature(
+  rawBody: string,
+  signatureHeader: string | null,
+  secret?: string,
+): boolean {
+  if (!signatureHeader) return false;
+  const header = signatureHeader.trim();
+  if (!header) return false;
+
+  const resolvedSecret = secret?.trim() || getResendWebhookSecret();
+
+  if (header.startsWith("sha256=")) {
+    const signature = header.slice("sha256=".length).trim();
+    if (!signature) return false;
+    const digest = createHmac("sha256", resolvedSecret).update(rawBody).digest("hex");
+    return compareSecret(digest, signature);
+  }
+
+  return compareSecret(resolvedSecret, header);
 }
 
 export async function resendApiRequest<TResponse>(

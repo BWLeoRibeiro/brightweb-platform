@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { createHmac } from "node:crypto";
 import test from "node:test";
 import {
   createAdminUsersGetHandler,
@@ -312,6 +313,79 @@ test("infra supabase clients validate env lazily and keep legacy aliases as fall
   });
   assert.equal(envModule.resolveSupabaseServiceRoleKey(), "sb_secret_legacy");
   assert.doesNotThrow(() => clientModule.createClient());
+});
+
+test("infra resend webhook verifier accepts sha256 signatures and raw secret fallback", async (t) => {
+  const originalEnv = {
+    RESEND_WEBHOOK_SECRET: process.env.RESEND_WEBHOOK_SECRET,
+  };
+
+  t.after(() => {
+    for (const [key, value] of Object.entries(originalEnv)) {
+      if (value === undefined) {
+        delete process.env[key];
+      } else {
+        process.env[key] = value;
+      }
+    }
+  });
+
+  process.env.RESEND_WEBHOOK_SECRET = "top-secret";
+
+  const serverModule = await import("../packages/infra/src/server.ts");
+  const body = JSON.stringify({ hello: "world" });
+  const digest = createHmac("sha256", "top-secret").update(body).digest("hex");
+
+  assert.equal(serverModule.verifyResendWebhookSignature(body, `sha256=${digest}`), true);
+  assert.equal(serverModule.verifyResendWebhookSignature(body, "top-secret"), true);
+  assert.equal(serverModule.verifyResendWebhookSignature(body, "sha256=bad"), false);
+  assert.equal(serverModule.verifyResendWebhookSignature(body, null), false);
+  assert.equal(serverModule.verifyResendWebhookSignature(body, `sha256=${digest}`, "top-secret"), true);
+});
+
+test("infra resendApiRequest throws typed config and provider errors", async (t) => {
+  const originalEnv = {
+    RESEND_API_KEY: process.env.RESEND_API_KEY,
+  };
+  const originalFetch = globalThis.fetch;
+
+  t.after(() => {
+    for (const [key, value] of Object.entries(originalEnv)) {
+      if (value === undefined) {
+        delete process.env[key];
+      } else {
+        process.env[key] = value;
+      }
+    }
+    globalThis.fetch = originalFetch;
+  });
+
+  const serverModule = await import("../packages/infra/src/server.ts");
+
+  delete process.env.RESEND_API_KEY;
+  await assert.rejects(
+    () => serverModule.resendApiRequest("/emails", { method: "POST", body: "{}" }),
+    (error) => error instanceof serverModule.ResendConfigError,
+  );
+
+  process.env.RESEND_API_KEY = "re_test";
+  let capturedInit: RequestInit | undefined;
+  globalThis.fetch = async (_input: RequestInfo | URL, init?: RequestInit) => {
+    capturedInit = init;
+    return new Response(JSON.stringify({ error: "bad request" }), {
+      status: 400,
+      headers: { "Content-Type": "application/json" },
+    });
+  };
+
+  await assert.rejects(
+    () => serverModule.resendApiRequest("/emails", { method: "POST", body: "{}" }),
+    (error) => error instanceof serverModule.ResendApiError && error.status === 400 && error.path === "/emails",
+  );
+
+  const headers = capturedInit?.headers as Record<string, string> | undefined;
+  assert.equal(headers?.Authorization, "Bearer re_test");
+  assert.equal(headers?.["Content-Type"], "application/json");
 });
 
 function createCrmSupabase() {
