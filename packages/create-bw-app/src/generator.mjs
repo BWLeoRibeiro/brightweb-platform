@@ -328,7 +328,7 @@ export function createPlatformModulesConfigFile(selectedModules) {
     "  {",
     '    key: "crm",',
     '    label: "CRM",',
-    '    description: "Contacts, marketing audience, and CRM server/data layer.",',
+    '    description: "Contacts and CRM server/data layer, with marketing-adjacent operational data stored in Supabase.",',
     `    enabled: ${String(selected.has("crm"))},`,
     '    packageName: "@brightweblabs/module-crm",',
     '    playgroundHref: "/playground/crm",',
