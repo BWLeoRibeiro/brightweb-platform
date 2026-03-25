@@ -15,10 +15,406 @@
         "description": "Shell registration object for projects navigation and actions."
       }
     ],
-    "notes": [
-      "Use when wiring Projects into the shared shell."
-    ],
     "source": "packages/module-projects/src/registration.ts"
+  },
+  {
+    "moduleKey": "projects",
+    "packageName": "@brightweblabs/module-projects",
+    "symbol": "PROJECT_STATUSES",
+    "kind": "shared-helper",
+    "status": "stable",
+    "runtime": "shared",
+    "summary": "Available project lifecycle values.",
+    "auth": "none",
+    "inputs": [],
+    "outputs": [
+      {
+        "type": "ProjectStatus[]",
+        "description": "Project lifecycle status values."
+      }
+    ],
+    "source": "packages/module-projects/src/data.ts"
+  },
+  {
+    "moduleKey": "projects",
+    "packageName": "@brightweblabs/module-projects",
+    "symbol": "PROJECT_HEALTH_STATES",
+    "kind": "shared-helper",
+    "status": "stable",
+    "runtime": "shared",
+    "summary": "Available project health values.",
+    "auth": "none",
+    "inputs": [],
+    "outputs": [
+      {
+        "type": "ProjectHealth[]",
+        "description": "Project health state values."
+      }
+    ],
+    "source": "packages/module-projects/src/data.ts"
+  },
+  {
+    "moduleKey": "projects",
+    "packageName": "@brightweblabs/module-projects",
+    "symbol": "PROJECT_MEMBER_ROLES",
+    "kind": "shared-helper",
+    "status": "stable",
+    "runtime": "shared",
+    "summary": "Available project member roles.",
+    "auth": "none",
+    "inputs": [],
+    "outputs": [
+      {
+        "type": "ProjectMemberRole[]",
+        "description": "Project member role values."
+      }
+    ],
+    "source": "packages/module-projects/src/contracts.ts"
+  },
+  {
+    "moduleKey": "projects",
+    "packageName": "@brightweblabs/module-projects",
+    "symbol": "PROJECT_MEMBER_ROLE_LABELS_PT",
+    "kind": "shared-helper",
+    "status": "stable",
+    "runtime": "shared",
+    "summary": "Portuguese labels for project member roles.",
+    "auth": "none",
+    "inputs": [],
+    "outputs": [
+      {
+        "type": "Record<ProjectMemberRole, string>",
+        "description": "Role label map for Portuguese UI strings."
+      }
+    ],
+    "source": "packages/module-projects/src/contracts.ts"
+  },
+  {
+    "moduleKey": "projects",
+    "packageName": "@brightweblabs/module-projects",
+    "symbol": "TASK_STATUSES",
+    "kind": "shared-helper",
+    "status": "stable",
+    "runtime": "shared",
+    "summary": "Available task status values.",
+    "auth": "none",
+    "inputs": [],
+    "outputs": [
+      {
+        "type": "TaskStatus[]",
+        "description": "Task status values."
+      }
+    ],
+    "source": "packages/module-projects/src/contracts.ts"
+  },
+  {
+    "moduleKey": "projects",
+    "packageName": "@brightweblabs/module-projects",
+    "symbol": "TASK_PRIORITIES",
+    "kind": "shared-helper",
+    "status": "stable",
+    "runtime": "shared",
+    "summary": "Available task priority values.",
+    "auth": "none",
+    "inputs": [],
+    "outputs": [
+      {
+        "type": "TaskPriority[]",
+        "description": "Task priority values."
+      }
+    ],
+    "source": "packages/module-projects/src/contracts.ts"
+  },
+  {
+    "moduleKey": "projects",
+    "packageName": "@brightweblabs/module-projects",
+    "symbol": "MILESTONE_STATUSES",
+    "kind": "shared-helper",
+    "status": "stable",
+    "runtime": "shared",
+    "summary": "Available milestone status values.",
+    "auth": "none",
+    "inputs": [],
+    "outputs": [
+      {
+        "type": "MilestoneStatus[]",
+        "description": "Milestone status values."
+      }
+    ],
+    "source": "packages/module-projects/src/contracts.ts"
+  },
+  {
+    "moduleKey": "projects",
+    "packageName": "@brightweblabs/module-projects",
+    "symbol": "PROJECT_LINK_VISIBILITY",
+    "kind": "shared-helper",
+    "status": "stable",
+    "runtime": "shared",
+    "summary": "Available project link visibility values.",
+    "auth": "none",
+    "inputs": [],
+    "outputs": [
+      {
+        "type": "ProjectLinkVisibility[]",
+        "description": "Project link visibility values."
+      }
+    ],
+    "source": "packages/module-projects/src/contracts.ts"
+  },
+  {
+    "moduleKey": "projects",
+    "packageName": "@brightweblabs/module-projects",
+    "symbol": "PROJECT_LINK_KIND",
+    "kind": "shared-helper",
+    "status": "stable",
+    "runtime": "shared",
+    "summary": "Available project link kinds.",
+    "auth": "none",
+    "inputs": [],
+    "outputs": [
+      {
+        "type": "ProjectLinkKind[]",
+        "description": "Project link kind values."
+      }
+    ],
+    "source": "packages/module-projects/src/contracts.ts"
+  },
+  {
+    "moduleKey": "projects",
+    "packageName": "@brightweblabs/module-projects",
+    "symbol": "isProjectStatus",
+    "kind": "helper",
+    "status": "stable",
+    "runtime": "shared",
+    "summary": "Validates a raw value as a project status.",
+    "auth": "none",
+    "inputs": [
+      {
+        "name": "value",
+        "type": "unknown",
+        "required": true,
+        "description": "Raw value to validate."
+      }
+    ],
+    "outputs": [
+      {
+        "type": "boolean",
+        "description": "True when the value matches the project status union."
+      }
+    ],
+    "source": "packages/module-projects/src/contracts.ts"
+  },
+  {
+    "moduleKey": "projects",
+    "packageName": "@brightweblabs/module-projects",
+    "symbol": "isProjectHealth",
+    "kind": "helper",
+    "status": "stable",
+    "runtime": "shared",
+    "summary": "Validates a raw value as a project health value.",
+    "auth": "none",
+    "inputs": [
+      {
+        "name": "value",
+        "type": "unknown",
+        "required": true,
+        "description": "Raw value to validate."
+      }
+    ],
+    "outputs": [
+      {
+        "type": "boolean",
+        "description": "True when the value matches the project health union."
+      }
+    ],
+    "source": "packages/module-projects/src/contracts.ts"
+  },
+  {
+    "moduleKey": "projects",
+    "packageName": "@brightweblabs/module-projects",
+    "symbol": "isTaskStatus",
+    "kind": "helper",
+    "status": "stable",
+    "runtime": "shared",
+    "summary": "Validates a raw value as a task status.",
+    "auth": "none",
+    "inputs": [
+      {
+        "name": "value",
+        "type": "unknown",
+        "required": true,
+        "description": "Raw value to validate."
+      }
+    ],
+    "outputs": [
+      {
+        "type": "boolean",
+        "description": "True when the value matches the task status union."
+      }
+    ],
+    "source": "packages/module-projects/src/contracts.ts"
+  },
+  {
+    "moduleKey": "projects",
+    "packageName": "@brightweblabs/module-projects",
+    "symbol": "isTaskPriority",
+    "kind": "helper",
+    "status": "stable",
+    "runtime": "shared",
+    "summary": "Validates a raw value as a task priority.",
+    "auth": "none",
+    "inputs": [
+      {
+        "name": "value",
+        "type": "unknown",
+        "required": true,
+        "description": "Raw value to validate."
+      }
+    ],
+    "outputs": [
+      {
+        "type": "boolean",
+        "description": "True when the value matches the task priority union."
+      }
+    ],
+    "source": "packages/module-projects/src/contracts.ts"
+  },
+  {
+    "moduleKey": "projects",
+    "packageName": "@brightweblabs/module-projects",
+    "symbol": "isMilestoneStatus",
+    "kind": "helper",
+    "status": "stable",
+    "runtime": "shared",
+    "summary": "Validates a raw value as a milestone status.",
+    "auth": "none",
+    "inputs": [
+      {
+        "name": "value",
+        "type": "unknown",
+        "required": true,
+        "description": "Raw value to validate."
+      }
+    ],
+    "outputs": [
+      {
+        "type": "boolean",
+        "description": "True when the value matches the milestone status union."
+      }
+    ],
+    "source": "packages/module-projects/src/contracts.ts"
+  },
+  {
+    "moduleKey": "projects",
+    "packageName": "@brightweblabs/module-projects",
+    "symbol": "isProjectMemberRole",
+    "kind": "helper",
+    "status": "stable",
+    "runtime": "shared",
+    "summary": "Validates a raw value as a project member role.",
+    "auth": "none",
+    "inputs": [
+      {
+        "name": "value",
+        "type": "unknown",
+        "required": true,
+        "description": "Raw value to validate."
+      }
+    ],
+    "outputs": [
+      {
+        "type": "boolean",
+        "description": "True when the value matches the project member role union."
+      }
+    ],
+    "source": "packages/module-projects/src/contracts.ts"
+  },
+  {
+    "moduleKey": "projects",
+    "packageName": "@brightweblabs/module-projects",
+    "symbol": "isProjectLinkVisibility",
+    "kind": "helper",
+    "status": "stable",
+    "runtime": "shared",
+    "summary": "Validates a raw value as a project link visibility value.",
+    "auth": "none",
+    "inputs": [
+      {
+        "name": "value",
+        "type": "unknown",
+        "required": true,
+        "description": "Raw value to validate."
+      }
+    ],
+    "outputs": [
+      {
+        "type": "boolean",
+        "description": "True when the value matches the project link visibility union."
+      }
+    ],
+    "source": "packages/module-projects/src/contracts.ts"
+  },
+  {
+    "moduleKey": "projects",
+    "packageName": "@brightweblabs/module-projects",
+    "symbol": "isProjectLinkKind",
+    "kind": "helper",
+    "status": "stable",
+    "runtime": "shared",
+    "summary": "Validates a raw value as a project link kind.",
+    "auth": "none",
+    "inputs": [
+      {
+        "name": "value",
+        "type": "unknown",
+        "required": true,
+        "description": "Raw value to validate."
+      }
+    ],
+    "outputs": [
+      {
+        "type": "boolean",
+        "description": "True when the value matches the project link kind union."
+      }
+    ],
+    "source": "packages/module-projects/src/contracts.ts"
+  },
+  {
+    "moduleKey": "projects",
+    "packageName": "@brightweblabs/module-projects",
+    "symbol": "parsePositiveInt",
+    "kind": "helper",
+    "status": "stable",
+    "runtime": "shared",
+    "summary": "Parses a positive integer with a fallback and maximum cap.",
+    "auth": "none",
+    "inputs": [
+      {
+        "name": "value",
+        "type": "string | null",
+        "required": true,
+        "description": "Raw string value to parse."
+      },
+      {
+        "name": "fallback",
+        "type": "number",
+        "required": true,
+        "description": "Fallback value when the input is not a positive integer."
+      },
+      {
+        "name": "max",
+        "type": "number",
+        "required": false,
+        "description": "Maximum allowed result. Defaults to 100."
+      }
+    ],
+    "outputs": [
+      {
+        "type": "number",
+        "description": "Positive integer value capped at the provided maximum."
+      }
+    ],
+    "source": "packages/module-projects/src/contracts.ts"
   },
   {
     "moduleKey": "projects",
@@ -49,9 +445,6 @@
         "description": "Paginated projects list with derived task and milestone stats."
       }
     ],
-    "notes": [
-      "Use when building app-owned portfolio tables, boards, and project queries."
-    ],
     "source": "packages/module-projects/src/data.ts"
   },
   {
@@ -77,10 +470,760 @@
         "description": "Portfolio totals for active, planned, at-risk, and overdue projects."
       }
     ],
-    "notes": [
-      "Use when building app-owned dashboards and portfolio summaries."
-    ],
     "source": "packages/module-projects/src/data.ts"
+  },
+  {
+    "moduleKey": "projects",
+    "packageName": "@brightweblabs/module-projects",
+    "symbol": "getProjectDashboard",
+    "kind": "helper",
+    "status": "stable",
+    "runtime": "server",
+    "summary": "Returns the project dashboard payload with members, milestones, tasks, links, and activity.",
+    "auth": "signed-in user with project access required in the caller context",
+    "inputs": [
+      {
+        "name": "supabase",
+        "type": "SupabaseClient",
+        "required": true,
+        "description": "Server-side Supabase client with project schema access."
+      },
+      {
+        "name": "projectId",
+        "type": "string",
+        "required": true,
+        "description": "Project id to load."
+      }
+    ],
+    "outputs": [
+      {
+        "type": "ProjectDashboardData",
+        "description": "Project detail payload with project data, related records, and activity."
+      }
+    ],
+    "source": "packages/module-projects/src/server.ts"
+  },
+  {
+    "moduleKey": "projects",
+    "packageName": "@brightweblabs/module-projects",
+    "symbol": "listProjectTasks",
+    "kind": "helper",
+    "status": "stable",
+    "runtime": "server",
+    "summary": "Lists project tasks in position order.",
+    "auth": "signed-in user with project access required in the caller context",
+    "inputs": [
+      {
+        "name": "supabase",
+        "type": "SupabaseClient",
+        "required": true,
+        "description": "Server-side Supabase client with project schema access."
+      },
+      {
+        "name": "projectId",
+        "type": "string",
+        "required": true,
+        "description": "Project id to query."
+      }
+    ],
+    "outputs": [
+      {
+        "type": "ProjectTask[]",
+        "description": "Ordered task list for the project."
+      }
+    ],
+    "source": "packages/module-projects/src/server.ts"
+  },
+  {
+    "moduleKey": "projects",
+    "packageName": "@brightweblabs/module-projects",
+    "symbol": "listProjectMilestones",
+    "kind": "helper",
+    "status": "stable",
+    "runtime": "server",
+    "summary": "Lists project milestones in chronological order.",
+    "auth": "signed-in user with project access required in the caller context",
+    "inputs": [
+      {
+        "name": "supabase",
+        "type": "SupabaseClient",
+        "required": true,
+        "description": "Server-side Supabase client with project schema access."
+      },
+      {
+        "name": "projectId",
+        "type": "string",
+        "required": true,
+        "description": "Project id to query."
+      }
+    ],
+    "outputs": [
+      {
+        "type": "ProjectMilestone[]",
+        "description": "Ordered milestone list for the project."
+      }
+    ],
+    "source": "packages/module-projects/src/server.ts"
+  },
+  {
+    "moduleKey": "projects",
+    "packageName": "@brightweblabs/module-projects",
+    "symbol": "listProjectLinks",
+    "kind": "helper",
+    "status": "stable",
+    "runtime": "server",
+    "summary": "Lists project links with optional client-only filtering.",
+    "auth": "signed-in user with project access required in the caller context",
+    "inputs": [
+      {
+        "name": "supabase",
+        "type": "SupabaseClient",
+        "required": true,
+        "description": "Server-side Supabase client with project schema access."
+      },
+      {
+        "name": "projectId",
+        "type": "string",
+        "required": true,
+        "description": "Project id to query."
+      },
+      {
+        "name": "options",
+        "type": "{ clientVisibleOnly?: boolean }",
+        "required": false,
+        "description": "Optional client-visible-only filter."
+      }
+    ],
+    "outputs": [
+      {
+        "type": "ProjectLink[]",
+        "description": "Ordered project link list."
+      }
+    ],
+    "source": "packages/module-projects/src/server.ts"
+  },
+  {
+    "moduleKey": "projects",
+    "packageName": "@brightweblabs/module-projects",
+    "symbol": "getClientProjectHealth",
+    "kind": "helper",
+    "status": "stable",
+    "runtime": "server",
+    "summary": "Returns a client-facing project health summary.",
+    "auth": "signed-in user with project access required in the caller context",
+    "inputs": [
+      {
+        "name": "supabase",
+        "type": "SupabaseClient",
+        "required": true,
+        "description": "Server-side Supabase client with project schema access."
+      },
+      {
+        "name": "projectId",
+        "type": "string",
+        "required": true,
+        "description": "Project id to query."
+      }
+    ],
+    "outputs": [
+      {
+        "type": "ProjectClientHealth",
+        "description": "Client-facing project summary with client-visible links and next milestone."
+      }
+    ],
+    "source": "packages/module-projects/src/server.ts"
+  },
+  {
+    "moduleKey": "projects",
+    "packageName": "@brightweblabs/module-projects",
+    "symbol": "listProjectAssignableProfiles",
+    "kind": "helper",
+    "status": "stable",
+    "runtime": "server",
+    "summary": "Lists profiles that can be assigned to a project.",
+    "auth": "signed-in user with project access required in the caller context",
+    "inputs": [
+      {
+        "name": "supabase",
+        "type": "SupabaseClient",
+        "required": true,
+        "description": "Server-side Supabase client with project schema access."
+      },
+      {
+        "name": "projectId",
+        "type": "string",
+        "required": true,
+        "description": "Project id to query."
+      }
+    ],
+    "outputs": [
+      {
+        "type": "ProjectAssignableProfile[]",
+        "description": "Deduplicated assignable profile options."
+      }
+    ],
+    "source": "packages/module-projects/src/server.ts"
+  },
+  {
+    "moduleKey": "projects",
+    "packageName": "@brightweblabs/module-projects",
+    "symbol": "syncProjectMembers",
+    "kind": "helper",
+    "status": "stable",
+    "runtime": "server",
+    "summary": "Synchronizes project membership records with the current allowed assignments.",
+    "auth": "signed-in user with project access required in the caller context",
+    "inputs": [
+      {
+        "name": "supabase",
+        "type": "SupabaseClient",
+        "required": true,
+        "description": "Server-side Supabase client with project schema access."
+      },
+      {
+        "name": "projectId",
+        "type": "string",
+        "required": true,
+        "description": "Project id to update."
+      },
+      {
+        "name": "input",
+        "type": "ProjectMemberInput[]",
+        "required": true,
+        "description": "Requested member assignments."
+      }
+    ],
+    "outputs": [
+      {
+        "type": "ProjectMember[]",
+        "description": "Updated project member list."
+      }
+    ],
+    "source": "packages/module-projects/src/server.ts"
+  },
+  {
+    "moduleKey": "projects",
+    "packageName": "@brightweblabs/module-projects",
+    "symbol": "createProjectOrganization",
+    "kind": "helper",
+    "status": "stable",
+    "runtime": "server",
+    "summary": "Creates a project-owned organization record.",
+    "auth": "signed-in user with project access required in the caller context",
+    "inputs": [
+      {
+        "name": "supabase",
+        "type": "SupabaseClient",
+        "required": true,
+        "description": "Server-side Supabase client with project schema access."
+      },
+      {
+        "name": "input",
+        "type": "CreateProjectOrganizationInput",
+        "required": true,
+        "description": "Organization creation payload."
+      }
+    ],
+    "outputs": [
+      {
+        "type": "{ id: string; name: string }",
+        "description": "Created organization record."
+      }
+    ],
+    "source": "packages/module-projects/src/server.ts"
+  },
+  {
+    "moduleKey": "projects",
+    "packageName": "@brightweblabs/module-projects",
+    "symbol": "createProject",
+    "kind": "helper",
+    "status": "stable",
+    "runtime": "server",
+    "summary": "Creates a project and returns the project dashboard payload.",
+    "auth": "signed-in user with project access required in the caller context",
+    "inputs": [
+      {
+        "name": "supabase",
+        "type": "SupabaseClient",
+        "required": true,
+        "description": "Server-side Supabase client with project schema access."
+      },
+      {
+        "name": "input",
+        "type": "CreateProjectInput",
+        "required": true,
+        "description": "Project creation payload."
+      }
+    ],
+    "outputs": [
+      {
+        "type": "ProjectDashboardData",
+        "description": "Created project dashboard payload."
+      }
+    ],
+    "source": "packages/module-projects/src/server.ts"
+  },
+  {
+    "moduleKey": "projects",
+    "packageName": "@brightweblabs/module-projects",
+    "symbol": "updateProject",
+    "kind": "helper",
+    "status": "stable",
+    "runtime": "server",
+    "summary": "Updates a project and returns the refreshed project dashboard payload.",
+    "auth": "signed-in user with project access required in the caller context",
+    "inputs": [
+      {
+        "name": "supabase",
+        "type": "SupabaseClient",
+        "required": true,
+        "description": "Server-side Supabase client with project schema access."
+      },
+      {
+        "name": "projectId",
+        "type": "string",
+        "required": true,
+        "description": "Project id to update."
+      },
+      {
+        "name": "input",
+        "type": "UpdateProjectInput",
+        "required": true,
+        "description": "Project update payload."
+      }
+    ],
+    "outputs": [
+      {
+        "type": "ProjectDashboardData",
+        "description": "Updated project dashboard payload."
+      }
+    ],
+    "source": "packages/module-projects/src/server.ts"
+  },
+  {
+    "moduleKey": "projects",
+    "packageName": "@brightweblabs/module-projects",
+    "symbol": "deleteProject",
+    "kind": "helper",
+    "status": "stable",
+    "runtime": "server",
+    "summary": "Deletes a project and logs the deletion event.",
+    "auth": "signed-in user with project access required in the caller context",
+    "inputs": [
+      {
+        "name": "supabase",
+        "type": "SupabaseClient",
+        "required": true,
+        "description": "Server-side Supabase client with project schema access."
+      },
+      {
+        "name": "projectId",
+        "type": "string",
+        "required": true,
+        "description": "Project id to delete."
+      },
+      {
+        "name": "actorProfileId",
+        "type": "string | null",
+        "required": true,
+        "description": "Profile id to include in the activity log."
+      }
+    ],
+    "outputs": [
+      {
+        "type": "void",
+        "description": "No return value."
+      }
+    ],
+    "source": "packages/module-projects/src/server.ts"
+  },
+  {
+    "moduleKey": "projects",
+    "packageName": "@brightweblabs/module-projects",
+    "symbol": "createProjectTask",
+    "kind": "helper",
+    "status": "stable",
+    "runtime": "server",
+    "summary": "Creates a project task and returns the refreshed task list.",
+    "auth": "signed-in user with project access required in the caller context",
+    "inputs": [
+      {
+        "name": "supabase",
+        "type": "SupabaseClient",
+        "required": true,
+        "description": "Server-side Supabase client with project schema access."
+      },
+      {
+        "name": "projectId",
+        "type": "string",
+        "required": true,
+        "description": "Project id to update."
+      },
+      {
+        "name": "input",
+        "type": "CreateProjectTaskInput",
+        "required": true,
+        "description": "Task creation payload."
+      }
+    ],
+    "outputs": [
+      {
+        "type": "ProjectTask[]",
+        "description": "Updated task list."
+      }
+    ],
+    "source": "packages/module-projects/src/server.ts"
+  },
+  {
+    "moduleKey": "projects",
+    "packageName": "@brightweblabs/module-projects",
+    "symbol": "updateProjectTask",
+    "kind": "helper",
+    "status": "stable",
+    "runtime": "server",
+    "summary": "Updates a project task and returns the refreshed task list.",
+    "auth": "signed-in user with project access required in the caller context",
+    "inputs": [
+      {
+        "name": "supabase",
+        "type": "SupabaseClient",
+        "required": true,
+        "description": "Server-side Supabase client with project schema access."
+      },
+      {
+        "name": "projectId",
+        "type": "string",
+        "required": true,
+        "description": "Project id to update."
+      },
+      {
+        "name": "taskId",
+        "type": "string",
+        "required": true,
+        "description": "Task id to update."
+      },
+      {
+        "name": "input",
+        "type": "UpdateProjectTaskInput",
+        "required": true,
+        "description": "Task update payload."
+      }
+    ],
+    "outputs": [
+      {
+        "type": "ProjectTask[]",
+        "description": "Updated task list."
+      }
+    ],
+    "source": "packages/module-projects/src/server.ts"
+  },
+  {
+    "moduleKey": "projects",
+    "packageName": "@brightweblabs/module-projects",
+    "symbol": "deleteProjectTask",
+    "kind": "helper",
+    "status": "stable",
+    "runtime": "server",
+    "summary": "Deletes a project task and returns the refreshed task list.",
+    "auth": "signed-in user with project access required in the caller context",
+    "inputs": [
+      {
+        "name": "supabase",
+        "type": "SupabaseClient",
+        "required": true,
+        "description": "Server-side Supabase client with project schema access."
+      },
+      {
+        "name": "projectId",
+        "type": "string",
+        "required": true,
+        "description": "Project id to update."
+      },
+      {
+        "name": "taskId",
+        "type": "string",
+        "required": true,
+        "description": "Task id to delete."
+      }
+    ],
+    "outputs": [
+      {
+        "type": "ProjectTask[]",
+        "description": "Updated task list."
+      }
+    ],
+    "source": "packages/module-projects/src/server.ts"
+  },
+  {
+    "moduleKey": "projects",
+    "packageName": "@brightweblabs/module-projects",
+    "symbol": "createProjectMilestone",
+    "kind": "helper",
+    "status": "stable",
+    "runtime": "server",
+    "summary": "Creates a project milestone and returns the refreshed milestone list.",
+    "auth": "signed-in user with project access required in the caller context",
+    "inputs": [
+      {
+        "name": "supabase",
+        "type": "SupabaseClient",
+        "required": true,
+        "description": "Server-side Supabase client with project schema access."
+      },
+      {
+        "name": "projectId",
+        "type": "string",
+        "required": true,
+        "description": "Project id to update."
+      },
+      {
+        "name": "input",
+        "type": "CreateProjectMilestoneInput",
+        "required": true,
+        "description": "Milestone creation payload."
+      }
+    ],
+    "outputs": [
+      {
+        "type": "ProjectMilestone[]",
+        "description": "Updated milestone list."
+      }
+    ],
+    "source": "packages/module-projects/src/server.ts"
+  },
+  {
+    "moduleKey": "projects",
+    "packageName": "@brightweblabs/module-projects",
+    "symbol": "updateProjectMilestone",
+    "kind": "helper",
+    "status": "stable",
+    "runtime": "server",
+    "summary": "Updates a project milestone and returns the refreshed milestone list.",
+    "auth": "signed-in user with project access required in the caller context",
+    "inputs": [
+      {
+        "name": "supabase",
+        "type": "SupabaseClient",
+        "required": true,
+        "description": "Server-side Supabase client with project schema access."
+      },
+      {
+        "name": "projectId",
+        "type": "string",
+        "required": true,
+        "description": "Project id to update."
+      },
+      {
+        "name": "milestoneId",
+        "type": "string",
+        "required": true,
+        "description": "Milestone id to update."
+      },
+      {
+        "name": "input",
+        "type": "UpdateProjectMilestoneInput",
+        "required": true,
+        "description": "Milestone update payload."
+      }
+    ],
+    "outputs": [
+      {
+        "type": "ProjectMilestone[]",
+        "description": "Updated milestone list."
+      }
+    ],
+    "source": "packages/module-projects/src/server.ts"
+  },
+  {
+    "moduleKey": "projects",
+    "packageName": "@brightweblabs/module-projects",
+    "symbol": "deleteProjectMilestone",
+    "kind": "helper",
+    "status": "stable",
+    "runtime": "server",
+    "summary": "Deletes a project milestone and returns the refreshed milestone list.",
+    "auth": "signed-in user with project access required in the caller context",
+    "inputs": [
+      {
+        "name": "supabase",
+        "type": "SupabaseClient",
+        "required": true,
+        "description": "Server-side Supabase client with project schema access."
+      },
+      {
+        "name": "projectId",
+        "type": "string",
+        "required": true,
+        "description": "Project id to update."
+      },
+      {
+        "name": "milestoneId",
+        "type": "string",
+        "required": true,
+        "description": "Milestone id to delete."
+      }
+    ],
+    "outputs": [
+      {
+        "type": "ProjectMilestone[]",
+        "description": "Updated milestone list."
+      }
+    ],
+    "source": "packages/module-projects/src/server.ts"
+  },
+  {
+    "moduleKey": "projects",
+    "packageName": "@brightweblabs/module-projects",
+    "symbol": "createProjectLink",
+    "kind": "helper",
+    "status": "stable",
+    "runtime": "server",
+    "summary": "Creates a project link and returns the refreshed link list.",
+    "auth": "signed-in user with project access required in the caller context",
+    "inputs": [
+      {
+        "name": "supabase",
+        "type": "SupabaseClient",
+        "required": true,
+        "description": "Server-side Supabase client with project schema access."
+      },
+      {
+        "name": "projectId",
+        "type": "string",
+        "required": true,
+        "description": "Project id to update."
+      },
+      {
+        "name": "input",
+        "type": "CreateProjectLinkInput",
+        "required": true,
+        "description": "Link creation payload."
+      }
+    ],
+    "outputs": [
+      {
+        "type": "ProjectLink[]",
+        "description": "Updated link list."
+      }
+    ],
+    "source": "packages/module-projects/src/server.ts"
+  },
+  {
+    "moduleKey": "projects",
+    "packageName": "@brightweblabs/module-projects",
+    "symbol": "updateProjectLink",
+    "kind": "helper",
+    "status": "stable",
+    "runtime": "server",
+    "summary": "Updates a project link and returns the refreshed link list.",
+    "auth": "signed-in user with project access required in the caller context",
+    "inputs": [
+      {
+        "name": "supabase",
+        "type": "SupabaseClient",
+        "required": true,
+        "description": "Server-side Supabase client with project schema access."
+      },
+      {
+        "name": "projectId",
+        "type": "string",
+        "required": true,
+        "description": "Project id to update."
+      },
+      {
+        "name": "linkId",
+        "type": "string",
+        "required": true,
+        "description": "Link id to update."
+      },
+      {
+        "name": "input",
+        "type": "UpdateProjectLinkInput",
+        "required": true,
+        "description": "Link update payload."
+      }
+    ],
+    "outputs": [
+      {
+        "type": "ProjectLink[]",
+        "description": "Updated link list."
+      }
+    ],
+    "source": "packages/module-projects/src/server.ts"
+  },
+  {
+    "moduleKey": "projects",
+    "packageName": "@brightweblabs/module-projects",
+    "symbol": "deleteProjectLink",
+    "kind": "helper",
+    "status": "stable",
+    "runtime": "server",
+    "summary": "Deletes a project link and returns the refreshed link list.",
+    "auth": "signed-in user with project access required in the caller context",
+    "inputs": [
+      {
+        "name": "supabase",
+        "type": "SupabaseClient",
+        "required": true,
+        "description": "Server-side Supabase client with project schema access."
+      },
+      {
+        "name": "projectId",
+        "type": "string",
+        "required": true,
+        "description": "Project id to update."
+      },
+      {
+        "name": "linkId",
+        "type": "string",
+        "required": true,
+        "description": "Link id to delete."
+      }
+    ],
+    "outputs": [
+      {
+        "type": "ProjectLink[]",
+        "description": "Updated link list."
+      }
+    ],
+    "source": "packages/module-projects/src/server.ts"
+  },
+  {
+    "moduleKey": "projects",
+    "packageName": "@brightweblabs/module-projects",
+    "symbol": "listOrgAdminProjectsByProfile",
+    "kind": "helper",
+    "status": "stable",
+    "runtime": "server",
+    "summary": "Lists projects visible to an org admin profile.",
+    "auth": "signed-in user with project access required in the caller context",
+    "inputs": [
+      {
+        "name": "supabase",
+        "type": "SupabaseClient",
+        "required": true,
+        "description": "Server-side Supabase client with project schema access."
+      },
+      {
+        "name": "profileId",
+        "type": "string",
+        "required": true,
+        "description": "Profile id to inspect."
+      },
+      {
+        "name": "options",
+        "type": "{ limit?: number }",
+        "required": false,
+        "description": "Optional result limit."
+      }
+    ],
+    "outputs": [
+      {
+        "type": "ProjectListItem[]",
+        "description": "Projects visible to the requested org admin profile."
+      }
+    ],
+    "source": "packages/module-projects/src/server.ts"
   },
   {
     "moduleKey": "projects",
@@ -97,9 +1240,6 @@
         "type": "ProjectsPortfolioPageData",
         "description": "Starter projects page payload with organization options, stats, and the initial list."
       }
-    ],
-    "notes": [
-      "Replace or compose this helper when a project needs a different portfolio page shape."
     ],
     "buildOn": [
       "listProjects",
@@ -129,9 +1269,6 @@
         "type": "boolean",
         "description": "True when the error matches the current schema-missing fallback cases."
       }
-    ],
-    "notes": [
-      "Treat as internal fallback logic for the current starter helpers."
     ],
     "source": "packages/module-projects/src/data.ts"
   }

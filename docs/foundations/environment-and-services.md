@@ -13,6 +13,8 @@ The current public scaffold only generates `.env.local` for the `platform` templ
 5. Replace placeholder service values with the real values for your own environment.
 
 > Brand defaults and module selection are starter config, not environment state. Keep them in `config/brand.ts` and `config/modules.ts`.
+>
+> The generated `.env.local` already includes blank placeholders for every current platform key. For admin-enabled apps, that includes the full app-owned Resend set, so the first-run task is to fill values, not invent env names.
 
 ## Service keys generated for platform apps
 
@@ -62,6 +64,7 @@ The current public scaffold only generates `.env.local` for the `platform` templ
 
 - Generated `.env.local`
 - Supabase and Resend are the main external services the starter expects
+- Admin-enabled apps include blank placeholders for the full app-owned Resend/admin key set in `.env.local`
 - Optional module routes need the matching database schema and access model in the target client database
 - Starter identity and module selection live in `config/brand.ts` and `config/modules.ts`
 

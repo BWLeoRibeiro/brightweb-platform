@@ -36,7 +36,7 @@ If you are unsure, start with `platform` only when you need shared platform auth
 1. From the parent directory where you want the new app to live, run `pnpm dlx create-bw-app` and choose the template.
 2. If creating a platform app, choose optional modules based on the product scope you want to validate right away.
 3. If you skipped install during scaffolding, change into the generated app directory and run your package manager install command.
-4. For platform apps, review `config/brand.ts`, `config/modules.ts`, and `.env.local`, then fill in the real service values described in [Environment and Services](./environment-and-services.md).
+4. For platform apps, review `config/brand.ts`, `config/modules.ts`, and the generated `.env.local`, then fill in the real service values described in [Environment and Services](./environment-and-services.md).
 5. Run the app and follow [Validate Your Starter](./validate-your-starter.md) before you start customizing the generated routes.
 
 ## Related

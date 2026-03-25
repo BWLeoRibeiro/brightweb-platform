@@ -15,9 +15,9 @@ Use [Base Contract](./base-contract.md) for the support-tier rules and [base-con
 
 | Concern | Current behavior |
 | --- | --- |
-| Projects package | `@brightweblabs/module-projects` exports shell registration for project navigation and toolbar behavior. |
-| Server helpers | The package exports server-side portfolio helpers such as project listing, project stats, and schema-missing detection behavior. |
-| Shared dependencies | The package reads shared CRM-owned organization data and shared profile/auth state to assemble project views. |
+| Projects package | `@brightweblabs/module-projects` exports stable portfolio, dashboard, detail, mutation, and shell registration helpers. |
+| Server helpers | The package covers app-owned project CRUD, task/milestone/link management, assignable-profile lookup, member sync, and client-health summaries. |
+| Shared contracts | The package exports reusable project status and link/task/milestone constants plus validation guards for app-owned forms. |
 
 ## Whether it adds starter routes and wiring
 
@@ -32,12 +32,30 @@ Use [Base Contract](./base-contract.md) for the support-tier rules and [base-con
 
 ## Supported base contract
 
-The current Projects contract splits reusable portfolio primitives from starter-facing page assembly.
+The current Projects contract splits reusable shared contracts, reusable server helpers, and starter-facing page assembly.
 
-### Stable
+### Stable shared contracts
 
-- `@brightweblabs/module-projects`: `listProjects()`
-- `@brightweblabs/module-projects`: `getProjectPortfolioStats()`
+- `@brightweblabs/module-projects`: `PROJECT_STATUSES`, `PROJECT_HEALTH_STATES`
+- `@brightweblabs/module-projects`: `PROJECT_MEMBER_ROLES`, `PROJECT_MEMBER_ROLE_LABELS_PT`
+- `@brightweblabs/module-projects`: `TASK_STATUSES`, `TASK_PRIORITIES`
+- `@brightweblabs/module-projects`: `MILESTONE_STATUSES`
+- `@brightweblabs/module-projects`: `PROJECT_LINK_VISIBILITY`, `PROJECT_LINK_KIND`
+- `@brightweblabs/module-projects`: `isProjectStatus()`, `isProjectHealth()`, `isTaskStatus()`, `isTaskPriority()`
+- `@brightweblabs/module-projects`: `isMilestoneStatus()`, `isProjectMemberRole()`, `isProjectLinkVisibility()`, `isProjectLinkKind()`
+- `@brightweblabs/module-projects`: `parsePositiveInt()`
+
+### Stable server helpers
+
+- `@brightweblabs/module-projects`: `listProjects()`, `getProjectPortfolioStats()`
+- `@brightweblabs/module-projects`: `getProjectDashboard()`, `getClientProjectHealth()`
+- `@brightweblabs/module-projects`: `listProjectTasks()`, `listProjectMilestones()`, `listProjectLinks()`
+- `@brightweblabs/module-projects`: `listProjectAssignableProfiles()`, `syncProjectMembers()`
+- `@brightweblabs/module-projects`: `createProjectOrganization()`, `createProject()`, `updateProject()`, `deleteProject()`
+- `@brightweblabs/module-projects`: `createProjectTask()`, `updateProjectTask()`, `deleteProjectTask()`
+- `@brightweblabs/module-projects`: `createProjectMilestone()`, `updateProjectMilestone()`, `deleteProjectMilestone()`
+- `@brightweblabs/module-projects`: `createProjectLink()`, `updateProjectLink()`, `deleteProjectLink()`
+- `@brightweblabs/module-projects`: `listOrgAdminProjectsByProfile()`
 - `@brightweblabs/module-projects/registration`: `projectsModuleRegistration`
 
 ### Starter
@@ -50,7 +68,7 @@ The current Projects contract splits reusable portfolio primitives from starter-
 
 ## How to use it in an app
 
-The current Projects package is mainly consumed through server helpers plus shell registration.
+The current Projects package is mainly consumed through server helpers plus shell registration. Use the portfolio helpers for app-owned lists, the dashboard helpers for detail pages, and the mutation helpers for write flows.
 
 ### Load portfolio data in a server page
 
@@ -69,6 +87,22 @@ Use `getProjectsPortfolioPageData()` when you want a starter portfolio payload f
 
 Treat the portfolio page helper as starter page glue. Build app-owned project surfaces on the lower-level stable helpers when you need a longer-lived contract.
 
+### Load a project dashboard in a server page
+
+```tsx
+import { requireServerPageAccess } from "@brightweblabs/core-auth/server";
+
+export default async function ProjectPage({ params }: { params: { projectId: string } }) {
+  const { supabase } = await requireServerPageAccess();
+  const { getProjectDashboard } = await import("@brightweblabs/module-projects");
+  const data = await getProjectDashboard(supabase, params.projectId);
+
+  return <pre>{JSON.stringify(data.project, null, 2)}</pre>;
+}
+```
+
+Use `getProjectDashboard()` for app-owned detail pages, `getClientProjectHealth()` when you only need the client-facing summary, and the mutation helpers when your app owns the write path.
+
 ### Register Projects in the app shell
 
 ```ts
@@ -83,7 +117,8 @@ The package gives you shared schema, access rules, and server-side data helpers.
 
 ## How To Build On This
 
-- Build on `stable` helpers such as `listProjects()` and `getProjectPortfolioStats()` for app-owned project pages and flows.
+- Build on `stable` helpers such as `listProjects()`, `getProjectPortfolioStats()`, and `getProjectDashboard()` for app-owned project pages and flows.
+- Use the project mutation helpers when your app owns create, edit, delete, and member-assignment flows.
 - Use `getProjectsPortfolioPageData()` when you want the current starter portfolio screen quickly.
 - Do not depend on `isProjectsSchemaMissingError()` for app-owned contracts; it is internal fallback logic for the current starter helper.
 

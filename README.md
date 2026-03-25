@@ -70,7 +70,7 @@ Current scaffold behavior:
 - prompts for the project name
 - supports optional platform module selection for `admin`, `crm`, and `projects`
 - writes `package.json`, `next.config.ts`, `.gitignore`, and `README.md` for both templates
-- writes `.env.example`, shell wiring, and module flags for platform apps
+- writes `.env.local`, shell wiring, and module flags for platform apps
 - keeps repo-local generated apps on `workspace:*` dependencies in workspace mode
 
 In workspace mode the generator creates the app under `apps/<slug>`. For platform apps it also creates `supabase/clients/<slug>/stack.json` plus a client-only migrations folder so the database install plan stays aligned with the selected modules.

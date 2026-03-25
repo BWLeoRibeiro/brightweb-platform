@@ -63,8 +63,14 @@ export function getStarterBootstrapChecklist() {
       },
       {
         label: "Configure Resend for the client sender domain",
-        done: Boolean(config.envStatus.find((item) => item.key === "RESEND_API_KEY")?.present),
-        detail: "Use a sender/domain owned by this client instance.",
+        done: [
+          "RESEND_API_KEY",
+          "RESEND_FROM_TRANSACTIONAL",
+          "RESEND_FROM_MARKETING",
+          "CONTACT_TO_EMAIL",
+          "RESEND_WEBHOOK_SECRET",
+        ].every((key) => Boolean(config.envStatus.find((item) => item.key === key)?.present)),
+        detail: "Use client-owned sender identities and configure webhook signature verification.",
       },
       {
         label: "Create per-client environment variables",
