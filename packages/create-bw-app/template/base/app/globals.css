@@ -4,17 +4,32 @@
   color-scheme: light;
   --font-sans: "IBM Plex Sans", "Segoe UI", sans-serif;
   --font-display: Georgia, "Times New Roman", serif;
+  /* Raw brand tokens: customize these first per client. */
+  --brand-primary: #266946;
+  --brand-primary-rgb: 38, 105, 70;
+  --brand-secondary-rgb: 126, 170, 112;
+  --brand-highlight-rgb: 189, 140, 89;
+  --brand-positive-rgb: 113, 196, 139;
+  /* Semantic theme tokens consumed by the UI. */
   --background: #f3efe5;
   --foreground: #18241d;
   --muted-foreground: #5a665c;
   --border: rgba(24, 36, 29, 0.12);
   --panel: rgba(255, 255, 255, 0.82);
   --panel-strong: #ffffff;
-  --accent: #266946;
-  --accent-soft: rgba(38, 105, 70, 0.12);
+  --accent: var(--brand-primary);
+  --accent-soft: rgba(var(--brand-primary-rgb), 0.12);
   --danger: #b43f3f;
   --ink-soft: #eef1e8;
-  --ring: rgba(38, 105, 70, 0.28);
+  --ring: rgba(var(--brand-primary-rgb), 0.28);
+  --surface-glow-cool: rgba(var(--brand-secondary-rgb), 0.18);
+  --surface-glow-warm: rgba(var(--brand-highlight-rgb), 0.12);
+  --accent-glow-strong: rgba(var(--brand-primary-rgb), 0.18);
+  --accent-glow-mid: rgba(var(--brand-primary-rgb), 0.14);
+  --accent-glow-soft: rgba(var(--brand-primary-rgb), 0.08);
+  --positive-glow-strong: rgba(var(--brand-positive-rgb), 0.5);
+  --positive-glow-soft: rgba(var(--brand-positive-rgb), 0.14);
+  --positive-glow-subtle: rgba(var(--brand-positive-rgb), 0.15);
 
   /* Compatibility aliases so both starters expose the same token surface. */
   --bg: var(--background);
@@ -32,8 +47,8 @@ body {
   margin: 0;
   padding: 0;
   background:
-    radial-gradient(circle at 15% 10%, rgba(126, 170, 112, 0.18), transparent 22%),
-    radial-gradient(circle at 85% 12%, rgba(189, 140, 89, 0.12), transparent 18%),
+    radial-gradient(circle at 15% 10%, var(--surface-glow-cool), transparent 22%),
+    radial-gradient(circle at 85% 12%, var(--surface-glow-warm), transparent 18%),
     linear-gradient(180deg, #faf8f1 0%, var(--bg) 48%, #e8e0cf 100%);
   color: var(--text);
   font-family: var(--font-sans), sans-serif;
@@ -97,7 +112,7 @@ input {
   overflow: hidden;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.86), rgba(247, 244, 235, 0.84)),
-    radial-gradient(circle at top right, rgba(38, 105, 70, 0.18), transparent 45%);
+    radial-gradient(circle at top right, var(--accent-glow-strong), transparent 45%);
 }
 
 .starter-hero-card::after {
@@ -107,7 +122,7 @@ input {
   width: 150px;
   height: 150px;
   border-radius: 999px;
-  background: rgba(38, 105, 70, 0.08);
+  background: var(--accent-glow-soft);
 }
 
 .starter-stat-grid {
@@ -185,7 +200,7 @@ input {
 .preview-glass-card {
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.84), rgba(246, 244, 236, 0.76)),
-    radial-gradient(circle at top right, rgba(38, 105, 70, 0.08), transparent 45%);
+    radial-gradient(circle at top right, var(--accent-glow-soft), transparent 45%);
 }
 
 .panel h2,
@@ -308,7 +323,7 @@ input {
   border-radius: 28px;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.88), rgba(241, 237, 226, 0.84)),
-    radial-gradient(circle at top, rgba(38, 105, 70, 0.12), transparent 34%);
+    radial-gradient(circle at top, var(--accent-soft), transparent 34%);
   backdrop-filter: blur(16px);
   box-shadow: 0 22px 60px rgba(24, 36, 29, 0.1);
 }
@@ -328,7 +343,7 @@ input {
   border-radius: 28px;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.88), rgba(246, 243, 235, 0.86)),
-    radial-gradient(circle at right top, rgba(38, 105, 70, 0.14), transparent 35%);
+    radial-gradient(circle at right top, var(--accent-glow-mid), transparent 35%);
   backdrop-filter: blur(16px);
 }
 
@@ -374,7 +389,7 @@ input {
 .preview-stage-panel {
   background:
     linear-gradient(180deg, rgba(23, 37, 29, 0.96), rgba(18, 30, 24, 0.95)),
-    radial-gradient(circle at top left, rgba(113, 196, 139, 0.15), transparent 34%);
+    radial-gradient(circle at top left, var(--positive-glow-subtle), transparent 34%);
   color: #f4f1e8;
   border-color: rgba(255, 255, 255, 0.1);
 }
@@ -409,8 +424,8 @@ input {
 
 .nav-chip.active,
 .nav-chip:hover {
-  border-color: rgba(113, 196, 139, 0.5);
-  background: rgba(113, 196, 139, 0.14);
+  border-color: var(--positive-glow-strong);
+  background: var(--positive-glow-soft);
 }
 
 .preview-surface-grid {
@@ -510,7 +525,7 @@ input {
 }
 
 .status.ok {
-  background: rgba(31, 122, 69, 0.14);
+  background: rgba(var(--brand-primary-rgb), 0.14);
   color: var(--accent);
 }
 

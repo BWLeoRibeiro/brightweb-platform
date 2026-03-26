@@ -270,7 +270,6 @@ function createDerivedBrandValues(slug) {
     tagline: DEFAULTS.tagline,
     contactEmail: DEFAULTS.contactEmail,
     supportEmail: DEFAULTS.supportEmail,
-    primaryHex: DEFAULTS.primaryHex,
   };
 }
 
@@ -283,7 +282,6 @@ function createPlatformBrandConfigFile({ slug, brandValues }) {
     "  tagline: string;",
     "  contactEmail: string;",
     "  supportEmail: string;",
-    "  primaryHex: string;",
     "};",
     "",
     "export const starterBrandConfig: StarterBrandConfig = {",
@@ -293,7 +291,6 @@ function createPlatformBrandConfigFile({ slug, brandValues }) {
     `  tagline: ${JSON.stringify(brandValues.tagline)},`,
     `  contactEmail: ${JSON.stringify(brandValues.contactEmail)},`,
     `  supportEmail: ${JSON.stringify(brandValues.supportEmail)},`,
-    `  primaryHex: ${JSON.stringify(brandValues.primaryHex)},`,
     "};",
     "",
   ].join("\n");
@@ -636,6 +633,7 @@ export function createAppContextFile({
           "AGENTS.md",
           "docs/ai/README.md",
           "README.md",
+          "app/globals.css",
           "config/brand.ts",
           "config/modules.ts",
           "config/client.ts",

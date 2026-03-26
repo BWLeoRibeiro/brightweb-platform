@@ -5,7 +5,6 @@ export type StarterBrandConfig = {
   tagline: string;
   contactEmail: string;
   supportEmail: string;
-  primaryHex: string;
 };
 
 export const starterBrandConfig: StarterBrandConfig = {
@@ -15,5 +14,4 @@ export const starterBrandConfig: StarterBrandConfig = {
   tagline: "A configurable Brightweb platform preview for validating package work before it lands in client scaffolds.",
   contactEmail: "hello@example.com",
   supportEmail: "support@example.com",
-  primaryHex: "#1f7a45",
 };

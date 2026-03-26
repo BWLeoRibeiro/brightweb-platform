@@ -10,6 +10,7 @@ This generated project is a BrightWeb platform starter. Use this file as the loc
 - `docs/ai/app-context.json`: machine-readable app summary for quick discovery.
 - `components/`: local app components used by starter routes and future product surfaces.
 - `config/brand.ts`: client identity, naming, and contact defaults.
+- `app/globals.css`: global design tokens, theme mapping, and shared visual styling.
 - `config/modules.ts`: selected module set and runtime enablement.
 - `config/client.ts`: starter-facing derived state used by the home page and setup surfaces.
 - `.env.local`: runtime service values for local development.
@@ -17,6 +18,7 @@ This generated project is a BrightWeb platform starter. Use this file as the loc
 ## Working rules
 
 - Treat `/bootstrap`, `/preview/app-shell`, and `/playground/*` as starter validation surfaces. They are app-owned and can be removed after setup if links and references are cleaned up too.
+- Keep identity/contact in `config/brand.ts`, and keep all color/theme tokens in `app/globals.css`.
 - Check `config/modules.ts` before assuming CRM, Projects, or Admin routes exist.
 - Prefer composing app-level routes and config before forking logic from `@brightweblabs/*` packages.
 - Keep edits local to this app unless the change is intentionally shared across multiple BrightWeb projects.

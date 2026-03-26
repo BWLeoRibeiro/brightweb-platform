@@ -20,11 +20,12 @@ This app is a normal Next.js App Router project with BrightWeb runtime wiring la
 - `docs/ai/examples.md`: common setup and customization workflows.
 - `README.md`: first-run setup steps.
 - `components/`: local app component layer for starter surfaces and future product UI.
-- `config/brand.ts`: client name, product name, support inboxes, and brand color.
+- `config/brand.ts`: client identity, product naming, and contact inboxes.
 - `config/modules.ts`: module metadata and enablement flags for CRM, Projects, and Admin.
 - `config/client.ts`: aggregated state consumed by starter pages.
 - `config/bootstrap.ts`: bootstrap checklist content for `/bootstrap`.
 - `config/shell.ts`: app-shell registration and navigation wiring.
+- `app/globals.css`: color tokens (raw brand + semantic mappings), typography, and global surface styling.
 - `app/page.tsx`: starter landing page for the generated app.
 - `app/bootstrap/page.tsx`: setup checklist surface.
 - `app/preview/app-shell/page.tsx`: shell preview validation route.
@@ -34,6 +35,7 @@ This app is a normal Next.js App Router project with BrightWeb runtime wiring la
 ## Editing strategy
 
 - Change client identity first in `config/brand.ts`.
+- Change colors and theme tokens in `app/globals.css`.
 - Check module presence in `config/modules.ts` before editing or creating module-specific routes.
 - Add app-specific UI in `components/` before forking shared package code.
 - Use `config/shell.ts` when navigation or toolbar behavior needs to change.

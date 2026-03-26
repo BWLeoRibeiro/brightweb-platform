@@ -113,6 +113,7 @@ export default function HomePage() {
               <h2>Starter controls</h2>
               <ul className="list">
                 <li>`config/brand.ts` for client identity and contact details.</li>
+                <li>`app/globals.css` for color and theme token management.</li>
                 <li>`config/modules.ts` for enabled platform modules.</li>
                 <li>`config/env.ts` for infra requirements and readiness checks.</li>
                 <li>`.env.local` for per-client service credentials and local runtime overrides.</li>

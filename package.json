@@ -5,6 +5,7 @@
   "packageManager": "pnpm@10.28.1",
   "scripts": {
     "check:base-contract": "node ./scripts/validate-base-contract.mjs",
+    "check:create-bw-app-templates": "node ./scripts/check-create-bw-app-templates.mjs",
     "changeset": "changeset",
     "create:client": "node ./scripts/create-brightweb-client.mjs",
     "db:materialize": "node ./scripts/materialize-client-migrations.mjs",

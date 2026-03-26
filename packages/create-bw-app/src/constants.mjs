@@ -110,7 +110,6 @@ export const DEFAULTS = {
   tagline: "A configurable Brightweb starter app for new client instances.",
   contactEmail: "hello@example.com",
   supportEmail: "support@example.com",
-  primaryHex: "#1f7a45",
 };
 
 export const HELP_TEXT = `

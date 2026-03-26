@@ -8,6 +8,7 @@ Goal: get the generated starter running with real credentials.
 
 - Review `.env.local` and replace placeholder values.
 - Review `config/brand.ts` and confirm client identity.
+- Review `app/globals.css` and confirm brand tokens map to the intended visual system.
 - Review `config/modules.ts` before touching module routes.
 - Run the local dev server for this app or workspace.
 - Validate `/`, `/bootstrap`, `/preview/app-shell`, and `/playground/auth`.
@@ -18,6 +19,7 @@ Goal: get the generated starter running with real credentials.
 Goal: update the starter to the real client name and support details.
 
 - Edit `config/brand.ts`.
+- Edit `app/globals.css` when palette or theme token mapping needs to change.
 - Move route-specific presentation into `components/` when the home or preview surfaces need app-owned UI.
 - Check `config/client.ts` or `config/bootstrap.ts` if starter copy still references old defaults.
 - Validate the home page and `/preview/app-shell` after the change.
