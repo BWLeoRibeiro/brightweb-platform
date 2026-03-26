@@ -16,11 +16,19 @@ The current public scaffold only generates `.env.local` for the `platform` templ
 >
 > The generated `.env.local` already includes blank placeholders for every current platform key. For admin-enabled apps, that includes the full app-owned Resend set, so the first-run task is to fill values, not invent env names.
 
+## Reminder: match the app URL to the environment
+
+- `NEXT_PUBLIC_APP_URL` must always point to the exact public URL of the environment that is currently running the app.
+- In local development, set it in `.env.local` to your local URL, for example `http://localhost:3000`.
+- In a shared dev or staging deployment, set the dev/staging domain in that environment's deployment env vars.
+- In production, set the final production domain in the production env vars.
+- Do not reuse the local URL in dev/staging/prod, and do not point dev/staging to the production domain. Auth callbacks and reset-password links are built from this value.
+
 ## Service keys generated for platform apps
 
 | Key | Scope | Required for | Purpose | Where the real value comes from |
 | --- | --- | --- | --- | --- |
-| `NEXT_PUBLIC_APP_URL` | public | `core-auth` | Canonical base URL used by auth callbacks and platform links. | Your local or deployed app URL, such as `http://localhost:3000` during local development. |
+| `NEXT_PUBLIC_APP_URL` | public | `core-auth` | Canonical base URL used by auth callbacks and platform links. | The public URL for the current environment: local URL in `.env.local`, dev/staging domain in dev env vars, and the final domain in production env vars. |
 | `NEXT_PUBLIC_SUPABASE_URL` | public | `crm`, `projects`, `admin` | Supabase project URL used by client-side and server-side API access. | The target Supabase project settings. |
 | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY` | public | `crm`, `projects`, `admin` | Browser-safe Supabase key for auth and RPC access. | The target Supabase project settings. |
 | `SUPABASE_SECRET_DEFAULT_KEY` | server | `crm`, `projects`, `admin` | Privileged server key for admin, CRM, and projects actions. | The target Supabase project settings. |

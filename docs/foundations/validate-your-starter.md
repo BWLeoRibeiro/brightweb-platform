@@ -6,6 +6,8 @@ This page is the first-run checklist for a freshly generated app. Use it after i
 
 Start the generated app, then check the routes in this order.
 
+Before testing auth flows, confirm `NEXT_PUBLIC_APP_URL` matches the environment you are running: local URL in `.env.local`, dev/staging domain in dev deployment env vars, and production domain in production env vars.
+
 | Route | What you should see | What a non-green state usually means |
 | --- | --- | --- |
 | `/` | Starter home page with brand details, env readiness, enabled modules, and links to preview routes. | The page can still load before every env key is set. Expect “Setup in progress” until the required values are present. |
