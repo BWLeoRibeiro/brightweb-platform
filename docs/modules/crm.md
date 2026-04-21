@@ -42,6 +42,8 @@ The current CRM contract is intentionally small:
 - `@brightweblabs/module-crm`: `listCrmOrganizations()`
 - `@brightweblabs/module-crm`: `getCrmContactStatusStats()`
 - `@brightweblabs/module-crm`: `listCrmOwnerOptions()`
+- `@brightweblabs/module-crm`: `listCrmPrimaryContacts()`
+- `@brightweblabs/module-crm`: `listCrmStatusTimeline()`
 - `@brightweblabs/module-crm`: `handleCrmContactsGetRequest()`
 - `@brightweblabs/module-crm`: `handleCrmOrganizationsGetRequest()`
 - `@brightweblabs/module-crm`: `handleCrmStatsGetRequest()`
@@ -81,18 +83,22 @@ import {
   getCrmContactStatusStats,
   listCrmContacts,
   listCrmOrganizations,
-  listCrmOwnerOptions,
+  listCrmStatusTimeline,
 } from "@brightweblabs/module-crm";
 
-const [contacts, organizations, stats, owners] = await Promise.all([
+const [contacts, organizations, stats, timeline] = await Promise.all([
   listCrmContacts(supabase, { page: 1, pageSize: 50 }),
   listCrmOrganizations(supabase, { page: 1, pageSize: 20 }),
   getCrmContactStatusStats(supabase),
-  listCrmOwnerOptions(supabase),
+  listCrmStatusTimeline(supabase),
 ]);
 ```
 
 Use these helpers when you want reusable CRM primitives that an app or AI agent can compose into its own tables, dashboards, filters, and ownership flows.
+
+Keep authentication at the page or route boundary, then pass the authenticated server Supabase client into the helpers you need. This lets larger apps progressively load sections and avoid dashboard-only overfetch. For example, an initial contacts page can load `listCrmContacts()`, `listCrmOrganizations()`, `getCrmContactStatusStats()`, and `listCrmStatusTimeline()` without also loading `listCrmOwnerOptions()` or `listCrmPrimaryContacts()`. Apps with custom ownership or role rules can replace `listCrmOwnerOptions()` with app-owned logic while still using the other CRM helpers.
+
+`getCrmDashboardData()` remains backward-compatible and now composes these helpers internally. Treat it as starter page glue for generated apps, not as the only supported CRM loading shape.
 
 ### Mount the CRM GET handlers
 

@@ -1,5 +1,11 @@
 # @brightweblabs/module-crm
 
+## 0.3.3
+
+### Patch Changes
+
+- Add composable CRM primary-contact and status-timeline loaders, and refactor the starter dashboard loader to compose the stable CRM helpers.
+
 ## 0.3.2
 
 ### Patch Changes

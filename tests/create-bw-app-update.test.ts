@@ -455,7 +455,7 @@ test("published updates can fall back to baked-in brightweb versions when explic
   );
 
   const coreAuthUpdate = plan.packageUpdates.find((entry) => entry.packageName === "@brightweblabs/core-auth");
-  assert.equal(coreAuthUpdate?.to, "^0.3.1");
+  assert.equal(coreAuthUpdate?.to, "^0.3.3");
 });
 
 test("scaffolds site AI handoff files with site-specific context", async (t) => {
@@ -626,7 +626,7 @@ test("apply rewrites only managed files and leaves app-owned pages alone", async
   );
 
   const manifest = await readJson(path.join(targetDir, "package.json"));
-  assert.equal(manifest.dependencies["@brightweblabs/module-crm"], "^0.3.0");
+  assert.equal(manifest.dependencies["@brightweblabs/module-crm"], "^0.3.3");
   assert.equal(
     await fs.readFile(path.join(targetDir, "next.config.ts"), "utf8"),
     createNextConfig({ template: "platform", selectedModules: ["crm"] }),

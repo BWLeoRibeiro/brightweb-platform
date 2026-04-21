@@ -9,22 +9,24 @@ interface PasswordInputProps extends Omit<React.ComponentProps<"input">, "type">
 }
 
 const PasswordInput = React.forwardRef<HTMLInputElement, PasswordInputProps>(
-  ({ className, showToggle = true, ...props }, ref) => {
+  ({ className, disabled, showToggle = true, ...props }, ref) => {
     const [showPassword, setShowPassword] = React.useState(false);
 
     return (
-      <div className="relative">
+      <div className="relative w-full">
         <Input
           type={showPassword ? "text" : "password"}
-          className={cn("pr-10", className)}
+          className={cn(showToggle && "pr-12", className)}
+          disabled={disabled}
           ref={ref}
           {...props}
         />
         {showToggle && (
           <button
             type="button"
-            onClick={() => setShowPassword(!showPassword)}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-foreground/40 hover:text-foreground/70 transition-colors"
+            onClick={() => setShowPassword((current) => !current)}
+            className="absolute right-2 top-1/2 flex size-8 -translate-y-1/2 items-center justify-center text-foreground/40 transition-colors hover:text-foreground/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 disabled:pointer-events-none disabled:opacity-50"
+            disabled={disabled}
             aria-label={showPassword ? "Ocultar palavra-passe" : "Mostrar palavra-passe"}
             tabIndex={-1}
           >

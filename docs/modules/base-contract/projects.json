@@ -15,7 +15,8 @@
         "description": "Shell registration object for projects navigation and actions."
       }
     ],
-    "source": "packages/module-projects/src/registration.ts"
+    "source": "packages/module-projects/src/registration.ts",
+    "notes": []
   },
   {
     "moduleKey": "projects",
@@ -33,7 +34,8 @@
         "description": "Project lifecycle status values."
       }
     ],
-    "source": "packages/module-projects/src/data.ts"
+    "source": "packages/module-projects/src/data.ts",
+    "notes": []
   },
   {
     "moduleKey": "projects",
@@ -51,7 +53,8 @@
         "description": "Project health state values."
       }
     ],
-    "source": "packages/module-projects/src/data.ts"
+    "source": "packages/module-projects/src/data.ts",
+    "notes": []
   },
   {
     "moduleKey": "projects",
@@ -69,7 +72,8 @@
         "description": "Project member role values."
       }
     ],
-    "source": "packages/module-projects/src/contracts.ts"
+    "source": "packages/module-projects/src/contracts.ts",
+    "notes": []
   },
   {
     "moduleKey": "projects",
@@ -87,7 +91,8 @@
         "description": "Role label map for Portuguese UI strings."
       }
     ],
-    "source": "packages/module-projects/src/contracts.ts"
+    "source": "packages/module-projects/src/contracts.ts",
+    "notes": []
   },
   {
     "moduleKey": "projects",
@@ -105,7 +110,8 @@
         "description": "Task status values."
       }
     ],
-    "source": "packages/module-projects/src/contracts.ts"
+    "source": "packages/module-projects/src/contracts.ts",
+    "notes": []
   },
   {
     "moduleKey": "projects",
@@ -123,7 +129,8 @@
         "description": "Task priority values."
       }
     ],
-    "source": "packages/module-projects/src/contracts.ts"
+    "source": "packages/module-projects/src/contracts.ts",
+    "notes": []
   },
   {
     "moduleKey": "projects",
@@ -141,7 +148,8 @@
         "description": "Milestone status values."
       }
     ],
-    "source": "packages/module-projects/src/contracts.ts"
+    "source": "packages/module-projects/src/contracts.ts",
+    "notes": []
   },
   {
     "moduleKey": "projects",
@@ -159,7 +167,8 @@
         "description": "Project link visibility values."
       }
     ],
-    "source": "packages/module-projects/src/contracts.ts"
+    "source": "packages/module-projects/src/contracts.ts",
+    "notes": []
   },
   {
     "moduleKey": "projects",
@@ -177,7 +186,8 @@
         "description": "Project link kind values."
       }
     ],
-    "source": "packages/module-projects/src/contracts.ts"
+    "source": "packages/module-projects/src/contracts.ts",
+    "notes": []
   },
   {
     "moduleKey": "projects",
@@ -202,7 +212,8 @@
         "description": "True when the value matches the project status union."
       }
     ],
-    "source": "packages/module-projects/src/contracts.ts"
+    "source": "packages/module-projects/src/contracts.ts",
+    "notes": []
   },
   {
     "moduleKey": "projects",
@@ -227,7 +238,8 @@
         "description": "True when the value matches the project health union."
       }
     ],
-    "source": "packages/module-projects/src/contracts.ts"
+    "source": "packages/module-projects/src/contracts.ts",
+    "notes": []
   },
   {
     "moduleKey": "projects",
@@ -252,7 +264,8 @@
         "description": "True when the value matches the task status union."
       }
     ],
-    "source": "packages/module-projects/src/contracts.ts"
+    "source": "packages/module-projects/src/contracts.ts",
+    "notes": []
   },
   {
     "moduleKey": "projects",
@@ -277,7 +290,8 @@
         "description": "True when the value matches the task priority union."
       }
     ],
-    "source": "packages/module-projects/src/contracts.ts"
+    "source": "packages/module-projects/src/contracts.ts",
+    "notes": []
   },
   {
     "moduleKey": "projects",
@@ -302,7 +316,8 @@
         "description": "True when the value matches the milestone status union."
       }
     ],
-    "source": "packages/module-projects/src/contracts.ts"
+    "source": "packages/module-projects/src/contracts.ts",
+    "notes": []
   },
   {
     "moduleKey": "projects",
@@ -327,7 +342,8 @@
         "description": "True when the value matches the project member role union."
       }
     ],
-    "source": "packages/module-projects/src/contracts.ts"
+    "source": "packages/module-projects/src/contracts.ts",
+    "notes": []
   },
   {
     "moduleKey": "projects",
@@ -352,7 +368,8 @@
         "description": "True when the value matches the project link visibility union."
       }
     ],
-    "source": "packages/module-projects/src/contracts.ts"
+    "source": "packages/module-projects/src/contracts.ts",
+    "notes": []
   },
   {
     "moduleKey": "projects",
@@ -377,7 +394,8 @@
         "description": "True when the value matches the project link kind union."
       }
     ],
-    "source": "packages/module-projects/src/contracts.ts"
+    "source": "packages/module-projects/src/contracts.ts",
+    "notes": []
   },
   {
     "moduleKey": "projects",
@@ -414,7 +432,8 @@
         "description": "Positive integer value capped at the provided maximum."
       }
     ],
-    "source": "packages/module-projects/src/contracts.ts"
+    "source": "packages/module-projects/src/contracts.ts",
+    "notes": []
   },
   {
     "moduleKey": "projects",
@@ -445,7 +464,8 @@
         "description": "Paginated projects list with derived task and milestone stats."
       }
     ],
-    "source": "packages/module-projects/src/data.ts"
+    "source": "packages/module-projects/src/data.ts",
+    "notes": []
   },
   {
     "moduleKey": "projects",
@@ -470,7 +490,8 @@
         "description": "Portfolio totals for active, planned, at-risk, and overdue projects."
       }
     ],
-    "source": "packages/module-projects/src/data.ts"
+    "source": "packages/module-projects/src/data.ts",
+    "notes": []
   },
   {
     "moduleKey": "projects",
@@ -501,7 +522,8 @@
         "description": "Project detail payload with project data, related records, and activity."
       }
     ],
-    "source": "packages/module-projects/src/server.ts"
+    "source": "packages/module-projects/src/server.ts",
+    "notes": []
   },
   {
     "moduleKey": "projects",
@@ -532,7 +554,8 @@
         "description": "Ordered task list for the project."
       }
     ],
-    "source": "packages/module-projects/src/server.ts"
+    "source": "packages/module-projects/src/server.ts",
+    "notes": []
   },
   {
     "moduleKey": "projects",
@@ -563,7 +586,8 @@
         "description": "Ordered milestone list for the project."
       }
     ],
-    "source": "packages/module-projects/src/server.ts"
+    "source": "packages/module-projects/src/server.ts",
+    "notes": []
   },
   {
     "moduleKey": "projects",
@@ -600,7 +624,8 @@
         "description": "Ordered project link list."
       }
     ],
-    "source": "packages/module-projects/src/server.ts"
+    "source": "packages/module-projects/src/server.ts",
+    "notes": []
   },
   {
     "moduleKey": "projects",
@@ -631,7 +656,8 @@
         "description": "Client-facing project summary with client-visible links and next milestone."
       }
     ],
-    "source": "packages/module-projects/src/server.ts"
+    "source": "packages/module-projects/src/server.ts",
+    "notes": []
   },
   {
     "moduleKey": "projects",
@@ -662,7 +688,8 @@
         "description": "Deduplicated assignable profile options."
       }
     ],
-    "source": "packages/module-projects/src/server.ts"
+    "source": "packages/module-projects/src/server.ts",
+    "notes": []
   },
   {
     "moduleKey": "projects",
@@ -699,7 +726,8 @@
         "description": "Updated project member list."
       }
     ],
-    "source": "packages/module-projects/src/server.ts"
+    "source": "packages/module-projects/src/server.ts",
+    "notes": []
   },
   {
     "moduleKey": "projects",
@@ -730,7 +758,8 @@
         "description": "Created organization record."
       }
     ],
-    "source": "packages/module-projects/src/server.ts"
+    "source": "packages/module-projects/src/server.ts",
+    "notes": []
   },
   {
     "moduleKey": "projects",
@@ -761,7 +790,8 @@
         "description": "Created project dashboard payload."
       }
     ],
-    "source": "packages/module-projects/src/server.ts"
+    "source": "packages/module-projects/src/server.ts",
+    "notes": []
   },
   {
     "moduleKey": "projects",
@@ -798,7 +828,8 @@
         "description": "Updated project dashboard payload."
       }
     ],
-    "source": "packages/module-projects/src/server.ts"
+    "source": "packages/module-projects/src/server.ts",
+    "notes": []
   },
   {
     "moduleKey": "projects",
@@ -835,7 +866,8 @@
         "description": "No return value."
       }
     ],
-    "source": "packages/module-projects/src/server.ts"
+    "source": "packages/module-projects/src/server.ts",
+    "notes": []
   },
   {
     "moduleKey": "projects",
@@ -872,7 +904,8 @@
         "description": "Updated task list."
       }
     ],
-    "source": "packages/module-projects/src/server.ts"
+    "source": "packages/module-projects/src/server.ts",
+    "notes": []
   },
   {
     "moduleKey": "projects",
@@ -915,7 +948,8 @@
         "description": "Updated task list."
       }
     ],
-    "source": "packages/module-projects/src/server.ts"
+    "source": "packages/module-projects/src/server.ts",
+    "notes": []
   },
   {
     "moduleKey": "projects",
@@ -952,7 +986,8 @@
         "description": "Updated task list."
       }
     ],
-    "source": "packages/module-projects/src/server.ts"
+    "source": "packages/module-projects/src/server.ts",
+    "notes": []
   },
   {
     "moduleKey": "projects",
@@ -989,7 +1024,8 @@
         "description": "Updated milestone list."
       }
     ],
-    "source": "packages/module-projects/src/server.ts"
+    "source": "packages/module-projects/src/server.ts",
+    "notes": []
   },
   {
     "moduleKey": "projects",
@@ -1032,7 +1068,8 @@
         "description": "Updated milestone list."
       }
     ],
-    "source": "packages/module-projects/src/server.ts"
+    "source": "packages/module-projects/src/server.ts",
+    "notes": []
   },
   {
     "moduleKey": "projects",
@@ -1069,7 +1106,8 @@
         "description": "Updated milestone list."
       }
     ],
-    "source": "packages/module-projects/src/server.ts"
+    "source": "packages/module-projects/src/server.ts",
+    "notes": []
   },
   {
     "moduleKey": "projects",
@@ -1106,7 +1144,8 @@
         "description": "Updated link list."
       }
     ],
-    "source": "packages/module-projects/src/server.ts"
+    "source": "packages/module-projects/src/server.ts",
+    "notes": []
   },
   {
     "moduleKey": "projects",
@@ -1149,7 +1188,8 @@
         "description": "Updated link list."
       }
     ],
-    "source": "packages/module-projects/src/server.ts"
+    "source": "packages/module-projects/src/server.ts",
+    "notes": []
   },
   {
     "moduleKey": "projects",
@@ -1186,7 +1226,8 @@
         "description": "Updated link list."
       }
     ],
-    "source": "packages/module-projects/src/server.ts"
+    "source": "packages/module-projects/src/server.ts",
+    "notes": []
   },
   {
     "moduleKey": "projects",
@@ -1223,7 +1264,8 @@
         "description": "Projects visible to the requested org admin profile."
       }
     ],
-    "source": "packages/module-projects/src/server.ts"
+    "source": "packages/module-projects/src/server.ts",
+    "notes": []
   },
   {
     "moduleKey": "projects",
@@ -1245,7 +1287,8 @@
       "listProjects",
       "getProjectPortfolioStats"
     ],
-    "source": "packages/module-projects/src/index.ts"
+    "source": "packages/module-projects/src/index.ts",
+    "notes": []
   },
   {
     "moduleKey": "projects",
@@ -1270,6 +1313,7 @@
         "description": "True when the error matches the current schema-missing fallback cases."
       }
     ],
-    "source": "packages/module-projects/src/data.ts"
+    "source": "packages/module-projects/src/data.ts",
+    "notes": []
   }
 ]

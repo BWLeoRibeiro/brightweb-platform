@@ -35,7 +35,7 @@ Use this recipe when the generated starter routes have done their job and you ar
 | `/bootstrap` and `config/bootstrap.ts` | A launch checklist for a new instance | Project-owned provisioning or admin flows once the client setup stabilizes |
 | `/preview/app-shell` | A shell wiring preview | Your real app routes driven by the long-lived shell configuration |
 | `/playground/auth` | Auth validation surface | Your own sign-in, callback, and account-management experience |
-| `/playground/crm` with `getCrmDashboardData()` | Starter CRM page glue | App-owned CRM UI built on `listCrmContacts()`, `listCrmOrganizations()`, `getCrmContactStatusStats()`, and `listCrmOwnerOptions()` |
+| `/playground/crm` with `getCrmDashboardData()` | Starter CRM page glue | App-owned CRM UI built on the stable CRM helpers, loading only the needed slices such as `listCrmContacts()`, `listCrmOrganizations()`, `getCrmContactStatusStats()`, `listCrmStatusTimeline()`, `listCrmPrimaryContacts()`, and `listCrmOwnerOptions()` |
 | `/api/crm/contacts`, `/api/crm/organizations`, `/api/crm/stats`, `/api/crm/owners` | Starter CRM HTTP routes | App-owned routes or direct package mounting built on the stable CRM handlers |
 | `/playground/projects` with `getProjectsPortfolioPageData()` | Starter portfolio glue | App-owned project pages built on `listProjects()`, `getProjectPortfolioStats()`, `getProjectDashboard()`, and the project mutation helpers |
 | `/playground/admin` with `getAdminUsersPageData()` | Starter admin page glue | App-owned admin pages built on `listAdminUsers()` and the stable admin handlers |

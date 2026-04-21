@@ -67,12 +67,12 @@ export const MODULE_STARTER_FILES = {
 
 export const APP_DEPENDENCY_DEFAULTS = {
   "@brightweblabs/app-shell": "^0.3.0",
-  "@brightweblabs/core-auth": "^0.3.1",
-  "@brightweblabs/infra": "^0.2.1",
-  "@brightweblabs/module-admin": "^0.3.0",
-  "@brightweblabs/module-crm": "^0.3.0",
-  "@brightweblabs/module-projects": "^0.2.2",
-  "@brightweblabs/ui": "^0.3.0",
+  "@brightweblabs/core-auth": "^0.3.3",
+  "@brightweblabs/infra": "^0.3.0",
+  "@brightweblabs/module-admin": "^0.3.2",
+  "@brightweblabs/module-crm": "^0.3.3",
+  "@brightweblabs/module-projects": "^0.3.2",
+  "@brightweblabs/ui": "^0.3.1",
   "lucide-react": "^0.562.0",
   "next": "16.1.6",
   "react": "19.2.3",

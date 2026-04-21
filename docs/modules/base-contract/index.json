@@ -23,7 +23,7 @@
       "title": "CRM",
       "file": "crm.json",
       "doc": "../crm.md",
-      "entryCount": 10,
+      "entryCount": 12,
       "summary": "CRM shell registration, stable list/stats helpers, package-owned GET handlers, and starter dashboard glue."
     },
     {
@@ -31,7 +31,7 @@
       "title": "Projects",
       "file": "projects.json",
       "doc": "../projects.md",
-      "entryCount": 5,
+      "entryCount": 44,
       "summary": "Projects shell registration, stable portfolio helpers, and starter portfolio helper."
     }
   ]

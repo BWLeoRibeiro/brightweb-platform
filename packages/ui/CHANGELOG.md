@@ -1,5 +1,11 @@
 # @brightweblabs/ui
 
+## 0.3.1
+
+### Patch Changes
+
+- Fix PasswordInput visibility toggle positioning inside the input.
+
 ## 0.3.0
 
 ### Minor Changes

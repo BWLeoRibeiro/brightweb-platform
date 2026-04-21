@@ -60,6 +60,19 @@ export type CrmContactStatusStats = {
   byStatus: Record<string, number>;
 };
 
+export type CrmPrimaryContactsListParams = {
+  limit?: number;
+};
+
+export type CrmPrimaryContactsData = CrmPrimaryContact[];
+
+export type CrmStatusTimelineParams = {
+  since?: Date | string;
+  limit?: number;
+};
+
+export type CrmStatusTimelineData = CrmStatusLog[];
+
 export type CrmContactsListParams = {
   page?: number;
   pageSize?: number;
@@ -127,10 +140,21 @@ type RawCrmOrganization = {
   created_at: string;
 };
 
+type RawCrmStatusLog = Omit<CrmStatusLog, "changed_by_label" | "contact_label">;
+
+type CrmChangedByProfile = {
+  user_id: string | null;
+  first_name: string | null;
+  last_name: string | null;
+};
+
 export const CRM_CONTACTS_DEFAULT_PAGE_SIZE = 50;
 export const CRM_CONTACTS_MAX_PAGE_SIZE = 100;
 export const CRM_ORGANIZATIONS_DEFAULT_PAGE_SIZE = 20;
 export const CRM_ORGANIZATIONS_MAX_PAGE_SIZE = 100;
+export const CRM_PRIMARY_CONTACTS_DEFAULT_LIMIT = 200;
+export const CRM_STATUS_TIMELINE_DEFAULT_LIMIT = 10;
+export const CRM_STATUS_TIMELINE_DEFAULT_DAYS = 7;
 
 function normalizePage(page: number | undefined, fallback: number) {
   return Number.isFinite(page) && (page ?? 0) > 0 ? Math.floor(page as number) : fallback;
@@ -166,6 +190,32 @@ function buildProfileDisplayName(profile: {
   const combinedFirstLast = [profile.first_name, profile.last_name].filter(Boolean).join(" ").trim();
   const safeCombinedFirstLast = combinedFirstLast && !isEmailLike(combinedFirstLast) ? combinedFirstLast : "";
   return safeCombinedFirstLast || null;
+}
+
+function buildContactDisplayName(contact: {
+  first_name?: string | null;
+  last_name?: string | null;
+  email?: string | null;
+}) {
+  return [contact.first_name, contact.last_name].filter(Boolean).join(" ") || contact.email || "Contacto";
+}
+
+function normalizeLimit(limit: number | undefined, fallback: number) {
+  return Number.isFinite(limit) && (limit ?? 0) > 0 ? Math.floor(limit as number) : fallback;
+}
+
+function normalizeSince(value: Date | string | undefined) {
+  if (value instanceof Date) {
+    return value.toISOString();
+  }
+
+  if (typeof value === "string" && value.trim()) {
+    return value;
+  }
+
+  const since = new Date();
+  since.setDate(since.getDate() - CRM_STATUS_TIMELINE_DEFAULT_DAYS);
+  return since.toISOString();
 }
 
 export function normalizeCrmContact(
@@ -328,4 +378,88 @@ export async function listCrmOwnerOptions(
     });
     return acc;
   }, []);
+}
+
+export async function listCrmPrimaryContacts(
+  supabase: SupabaseClient,
+  params: CrmPrimaryContactsListParams = {},
+): Promise<CrmPrimaryContactsData> {
+  const limit = normalizeLimit(params.limit, CRM_PRIMARY_CONTACTS_DEFAULT_LIMIT);
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("id, first_name, last_name, email")
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return (data ?? []) as CrmPrimaryContact[];
+}
+
+export async function listCrmStatusTimeline(
+  supabase: SupabaseClient,
+  params: CrmStatusTimelineParams = {},
+): Promise<CrmStatusTimelineData> {
+  const limit = normalizeLimit(params.limit, CRM_STATUS_TIMELINE_DEFAULT_LIMIT);
+  const since = normalizeSince(params.since);
+  const { data, error } = await supabase
+    .from("crm_status_log")
+    .select("id, contact_id, previous_status, new_status, reason, changed_at, changed_by_user_id")
+    .gte("changed_at", since)
+    .order("changed_at", { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  const statusLog = (data ?? []) as RawCrmStatusLog[];
+  const contactIds = Array.from(new Set(statusLog.map((entry) => entry.contact_id).filter(Boolean)));
+  const changedByIds = Array.from(
+    new Set(statusLog.map((entry) => entry.changed_by_user_id).filter((value): value is string => Boolean(value))),
+  );
+
+  const contactMap = new Map<string, string>();
+  if (contactIds.length > 0) {
+    const { data: contacts, error: contactsError } = await supabase
+      .from("crm_contacts")
+      .select("id, first_name, last_name, email")
+      .in("id", contactIds);
+
+    if (contactsError) {
+      throw new Error(contactsError.message);
+    }
+
+    ((contacts ?? []) as Array<Pick<CrmContact, "id" | "first_name" | "last_name" | "email">>).forEach((contact) => {
+      contactMap.set(contact.id, buildContactDisplayName(contact));
+    });
+  }
+
+  const changedByMap = new Map<string, string>();
+  if (changedByIds.length > 0) {
+    const { data: changedByProfiles, error: changedByProfilesError } = await supabase
+      .from("profiles")
+      .select("user_id, first_name, last_name")
+      .in("user_id", changedByIds);
+
+    if (changedByProfilesError) {
+      throw new Error(changedByProfilesError.message);
+    }
+
+    ((changedByProfiles ?? []) as CrmChangedByProfile[]).forEach((profile) => {
+      const userId = profile.user_id;
+      const label = buildProfileDisplayName(profile);
+      if (userId && label) {
+        changedByMap.set(userId, label);
+      }
+    });
+  }
+
+  return statusLog.map((entry) => ({
+    ...entry,
+    contact_label: contactMap.get(entry.contact_id) ?? "Contacto",
+    changed_by_label: entry.changed_by_user_id ? (changedByMap.get(entry.changed_by_user_id) ?? null) : null,
+  }));
 }

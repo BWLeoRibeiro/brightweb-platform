@@ -159,6 +159,74 @@
   {
     "moduleKey": "crm",
     "packageName": "@brightweblabs/module-crm",
+    "symbol": "listCrmPrimaryContacts",
+    "kind": "helper",
+    "status": "stable",
+    "runtime": "server",
+    "summary": "Lists profile records suitable for CRM primary-contact selectors.",
+    "auth": "signed-in user required in the caller context",
+    "inputs": [
+      {
+        "name": "supabase",
+        "type": "SupabaseClient",
+        "required": true,
+        "description": "Server-side Supabase client with profile table access."
+      },
+      {
+        "name": "params",
+        "type": "CrmPrimaryContactsListParams",
+        "required": false,
+        "description": "Optional limit override."
+      }
+    ],
+    "outputs": [
+      {
+        "type": "CrmPrimaryContactsData",
+        "description": "Primary-contact profile options."
+      }
+    ],
+    "notes": [
+      "Use only when a page needs primary-contact selector data; contacts and stats can be loaded without it."
+    ],
+    "source": "packages/module-crm/src/data.ts"
+  },
+  {
+    "moduleKey": "crm",
+    "packageName": "@brightweblabs/module-crm",
+    "symbol": "listCrmStatusTimeline",
+    "kind": "helper",
+    "status": "stable",
+    "runtime": "server",
+    "summary": "Lists recent CRM status-change timeline entries with contact and actor labels.",
+    "auth": "signed-in user required in the caller context",
+    "inputs": [
+      {
+        "name": "supabase",
+        "type": "SupabaseClient",
+        "required": true,
+        "description": "Server-side Supabase client with CRM schema and profile access."
+      },
+      {
+        "name": "params",
+        "type": "CrmStatusTimelineParams",
+        "required": false,
+        "description": "Optional since timestamp and limit override."
+      }
+    ],
+    "outputs": [
+      {
+        "type": "CrmStatusTimelineData",
+        "description": "Recent CRM status-log entries normalized with display labels."
+      }
+    ],
+    "notes": [
+      "Use for progressively loaded CRM timeline sections without forcing the full dashboard payload."
+    ],
+    "source": "packages/module-crm/src/data.ts"
+  },
+  {
+    "moduleKey": "crm",
+    "packageName": "@brightweblabs/module-crm",
     "symbol": "handleCrmContactsGetRequest",
     "kind": "handler",
     "status": "stable",
@@ -425,7 +493,9 @@
       "listCrmContacts",
       "listCrmOrganizations",
       "getCrmContactStatusStats",
-      "listCrmOwnerOptions"
+      "listCrmOwnerOptions",
+      "listCrmPrimaryContacts",
+      "listCrmStatusTimeline"
     ],
     "source": "packages/module-crm/src/index.ts"
   }

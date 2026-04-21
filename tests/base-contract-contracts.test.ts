@@ -25,6 +25,8 @@ import {
   listCrmContacts,
   listCrmOrganizations,
   listCrmOwnerOptions,
+  listCrmPrimaryContacts,
+  listCrmStatusTimeline,
 } from "../packages/module-crm/src/data.ts";
 
 type Row = Record<string, unknown>;
@@ -501,6 +503,44 @@ function createCrmSupabase() {
         profile: [{ id: "owner-3", first_name: "Client", last_name: "User", email: "client@example.com" }],
       },
     ],
+    crm_status_log: [
+      {
+        id: "status-1",
+        contact_id: "contact-1",
+        previous_status: "lead",
+        new_status: "qualified",
+        reason: "Discovery complete",
+        changed_at: "2026-03-10T12:00:00.000Z",
+        changed_by_user_id: "user-owner-1",
+      },
+      {
+        id: "status-2",
+        contact_id: "contact-3",
+        previous_status: null,
+        new_status: "lead",
+        reason: null,
+        changed_at: "2026-03-09T12:00:00.000Z",
+        changed_by_user_id: null,
+      },
+    ],
+    profiles: [
+      {
+        id: "profile-1",
+        user_id: "user-owner-1",
+        first_name: "Sara",
+        last_name: "Costa",
+        email: "sara@example.com",
+        created_at: "2026-03-10T10:00:00.000Z",
+      },
+      {
+        id: "profile-2",
+        user_id: "user-owner-2",
+        first_name: "Tom",
+        last_name: "Pires",
+        email: "tom@example.com",
+        created_at: "2026-03-09T10:00:00.000Z",
+      },
+    ],
   });
 }
 
@@ -782,6 +822,41 @@ test("CRM stable helpers return filtered, paginated, and summarized results", as
   assert.deepEqual(owners, [
     { id: "owner-1", label: "Sara Costa", email: "sara@example.com", role: "staff" },
     { id: "owner-2", label: "Tom Pires", email: "tom@example.com", role: "admin" },
+  ]);
+
+  const primaryContacts = await listCrmPrimaryContacts(supabase as never, { limit: 1 });
+  assert.equal(primaryContacts.length, 1);
+  assert.equal(primaryContacts[0]?.id, "profile-1");
+  assert.equal(primaryContacts[0]?.first_name, "Sara");
+  assert.equal(primaryContacts[0]?.email, "sara@example.com");
+
+  const timeline = await listCrmStatusTimeline(supabase as never, {
+    since: "2026-03-01T00:00:00.000Z",
+    limit: 2,
+  });
+  assert.deepEqual(timeline, [
+    {
+      id: "status-1",
+      contact_id: "contact-1",
+      previous_status: "lead",
+      new_status: "qualified",
+      reason: "Discovery complete",
+      changed_at: "2026-03-10T12:00:00.000Z",
+      changed_by_user_id: "user-owner-1",
+      contact_label: "Ana Silva",
+      changed_by_label: "Sara Costa",
+    },
+    {
+      id: "status-2",
+      contact_id: "contact-3",
+      previous_status: null,
+      new_status: "lead",
+      reason: null,
+      changed_at: "2026-03-09T12:00:00.000Z",
+      changed_by_user_id: null,
+      contact_label: "Bruno Matos",
+      changed_by_label: null,
+    },
   ]);
 });
 

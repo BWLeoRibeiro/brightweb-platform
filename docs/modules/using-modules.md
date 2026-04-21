@@ -38,7 +38,7 @@ That means BrightWeb module usage is primarily a package and wiring model. The s
 | `@brightweblabs/module-admin` | `listAdminUsers()`, `handleAdminUsersGetRequest()`, `handleAdminUsersRoleChangeRequest()` | `stable` | Reusable admin listing plus package-owned admin HTTP handlers. |
 | `@brightweblabs/module-admin` | `getAdminUsersPageData()` | `starter` | Starter admin page payload for the scaffolded users screen. |
 | `@brightweblabs/module-admin/registration` | `adminModuleRegistration` | `stable` | Admin app-shell navigation and toolbar registration. |
-| `@brightweblabs/module-crm` | `listCrmContacts()`, `listCrmOrganizations()`, `getCrmContactStatusStats()`, `listCrmOwnerOptions()` | `stable` | Reusable CRM list, stats, and owner-option primitives for app-owned CRM UIs and workflows. |
+| `@brightweblabs/module-crm` | `listCrmContacts()`, `listCrmOrganizations()`, `getCrmContactStatusStats()`, `listCrmOwnerOptions()`, `listCrmPrimaryContacts()`, `listCrmStatusTimeline()` | `stable` | Reusable CRM list, stats, owner-option, primary-contact, and timeline primitives for app-owned CRM UIs and workflows. |
 | `@brightweblabs/module-crm` | `handleCrmContactsGetRequest()`, `handleCrmOrganizationsGetRequest()`, `handleCrmStatsGetRequest()`, `handleCrmOwnersGetRequest()` | `stable` | Package-owned CRM GET handlers that can be mounted directly from Next.js routes. |
 | `@brightweblabs/module-crm` | `getCrmDashboardData()` | `starter` | Starter CRM dashboard payload for the scaffolded CRM page. |
 | `@brightweblabs/module-crm/registration` | `crmModuleRegistration` | `stable` | CRM app-shell navigation groups and toolbar registration. |
@@ -232,7 +232,8 @@ Auth email flows should stay on `supabase.auth.*` and Supabase Auth SMTP/project
 
 ### CRM
 
-- Build on `listCrmContacts()`, `listCrmOrganizations()`, `getCrmContactStatusStats()`, and `listCrmOwnerOptions()` when you need reusable CRM data primitives.
+- Build on `listCrmContacts()`, `listCrmOrganizations()`, `getCrmContactStatusStats()`, `listCrmStatusTimeline()`, `listCrmPrimaryContacts()`, and `listCrmOwnerOptions()` when you need reusable CRM data primitives.
+- Load only the CRM slices a page needs. For example, a contacts-first page can skip `listCrmOwnerOptions()` and `listCrmPrimaryContacts()` until an assignment or organization-edit workflow needs them.
 - Mount the package-owned CRM GET handlers when you want the package to own the initial HTTP contract.
 - Treat `getCrmDashboardData()` as `starter` page glue for the scaffolded CRM screen.
 - Build your own forms, tables, actions, and workflows on top of the CRM schema and replace the starter page payload when needed.
