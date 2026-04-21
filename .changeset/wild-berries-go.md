@@ -1,4 +1,0 @@
----
----
-
-Manual package publish
