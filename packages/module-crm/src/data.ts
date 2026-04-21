@@ -155,6 +155,7 @@ export const CRM_ORGANIZATIONS_MAX_PAGE_SIZE = 100;
 export const CRM_PRIMARY_CONTACTS_DEFAULT_LIMIT = 200;
 export const CRM_STATUS_TIMELINE_DEFAULT_LIMIT = 10;
 export const CRM_STATUS_TIMELINE_DEFAULT_DAYS = 7;
+export const CRM_CONTACT_STATUSES = ["lead", "qualified", "proposal", "won", "lost"] as const;
 
 function normalizePage(page: number | undefined, fallback: number) {
   return Number.isFinite(page) && (page ?? 0) > 0 ? Math.floor(page as number) : fallback;
@@ -245,7 +246,7 @@ export async function listCrmContacts(
     .from("crm_contacts")
     .select(
       "id, first_name, last_name, email, phone, status, source, owner_id, organization_id, created_at, updated_at, organizations(name)",
-      { count: "exact" },
+      { count: "planned" },
     )
     .order("updated_at", { ascending: false })
     .range(from, to);
@@ -300,7 +301,7 @@ export async function listCrmOrganizations(
     .from("organizations")
     .select(
       "id, name, industry, company_size, budget_range, website_url, address, tax_identifier_value, primary_contact_id, created_at, primary_contact:profiles!organizations_primary_contact_id_fkey(id, first_name, last_name, email)",
-      { count: "exact" },
+      { count: "planned" },
     )
     .order("created_at", { ascending: false })
     .range(from, to);
@@ -327,20 +328,28 @@ export async function listCrmOrganizations(
 export async function getCrmContactStatusStats(
   supabase: SupabaseClient,
 ): Promise<CrmContactStatusStats> {
-  const { data, error } = await supabase.from("crm_contacts").select("status");
-  if (error) {
-    throw new Error(error.message);
+  const [totalResult, ...statusResults] = await Promise.all([
+    supabase.from("crm_contacts").select("id", { count: "planned", head: true }),
+    ...CRM_CONTACT_STATUSES.map((status) =>
+      supabase
+        .from("crm_contacts")
+        .select("id", { count: "planned", head: true })
+        .eq("status", status),
+    ),
+  ]);
+
+  const aggregateError = [totalResult, ...statusResults].find((result) => result.error)?.error;
+  if (aggregateError) {
+    throw new Error(aggregateError.message);
   }
 
-  return ((data ?? []) as Array<{ status?: string | null }>).reduce<CrmContactStatusStats>(
-    (acc, row) => {
-      const status = typeof row.status === "string" && row.status.trim() ? row.status : "lead";
-      acc.total += 1;
-      acc.byStatus[status] = (acc.byStatus[status] ?? 0) + 1;
+  return {
+    total: totalResult.count ?? 0,
+    byStatus: CRM_CONTACT_STATUSES.reduce<Record<string, number>>((acc, status, index) => {
+      acc[status] = statusResults[index]?.count ?? 0;
       return acc;
-    },
-    { total: 0, byStatus: {} },
-  );
+    }, {}),
+  };
 }
 
 export async function listCrmOwnerOptions(

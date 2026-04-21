@@ -33,10 +33,12 @@ type Row = Record<string, unknown>;
 type TableMap = Record<string, Row[]>;
 type SelectError = { message: string };
 type SelectErrorFactory = (context: { table: string; columns: string }) => SelectError | null;
-type SelectSpy = (context: { table: string; columns: string }) => void;
+type SelectOptions = { count?: string; head?: boolean };
+type SelectSpy = (context: { table: string; columns: string; options?: SelectOptions }) => void;
 type FakeSupabaseOptions = {
   selectErrorFactory?: SelectErrorFactory;
   selectSpy?: SelectSpy;
+  defaultSelectLimit?: number;
 };
 
 class FakeSupabase {
@@ -61,7 +63,8 @@ class FakeQuery {
   private orderRules: Array<{ field: string; ascending: boolean }> = [];
   private rangeStart = 0;
   private rangeEnd = Number.POSITIVE_INFINITY;
-  private exactCount = false;
+  private hasExplicitRange = false;
+  private countMode: string | null = null;
   private head = false;
   private selectError: SelectError | null = null;
 
@@ -71,10 +74,10 @@ class FakeQuery {
     this.options = options;
   }
 
-  select(columns: string, options?: { count?: string; head?: boolean }) {
+  select(columns: string, options?: SelectOptions) {
     this.selectError = this.options.selectErrorFactory?.({ table: this.table, columns }) ?? null;
-    this.options.selectSpy?.({ table: this.table, columns });
-    this.exactCount = options?.count === "exact";
+    this.options.selectSpy?.({ table: this.table, columns, options });
+    this.countMode = options?.count ?? null;
     this.head = Boolean(options?.head);
     return this;
   }
@@ -87,12 +90,14 @@ class FakeQuery {
   range(from: number, to: number) {
     this.rangeStart = from;
     this.rangeEnd = to;
+    this.hasExplicitRange = true;
     return this;
   }
 
   limit(value: number) {
     this.rangeStart = 0;
     this.rangeEnd = value - 1;
+    this.hasExplicitRange = true;
     return this;
   }
 
@@ -166,13 +171,19 @@ class FakeQuery {
       data = data.filter(filter);
     }
 
-    const count = this.exactCount ? data.length : null;
+    const count = this.countMode ? data.length : null;
 
     for (const rule of [...this.orderRules].reverse()) {
       data.sort((left, right) => compareValues(getFieldValue(left, rule.field), getFieldValue(right, rule.field), rule.ascending));
     }
 
-    data = data.slice(this.rangeStart, Number.isFinite(this.rangeEnd) ? this.rangeEnd + 1 : undefined);
+    const effectiveRangeEnd = this.hasExplicitRange
+      ? this.rangeEnd
+      : this.options.defaultSelectLimit === undefined
+        ? this.rangeEnd
+        : this.options.defaultSelectLimit - 1;
+
+    data = data.slice(this.rangeStart, Number.isFinite(effectiveRangeEnd) ? effectiveRangeEnd + 1 : undefined);
 
     return {
       data: this.head ? null : data,
@@ -816,7 +827,16 @@ test("CRM stable helpers return filtered, paginated, and summarized results", as
   assert.equal(organizations.items[0]?.name, "Bright Growth");
 
   const stats = await getCrmContactStatusStats(supabase as never);
-  assert.deepEqual(stats, { total: 3, byStatus: { lead: 2, qualified: 1 } });
+  assert.deepEqual(stats, {
+    total: 3,
+    byStatus: {
+      lead: 2,
+      qualified: 1,
+      proposal: 0,
+      won: 0,
+      lost: 0,
+    },
+  });
 
   const owners = await listCrmOwnerOptions(supabase as never);
   assert.deepEqual(owners, [
@@ -858,6 +878,45 @@ test("CRM stable helpers return filtered, paginated, and summarized results", as
       changed_by_label: null,
     },
   ]);
+});
+
+test("CRM status stats use head count queries so totals are not capped at 1000 rows", async () => {
+  const crmContacts = Array.from({ length: 1205 }, (_, index) => ({
+    id: `contact-${index + 1}`,
+    status: index < 1005 ? "lead" : "qualified",
+  }));
+  const selectCalls: Array<{ table: string; columns: string; options?: SelectOptions }> = [];
+  const supabase = new FakeSupabase(
+    { crm_contacts: crmContacts },
+    {
+      defaultSelectLimit: 1000,
+      selectSpy: (context) => {
+        selectCalls.push(context);
+      },
+    },
+  );
+
+  const stats = await getCrmContactStatusStats(supabase as never);
+
+  assert.deepEqual(stats, {
+    total: 1205,
+    byStatus: {
+      lead: 1005,
+      qualified: 200,
+      proposal: 0,
+      won: 0,
+      lost: 0,
+    },
+  });
+  assert.equal(selectCalls.some((call) => call.table === "crm_contacts" && call.columns === "status"), false);
+  assert.equal(
+    selectCalls.every((call) => call.table !== "crm_contacts" || call.options?.head === true),
+    true,
+  );
+  assert.equal(
+    selectCalls.every((call) => call.table !== "crm_contacts" || call.options?.count === "planned"),
+    true,
+  );
 });
 
 test("CRM handler helpers parse params and return JSON envelopes", async () => {

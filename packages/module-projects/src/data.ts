@@ -276,13 +276,13 @@ export async function getProjectPortfolioStats(
     { count: atRiskCount, error: atRiskError },
     { count: overdueCount, error: overdueCountError },
   ] = await Promise.all([
-    supabase.from("projects").select("id", { count: "exact", head: true }).not("status", "in", "(completed,canceled)"),
-    supabase.from("projects").select("id", { count: "exact", head: true }).eq("status", "planned"),
-    supabase.from("projects").select("id", { count: "exact", head: true }).eq("status", "active"),
-    supabase.from("projects").select("id", { count: "exact", head: true }).or("health.eq.at_risk,status.eq.blocked"),
+    supabase.from("projects").select("id", { count: "planned", head: true }).not("status", "in", "(completed,canceled)"),
+    supabase.from("projects").select("id", { count: "planned", head: true }).eq("status", "planned"),
+    supabase.from("projects").select("id", { count: "planned", head: true }).eq("status", "active"),
+    supabase.from("projects").select("id", { count: "planned", head: true }).or("health.eq.at_risk,status.eq.blocked"),
     supabase
       .from("projects")
-      .select("id", { count: "exact", head: true })
+      .select("id", { count: "planned", head: true })
       .lt("target_date", today)
       .not("status", "in", "(completed,canceled)"),
   ]);
@@ -311,7 +311,7 @@ export async function listProjects(
   const runProjectsListQuery = (columns: string) => {
     let query = supabase
       .from("projects")
-      .select(columns, { count: "exact" })
+      .select(columns, { count: "planned" })
       .order("updated_at", { ascending: false })
       .range(from, to);
 

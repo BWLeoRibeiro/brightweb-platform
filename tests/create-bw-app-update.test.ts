@@ -225,12 +225,14 @@ test("published platform scaffolds resolved supabase migrations for the selected
       "0001_core__20260316090000_core_v1.sql",
       "0002_admin__20260316091000_admin_v1.sql",
       "0003_crm__20260316092000_crm_v1.sql",
+      "0004_crm__20260421201523_portal_read_indexes.sql",
     ],
   );
 
   await fs.access(path.join(targetDir, "supabase", "modules", "core", "migrations", "20260316090000_core_v1.sql"));
   await fs.access(path.join(targetDir, "supabase", "modules", "admin", "migrations", "20260316091000_admin_v1.sql"));
   await fs.access(path.join(targetDir, "supabase", "modules", "crm", "migrations", "20260316092000_crm_v1.sql"));
+  await fs.access(path.join(targetDir, "supabase", "modules", "crm", "migrations", "20260421201523_portal_read_indexes.sql"));
   await assert.rejects(() =>
     fs.access(path.join(targetDir, "supabase", "modules", "projects", "migrations", "20260316093000_projects_v1.sql")));
 });
