@@ -11,6 +11,7 @@ import {
   type ProjectDashboardData,
   type ProjectLink,
   type ProjectListItem,
+  type ProjectActivityItem,
   type ProjectMilestone,
   type ProjectMemberInput,
   type ProjectTask,
@@ -807,6 +808,119 @@ export async function getProjectDashboard(supabase: SupabaseClient, projectId: s
     links,
     activity: [],
   };
+}
+
+type ActivityEventRow = {
+  id: string;
+  created_at: string;
+  event_type: string;
+  summary: string;
+  payload: unknown;
+  actor_profile_id: string | null;
+};
+
+export async function listProjectActivity(
+  supabase: SupabaseClient,
+  projectId: string,
+): Promise<ProjectActivityItem[]> {
+  const [payloadProjectEvents, directProjectEvents] = await Promise.all([
+    supabase
+      .from("app_activity_events")
+      .select("id, created_at, event_type, summary, payload, actor_profile_id")
+      .eq("domain", "projects")
+      .filter("payload->>project_id", "eq", projectId)
+      .order("created_at", { ascending: false })
+      .limit(50),
+    supabase
+      .from("app_activity_events")
+      .select("id, created_at, event_type, summary, payload, actor_profile_id")
+      .eq("domain", "projects")
+      .eq("entity_table", "projects")
+      .eq("entity_id", projectId)
+      .order("created_at", { ascending: false })
+      .limit(50),
+  ]);
+
+  if (payloadProjectEvents.error) throw new Error(payloadProjectEvents.error.message);
+  if (directProjectEvents.error) throw new Error(directProjectEvents.error.message);
+
+  const rowsById = new Map<string, ActivityEventRow>();
+  for (const row of [
+    ...((payloadProjectEvents.data ?? []) as ActivityEventRow[]),
+    ...((directProjectEvents.data ?? []) as ActivityEventRow[]),
+  ]) {
+    rowsById.set(String(row.id), row);
+  }
+
+  const rows = Array.from(rowsById.values())
+    .sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)))
+    .slice(0, 50);
+
+  // Every profile referenced anywhere — the actor plus the member profiles named
+  // in member_*/project_members_synced payloads — resolved in one query so the
+  // feed can speak people by name instead of leaving raw ids or "Sistema".
+  const profileIds = new Set<string>();
+  const collect = (value: unknown) => {
+    if (typeof value === "string" && value) profileIds.add(value);
+    else if (Array.isArray(value)) for (const entry of value) collect(entry);
+  };
+  for (const row of rows) {
+    collect(row.actor_profile_id);
+    const payload = (row.payload ?? {}) as Record<string, unknown>;
+    collect(payload.profile_id);
+    collect(payload.added_profile_ids);
+    collect(payload.removed_profile_ids);
+    collect(payload.changed_profile_ids);
+  }
+
+  const labelsById = new Map<string, string>();
+  if (profileIds.size > 0) {
+    const { data: profiles } = await supabase
+      .from("profiles")
+      .select("id, first_name, last_name, email")
+      .in("id", Array.from(profileIds));
+
+    for (const profile of profiles ?? []) {
+      if (typeof profile.id !== "string") continue;
+      const label = profileLabel(profile.first_name, profile.last_name, profile.email);
+      if (label) labelsById.set(profile.id, label);
+    }
+  }
+
+  const namesFor = (value: unknown): string[] => {
+    if (!Array.isArray(value)) return [];
+    return value
+      .map((id) => (typeof id === "string" ? labelsById.get(id) ?? null : null))
+      .filter((name): name is string => Boolean(name));
+  };
+
+  return rows.map((row) => {
+    const payload = (row.payload ?? {}) as Record<string, unknown>;
+    const profileId = typeof payload.profile_id === "string" ? payload.profile_id : null;
+    // Enrich the payload with resolved names so the client renders people, not ids.
+    const enrichedPayload: Record<string, unknown> = {
+      ...payload,
+      ...(profileId && labelsById.has(profileId)
+        ? { profile_name: labelsById.get(profileId) }
+        : {}),
+      added_profile_names: namesFor(payload.added_profile_ids),
+      removed_profile_names: namesFor(payload.removed_profile_ids),
+      changed_profile_names: namesFor(payload.changed_profile_ids),
+    };
+
+    return {
+      id: String(row.id),
+      createdAt: String(row.created_at),
+      eventType: String(row.event_type),
+      actorProfileId: typeof row.actor_profile_id === "string" ? row.actor_profile_id : null,
+      actorLabel:
+        typeof row.actor_profile_id === "string"
+          ? (labelsById.get(row.actor_profile_id) ?? null)
+          : null,
+      summary: String(row.summary),
+      payload: enrichedPayload,
+    };
+  });
 }
 
 export async function createProject(supabase: SupabaseClient, input: CreateProjectInput) {

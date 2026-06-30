@@ -49,6 +49,7 @@ export {
   getClientProjectHealth,
   getProjectDashboard,
   isProjectsSchemaMissingError,
+  listProjectActivity,
   listProjects,
   listOrgAdminProjectsByProfile,
   listProjectAssignableProfiles,
