@@ -17,6 +17,7 @@
   },
   "exports": {
     ".": "./src/index.ts",
+    "./activity-messages": "./src/activity-messages.ts",
     "./contracts": "./src/contracts.ts",
     "./registration": "./src/registration.ts",
     "./server": "./src/server.ts",

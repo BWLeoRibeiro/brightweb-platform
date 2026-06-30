@@ -17,6 +17,7 @@
   },
   "exports": {
     ".": "./src/index.ts",
+    "./activity-messages": "./src/activity-messages.ts",
     "./registration": "./src/registration.ts"
   },
   "dependencies": {
