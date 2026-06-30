@@ -1,5 +1,16 @@
 # @brightweblabs/module-projects
 
+## 0.4.1
+
+### Patch Changes
+
+- 1550f0b: Expose the activity message composers through a dedicated `./activity-messages`
+  subpath. The composers (`composeProjectMessage` / `composeCrmMessage`) are pure
+  and client-safe, but the package root also re-exports server-only data
+  functions, so importing them from the barrel pulled `server-only` into client
+  bundles. Import from `@brightweblabs/module-projects/activity-messages` and
+  `@brightweblabs/module-crm/activity-messages` in client components instead.
+
 ## 0.4.0
 
 ### Minor Changes
