@@ -27,3 +27,12 @@ export * from "./components/sheet";
 export * from "./components/table";
 export { Toaster } from "./components/sonner";
 export { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./components/tooltip";
+export { ActivityMessage } from "./components/activity-message";
+export {
+  formatActivityValue,
+  toActivityChanges,
+  type ActivityChange,
+  type ActivityChangesOptions,
+  type ActivityValueOptions,
+  type MsgSeg,
+} from "./lib/activity-format";

@@ -234,6 +234,9 @@ importers:
       '@brightweblabs/infra':
         specifier: workspace:*
         version: link:../infra
+      '@brightweblabs/ui':
+        specifier: workspace:*
+        version: link:../ui
       '@supabase/supabase-js':
         specifier: ^2.99.2
         version: 2.99.2
@@ -255,6 +258,9 @@ importers:
       '@brightweblabs/infra':
         specifier: workspace:*
         version: link:../infra
+      '@brightweblabs/ui':
+        specifier: workspace:*
+        version: link:../ui
       '@supabase/supabase-js':
         specifier: ^2.99.2
         version: 2.99.2

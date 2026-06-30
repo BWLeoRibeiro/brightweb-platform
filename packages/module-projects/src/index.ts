@@ -1,5 +1,12 @@
 import { requireServerPageAccess } from "@brightweblabs/core-auth/server";
 export {
+  activityActorName,
+  composeProjectMessage,
+  ptProjectActivityDictionary,
+  type ProjectActivityDictionary,
+  type ProjectActivityMessageItem,
+} from "./activity-messages";
+export {
   PROJECT_HEALTH_STATES,
   PROJECT_STATUSES,
   type ListProjectsParams,
