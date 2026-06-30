@@ -246,7 +246,7 @@ export async function listCrmContacts(
     .from("crm_contacts")
     .select(
       "id, first_name, last_name, email, phone, status, source, owner_id, organization_id, created_at, updated_at, organizations(name)",
-      { count: "planned" },
+      { count: "exact" },
     )
     .order("updated_at", { ascending: false })
     .range(from, to);
@@ -301,7 +301,7 @@ export async function listCrmOrganizations(
     .from("organizations")
     .select(
       "id, name, industry, company_size, budget_range, website_url, address, tax_identifier_value, primary_contact_id, created_at, primary_contact:profiles!organizations_primary_contact_id_fkey(id, first_name, last_name, email)",
-      { count: "planned" },
+      { count: "exact" },
     )
     .order("created_at", { ascending: false })
     .range(from, to);
@@ -329,11 +329,11 @@ export async function getCrmContactStatusStats(
   supabase: SupabaseClient,
 ): Promise<CrmContactStatusStats> {
   const [totalResult, ...statusResults] = await Promise.all([
-    supabase.from("crm_contacts").select("id", { count: "planned", head: true }),
+    supabase.from("crm_contacts").select("id", { count: "exact", head: true }),
     ...CRM_CONTACT_STATUSES.map((status) =>
       supabase
         .from("crm_contacts")
-        .select("id", { count: "planned", head: true })
+        .select("id", { count: "exact", head: true })
         .eq("status", status),
     ),
   ]);

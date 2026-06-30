@@ -264,12 +264,6 @@ function profileLabel(firstName: unknown, lastName: unknown, email: unknown): st
   return typeof email === "string" && email.trim().length > 0 ? email : null;
 }
 
-function buildProfileDisplayName(profile: { first_name: string | null; last_name: string | null; email?: string | null }) {
-  const full = [profile.first_name, profile.last_name].filter(Boolean).join(" ").trim();
-  if (full) return full;
-  return typeof profile.email === "string" && profile.email.trim().length > 0 ? profile.email : null;
-}
-
 function normalizeProjectRow(row: Record<string, unknown>): ProjectListItem {
   const ownerRaw = row.owner;
   const owner = Array.isArray(ownerRaw) ? ownerRaw[0] ?? null : ownerRaw;
@@ -331,16 +325,16 @@ export async function getProjectPortfolioStats(
     { count: atRiskCount, error: atRiskError },
     { count: overdueCount, error: overdueCountError },
   ] = await Promise.all([
-    supabase.from("projects").select("id", { count: "planned", head: true }).not("status", "in", "(completed,canceled)"),
-    supabase.from("projects").select("id", { count: "planned", head: true }).eq("status", "planned"),
-    supabase.from("projects").select("id", { count: "planned", head: true }).eq("status", "active"),
+    supabase.from("projects").select("id", { count: "exact", head: true }).not("status", "in", "(completed,canceled)"),
+    supabase.from("projects").select("id", { count: "exact", head: true }).eq("status", "planned"),
+    supabase.from("projects").select("id", { count: "exact", head: true }).eq("status", "active"),
     supabase
       .from("projects")
-      .select("id", { count: "planned", head: true })
+      .select("id", { count: "exact", head: true })
       .or("health.eq.at_risk,status.eq.blocked"),
     supabase
       .from("projects")
-      .select("id", { count: "planned", head: true })
+      .select("id", { count: "exact", head: true })
       .lt("target_date", today)
       .not("status", "in", "(completed,canceled)"),
   ]);
@@ -369,7 +363,7 @@ export async function listProjects(
   const runProjectsListQuery = (columns: string) => {
     let query = supabase
       .from("projects")
-      .select(columns, { count: "planned" })
+      .select(columns, { count: "exact" })
       .order("updated_at", { ascending: false })
       .range(from, to);
 
@@ -763,7 +757,7 @@ async function listProjectMembers(supabase: SupabaseClient, projectId: string): 
   return normalizeMemberRows(data ?? []);
 }
 
-export async function getProjectDashboard(supabase: SupabaseClient, projectId: string): Promise<ProjectDashboardData> {
+async function getProjectDashboardProjectRow(supabase: SupabaseClient, projectId: string): Promise<unknown> {
   let { data, error } = await supabase
     .from("projects")
     .select(PROJECT_SELECT_COLUMNS)
@@ -781,29 +775,17 @@ export async function getProjectDashboard(supabase: SupabaseClient, projectId: s
   if (error) throw new Error(error.message);
   if (!data) throw new Error("Projeto não encontrado.");
 
-  const [tasks, milestones, links, members, projectActivity, relatedActivity] = await Promise.all([
+  return data;
+}
+
+export async function getProjectDashboard(supabase: SupabaseClient, projectId: string): Promise<ProjectDashboardData> {
+  const [data, tasks, milestones, links, members] = await Promise.all([
+    getProjectDashboardProjectRow(supabase, projectId),
     listProjectTasks(supabase, projectId),
     listProjectMilestones(supabase, projectId),
     listProjectLinks(supabase, projectId),
     listProjectMembers(supabase, projectId),
-    supabase
-      .from("app_activity_events")
-      .select("id, created_at, event_type, summary, payload, actor_profile_id")
-      .eq("domain", "projects")
-      .eq("entity_table", "projects")
-      .eq("entity_id", projectId)
-      .order("created_at", { ascending: false }),
-    supabase
-      .from("app_activity_events")
-      .select("id, created_at, event_type, summary, payload, actor_profile_id")
-      .eq("domain", "projects")
-      .filter("payload->>project_id", "eq", projectId)
-      .neq("entity_table", "projects")
-      .order("created_at", { ascending: false }),
   ]);
-
-  if (projectActivity.error) throw new Error(projectActivity.error.message);
-  if (relatedActivity.error) throw new Error(relatedActivity.error.message);
 
   const projectRecord = toRecord(data);
   if (!projectRecord) throw new Error("Projeto não encontrado.");
@@ -817,50 +799,13 @@ export async function getProjectDashboard(supabase: SupabaseClient, projectId: s
   project.milestoneStats.achieved = milestones.filter((m) => m.status === "achieved").length;
   project.milestoneStats.delayed = milestones.filter((m) => m.status === "delayed").length;
   project.health = deriveProjectHealth(project);
-  const allActivityRows = [...(projectActivity.data ?? []), ...(relatedActivity.data ?? [])]
-    .toSorted((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
-  const actorProfileIds = Array.from(
-    new Set(
-      allActivityRows
-        .map((row) => (typeof row.actor_profile_id === "string" ? row.actor_profile_id : ""))
-        .filter(Boolean),
-    ),
-  );
-  const actorLabelsById = new Map<string, string>();
-  if (actorProfileIds.length > 0) {
-    const { data: actorProfiles } = await supabase
-      .from("profiles")
-      .select("id, first_name, last_name, email")
-      .in("id", actorProfileIds);
-    for (const profile of actorProfiles ?? []) {
-      if (typeof profile.id !== "string") continue;
-      const label = buildProfileDisplayName({
-        first_name: typeof profile.first_name === "string" ? profile.first_name : null,
-        last_name: typeof profile.last_name === "string" ? profile.last_name : null,
-        email: typeof profile.email === "string" ? profile.email : null,
-      });
-      if (label) actorLabelsById.set(profile.id, label);
-    }
-  }
-
   return {
     project,
     members,
     milestones,
     tasks,
     links,
-    activity: allActivityRows.map((row) => ({
-      id: String(row.id),
-      createdAt: String(row.created_at),
-      eventType: String(row.event_type),
-      actorProfileId: typeof row.actor_profile_id === "string" ? row.actor_profile_id : null,
-      actorLabel:
-        typeof row.actor_profile_id === "string"
-          ? (actorLabelsById.get(row.actor_profile_id) ?? null)
-          : null,
-      summary: String(row.summary),
-      payload: (row.payload ?? {}) as Record<string, unknown>,
-    })),
+    activity: [],
   };
 }
 
@@ -1057,10 +1002,18 @@ export async function createProjectTask(supabase: SupabaseClient, projectId: str
     position,
   };
 
-  const { error } = await supabase.from("project_tasks").insert(payload);
+  const { data, error } = await supabase
+    .from("project_tasks")
+    .insert(payload)
+    .select(
+      "id, project_id, milestone_id, title, description, status, priority, assignee_profile_id, reporter_profile_id, due_date, position, blocked_reason, created_at, updated_at, assignee:profiles!project_tasks_assignee_profile_id_fkey(first_name, last_name, email), reporter:profiles!project_tasks_reporter_profile_id_fkey(first_name, last_name, email)",
+    )
+    .single();
   if (error) throw new Error(error.message);
   await syncProjectHealth(supabase, projectId);
-  return listProjectTasks(supabase, projectId);
+  const record = toRecord(data);
+  if (!record) throw new Error("Não foi possível criar a tarefa.");
+  return normalizeTaskRow(record);
 }
 
 export async function updateProjectTask(
