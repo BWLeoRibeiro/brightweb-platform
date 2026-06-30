@@ -1,5 +1,57 @@
 # @brightweblabs/module-projects
 
+## 0.4.0
+
+### Minor Changes
+
+- cc8cfaa: Share the MQ Consulting activity-feed presentation across packages, with
+  language parameterised so each app supplies its own dictionary (pt-PT shipped
+  as the default):
+
+  - `@brightweblabs/ui` adds `./activity-format` (framework-free `MsgSeg` /
+    `ActivityChange` types plus `formatActivityValue` and `toActivityChanges`,
+    both taking injected field labels, person fields, locale and system/boolean
+    words) and `./activity-message` (the `ActivityMessage` renderer). Both are
+    also re-exported from the package root.
+  - `@brightweblabs/module-projects` adds `composeProjectMessage(item, actor,
+dict?)` with a `ProjectActivityDictionary` type and the default
+    `ptProjectActivityDictionary`, plus `activityActorName`.
+  - `@brightweblabs/module-crm` adds `composeCrmMessage(item, actor, dict?)` with
+    a `CrmActivityDictionary` type and the default `ptCrmActivityDictionary`.
+
+  Each module renders one written sentence per event (actor → verb → entity →
+  change). Apps compose a cross-domain feed by dispatching on the event-type
+  prefix to the relevant module composer and rendering the result with
+  `ActivityMessage`.
+
+- 0423b3c: Add `listProjectActivity(supabase, projectId)`, a dedicated, lazy-loadable
+  project activity query adopted from the MQ Consulting portal. It merges
+  payload-referenced and directly-attributed `app_activity_events`, dedupes and
+  caps the feed at 50 rows, and resolves every referenced profile id (actor plus
+  member ids in `member_*`/`project_members_synced` payloads) to display names in
+  a single query — enriching the payload with `profile_name`/`*_profile_names`
+  so consumers render people instead of raw ids. Pairs with `getProjectDashboard`
+  no longer loading activity inline (see previous release).
+- c99a284: Adopt MQ Consulting portal improvements as the baseline:
+
+  - Use `count: "exact"` instead of `count: "planned"` for project portfolio
+    stats and project list queries so totals are accurate rather than planner
+    estimates.
+  - `createProjectTask` now returns the single created `ProjectTask` (with
+    assignee/reporter joins) instead of re-listing every task in the project.
+    **Breaking:** the return type changes from `ProjectTask[]` to `ProjectTask`.
+  - `getProjectDashboard` no longer eagerly loads the activity feed inline; it
+    fetches the project row in parallel with tasks/milestones/links/members and
+    returns `activity: []`. Activity moves to a dedicated lazy-loaded query in a
+    follow-up release. **Breaking:** `ProjectDashboardData.activity` is now
+    always empty from this function.
+
+### Patch Changes
+
+- Updated dependencies [cc8cfaa]
+  - @brightweblabs/ui@0.4.0
+  - @brightweblabs/app-shell@0.3.1
+
 ## 0.3.3
 
 ### Patch Changes
