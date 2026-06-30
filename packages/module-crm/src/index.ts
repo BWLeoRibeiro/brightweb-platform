@@ -1,5 +1,11 @@
 import { requireServerPageAccess } from "@brightweblabs/core-auth/server";
 export {
+  composeCrmMessage,
+  ptCrmActivityDictionary,
+  type CrmActivityDictionary,
+  type CrmActivityMessageItem,
+} from "./activity-messages";
+export {
   CRM_CONTACTS_DEFAULT_PAGE_SIZE,
   CRM_CONTACTS_MAX_PAGE_SIZE,
   CRM_ORGANIZATIONS_DEFAULT_PAGE_SIZE,

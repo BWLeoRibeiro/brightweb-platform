@@ -27,6 +27,15 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          # Full history so `changeset status` can diff against `main`.
+          fetch-depth: 0
+
+      # On PRs the checkout is detached with no local `main`; `changeset status`
+      # runs `git merge-base main HEAD`, so materialise a local `main` ref from
+      # the remote-tracking branch. No-op on push-to-main builds.
+      - name: Ensure base ref for changeset diff
+        run: git rev-parse --verify --quiet main || git branch main origin/main
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4

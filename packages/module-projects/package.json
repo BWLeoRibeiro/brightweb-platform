@@ -26,6 +26,7 @@
     "@brightweblabs/app-shell": "workspace:*",
     "@brightweblabs/core-auth": "workspace:*",
     "@brightweblabs/infra": "workspace:*",
+    "@brightweblabs/ui": "workspace:*",
     "@supabase/supabase-js": "^2.99.2",
     "lucide-react": "^0.577.0"
   }

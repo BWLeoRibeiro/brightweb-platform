@@ -17,6 +17,8 @@
   },
   "exports": {
     ".": "./src/index.ts",
+    "./activity-format": "./src/lib/activity-format.ts",
+    "./activity-message": "./src/components/activity-message.tsx",
     "./alert-dialog": "./src/components/alert-dialog.tsx",
     "./badge": "./src/components/badge.tsx",
     "./button": "./src/components/button.tsx",
