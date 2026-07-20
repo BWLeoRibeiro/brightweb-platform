@@ -3,7 +3,7 @@ import path from "node:path";
 import { stdout as output } from "node:process";
 import { hashFile, findWorkspaceRoot, loadModuleCatalog, readAppManifest, writeAppManifest, cleanVersion } from "./app-manifest.mjs";
 import { pathExists, runInstall } from "./generator.mjs";
-import { applyMigrationWrites, planMigrationAppends } from "./migrations.mjs";
+import { applyMigrationWrites, getModuleMigrations, planMigrationAppends } from "./migrations.mjs";
 import { buildBrightwebAppUpdatePlan } from "./update.mjs";
 
 const HELP = `Usage: bw upgrade [moduleKey] [options]\n\nOptions:\n  --target-dir <path>          App directory (defaults to cwd)\n  --workspace-root <path>      BrightWeb workspace root\n  --allow-stale-fallback       Use baked-in versions if npm lookup fails\n  --install                    Install changed dependencies\n  --refresh-starters           Refresh unchanged starter files\n  --dry-run                    Print the upgrade plan without writing\n  --help                       Show this help`;
@@ -34,6 +34,11 @@ export async function upgradeBrightwebApp(moduleKey, argvOptions = {}, runtimeOp
     if (key) catalog[key].version = cleanVersion(update.to) || catalog[key].version;
   }
   const moduleKeys = moduleKey ? [moduleKey] : Object.keys(appManifest.modules);
+  const uncursored = [];
+  for (const key of moduleKeys) {
+    if (appManifest.migrationCursor?.[key] == null && (await getModuleMigrations(key, catalog[key])).length > 0) uncursored.push(key);
+  }
+  if (uncursored.length > 0) throw new Error(`Migration upgrade blocked: ${uncursored.join(", ")} ${uncursored.length === 1 ? "has" : "have"} a null migration cursor. Set an explicit cursor with bw adopt --force --cursor before upgrading.`);
   const migrationPlan = await planMigrationAppends({ targetDir, moduleKeys, catalog, migrationCursor: appManifest.migrationCursor });
   output.write(`bw upgrade\nPackages to update: ${plan.packageUpdates.length}\nManaged files to write: ${plan.fileWrites.length}\nMigrations to append: ${migrationPlan.writes.length}\n`);
   for (const relativePath of missing) output.write(`- missing: ${relativePath}\n`);

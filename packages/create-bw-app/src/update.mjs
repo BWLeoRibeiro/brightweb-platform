@@ -148,7 +148,7 @@ function parseConfiguredModules(content) {
   return enabledModules;
 }
 
-async function detectTemplate(targetDir, installedBrightwebPackages) {
+export async function detectTemplate(targetDir, installedBrightwebPackages) {
   if (await pathExists(path.join(targetDir, "config", "modules.ts"))) {
     return "platform";
   }
@@ -156,7 +156,7 @@ async function detectTemplate(targetDir, installedBrightwebPackages) {
   return installedBrightwebPackages.size > 0 ? "platform" : "site";
 }
 
-function detectDependencyMode(installedBrightwebPackages) {
+export function detectDependencyMode(installedBrightwebPackages) {
   for (const { version } of installedBrightwebPackages.values()) {
     if (typeof version === "string" && version.startsWith("workspace:")) {
       return "workspace";

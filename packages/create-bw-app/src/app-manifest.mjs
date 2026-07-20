@@ -107,7 +107,7 @@ export function validateAppManifest(manifest) {
     if (!entry || !cleanVersion(entry.version) || typeof entry.installedAt !== "string" || typeof entry.exposed !== "boolean") errors.push(`modules.${key} is invalid`);
   }
   for (const [relativePath, entry] of Object.entries(manifest.scaffoldFiles || {})) {
-    if (!entry || typeof entry.module !== "string" || !/^sha256:[a-f0-9]{64}$/.test(entry.hash || "") || entry.status !== "current") errors.push(`scaffoldFiles.${relativePath} is invalid`);
+    if (!entry || typeof entry.module !== "string" || !/^sha256:[a-f0-9]{64}$/.test(entry.hash || "") || !["current", "drifted", "missing"].includes(entry.status)) errors.push(`scaffoldFiles.${relativePath} is invalid`);
   }
   if (manifest.lastDoctor != null && (typeof manifest.lastDoctor.at !== "string" || typeof manifest.lastDoctor.ok !== "boolean")) errors.push("lastDoctor is invalid");
   return errors;

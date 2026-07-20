@@ -2,6 +2,17 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { TEMPLATE_ROOT, pathExists } from "./generator.mjs";
 
+export async function findAppMigrationsDirectory(targetDir) {
+  let current = path.resolve(targetDir);
+  while (true) {
+    const candidate = path.join(current, "supabase", "migrations");
+    if (await pathExists(candidate)) return candidate;
+    const parent = path.dirname(current);
+    if (parent === current) return path.join(path.resolve(targetDir), "supabase", "migrations");
+    current = parent;
+  }
+}
+
 export async function getModuleMigrations(moduleKey, catalogEntry = {}) {
   const candidates = [];
   const configuredPath = catalogEntry.manifest?.database?.migrations;
@@ -17,7 +28,7 @@ export async function getModuleMigrations(moduleKey, catalogEntry = {}) {
 }
 
 export async function planMigrationAppends({ targetDir, moduleKeys, catalog, migrationCursor = {} }) {
-  const migrationsDir = path.join(targetDir, "supabase", "migrations");
+  const migrationsDir = await findAppMigrationsDirectory(targetDir);
   const existing = (await pathExists(migrationsDir))
     ? (await fs.readdir(migrationsDir)).filter((fileName) => fileName.endsWith(".sql")).sort()
     : [];
@@ -61,10 +72,21 @@ export async function cursorMigrationStatus({ targetDir, moduleKey, cursor, cata
   if (migrations.length === 0) return { shipsMigrations: false, missing: [] };
   if (!cursor) return { shipsMigrations: true, missing: ["migration cursor"] };
   const expected = migrations.filter((entry) => entry.fileName <= cursor);
-  const migrationsDir = path.join(targetDir, "supabase", "migrations");
-  const installed = (await pathExists(migrationsDir)) ? await fs.readdir(migrationsDir) : [];
+  const migrationsDir = await findAppMigrationsDirectory(targetDir);
+  const installed = [];
+  if (await pathExists(migrationsDir)) {
+    for (const fileName of await fs.readdir(migrationsDir)) {
+      if (!fileName.endsWith(".sql")) continue;
+      const content = await fs.readFile(path.join(migrationsDir, fileName), "utf8");
+      installed.push({ fileName, content });
+    }
+  }
   return {
     shipsMigrations: true,
-    missing: expected.filter((entry) => !installed.some((fileName) => fileName.includes(`_${moduleKey}__${entry.fileName}`))).map((entry) => entry.fileName),
+    missing: expected.filter((entry) => !installed.some(({ fileName, content }) => {
+      if (fileName === entry.fileName || fileName.endsWith(`_${moduleKey}__${entry.fileName}`)) return true;
+      const header = content.match(/^\s*--\s*bw-module:\s*([^@\s]+)@[^\s]+\s+([^\s]+)/im);
+      return header?.[1] === moduleKey && header?.[2] === entry.fileName;
+    })).map((entry) => entry.fileName),
   };
 }

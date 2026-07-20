@@ -2,8 +2,9 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { stdout as output } from "node:process";
 import { cursorMigrationStatus } from "./migrations.mjs";
-import { findWorkspaceRoot, hashFile, loadModuleCatalog, MODULE_PACKAGES, readAppManifest, readConfiguredModuleFlags, satisfiesVersion, validateAppManifest, writeAppManifest } from "./app-manifest.mjs";
+import { findWorkspaceRoot, loadModuleCatalog, MODULE_PACKAGES, readAppManifest, readConfiguredModuleFlags, satisfiesVersion, validateAppManifest, writeAppManifest } from "./app-manifest.mjs";
 import { pathExists, readJsonIfPresent } from "./generator.mjs";
+import { scaffoldDrift } from "./scaffold.mjs";
 
 const HELP = `Usage: bw doctor [options]\n\nOptions:\n  --target-dir <path>       App directory (defaults to cwd)\n  --workspace-root <path>   BrightWeb workspace root\n  --strict                  Treat warnings as failures\n  --report                  Stamp lastDoctor in the app manifest\n  --help                    Show this help`;
 
@@ -35,7 +36,7 @@ export async function doctorBrightwebApp(argvOptions = {}, runtimeOptions = {}) 
   add(packageProblems.length ? "FAIL" : "PASS", "packages", packageProblems.join("; ") || "Installed module packages agree with the manifest.");
 
   const flags = await readConfiguredModuleFlags(targetDir);
-  const exposureProblems = Object.entries(appManifest.modules || {}).filter(([key, entry]) => flags[key] !== entry.exposed).map(([key, entry]) => `${key}: manifest exposed=${entry.exposed}, config enabled=${String(flags[key])}`);
+  const exposureProblems = Object.entries(appManifest.modules || {}).filter(([key, entry]) => typeof flags[key] === "boolean" && flags[key] !== entry.exposed).map(([key, entry]) => `${key}: manifest exposed=${entry.exposed}, config enabled=${String(flags[key])}`);
   add(exposureProblems.length ? "FAIL" : "PASS", "exposure", exposureProblems.join("; ") || "Module exposure flags agree.");
 
   const workspaceRoot = runtimeOptions.workspaceRoot || argvOptions.workspaceRoot || await findWorkspaceRoot(targetDir);
@@ -50,16 +51,9 @@ export async function doctorBrightwebApp(argvOptions = {}, runtimeOptions = {}) 
   }
   add(topologyProblems.length ? "FAIL" : "PASS", "topology", topologyProblems.join("; ") || "Module requirements are satisfied.");
 
-  let current = 0;
-  const drifted = [];
-  const missing = [];
-  for (const [relativePath, record] of Object.entries(appManifest.scaffoldFiles || {})) {
-    const filePath = path.join(targetDir, relativePath);
-    if (!(await pathExists(filePath))) missing.push(relativePath);
-    else if (await hashFile(filePath) !== record.hash) drifted.push(relativePath);
-    else current += 1;
-  }
-  add(drifted.length || missing.length ? "FAIL" : "PASS", "scaffold", `${current} current, ${drifted.length} drifted, ${missing.length} missing${drifted.length ? `; drifted: ${drifted.join(", ")}` : ""}${missing.length ? `; missing: ${missing.join(", ")}` : ""}`);
+  const scaffold = await scaffoldDrift(targetDir, appManifest.scaffoldFiles);
+  add(scaffold.drifted.length || scaffold.missing.length ? "FAIL" : "PASS", "scaffold", `${scaffold.current.length} current, ${scaffold.drifted.length} drifted, ${scaffold.missing.length} missing; drifted scaffold files: ${scaffold.drifted.length} (see bw diff --list)${scaffold.missing.length ? `; missing: ${scaffold.missing.join(", ")}` : ""}`);
+  add("INFO", "owned-surfaces", `Owned surfaces: ${(appManifest.ownedSurfaces || []).join(", ") || "none"}.`);
 
   const envNames = new Set(Object.keys(process.env));
   const envPath = path.join(targetDir, ".env.local");
@@ -78,7 +72,13 @@ export async function doctorBrightwebApp(argvOptions = {}, runtimeOptions = {}) 
     ? Array.from(new Set(["core", "admin", ...Object.keys(appManifest.modules || {})]))
     : [];
   for (const key of migrationKeys) {
-    const status = await cursorMigrationStatus({ targetDir, moduleKey: key, cursor: appManifest.migrationCursor?.[key], catalogEntry: catalog[key] });
+    const cursor = appManifest.migrationCursor?.[key];
+    const status = await cursorMigrationStatus({ targetDir, moduleKey: key, cursor, catalogEntry: catalog[key] });
+    if (status.shipsMigrations && cursor == null) {
+      if (appManifest.adoptionNotes?.allowUncursored) add("WARN", `migration-cursor-${key}`, `${key}: migration cursor is null; adoption explicitly allowed uncursored operation.`);
+      else migrationProblems.push(`${key}: migration cursor is null (run bw adopt --force --cursor ${key}=<migrationFilename>, or explicitly adopt with --allow-uncursored)`);
+      continue;
+    }
     if (status.shipsMigrations && status.missing.length > 0) migrationProblems.push(`${key}: ${status.missing.join(", ")}`);
   }
   add(migrationProblems.length ? "FAIL" : "PASS", "migrations", migrationProblems.join("; ") || "Migration cursors and flattened files agree.");
