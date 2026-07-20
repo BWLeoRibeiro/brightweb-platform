@@ -252,6 +252,7 @@ export async function getVersionMap(workspaceRoot) {
     "@brightweblabs/module-crm",
     "@brightweblabs/module-orgs",
     "@brightweblabs/module-projects",
+    "@brightweblabs/theme",
     "@brightweblabs/ui",
   ]) {
     const folderName = packageName.replace("@brightweblabs/", "");
@@ -734,6 +735,7 @@ export function createPackageJson({
     "@brightweblabs/app-shell": internalDependencyVersion("@brightweblabs/app-shell"),
     "@brightweblabs/core-auth": internalDependencyVersion("@brightweblabs/core-auth"),
     "@brightweblabs/infra": internalDependencyVersion("@brightweblabs/infra"),
+    "@brightweblabs/theme": internalDependencyVersion("@brightweblabs/theme"),
     "@brightweblabs/ui": internalDependencyVersion("@brightweblabs/ui"),
     "lucide-react": versionMap["lucide-react"],
     "next": versionMap.next,

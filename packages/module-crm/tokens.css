@@ -1,0 +1,12 @@
+:root {
+  --crm-stage-lead: var(--semantic-info);
+  --crm-stage-lead-strong: var(--semantic-info-strong);
+  --crm-stage-qualified: var(--semantic-special);
+  --crm-stage-qualified-strong: var(--semantic-special-strong);
+  --crm-stage-proposal: var(--semantic-warning);
+  --crm-stage-proposal-strong: var(--semantic-warning-strong);
+  --crm-stage-won: var(--semantic-success);
+  --crm-stage-won-strong: var(--semantic-success-strong);
+  --crm-stage-lost: var(--semantic-danger);
+  --crm-stage-lost-strong: var(--semantic-danger-strong);
+}

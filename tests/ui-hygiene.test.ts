@@ -6,6 +6,7 @@ import test from "node:test";
 const repoRoot = path.resolve(new URL("..", import.meta.url).pathname);
 const uiSourceRoot = path.join(repoRoot, "packages", "ui", "src");
 const appShellSourceRoot = path.join(repoRoot, "packages", "app-shell", "src");
+const crmUiSourceRoot = path.join(repoRoot, "packages", "module-crm", "src", "ui");
 const typographyPath = path.join(repoRoot, "packages", "theme", "src", "typography.css");
 
 async function sourceFiles(directory: string): Promise<string[]> {
@@ -48,8 +49,15 @@ test("app-shell source uses only tokenized color and typography utilities", asyn
   assertPatternAbsent(files, /\bparagraph-[a-z0-9-]+\b/i, "legacy paragraph utilities are not available in app-shell");
 });
 
+test("module CRM UI follows the BrightWeb typography and color hygiene rules", async () => {
+  const files = await sourcesAt(crmUiSourceRoot);
+  assertPatternAbsent(files, /\bfont-medium\b/, "font-medium is not part of the loaded weight ladder");
+  assertPatternAbsent(files, /#[0-9a-f]{3,8}\b/i, "raw hex colors must be represented by theme tokens");
+  assertPatternAbsent(files, /\b(?:paragraph|portal)-[a-z0-9-]+\b/i, "app-specific typography classes are not available in module CRM UI");
+});
+
 test("every text-ui utility used by ui exists in theme typography", async () => {
-  const files = await sourcesAt(uiSourceRoot);
+  const files = [...await sourcesAt(uiSourceRoot), ...await sourcesAt(crmUiSourceRoot)];
   const typography = await readFile(typographyPath, "utf8");
   const providedUtilities = new Set(Array.from(typography.matchAll(/@utility\s+(text-ui-[a-z0-9-]+)/g), (match) => match[1]));
   const usedUtilities = new Set(files.flatMap(({ source }) => Array.from(source.matchAll(/\btext-ui-[a-z0-9-]+\b/g), (match) => match[0])));

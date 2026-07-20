@@ -31,6 +31,7 @@ export {
   listCrmPrimaryContacts,
   listCrmStatusTimeline,
   type CrmContact,
+  type CrmContactSort,
   type CrmContactStatusStats,
   type CrmContactsListParams,
   type CrmContactsListResult,
@@ -49,6 +50,7 @@ export {
   handleCrmOrganizationsGetRequest,
   handleCrmOwnersGetRequest,
   handleCrmStatsGetRequest,
+  handleCrmTimelineGetRequest,
 } from "./handlers";
 import {
   getCrmContactStatusStats,

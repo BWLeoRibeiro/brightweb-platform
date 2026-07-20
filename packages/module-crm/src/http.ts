@@ -7,6 +7,7 @@ import {
   listCrmContacts,
   listCrmOrganizations,
   listCrmOwnerOptions,
+  listCrmStatusTimeline,
 } from "./data";
 import { ptCrmActivityDictionary } from "./activity-messages";
 import {
@@ -47,6 +48,16 @@ export function parseCrmContactsRequest(request: Request | URL | string) {
     status: url.searchParams.get("status")?.trim() || null,
     organizationId: url.searchParams.get("organizationId")?.trim() || null,
     ownerProfileId: url.searchParams.get("ownerProfileId")?.trim() || null,
+    sort: (["date_desc", "name", "company"] as const).find((sort) => sort === url.searchParams.get("sort")) ?? "date_desc",
+  };
+}
+
+export function parseCrmTimelineRequest(request: Request | URL | string) {
+  const url = request instanceof URL ? request : new URL(typeof request === "string" ? request : request.url);
+  return {
+    contactId: url.searchParams.get("contactId")?.trim() || undefined,
+    limit: parsePositiveInteger(url.searchParams.get("limit"), 50),
+    since: url.searchParams.get("since")?.trim() || undefined,
   };
 }
 
@@ -82,6 +93,7 @@ type CrmHttpDependencies = {
   listOrganizations: typeof listCrmOrganizations;
   getStats: typeof getCrmContactStatusStats;
   listOwners: typeof listCrmOwnerOptions;
+  listTimeline: typeof listCrmStatusTimeline;
   createContact: typeof createCrmContact;
   updateContact: typeof updateCrmContact;
   setContactStatus: typeof bulkSetCrmContactStatus;
@@ -178,6 +190,13 @@ export function createCrmStatsGetHandler(dependencies: CrmHttpDependencies) {
 export function createCrmOwnersGetHandler(dependencies: CrmHttpDependencies) {
   return withUserAccess(dependencies, async (supabase) => {
     const result = await dependencies.listOwners(supabase as never);
+    return json(result);
+  });
+}
+
+export function createCrmTimelineGetHandler(dependencies: CrmHttpDependencies) {
+  return withUserAccess(dependencies, async (supabase, request) => {
+    const result = await dependencies.listTimeline(supabase as never, parseCrmTimelineRequest(request));
     return json(result);
   });
 }

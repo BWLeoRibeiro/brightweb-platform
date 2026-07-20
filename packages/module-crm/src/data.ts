@@ -65,6 +65,7 @@ export type CrmPrimaryContactsData = CrmPrimaryContact[];
 export type CrmStatusTimelineParams = {
   since?: Date | string;
   limit?: number;
+  contactId?: string;
 };
 
 export type CrmStatusTimelineData = CrmStatusLog[];
@@ -76,7 +77,10 @@ export type CrmContactsListParams = {
   status?: string | null;
   organizationId?: string | null;
   ownerProfileId?: string | null;
+  sort?: CrmContactSort;
 };
+
+export type CrmContactSort = "date_desc" | "name" | "company";
 
 export type CrmContactsListResult = {
   items: CrmContact[];
@@ -193,9 +197,17 @@ export async function listCrmContacts(
     .select(
       "id, first_name, last_name, email, phone, status, source, owner_id, organization_id, created_at, updated_at, organizations(name)",
       { count: "exact" },
-    )
-    .order("updated_at", { ascending: false })
-    .range(from, to);
+    );
+
+  if (params.sort === "name") {
+    query = query.order("first_name", { ascending: true }).order("last_name", { ascending: true });
+  } else if (params.sort === "company") {
+    query = query.order("name", { ascending: true, foreignTable: "organizations" });
+  } else {
+    query = query.order("updated_at", { ascending: false });
+  }
+
+  query = query.range(from, to);
 
   if (search) {
     const safe = search.replace(/[%_,()"]/g, "");
@@ -321,12 +333,14 @@ export async function listCrmStatusTimeline(
 ): Promise<CrmStatusTimelineData> {
   const limit = normalizeLimit(params.limit, CRM_STATUS_TIMELINE_DEFAULT_LIMIT);
   const since = normalizeSince(params.since);
-  const { data, error } = await supabase
+  let query = supabase
     .from("crm_status_log")
     .select("id, contact_id, previous_status, new_status, reason, changed_at, changed_by_user_id")
     .gte("changed_at", since)
-    .order("changed_at", { ascending: false })
-    .limit(limit);
+    .order("changed_at", { ascending: false });
+
+  if (params.contactId?.trim()) query = query.eq("contact_id", params.contactId.trim());
+  const { data, error } = await query.limit(limit);
 
   if (error) {
     throw new Error(error.message);

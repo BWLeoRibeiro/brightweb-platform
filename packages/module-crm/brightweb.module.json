@@ -67,6 +67,7 @@
     ]
   },
   "registration": "./registration",
+  "tokens": "./tokens.css",
   "database": {
     "namespace": ["crm_"],
     "ownedObjects": [

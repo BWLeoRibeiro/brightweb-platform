@@ -14,6 +14,7 @@ export type TablePaginationProps = {
   className?: string;
   previousLabel?: string;
   nextLabel?: string;
+  pageLabel?: (page: number, totalPages: number) => string;
 };
 
 export function TablePagination({
@@ -24,6 +25,7 @@ export function TablePagination({
   className,
   previousLabel = "Go to the previous page",
   nextLabel = "Go to the next page",
+  pageLabel = (currentPage, pageCount) => `Page ${currentPage} of ${pageCount}`,
 }: TablePaginationProps) {
   const safeTotalPages = Math.max(1, Math.trunc(totalPages));
   const safePage = Math.min(Math.max(Math.trunc(page), 1), safeTotalPages);
@@ -38,7 +40,7 @@ export function TablePagination({
     <div className={cn("flex min-w-0 flex-col gap-2 border-t border-hairline px-4 py-2 md:flex-row md:items-center md:justify-between", className)}>
       {summary ? (
         <p className="min-w-0 truncate text-ui-meta">
-          <span className="font-semibold text-foreground">Page {safePage} of {safeTotalPages}</span>
+          <span className="font-semibold text-foreground">{pageLabel(safePage, safeTotalPages)}</span>
           <span className="px-1.5 text-border">·</span>
           {summary}
         </p>

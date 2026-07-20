@@ -2,5 +2,6 @@
   "contractVersion": 1,
   "key": "crm",
   "requires": { "core": ">=0.4", "admin": ">=0.3", "orgs": ">=0.1" },
-  "env": []
+  "env": [],
+  "tokens": "./tokens.css"
 }

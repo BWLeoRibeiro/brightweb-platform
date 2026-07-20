@@ -6,12 +6,14 @@ import {
   createCrmOrganizationsGetHandler,
   createCrmOwnersGetHandler,
   createCrmStatsGetHandler,
+  createCrmTimelineGetHandler,
 } from "./http";
 import {
   getCrmContactStatusStats,
   listCrmContacts,
   listCrmOrganizations,
   listCrmOwnerOptions,
+  listCrmStatusTimeline,
 } from "./data";
 import {
   bulkSetCrmContactStatus,
@@ -25,6 +27,7 @@ const crmDependencies = {
   listOrganizations: listCrmOrganizations,
   getStats: getCrmContactStatusStats,
   listOwners: listCrmOwnerOptions,
+  listTimeline: listCrmStatusTimeline,
   createContact: createCrmContact,
   updateContact: updateCrmContact,
   setContactStatus: bulkSetCrmContactStatus,
@@ -41,3 +44,5 @@ export const handleCrmOrganizationsGetRequest = createCrmOrganizationsGetHandler
 export const handleCrmStatsGetRequest = createCrmStatsGetHandler(crmDependencies);
 
 export const handleCrmOwnersGetRequest = createCrmOwnersGetHandler(crmDependencies);
+
+export const handleCrmTimelineGetRequest = createCrmTimelineGetHandler(crmDependencies);

@@ -243,6 +243,9 @@ importers:
       '@brightweblabs/module-orgs':
         specifier: workspace:*
         version: link:../module-orgs
+      '@brightweblabs/theme':
+        specifier: workspace:*
+        version: link:../theme
       '@brightweblabs/ui':
         specifier: workspace:*
         version: link:../ui

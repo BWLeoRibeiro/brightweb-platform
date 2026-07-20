@@ -39,6 +39,7 @@ export const CORE_PACKAGES = [
   "@brightweblabs/app-shell",
   "@brightweblabs/core-auth",
   "@brightweblabs/infra",
+  "@brightweblabs/theme",
   "@brightweblabs/ui",
 ];
 
@@ -57,10 +58,13 @@ export const MODULE_STARTER_FILES = {
     "app/playground/admin/page.tsx",
   ],
   crm: [
+    "app/crm/layout.tsx",
+    "app/crm/page.tsx",
     "app/api/crm/contacts/route.ts",
     "app/api/crm/organizations/route.ts",
     "app/api/crm/owners/route.ts",
     "app/api/crm/stats/route.ts",
+    "app/api/crm/timeline/route.ts",
     "app/playground/crm/page.tsx",
   ],
   projects: [
@@ -80,6 +84,7 @@ export const APP_DEPENDENCY_DEFAULTS = {
   "@brightweblabs/module-crm": "^0.4.1",
   "@brightweblabs/module-orgs": "^0.1.0",
   "@brightweblabs/module-projects": "^0.4.1",
+  "@brightweblabs/theme": "^0.1.0",
   "@brightweblabs/ui": "^0.4.0",
   "lucide-react": "^1.8.0",
   "next": "16.1.6",

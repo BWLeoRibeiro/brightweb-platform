@@ -21,6 +21,7 @@ const BRIGHTWEB_PACKAGES = [
   "@brightweblabs/module-crm",
   "@brightweblabs/module-orgs",
   "@brightweblabs/module-projects",
+  "@brightweblabs/theme",
   "@brightweblabs/ui",
 ];
 
@@ -224,6 +225,7 @@ test("published platform scaffolds pin current brightweb package versions", asyn
     "@brightweblabs/module-crm",
     "@brightweblabs/module-orgs",
     "@brightweblabs/module-projects",
+    "@brightweblabs/theme",
     "@brightweblabs/ui",
   ]) {
     assert.equal(

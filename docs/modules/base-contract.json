@@ -1622,6 +1622,36 @@
     "source": "packages/module-crm/src/index.ts"
   },
   {
+    "moduleKey": "crm", "packageName": "@brightweblabs/module-crm", "symbol": "handleCrmTimelineGetRequest", "kind": "handler", "status": "stable", "runtime": "server", "summary": "Package-owned GET handler for contact status history.", "auth": "signed-in user required", "inputs": [{ "name": "request", "type": "Request", "required": true, "description": "Request with optional contactId, since, and limit query parameters." }], "outputs": [{ "type": "Response", "description": "JSON status-history entries." }], "notes": ["The default CRM UI uses this at /api/crm/timeline."], "source": "packages/module-crm/src/handlers.ts"
+  },
+  {
+    "moduleKey": "crm", "packageName": "@brightweblabs/module-crm/ui", "symbol": "createCrmUiClient", "kind": "helper", "status": "starter", "runtime": "client", "summary": "Creates the default CRM HTTP client without hardcoding URLs in components.", "auth": "inherits the app route session", "inputs": [{ "name": "basePath", "type": "string", "required": false, "description": "CRM API base path; defaults to /api/crm." }, { "name": "fetcher", "type": "typeof fetch", "required": false, "description": "Injectable fetch implementation." }], "outputs": [{ "type": "CrmUiClient", "description": "Client callbacks for CRM reads and writes." }], "notes": ["Starter status allows route envelopes to evolve before the next stable UI contract."], "source": "packages/module-crm/src/ui/client.ts"
+  },
+  {
+    "moduleKey": "crm", "packageName": "@brightweblabs/module-crm/ui", "symbol": "defaultCrmUiDictionary", "kind": "shared-helper", "status": "starter", "runtime": "shared", "summary": "English dictionary containing every default CRM UI string.", "auth": "none", "inputs": [], "outputs": [{ "type": "CrmUiDictionary", "description": "Default English CRM copy and formatters." }], "notes": ["Copy the object and override nested values for another locale."], "source": "packages/module-crm/src/ui/dictionary.ts"
+  },
+  {
+    "moduleKey": "crm", "packageName": "@brightweblabs/module-crm/ui", "symbol": "defaultCrmStages", "kind": "shared-helper", "status": "starter", "runtime": "shared", "summary": "Canonical ordered CRM funnel stage metadata.", "auth": "none", "inputs": [], "outputs": [{ "type": "CrmStageConfig[]", "description": "Five stages with labels and token names." }], "notes": ["Override through the stages prop on CRM surfaces."], "source": "packages/module-crm/src/ui/dictionary.ts"
+  },
+  {
+    "moduleKey": "crm", "packageName": "@brightweblabs/module-crm/ui", "symbol": "CrmContactsTable", "kind": "component", "status": "starter", "runtime": "client", "summary": "Searchable, sortable, selectable, paginated CRM contacts table.", "auth": "none; data and callbacks are supplied by the caller", "inputs": [{ "name": "props", "type": "CrmContactsTableProps", "required": true, "description": "Contacts result, query callbacks, columns, stages, and selection callbacks." }], "outputs": [{ "type": "React element", "description": "Default CRM contact list surface." }], "notes": ["Column order, visibility, labels, and custom cells are configurable."], "source": "packages/module-crm/src/ui/contacts-table.tsx"
+  },
+  {
+    "moduleKey": "crm", "packageName": "@brightweblabs/module-crm/ui", "symbol": "CrmFunnelStats", "kind": "component", "status": "starter", "runtime": "client", "summary": "Token-tinted funnel stage statistic tiles.", "auth": "none; data is supplied by the caller", "inputs": [{ "name": "props", "type": "CrmFunnelStatsProps", "required": true, "description": "Stats, loading state, dictionary, and stage metadata." }], "outputs": [{ "type": "React element", "description": "CRM funnel metric row." }], "notes": ["Stage colors resolve only through module tokens."], "source": "packages/module-crm/src/ui/funnel-stats.tsx"
+  },
+  {
+    "moduleKey": "crm", "packageName": "@brightweblabs/module-crm/ui", "symbol": "CrmContactDialog", "kind": "component", "status": "starter", "runtime": "client", "summary": "Controlled create and edit form for CRM contacts.", "auth": "none; submit callback owns authorization", "inputs": [{ "name": "props", "type": "CrmContactDialogProps", "required": true, "description": "Controlled dialog state, form options, and submit callback." }], "outputs": [{ "type": "React element", "description": "CRM contact form dialog." }], "notes": ["The component never assumes an API URL."], "source": "packages/module-crm/src/ui/contact-dialog.tsx"
+  },
+  {
+    "moduleKey": "crm", "packageName": "@brightweblabs/module-crm/ui", "symbol": "CrmStatusDialog", "kind": "component", "status": "starter", "runtime": "client", "summary": "Controlled single or bulk funnel status dialog with optional reason.", "auth": "none; submit callback owns authorization", "inputs": [{ "name": "props", "type": "CrmStatusDialogProps", "required": true, "description": "Contact IDs, stages, controlled state, and submit callback." }], "outputs": [{ "type": "React element", "description": "CRM status transition dialog." }], "notes": ["Lost status visually emphasizes the reason field."], "source": "packages/module-crm/src/ui/status-dialog.tsx"
+  },
+  {
+    "moduleKey": "crm", "packageName": "@brightweblabs/module-crm/ui", "symbol": "CrmTimeline", "kind": "component", "status": "starter", "runtime": "client", "summary": "CRM contact status-history timeline using shared activity messages.", "auth": "none; entries are supplied by the caller", "inputs": [{ "name": "props", "type": "CrmTimelineProps", "required": true, "description": "Status entries plus UI and activity dictionaries." }], "outputs": [{ "type": "React element", "description": "CRM activity timeline." }], "notes": ["Accepts the existing CRM activity dictionary contract."], "source": "packages/module-crm/src/ui/timeline.tsx"
+  },
+  {
+    "moduleKey": "crm", "packageName": "@brightweblabs/module-crm/ui", "symbol": "CrmDashboard", "kind": "component", "status": "starter", "runtime": "client", "summary": "Ready-to-mount CRM dashboard composition with default data and write orchestration.", "auth": "inherits the supplied client or default app route session", "inputs": [{ "name": "props", "type": "CrmDashboardProps", "required": false, "description": "Optional client, initial data, dictionary, columns, slots, stages, and page size." }], "outputs": [{ "type": "React element", "description": "Complete default CRM screen." }], "notes": ["Starter status is consistent across package-owned UI surfaces while their customization contract matures."], "source": "packages/module-crm/src/ui/dashboard.tsx"
+  },
+  {
     "moduleKey": "orgs",
     "packageName": "@brightweblabs/module-orgs/registration",
     "symbol": "orgsModuleRegistration",

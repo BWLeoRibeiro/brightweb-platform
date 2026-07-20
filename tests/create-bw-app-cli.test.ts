@@ -68,6 +68,10 @@ test("scaffold writes a valid app manifest", async (t) => {
   assert.equal(manifest.app.template, "platform");
   assert.equal(manifest.modules.crm.version, "0.4.1");
   assert.match(manifest.scaffoldFiles["app/playground/crm/page.tsx"].hash, /^sha256:/);
+  assert.match(manifest.scaffoldFiles["app/crm/page.tsx"].hash, /^sha256:/);
+  assert.match(manifest.scaffoldFiles["app/api/crm/timeline/route.ts"].hash, /^sha256:/);
+  const packageJson = await readJson(path.join(targetDir, "package.json"));
+  assert.equal(packageJson.dependencies["@brightweblabs/theme"], "^0.1.0");
 });
 
 test("bw add projects resolves orgs, writes overlays, migrations, and manifest state", async (t) => {

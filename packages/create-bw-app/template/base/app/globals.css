@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "@brightweblabs/theme/css";
 
 :root {
   color-scheme: light;

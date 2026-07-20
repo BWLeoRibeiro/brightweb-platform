@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "@brightweblabs/theme/css";
+@import "@brightweblabs/module-crm/tokens.css";
 
 .shell {
   min-height: 100vh;

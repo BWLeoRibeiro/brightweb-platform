@@ -7,7 +7,8 @@
   "files": [
     "src",
     "schemas",
-    "brightweb.module.json"
+    "brightweb.module.json",
+    "tokens.css"
   ],
   "license": "MIT",
   "repository": {
@@ -19,6 +20,8 @@
   },
   "exports": {
     ".": "./src/index.ts",
+    "./ui": "./src/ui/index.ts",
+    "./tokens.css": "./tokens.css",
     "./activity-messages": "./src/activity-messages.ts",
     "./registration": "./src/registration.ts",
     "./server": "./src/server.ts"
@@ -28,6 +31,7 @@
     "@brightweblabs/core-auth": "workspace:*",
     "@brightweblabs/infra": "workspace:*",
     "@brightweblabs/module-orgs": "workspace:*",
+    "@brightweblabs/theme": "workspace:*",
     "@brightweblabs/ui": "workspace:*",
     "@supabase/supabase-js": "^2.99.2",
     "lucide-react": "^1.8.0",

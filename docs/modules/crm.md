@@ -15,7 +15,7 @@ Use [Base Contract](./base-contract.md) for the support-tier rules and [base-con
 
 | Concern | Current behavior |
 | --- | --- |
-| CRM package | `@brightweblabs/module-crm` exports shell registration for CRM nav groups and toolbar routes. |
+| CRM package | `@brightweblabs/module-crm` exports server/data contracts; `@brightweblabs/module-crm/ui` exports the default CRM screen and its focused surfaces. |
 | Server helpers | The package exports reusable CRM read helpers, contact create/update/delete operations, SQL-backed single and bulk status transitions, plus the starter `getCrmDashboardData()` helper. |
 | Route handlers | The package exports package-owned GET handlers plus staff-only POST and PATCH handlers for the contacts endpoint. |
 | Shared dependencies | The package depends on `@brightweblabs/module-orgs` and also reads shared platform tables such as `profiles` and `user_role_assignments`. |
@@ -25,11 +25,11 @@ Use [Base Contract](./base-contract.md) for the support-tier rules and [base-con
 | Concern | Current behavior |
 | --- | --- |
 | Scaffold wiring | Selecting CRM adds the package dependency and enables CRM-related shell/config wiring in generated platform apps. |
-| Starter routes | The current module template contributes the `/playground/crm` starter surface plus `/api/crm/contacts` (GET, POST, PATCH), `/api/crm/organizations`, `/api/crm/stats`, and `/api/crm/owners`. |
+| Starter routes | The module template contributes a ready-to-use `/crm` route, keeps `/playground/crm` as an alias, and mounts `/api/crm/contacts` (GET, POST, PATCH), `/api/crm/organizations`, `/api/crm/stats`, `/api/crm/owners`, and `/api/crm/timeline`. |
 | Shell behavior | The module registration adds CRM navigation groups and toolbar route definitions. |
 | Dependency behavior | CRM resolves on top of `Core + Admin + Organizations`; orgs is enabled with hidden shell placement. |
 
-> The CRM module does **not** install a full ready-made CRM frontend on its own. It provides shared schema, policies, helper functions, and a light starter surface. Product-specific UI remains application-owned.
+> The CRM module now ships a focused default frontend. Product-specific UI can customize or replace it without copying package code.
 
 ## Supported base contract
 
@@ -59,8 +59,72 @@ The current CRM contract is intentionally small:
 ### Starter
 
 - `@brightweblabs/module-crm`: `getCrmDashboardData()`
+- `@brightweblabs/module-crm/ui`: `CrmDashboard` and its package-owned CRM surfaces, dictionary, stage metadata, and default client
 
-The starter helper is public because it helps a new app move quickly, but it is not the recommended long-term contract for app-owned CRM product logic. The stable CRM contract is now the smaller list/stats/owner helper set plus the package-owned GET handlers.
+The dashboard helper and default UI are marked `starter`: they are supported fast-start surfaces, but their composition may evolve before becoming stable. The smaller server helper and request-handler contracts remain stable.
+
+## Default UI
+
+A generated app with `--modules crm` can mount a complete screen with no app-owned CRM components:
+
+```tsx
+import { CrmDashboard } from "@brightweblabs/module-crm/ui";
+
+export default function CrmPage() {
+  return <CrmDashboard />;
+}
+```
+
+The scaffold imports `@brightweblabs/theme/css` globally and `@brightweblabs/module-crm/tokens.css` from the CRM route layout. The default `createCrmUiClient()` calls the scaffolded routes under `/api/crm`; pass a different base path or fetch implementation when needed.
+
+### The five customization points
+
+1. **Locale dictionary.** Every CRM-owned string comes from `CrmUiDictionary`. Start with the English dictionary and replace the values you need:
+
+   ```tsx
+   import { CrmDashboard, defaultCrmUiDictionary } from "@brightweblabs/module-crm/ui";
+
+   const dictionary = {
+     ...defaultCrmUiDictionary,
+     dashboard: { ...defaultCrmUiDictionary.dashboard, title: "Pipeline" },
+   };
+
+   <CrmDashboard dictionary={dictionary} />;
+   ```
+
+2. **Column config.** Reorder, hide, relabel, or render a built-in column through `CrmTableColumnConfig[]`:
+
+   ```tsx
+   <CrmDashboard columns={[
+     { key: "name", label: "Contact" },
+     { key: "status" },
+     { key: "email", hidden: true },
+     { key: "organization", render: (contact) => contact.organizations?.name ?? "—" },
+   ]} />
+   ```
+
+3. **Slots.** Add content above the table, beside the funnel stats, or on every row without forking the dashboard:
+
+   ```tsx
+   <CrmDashboard slots={{
+     aboveTable: <CampaignFilter />,
+     besideStats: <RevenueForecast />,
+     rowActions: (contact) => <ContactMenu contactId={contact.id} />,
+   }} />
+   ```
+
+4. **Status metadata.** Pass `CrmStageConfig[]` to control stage order, labels, and token names. The default is the canonical `lead`, `qualified`, `proposal`, `won`, and `lost` sequence.
+
+   ```tsx
+   <CrmDashboard stages={[
+     { value: "lead", label: "Inbox", token: "--crm-stage-lead" },
+     { value: "won", label: "Customer", token: "--crm-stage-won" },
+   ]} />
+   ```
+
+5. **Theming.** Change `--crm-stage-*` and `--crm-stage-*-strong` aliases in a theme file. Components expose no color props; the shipped aliases map only to BrightWeb `--semantic-*` tokens.
+
+The individual `CrmContactsTable`, `CrmFunnelStats`, `CrmContactDialog`, `CrmStatusDialog`, and `CrmTimeline` exports accept data and callbacks, so they can also be composed without `CrmDashboard` or rendered in tests without a network.
 
 ## How to use it in an app
 
@@ -172,12 +236,13 @@ import { crmModuleRegistration } from "@brightweblabs/module-crm/registration";
 
 Wire that registration into your app shell when you want CRM navigation groups and CRM toolbar route behavior.
 
-### Build your own UI on top
+### Build beyond the default UI
 
-The generated starter only proves that the package is connected. You are still expected to build application-owned CRM tables, forms, filters, create and update flows, and business-specific workflows on top of the returned data and installed schema.
+Use the package-owned screen until a product needs a materially different workflow. At that point, compose the individual surfaces or build app-owned UI on the stable data and write helpers while retaining the default route handlers.
 
 ## How To Build On This
 
+- Start with `CrmDashboard` for a working contact and funnel experience, then use its five customization points before forking UI.
 - Build on the stable CRM read and write helpers for contacts, stats, funnel transitions, and owner options; use `@brightweblabs/module-orgs` for organization data.
 - Build on the `stable` CRM shell registration when you want shared CRM navigation and toolbar wiring.
 - Use `getCrmDashboardData()` when you want the current scaffolded CRM page payload quickly.

@@ -74,3 +74,19 @@ test("the MQ theme contains only scoped custom-property overrides", async () => 
     }
   }
 });
+
+test("module token files only alias semantic theme tokens", async () => {
+  const packageEntries = await fs.readdir(path.join(repoRoot, "packages"), { withFileTypes: true });
+  for (const entry of packageEntries.filter((candidate) => candidate.isDirectory() && candidate.name.startsWith("module-"))) {
+    const packageRoot = path.join(repoRoot, "packages", entry.name);
+    const manifestPath = path.join(packageRoot, "brightweb.module.json");
+    const manifest = JSON.parse(await fs.readFile(manifestPath, "utf8")) as { tokens?: string };
+    if (!manifest.tokens) continue;
+    const css = stripComments(await fs.readFile(path.join(packageRoot, manifest.tokens), "utf8"));
+    const declarations = Array.from(css.matchAll(/(--[a-z0-9-]+)\s*:\s*([^;]+);/g));
+    assert.ok(declarations.length > 0, `${entry.name} token file must declare custom properties`);
+    for (const [, token, value] of declarations) {
+      assert.match(value.trim(), /^var\(--semantic-[a-z0-9-]+\)$/, `${entry.name} ${token} must alias one --semantic-* token`);
+    }
+  }
+});
