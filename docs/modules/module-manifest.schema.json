@@ -88,6 +88,10 @@
           "type": "array",
           "items": { "$ref": "#/$defs/nonEmptyString" }
         },
+        "integrationObjects": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/nonEmptyString" }
+        },
         "migrations": { "$ref": "#/$defs/path" }
       }
     },

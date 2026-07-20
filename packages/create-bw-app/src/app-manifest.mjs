@@ -32,10 +32,10 @@ export const MODULE_PACKAGES = {
 
 const FALLBACK_REQUIRES = {
   core: {},
-  admin: { core: ">=0.4" },
-  orgs: { core: ">=0.4", admin: ">=0.3" },
-  crm: { core: ">=0.4", admin: ">=0.3", orgs: ">=0.1" },
-  projects: { core: ">=0.4", admin: ">=0.3", orgs: ">=0.1" },
+  admin: { core: ">=0.3" },
+  orgs: { core: ">=0.3", admin: ">=0.3" },
+  crm: { core: ">=0.3", admin: ">=0.3", orgs: ">=0.1" },
+  projects: { core: ">=0.3", admin: ">=0.3", orgs: ">=0.1" },
 };
 
 export function cleanVersion(version) {
@@ -183,7 +183,12 @@ export async function findWorkspaceRoot(startDir) {
 }
 
 export async function loadModuleCatalog({ targetDir, workspaceRoot }) {
-  const catalog = { core: { key: "core", requires: {}, version: moduleVersion("core"), packageName: "@brightweblabs/core-auth" } };
+  const release = workspaceRoot
+    ? await readJsonIfPresent(path.join(workspaceRoot, "brightweb-release.json"))
+    : null;
+  const coreVersion = cleanVersion(release?.packages?.["@brightweblabs/core-auth"])
+    || moduleVersion("core");
+  const catalog = { core: { key: "core", requires: {}, version: coreVersion, packageName: "@brightweblabs/core-auth" } };
   for (const [moduleKey, packageName] of Object.entries(MODULE_PACKAGES)) {
     const folderName = packageName.replace("@brightweblabs/", "");
     const candidates = [

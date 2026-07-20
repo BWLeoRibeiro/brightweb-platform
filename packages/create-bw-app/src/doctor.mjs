@@ -41,7 +41,7 @@ export async function doctorBrightwebApp(argvOptions = {}, runtimeOptions = {}) 
 
   const workspaceRoot = runtimeOptions.workspaceRoot || argvOptions.workspaceRoot || await findWorkspaceRoot(targetDir);
   const catalog = await loadModuleCatalog({ targetDir, workspaceRoot });
-  const available = { core: "0.4.0", admin: catalog.admin.version, ...Object.fromEntries(Object.entries(appManifest.modules || {}).map(([key, entry]) => [key, entry.version])) };
+  const available = { core: catalog.core.version, admin: catalog.admin.version, ...Object.fromEntries(Object.entries(appManifest.modules || {}).map(([key, entry]) => [key, entry.version])) };
   const topologyProblems = [];
   for (const key of Object.keys(appManifest.modules || {})) {
     for (const [requiredKey, range] of Object.entries(catalog[key]?.requires || {})) {

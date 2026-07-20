@@ -60,8 +60,8 @@ Pre-manifest apps are not changed automatically. Use the fallback below until th
 
 ## Dependency notes
 
-- CRM builds on the `Core + Admin` platform baseline.
-- Projects build on the CRM-backed database baseline even if you do not expose the CRM starter route in your app.
+- CRM builds on the `Core + Admin + Organizations` platform baseline.
+- Projects build on the `Core + Admin + Organizations` platform baseline.
 - Admin starter UI is optional, but the platform database baseline already includes the Admin layer.
 
 <Callout title="Workspace mode note">

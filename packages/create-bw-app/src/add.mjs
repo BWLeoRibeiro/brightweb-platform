@@ -25,7 +25,7 @@ export async function addBrightwebModule(moduleKey, argvOptions = {}, runtimeOpt
   if (!catalog[moduleKey] || moduleKey === "core") throw new Error(`Unknown installable module key: ${moduleKey}`);
 
   const resolved = resolveModuleClosure(catalog, [moduleKey]);
-  const installedVersions = { core: "0.4.0", admin: catalog.admin.version };
+  const installedVersions = { core: catalog.core.version, admin: catalog.admin.version };
   for (const [key, entry] of Object.entries(appManifest.modules)) installedVersions[key] = entry.version;
   const conflicts = [];
   for (const key of resolved) {

@@ -4,7 +4,7 @@ import path from "node:path";
 const repoRoot = path.resolve(new URL("..", import.meta.url).pathname);
 const manifestPath = path.join(repoRoot, "docs", "modules", "base-contract.json");
 const splitManifestIndexPath = path.join(repoRoot, "docs", "modules", "base-contract", "index.json");
-const allowedKinds = new Set(["component", "helper", "handler", "registration", "hook", "shared-helper"]);
+const allowedKinds = new Set(["component", "helper", "handler", "registration", "hook", "shared-helper", "type"]);
 const allowedStatuses = new Set(["stable", "starter", "deprecated", "internal"]);
 const allowedRuntimes = new Set(["server", "client", "shared", "shell"]);
 
@@ -326,7 +326,7 @@ async function collectRuntimeExports(filePath, cache) {
       .split(",")
       .map((value) => value.trim())
       .filter(Boolean)
-      .filter((value) => !value.startsWith("type "));
+      .map((value) => value.replace(/^type\s+/, ""));
 
     for (const name of names) {
       const aliasMatch = name.match(/^([A-Za-z_$][\w$]*)\s+as\s+([A-Za-z_$][\w$]*)$/);

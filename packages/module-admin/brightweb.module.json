@@ -4,7 +4,7 @@
   "title": "Administration",
   "description": "RBAC, user governance, and privileged role-management behavior.",
   "requires": {
-    "core": ">=0.4"
+    "core": ">=0.3"
   },
   "capabilities": {
     "provides": [
@@ -49,8 +49,14 @@
       "roles",
       "user_role_assignments",
       "role_change_audit",
-      "admin_user_invitations",
-      "admin_set_user_role"
+      "current_global_role",
+      "has_role",
+      "is_staff",
+      "is_admin",
+      "admin_set_user_role",
+      "guard_privileged_profile_fields",
+      "ensure_profile_role_assignment",
+      "trg_ensure_profile_role_assignment"
     ]
   }
 }

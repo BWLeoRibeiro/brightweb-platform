@@ -134,7 +134,8 @@ export async function getDbModuleRegistry(workspaceRoot) {
   return DEFAULT_DB_MODULE_REGISTRY;
 }
 
-function resolveModuleOrder(registry, enabledModules) {
+// Duplicated by design: scripts/_db-modules.mjs — keep in sync.
+export function resolveModuleOrder(registry, enabledModules) {
   const resolved = [];
   const visited = new Set();
   const visiting = new Set();
@@ -653,6 +654,7 @@ export function createAppContextFile({
           "config/client.ts",
           "config/bootstrap.ts",
           "config/shell.ts",
+          "config/shell.overrides.ts",
           ".env.local",
         ],
         appRoutesRoot: "app",

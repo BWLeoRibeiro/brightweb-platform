@@ -163,9 +163,10 @@ function validatePermissions(value, location, errors) {
 }
 
 function validateDatabase(value, location, errors) {
-  if (!validateObject(value, location, ["namespace", "ownedObjects", "migrations"], ["namespace", "ownedObjects"], errors)) return;
+  if (!validateObject(value, location, ["namespace", "ownedObjects", "integrationObjects", "migrations"], ["namespace", "ownedObjects"], errors)) return;
   validateStringArray(value.namespace, `${location}.namespace`, errors);
   validateStringArray(value.ownedObjects, `${location}.ownedObjects`, errors);
+  if (value.integrationObjects !== undefined) validateStringArray(value.integrationObjects, `${location}.integrationObjects`, errors);
   if (value.migrations !== undefined) validateNonEmptyString(value.migrations, `${location}.migrations`, errors);
 }
 
@@ -286,14 +287,21 @@ async function validateCapabilityExports(entries, errors) {
 
 function validateDatabaseOwnership(entries, errors) {
   const ownedObjects = new Map();
+  const integrationObjects = new Map();
   const namespaces = new Map();
   for (const entry of entries) {
     const moduleOwnedObjects = Array.isArray(entry.manifest.database?.ownedObjects) ? entry.manifest.database.ownedObjects : [];
+    const moduleIntegrationObjects = Array.isArray(entry.manifest.database?.integrationObjects) ? entry.manifest.database.integrationObjects : [];
     const moduleNamespaces = Array.isArray(entry.manifest.database?.namespace) ? entry.manifest.database.namespace : [];
     for (const objectName of moduleOwnedObjects) {
       const owner = ownedObjects.get(objectName);
       if (owner && owner !== entry.manifest.key) errors.push(`Database object "${objectName}" is owned by both "${owner}" and "${entry.manifest.key}".`);
       ownedObjects.set(objectName, entry.manifest.key);
+    }
+    for (const objectName of moduleIntegrationObjects) {
+      const author = integrationObjects.get(objectName);
+      if (author && author !== entry.manifest.key) errors.push(`Database integration object "${objectName}" is authored by both "${author}" and "${entry.manifest.key}".`);
+      integrationObjects.set(objectName, entry.manifest.key);
     }
     for (const namespace of moduleNamespaces) {
       const owner = namespaces.get(namespace);

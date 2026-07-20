@@ -214,6 +214,3 @@ FROM public.organizations o
 WHERE o.primary_contact_id IS NOT NULL
 ON CONFLICT (organization_id, profile_id)
 DO UPDATE SET role = 'admin';
-
-CREATE INDEX IF NOT EXISTS idx_organizations_created_at_desc
-  ON public.organizations (created_at DESC);

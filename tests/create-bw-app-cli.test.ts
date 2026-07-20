@@ -5,12 +5,13 @@ import path from "node:path";
 import test from "node:test";
 import { addBrightwebModule } from "../packages/create-bw-app/src/add.mjs";
 import { adoptBrightwebApp } from "../packages/create-bw-app/src/adopt.mjs";
-import { validateAppManifest } from "../packages/create-bw-app/src/app-manifest.mjs";
+import { loadModuleCatalog, validateAppManifest } from "../packages/create-bw-app/src/app-manifest.mjs";
 import { diffBrightwebScaffold } from "../packages/create-bw-app/src/diff.mjs";
 import { doctorBrightwebApp } from "../packages/create-bw-app/src/doctor.mjs";
-import { createBrightwebClientApp } from "../packages/create-bw-app/src/generator.mjs";
+import { createBrightwebClientApp, resolveModuleOrder as resolveGeneratorModuleOrder } from "../packages/create-bw-app/src/generator.mjs";
 import { removeBrightwebModule } from "../packages/create-bw-app/src/remove.mjs";
 import { upgradeBrightwebApp } from "../packages/create-bw-app/src/upgrade.mjs";
+import { resolveModuleOrder as resolveScriptModuleOrder } from "../scripts/_db-modules.mjs";
 
 const REPO_ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), "..");
 
@@ -68,10 +69,38 @@ test("scaffold writes a valid app manifest", async (t) => {
   assert.equal(manifest.app.template, "platform");
   assert.equal(manifest.modules.crm.version, "0.4.1");
   assert.match(manifest.scaffoldFiles["app/playground/crm/page.tsx"].hash, /^sha256:/);
+  assert.match(manifest.scaffoldFiles["app/playground/crm/layout.tsx"].hash, /^sha256:/);
   assert.match(manifest.scaffoldFiles["app/crm/page.tsx"].hash, /^sha256:/);
   assert.match(manifest.scaffoldFiles["app/api/crm/timeline/route.ts"].hash, /^sha256:/);
   const packageJson = await readJson(path.join(targetDir, "package.json"));
   assert.equal(packageJson.dependencies["@brightweblabs/theme"], "^0.1.0");
+});
+
+test("database module order implementations stay in sync for the current registry", async () => {
+  const registry = await readJson(path.join(REPO_ROOT, "supabase", "module-registry.json"));
+  const selections = [
+    ["core"],
+    ["admin"],
+    ["orgs"],
+    ["crm"],
+    ["projects"],
+    ["crm", "projects"],
+    ["projects", "crm"],
+  ];
+
+  for (const selection of selections) {
+    assert.deepEqual(
+      resolveGeneratorModuleOrder(registry, selection),
+      resolveScriptModuleOrder(registry, selection),
+      `module order drifted for ${selection.join(",")}`,
+    );
+  }
+});
+
+test("module catalog resolves core from the workspace compatibility set", async () => {
+  const release = await readJson(path.join(REPO_ROOT, "brightweb-release.json"));
+  const catalog = await loadModuleCatalog({ targetDir: REPO_ROOT, workspaceRoot: REPO_ROOT });
+  assert.equal(catalog.core.version, release.packages["@brightweblabs/core-auth"]);
 });
 
 test("bw add projects resolves orgs, writes overlays, migrations, and manifest state", async (t) => {

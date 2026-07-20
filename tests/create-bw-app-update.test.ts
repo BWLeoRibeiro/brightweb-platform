@@ -323,6 +323,7 @@ test("scaffolds platform AI handoff files with platform-specific context", async
   assert.equal(context.template, "platform");
   assert.deepEqual(context.modules.enabled, ["crm", "projects"]);
   assert.equal(context.paths.componentsRoot, "components");
+  assert.ok(context.paths.readFirst.includes("config/shell.overrides.ts"));
   assert.deepEqual(context.starterRoutes, [
     "/",
     "/bootstrap",
@@ -333,6 +334,10 @@ test("scaffolds platform AI handoff files with platform-specific context", async
   ]);
   assert.match(examples, /First local setup/);
   assert.match(agents, /docs\/ai\/app-context\.json/);
+  assert.match(
+    await fs.readFile(path.join(targetDir, "app", "playground", "crm", "layout.tsx"), "utf8"),
+    /@brightweblabs\/module-crm\/tokens\.css/,
+  );
 });
 
 test("scaffolds platform starter components into a local components folder", async (t) => {

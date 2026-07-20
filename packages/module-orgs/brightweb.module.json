@@ -4,7 +4,7 @@
   "title": "Organizations",
   "description": "Organizations, membership, invitations, and shared organization access helpers.",
   "requires": {
-    "core": ">=0.4",
+    "core": ">=0.3",
     "admin": ">=0.3"
   },
   "capabilities": {
@@ -37,7 +37,11 @@
       "organization_members",
       "organization_invitations",
       "is_org_admin",
-      "is_org_member"
+      "is_org_member",
+      "touch_organization_invitations_updated_at",
+      "trg_touch_organization_invitations_updated_at",
+      "normalize_organization_invitation_email",
+      "trg_normalize_organization_invitation_email"
     ]
   }
 }

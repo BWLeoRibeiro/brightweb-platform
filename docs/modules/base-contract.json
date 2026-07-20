@@ -479,6 +479,18 @@
     "source": "packages/app-shell/src/config.ts"
   },
   {
+    "moduleKey": "platform-base", "packageName": "@brightweblabs/ui", "symbol": "ActivityMessage", "kind": "component", "status": "stable", "runtime": "shared", "summary": "Renders composed activity text with semantic emphasis for actor, entity, and value segments.", "auth": "none", "inputs": [{ "name": "segs", "type": "MsgSeg[]", "required": true, "description": "Ordered plain-text and emphasized activity-message segments." }], "outputs": [{ "type": "React element", "description": "Formatted activity message fragment." }], "notes": ["Use with the shared activity-format helpers."], "source": "packages/ui/src/components/activity-message.tsx"
+  },
+  {
+    "moduleKey": "platform-base", "packageName": "@brightweblabs/ui", "symbol": "formatActivityValue", "kind": "helper", "status": "stable", "runtime": "shared", "summary": "Formats stored activity values into concise, locale-aware display text.", "auth": "none", "inputs": [{ "name": "value", "type": "unknown", "required": true, "description": "Stored activity value to format." }, { "name": "options", "type": "ActivityValueOptions", "required": false, "description": "Locale and boolean-label overrides." }], "outputs": [{ "type": "string | null", "description": "Readable value or null when the value should not be displayed." }], "notes": ["Raw identifiers and unsupported structured values are intentionally hidden."], "source": "packages/ui/src/lib/activity-format.ts"
+  },
+  {
+    "moduleKey": "platform-base", "packageName": "@brightweblabs/ui", "symbol": "toActivityChanges", "kind": "helper", "status": "stable", "runtime": "shared", "summary": "Converts an activity payload changes map into display-ready field changes.", "auth": "none", "inputs": [{ "name": "payload", "type": "Record<string, unknown> | undefined", "required": false, "description": "Activity payload containing an optional changes map." }, { "name": "options", "type": "ActivityChangesOptions", "required": false, "description": "Field labels, person fields, locale, and fallback labels." }], "outputs": [{ "type": "ActivityChange[]", "description": "Ordered display-ready activity changes." }], "notes": ["Human-readable labels remain caller supplied."], "source": "packages/ui/src/lib/activity-format.ts"
+  },
+  {
+    "moduleKey": "platform-base", "packageName": "@brightweblabs/ui", "symbol": "MsgSeg", "kind": "type", "status": "stable", "runtime": "shared", "summary": "Type contract for plain and emphasized activity-message segments.", "auth": "none", "inputs": [], "outputs": [{ "type": "string | { b: string } | { v: string }", "description": "A single activity-message segment." }], "notes": ["Consumed by ActivityMessage and package activity formatters."], "source": "packages/ui/src/lib/activity-format.ts"
+  },
+  {
     "moduleKey": "platform-base", "packageName": "@brightweblabs/ui", "symbol": "Avatar", "kind": "component", "status": "stable", "runtime": "client", "summary": "Tokenized avatar root with small, default, and large sizes.", "auth": "none", "inputs": [], "outputs": [{ "type": "React element", "description": "Avatar root surface." }], "notes": ["Compose with the exported avatar image, fallback, badge, and group helpers."], "source": "packages/ui/src/components/avatar.tsx"
   },
   {

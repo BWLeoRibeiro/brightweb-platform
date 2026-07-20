@@ -40,7 +40,7 @@ BrightWeb does not require a private workspace checkout for the public scaffold 
 
 - `crm`, `projects`, and `admin` control starter package wiring, generated runtime config, and optional starter routes.
 - The platform database baseline always includes `Core + Admin`. Selecting `admin` controls whether the Admin starter UI and package wiring are scaffolded.
-- Projects build on the CRM-backed database baseline even if you do not expose a CRM starter route in your app.
+- Projects build on the Core + Admin + Organizations database baseline without requiring CRM.
 
 ## Recommended first path
 

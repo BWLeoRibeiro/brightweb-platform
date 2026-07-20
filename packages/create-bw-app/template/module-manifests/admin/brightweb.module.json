@@ -1,6 +1,6 @@
 {
   "contractVersion": 1,
   "key": "admin",
-  "requires": { "core": ">=0.4" },
+  "requires": { "core": ">=0.3" },
   "env": []
 }

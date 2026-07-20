@@ -4,7 +4,7 @@
   "title": "CRM",
   "description": "CRM contacts, status tracking, and funnel reporting built on organizations.",
   "requires": {
-    "core": ">=0.4",
+    "core": ">=0.3",
     "admin": ">=0.3",
     "orgs": ">=0.1"
   },
@@ -73,7 +73,13 @@
     "ownedObjects": [
       "crm_contacts",
       "crm_status_log",
+      "set_crm_contacts_updated_at",
       "set_crm_status"
+    ],
+    "integrationObjects": [
+      "sync_org_primary_contact_admin_membership",
+      "trg_sync_org_primary_contact_admin_membership",
+      "organization_invitations_accepted_contact_id_fkey"
     ]
   }
 }
