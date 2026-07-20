@@ -1353,6 +1353,142 @@
   },
   {
     "moduleKey": "crm",
+    "packageName": "@brightweblabs/module-crm/server",
+    "symbol": "createCrmContact",
+    "kind": "helper",
+    "status": "stable",
+    "runtime": "server",
+    "summary": "Validates and creates a CRM contact.",
+    "auth": "staff-authenticated Supabase client required; database policy enforces access",
+    "inputs": [
+      { "name": "supabase", "type": "SupabaseClient", "required": true, "description": "Authenticated server Supabase client." },
+      { "name": "input", "type": "CreateCrmContactInput", "required": true, "description": "Contact identity, status, source, organization, and owner fields." },
+      { "name": "options", "type": "CrmWriteOptions", "required": false, "description": "Optional activity actor context." }
+    ],
+    "outputs": [
+      { "type": "Promise<CrmContact>", "description": "The created CRM contact." }
+    ],
+    "notes": ["Normalizes email and validates email, phone, status, and required identity fields."],
+    "source": "packages/module-crm/src/server.ts"
+  },
+  {
+    "moduleKey": "crm",
+    "packageName": "@brightweblabs/module-crm/server",
+    "symbol": "updateCrmContact",
+    "kind": "helper",
+    "status": "stable",
+    "runtime": "server",
+    "summary": "Validates and updates mutable CRM contact fields.",
+    "auth": "staff-authenticated Supabase client required; database policy enforces access",
+    "inputs": [
+      { "name": "supabase", "type": "SupabaseClient", "required": true, "description": "Authenticated server Supabase client." },
+      { "name": "contactId", "type": "string", "required": true, "description": "CRM contact ID." },
+      { "name": "patch", "type": "UpdateCrmContactInput", "required": true, "description": "Mutable CRM contact fields." }
+    ],
+    "outputs": [
+      { "type": "Promise<CrmContact>", "description": "The updated CRM contact." }
+    ],
+    "notes": ["Status changes use setCrmContactStatus so SQL history remains complete."],
+    "source": "packages/module-crm/src/server.ts"
+  },
+  {
+    "moduleKey": "crm",
+    "packageName": "@brightweblabs/module-crm/server",
+    "symbol": "setCrmContactStatus",
+    "kind": "helper",
+    "status": "stable",
+    "runtime": "server",
+    "summary": "Changes one CRM contact status through the set_crm_status SQL function.",
+    "auth": "staff-authenticated Supabase client required; database function enforces access",
+    "inputs": [
+      { "name": "supabase", "type": "SupabaseClient", "required": true, "description": "Authenticated server Supabase client." },
+      { "name": "contactId", "type": "string", "required": true, "description": "CRM contact ID." },
+      { "name": "status", "type": "CrmContactStatus", "required": true, "description": "Target funnel status." },
+      { "name": "reason", "type": "string | null", "required": false, "description": "Optional status-change reason." }
+    ],
+    "outputs": [
+      { "type": "Promise<CrmContact>", "description": "The contact after the status transition." }
+    ],
+    "notes": ["The set_crm_status RPC owns crm_status_log writes and unchanged-status no-op behavior."],
+    "source": "packages/module-crm/src/server.ts"
+  },
+  {
+    "moduleKey": "crm",
+    "packageName": "@brightweblabs/module-crm/server",
+    "symbol": "bulkSetCrmContactStatus",
+    "kind": "helper",
+    "status": "stable",
+    "runtime": "server",
+    "summary": "Changes the status of multiple distinct CRM contacts.",
+    "auth": "staff-authenticated Supabase client required; database function enforces access",
+    "inputs": [
+      { "name": "supabase", "type": "SupabaseClient", "required": true, "description": "Authenticated server Supabase client." },
+      { "name": "contactIds", "type": "string[]", "required": true, "description": "CRM contact IDs to update." },
+      { "name": "status", "type": "CrmContactStatus", "required": true, "description": "Target funnel status." }
+    ],
+    "outputs": [
+      { "type": "Promise<CrmContact[]>", "description": "Contacts after their status transitions." }
+    ],
+    "notes": ["Deduplicates IDs and invokes set_crm_status once per contact."],
+    "source": "packages/module-crm/src/server.ts"
+  },
+  {
+    "moduleKey": "crm",
+    "packageName": "@brightweblabs/module-crm/server",
+    "symbol": "deleteCrmContact",
+    "kind": "helper",
+    "status": "stable",
+    "runtime": "server",
+    "summary": "Deletes one CRM contact and records generic CRM activity.",
+    "auth": "staff-authenticated Supabase client required; database policy enforces access",
+    "inputs": [
+      { "name": "supabase", "type": "SupabaseClient", "required": true, "description": "Authenticated server Supabase client." },
+      { "name": "contactId", "type": "string", "required": true, "description": "CRM contact ID." }
+    ],
+    "outputs": [
+      { "type": "Promise<{ deletedId: string }>", "description": "The deleted contact ID." }
+    ],
+    "notes": ["Mirrors the delete operation supported by the reference CRM application."],
+    "source": "packages/module-crm/src/server.ts"
+  },
+  {
+    "moduleKey": "crm",
+    "packageName": "@brightweblabs/module-crm",
+    "symbol": "handleCrmContactsPostRequest",
+    "kind": "handler",
+    "status": "stable",
+    "runtime": "server",
+    "summary": "Package-owned POST handler for CRM contact creation.",
+    "auth": "staff or admin role required",
+    "inputs": [
+      { "name": "request", "type": "Request", "required": true, "description": "JSON request containing CRM contact creation fields." }
+    ],
+    "outputs": [
+      { "type": "Response", "description": "201 JSON response with the created contact or an error envelope." }
+    ],
+    "notes": ["Rejects malformed JSON and non-staff callers before performing writes."],
+    "source": "packages/module-crm/src/handlers.ts"
+  },
+  {
+    "moduleKey": "crm",
+    "packageName": "@brightweblabs/module-crm",
+    "symbol": "handleCrmContactsPatchRequest",
+    "kind": "handler",
+    "status": "stable",
+    "runtime": "server",
+    "summary": "Package-owned PATCH handler for CRM contact and funnel updates.",
+    "auth": "staff or admin role required",
+    "inputs": [
+      { "name": "request", "type": "Request", "required": true, "description": "JSON request containing a contact ID or contact IDs and fields to update." }
+    ],
+    "outputs": [
+      { "type": "Response", "description": "JSON response with one updated contact or the updated contact IDs." }
+    ],
+    "notes": ["Supports single-contact field updates and single or bulk status transitions."],
+    "source": "packages/module-crm/src/handlers.ts"
+  },
+  {
+    "moduleKey": "crm",
     "packageName": "@brightweblabs/module-crm",
     "symbol": "getCrmDashboardData",
     "kind": "helper",

@@ -1,6 +1,8 @@
 import { requireServerUserAccess } from "@brightweblabs/core-auth/server";
 import {
   createCrmContactsGetHandler,
+  createCrmContactsPatchHandler,
+  createCrmContactsPostHandler,
   createCrmOrganizationsGetHandler,
   createCrmOwnersGetHandler,
   createCrmStatsGetHandler,
@@ -11,35 +13,31 @@ import {
   listCrmOrganizations,
   listCrmOwnerOptions,
 } from "./data";
+import {
+  bulkSetCrmContactStatus,
+  createCrmContact,
+  updateCrmContact,
+} from "./server";
 
-export const handleCrmContactsGetRequest = createCrmContactsGetHandler({
+const crmDependencies = {
   getAccess: requireServerUserAccess,
   listContacts: listCrmContacts,
   listOrganizations: listCrmOrganizations,
   getStats: getCrmContactStatusStats,
   listOwners: listCrmOwnerOptions,
-});
+  createContact: createCrmContact,
+  updateContact: updateCrmContact,
+  setContactStatus: bulkSetCrmContactStatus,
+};
 
-export const handleCrmOrganizationsGetRequest = createCrmOrganizationsGetHandler({
-  getAccess: requireServerUserAccess,
-  listContacts: listCrmContacts,
-  listOrganizations: listCrmOrganizations,
-  getStats: getCrmContactStatusStats,
-  listOwners: listCrmOwnerOptions,
-});
+export const handleCrmContactsGetRequest = createCrmContactsGetHandler(crmDependencies);
 
-export const handleCrmStatsGetRequest = createCrmStatsGetHandler({
-  getAccess: requireServerUserAccess,
-  listContacts: listCrmContacts,
-  listOrganizations: listCrmOrganizations,
-  getStats: getCrmContactStatusStats,
-  listOwners: listCrmOwnerOptions,
-});
+export const handleCrmContactsPostRequest = createCrmContactsPostHandler(crmDependencies);
 
-export const handleCrmOwnersGetRequest = createCrmOwnersGetHandler({
-  getAccess: requireServerUserAccess,
-  listContacts: listCrmContacts,
-  listOrganizations: listCrmOrganizations,
-  getStats: getCrmContactStatusStats,
-  listOwners: listCrmOwnerOptions,
-});
+export const handleCrmContactsPatchRequest = createCrmContactsPatchHandler(crmDependencies);
+
+export const handleCrmOrganizationsGetRequest = createCrmOrganizationsGetHandler(crmDependencies);
+
+export const handleCrmStatsGetRequest = createCrmStatsGetHandler(crmDependencies);
+
+export const handleCrmOwnersGetRequest = createCrmOwnersGetHandler(crmDependencies);

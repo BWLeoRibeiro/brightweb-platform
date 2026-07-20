@@ -40,6 +40,13 @@ export type CrmActivityDictionary = {
   };
   statusLabels: Record<string, string>;
   fieldLabels: Record<string, string>;
+  summaries?: {
+    loadFailed: string;
+    contactCreated: string;
+    contactUpdated: string;
+    contactStatusChanged: string;
+    contactDeleted: string;
+  };
 };
 
 export const ptCrmActivityDictionary: CrmActivityDictionary = {
@@ -78,6 +85,13 @@ export const ptCrmActivityDictionary: CrmActivityDictionary = {
     organization_id: "Organização",
     owner_id: "Responsável",
     status: "Estado",
+  },
+  summaries: {
+    loadFailed: "Não foi possível carregar dados CRM.",
+    contactCreated: "Contacto CRM criado.",
+    contactUpdated: "Contacto CRM atualizado.",
+    contactStatusChanged: "Estado de contacto CRM alterado.",
+    contactDeleted: "Contacto CRM eliminado.",
   },
 };
 

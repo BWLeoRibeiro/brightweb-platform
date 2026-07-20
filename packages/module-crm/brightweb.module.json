@@ -17,6 +17,14 @@
       {
         "name": "crm.funnel.read",
         "since": "0.4.1"
+      },
+      {
+        "name": "crm.contacts.write",
+        "since": "0.5.0"
+      },
+      {
+        "name": "crm.funnel.write",
+        "since": "0.5.0"
       }
     ],
     "consumes": []
@@ -29,10 +37,24 @@
     "crm.funnel.read": {
       "specifier": ".",
       "symbol": "getCrmContactStatusStats"
+    },
+    "crm.contacts.write": {
+      "specifier": "./server",
+      "symbol": "createCrmContact"
+    },
+    "crm.funnel.write": {
+      "specifier": "./server",
+      "symbol": "setCrmContactStatus"
     }
   },
   "events": {
-    "emits": [],
+    "emits": [
+      {
+        "name": "crm.contact.status_changed",
+        "since": "0.5.0",
+        "payloadSchema": "./schemas/events/contact-status-changed.v1.json"
+      }
+    ],
     "consumes": []
   },
   "permissions": {

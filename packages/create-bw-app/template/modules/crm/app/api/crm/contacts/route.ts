@@ -6,3 +6,13 @@ export const GET = createModuleRouteHandler(
   () => import("@brightweblabs/module-crm"),
   "handleCrmContactsGetRequest",
 );
+
+export const POST = createModuleRouteHandler(
+  () => import("@brightweblabs/module-crm"),
+  "handleCrmContactsPostRequest",
+);
+
+export const PATCH = createModuleRouteHandler(
+  () => import("@brightweblabs/module-crm"),
+  "handleCrmContactsPatchRequest",
+);

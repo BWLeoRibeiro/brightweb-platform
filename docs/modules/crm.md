@@ -16,8 +16,8 @@ Use [Base Contract](./base-contract.md) for the support-tier rules and [base-con
 | Concern | Current behavior |
 | --- | --- |
 | CRM package | `@brightweblabs/module-crm` exports shell registration for CRM nav groups and toolbar routes. |
-| Server helpers | The package exports reusable CRM list and stats helpers plus the starter `getCrmDashboardData()` helper. |
-| Route handlers | The package exports package-owned GET handlers for CRM contacts, organizations, stats, and owner options. |
+| Server helpers | The package exports reusable CRM read helpers, contact create/update/delete operations, SQL-backed single and bulk status transitions, plus the starter `getCrmDashboardData()` helper. |
+| Route handlers | The package exports package-owned GET handlers plus staff-only POST and PATCH handlers for the contacts endpoint. |
 | Shared dependencies | The package depends on `@brightweblabs/module-orgs` and also reads shared platform tables such as `profiles` and `user_role_assignments`. |
 
 ## Whether it adds starter routes and wiring
@@ -25,7 +25,7 @@ Use [Base Contract](./base-contract.md) for the support-tier rules and [base-con
 | Concern | Current behavior |
 | --- | --- |
 | Scaffold wiring | Selecting CRM adds the package dependency and enables CRM-related shell/config wiring in generated platform apps. |
-| Starter routes | The current module template contributes the `/playground/crm` starter surface plus `/api/crm/contacts`, `/api/crm/organizations`, `/api/crm/stats`, and `/api/crm/owners`. |
+| Starter routes | The current module template contributes the `/playground/crm` starter surface plus `/api/crm/contacts` (GET, POST, PATCH), `/api/crm/organizations`, `/api/crm/stats`, and `/api/crm/owners`. |
 | Shell behavior | The module registration adds CRM navigation groups and toolbar route definitions. |
 | Dependency behavior | CRM resolves on top of `Core + Admin + Organizations`; orgs is enabled with hidden shell placement. |
 
@@ -48,6 +48,13 @@ The current CRM contract is intentionally small:
 - `@brightweblabs/module-crm`: `handleCrmOrganizationsGetRequest()`
 - `@brightweblabs/module-crm`: `handleCrmStatsGetRequest()`
 - `@brightweblabs/module-crm`: `handleCrmOwnersGetRequest()`
+- `@brightweblabs/module-crm/server`: `createCrmContact()`
+- `@brightweblabs/module-crm/server`: `updateCrmContact()`
+- `@brightweblabs/module-crm/server`: `setCrmContactStatus()`
+- `@brightweblabs/module-crm/server`: `bulkSetCrmContactStatus()`
+- `@brightweblabs/module-crm/server`: `deleteCrmContact()`
+- `@brightweblabs/module-crm`: `handleCrmContactsPostRequest()`
+- `@brightweblabs/module-crm`: `handleCrmContactsPatchRequest()`
 
 ### Starter
 
@@ -100,7 +107,36 @@ Keep authentication at the page or route boundary, then pass the authenticated s
 
 `getCrmDashboardData()` remains backward-compatible and now composes these helpers internally. Treat it as starter page glue for generated apps, not as the only supported CRM loading shape.
 
-### Mount the CRM GET handlers
+### Write contacts and funnel status
+
+Import write operations from the server-only subpath and pass the authenticated Supabase client obtained at the route or page boundary:
+
+```ts
+import {
+  bulkSetCrmContactStatus,
+  createCrmContact,
+  setCrmContactStatus,
+  updateCrmContact,
+} from "@brightweblabs/module-crm/server";
+
+const contact = await createCrmContact(supabase, {
+  firstName: "Ada",
+  lastName: "Lovelace",
+  email: "ada@example.com",
+  organizationId: organizationId,
+  ownerId: profileId,
+});
+
+await updateCrmContact(supabase, contact.id, { phone: "+351910000000" });
+await setCrmContactStatus(supabase, contact.id, "qualified", "Discovery completed");
+await bulkSetCrmContactStatus(supabase, selectedIds, "proposal");
+```
+
+`setCrmContactStatus()` and `bulkSetCrmContactStatus()` always call the `set_crm_status` database function. That function owns the contact update and `crm_status_log` insert, including unchanged-status no-op behavior. `deleteCrmContact()` is also available because deletion is part of the reference CRM write path.
+
+The module manifest declares the `crm.contact.status_changed` payload contract at `schemas/events/contact-status-changed.v1.json`. Version 0.5 guarantees SQL status-history writes and the contract only; runtime event dispatch is intentionally deferred.
+
+### Mount the CRM request handlers
 
 ```ts
 export const dynamic = "force-dynamic";
@@ -109,9 +145,19 @@ export async function GET(request: Request) {
   const { handleCrmContactsGetRequest } = await import("@brightweblabs/module-crm");
   return handleCrmContactsGetRequest(request);
 }
+
+export async function POST(request: Request) {
+  const { handleCrmContactsPostRequest } = await import("@brightweblabs/module-crm");
+  return handleCrmContactsPostRequest(request);
+}
+
+export async function PATCH(request: Request) {
+  const { handleCrmContactsPatchRequest } = await import("@brightweblabs/module-crm");
+  return handleCrmContactsPatchRequest(request);
+}
 ```
 
-The current starter mounts:
+The current starter mounts the contacts write handlers and the read endpoints:
 
 - `/api/crm/contacts`
 - `/api/crm/organizations`
@@ -132,7 +178,7 @@ The generated starter only proves that the package is connected. You are still e
 
 ## How To Build On This
 
-- Build on the stable CRM helpers for contacts, stats, and owner options; use `@brightweblabs/module-orgs` for organization data.
+- Build on the stable CRM read and write helpers for contacts, stats, funnel transitions, and owner options; use `@brightweblabs/module-orgs` for organization data.
 - Build on the `stable` CRM shell registration when you want shared CRM navigation and toolbar wiring.
 - Use `getCrmDashboardData()` when you want the current scaffolded CRM page payload quickly.
 - Replace or wrap the starter helper once the client app needs different CRM slices, workflows, or page composition.
@@ -155,6 +201,7 @@ For a broader integration overview, see [Using BrightWeb Modules](./using-module
 - `packages/module-crm/src/index.ts`
 - `packages/module-crm/src/data.ts`
 - `packages/module-crm/src/handlers.ts`
+- `packages/module-crm/src/server.ts`
 - `packages/module-crm/src/registration.ts`
 - `packages/create-bw-app/template/modules/crm`
 - `supabase/module-registry.json`

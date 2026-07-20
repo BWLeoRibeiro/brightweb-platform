@@ -234,6 +234,21 @@ test("published platform scaffolds pin current brightweb package versions", asyn
   }
 });
 
+test("CRM scaffolds expose package-owned contact write handlers", async (t) => {
+  const { tempRoot, targetDir } = await scaffoldPlatformApp({ modules: ["crm"] });
+  t.after(async () => fs.rm(tempRoot, { recursive: true, force: true }));
+
+  const route = await fs.readFile(
+    path.join(targetDir, "app", "api", "crm", "contacts", "route.ts"),
+    "utf8",
+  );
+
+  assert.match(route, /export const POST = createModuleRouteHandler/);
+  assert.match(route, /"handleCrmContactsPostRequest"/);
+  assert.match(route, /export const PATCH = createModuleRouteHandler/);
+  assert.match(route, /"handleCrmContactsPatchRequest"/);
+});
+
 test("published platform scaffolds resolved supabase migrations for the selected modules", async (t) => {
   const { tempRoot, targetDir } = await scaffoldPlatformApp({
     modules: ["crm"],

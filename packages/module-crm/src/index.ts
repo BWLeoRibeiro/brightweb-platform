@@ -44,6 +44,8 @@ export {
 } from "./data";
 export {
   handleCrmContactsGetRequest,
+  handleCrmContactsPatchRequest,
+  handleCrmContactsPostRequest,
   handleCrmOrganizationsGetRequest,
   handleCrmOwnersGetRequest,
   handleCrmStatsGetRequest,

@@ -6,6 +6,7 @@
   "types": "./src/index.ts",
   "files": [
     "src",
+    "schemas",
     "brightweb.module.json"
   ],
   "license": "MIT",
@@ -19,7 +20,8 @@
   "exports": {
     ".": "./src/index.ts",
     "./activity-messages": "./src/activity-messages.ts",
-    "./registration": "./src/registration.ts"
+    "./registration": "./src/registration.ts",
+    "./server": "./src/server.ts"
   },
   "dependencies": {
     "@brightweblabs/app-shell": "workspace:*",
