@@ -99,6 +99,9 @@ importers:
       '@brightweblabs/module-projects':
         specifier: workspace:*
         version: link:../../packages/module-projects
+      '@brightweblabs/theme':
+        specifier: workspace:*
+        version: link:../../packages/theme
       lucide-react:
         specifier: ^0.577.0
         version: 0.577.0(react@19.2.4)
@@ -267,6 +270,8 @@ importers:
       lucide-react:
         specifier: ^0.577.0
         version: 0.577.0(react@19.2.4)
+
+  packages/theme: {}
 
   packages/ui:
     dependencies:

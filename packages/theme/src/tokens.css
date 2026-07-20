@@ -1,0 +1,274 @@
+/* ── L0: brand primitives ─────────────────────────────────────────────── */
+:root {
+  color-scheme: light;
+  --font-body: "Mulish", "Mulish Fallback", "Segoe UI", Arial, sans-serif;
+  --font-heading: var(--font-body);
+  --font-sans: var(--font-body);
+  --font-display: var(--font-heading);
+  --font-mono: ui-monospace, "SF Mono", "JetBrains Mono", "Menlo", monospace;
+
+  --brand-accent: #4a7dbd;
+  --brand-accent-soft: #7196c4;
+  --brand-ink: #111827;
+  --brand-neutral-500: #64748b;
+  --brand-neutral-300: #cbd5e1;
+  --brand-neutral-200: #e2e8f0;
+  --brand-neutral-100: #f1f5f9;
+  --brand-white: #ffffff;
+  --brand-border-subtle: rgba(15, 23, 42, 0.1);
+  --brand-surface-tint: rgba(74, 125, 189, 0.09);
+  --brand-surface-dark: rgba(15, 23, 42, 0.95);
+  --brand-shadow-soft: 0 20px 44px rgba(15, 23, 42, 0.1);
+  --brand-shadow-lift: 0 18px 32px rgba(15, 23, 42, 0.22);
+
+  /* ── L1: shadcn semantic contract ──────────────────────────────────── */
+  --background: var(--brand-white);
+  --foreground: var(--brand-ink);
+  --card: var(--brand-white);
+  --card-foreground: var(--brand-ink);
+  --popover: var(--brand-white);
+  --popover-foreground: var(--brand-ink);
+  --primary: var(--brand-ink);
+  --primary-foreground: var(--brand-white);
+  --secondary: var(--brand-neutral-100);
+  --secondary-foreground: var(--brand-ink);
+  --muted: rgba(203, 213, 225, 0.25);
+  --muted-foreground: var(--brand-neutral-500);
+  --foreground-inverse: var(--brand-white);
+  --foreground-inverse-muted: rgba(255, 255, 255, 0.88);
+  --foreground-inverse-subtle: rgba(255, 255, 255, 0.84);
+  --accent: var(--brand-accent);
+  --accent-foreground: var(--brand-white);
+  --destructive: #b43f3f;
+  --destructive-foreground: var(--brand-white);
+  --border: var(--brand-border-subtle);
+  --input: rgba(15, 23, 42, 0.09);
+  --ring: rgba(74, 125, 189, 0.42);
+
+  /* ── L2: brand-agnostic semantic colour base ───────────────────────── */
+  --semantic-info: #0ea5e9;
+  --semantic-info-strong: #0369a1;
+  --semantic-special: #8b5cf6;
+  --semantic-special-strong: #6d28d9;
+  --semantic-warning: #eab034;
+  --semantic-warning-strong: #7a5c15;
+  --semantic-success: #10b981;
+  --semantic-success-strong: #047857;
+  --semantic-danger: #c9373a;
+  --semantic-danger-strong: #b72f33;
+  --semantic-danger-soft: #e55759;
+  --semantic-neutral: #71717a;
+  --semantic-neutral-strong: #52525b;
+
+  /* ── L3: experience tokens ─────────────────────────────────────────── */
+  --space-2xs: 0.25rem;
+  --space-xs: 0.5rem;
+  --space-sm: 0.75rem;
+  --space-md: 1rem;
+  --space-lg: 1.5rem;
+  --space-lg-plus: 1.75rem;
+  --space-xl: 2rem;
+  --space-2xl: 2.5rem;
+  --space-3xl: 3rem;
+  --space-4xl: 3.75rem;
+  --space-control: 2.8rem;
+  --space-button-y: 1.15rem;
+  --space-button-x: 2.35rem;
+  --space-card-pad-x: 1.5rem;
+  --space-card-pad-x-tight: 1.25rem;
+  --space-copy-bottom: 2.25rem;
+  --space-badge-y: 0.4rem;
+  --space-badge-x: 0.7rem;
+
+  /* Controls, cards, and large panels. Full radius remains for pills/avatars. */
+  --radius: 0.3125rem;
+  --radius-control: 0.625rem;
+  --radius-card: 0.75rem;
+  --radius-panel: 1rem;
+
+  --text-ui-micro: 0.625rem;
+  --text-ui-label: 0.6875rem;
+  --text-ui-meta: 0.75rem;
+  --text-ui-body: 0.875rem;
+  --text-ui-card-title: 0.9375rem;
+  --text-ui-subhead: 1.125rem;
+  --text-ui-panel-title: 1.25rem;
+  --text-ui-heading: 1.5rem;
+  --text-ui-title-sm: 1.875rem;
+  --text-ui-title: clamp(1.75rem, 1.6rem + 0.7vw, 2rem);
+  --text-ui-metric: 2.75rem;
+  --text-ui-metric-xl: 3.5rem;
+  --text-ui-metric-display: var(--text-ui-metric);
+
+  --elevate-1: color-mix(in srgb, var(--foreground) 3%, transparent);
+  --elevate-2: color-mix(in srgb, var(--foreground) 5%, transparent);
+  --elevate-3: color-mix(in srgb, var(--foreground) 8%, transparent);
+  --hairline: color-mix(in srgb, var(--foreground) 8%, transparent);
+  --hairline-strong: color-mix(in srgb, var(--foreground) 12%, transparent);
+  --border-hairline: color-mix(in srgb, var(--foreground) 14%, transparent);
+  --border-hairline-soft: color-mix(in srgb, var(--foreground) 12%, transparent);
+  --border-strong: color-mix(in srgb, var(--foreground) 24%, transparent);
+  --surface-hover: color-mix(in srgb, var(--foreground) 4%, var(--card) 96%);
+
+  --skeleton: color-mix(in srgb, var(--foreground) 7%, transparent);
+  --skeleton-strong: color-mix(in srgb, var(--foreground) 11%, transparent);
+  --skeleton-highlight: color-mix(in srgb, var(--brand-white) 65%, transparent);
+
+  --role-client: #5076a8;
+  --role-client-strong: #31527f;
+  --role-team: #398579;
+  --role-team-strong: #25665d;
+  --role-admin: #765c9f;
+  --role-admin-strong: #59417e;
+  --role-manager: #a36f2f;
+  --role-manager-strong: #7b501f;
+
+  --badge-count-bg: var(--semantic-danger);
+  --badge-count-fg: var(--brand-white);
+  --on-fill-danger: var(--brand-white);
+  --on-fill-warning: #3a2a05;
+  --on-fill-success: #06281e;
+
+  --page-background:
+    radial-gradient(circle at 14% 8%, color-mix(in srgb, var(--brand-accent) 14%, transparent), transparent 26%),
+    linear-gradient(180deg, var(--brand-white) 0%, color-mix(in srgb, var(--brand-accent) 4%, var(--brand-white)) 54%, var(--brand-white) 100%);
+  --brand-panel-surface: linear-gradient(
+    158deg,
+    color-mix(in srgb, var(--brand-surface-dark) 96%, var(--brand-accent)) 0%,
+    color-mix(in srgb, var(--brand-surface-dark) 86%, var(--brand-accent)) 55%,
+    color-mix(in srgb, var(--brand-surface-dark) 72%, var(--brand-accent)) 100%
+  );
+  --brand-panel-surface-raised: color-mix(in srgb, var(--brand-surface-dark) 76%, var(--brand-accent));
+  --brand-panel-foreground: var(--brand-white);
+  --brand-panel-muted: color-mix(in srgb, var(--brand-white) 68%, transparent);
+  --brand-panel-subtle: color-mix(in srgb, var(--brand-white) 48%, transparent);
+  --brand-panel-border: color-mix(in srgb, var(--brand-accent) 22%, transparent);
+  --row-sweep-tint: var(--foreground);
+  --surface-card: color-mix(in srgb, var(--foreground) 2%, var(--card) 98%);
+  --surface-card-light: var(--card);
+  --surface-card-padding: 1.25rem;
+  --stat-cell-padding: 1rem;
+}
+
+/* Dark mode redefines the primitives and semantic base before re-deriving L1. */
+:root.dark,
+:root[data-theme="dark"],
+.theme-dark {
+  color-scheme: dark;
+  --brand-accent: #79a8df;
+  --brand-accent-soft: #9bbce2;
+  --brand-ink: #0b1220;
+  --brand-neutral-500: #9aa9bc;
+  --brand-neutral-300: #c7d2e1;
+  --brand-neutral-200: #dce4ee;
+  --brand-neutral-100: #111c2c;
+  --brand-white: #f8fafc;
+  --brand-border-subtle: rgba(148, 163, 184, 0.24);
+  --brand-surface-tint: rgba(121, 168, 223, 0.14);
+  --brand-surface-dark: rgba(8, 15, 27, 0.96);
+  --brand-shadow-soft: 0 20px 44px rgba(0, 0, 0, 0.44);
+  --brand-shadow-lift: 0 18px 36px rgba(0, 0, 0, 0.5);
+
+  --background: #0b1220;
+  --foreground: #edf2f8;
+  --card: #111c2c;
+  --card-foreground: #edf2f8;
+  --popover: #101a29;
+  --popover-foreground: #edf2f8;
+  --primary: #edf2f8;
+  --primary-foreground: #0b1220;
+  --secondary: #172438;
+  --secondary-foreground: #dce5f0;
+  --muted: rgba(148, 163, 184, 0.16);
+  --muted-foreground: #a6b4c6;
+  --foreground-inverse: #f8fafc;
+  --foreground-inverse-muted: rgba(248, 250, 252, 0.9);
+  --foreground-inverse-subtle: rgba(248, 250, 252, 0.84);
+  --accent: var(--brand-accent);
+  --accent-foreground: #0b1220;
+  --destructive: #d26969;
+  --destructive-foreground: #0b1220;
+  --border: rgba(148, 163, 184, 0.22);
+  --input: rgba(148, 163, 184, 0.17);
+  --ring: rgba(121, 168, 223, 0.4);
+
+  --semantic-info: #38bdf8;
+  --semantic-info-strong: #7dd3fc;
+  --semantic-special: #a78bfa;
+  --semantic-special-strong: #ddd6fe;
+  --semantic-warning: #fbbf24;
+  --semantic-warning-strong: #fde68a;
+  --semantic-success: #34d399;
+  --semantic-success-strong: #a7f3d0;
+  --semantic-danger: #fb7185;
+  --semantic-danger-strong: #fecdd3;
+  --semantic-danger-soft: #fda4af;
+  --semantic-neutral: #a1a1aa;
+  --semantic-neutral-strong: #d4d4d8;
+
+  --skeleton: color-mix(in srgb, var(--foreground) 9%, transparent);
+  --skeleton-strong: color-mix(in srgb, var(--foreground) 14%, transparent);
+  --skeleton-highlight: color-mix(in srgb, var(--brand-white) 12%, transparent);
+  --role-client: #79a8df;
+  --role-client-strong: #c5daf2;
+  --role-team: #5bc8b9;
+  --role-team-strong: #b8eee7;
+  --role-admin: #ad99d0;
+  --role-admin-strong: #ded5ed;
+  --role-manager: #e0aa61;
+  --role-manager-strong: #f4d6aa;
+  --badge-count-fg: #ffffff;
+  --on-fill-danger: #350a11;
+  --on-fill-warning: #3a2a05;
+  --on-fill-success: #06281e;
+
+  --page-background:
+    radial-gradient(circle at 14% 12%, color-mix(in srgb, var(--brand-accent) 17%, transparent), transparent 26%),
+    radial-gradient(circle at 82% 18%, color-mix(in srgb, var(--brand-accent) 10%, transparent), transparent 24%),
+    linear-gradient(180deg, var(--brand-surface-dark) 0%, var(--background) 100%);
+  --brand-panel-surface: linear-gradient(
+    158deg,
+    color-mix(in srgb, var(--card) 84%, var(--brand-accent)) 0%,
+    color-mix(in srgb, var(--card) 72%, var(--brand-accent)) 52%,
+    color-mix(in srgb, var(--card) 60%, var(--brand-accent)) 100%
+  );
+  --brand-panel-surface-raised: color-mix(in srgb, var(--card) 72%, var(--brand-accent));
+  --surface-card: color-mix(in srgb, var(--foreground) 2%, var(--card) 98%);
+  --surface-card-light: color-mix(in srgb, var(--card) 92%, var(--brand-white) 8%);
+}
+
+/* Explicit light scope wins when a theme class/attribute is toggled at runtime. */
+:root.light,
+:root[data-theme="light"],
+.theme-light {
+  color-scheme: light;
+  --background: var(--brand-white);
+  --foreground: var(--brand-ink);
+  --card: var(--brand-white);
+  --card-foreground: var(--brand-ink);
+  --popover: var(--brand-white);
+  --popover-foreground: var(--brand-ink);
+  --primary: var(--brand-ink);
+  --primary-foreground: var(--brand-white);
+  --secondary: var(--brand-neutral-100);
+  --secondary-foreground: var(--brand-ink);
+  --muted: rgba(203, 213, 225, 0.25);
+  --muted-foreground: var(--brand-neutral-500);
+  --foreground-inverse: var(--brand-white);
+  --foreground-inverse-muted: rgba(255, 255, 255, 0.88);
+  --foreground-inverse-subtle: rgba(255, 255, 255, 0.84);
+  --accent: var(--brand-accent);
+  --accent-foreground: var(--brand-white);
+  --destructive: #b43f3f;
+  --destructive-foreground: var(--brand-white);
+  --border: var(--brand-border-subtle);
+  --input: rgba(15, 23, 42, 0.09);
+  --ring: rgba(74, 125, 189, 0.42);
+}
+
+@media (max-width: 640px) {
+  :root {
+    --space-card-pad-x: 1.25rem;
+    --space-copy-bottom: 1.75rem;
+  }
+}

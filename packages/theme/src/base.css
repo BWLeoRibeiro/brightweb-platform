@@ -1,0 +1,33 @@
+/* Keep the reset layered so Tailwind utilities and component variants retain
+   precedence over these element defaults. */
+@layer base {
+  *,
+  ::before,
+  ::after {
+    box-sizing: border-box;
+  }
+
+  html,
+  body {
+    margin: 0;
+    padding: 0;
+    background: var(--page-background);
+    color: var(--foreground);
+    font-family: var(--font-sans), sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  /* Unlayered, this shorthand beats @layer utilities and erases button
+     variant typography. */
+  button,
+  input {
+    font: inherit;
+  }
+}
