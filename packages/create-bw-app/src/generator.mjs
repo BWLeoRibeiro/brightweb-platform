@@ -16,6 +16,7 @@ import {
   SITE_DEV_DEPENDENCY_DEFAULTS,
   TEMPLATE_OPTIONS,
 } from "./constants.mjs";
+import { createInitialAppManifest, writeAppManifest } from "./app-manifest.mjs";
 
 export const PACKAGE_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 export const TEMPLATE_ROOT = path.join(PACKAGE_ROOT, "template");
@@ -1286,6 +1287,7 @@ async function scaffoldPlatformProject({
 
   if (workspaceMode) {
     await writeClientStack(workspaceRoot, answers.slug, dbInstallPlan, { workspaceMode: true });
+    await writeSupabaseCliMigrations({ targetDir, dbInstallPlan });
   } else {
     await writeBundledSupabaseBaseline({
       targetDir,
@@ -1294,6 +1296,17 @@ async function scaffoldPlatformProject({
       registry: dbRegistry,
     });
   }
+
+  const cliPackage = await readJsonIfPresent(path.join(PACKAGE_ROOT, "package.json"));
+  await writeAppManifest(targetDir, await createInitialAppManifest({
+    targetDir,
+    slug: answers.slug,
+    template: "platform",
+    selectedModules,
+    versionMap,
+    dbInstallPlan,
+    cliVersion: cliPackage?.version || "0.0.0",
+  }));
 }
 
 async function scaffoldSiteProject({
@@ -1345,6 +1358,16 @@ async function scaffoldSiteProject({
       packageManager,
     }),
   );
+  const cliPackage = await readJsonIfPresent(path.join(PACKAGE_ROOT, "package.json"));
+  await writeAppManifest(targetDir, await createInitialAppManifest({
+    targetDir,
+    slug: answers.slug,
+    template: "site",
+    selectedModules: [],
+    versionMap,
+    dbInstallPlan: { resolvedOrder: [] },
+    cliVersion: cliPackage?.version || "0.0.0",
+  }));
 }
 
 function printCompletionMessage({ targetDir, workspaceMode, slug, packageManager, install }) {

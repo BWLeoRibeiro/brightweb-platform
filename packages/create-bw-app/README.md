@@ -2,7 +2,7 @@
 
 Scaffold a new BrightWeb app from either the `platform` or `site` starter.
 
-The CLI can also update an existing generated platform app in place.
+The package also installs the `bw` lifecycle CLI for generated apps.
 
 ## Workspace usage
 
@@ -26,6 +26,19 @@ pnpm dlx create-bw-app --template site
 pnpm dlx create-bw-app update
 npm create bw-app@latest
 ```
+
+From a generated app, use `bw` to manage the machine-readable `.brightweb/app-manifest.json` contract:
+
+```bash
+bw add projects
+bw upgrade
+bw doctor
+```
+
+- `bw add <moduleKey>` resolves requirements, installs module wiring and starter overlays, and appends migrations.
+- `bw upgrade [moduleKey]` includes the existing managed update flow plus forward-only module migrations.
+- `bw doctor` checks package, config, scaffold, environment-name, and migration consistency. Add `--report` to stamp the result in the app manifest.
+- All mutating commands support `--dry-run`.
 
 ## Update existing apps
 
@@ -64,6 +77,7 @@ Current updater behavior:
 - platform apps also write `.env.local`, `AGENTS.md`, `docs/ai/README.md`, `docs/ai/examples.md`, `docs/ai/app-context.json`, and generated config files for brand and module state
 - site apps also write `AGENTS.md`, `docs/ai/README.md`, `docs/ai/examples.md`, and `docs/ai/app-context.json` for app-local AI handoff
 - supports repo-local `workspace:*` wiring and future published dependency wiring
+- writes `.brightweb/app-manifest.json` as the machine-authoritative scaffold and module record
 
 ## Workspace mode extras
 

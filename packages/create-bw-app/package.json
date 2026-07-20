@@ -3,7 +3,10 @@
   "private": false,
   "version": "0.10.1",
   "type": "module",
-  "bin": "bin/create-bw-app.mjs",
+  "bin": {
+    "create-bw-app": "bin/create-bw-app.mjs",
+    "bw": "bin/bw.mjs"
+  },
   "files": [
     "bin",
     "src",

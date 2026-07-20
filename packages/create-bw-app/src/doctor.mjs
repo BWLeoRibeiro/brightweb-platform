@@ -1,0 +1,99 @@
+import fs from "node:fs/promises";
+import path from "node:path";
+import { stdout as output } from "node:process";
+import { cursorMigrationStatus } from "./migrations.mjs";
+import { findWorkspaceRoot, hashFile, loadModuleCatalog, MODULE_PACKAGES, readAppManifest, readConfiguredModuleFlags, satisfiesVersion, validateAppManifest, writeAppManifest } from "./app-manifest.mjs";
+import { pathExists, readJsonIfPresent } from "./generator.mjs";
+
+const HELP = `Usage: bw doctor [options]\n\nOptions:\n  --target-dir <path>       App directory (defaults to cwd)\n  --workspace-root <path>   BrightWeb workspace root\n  --strict                  Treat warnings as failures\n  --report                  Stamp lastDoctor in the app manifest\n  --help                    Show this help`;
+
+export async function doctorBrightwebApp(argvOptions = {}, runtimeOptions = {}) {
+  if (argvOptions.help) { output.write(`${HELP}\n`); return { help: true, ok: true }; }
+  const targetDir = path.resolve(runtimeOptions.targetDir || argvOptions.targetDir || process.cwd());
+  const checks = [];
+  const add = (status, id, message) => checks.push({ status, id, message });
+  let appManifest;
+  try { appManifest = await readAppManifest(targetDir); } catch (error) {
+    add("FAIL", "manifest", error instanceof Error ? error.message : String(error));
+    return finish(checks, argvOptions, null, targetDir);
+  }
+  const validationErrors = validateAppManifest(appManifest);
+  if (validationErrors.length > 0) add("FAIL", "manifest", validationErrors.join("; "));
+  else add("PASS", "manifest", "App manifest is valid.");
+
+  const packageJson = await readJsonIfPresent(path.join(targetDir, "package.json"));
+  const dependencyMap = { ...(packageJson?.dependencies || {}), ...(packageJson?.devDependencies || {}) };
+  const packageProblems = [];
+  for (const [key, entry] of Object.entries(appManifest.modules || {})) {
+    const packageName = MODULE_PACKAGES[key];
+    if (!packageName || !dependencyMap[packageName]) packageProblems.push(`${key}: ${packageName || "unknown package"} is missing`);
+    else if (!satisfiesVersion(entry.version, dependencyMap[packageName])) packageProblems.push(`${key}@${entry.version} does not satisfy package.json ${dependencyMap[packageName]}`);
+  }
+  for (const [key, packageName] of Object.entries(MODULE_PACKAGES)) {
+    if (dependencyMap[packageName] && !appManifest.modules[key]) packageProblems.push(`${packageName} is installed but absent from manifest.modules`);
+  }
+  add(packageProblems.length ? "FAIL" : "PASS", "packages", packageProblems.join("; ") || "Installed module packages agree with the manifest.");
+
+  const flags = await readConfiguredModuleFlags(targetDir);
+  const exposureProblems = Object.entries(appManifest.modules || {}).filter(([key, entry]) => flags[key] !== entry.exposed).map(([key, entry]) => `${key}: manifest exposed=${entry.exposed}, config enabled=${String(flags[key])}`);
+  add(exposureProblems.length ? "FAIL" : "PASS", "exposure", exposureProblems.join("; ") || "Module exposure flags agree.");
+
+  const workspaceRoot = runtimeOptions.workspaceRoot || argvOptions.workspaceRoot || await findWorkspaceRoot(targetDir);
+  const catalog = await loadModuleCatalog({ targetDir, workspaceRoot });
+  const available = { core: "0.4.0", admin: catalog.admin.version, ...Object.fromEntries(Object.entries(appManifest.modules || {}).map(([key, entry]) => [key, entry.version])) };
+  const topologyProblems = [];
+  for (const key of Object.keys(appManifest.modules || {})) {
+    for (const [requiredKey, range] of Object.entries(catalog[key]?.requires || {})) {
+      if (!available[requiredKey]) topologyProblems.push(`${key} requires missing ${requiredKey}@${range}`);
+      else if (!satisfiesVersion(available[requiredKey], range)) topologyProblems.push(`${key} requires ${requiredKey}@${range}, found ${available[requiredKey]}`);
+    }
+  }
+  add(topologyProblems.length ? "FAIL" : "PASS", "topology", topologyProblems.join("; ") || "Module requirements are satisfied.");
+
+  let current = 0;
+  const drifted = [];
+  const missing = [];
+  for (const [relativePath, record] of Object.entries(appManifest.scaffoldFiles || {})) {
+    const filePath = path.join(targetDir, relativePath);
+    if (!(await pathExists(filePath))) missing.push(relativePath);
+    else if (await hashFile(filePath) !== record.hash) drifted.push(relativePath);
+    else current += 1;
+  }
+  add(drifted.length || missing.length ? "FAIL" : "PASS", "scaffold", `${current} current, ${drifted.length} drifted, ${missing.length} missing${drifted.length ? `; drifted: ${drifted.join(", ")}` : ""}${missing.length ? `; missing: ${missing.join(", ")}` : ""}`);
+
+  const envNames = new Set(Object.keys(process.env));
+  const envPath = path.join(targetDir, ".env.local");
+  if (await pathExists(envPath)) {
+    for (const line of (await fs.readFile(envPath, "utf8")).split(/\r?\n/)) {
+      const match = line.match(/^\s*(?:export\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*=/);
+      if (match) envNames.add(match[1]);
+    }
+  }
+  const missingEnv = [];
+  for (const key of Object.keys(appManifest.modules || {})) for (const entry of catalog[key]?.manifest?.env || []) if (entry.required && !envNames.has(entry.name)) missingEnv.push(`${key}:${entry.name}`);
+  add(missingEnv.length ? "FAIL" : "PASS", "env", missingEnv.length ? `Missing required names: ${missingEnv.join(", ")}` : "Required environment variable names are present.");
+
+  const migrationProblems = [];
+  const migrationKeys = appManifest.app.template === "platform"
+    ? Array.from(new Set(["core", "admin", ...Object.keys(appManifest.modules || {})]))
+    : [];
+  for (const key of migrationKeys) {
+    const status = await cursorMigrationStatus({ targetDir, moduleKey: key, cursor: appManifest.migrationCursor?.[key], catalogEntry: catalog[key] });
+    if (status.shipsMigrations && status.missing.length > 0) migrationProblems.push(`${key}: ${status.missing.join(", ")}`);
+  }
+  add(migrationProblems.length ? "FAIL" : "PASS", "migrations", migrationProblems.join("; ") || "Migration cursors and flattened files agree.");
+  add("WARN", "db-objects", "SKIP live database checks are not available yet.");
+  return finish(checks, argvOptions, appManifest, targetDir);
+}
+
+async function finish(checks, options, appManifest, targetDir) {
+  for (const check of checks) output.write(`${check.status} ${check.id}: ${check.message}\n`);
+  const hasFailure = checks.some((check) => check.status === "FAIL") || (options.strict && checks.some((check) => check.status === "WARN"));
+  if (options.report && appManifest) {
+    appManifest.lastDoctor = { at: new Date().toISOString(), ok: !hasFailure };
+    await writeAppManifest(targetDir, appManifest);
+  }
+  return { ok: !hasFailure, checks };
+}
+
+export { HELP as DOCTOR_HELP };

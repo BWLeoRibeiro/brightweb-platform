@@ -12,7 +12,7 @@ This section stays intentionally practical. Each page documents a real public wo
 
 - [Platform First Run](./platform-first-run.md): scaffold a platform app, configure its environment, and verify the generated routes.
 - [Site First Customization](./site-first-customization.md): scaffold the site starter and make the first round of copy, CTA, and visual changes.
-- [Add Modules After Scaffold](./add-modules-after-scaffold.md): follow the current manual path for adding a module to an existing platform app.
+- [Add Modules After Scaffold](./add-modules-after-scaffold.md): add a module with `bw add`, with a manual fallback for older apps.
 - [Replace Starter Surfaces](./replace-starter-surfaces.md): move from starter pages and starter helpers to app-owned product routes.
 
 ## How to use these recipes
