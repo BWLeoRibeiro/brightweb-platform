@@ -102,6 +102,9 @@ importers:
       '@brightweblabs/theme':
         specifier: workspace:*
         version: link:../../packages/theme
+      '@brightweblabs/ui':
+        specifier: workspace:*
+        version: link:../../packages/ui
       lucide-react:
         specifier: ^1.8.0
         version: 1.25.0(react@19.2.4)
@@ -287,6 +290,9 @@ importers:
 
   packages/ui:
     dependencies:
+      '@brightweblabs/theme':
+        specifier: workspace:*
+        version: link:../theme
       '@radix-ui/react-alert-dialog':
         specifier: ^1.1.15
         version: 1.1.15(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)

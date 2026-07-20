@@ -29,7 +29,7 @@ export function DesktopSidebar({
     <aside className={className}>
       <button
         onClick={onToggleSidebar}
-        className="absolute -right-4 top-4 z-30 inline-flex h-8 w-8 items-center justify-center rounded-full border border-black/15 bg-background text-foreground/80 shadow-sm transition-colors hover:border-black/25 hover:text-foreground dark:border-white/20 dark:hover:border-white/35"
+        className="absolute -right-4 top-4 z-30 inline-flex h-8 w-8 items-center justify-center rounded-full border border-hairline-strong bg-background text-foreground/80 shadow-sm transition-colors hover:border-border-strong hover:bg-surface-hover hover:text-foreground"
         aria-label={isSidebarCollapsed ? "Expandir menu lateral" : "Colapsar menu lateral"}
       >
         {isSidebarCollapsed ? <PanelLeftOpen className="size-4" /> : <PanelLeftClose className="size-4" />}

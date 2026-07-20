@@ -39,6 +39,16 @@ export { ThemeProvider, useTheme } from "./components/theme-provider";
 export type { Theme, ThemeContextValue, ThemeProviderProps } from "./components/theme-provider";
 export { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./components/tooltip";
 export { ActivityMessage } from "./components/activity-message";
+export * from "./components/action";
+export * from "./components/empty-state";
+export * from "./components/initials-avatar";
+export * from "./components/kpi-breakdown-bar";
+export * from "./components/role-badge";
+export * from "./components/section-heading";
+export * from "./components/stat-tile";
+export * from "./components/status-pill";
+export * from "./components/surface-card";
+export * from "./components/table-pagination";
 export {
   formatActivityValue,
   toActivityChanges,

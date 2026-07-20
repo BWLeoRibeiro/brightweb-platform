@@ -530,6 +530,60 @@
     "moduleKey": "platform-base", "packageName": "@brightweblabs/ui", "symbol": "badgeVariants", "kind": "helper", "status": "stable", "runtime": "shared", "summary": "Class-variance recipe for shared badge variants and sizes.", "auth": "none", "inputs": [], "outputs": [{ "type": "CVA variant function", "description": "Tokenized badge class string." }], "notes": ["Includes the tint variant and small text-ui-micro size."], "source": "packages/ui/src/components/badge.tsx"
   },
   {
+    "moduleKey": "platform-base", "packageName": "@brightweblabs/ui", "symbol": "SectionHeading", "kind": "component", "status": "stable", "runtime": "shared", "summary": "Application section heading with a themed icon chip, title, subtitle, and action slot.", "auth": "none", "inputs": [], "outputs": [{ "type": "React element", "description": "Tokenized section heading composition." }], "notes": ["The icon chip uses the theme section-icon recipe."], "source": "packages/ui/src/components/section-heading.tsx"
+  },
+  {
+    "moduleKey": "platform-base", "packageName": "@brightweblabs/ui", "symbol": "ActionButton", "kind": "component", "status": "stable", "runtime": "shared", "summary": "Brand-accent pill call-to-action button.", "auth": "none", "inputs": [], "outputs": [{ "type": "React element", "description": "Tokenized action button." }], "notes": ["Uses the exported actionClassName recipe."], "source": "packages/ui/src/components/action.tsx"
+  },
+  {
+    "moduleKey": "platform-base", "packageName": "@brightweblabs/ui", "symbol": "actionClassName", "kind": "helper", "status": "stable", "runtime": "shared", "summary": "Reusable class recipe for brand-accent pill actions.", "auth": "none", "inputs": [], "outputs": [{ "type": "string", "description": "Tokenized action class string." }], "notes": ["Apply to links or custom controls that match ActionButton."], "source": "packages/ui/src/components/action.tsx"
+  },
+  {
+    "moduleKey": "platform-base", "packageName": "@brightweblabs/ui", "symbol": "TablePagination", "kind": "component", "status": "stable", "runtime": "client", "summary": "Compact controlled pagination footer for application tables.", "auth": "none", "inputs": [], "outputs": [{ "type": "React element", "description": "Pagination summary and controls." }], "notes": ["Builds on the shared pagination primitives and uses English ARIA defaults."], "source": "packages/ui/src/components/table-pagination.tsx"
+  },
+  {
+    "moduleKey": "platform-base", "packageName": "@brightweblabs/ui", "symbol": "SurfaceCard", "kind": "component", "status": "stable", "runtime": "shared", "summary": "Thin article wrapper over the theme surface-card recipe.", "auth": "none", "inputs": [], "outputs": [{ "type": "React element", "description": "Theme-owned card surface." }], "notes": ["Set isLight to apply the theme is-light modifier."], "source": "packages/ui/src/components/surface-card.tsx"
+  },
+  {
+    "moduleKey": "platform-base", "packageName": "@brightweblabs/ui", "symbol": "StatTile", "kind": "component", "status": "stable", "runtime": "shared", "summary": "Labeled metric tile using the theme stat-cell recipe.", "auth": "none", "inputs": [], "outputs": [{ "type": "React element", "description": "Metric tile composition." }], "notes": ["Compose with StatValue for canonical metric typography."], "source": "packages/ui/src/components/stat-tile.tsx"
+  },
+  {
+    "moduleKey": "platform-base", "packageName": "@brightweblabs/ui", "symbol": "StatValue", "kind": "component", "status": "stable", "runtime": "shared", "summary": "Canonical metric value typography for StatTile.", "auth": "none", "inputs": [], "outputs": [{ "type": "React element", "description": "Tokenized metric value." }], "notes": ["Supports normal, large, and display metric sizes."], "source": "packages/ui/src/components/stat-tile.tsx"
+  },
+  {
+    "moduleKey": "platform-base", "packageName": "@brightweblabs/ui", "symbol": "StatusPill", "kind": "component", "status": "stable", "runtime": "shared", "summary": "Domain-neutral tinted status pill with small and normal sizes.", "auth": "none", "inputs": [], "outputs": [{ "type": "React element", "description": "Token-colored status pill." }], "notes": ["All component-owned colors are resolved through theme tintPill."], "source": "packages/ui/src/components/status-pill.tsx"
+  },
+  {
+    "moduleKey": "platform-base", "packageName": "@brightweblabs/ui", "symbol": "STATUS_PILL_BASE_CLASS", "kind": "helper", "status": "stable", "runtime": "shared", "summary": "Base structural class recipe for StatusPill.", "auth": "none", "inputs": [], "outputs": [{ "type": "string", "description": "Status pill base classes." }], "notes": ["Contains layout and typography only; colors come from tintPill."], "source": "packages/ui/src/components/status-pill.tsx"
+  },
+  {
+    "moduleKey": "platform-base", "packageName": "@brightweblabs/ui", "symbol": "STATUS_PILL_SIZE_CLASSES", "kind": "helper", "status": "stable", "runtime": "shared", "summary": "Small and normal size recipes for StatusPill.", "auth": "none", "inputs": [], "outputs": [{ "type": "Record", "description": "Status pill size class map." }], "notes": ["Uses BrightWeb text-ui typography utilities."], "source": "packages/ui/src/components/status-pill.tsx"
+  },
+  {
+    "moduleKey": "platform-base", "packageName": "@brightweblabs/ui", "symbol": "KpiBreakdownBar", "kind": "component", "status": "stable", "runtime": "client", "summary": "Segmented KPI proportion bar with a token-mapped legend and tooltips.", "auth": "none", "inputs": [], "outputs": [{ "type": "React element", "description": "Token-colored KPI breakdown." }], "notes": ["Consumers provide a domain-neutral tone-to-CSS-variable map."], "source": "packages/ui/src/components/kpi-breakdown-bar.tsx"
+  },
+  {
+    "moduleKey": "platform-base", "packageName": "@brightweblabs/ui", "symbol": "EmptyState", "kind": "component", "status": "stable", "runtime": "shared", "summary": "Centered empty state with icon, title, hint, and optional action.", "auth": "none", "inputs": [], "outputs": [{ "type": "React element", "description": "Tokenized empty state composition." }], "notes": ["All user-facing copy is supplied through props."], "source": "packages/ui/src/components/empty-state.tsx"
+  },
+  {
+    "moduleKey": "platform-base", "packageName": "@brightweblabs/ui", "symbol": "InitialsAvatar", "kind": "component", "status": "stable", "runtime": "client", "summary": "Avatar fallback that derives up to two initials from neutral label inputs.", "auth": "none", "inputs": [], "outputs": [{ "type": "React element", "description": "Tokenized initials avatar." }], "notes": ["Supports active and subtle semantic tones."], "source": "packages/ui/src/components/initials-avatar.tsx"
+  },
+  {
+    "moduleKey": "platform-base", "packageName": "@brightweblabs/ui", "symbol": "getInitials", "kind": "helper", "status": "stable", "runtime": "shared", "summary": "Derives up to two uppercase initials from a label and fallback.", "auth": "none", "inputs": [], "outputs": [{ "type": "string", "description": "One or two initials, or a question mark fallback." }], "notes": ["Used by InitialsAvatar."], "source": "packages/ui/src/components/initials-avatar.tsx"
+  },
+  {
+    "moduleKey": "platform-base", "packageName": "@brightweblabs/ui", "symbol": "RoleBadge", "kind": "component", "status": "stable", "runtime": "shared", "summary": "Domain-neutral role badge driven by a replaceable role-to-token map.", "auth": "none", "inputs": [], "outputs": [{ "type": "React element", "description": "Token-colored role badge." }], "notes": ["Defaults to the theme role token family and composes StatusPill."], "source": "packages/ui/src/components/role-badge.tsx"
+  },
+  {
+    "moduleKey": "platform-base", "packageName": "@brightweblabs/ui", "symbol": "DEFAULT_ROLE_TOKEN_MAP", "kind": "helper", "status": "stable", "runtime": "shared", "summary": "Default mapping from common neutral role buckets to theme role tokens.", "auth": "none", "inputs": [], "outputs": [{ "type": "Record", "description": "Role-to-CSS-variable map." }], "notes": ["Consumers can replace the map without changing RoleBadge."], "source": "packages/ui/src/components/role-badge.tsx"
+  },
+  {
+    "moduleKey": "platform-base", "packageName": "@brightweblabs/ui", "symbol": "getRoleLabel", "kind": "helper", "status": "stable", "runtime": "shared", "summary": "Converts a role identifier into a readable domain-neutral label.", "auth": "none", "inputs": [], "outputs": [{ "type": "string", "description": "Title-cased role label." }], "notes": ["Callers can bypass it by passing RoleBadge an explicit label."], "source": "packages/ui/src/components/role-badge.tsx"
+  },
+  {
+    "moduleKey": "platform-base", "packageName": "@brightweblabs/ui", "symbol": "resolveRoleToken", "kind": "helper", "status": "stable", "runtime": "shared", "summary": "Resolves a role token from a supplied map with a semantic-neutral fallback.", "auth": "none", "inputs": [], "outputs": [{ "type": "string", "description": "CSS custom-property name." }], "notes": ["Used by RoleBadge before applying tintPill."], "source": "packages/ui/src/components/role-badge.tsx"
+  },
+  {
     "moduleKey": "admin",
     "packageName": "@brightweblabs/module-admin/registration",
     "symbol": "adminModuleRegistration",

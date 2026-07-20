@@ -16,7 +16,7 @@ export function AccountMenu({ displayName, isStaff, onSignOut, user, userInitial
       <DropdownMenuTrigger asChild>
         <button
           id="header-account-menu-trigger"
-          className="inline-flex h-8 w-8 items-center justify-center rounded-full text-[11px] font-semibold text-primary transition-colors hover:bg-black/6 dark:hover:bg-white/10"
+          className="inline-flex h-8 w-8 items-center justify-center rounded-full text-[11px] font-semibold text-primary transition-colors hover:bg-elevate-3"
           aria-label="Menu da conta"
         >
           <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-primary/15">{userInitials}</span>
@@ -25,11 +25,11 @@ export function AccountMenu({ displayName, isStaff, onSignOut, user, userInitial
       <DropdownMenuContent align="end" className="w-fit min-w-0 whitespace-nowrap">
         <DropdownMenuLabel className="font-normal space-y-0.5">
           {displayName ? (
-            <p className="paragraph-small font-medium text-foreground truncate" title={displayName}>
+            <p className="text-ui-body truncate font-semibold text-foreground" title={displayName}>
               Olá, {displayName}
             </p>
           ) : null}
-          <p className="paragraph-mini text-muted-foreground truncate" title={user?.email ?? undefined}>
+          <p className="text-ui-meta truncate text-muted-foreground" title={user?.email ?? undefined}>
             {user?.email}
           </p>
         </DropdownMenuLabel>

@@ -5,6 +5,7 @@ import test from "node:test";
 
 const repoRoot = path.resolve(new URL("..", import.meta.url).pathname);
 const uiSourceRoot = path.join(repoRoot, "packages", "ui", "src");
+const appShellSourceRoot = path.join(repoRoot, "packages", "app-shell", "src");
 const typographyPath = path.join(repoRoot, "packages", "theme", "src", "typography.css");
 
 async function sourceFiles(directory: string): Promise<string[]> {
@@ -16,15 +17,15 @@ async function sourceFiles(directory: string): Promise<string[]> {
   return nested.flat().filter((filePath) => /\.(?:ts|tsx)$/.test(filePath));
 }
 
-async function uiSources() {
-  const files = await sourceFiles(uiSourceRoot);
+async function sourcesAt(sourceRoot: string) {
+  const files = await sourceFiles(sourceRoot);
   return Promise.all(files.map(async (filePath) => ({
     filePath,
     source: await readFile(filePath, "utf8"),
   })));
 }
 
-function assertPatternAbsent(files: Awaited<ReturnType<typeof uiSources>>, pattern: RegExp, label: string) {
+function assertPatternAbsent(files: Awaited<ReturnType<typeof sourcesAt>>, pattern: RegExp, label: string) {
   const violations = files.flatMap(({ filePath, source }) => {
     const matches = Array.from(source.matchAll(new RegExp(pattern.source, pattern.flags.includes("g") ? pattern.flags : `${pattern.flags}g`)));
     return matches.map((match) => `${path.relative(repoRoot, filePath)}:${source.slice(0, match.index).split("\n").length} ${match[0]}`);
@@ -33,14 +34,22 @@ function assertPatternAbsent(files: Awaited<ReturnType<typeof uiSources>>, patte
 }
 
 test("ui source follows the BrightWeb typography and color hygiene rules", async () => {
-  const files = await uiSources();
+  const files = await sourcesAt(uiSourceRoot);
   assertPatternAbsent(files, /\bfont-medium\b/, "font-medium is not part of the loaded weight ladder");
   assertPatternAbsent(files, /#[0-9a-f]{3,8}\b/i, "raw hex colors must be represented by theme tokens");
   assertPatternAbsent(files, /\b(?:paragraph|portal)-[a-z0-9-]+\b/i, "app-specific typography classes are not available in ui");
 });
 
+test("app-shell source uses only tokenized color and typography utilities", async () => {
+  const files = await sourcesAt(appShellSourceRoot);
+  assertPatternAbsent(files, /\bfont-medium\b/, "font-medium is not part of the loaded weight ladder");
+  assertPatternAbsent(files, /\b(?:bg|border)-(?:black|white)\//, "black/white alpha utilities lock the shell to a theme");
+  assertPatternAbsent(files, /#[0-9a-f]{3,8}\b/i, "raw hex colors must be represented by theme tokens");
+  assertPatternAbsent(files, /\bparagraph-[a-z0-9-]+\b/i, "legacy paragraph utilities are not available in app-shell");
+});
+
 test("every text-ui utility used by ui exists in theme typography", async () => {
-  const files = await uiSources();
+  const files = await sourcesAt(uiSourceRoot);
   const typography = await readFile(typographyPath, "utf8");
   const providedUtilities = new Set(Array.from(typography.matchAll(/@utility\s+(text-ui-[a-z0-9-]+)/g), (match) => match[1]));
   const usedUtilities = new Set(files.flatMap(({ source }) => Array.from(source.matchAll(/\btext-ui-[a-z0-9-]+\b/g), (match) => match[0])));
