@@ -42,8 +42,11 @@ export const CORE_PACKAGES = [
   "@brightweblabs/ui",
 ];
 
+export const ORGS_PACKAGE_NAME = "@brightweblabs/module-orgs";
+
 export const BRIGHTWEB_PACKAGE_NAMES = [
   ...CORE_PACKAGES,
+  ORGS_PACKAGE_NAME,
   ...SELECTABLE_MODULES.map((moduleDefinition) => moduleDefinition.packageName),
 ];
 
@@ -75,6 +78,7 @@ export const APP_DEPENDENCY_DEFAULTS = {
   "@brightweblabs/infra": "^0.3.0",
   "@brightweblabs/module-admin": "^0.3.3",
   "@brightweblabs/module-crm": "^0.4.1",
+  "@brightweblabs/module-orgs": "^0.1.0",
   "@brightweblabs/module-projects": "^0.4.1",
   "@brightweblabs/ui": "^0.4.0",
   "lucide-react": "^0.562.0",

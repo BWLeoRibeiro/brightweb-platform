@@ -1,15 +1,15 @@
 # CRM Module
 
-The CRM module extends the platform with organizations, org membership, CRM contact data, status tracking, and invitation flows. It depends on the Admin layer because the current policies and privileged workflows assume RBAC is present.
+The CRM module extends the platform with CRM contact data, status tracking, and funnel reporting. It depends on the Organizations module for shared organization, membership, and invitation data.
 
-> CRM builds on top of the `Core + Admin` platform baseline; selecting CRM adds CRM-owned schema, package wiring, and the starter CRM surface.
+> CRM builds on top of the Core + Admin + Organizations baseline; selecting CRM auto-includes Organizations.
 
 Use [Base Contract](./base-contract.md) for the support-tier rules and [base-contract.json](./base-contract.json) for the canonical symbol inventory.
 
 ## What schema it installs
 
-- Baseline tables: `organizations`, `organization_members`, `crm_contacts`, `crm_status_log`, and `organization_invitations`
-- Follow-up migrations: acceptance linkage, address support, contact/profile linking, and generalized tax identifier fields on organizations
+- Baseline tables: crm_contacts and crm_status_log
+- Integration migration: invitation acceptance linkage and primary-contact membership synchronization after Organizations is installed
 
 ## What package and domain logic it provides
 
@@ -18,7 +18,7 @@ Use [Base Contract](./base-contract.md) for the support-tier rules and [base-con
 | CRM package | `@brightweblabs/module-crm` exports shell registration for CRM nav groups and toolbar routes. |
 | Server helpers | The package exports reusable CRM list and stats helpers plus the starter `getCrmDashboardData()` helper. |
 | Route handlers | The package exports package-owned GET handlers for CRM contacts, organizations, stats, and owner options. |
-| Shared dependencies | The package reads shared platform tables such as `profiles` and `user_role_assignments` in addition to CRM-owned tables. |
+| Shared dependencies | The package depends on `@brightweblabs/module-orgs` and also reads shared platform tables such as `profiles` and `user_role_assignments`. |
 
 ## Whether it adds starter routes and wiring
 
@@ -27,7 +27,7 @@ Use [Base Contract](./base-contract.md) for the support-tier rules and [base-con
 | Scaffold wiring | Selecting CRM adds the package dependency and enables CRM-related shell/config wiring in generated platform apps. |
 | Starter routes | The current module template contributes the `/playground/crm` starter surface plus `/api/crm/contacts`, `/api/crm/organizations`, `/api/crm/stats`, and `/api/crm/owners`. |
 | Shell behavior | The module registration adds CRM navigation groups and toolbar route definitions. |
-| Dependency behavior | CRM resolves on top of the existing `Core + Admin` platform baseline because its current policies and privileged workflows assume RBAC is present. |
+| Dependency behavior | CRM resolves on top of `Core + Admin + Organizations`; orgs is enabled with hidden shell placement. |
 
 > The CRM module does **not** install a full ready-made CRM frontend on its own. It provides shared schema, policies, helper functions, and a light starter surface. Product-specific UI remains application-owned.
 
@@ -39,7 +39,7 @@ The current CRM contract is intentionally small:
 
 - `@brightweblabs/module-crm/registration`: `crmModuleRegistration`
 - `@brightweblabs/module-crm`: `listCrmContacts()`
-- `@brightweblabs/module-crm`: `listCrmOrganizations()`
+- `@brightweblabs/module-crm`: `listCrmOrganizations()` (deprecated alias of the Organizations module listOrganizations helper)
 - `@brightweblabs/module-crm`: `getCrmContactStatusStats()`
 - `@brightweblabs/module-crm`: `listCrmOwnerOptions()`
 - `@brightweblabs/module-crm`: `listCrmPrimaryContacts()`
@@ -132,7 +132,7 @@ The generated starter only proves that the package is connected. You are still e
 
 ## How To Build On This
 
-- Build on the `stable` CRM helpers and handlers first when you want reusable contacts, organizations, stats, and owner options.
+- Build on the stable CRM helpers for contacts, stats, and owner options; use `@brightweblabs/module-orgs` for organization data.
 - Build on the `stable` CRM shell registration when you want shared CRM navigation and toolbar wiring.
 - Use `getCrmDashboardData()` when you want the current scaffolded CRM page payload quickly.
 - Replace or wrap the starter helper once the client app needs different CRM slices, workflows, or page composition.
@@ -146,6 +146,7 @@ For a broader integration overview, see [Using BrightWeb Modules](./using-module
 - [Base Contract](./base-contract.md)
 - [Using BrightWeb Modules](./using-modules.md)
 - [Projects](./projects.md)
+- [Organizations](./orgs.md)
 - [Platform Base](./platform-base.md)
 
 ## Implementation references

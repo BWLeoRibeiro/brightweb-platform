@@ -1,12 +1,12 @@
 {
-  "$comment": "Organizations and membership objects are owned here until a future orgs module is introduced.",
   "contractVersion": 1,
   "key": "crm",
   "title": "CRM",
-  "description": "Organizations, CRM contacts, membership, invitations, and funnel reporting.",
+  "description": "CRM contacts, status tracking, and funnel reporting built on organizations.",
   "requires": {
     "core": ">=0.4",
-    "admin": ">=0.3"
+    "admin": ">=0.3",
+    "orgs": ">=0.1"
   },
   "capabilities": {
     "provides": [
@@ -50,10 +50,7 @@
     "ownedObjects": [
       "crm_contacts",
       "crm_status_log",
-      "set_crm_status",
-      "organizations",
-      "organization_members",
-      "organization_invitations"
+      "set_crm_status"
     ]
   }
 }

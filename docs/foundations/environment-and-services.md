@@ -44,7 +44,7 @@ The current public scaffold only generates `.env.local` for the `platform` templ
 
 - The current platform starter uses Resend as an email delivery transport, not as the source of truth for marketing audience state.
 - The generated env contract does not include topic-ID variables, and the current starter does not create or manage ESP topic resources.
-- Operational contact data lives in Supabase CRM tables such as `crm_contacts` and `organization_invitations`.
+- Operational contact data lives in Supabase CRM tables such as `crm_contacts`; organization invitation data lives in the Organizations module.
 - Global user preference state lives in Supabase core tables such as `user_preferences` and `user_notification_state`.
 - If a project later syncs app-owned subscription state to an ESP such as Resend, that mapping is app-specific and not part of the current BrightWeb scaffold contract.
 

@@ -1,11 +1,12 @@
 # Dependency Resolution
 
-BrightWeb resolves module order from the registry, not from ad hoc assumptions. The current chain is linear: **Core** first, then **Admin**, then **CRM**, then **Projects**.
+BrightWeb resolves module order from the registry, not from ad hoc assumptions. Core and Admin establish the base, Organizations builds on them, and CRM and Projects independently build on Organizations.
 
 ## Current dependency rules
 
-- **CRM requires Admin.** CRM policies and shared workflows assume the RBAC and governance layer already exists.
-- **Projects requires CRM.** Projects attach to organizations and reuse CRM-owned organizational structure.
+- **Organizations requires Admin.** Its policies and privileged workflows assume the RBAC and governance layer already exists.
+- **CRM requires Organizations.** CRM contacts attach to shared organization records.
+- **Projects requires Organizations.** Projects attach to organizations without requiring CRM.
 - **Admin depends on Core.** RBAC extends the shared profile and auth foundations in Core.
 
 ## Resolved install-order examples
@@ -13,8 +14,9 @@ BrightWeb resolves module order from the registry, not from ad hoc assumptions. 
 | Install shape | Resolved order | Note |
 | --- | --- | --- |
 | Base only | Core → Admin | Platform always resolves to the `Core + Admin` database baseline; selecting Admin only controls whether the Admin starter UI and package wiring are scaffolded. |
-| Base + CRM | Core → Admin → CRM | CRM depends on Admin, so RBAC and governance land before CRM schema and logic. |
-| Base + CRM + Projects | Core → Admin → CRM → Projects | Projects depends on CRM, so the install order is fully resolved before client-only migrations. |
+| Base + CRM | Core → Admin → Organizations → CRM | Shared organization schema lands before CRM contacts and integration seams. |
+| Base + Projects | Core → Admin → Organizations → Projects | Projects receives organization structure without installing CRM. |
+| Base + CRM + Projects | Core → Admin → Organizations → CRM → Projects | CRM and Projects share Organizations; requested module order breaks the tie between the two leaf modules. |
 
 ## Where the order comes from
 

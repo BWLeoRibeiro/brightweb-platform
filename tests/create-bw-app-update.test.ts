@@ -19,6 +19,7 @@ const BRIGHTWEB_PACKAGES = [
   "@brightweblabs/infra",
   "@brightweblabs/module-admin",
   "@brightweblabs/module-crm",
+  "@brightweblabs/module-orgs",
   "@brightweblabs/module-projects",
   "@brightweblabs/ui",
 ];
@@ -182,6 +183,32 @@ test("detects a published platform app with installed crm module", async (t) => 
   assert.equal(plan.packageUpdates.length, 0);
 });
 
+test("updates legacy CRM apps with the required organizations package", async (t) => {
+  const { tempRoot, targetDir } = await scaffoldPlatformApp({
+    modules: ["crm"],
+    workspaceRoot: REPO_ROOT,
+  });
+  t.after(async () => fs.rm(tempRoot, { recursive: true, force: true }));
+
+  const packageJsonPath = path.join(targetDir, "package.json");
+  const manifest = await readJson(packageJsonPath);
+  delete manifest.dependencies["@brightweblabs/module-orgs"];
+  await fs.writeFile(packageJsonPath, `${JSON.stringify(manifest, null, 2)}\n`, "utf8");
+
+  const plan = await buildBrightwebAppUpdatePlan(
+    { targetDir },
+    {
+      workspaceRoot: REPO_ROOT,
+      fetchImpl: await createMockNpmFetch(),
+    },
+  );
+
+  const orgsUpdate = plan.packageUpdates.find((entry) => entry.packageName === "@brightweblabs/module-orgs");
+  assert.equal(orgsUpdate?.from, null);
+  assert.equal(orgsUpdate?.to, "^0.1.0");
+  assert.match(plan.fileWrites.find((entry) => entry.relativePath === "package.json")?.content ?? "", /"@brightweblabs\/module-orgs": "\^0\.1\.0"/);
+});
+
 test("published platform scaffolds pin current brightweb package versions", async (t) => {
   const { tempRoot, targetDir } = await scaffoldPlatformApp({
     modules: ["crm", "projects"],
@@ -195,6 +222,7 @@ test("published platform scaffolds pin current brightweb package versions", asyn
     "@brightweblabs/core-auth",
     "@brightweblabs/infra",
     "@brightweblabs/module-crm",
+    "@brightweblabs/module-orgs",
     "@brightweblabs/module-projects",
     "@brightweblabs/ui",
   ]) {
@@ -215,8 +243,8 @@ test("published platform scaffolds resolved supabase migrations for the selected
   const registry = await readJson(path.join(targetDir, "supabase", "module-registry.json"));
   const stack = await readJson(path.join(targetDir, "supabase", "clients", "sample-platform", "stack.json"));
 
-  assert.deepEqual(Object.keys(registry.modules), ["core", "admin", "crm"]);
-  assert.deepEqual(stack.enabledModules, ["core", "admin", "crm"]);
+  assert.deepEqual(Object.keys(registry.modules), ["core", "admin", "orgs", "crm"]);
+  assert.deepEqual(stack.enabledModules, ["core", "admin", "orgs", "crm"]);
 
   assert.match(await fs.readFile(path.join(targetDir, "supabase", "config.toml"), "utf8"), /project_id = "app"/);
   assert.deepEqual(
@@ -224,17 +252,44 @@ test("published platform scaffolds resolved supabase migrations for the selected
     [
       "0001_core__20260316090000_core_v1.sql",
       "0002_admin__20260316091000_admin_v1.sql",
-      "0003_crm__20260316092000_crm_v1.sql",
-      "0004_crm__20260421201523_portal_read_indexes.sql",
+      "0003_orgs__20260316091500_orgs_v1.sql",
+      "0004_crm__20260316092000_crm_v1.sql",
+      "0005_crm__20260316092010_crm_org_integration.sql",
+      "0006_crm__20260421201523_portal_read_indexes.sql",
     ],
   );
 
   await fs.access(path.join(targetDir, "supabase", "modules", "core", "migrations", "20260316090000_core_v1.sql"));
   await fs.access(path.join(targetDir, "supabase", "modules", "admin", "migrations", "20260316091000_admin_v1.sql"));
+  await fs.access(path.join(targetDir, "supabase", "modules", "orgs", "migrations", "20260316091500_orgs_v1.sql"));
   await fs.access(path.join(targetDir, "supabase", "modules", "crm", "migrations", "20260316092000_crm_v1.sql"));
   await fs.access(path.join(targetDir, "supabase", "modules", "crm", "migrations", "20260421201523_portal_read_indexes.sql"));
   await assert.rejects(() =>
     fs.access(path.join(targetDir, "supabase", "modules", "projects", "migrations", "20260316093000_projects_v1.sql")));
+});
+
+test("projects scaffolding resolves organizations without CRM", async (t) => {
+  const { tempRoot, targetDir } = await scaffoldPlatformApp({ modules: ["projects"] });
+  t.after(async () => fs.rm(tempRoot, { recursive: true, force: true }));
+
+  const stack = await readJson(path.join(targetDir, "supabase", "clients", "sample-platform", "stack.json"));
+  assert.deepEqual(stack.enabledModules, ["core", "admin", "orgs", "projects"]);
+
+  const migrations = (await fs.readdir(path.join(targetDir, "supabase", "migrations")))
+    .filter((fileName) => fileName.endsWith(".sql"));
+  assert.deepEqual(migrations.slice(0, 4), [
+    "0001_core__20260316090000_core_v1.sql",
+    "0002_admin__20260316091000_admin_v1.sql",
+    "0003_orgs__20260316091500_orgs_v1.sql",
+    "0004_projects__20260316093000_projects_v1.sql",
+  ]);
+  assert.equal(migrations.some((fileName) => fileName.includes("_crm__")), false);
+
+  const manifest = await readJson(path.join(targetDir, "package.json"));
+  assert.equal(manifest.dependencies["@brightweblabs/module-orgs"], "^0.1.0");
+  assert.equal(manifest.dependencies["@brightweblabs/module-crm"], undefined);
+  assert.match(await fs.readFile(path.join(targetDir, "config", "modules.ts"), "utf8"), /key: "orgs"[\s\S]*?enabled: true[\s\S]*?placement: "hidden"/);
+  assert.match(await fs.readFile(path.join(targetDir, "config", "shell.ts"), "utf8"), /orgsModuleRegistration/);
 });
 
 test("scaffolds platform AI handoff files with platform-specific context", async (t) => {

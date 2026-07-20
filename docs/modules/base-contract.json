@@ -948,16 +948,16 @@
     "packageName": "@brightweblabs/module-crm",
     "symbol": "listCrmOrganizations",
     "kind": "helper",
-    "status": "stable",
+    "status": "deprecated",
     "runtime": "server",
-    "summary": "Lists CRM organizations with reusable search and pagination.",
+    "summary": "Deprecated compatibility alias for the organizations module list helper.",
     "auth": "signed-in user required in the caller context",
     "inputs": [
       {
         "name": "supabase",
         "type": "SupabaseClient",
         "required": true,
-        "description": "Server-side Supabase client with CRM schema access."
+        "description": "Server-side Supabase client with organization schema access."
       },
       {
         "name": "params",
@@ -973,9 +973,13 @@
       }
     ],
     "notes": [
-      "Use for app-owned CRM organization lists and selectors."
+      "Deprecated: import listOrganizations from @brightweblabs/module-orgs for new code.",
+      "The alias remains supported so module-crm's public API stays stable."
     ],
-    "source": "packages/module-crm/src/data.ts"
+    "replaces": [
+      "listOrganizations"
+    ],
+    "source": "packages/module-crm/src/index.ts"
   },
   {
     "moduleKey": "crm",
@@ -1375,6 +1379,212 @@
       "listCrmStatusTimeline"
     ],
     "source": "packages/module-crm/src/index.ts"
+  },
+  {
+    "moduleKey": "orgs",
+    "packageName": "@brightweblabs/module-orgs/registration",
+    "symbol": "orgsModuleRegistration",
+    "kind": "registration",
+    "status": "stable",
+    "runtime": "shell",
+    "summary": "Registers the organizations foundation module without adding navigation.",
+    "auth": "none",
+    "inputs": [],
+    "outputs": [
+      {
+        "type": "ShellModuleRegistration",
+        "description": "Hidden shell registration for the organizations foundation."
+      }
+    ],
+    "notes": [
+      "Enabled automatically when CRM or Projects is selected."
+    ],
+    "source": "packages/module-orgs/src/registration.ts"
+  },
+  {
+    "moduleKey": "orgs",
+    "packageName": "@brightweblabs/module-orgs",
+    "symbol": "listOrganizations",
+    "kind": "helper",
+    "status": "stable",
+    "runtime": "server",
+    "summary": "Lists organizations with search and pagination.",
+    "auth": "signed-in user required in the caller context",
+    "inputs": [
+      {
+        "name": "supabase",
+        "type": "SupabaseClient",
+        "required": true,
+        "description": "Server-side Supabase client with organization access."
+      },
+      {
+        "name": "params",
+        "type": "OrganizationsListParams",
+        "required": false,
+        "description": "Optional page, pageSize, and search filters."
+      }
+    ],
+    "outputs": [
+      {
+        "type": "OrganizationsListResult",
+        "description": "Paginated organizations plus total counters."
+      }
+    ],
+    "notes": [
+      "Replaces module-crm's deprecated listCrmOrganizations name."
+    ],
+    "replaces": [
+      "listCrmOrganizations"
+    ],
+    "source": "packages/module-orgs/src/data.ts"
+  },
+  {
+    "moduleKey": "orgs",
+    "packageName": "@brightweblabs/module-orgs",
+    "symbol": "createOrganization",
+    "kind": "helper",
+    "status": "stable",
+    "runtime": "server",
+    "summary": "Creates an organization.",
+    "auth": "staff access enforced by database policy",
+    "inputs": [
+      {
+        "name": "supabase",
+        "type": "SupabaseClient",
+        "required": true,
+        "description": "Server-side Supabase client with organization write access."
+      },
+      {
+        "name": "input",
+        "type": "CreateOrganizationInput",
+        "required": true,
+        "description": "Organization fields to create."
+      }
+    ],
+    "outputs": [
+      {
+        "type": "Organization",
+        "description": "The created organization."
+      }
+    ],
+    "notes": [],
+    "source": "packages/module-orgs/src/data.ts"
+  },
+  {
+    "moduleKey": "orgs",
+    "packageName": "@brightweblabs/module-orgs",
+    "symbol": "updateOrganization",
+    "kind": "helper",
+    "status": "stable",
+    "runtime": "server",
+    "summary": "Updates an organization.",
+    "auth": "staff access enforced by database policy",
+    "inputs": [
+      {
+        "name": "supabase",
+        "type": "SupabaseClient",
+        "required": true,
+        "description": "Server-side Supabase client with organization write access."
+      },
+      {
+        "name": "organizationId",
+        "type": "string",
+        "required": true,
+        "description": "Organization identifier."
+      },
+      {
+        "name": "input",
+        "type": "UpdateOrganizationInput",
+        "required": true,
+        "description": "Organization fields to update."
+      }
+    ],
+    "outputs": [
+      {
+        "type": "Organization",
+        "description": "The updated organization."
+      }
+    ],
+    "notes": [],
+    "source": "packages/module-orgs/src/data.ts"
+  },
+  {
+    "moduleKey": "orgs",
+    "packageName": "@brightweblabs/module-orgs",
+    "symbol": "listOrganizationMembers",
+    "kind": "helper",
+    "status": "stable",
+    "runtime": "server",
+    "summary": "Lists members of an organization.",
+    "auth": "organization membership or staff access enforced by database policy",
+    "inputs": [
+      {
+        "name": "supabase",
+        "type": "SupabaseClient",
+        "required": true,
+        "description": "Server-side Supabase client with membership access."
+      },
+      {
+        "name": "organizationId",
+        "type": "string",
+        "required": true,
+        "description": "Organization identifier."
+      }
+    ],
+    "outputs": [
+      {
+        "type": "OrganizationMember[]",
+        "description": "Organization membership rows."
+      }
+    ],
+    "notes": [],
+    "source": "packages/module-orgs/src/data.ts"
+  },
+  {
+    "moduleKey": "orgs",
+    "packageName": "@brightweblabs/module-orgs",
+    "symbol": "setOrganizationMemberRole",
+    "kind": "helper",
+    "status": "stable",
+    "runtime": "server",
+    "summary": "Adds an organization member or updates the member role.",
+    "auth": "organization admin or staff access enforced by database policy",
+    "inputs": [
+      {
+        "name": "supabase",
+        "type": "SupabaseClient",
+        "required": true,
+        "description": "Server-side Supabase client with membership admin access."
+      },
+      {
+        "name": "organizationId",
+        "type": "string",
+        "required": true,
+        "description": "Organization identifier."
+      },
+      {
+        "name": "profileId",
+        "type": "string",
+        "required": true,
+        "description": "Member profile identifier."
+      },
+      {
+        "name": "role",
+        "type": "OrganizationMemberRole",
+        "required": true,
+        "description": "Admin or member role."
+      }
+    ],
+    "outputs": [
+      {
+        "type": "OrganizationMember",
+        "description": "The created or updated membership row."
+      }
+    ],
+    "notes": [
+      "Supported member roles are admin and member."
+    ],
+    "source": "packages/module-orgs/src/data.ts"
   },
   {
     "moduleKey": "projects",

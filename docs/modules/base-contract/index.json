@@ -27,6 +27,14 @@
       "summary": "CRM shell registration, stable list/stats helpers, package-owned GET handlers, and starter dashboard glue."
     },
     {
+      "moduleKey": "orgs",
+      "title": "Organizations",
+      "file": "orgs.json",
+      "doc": "../orgs.md",
+      "entryCount": 6,
+      "summary": "Organization data, membership helpers, and hidden shell registration."
+    },
+    {
       "moduleKey": "projects",
       "title": "Projects",
       "file": "projects.json",

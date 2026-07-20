@@ -71,16 +71,16 @@
     "packageName": "@brightweblabs/module-crm",
     "symbol": "listCrmOrganizations",
     "kind": "helper",
-    "status": "stable",
+    "status": "deprecated",
     "runtime": "server",
-    "summary": "Lists CRM organizations with reusable search and pagination.",
+    "summary": "Deprecated compatibility alias for the organizations module list helper.",
     "auth": "signed-in user required in the caller context",
     "inputs": [
       {
         "name": "supabase",
         "type": "SupabaseClient",
         "required": true,
-        "description": "Server-side Supabase client with CRM schema access."
+        "description": "Server-side Supabase client with organization schema access."
       },
       {
         "name": "params",
@@ -96,9 +96,13 @@
       }
     ],
     "notes": [
-      "Use for app-owned CRM organization lists and selectors."
+      "Deprecated: import listOrganizations from @brightweblabs/module-orgs for new code.",
+      "The alias remains supported so module-crm's public API stays stable."
     ],
-    "source": "packages/module-crm/src/data.ts"
+    "replaces": [
+      "listOrganizations"
+    ],
+    "source": "packages/module-crm/src/index.ts"
   },
   {
     "moduleKey": "crm",

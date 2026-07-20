@@ -12,16 +12,22 @@
       "dependsOn": ["core"],
       "description": "RBAC, user governance, and privileged role-management behavior."
     },
+    "orgs": {
+      "label": "Organizations",
+      "path": "supabase/modules/orgs/migrations",
+      "dependsOn": ["core", "admin"],
+      "description": "Organizations, membership, invitations, and shared organization access helpers."
+    },
     "crm": {
       "label": "CRM",
       "path": "supabase/modules/crm/migrations",
-      "dependsOn": ["core", "admin"],
-      "description": "Organizations, CRM contacts, org membership, and invitation flows."
+      "dependsOn": ["core", "admin", "orgs"],
+      "description": "CRM contacts, status tracking, and organization integration."
     },
     "projects": {
       "label": "Projects",
       "path": "supabase/modules/projects/migrations",
-      "dependsOn": ["core", "admin", "crm"],
+      "dependsOn": ["core", "admin", "orgs"],
       "description": "Projects, tasks, milestones, members, links, and project activity policies."
     }
   }

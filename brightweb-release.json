@@ -7,6 +7,7 @@
     "@brightweblabs/infra": "0.3.0",
     "@brightweblabs/module-admin": "0.3.3",
     "@brightweblabs/module-crm": "0.4.1",
+    "@brightweblabs/module-orgs": "0.1.0",
     "@brightweblabs/module-projects": "0.4.1",
     "@brightweblabs/theme": "0.1.0",
     "@brightweblabs/ui": "0.4.0",

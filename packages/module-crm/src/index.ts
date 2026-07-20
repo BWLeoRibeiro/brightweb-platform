@@ -1,4 +1,18 @@
 import { requireServerPageAccess } from "@brightweblabs/core-auth/server";
+import {
+  listOrganizations,
+  type Organization,
+} from "@brightweblabs/module-orgs";
+/** @deprecated Import listOrganizations from @brightweblabs/module-orgs. */
+export { listOrganizations as listCrmOrganizations } from "@brightweblabs/module-orgs";
+/** @deprecated Import organization types and constants from @brightweblabs/module-orgs. */
+export {
+  ORGANIZATIONS_DEFAULT_PAGE_SIZE as CRM_ORGANIZATIONS_DEFAULT_PAGE_SIZE,
+  ORGANIZATIONS_MAX_PAGE_SIZE as CRM_ORGANIZATIONS_MAX_PAGE_SIZE,
+  type Organization as CrmOrganization,
+  type OrganizationsListParams as CrmOrganizationsListParams,
+  type OrganizationsListResult as CrmOrganizationsListResult,
+} from "@brightweblabs/module-orgs";
 export {
   composeCrmMessage,
   ptCrmActivityDictionary,
@@ -8,14 +22,11 @@ export {
 export {
   CRM_CONTACTS_DEFAULT_PAGE_SIZE,
   CRM_CONTACTS_MAX_PAGE_SIZE,
-  CRM_ORGANIZATIONS_DEFAULT_PAGE_SIZE,
-  CRM_ORGANIZATIONS_MAX_PAGE_SIZE,
   CRM_PRIMARY_CONTACTS_DEFAULT_LIMIT,
   CRM_STATUS_TIMELINE_DEFAULT_DAYS,
   CRM_STATUS_TIMELINE_DEFAULT_LIMIT,
   getCrmContactStatusStats,
   listCrmContacts,
-  listCrmOrganizations,
   listCrmOwnerOptions,
   listCrmPrimaryContacts,
   listCrmStatusTimeline,
@@ -23,9 +34,6 @@ export {
   type CrmContactStatusStats,
   type CrmContactsListParams,
   type CrmContactsListResult,
-  type CrmOrganization,
-  type CrmOrganizationsListParams,
-  type CrmOrganizationsListResult,
   type CrmOwnerOption,
   type CrmPrimaryContact,
   type CrmPrimaryContactsData,
@@ -43,13 +51,11 @@ export {
 import {
   getCrmContactStatusStats,
   listCrmContacts,
-  listCrmOrganizations,
   listCrmOwnerOptions,
   listCrmPrimaryContacts,
   listCrmStatusTimeline,
   type CrmContact,
   type CrmContactStatusStats,
-  type CrmOrganization,
   type CrmOwnerOption,
   type CrmPrimaryContact,
   type CrmStatusLog,
@@ -58,7 +64,7 @@ import {
 export type CrmDashboardData = {
   userId: string;
   profileId: string;
-  organizations: CrmOrganization[];
+  organizations: Organization[];
   primaryContacts: CrmPrimaryContact[];
   ownerOptions: CrmOwnerOption[];
   contacts: CrmContact[];
@@ -77,7 +83,7 @@ export async function getCrmDashboardData(): Promise<CrmDashboardData> {
     statusLog,
     primaryContacts,
   ] = await Promise.all([
-    listCrmOrganizations(supabase, { page: 1, pageSize: 12 }),
+    listOrganizations(supabase, { page: 1, pageSize: 12 }),
     listCrmContacts(supabase, { page: 1, pageSize: 100 }),
     getCrmContactStatusStats(supabase),
     listCrmOwnerOptions(supabase),

@@ -6,7 +6,7 @@
   "requires": {
     "core": ">=0.4",
     "admin": ">=0.3",
-    "crm": ">=0.4"
+    "orgs": ">=0.1"
   },
   "capabilities": {
     "provides": [

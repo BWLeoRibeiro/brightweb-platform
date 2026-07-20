@@ -12,6 +12,7 @@ Each manifest entry uses structured fields for `inputs`, `outputs`, and, where r
 | --- | --- | --- |
 | `stable` | Supported base surface intended for reuse across projects. | Build on it. |
 | `starter` | Convenience surface tied to starter pages, starter routes, or starter payload shapes. | Feel free to replace or compose it. |
+| `deprecated` | Compatibility surface retained while callers move to the replacement named in the entry. | Keep existing callers working; use the replacement in new code. |
 | `internal` | Exported or repo-visible surface that is not part of the supported public promise. | Do not depend on it. |
 
 ## Contract shape
@@ -30,6 +31,7 @@ It is broader than just HTTP endpoints, and narrower than a full developer platf
 
 - Build new project code on `stable` entries first.
 - Use `starter` entries when you want to move quickly, then replace or wrap them as the client app becomes more specific.
+- Migrate away from `deprecated` entries using their replacement notes; compatibility remains explicit while the alias is supported.
 - Avoid coupling app-owned code to `internal` entries, even if they are exported today.
 
 ## What To Read Next

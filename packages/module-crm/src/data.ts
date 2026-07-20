@@ -1,5 +1,15 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+/** @deprecated Import organization helpers and types from @brightweblabs/module-orgs. */
+export {
+  ORGANIZATIONS_DEFAULT_PAGE_SIZE as CRM_ORGANIZATIONS_DEFAULT_PAGE_SIZE,
+  ORGANIZATIONS_MAX_PAGE_SIZE as CRM_ORGANIZATIONS_MAX_PAGE_SIZE,
+  listOrganizations as listCrmOrganizations,
+  type Organization as CrmOrganization,
+  type OrganizationsListParams as CrmOrganizationsListParams,
+  type OrganizationsListResult as CrmOrganizationsListResult,
+} from "@brightweblabs/module-orgs";
+
 export type CrmContact = {
   id: string;
   first_name: string | null;
@@ -20,20 +30,6 @@ export type CrmPrimaryContact = {
   first_name: string | null;
   last_name: string | null;
   email: string | null;
-};
-
-export type CrmOrganization = {
-  id: string;
-  name: string;
-  industry: string | null;
-  company_size: string | null;
-  budget_range: string | null;
-  website_url: string | null;
-  address: string | null;
-  taxIdentifierValue: string | null;
-  primary_contact_id: string | null;
-  primary_contact?: CrmPrimaryContact | null;
-  created_at: string;
 };
 
 export type CrmOwnerOption = {
@@ -90,20 +86,6 @@ export type CrmContactsListResult = {
   totalPages: number;
 };
 
-export type CrmOrganizationsListParams = {
-  page?: number;
-  pageSize?: number;
-  search?: string;
-};
-
-export type CrmOrganizationsListResult = {
-  items: CrmOrganization[];
-  page: number;
-  pageSize: number;
-  total: number;
-  totalPages: number;
-};
-
 type CrmOwnerAssignment = {
   profile_id: string | null;
   role_code: string | null;
@@ -123,23 +105,6 @@ type CrmOwnerAssignment = {
     | null;
 };
 
-type RawCrmOrganization = {
-  id: string;
-  name: string;
-  industry: string | null;
-  company_size: string | null;
-  budget_range: string | null;
-  website_url: string | null;
-  address: string | null;
-  tax_identifier_value?: string | null;
-  primary_contact_id: string | null;
-  primary_contact?:
-    | CrmPrimaryContact
-    | CrmPrimaryContact[]
-    | null;
-  created_at: string;
-};
-
 type RawCrmStatusLog = Omit<CrmStatusLog, "changed_by_label" | "contact_label">;
 
 type CrmChangedByProfile = {
@@ -150,8 +115,6 @@ type CrmChangedByProfile = {
 
 export const CRM_CONTACTS_DEFAULT_PAGE_SIZE = 50;
 export const CRM_CONTACTS_MAX_PAGE_SIZE = 100;
-export const CRM_ORGANIZATIONS_DEFAULT_PAGE_SIZE = 20;
-export const CRM_ORGANIZATIONS_MAX_PAGE_SIZE = 100;
 export const CRM_PRIMARY_CONTACTS_DEFAULT_LIMIT = 200;
 export const CRM_STATUS_TIMELINE_DEFAULT_LIMIT = 10;
 export const CRM_STATUS_TIMELINE_DEFAULT_DAYS = 7;
@@ -164,23 +127,6 @@ function normalizePage(page: number | undefined, fallback: number) {
 function normalizePageSize(pageSize: number | undefined, fallback: number, max: number) {
   const normalized = Number.isFinite(pageSize) && (pageSize ?? 0) > 0 ? Math.floor(pageSize as number) : fallback;
   return Math.min(normalized, max);
-}
-
-function normalizeOrganization(raw: RawCrmOrganization): CrmOrganization {
-  const primaryContact = raw.primary_contact;
-  return {
-    id: raw.id,
-    name: raw.name,
-    industry: raw.industry,
-    company_size: raw.company_size,
-    budget_range: raw.budget_range,
-    website_url: raw.website_url,
-    address: raw.address,
-    taxIdentifierValue: typeof raw.tax_identifier_value === "string" ? raw.tax_identifier_value : null,
-    primary_contact_id: raw.primary_contact_id,
-    primary_contact: Array.isArray(primaryContact) ? primaryContact[0] ?? null : primaryContact ?? null,
-    created_at: raw.created_at,
-  };
 }
 
 function buildProfileDisplayName(profile: {
@@ -280,44 +226,6 @@ export async function listCrmContacts(
 
   return {
     items,
-    page,
-    pageSize,
-    total: count ?? 0,
-    totalPages: Math.max(1, Math.ceil((count ?? 0) / pageSize)),
-  };
-}
-
-export async function listCrmOrganizations(
-  supabase: SupabaseClient,
-  params: CrmOrganizationsListParams = {},
-): Promise<CrmOrganizationsListResult> {
-  const page = normalizePage(params.page, 1);
-  const pageSize = normalizePageSize(params.pageSize, CRM_ORGANIZATIONS_DEFAULT_PAGE_SIZE, CRM_ORGANIZATIONS_MAX_PAGE_SIZE);
-  const from = (page - 1) * pageSize;
-  const to = from + pageSize - 1;
-  const search = params.search?.trim() ?? "";
-
-  let query = supabase
-    .from("organizations")
-    .select(
-      "id, name, industry, company_size, budget_range, website_url, address, tax_identifier_value, primary_contact_id, created_at, primary_contact:profiles!organizations_primary_contact_id_fkey(id, first_name, last_name, email)",
-      { count: "exact" },
-    )
-    .order("created_at", { ascending: false })
-    .range(from, to);
-
-  if (search) {
-    const safe = search.replace(/[%_,()"]/g, "");
-    query = query.ilike("name", `%${safe}%`);
-  }
-
-  const { data, error, count } = await query;
-  if (error) {
-    throw new Error(error.message);
-  }
-
-  return {
-    items: ((data ?? []) as RawCrmOrganization[]).map(normalizeOrganization),
     page,
     pageSize,
     total: count ?? 0,

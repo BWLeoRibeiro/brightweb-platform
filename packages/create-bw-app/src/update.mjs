@@ -5,6 +5,7 @@ import {
   BRIGHTWEB_PACKAGE_NAMES,
   CLI_DISPLAY_NAME,
   MODULE_STARTER_FILES,
+  ORGS_PACKAGE_NAME,
   PLATFORM_STARTER_FILES,
   SELECTABLE_MODULES,
 } from "./constants.mjs";
@@ -217,6 +218,19 @@ function mergeManagedPackageUpdates({ manifest, targetVersions, installedBrightw
       from: details.version,
       to: targetVersion,
       section: details.section,
+    });
+    changed = true;
+  }
+
+  const requiredOrgsVersion = targetVersions[ORGS_PACKAGE_NAME];
+  if (requiredOrgsVersion && !installedBrightwebPackages.has(ORGS_PACKAGE_NAME)) {
+    nextManifest.dependencies = nextManifest.dependencies || {};
+    nextManifest.dependencies[ORGS_PACKAGE_NAME] = requiredOrgsVersion;
+    packageUpdates.push({
+      packageName: ORGS_PACKAGE_NAME,
+      from: null,
+      to: requiredOrgsVersion,
+      section: "dependencies",
     });
     changed = true;
   }

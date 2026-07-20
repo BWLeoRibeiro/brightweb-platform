@@ -10,6 +10,7 @@ import {
   CLI_DISPLAY_NAME,
   CORE_PACKAGES,
   DEFAULTS,
+  ORGS_PACKAGE_NAME,
   SELECTABLE_MODULES,
   SITE_DEPENDENCY_DEFAULTS,
   SITE_DEV_DEPENDENCY_DEFAULTS,
@@ -24,8 +25,9 @@ const DEFAULT_DB_MODULE_REGISTRY = {
   modules: {
     core: { label: "Core", dependsOn: [] },
     admin: { label: "Admin", dependsOn: ["core"] },
-    crm: { label: "CRM", dependsOn: ["core", "admin"] },
-    projects: { label: "Projects", dependsOn: ["core", "admin", "crm"] },
+    orgs: { label: "Organizations", dependsOn: ["core", "admin"] },
+    crm: { label: "CRM", dependsOn: ["core", "admin", "orgs"] },
+    projects: { label: "Projects", dependsOn: ["core", "admin", "orgs"] },
   },
 };
 
@@ -247,6 +249,7 @@ export async function getVersionMap(workspaceRoot) {
     "@brightweblabs/infra",
     "@brightweblabs/module-admin",
     "@brightweblabs/module-crm",
+    "@brightweblabs/module-orgs",
     "@brightweblabs/module-projects",
     "@brightweblabs/ui",
   ]) {
@@ -298,9 +301,10 @@ function createPlatformBrandConfigFile({ slug, brandValues }) {
 
 export function createPlatformModulesConfigFile(selectedModules) {
   const selected = new Set(selectedModules);
+  const orgsEnabled = selected.has("crm") || selected.has("projects");
 
   return [
-    'export type StarterModuleKey = "core-auth" | "crm" | "projects" | "admin";',
+    'export type StarterModuleKey = "core-auth" | "orgs" | "crm" | "projects" | "admin";',
     "",
     "export type StarterModuleConfig = {",
     "  key: StarterModuleKey;",
@@ -309,7 +313,7 @@ export function createPlatformModulesConfigFile(selectedModules) {
     "  enabled: boolean;",
     "  packageName: string;",
     "  playgroundHref?: string;",
-    '  placement: "core" | "primary" | "admin";',
+    '  placement: "core" | "primary" | "admin" | "hidden";',
     "};",
     "",
     "export const starterModuleConfig: StarterModuleConfig[] = [",
@@ -321,6 +325,14 @@ export function createPlatformModulesConfigFile(selectedModules) {
     '    packageName: "@brightweblabs/core-auth",',
     '    playgroundHref: "/playground/auth",',
     '    placement: "core",',
+    "  },",
+    "  {",
+    '    key: "orgs",',
+    '    label: "Organizations",',
+    '    description: "Shared organizations, membership, and invitation foundation for CRM and Projects.",',
+    `    enabled: ${String(orgsEnabled)},`,
+    '    packageName: "@brightweblabs/module-orgs",',
+    '    placement: "hidden",',
     "  },",
     "  {",
     '    key: "crm",',
@@ -659,6 +671,7 @@ export function createAppContextFile({
         ],
         packageOwned: [
           ...CORE_PACKAGES,
+          ...(selectedModules.includes("crm") || selectedModules.includes("projects") ? [ORGS_PACKAGE_NAME] : []),
           ...SELECTABLE_MODULES
             .filter((moduleDefinition) => selectedModules.includes(moduleDefinition.key))
             .map((moduleDefinition) => moduleDefinition.packageName),
@@ -732,6 +745,9 @@ export function createPackageJson({
       dependencies[moduleDefinition.packageName] = internalDependencyVersion(moduleDefinition.packageName);
     }
   }
+  if (selectedModules.includes("crm") || selectedModules.includes("projects")) {
+    dependencies[ORGS_PACKAGE_NAME] = internalDependencyVersion(ORGS_PACKAGE_NAME);
+  }
 
   return {
     name: slug,
@@ -768,6 +784,9 @@ export function createNextConfig({ template, selectedModules }) {
   }
 
   const transpilePackages = [...CORE_PACKAGES];
+  if (selectedModules.includes("crm") || selectedModules.includes("projects")) {
+    transpilePackages.push(ORGS_PACKAGE_NAME);
+  }
 
   for (const moduleDefinition of SELECTABLE_MODULES) {
     if (selectedModules.includes(moduleDefinition.key)) {
@@ -792,6 +811,11 @@ export function createNextConfig({ template, selectedModules }) {
 export function createShellConfig(selectedModules) {
   const importLines = [];
   const registrationLines = [];
+
+  if (selectedModules.includes("crm") || selectedModules.includes("projects")) {
+    importLines.push('import { orgsModuleRegistration } from "@brightweblabs/module-orgs/registration";');
+    registrationLines.push('  if (enabled.has("orgs")) registrations.push(orgsModuleRegistration);');
+  }
 
   if (selectedModules.includes("admin")) {
     importLines.push('import { adminModuleRegistration } from "@brightweblabs/module-admin/registration";');
