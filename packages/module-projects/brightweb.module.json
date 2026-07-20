@@ -1,0 +1,64 @@
+{
+  "contractVersion": 1,
+  "key": "projects",
+  "title": "Projects",
+  "description": "Projects, tasks, milestones, members, links, and project activity policies.",
+  "requires": {
+    "core": ">=0.4",
+    "admin": ">=0.3",
+    "crm": ">=0.4"
+  },
+  "capabilities": {
+    "provides": [
+      {
+        "name": "projects.projects.read",
+        "since": "0.4.1"
+      },
+      {
+        "name": "projects.projects.write",
+        "since": "0.4.1"
+      }
+    ],
+    "consumes": []
+  },
+  "capabilityExports": {
+    "projects.projects.read": {
+      "specifier": "./server",
+      "symbol": "listProjects"
+    },
+    "projects.projects.write": {
+      "specifier": "./server",
+      "symbol": "createProject"
+    }
+  },
+  "events": {
+    "emits": [],
+    "consumes": []
+  },
+  "permissions": {
+    "surfaces": "staff",
+    "grants": [
+      {
+        "name": "projects.manage",
+        "defaultRoles": ["staff", "admin"]
+      }
+    ]
+  },
+  "registration": "./registration",
+  "database": {
+    "namespace": ["project"],
+    "ownedObjects": [
+      "projects",
+      "project_members",
+      "project_milestones",
+      "project_tasks",
+      "project_links",
+      "project_status_log",
+      "is_project_org_admin",
+      "is_project_org_member",
+      "is_project_team_member",
+      "is_project_content_editor",
+      "is_project_owner_member"
+    ]
+  }
+}

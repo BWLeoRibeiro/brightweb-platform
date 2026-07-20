@@ -1,0 +1,56 @@
+{
+  "contractVersion": 1,
+  "key": "admin",
+  "title": "Administration",
+  "description": "RBAC, user governance, and privileged role-management behavior.",
+  "requires": {
+    "core": ">=0.4"
+  },
+  "capabilities": {
+    "provides": [
+      {
+        "name": "admin.users.read",
+        "since": "0.3.3"
+      },
+      {
+        "name": "admin.users.admin",
+        "since": "0.3.3"
+      }
+    ],
+    "consumes": []
+  },
+  "capabilityExports": {
+    "admin.users.read": {
+      "specifier": "./users",
+      "symbol": "listAdminUsers"
+    },
+    "admin.users.admin": {
+      "specifier": ".",
+      "symbol": "applyAdminRoleChanges"
+    }
+  },
+  "events": {
+    "emits": [],
+    "consumes": []
+  },
+  "permissions": {
+    "surfaces": "admin",
+    "grants": [
+      {
+        "name": "admin.manage",
+        "defaultRoles": ["admin"]
+      }
+    ]
+  },
+  "registration": "./registration",
+  "database": {
+    "namespace": ["role", "admin_user_"],
+    "ownedObjects": [
+      "roles",
+      "user_role_assignments",
+      "role_change_audit",
+      "admin_user_invitations",
+      "admin_set_user_role"
+    ]
+  }
+}

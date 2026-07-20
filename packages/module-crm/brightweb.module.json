@@ -1,0 +1,59 @@
+{
+  "$comment": "Organizations and membership objects are owned here until a future orgs module is introduced.",
+  "contractVersion": 1,
+  "key": "crm",
+  "title": "CRM",
+  "description": "Organizations, CRM contacts, membership, invitations, and funnel reporting.",
+  "requires": {
+    "core": ">=0.4",
+    "admin": ">=0.3"
+  },
+  "capabilities": {
+    "provides": [
+      {
+        "name": "crm.contacts.read",
+        "since": "0.4.1"
+      },
+      {
+        "name": "crm.funnel.read",
+        "since": "0.4.1"
+      }
+    ],
+    "consumes": []
+  },
+  "capabilityExports": {
+    "crm.contacts.read": {
+      "specifier": ".",
+      "symbol": "listCrmContacts"
+    },
+    "crm.funnel.read": {
+      "specifier": ".",
+      "symbol": "getCrmContactStatusStats"
+    }
+  },
+  "events": {
+    "emits": [],
+    "consumes": []
+  },
+  "permissions": {
+    "surfaces": "staff",
+    "grants": [
+      {
+        "name": "crm.manage",
+        "defaultRoles": ["staff", "admin"]
+      }
+    ]
+  },
+  "registration": "./registration",
+  "database": {
+    "namespace": ["crm_"],
+    "ownedObjects": [
+      "crm_contacts",
+      "crm_status_log",
+      "set_crm_status",
+      "organizations",
+      "organization_members",
+      "organization_invitations"
+    ]
+  }
+}

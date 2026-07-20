@@ -1,0 +1,256 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://brightweb.dev/schemas/module-manifest-v1.json",
+  "title": "BrightWeb module manifest v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contractVersion",
+    "key",
+    "title",
+    "description",
+    "requires",
+    "capabilities",
+    "events",
+    "permissions",
+    "registration",
+    "database"
+  ],
+  "properties": {
+    "$comment": { "type": "string" },
+    "contractVersion": { "const": 1 },
+    "key": { "$ref": "#/$defs/moduleKey" },
+    "title": { "$ref": "#/$defs/nonEmptyString" },
+    "description": { "$ref": "#/$defs/nonEmptyString" },
+    "requires": {
+      "type": "object",
+      "propertyNames": { "$ref": "#/$defs/moduleKey" },
+      "additionalProperties": { "$ref": "#/$defs/semverRange" }
+    },
+    "capabilities": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["provides", "consumes"],
+      "properties": {
+        "provides": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/capabilityDescriptor" }
+        },
+        "consumes": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/capabilityDescriptor" }
+        }
+      }
+    },
+    "capabilityExports": {
+      "type": "object",
+      "propertyNames": { "$ref": "#/$defs/capabilityName" },
+      "additionalProperties": { "$ref": "#/$defs/capabilityExport" }
+    },
+    "events": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["emits", "consumes"],
+      "properties": {
+        "emits": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/emittedEventDescriptor" }
+        },
+        "consumes": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/eventDescriptor" }
+        }
+      }
+    },
+    "permissions": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["surfaces", "grants"],
+      "properties": {
+        "surfaces": { "enum": ["all", "staff", "admin"] },
+        "grants": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/permissionGrant" }
+        }
+      }
+    },
+    "registration": { "$ref": "#/$defs/path" },
+    "database": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["namespace", "ownedObjects"],
+      "properties": {
+        "namespace": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/nonEmptyString" }
+        },
+        "ownedObjects": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/nonEmptyString" }
+        },
+        "migrations": { "$ref": "#/$defs/path" }
+      }
+    },
+    "integrations": {
+      "type": "object",
+      "propertyNames": { "$ref": "#/$defs/moduleKey" },
+      "additionalProperties": { "$ref": "#/$defs/integration" }
+    },
+    "tokens": { "$ref": "#/$defs/path" },
+    "scaffold": { "$ref": "#/$defs/path" },
+    "env": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/envVariable" }
+    },
+    "jobs": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/job" }
+    },
+    "health": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/healthCheck" }
+    },
+    "upgrade": { "$ref": "#/$defs/upgrade" }
+  },
+  "$defs": {
+    "nonEmptyString": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "\\S"
+    },
+    "path": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "\\S"
+    },
+    "moduleKey": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
+    },
+    "semverRange": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "\\S"
+    },
+    "capabilityName": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]*\\.[a-z][a-z0-9_-]*\\.(read|write|admin)$"
+    },
+    "eventName": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]*\\.[a-z][a-z0-9_-]*\\.[a-z][a-z0-9_]*$"
+    },
+    "permissionName": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]*\\.[a-z][a-z0-9_-]+$"
+    },
+    "capabilityDescriptor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "since"],
+      "properties": {
+        "name": { "$ref": "#/$defs/capabilityName" },
+        "since": { "$ref": "#/$defs/nonEmptyString" }
+      }
+    },
+    "capabilityExport": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["specifier", "symbol"],
+      "properties": {
+        "specifier": { "$ref": "#/$defs/nonEmptyString" },
+        "symbol": { "$ref": "#/$defs/nonEmptyString" }
+      }
+    },
+    "eventDescriptor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "since"],
+      "properties": {
+        "name": { "$ref": "#/$defs/eventName" },
+        "since": { "$ref": "#/$defs/nonEmptyString" }
+      }
+    },
+    "emittedEventDescriptor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "since"],
+      "properties": {
+        "name": { "$ref": "#/$defs/eventName" },
+        "since": { "$ref": "#/$defs/nonEmptyString" },
+        "payloadSchema": { "$ref": "#/$defs/path" }
+      }
+    },
+    "permissionGrant": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "defaultRoles"],
+      "properties": {
+        "name": { "$ref": "#/$defs/permissionName" },
+        "description": { "$ref": "#/$defs/nonEmptyString" },
+        "defaultRoles": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/nonEmptyString" }
+        }
+      }
+    },
+    "integration": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "description": { "$ref": "#/$defs/nonEmptyString" },
+        "consumes": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/capabilityName" }
+        },
+        "provides": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/capabilityName" }
+        },
+        "events": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/eventName" }
+        }
+      }
+    },
+    "envVariable": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "required"],
+      "properties": {
+        "name": { "$ref": "#/$defs/nonEmptyString" },
+        "required": { "type": "boolean" },
+        "usedFor": { "$ref": "#/$defs/nonEmptyString" }
+      }
+    },
+    "job": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "route"],
+      "properties": {
+        "name": { "$ref": "#/$defs/nonEmptyString" },
+        "route": { "$ref": "#/$defs/nonEmptyString" },
+        "kind": { "$ref": "#/$defs/nonEmptyString" }
+      }
+    },
+    "healthCheck": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "kind"],
+      "properties": {
+        "id": { "$ref": "#/$defs/nonEmptyString" },
+        "kind": {
+          "enum": ["db-objects", "package-exports", "env", "route-mounted", "migration-cursor"]
+        }
+      }
+    },
+    "upgrade": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "breaking": { "type": "boolean" },
+        "downMigrations": { "type": "boolean" }
+      }
+    }
+  }
+}

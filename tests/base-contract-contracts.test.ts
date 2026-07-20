@@ -914,7 +914,7 @@ test("CRM status stats use head count queries so totals are not capped at 1000 r
     true,
   );
   assert.equal(
-    selectCalls.every((call) => call.table !== "crm_contacts" || call.options?.count === "planned"),
+    selectCalls.every((call) => call.table !== "crm_contacts" || call.options?.count === "exact"),
     true,
   );
 });
