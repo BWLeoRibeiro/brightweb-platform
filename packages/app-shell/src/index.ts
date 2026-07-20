@@ -1,11 +1,13 @@
 export { AppHeader } from "./components/app-header";
 export { AccountMenu } from "./components/account-menu";
 export {
+  applyShellRegistrationOverrides,
   buildClientAppShellRegistration,
   getShellNavGroup,
   getShellNavItem,
   isShellNavItemActive,
   matchesShellPath,
+  overrideNavHref,
   resolveClientAppShellConfig,
   resolveShellToolbarSurface,
 } from "./config";
@@ -38,6 +40,8 @@ export type {
   ShellContextualAction,
   ShellModulePlacement,
   ShellModuleRegistration,
+  ShellRegistrationOverride,
+  ShellRegistrationOverrides,
   ShellNavGroupConfig,
   ShellNavItemConfig,
   ShellNavSectionConfig,

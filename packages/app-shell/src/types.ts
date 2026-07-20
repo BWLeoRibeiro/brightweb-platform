@@ -125,6 +125,12 @@ export type ShellModuleRegistration<TAction = never> = {
   toolbarActions?: Partial<Record<ShellToolbarSurface, TAction[]>>;
 };
 
+export type ShellRegistrationOverride = (
+  registration: ShellModuleRegistration,
+) => ShellModuleRegistration;
+
+export type ShellRegistrationOverrides = Record<string, ShellRegistrationOverride>;
+
 export type ClientAppShellRegistration<TAction = never> = {
   brand: ShellBrand;
   toolsSection: ShellToolsSectionBase;

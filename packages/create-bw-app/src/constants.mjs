@@ -65,6 +65,10 @@ export const MODULE_STARTER_FILES = {
   ],
 };
 
+export const PLATFORM_STARTER_FILES = [
+  "config/shell.overrides.ts",
+];
+
 export const APP_DEPENDENCY_DEFAULTS = {
   "@brightweblabs/app-shell": "^0.3.1",
   "@brightweblabs/core-auth": "^0.3.3",

@@ -403,5 +403,79 @@
       "Treat as internal server composition in v1."
     ],
     "source": "packages/core-auth/src/server.ts"
+  },
+  {
+    "moduleKey": "platform-base",
+    "packageName": "@brightweblabs/app-shell",
+    "symbol": "applyShellRegistrationOverrides",
+    "kind": "helper",
+    "status": "stable",
+    "runtime": "shell",
+    "summary": "Applies app-owned module registration overrides without mutating the imported registrations.",
+    "auth": "none",
+    "inputs": [
+      {
+        "name": "registrations",
+        "type": "ShellModuleRegistration[]",
+        "required": true,
+        "description": "Module registrations to clone and customize."
+      },
+      {
+        "name": "overrides",
+        "type": "ShellRegistrationOverrides",
+        "required": true,
+        "description": "Override functions keyed by module registration key."
+      }
+    ],
+    "outputs": [
+      {
+        "type": "ShellModuleRegistration[]",
+        "description": "New registration objects with known overrides applied."
+      }
+    ],
+    "notes": [
+      "Unknown override keys emit a warning that includes the known module keys."
+    ],
+    "source": "packages/app-shell/src/config.ts"
+  },
+  {
+    "moduleKey": "platform-base",
+    "packageName": "@brightweblabs/app-shell",
+    "symbol": "overrideNavHref",
+    "kind": "helper",
+    "status": "stable",
+    "runtime": "shell",
+    "summary": "Rewrites a navigation href across a shell module registration without mutating it.",
+    "auth": "none",
+    "inputs": [
+      {
+        "name": "registration",
+        "type": "ShellModuleRegistration",
+        "required": true,
+        "description": "Module registration to clone and rewrite."
+      },
+      {
+        "name": "fromHref",
+        "type": "string",
+        "required": true,
+        "description": "Existing href to replace in navigation items and toolbar matchers."
+      },
+      {
+        "name": "toHref",
+        "type": "string",
+        "required": true,
+        "description": "Replacement href."
+      }
+    ],
+    "outputs": [
+      {
+        "type": "ShellModuleRegistration",
+        "description": "New registration with matching href values rewritten."
+      }
+    ],
+    "notes": [
+      "Rewrites navItems, primaryNav, adminNavItem, toolsItems, moduleGroups, active matchers, and toolbar route matchers."
+    ],
+    "source": "packages/app-shell/src/config.ts"
   }
 ]

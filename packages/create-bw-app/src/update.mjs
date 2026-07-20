@@ -5,6 +5,7 @@ import {
   BRIGHTWEB_PACKAGE_NAMES,
   CLI_DISPLAY_NAME,
   MODULE_STARTER_FILES,
+  PLATFORM_STARTER_FILES,
   SELECTABLE_MODULES,
 } from "./constants.mjs";
 import {
@@ -229,6 +230,38 @@ function mergeManagedPackageUpdates({ manifest, targetVersions, installedBrightw
 
 async function getStarterFileStatus(targetDir, installedModules) {
   const starterFiles = [];
+
+  for (const relativePath of PLATFORM_STARTER_FILES) {
+    const sourcePath = path.join(TEMPLATE_ROOT, "base", relativePath);
+    const targetPath = path.join(targetDir, relativePath);
+    const exists = await pathExists(targetPath);
+
+    if (!exists) {
+      starterFiles.push({
+        moduleKey: "platform-base",
+        relativePath,
+        sourcePath,
+        targetPath,
+        status: "missing",
+        refreshable: false,
+      });
+      continue;
+    }
+
+    const [sourceContent, targetContent] = await Promise.all([
+      fs.readFile(sourcePath, "utf8"),
+      fs.readFile(targetPath, "utf8"),
+    ]);
+
+    starterFiles.push({
+      moduleKey: "platform-base",
+      relativePath,
+      sourcePath,
+      targetPath,
+      status: sourceContent === targetContent ? "current" : "drifted",
+      refreshable: false,
+    });
+  }
 
   for (const moduleKey of installedModules) {
     const templateFolder = SELECTABLE_MODULES.find((moduleDefinition) => moduleDefinition.key === moduleKey)?.templateFolder;
@@ -498,7 +531,8 @@ export async function buildBrightwebAppUpdatePlan(argvOptions = {}, runtimeOptio
   const starterFilesDrifted = starterFiles.filter((entry) => entry.status === "drifted");
 
   if (argvOptions.refreshStarters) {
-    for (const entry of starterFiles.filter((candidate) => candidate.status !== "current")) {
+    for (const entry of starterFiles.filter((candidate) =>
+      candidate.status !== "current" && (candidate.status === "missing" || candidate.refreshable !== false))) {
       fileWrites.push({
         relativePath: entry.relativePath,
         targetPath: entry.targetPath,

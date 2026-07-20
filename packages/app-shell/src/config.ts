@@ -8,10 +8,77 @@ import type {
   ShellModulePlacement,
   ShellNavItemConfig,
   ShellPathMatcher,
+  ShellModuleRegistration,
+  ShellRegistrationOverrides,
   ShellToolbarRouteConfig,
   ShellToolbarSurface,
   ShellViewerContext,
 } from "./types";
+
+type ShellPathMatchScore = {
+  kind: number;
+  matchedLength: number;
+  segments: number;
+  staticLength: number;
+};
+
+function escapeRegExp(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function createShellPathPattern(value: string, mode: "exact" | "prefix" | "includes") {
+  const pattern = value
+    .split(/(\[[^/\]]+\])/g)
+    .map((part) => (/^\[[^/\]]+\]$/.test(part) ? "[^/]+" : escapeRegExp(part)))
+    .join("");
+
+  if (mode === "exact") return new RegExp(`^${pattern}$`);
+  if (mode === "prefix") return new RegExp(`^${pattern}`);
+  return new RegExp(pattern);
+}
+
+function getPatternSpecificity(value: string) {
+  return {
+    segments: value.split("/").filter(Boolean).length,
+    staticLength: value.replace(/\[[^/\]]+\]/g, "").length,
+  };
+}
+
+function compareShellPathMatchScores(left: ShellPathMatchScore, right: ShellPathMatchScore) {
+  return left.kind - right.kind
+    || left.matchedLength - right.matchedLength
+    || left.segments - right.segments
+    || left.staticLength - right.staticLength;
+}
+
+function getShellPathMatchScore(pathname: string, matcher?: ShellPathMatcher): ShellPathMatchScore | null {
+  if (!matcher) return null;
+
+  let bestScore: ShellPathMatchScore | null = null;
+  const candidates = [
+    { values: matcher.exact, mode: "exact" as const, kind: 2 },
+    { values: matcher.prefixes, mode: "prefix" as const, kind: 1 },
+    { values: matcher.includes, mode: "includes" as const, kind: 1 },
+  ];
+
+  for (const candidate of candidates) {
+    for (const value of candidate.values ?? []) {
+      const match = createShellPathPattern(value, candidate.mode).exec(pathname);
+      if (!match) continue;
+
+      const score = {
+        kind: candidate.kind,
+        matchedLength: match.index + match[0].length,
+        ...getPatternSpecificity(value),
+      };
+      if (!bestScore || compareShellPathMatchScores(score, bestScore) > 0) {
+        bestScore = score;
+      }
+    }
+  }
+
+  return bestScore;
+}
 
 function canAccessLevel(level: ShellAccessLevel | undefined, viewer: ShellViewerContext) {
   if (level === "admin") {
@@ -38,23 +105,120 @@ function isItemVisible(item: { visibility?: ShellAccessLevel; isVisible?: (viewe
 }
 
 export function matchesShellPath(pathname: string, matcher?: ShellPathMatcher) {
-  if (!matcher) {
-    return false;
+  return getShellPathMatchScore(pathname, matcher) !== null;
+}
+
+function cloneShellPathMatcher(matcher: ShellPathMatcher | undefined) {
+  if (!matcher) return matcher;
+  return {
+    ...matcher,
+    exact: matcher.exact ? [...matcher.exact] : undefined,
+    prefixes: matcher.prefixes ? [...matcher.prefixes] : undefined,
+    includes: matcher.includes ? [...matcher.includes] : undefined,
+  };
+}
+
+function cloneShellNavItem(item: ShellNavItemConfig) {
+  return { ...item, activeMatch: cloneShellPathMatcher(item.activeMatch) };
+}
+
+function cloneShellModuleRegistration<TAction>(registration: ShellModuleRegistration<TAction>) {
+  const cloneItems = (items: ShellNavItemConfig[] | undefined) => items?.map(cloneShellNavItem);
+  const toolbarActions = registration.toolbarActions
+    ? Object.fromEntries(Object.entries(registration.toolbarActions).map(([surface, actions]) => [
+        surface,
+        actions ? [...actions] : actions,
+      ])) as ShellModuleRegistration<TAction>["toolbarActions"]
+    : undefined;
+
+  return {
+    ...registration,
+    navItems: cloneItems(registration.navItems),
+    primaryNav: cloneItems(registration.primaryNav),
+    adminNavItem: registration.adminNavItem ? cloneShellNavItem(registration.adminNavItem) : registration.adminNavItem,
+    toolsItems: cloneItems(registration.toolsItems),
+    moduleGroups: registration.moduleGroups?.map((group) => ({
+      ...group,
+      children: group.children.map(cloneShellNavItem),
+    })),
+    toolbarRoutes: registration.toolbarRoutes?.map((route) => ({
+      ...route,
+      match: cloneShellPathMatcher(route.match) ?? route.match,
+    })),
+    toolbarActions,
+  };
+}
+
+export function applyShellRegistrationOverrides<TAction = never>(
+  registrations: ShellModuleRegistration<TAction>[],
+  overrides: ShellRegistrationOverrides,
+): ShellModuleRegistration<TAction>[] {
+  const knownKeys = registrations.map((registration) => registration.key);
+  const knownKeySet = new Set(knownKeys);
+  const unknownKeys = Object.keys(overrides).filter((key) => !knownKeySet.has(key));
+
+  if (unknownKeys.length > 0) {
+    console.warn(
+      `Unknown shell registration override keys: ${unknownKeys.join(", ")}. Known keys: ${knownKeys.join(", ") || "(none)"}.`,
+    );
   }
 
-  if (matcher.exact?.includes(pathname)) {
-    return true;
-  }
+  return registrations.map((registration) => {
+    const clonedRegistration = cloneShellModuleRegistration(registration);
+    const override = overrides[registration.key];
+    if (!override) return clonedRegistration;
 
-  if (matcher.prefixes?.some((prefix) => pathname.startsWith(prefix))) {
-    return true;
-  }
+    return {
+      ...(override(clonedRegistration as ShellModuleRegistration) as ShellModuleRegistration<TAction>),
+    };
+  });
+}
 
-  if (matcher.includes?.some((fragment) => pathname.includes(fragment))) {
-    return true;
-  }
+function overrideShellPathMatcherHref(matcher: ShellPathMatcher | undefined, fromHref: string, toHref: string) {
+  if (!matcher) return matcher;
 
-  return false;
+  const rewrite = (values: string[] | undefined) => values?.map((value) => value === fromHref ? toHref : value);
+  return {
+    ...matcher,
+    exact: rewrite(matcher.exact),
+    prefixes: rewrite(matcher.prefixes),
+    includes: rewrite(matcher.includes),
+  };
+}
+
+function overrideShellNavItemHref<T extends ShellNavItemConfig>(item: T, fromHref: string, toHref: string): T {
+  return {
+    ...item,
+    href: item.href === fromHref ? toHref : item.href,
+    activeMatch: overrideShellPathMatcherHref(item.activeMatch, fromHref, toHref),
+  };
+}
+
+export function overrideNavHref<TAction = never>(
+  registration: ShellModuleRegistration<TAction>,
+  fromHref: string,
+  toHref: string,
+): ShellModuleRegistration<TAction> {
+  const rewriteItems = (items: ShellNavItemConfig[] | undefined) =>
+    items?.map((item) => overrideShellNavItemHref(item, fromHref, toHref));
+
+  return {
+    ...registration,
+    navItems: rewriteItems(registration.navItems),
+    primaryNav: rewriteItems(registration.primaryNav),
+    adminNavItem: registration.adminNavItem
+      ? overrideShellNavItemHref(registration.adminNavItem, fromHref, toHref)
+      : registration.adminNavItem,
+    toolsItems: rewriteItems(registration.toolsItems),
+    moduleGroups: registration.moduleGroups?.map((group) => ({
+      ...group,
+      children: rewriteItems(group.children) ?? [],
+    })),
+    toolbarRoutes: registration.toolbarRoutes?.map((route) => ({
+      ...route,
+      match: overrideShellPathMatcherHref(route.match, fromHref, toHref) ?? route.match,
+    })),
+  };
 }
 
 export function isShellNavItemActive(pathname: string, item: Pick<ShellNavItemConfig, "href" | "activeMatch">) {
@@ -173,5 +337,16 @@ export function resolveShellToolbarSurface(
   routes: ShellToolbarRouteConfig[],
   fallback: ShellToolbarSurface = "dashboard",
 ) {
-  return routes.find((route) => matchesShellPath(pathname, route.match))?.surface ?? fallback;
+  let bestRoute: ShellToolbarRouteConfig | undefined;
+  let bestScore: ShellPathMatchScore | null = null;
+
+  for (const route of routes) {
+    const score = getShellPathMatchScore(pathname, route.match);
+    if (score && (!bestScore || compareShellPathMatchScores(score, bestScore) > 0)) {
+      bestRoute = route;
+      bestScore = score;
+    }
+  }
+
+  return bestRoute?.surface ?? fallback;
 }

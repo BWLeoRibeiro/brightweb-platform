@@ -30,7 +30,7 @@ Goal: move from validation surfaces to product-owned pages.
 
 - Build the real routes in `app/` first.
 - Keep reusable route UI in `components/` so the app follows the expected Next.js folder split.
-- Update `config/shell.ts` if navigation or toolbar behavior changes.
+- Update `config/shell.overrides.ts` if navigation or toolbar behavior changes.
 - Remove `/bootstrap`, `/preview/app-shell`, or `/playground/*` only after links and config references are cleaned up.
 
 ## Make a module-aware change
