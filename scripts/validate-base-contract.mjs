@@ -4,7 +4,7 @@ import path from "node:path";
 const repoRoot = path.resolve(new URL("..", import.meta.url).pathname);
 const manifestPath = path.join(repoRoot, "docs", "modules", "base-contract.json");
 const splitManifestIndexPath = path.join(repoRoot, "docs", "modules", "base-contract", "index.json");
-const allowedKinds = new Set(["helper", "handler", "registration", "hook", "shared-helper"]);
+const allowedKinds = new Set(["component", "helper", "handler", "registration", "hook", "shared-helper"]);
 const allowedStatuses = new Set(["stable", "starter", "deprecated", "internal"]);
 const allowedRuntimes = new Set(["server", "client", "shared", "shell"]);
 

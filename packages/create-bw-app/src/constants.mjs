@@ -81,7 +81,7 @@ export const APP_DEPENDENCY_DEFAULTS = {
   "@brightweblabs/module-orgs": "^0.1.0",
   "@brightweblabs/module-projects": "^0.4.1",
   "@brightweblabs/ui": "^0.4.0",
-  "lucide-react": "^0.562.0",
+  "lucide-react": "^1.8.0",
   "next": "16.1.6",
   "react": "19.2.3",
   "react-dom": "19.2.3",
@@ -90,7 +90,7 @@ export const APP_DEPENDENCY_DEFAULTS = {
 export const SITE_DEPENDENCY_DEFAULTS = {
   "class-variance-authority": "^0.7.1",
   "clsx": "^2.1.1",
-  "lucide-react": "^0.562.0",
+  "lucide-react": "^1.8.0",
   "next": "16.1.6",
   "react": "19.2.3",
   "react-dom": "19.2.3",

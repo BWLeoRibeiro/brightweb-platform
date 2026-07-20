@@ -36,23 +36,23 @@ function getStrengthConfig(strength: StrengthLevel) {
     case "weak":
       return {
         label: "Fraca",
-        color: "bg-destructive",
+        color: "bg-rose-500",
         width: "w-1/3",
-        textColor: "text-destructive",
+        textColor: "text-rose-600 dark:text-rose-400",
       };
     case "medium":
       return {
         label: "Média",
-        color: "bg-accent",
+        color: "bg-amber-500",
         width: "w-2/3",
-        textColor: "text-accent",
+        textColor: "text-amber-600 dark:text-amber-400",
       };
     case "strong":
       return {
         label: "Forte",
-        color: "bg-secondary",
+        color: "bg-emerald-500",
         width: "w-full",
-        textColor: "text-secondary",
+        textColor: "text-emerald-600 dark:text-emerald-400",
       };
     default:
       return null;
@@ -67,8 +67,7 @@ export function PasswordStrength({ password, className }: PasswordStrengthProps)
 
   return (
     <div className={cn("flex flex-col gap-1.5", className)}>
-      {/* Strength bar */}
-      <div className="h-1 w-full bg-foreground/10 rounded-full overflow-hidden">
+      <div className="h-1 w-full overflow-hidden rounded-full bg-foreground/10">
         <div
           className={cn("h-full transition-all duration-300", config.color, config.width)}
           role="progressbar"
@@ -76,11 +75,11 @@ export function PasswordStrength({ password, className }: PasswordStrengthProps)
           aria-valuemin={0}
           aria-valuemax={100}
           aria-label="Força da palavra-passe"
+          aria-valuetext={config.label}
         />
       </div>
 
-      {/* Strength label */}
-      <p className={cn("paragraph-mini font-medium transition-colors", config.textColor)}>
+      <p className={cn("text-ui-meta !font-semibold transition-colors", config.textColor)}>
         Força: {config.label}
       </p>
     </div>

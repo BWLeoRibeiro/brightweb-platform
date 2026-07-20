@@ -20,6 +20,7 @@ Each manifest entry uses structured fields for `inputs`, `outputs`, and, where r
 The current base contract spans:
 
 - shared and server package helpers
+- shared UI components and their composition helpers
 - client hooks
 - package-owned route handlers
 - shell registration objects
