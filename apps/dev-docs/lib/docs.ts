@@ -63,6 +63,7 @@ const docOrderByHref: Record<string, number> = {
   "/docs/foundations": 10,
   "/docs/foundations/prerequisites": 20,
   "/docs/foundations/installation": 30,
+  "/docs/foundations/bw-cli": 35,
   "/docs/foundations/environment-and-services": 40,
   "/docs/foundations/create-an-app-templates": 50,
   "/docs/foundations/project-structure": 60,

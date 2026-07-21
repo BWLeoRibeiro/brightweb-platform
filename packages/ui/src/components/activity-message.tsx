@@ -14,7 +14,7 @@ export function ActivityMessage({ segs }: { segs: MsgSeg[] }) {
           );
         }
         return (
-          <span key={index} className="font-medium text-[color:var(--foreground)]">
+          <span key={index} className="font-semibold text-[color:var(--foreground)]">
             {seg.v}
           </span>
         );

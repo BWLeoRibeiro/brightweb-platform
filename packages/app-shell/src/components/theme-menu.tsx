@@ -8,7 +8,7 @@ export function ThemeMenu({ onThemeChange }: ThemeMenuProps) {
       <DropdownMenuTrigger asChild>
         <button
           id="header-theme-menu-trigger"
-          className="inline-flex h-8 w-8 items-center justify-center rounded-full text-foreground/75 transition-colors hover:bg-black/6 hover:text-foreground dark:hover:bg-white/10"
+          className="inline-flex h-8 w-8 items-center justify-center rounded-full text-foreground/75 transition-colors hover:bg-elevate-3 hover:text-foreground"
           aria-label="Alterar tema"
         >
           <span className="relative inline-flex items-center justify-center">

@@ -1,0 +1,85 @@
+{
+  "contractVersion": 1,
+  "key": "crm",
+  "title": "CRM",
+  "description": "CRM contacts, status tracking, and funnel reporting built on organizations.",
+  "requires": {
+    "core": ">=0.3",
+    "admin": ">=0.3",
+    "orgs": ">=0.1"
+  },
+  "capabilities": {
+    "provides": [
+      {
+        "name": "crm.contacts.read",
+        "since": "0.4.1"
+      },
+      {
+        "name": "crm.funnel.read",
+        "since": "0.4.1"
+      },
+      {
+        "name": "crm.contacts.write",
+        "since": "0.5.0"
+      },
+      {
+        "name": "crm.funnel.write",
+        "since": "0.5.0"
+      }
+    ],
+    "consumes": []
+  },
+  "capabilityExports": {
+    "crm.contacts.read": {
+      "specifier": ".",
+      "symbol": "listCrmContacts"
+    },
+    "crm.funnel.read": {
+      "specifier": ".",
+      "symbol": "getCrmContactStatusStats"
+    },
+    "crm.contacts.write": {
+      "specifier": "./server",
+      "symbol": "createCrmContact"
+    },
+    "crm.funnel.write": {
+      "specifier": "./server",
+      "symbol": "setCrmContactStatus"
+    }
+  },
+  "events": {
+    "emits": [
+      {
+        "name": "crm.contact.status_changed",
+        "since": "0.5.0",
+        "payloadSchema": "./schemas/events/contact-status-changed.v1.json"
+      }
+    ],
+    "consumes": []
+  },
+  "permissions": {
+    "surfaces": "staff",
+    "grants": [
+      {
+        "name": "crm.manage",
+        "defaultRoles": ["staff", "admin"]
+      }
+    ]
+  },
+  "registration": "./registration",
+  "tokens": "./tokens.css",
+  "database": {
+    "namespace": ["crm_"],
+    "ownedObjects": [
+      "crm_contacts",
+      "crm_status_log",
+      "set_crm_contacts_updated_at",
+      "set_crm_status"
+    ],
+    "integrationObjects": [
+      "sync_org_primary_contact_admin_membership",
+      "trg_sync_org_primary_contact_admin_membership",
+      "organization_invitations_accepted_contact_id_fkey"
+    ]
+  }
+}

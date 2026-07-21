@@ -1,0 +1,26 @@
+{
+  "name": "@brightweblabs/theme",
+  "private": false,
+  "version": "0.1.0",
+  "main": "./src/tint.ts",
+  "types": "./src/tint.ts",
+  "files": [
+    "src",
+    "themes"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/BWLeoRibeiro/brightweb-platform.git"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "exports": {
+    ".": "./src/tint.ts",
+    "./css": "./src/index.css",
+    "./tint": "./src/tint.ts",
+    "./themes/mq": "./themes/mq.css",
+    "./themes/mq-aliases": "./themes/mq-aliases.css"
+  }
+}

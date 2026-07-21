@@ -1,0 +1,84 @@
+{
+  "contractVersion": 1,
+  "key": "projects",
+  "title": "Projects",
+  "description": "Projects, tasks, milestones, members, links, and project activity policies.",
+  "requires": {
+    "core": ">=0.3",
+    "admin": ">=0.3",
+    "orgs": ">=0.1"
+  },
+  "capabilities": {
+    "provides": [
+      {
+        "name": "projects.projects.read",
+        "since": "0.4.1"
+      },
+      {
+        "name": "projects.projects.write",
+        "since": "0.4.1"
+      }
+    ],
+    "consumes": []
+  },
+  "capabilityExports": {
+    "projects.projects.read": {
+      "specifier": "./server",
+      "symbol": "listProjects"
+    },
+    "projects.projects.write": {
+      "specifier": "./server",
+      "symbol": "createProject"
+    }
+  },
+  "events": {
+    "emits": [],
+    "consumes": []
+  },
+  "permissions": {
+    "surfaces": "staff",
+    "grants": [
+      {
+        "name": "projects.manage",
+        "defaultRoles": ["staff", "admin"]
+      }
+    ]
+  },
+  "registration": "./registration",
+  "database": {
+    "namespace": ["project"],
+    "ownedObjects": [
+      "projects",
+      "project_members",
+      "project_milestones",
+      "project_tasks",
+      "project_links",
+      "project_status_log",
+      "is_project_org_admin",
+      "is_project_org_member",
+      "can_create_projects_for_org",
+      "is_project_team_member",
+      "is_project_content_editor",
+      "is_project_owner_member",
+      "set_project_updated_at",
+      "trg_projects_updated_at",
+      "trg_project_milestones_updated_at",
+      "trg_project_tasks_updated_at",
+      "trg_project_links_updated_at",
+      "sync_project_lifecycle_dates",
+      "trg_projects_lifecycle_dates",
+      "project_activity_project_name",
+      "log_project_activity_event",
+      "log_projects_activity_event",
+      "trg_log_projects_activity_event",
+      "log_project_tasks_activity_event",
+      "trg_log_project_tasks_activity_event",
+      "log_project_milestones_activity_event",
+      "trg_log_project_milestones_activity_event",
+      "log_project_links_activity_event",
+      "trg_log_project_links_activity_event",
+      "log_project_members_activity_event",
+      "trg_log_project_members_activity_event"
+    ]
+  }
+}

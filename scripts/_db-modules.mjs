@@ -8,6 +8,7 @@ export function readJson(filePath) {
   return JSON.parse(fs.readFileSync(filePath, "utf8"));
 }
 
+// Duplicated by design: packages/create-bw-app/src/generator.mjs — keep in sync.
 export function resolveModuleOrder(registry, enabledModules) {
   const resolved = [];
   const visiting = new Set();

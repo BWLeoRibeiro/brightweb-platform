@@ -54,6 +54,12 @@ jobs:
       - name: Check release state
         run: pnpm release:check
 
+      - name: Check module manifests
+        run: pnpm check:module-manifest
+
+      - name: Check compatibility set
+        run: pnpm check:compatibility-set
+
       - name: Check scaffold template contracts
         run: pnpm check:create-bw-app-templates
 

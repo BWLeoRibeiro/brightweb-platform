@@ -1,0 +1,47 @@
+{
+  "contractVersion": 1,
+  "key": "orgs",
+  "title": "Organizations",
+  "description": "Organizations, membership, invitations, and shared organization access helpers.",
+  "requires": {
+    "core": ">=0.3",
+    "admin": ">=0.3"
+  },
+  "capabilities": {
+    "provides": [
+      { "name": "orgs.organizations.read", "since": "0.1.0" },
+      { "name": "orgs.organizations.write", "since": "0.1.0" },
+      { "name": "orgs.membership.read", "since": "0.1.0" },
+      { "name": "orgs.membership.admin", "since": "0.1.0" }
+    ],
+    "consumes": []
+  },
+  "capabilityExports": {
+    "orgs.organizations.read": { "specifier": ".", "symbol": "listOrganizations" },
+    "orgs.organizations.write": { "specifier": ".", "symbol": "createOrganization" },
+    "orgs.membership.read": { "specifier": ".", "symbol": "listOrganizationMembers" },
+    "orgs.membership.admin": { "specifier": ".", "symbol": "setOrganizationMemberRole" }
+  },
+  "events": { "emits": [], "consumes": [] },
+  "permissions": {
+    "surfaces": "staff",
+    "grants": [
+      { "name": "orgs.manage", "defaultRoles": ["staff", "admin"] }
+    ]
+  },
+  "registration": "./registration",
+  "database": {
+    "namespace": ["organization"],
+    "ownedObjects": [
+      "organizations",
+      "organization_members",
+      "organization_invitations",
+      "is_org_admin",
+      "is_org_member",
+      "touch_organization_invitations_updated_at",
+      "trg_touch_organization_invitations_updated_at",
+      "normalize_organization_invitation_email",
+      "trg_normalize_organization_invitation_email"
+    ]
+  }
+}

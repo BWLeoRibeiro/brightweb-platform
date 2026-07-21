@@ -44,6 +44,8 @@ To version packages locally:
 pnpm release:version
 ```
 
+`release:version` runs Changesets and then regenerates `brightweb-release.json` from the current workspace package versions. The same sync also updates the BrightWeb caret ranges in `packages/create-bw-app/src/constants.mjs`, keeping the compatibility set and generated app dependency defaults aligned before CI validates them.
+
 To publish manually after authenticating with npm:
 
 ```bash
@@ -53,3 +55,5 @@ pnpm release:publish
 ## Important note
 
 Public npm publishing is separate from GitHub visibility. A public GitHub repo does not automatically grant ownership of the `@brightweblabs` npm scope or the unscoped `create-bw-app` package name.
+
+The marketing core stub was retired pre-1.x and was never a runtime dependency; a future `module-marketing` will be a fresh package.

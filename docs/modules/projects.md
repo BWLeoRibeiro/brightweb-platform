@@ -1,8 +1,8 @@
 # Projects Module
 
-The Projects module extends the platform with work-management data and project access rules. It depends on CRM because projects are attached to organizations, and it inherits the Admin and RBAC layer through that dependency chain.
+The Projects module extends the platform with work-management data and project access rules. It depends directly on Organizations because projects are attached to organizations; it no longer requires CRM.
 
-> Projects builds on top of the `Core + Admin + CRM` platform baseline; selecting Projects adds Projects-owned schema, package wiring, and the starter projects surface.
+> Projects builds on top of the Core + Admin + Organizations platform baseline; selecting Projects auto-includes Organizations without CRM.
 
 Use [Base Contract](./base-contract.md) for the support-tier rules and [base-contract.json](./base-contract.json) for the canonical symbol inventory.
 
@@ -26,7 +26,7 @@ Use [Base Contract](./base-contract.md) for the support-tier rules and [base-con
 | Scaffold wiring | Selecting Projects adds the package dependency and enables project-related shell/config wiring in generated platform apps. |
 | Starter routes | The current module template contributes the `/playground/projects` starter surface in the scaffold. |
 | Shell behavior | The module registration adds project navigation items and project-specific toolbar surfaces. |
-| Dependency behavior | Projects resolves on top of the existing `Core + Admin + CRM` platform baseline because projects are attached to organizations and inherit that dependency chain. |
+| Dependency behavior | Projects resolves on top of Core + Admin + Organizations; CRM is not installed unless explicitly selected. |
 
 > Projects does **not** install a full project management frontend product on its own. It mainly installs shared schema, access rules, and server and domain contracts that applications build on top of.
 

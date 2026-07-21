@@ -1,0 +1,6 @@
+{
+  "contractVersion": 1,
+  "key": "projects",
+  "requires": { "core": ">=0.3", "admin": ">=0.3", "orgs": ">=0.1" },
+  "env": []
+}

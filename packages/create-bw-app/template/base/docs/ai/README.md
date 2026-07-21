@@ -24,7 +24,8 @@ This app is a normal Next.js App Router project with BrightWeb runtime wiring la
 - `config/modules.ts`: module metadata and enablement flags for CRM, Projects, and Admin.
 - `config/client.ts`: aggregated state consumed by starter pages.
 - `config/bootstrap.ts`: bootstrap checklist content for `/bootstrap`.
-- `config/shell.ts`: app-shell registration and navigation wiring.
+- `config/shell.ts`: managed app-shell registration and navigation wiring.
+- `config/shell.overrides.ts`: app-owned shell registration customizations preserved across updates.
 - `app/globals.css`: color tokens (raw brand + semantic mappings), typography, and global surface styling.
 - `app/page.tsx`: starter landing page for the generated app.
 - `app/bootstrap/page.tsx`: setup checklist surface.
@@ -38,7 +39,7 @@ This app is a normal Next.js App Router project with BrightWeb runtime wiring la
 - Change colors and theme tokens in `app/globals.css`.
 - Check module presence in `config/modules.ts` before editing or creating module-specific routes.
 - Add app-specific UI in `components/` before forking shared package code.
-- Use `config/shell.ts` when navigation or toolbar behavior needs to change.
+- Use `config/shell.overrides.ts` when navigation or toolbar behavior needs to change.
 - Use `config/bootstrap.ts` and `config/client.ts` when the setup checklist or readiness messaging is wrong.
 - Keep starter validation routes until the real product routes replace their purpose.
 

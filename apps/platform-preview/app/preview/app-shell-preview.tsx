@@ -11,7 +11,8 @@ import {
   type NavGroupConfig,
   type ResolvedClientAppShellConfig,
 } from "@brightweblabs/app-shell";
-import { LayoutTemplate, Sparkles, Users } from "lucide-react";
+import { SectionHeading, StatTile, StatValue, StatusPill, SurfaceCard } from "@brightweblabs/ui";
+import { Gauge, LayoutTemplate, Sparkles, Users } from "lucide-react";
 import { starterBrandConfig } from "../../config/brand";
 import { getStarterShellConfig } from "../../config/shell";
 
@@ -175,6 +176,26 @@ export function AppShellPreview() {
                 </div>
               </div>
             </article>
+
+            <SurfaceCard>
+              <SectionHeading
+                icon={Gauge}
+                title="Tier-2 patterns"
+                subtitle="Reusable application compositions rendered against the active platform theme."
+                action={<StatusPill token="--semantic-success">Ready</StatusPill>}
+              />
+              <div className="mt-5 grid grid-cols-1 divide-y divide-hairline sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+                <StatTile label="Navigation items">
+                  <StatValue>{config.primaryNav.length + crmNavGroup.children.length}</StatValue>
+                </StatTile>
+                <StatTile label="Tool entries">
+                  <StatValue>{config.toolsSection.items.length}</StatValue>
+                </StatTile>
+                <StatTile label="Shell state">
+                  <StatusPill token="--brand-accent" size="normal">Tokenized</StatusPill>
+                </StatTile>
+              </div>
+            </SurfaceCard>
           </div>
         </section>
       </div>

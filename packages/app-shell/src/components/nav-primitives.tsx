@@ -42,19 +42,19 @@ type MobileTogglePillProps = {
 function getSidebarItemClasses(active: boolean) {
   return active
     ? "border-primary/35 bg-primary/10 text-foreground"
-    : "border-transparent bg-transparent text-foreground/70 hover:border-black/10 hover:bg-black/5 hover:text-foreground dark:hover:border-white/10 dark:hover:bg-white/5";
+    : "border-transparent bg-transparent text-foreground/70 hover:border-hairline hover:bg-elevate-2 hover:text-foreground";
 }
 
 function getSidebarIconClasses(active: boolean) {
   return active
     ? "bg-primary/18 text-primary"
-    : "bg-black/5 text-foreground/65 group-hover:text-primary dark:bg-white/5";
+    : "bg-elevate-2 text-foreground/65 group-hover:text-primary";
 }
 
 function getMobilePillClasses(active: boolean) {
   return active
     ? "border-primary/35 bg-primary/10 text-foreground"
-    : "border-black/10 text-foreground/75 hover:border-black/20 hover:text-foreground dark:border-white/10 dark:hover:border-white/25";
+    : "border-hairline text-foreground/75 hover:border-border-strong hover:bg-surface-hover hover:text-foreground";
 }
 
 export function SidebarNavLink({
@@ -70,7 +70,7 @@ export function SidebarNavLink({
       href={href}
       title={collapsed ? title ?? label : undefined}
       className={cn(
-        "group relative flex items-center rounded-2xl border py-3 text-sm font-medium transition-all",
+        "group relative flex items-center rounded-2xl border py-3 text-sm font-semibold transition-all",
         collapsed ? "justify-center px-2" : "gap-3 px-4",
         getSidebarItemClasses(active),
       )}
@@ -99,10 +99,10 @@ export function SidebarSectionToggle({
     <button
       onClick={onToggle}
       className={cn(
-        "flex w-full items-center gap-3 rounded-2xl border px-4 py-3 text-left text-sm font-medium transition-all",
+        "flex w-full items-center gap-3 rounded-2xl border px-4 py-3 text-left text-sm font-semibold transition-all",
         expanded
           ? "border-primary/35 bg-primary/10 text-foreground"
-          : "border-transparent text-foreground/70 hover:border-black/10 hover:bg-black/5 hover:text-foreground dark:hover:border-white/10 dark:hover:bg-white/5",
+          : "border-transparent text-foreground/70 hover:border-hairline hover:bg-elevate-2 hover:text-foreground",
       )}
       aria-expanded={expanded}
       aria-controls={controlsId}
@@ -110,7 +110,7 @@ export function SidebarSectionToggle({
       <span
         className={cn(
           "inline-flex size-8 items-center justify-center rounded-xl",
-          expanded ? "bg-primary/18 text-primary" : "bg-black/5 text-foreground/65 dark:bg-white/5",
+          expanded ? "bg-primary/18 text-primary" : "bg-elevate-2 text-foreground/65",
         )}
       >
         <Icon className="size-4" />
@@ -129,7 +129,7 @@ export function SidebarSubNavLink({ active, href, icon: Icon, label }: SidebarSu
         "flex items-center gap-2 rounded-xl border px-3 py-2 text-sm transition-colors",
         active
           ? "border-primary/35 bg-primary/10 text-foreground"
-          : "border-transparent text-foreground/70 hover:border-black/10 hover:bg-black/5 hover:text-foreground dark:hover:border-white/10 dark:hover:bg-white/5",
+          : "border-transparent text-foreground/70 hover:border-hairline hover:bg-elevate-2 hover:text-foreground",
       )}
     >
       <Icon className="size-4 text-primary" />
@@ -143,7 +143,7 @@ export function MobileNavPill({ active, href, icon: Icon, label }: MobileNavPill
     <Link
       href={href}
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
+        "inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors",
         getMobilePillClasses(active),
       )}
     >
@@ -158,7 +158,7 @@ export function MobileTogglePill({ controlsId, expanded, onToggle }: MobileToggl
     <button
       onClick={onToggle}
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
+        "inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors",
         getMobilePillClasses(expanded),
       )}
       aria-expanded={expanded}

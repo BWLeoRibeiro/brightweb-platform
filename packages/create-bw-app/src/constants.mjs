@@ -39,11 +39,15 @@ export const CORE_PACKAGES = [
   "@brightweblabs/app-shell",
   "@brightweblabs/core-auth",
   "@brightweblabs/infra",
+  "@brightweblabs/theme",
   "@brightweblabs/ui",
 ];
 
+export const ORGS_PACKAGE_NAME = "@brightweblabs/module-orgs";
+
 export const BRIGHTWEB_PACKAGE_NAMES = [
   ...CORE_PACKAGES,
+  ORGS_PACKAGE_NAME,
   ...SELECTABLE_MODULES.map((moduleDefinition) => moduleDefinition.packageName),
 ];
 
@@ -54,26 +58,34 @@ export const MODULE_STARTER_FILES = {
     "app/playground/admin/page.tsx",
   ],
   crm: [
+    "app/crm/layout.tsx",
+    "app/crm/page.tsx",
     "app/api/crm/contacts/route.ts",
     "app/api/crm/organizations/route.ts",
     "app/api/crm/owners/route.ts",
     "app/api/crm/stats/route.ts",
-    "app/playground/crm/page.tsx",
+    "app/api/crm/timeline/route.ts",
   ],
   projects: [
     "app/playground/projects/page.tsx",
   ],
 };
 
+export const PLATFORM_STARTER_FILES = [
+  "config/shell.overrides.ts",
+];
+
 export const APP_DEPENDENCY_DEFAULTS = {
-  "@brightweblabs/app-shell": "^0.3.0",
+  "@brightweblabs/app-shell": "^0.3.1",
   "@brightweblabs/core-auth": "^0.3.3",
   "@brightweblabs/infra": "^0.3.0",
-  "@brightweblabs/module-admin": "^0.3.2",
-  "@brightweblabs/module-crm": "^0.3.3",
-  "@brightweblabs/module-projects": "^0.3.2",
-  "@brightweblabs/ui": "^0.3.1",
-  "lucide-react": "^0.562.0",
+  "@brightweblabs/module-admin": "^0.3.3",
+  "@brightweblabs/module-crm": "^0.4.1",
+  "@brightweblabs/module-orgs": "^0.1.0",
+  "@brightweblabs/module-projects": "^0.4.1",
+  "@brightweblabs/theme": "^0.1.0",
+  "@brightweblabs/ui": "^0.4.0",
+  "lucide-react": "^1.8.0",
   "next": "16.1.6",
   "react": "19.2.3",
   "react-dom": "19.2.3",
@@ -82,7 +94,7 @@ export const APP_DEPENDENCY_DEFAULTS = {
 export const SITE_DEPENDENCY_DEFAULTS = {
   "class-variance-authority": "^0.7.1",
   "clsx": "^2.1.1",
-  "lucide-react": "^0.562.0",
+  "lucide-react": "^1.8.0",
   "next": "16.1.6",
   "react": "19.2.3",
   "react-dom": "19.2.3",

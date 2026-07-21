@@ -11,6 +11,7 @@ Start here when you need to choose the right template, understand the generated 
 3. [Environment and Services](./environment-and-services.md) for `.env.local`, service ownership, and platform config ownership.
 4. [Project Structure](./project-structure.md) for the generated files, folders, and starter routes.
 5. [Validate Your Starter](./validate-your-starter.md) for the first-run route checks.
+6. [The `bw` CLI](./bw-cli.md) for adding, upgrading, and diagnosing modules after scaffold.
 
 ## Platform app vs standalone site
 
@@ -28,3 +29,4 @@ Do not assume the `site` template includes platform auth, shared shell behavior,
 - [Environment and Services](./environment-and-services.md)
 - [Project Structure](./project-structure.md)
 - [Validate Your Starter](./validate-your-starter.md)
+- [The `bw` CLI](./bw-cli.md)

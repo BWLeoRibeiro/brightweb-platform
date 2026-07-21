@@ -52,6 +52,7 @@ The current platform-base contract is intentionally split into reusable and star
 - `@brightweblabs/core-auth/shared`: shared validation, URL helpers, and auth constants
 - `@brightweblabs/core-auth/client`: `useCooldownTimer()`
 - `@brightweblabs/core-auth/server`: `requireServerPageAccess()`, `requireServerPageRoleAccess()`, `getServerAccess()`
+- `@brightweblabs/ui`: shared avatar, search, skeleton, phone-input, badge recipe, and theme-provider surfaces
 - `@brightweblabs/module-admin`: `listAdminUsers()`, `handleAdminUsersGetRequest()`, `handleAdminUsersRoleChangeRequest()`
 - `@brightweblabs/module-admin/registration`: `adminModuleRegistration`
 
@@ -84,6 +85,10 @@ import { requireServerPageAccess, requireServerPageRoleAccess } from "@brightweb
 const { supabase, user, profileId } = await requireServerPageAccess();
 const adminOnly = await requireServerPageRoleAccess("admin");
 ```
+
+### Shared UI and theme
+
+`@brightweblabs/ui` 1.0 exposes the stable component system from its root and per-component subpaths. Wrap app content with `ThemeProvider` when the app needs persistent light, dark, and system modes; `useTheme()` exposes both the selected mode and its resolved light/dark value. The avatar, search, skeleton, table-skeleton, and phone-input exports build on `@brightweblabs/theme` tokens and typography utilities.
 
 ### Admin routes and data helpers
 

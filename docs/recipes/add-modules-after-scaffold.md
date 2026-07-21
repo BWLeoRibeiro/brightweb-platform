@@ -1,6 +1,6 @@
 # Add Modules After Scaffold
 
-Use this recipe when you already have a generated `platform` app and need to add BrightWeb module wiring after the original scaffold step. The current public path is manual on purpose; there is no one-command post-scaffold installer today.
+Use this recipe when you already have a generated `platform` app and need to add BrightWeb module wiring after the original scaffold step. `bw add` is the primary path for apps with `.brightweb/app-manifest.json`; keep the manual path below as a fallback for older apps.
 
 ## When to use it
 
@@ -14,7 +14,21 @@ Use this recipe when you already have a generated `platform` app and need to add
 - A clear target module set such as `crm`, `projects`, or `admin`
 - Willingness to compare the current app against a fresh scaffold reference
 
-## Steps
+## Primary path
+
+Preview and apply the module plan from the app root:
+
+```bash
+bw add projects --dry-run
+bw add projects
+pnpm install
+```
+
+The command resolves transitive requirements, pins dependencies, copies the module starter overlay, regenerates managed module and shell config, appends unapplied Supabase migrations, and updates the app manifest. Review the summary and apply the new Supabase migrations before using module-backed routes.
+
+Pre-manifest apps are not changed automatically. Use the fallback below until the adoption workflow is available.
+
+## Manual fallback
 
 1. Generate a temporary reference app with the module set you want.
 
@@ -29,7 +43,7 @@ Use this recipe when you already have a generated `platform` app and need to add
    - `config/shell.ts`
 3. Port the relevant dependency wiring, `transpilePackages`, module config, and shell registrations into your real app.
 4. Copy or recreate the starter route files you actually want:
-   - CRM: `app/playground/crm/page.tsx`
+   - CRM: `app/crm/page.tsx`
    - Projects: `app/playground/projects/page.tsx`
    - Admin: `app/playground/admin/page.tsx` and the admin API routes under `app/api/admin/users/`
 5. Install the added dependencies and run the app locally.
@@ -46,8 +60,8 @@ Use this recipe when you already have a generated `platform` app and need to add
 
 ## Dependency notes
 
-- CRM builds on the `Core + Admin` platform baseline.
-- Projects build on the CRM-backed database baseline even if you do not expose the CRM starter route in your app.
+- CRM builds on the `Core + Admin + Organizations` platform baseline.
+- Projects build on the `Core + Admin + Organizations` platform baseline.
 - Admin starter UI is optional, but the platform database baseline already includes the Admin layer.
 
 <Callout title="Workspace mode note">
@@ -65,6 +79,7 @@ Use this recipe when you already have a generated `platform` app and need to add
 
 ## Related docs
 
+- [The `bw` CLI](../foundations/bw-cli.md)
 - [Modules](../modules/README.md)
 - [Using BrightWeb Modules](../modules/using-modules.md)
 - [Validate Your Starter](../foundations/validate-your-starter.md)

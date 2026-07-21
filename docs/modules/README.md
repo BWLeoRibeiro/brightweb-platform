@@ -9,7 +9,7 @@ BrightWeb modules extend the platform through shared schema, domain logic, packa
 The `platform` template has two layers:
 
 - the platform base, which always resolves to the `Core + Admin` database baseline
-- optional starter surfaces and package wiring, which may add `admin`, `crm`, and `projects`
+- optional starter surfaces and package wiring, which may add admin, CRM, and Projects; CRM and Projects auto-include the hidden Organizations foundation
 
 Selecting `admin` in the scaffold affects the Admin starter UI and package wiring. It does not remove the Admin database baseline from platform mode.
 
@@ -29,7 +29,8 @@ Use [Base Contract](./base-contract.md) for the canonical support-tier rules and
 | --- | --- | --- | --- |
 | Platform Base | Core auth/profile foundations plus the Admin-backed database baseline that platform apps depend on. | Every `platform` app gets this runtime and database baseline. | No. It is the base runtime, not a finished product surface. |
 | Admin | Governance helpers, RBAC package wiring, and the optional Admin starter surface. | Selecting `admin` adds the Admin package wiring and starter routes such as `/playground/admin`. | No. It is a starter governance surface, not a full admin product. |
-| CRM | `organizations`, `organization_members`, `crm_contacts`, `crm_status_log`, `organization_invitations`, plus follow-up CRM constraints and helpers. | Selecting `crm` adds package wiring, shell registration, env flags, and `/playground/crm`. | No. Product-specific CRM UI remains app-owned. |
+| Organizations | Organizations, membership, invitations, and organization access helpers. | Auto-included when CRM or Projects is selected; hidden in navigation. | No. It is a shared domain foundation. |
+| CRM | CRM contacts and status logs, plus CRM-to-organizations integration. | Selecting CRM adds package wiring, shell registration, env flags, and the CRM playground. | No. Product-specific CRM UI remains app-owned. |
 | Projects | `projects`, `project_members`, `project_milestones`, `project_tasks`, `project_links`, `project_status_log`, plus follow-up access and activity behavior. | Selecting `projects` adds package wiring, shell registration, env flags, and `/playground/projects`. | No. It does not install a full project management frontend on its own. |
 
 ## Pages in this section
@@ -37,6 +38,7 @@ Use [Base Contract](./base-contract.md) for the canonical support-tier rules and
 - [Base Contract](./base-contract.md): support tiers, extension rules, and the canonical contract inventory.
 - [Using BrightWeb Modules](./using-modules.md): integration entrypoints, code-level usage patterns, and current package contracts.
 - [Platform Base](./platform-base.md)
+- [Organizations](./orgs.md): shared organization schema, membership, and package helpers.
 - [CRM](./crm.md): CRM-owned schema, runtime wiring, and CRM package behavior.
 - [Projects](./projects.md): Projects-owned schema, runtime wiring, and project package behavior.
 
@@ -60,8 +62,10 @@ Use [Base Contract](./base-contract.md) for the canonical support-tier rules and
 - `packages/create-bw-app/template/modules`
 - `packages/module-admin/src`
 - `packages/module-crm/src`
+- `packages/module-orgs/src`
 - `packages/module-projects/src`
 - `supabase/module-registry.json`
 - `supabase/modules/admin/migrations`
 - `supabase/modules/crm/migrations`
+- `supabase/modules/orgs/migrations`
 - `supabase/modules/projects/migrations`

@@ -17,6 +17,3 @@ CREATE INDEX IF NOT EXISTS idx_crm_contacts_source
 
 CREATE INDEX IF NOT EXISTS idx_crm_status_log_changed_at_desc
   ON public.crm_status_log (changed_at DESC);
-
-CREATE INDEX IF NOT EXISTS idx_organizations_created_at_desc
-  ON public.organizations (created_at DESC);

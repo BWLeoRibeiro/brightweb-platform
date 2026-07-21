@@ -914,7 +914,7 @@ test("CRM status stats use head count queries so totals are not capped at 1000 r
     true,
   );
   assert.equal(
-    selectCalls.every((call) => call.table !== "crm_contacts" || call.options?.count === "planned"),
+    selectCalls.every((call) => call.table !== "crm_contacts" || call.options?.count === "exact"),
     true,
   );
 });
@@ -929,6 +929,7 @@ test("CRM handler helpers parse params and return JSON envelopes", async () => {
       status: "lead",
       organizationId: "org-1",
       ownerProfileId: "owner-1",
+      sort: "date_desc",
     },
   );
 
@@ -959,6 +960,7 @@ test("CRM handler helpers parse params and return JSON envelopes", async () => {
     status: "lead",
     organizationId: null,
     ownerProfileId: null,
+    sort: "date_desc",
   });
   assert.deepEqual(await contactsResponse.json(), {
     items: [],

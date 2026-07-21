@@ -10,11 +10,13 @@ import {
   CLI_DISPLAY_NAME,
   CORE_PACKAGES,
   DEFAULTS,
+  ORGS_PACKAGE_NAME,
   SELECTABLE_MODULES,
   SITE_DEPENDENCY_DEFAULTS,
   SITE_DEV_DEPENDENCY_DEFAULTS,
   TEMPLATE_OPTIONS,
 } from "./constants.mjs";
+import { createInitialAppManifest, writeAppManifest } from "./app-manifest.mjs";
 
 export const PACKAGE_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 export const TEMPLATE_ROOT = path.join(PACKAGE_ROOT, "template");
@@ -24,8 +26,9 @@ const DEFAULT_DB_MODULE_REGISTRY = {
   modules: {
     core: { label: "Core", dependsOn: [] },
     admin: { label: "Admin", dependsOn: ["core"] },
-    crm: { label: "CRM", dependsOn: ["core", "admin"] },
-    projects: { label: "Projects", dependsOn: ["core", "admin", "crm"] },
+    orgs: { label: "Organizations", dependsOn: ["core", "admin"] },
+    crm: { label: "CRM", dependsOn: ["core", "admin", "orgs"] },
+    projects: { label: "Projects", dependsOn: ["core", "admin", "orgs"] },
   },
 };
 
@@ -131,7 +134,8 @@ export async function getDbModuleRegistry(workspaceRoot) {
   return DEFAULT_DB_MODULE_REGISTRY;
 }
 
-function resolveModuleOrder(registry, enabledModules) {
+// Duplicated by design: scripts/_db-modules.mjs — keep in sync.
+export function resolveModuleOrder(registry, enabledModules) {
   const resolved = [];
   const visited = new Set();
   const visiting = new Set();
@@ -247,7 +251,9 @@ export async function getVersionMap(workspaceRoot) {
     "@brightweblabs/infra",
     "@brightweblabs/module-admin",
     "@brightweblabs/module-crm",
+    "@brightweblabs/module-orgs",
     "@brightweblabs/module-projects",
+    "@brightweblabs/theme",
     "@brightweblabs/ui",
   ]) {
     const folderName = packageName.replace("@brightweblabs/", "");
@@ -298,9 +304,10 @@ function createPlatformBrandConfigFile({ slug, brandValues }) {
 
 export function createPlatformModulesConfigFile(selectedModules) {
   const selected = new Set(selectedModules);
+  const orgsEnabled = selected.has("crm") || selected.has("projects");
 
   return [
-    'export type StarterModuleKey = "core-auth" | "crm" | "projects" | "admin";',
+    'export type StarterModuleKey = "core-auth" | "orgs" | "crm" | "projects" | "admin";',
     "",
     "export type StarterModuleConfig = {",
     "  key: StarterModuleKey;",
@@ -309,7 +316,7 @@ export function createPlatformModulesConfigFile(selectedModules) {
     "  enabled: boolean;",
     "  packageName: string;",
     "  playgroundHref?: string;",
-    '  placement: "core" | "primary" | "admin";',
+    '  placement: "core" | "primary" | "admin" | "hidden";',
     "};",
     "",
     "export const starterModuleConfig: StarterModuleConfig[] = [",
@@ -323,12 +330,20 @@ export function createPlatformModulesConfigFile(selectedModules) {
     '    placement: "core",',
     "  },",
     "  {",
+    '    key: "orgs",',
+    '    label: "Organizations",',
+    '    description: "Shared organizations, membership, and invitation foundation for CRM and Projects.",',
+    `    enabled: ${String(orgsEnabled)},`,
+    '    packageName: "@brightweblabs/module-orgs",',
+    '    placement: "hidden",',
+    "  },",
+    "  {",
     '    key: "crm",',
     '    label: "CRM",',
     '    description: "Contacts and CRM server/data layer, with marketing-adjacent operational data stored in Supabase.",',
     `    enabled: ${String(selected.has("crm"))},`,
     '    packageName: "@brightweblabs/module-crm",',
-    '    playgroundHref: "/playground/crm",',
+    '    playgroundHref: "/crm",',
     '    placement: "primary",',
     "  },",
     "  {",
@@ -428,7 +443,7 @@ function getPlatformStarterRoutes(selectedModules) {
     "/bootstrap",
     "/preview/app-shell",
     "/playground/auth",
-    ...selectedModules.map((moduleKey) => `/playground/${moduleKey}`),
+    ...selectedModules.map((moduleKey) => moduleKey === "crm" ? "/crm" : `/playground/${moduleKey}`),
   ];
 }
 
@@ -639,6 +654,7 @@ export function createAppContextFile({
           "config/client.ts",
           "config/bootstrap.ts",
           "config/shell.ts",
+          "config/shell.overrides.ts",
           ".env.local",
         ],
         appRoutesRoot: "app",
@@ -659,6 +675,7 @@ export function createAppContextFile({
         ],
         packageOwned: [
           ...CORE_PACKAGES,
+          ...(selectedModules.includes("crm") || selectedModules.includes("projects") ? [ORGS_PACKAGE_NAME] : []),
           ...SELECTABLE_MODULES
             .filter((moduleDefinition) => selectedModules.includes(moduleDefinition.key))
             .map((moduleDefinition) => moduleDefinition.packageName),
@@ -720,6 +737,7 @@ export function createPackageJson({
     "@brightweblabs/app-shell": internalDependencyVersion("@brightweblabs/app-shell"),
     "@brightweblabs/core-auth": internalDependencyVersion("@brightweblabs/core-auth"),
     "@brightweblabs/infra": internalDependencyVersion("@brightweblabs/infra"),
+    "@brightweblabs/theme": internalDependencyVersion("@brightweblabs/theme"),
     "@brightweblabs/ui": internalDependencyVersion("@brightweblabs/ui"),
     "lucide-react": versionMap["lucide-react"],
     "next": versionMap.next,
@@ -731,6 +749,9 @@ export function createPackageJson({
     if (selectedModules.includes(moduleDefinition.key)) {
       dependencies[moduleDefinition.packageName] = internalDependencyVersion(moduleDefinition.packageName);
     }
+  }
+  if (selectedModules.includes("crm") || selectedModules.includes("projects")) {
+    dependencies[ORGS_PACKAGE_NAME] = internalDependencyVersion(ORGS_PACKAGE_NAME);
   }
 
   return {
@@ -768,6 +789,9 @@ export function createNextConfig({ template, selectedModules }) {
   }
 
   const transpilePackages = [...CORE_PACKAGES];
+  if (selectedModules.includes("crm") || selectedModules.includes("projects")) {
+    transpilePackages.push(ORGS_PACKAGE_NAME);
+  }
 
   for (const moduleDefinition of SELECTABLE_MODULES) {
     if (selectedModules.includes(moduleDefinition.key)) {
@@ -793,6 +817,11 @@ export function createShellConfig(selectedModules) {
   const importLines = [];
   const registrationLines = [];
 
+  if (selectedModules.includes("crm") || selectedModules.includes("projects")) {
+    importLines.push('import { orgsModuleRegistration } from "@brightweblabs/module-orgs/registration";');
+    registrationLines.push('  if (enabled.has("orgs")) registrations.push(orgsModuleRegistration);');
+  }
+
   if (selectedModules.includes("admin")) {
     importLines.push('import { adminModuleRegistration } from "@brightweblabs/module-admin/registration";');
     registrationLines.push('  if (enabled.has("admin")) registrations.push(adminModuleRegistration);');
@@ -809,8 +838,10 @@ export function createShellConfig(selectedModules) {
   }
 
   return [
+    "// MANAGED BY BRIGHTWEB — regenerated by create-bw-app update; put customizations in config/shell.overrides.ts",
     'import { LayoutDashboard, Wrench } from "lucide-react";',
     "import {",
+    "  applyShellRegistrationOverrides,",
     "  buildClientAppShellRegistration,",
     "  resolveClientAppShellConfig,",
     "  type ClientAppShellRegistration,",
@@ -820,6 +851,7 @@ export function createShellConfig(selectedModules) {
     ...importLines,
     'import { starterBrandConfig } from "./brand";',
     'import { getEnabledStarterModules } from "./modules";',
+    'import { shellRegistrationOverrides } from "./shell.overrides";',
     "",
     "const dashboardModuleRegistration: ShellModuleRegistration<ShellContextualAction> = {",
     '  key: "dashboard",',
@@ -839,6 +871,10 @@ export function createShellConfig(selectedModules) {
     "",
     "export function getStarterShellConfig() {",
     "  const enabledModules = getEnabledStarterModules();",
+    "  const modules = applyShellRegistrationOverrides(",
+    "    getStarterModuleRegistrations(),",
+    "    shellRegistrationOverrides,",
+    "  );",
     "  const shellRegistration: ClientAppShellRegistration<ShellContextualAction> = {",
     "    brand: {",
     '      href: "/",',
@@ -866,7 +902,7 @@ export function createShellConfig(selectedModules) {
     "      icon: Wrench,",
     '      collapsedHref: enabledModules.find((moduleConfig) => moduleConfig.playgroundHref)?.playgroundHref || "/",',
     "    },",
-    "    modules: getStarterModuleRegistrations(),",
+    "    modules,",
     "  };",
     "",
     "  const builtRegistration = buildClientAppShellRegistration(shellRegistration);",
@@ -1255,6 +1291,7 @@ async function scaffoldPlatformProject({
 
   if (workspaceMode) {
     await writeClientStack(workspaceRoot, answers.slug, dbInstallPlan, { workspaceMode: true });
+    await writeSupabaseCliMigrations({ targetDir, dbInstallPlan });
   } else {
     await writeBundledSupabaseBaseline({
       targetDir,
@@ -1263,6 +1300,17 @@ async function scaffoldPlatformProject({
       registry: dbRegistry,
     });
   }
+
+  const cliPackage = await readJsonIfPresent(path.join(PACKAGE_ROOT, "package.json"));
+  await writeAppManifest(targetDir, await createInitialAppManifest({
+    targetDir,
+    slug: answers.slug,
+    template: "platform",
+    selectedModules,
+    versionMap,
+    dbInstallPlan,
+    cliVersion: cliPackage?.version || "0.0.0",
+  }));
 }
 
 async function scaffoldSiteProject({
@@ -1314,6 +1362,16 @@ async function scaffoldSiteProject({
       packageManager,
     }),
   );
+  const cliPackage = await readJsonIfPresent(path.join(PACKAGE_ROOT, "package.json"));
+  await writeAppManifest(targetDir, await createInitialAppManifest({
+    targetDir,
+    slug: answers.slug,
+    template: "site",
+    selectedModules: [],
+    versionMap,
+    dbInstallPlan: { resolvedOrder: [] },
+    cliVersion: cliPackage?.version || "0.0.0",
+  }));
 }
 
 function printCompletionMessage({ targetDir, workspaceMode, slug, packageManager, install }) {

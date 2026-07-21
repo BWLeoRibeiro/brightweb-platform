@@ -12,7 +12,7 @@ Goal: get the generated starter running with real credentials.
 - Review `config/modules.ts` before touching module routes.
 - Run the local dev server for this app or workspace.
 - Validate `/`, `/bootstrap`, `/preview/app-shell`, and `/playground/auth`.
-- Validate `/playground/crm`, `/playground/projects`, and `/playground/admin` only when those modules are enabled.
+- Validate `/crm`, `/playground/projects`, and `/playground/admin` only when those modules are enabled.
 
 ## Change brand identity
 
@@ -30,7 +30,7 @@ Goal: move from validation surfaces to product-owned pages.
 
 - Build the real routes in `app/` first.
 - Keep reusable route UI in `components/` so the app follows the expected Next.js folder split.
-- Update `config/shell.ts` if navigation or toolbar behavior changes.
+- Update `config/shell.overrides.ts` if navigation or toolbar behavior changes.
 - Remove `/bootstrap`, `/preview/app-shell`, or `/playground/*` only after links and config references are cleaned up.
 
 ## Make a module-aware change

@@ -93,7 +93,7 @@ reference page: start with the top-level folders and files, then scan the templa
 <FactTable
   columns={["Path or file", "Added when selected", "Purpose"]}
   rows={[
-    ["`app/playground/crm/page.tsx`", "CRM", "Sandbox route for the CRM module package."],
+    ["`app/crm/page.tsx`", "CRM", "Ready-to-use route for the CRM module package."],
     ["`app/api/crm/contacts/route.ts`", "CRM", "Starter CRM contacts endpoint backed by the package-owned CRM handler."],
     ["`app/api/crm/organizations/route.ts`", "CRM", "Starter CRM organizations endpoint backed by the package-owned CRM handler."],
     ["`app/api/crm/stats/route.ts`", "CRM", "Starter CRM stats endpoint backed by the package-owned CRM handler."],

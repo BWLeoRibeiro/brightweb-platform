@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://brightweb.dev/schemas/events/crm/contact-status-changed.v1.json",
+  "title": "CRM contact status changed",
+  "description": "Contract for a CRM contact status transition. Runtime dispatch is not part of module-crm 0.5.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contactId",
+    "previousStatus",
+    "newStatus",
+    "reason",
+    "changedBy",
+    "changedAt"
+  ],
+  "properties": {
+    "contactId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "previousStatus": {
+      "type": ["string", "null"],
+      "enum": ["lead", "qualified", "proposal", "won", "lost", null]
+    },
+    "newStatus": {
+      "type": "string",
+      "enum": ["lead", "qualified", "proposal", "won", "lost"]
+    },
+    "reason": {
+      "type": ["string", "null"]
+    },
+    "changedBy": {
+      "description": "Profile ID of the staff member responsible for the transition.",
+      "type": "string",
+      "format": "uuid"
+    },
+    "changedAt": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+}

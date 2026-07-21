@@ -7,7 +7,7 @@
       "title": "Platform Base",
       "file": "platform-base.json",
       "doc": "../platform-base.md",
-      "entryCount": 16,
+      "entryCount": 57,
       "summary": "Core auth and admin-backed platform base surfaces."
     },
     {
@@ -23,8 +23,16 @@
       "title": "CRM",
       "file": "crm.json",
       "doc": "../crm.md",
-      "entryCount": 12,
-      "summary": "CRM shell registration, stable list/stats helpers, package-owned GET handlers, and starter dashboard glue."
+      "entryCount": 29,
+      "summary": "CRM shell registration, stable read/write helpers, package-owned request handlers, and starter dashboard glue."
+    },
+    {
+      "moduleKey": "orgs",
+      "title": "Organizations",
+      "file": "orgs.json",
+      "doc": "../orgs.md",
+      "entryCount": 6,
+      "summary": "Organization data, membership helpers, and hidden shell registration."
     },
     {
       "moduleKey": "projects",

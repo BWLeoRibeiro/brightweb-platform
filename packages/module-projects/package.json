@@ -5,7 +5,8 @@
   "main": "./src/index.ts",
   "types": "./src/index.ts",
   "files": [
-    "src"
+    "src",
+    "brightweb.module.json"
   ],
   "license": "MIT",
   "repository": {
@@ -28,7 +29,7 @@
     "@brightweblabs/core-auth": "workspace:*",
     "@brightweblabs/infra": "workspace:*",
     "@brightweblabs/ui": "workspace:*",
-    "@supabase/supabase-js": "^2.99.2",
-    "lucide-react": "^0.577.0"
+    "@supabase/supabase-js": "^2.105.3",
+    "lucide-react": "^1.8.0"
   }
 }

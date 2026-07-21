@@ -405,6 +405,197 @@
     "source": "packages/core-auth/src/server.ts"
   },
   {
+    "moduleKey": "platform-base",
+    "packageName": "@brightweblabs/app-shell",
+    "symbol": "applyShellRegistrationOverrides",
+    "kind": "helper",
+    "status": "stable",
+    "runtime": "shell",
+    "summary": "Applies app-owned module registration overrides without mutating the imported registrations.",
+    "auth": "none",
+    "inputs": [
+      {
+        "name": "registrations",
+        "type": "ShellModuleRegistration[]",
+        "required": true,
+        "description": "Module registrations to clone and customize."
+      },
+      {
+        "name": "overrides",
+        "type": "ShellRegistrationOverrides",
+        "required": true,
+        "description": "Override functions keyed by module registration key."
+      }
+    ],
+    "outputs": [
+      {
+        "type": "ShellModuleRegistration[]",
+        "description": "New registration objects with known overrides applied."
+      }
+    ],
+    "notes": [
+      "Unknown override keys emit a warning that includes the known module keys."
+    ],
+    "source": "packages/app-shell/src/config.ts"
+  },
+  {
+    "moduleKey": "platform-base",
+    "packageName": "@brightweblabs/app-shell",
+    "symbol": "overrideNavHref",
+    "kind": "helper",
+    "status": "stable",
+    "runtime": "shell",
+    "summary": "Rewrites a navigation href across a shell module registration without mutating it.",
+    "auth": "none",
+    "inputs": [
+      {
+        "name": "registration",
+        "type": "ShellModuleRegistration",
+        "required": true,
+        "description": "Module registration to clone and rewrite."
+      },
+      {
+        "name": "fromHref",
+        "type": "string",
+        "required": true,
+        "description": "Existing href to replace in navigation items and toolbar matchers."
+      },
+      {
+        "name": "toHref",
+        "type": "string",
+        "required": true,
+        "description": "Replacement href."
+      }
+    ],
+    "outputs": [
+      {
+        "type": "ShellModuleRegistration",
+        "description": "New registration with matching href values rewritten."
+      }
+    ],
+    "notes": [
+      "Rewrites navItems, primaryNav, adminNavItem, toolsItems, moduleGroups, active matchers, and toolbar route matchers."
+    ],
+    "source": "packages/app-shell/src/config.ts"
+  },
+  {
+    "moduleKey": "platform-base", "packageName": "@brightweblabs/ui", "symbol": "ActivityMessage", "kind": "component", "status": "stable", "runtime": "shared", "summary": "Renders composed activity text with semantic emphasis for actor, entity, and value segments.", "auth": "none", "inputs": [{ "name": "segs", "type": "MsgSeg[]", "required": true, "description": "Ordered plain-text and emphasized activity-message segments." }], "outputs": [{ "type": "React element", "description": "Formatted activity message fragment." }], "notes": ["Use with the shared activity-format helpers."], "source": "packages/ui/src/components/activity-message.tsx"
+  },
+  {
+    "moduleKey": "platform-base", "packageName": "@brightweblabs/ui", "symbol": "formatActivityValue", "kind": "helper", "status": "stable", "runtime": "shared", "summary": "Formats stored activity values into concise, locale-aware display text.", "auth": "none", "inputs": [{ "name": "value", "type": "unknown", "required": true, "description": "Stored activity value to format." }, { "name": "options", "type": "ActivityValueOptions", "required": false, "description": "Locale and boolean-label overrides." }], "outputs": [{ "type": "string | null", "description": "Readable value or null when the value should not be displayed." }], "notes": ["Raw identifiers and unsupported structured values are intentionally hidden."], "source": "packages/ui/src/lib/activity-format.ts"
+  },
+  {
+    "moduleKey": "platform-base", "packageName": "@brightweblabs/ui", "symbol": "toActivityChanges", "kind": "helper", "status": "stable", "runtime": "shared", "summary": "Converts an activity payload changes map into display-ready field changes.", "auth": "none", "inputs": [{ "name": "payload", "type": "Record<string, unknown> | undefined", "required": false, "description": "Activity payload containing an optional changes map." }, { "name": "options", "type": "ActivityChangesOptions", "required": false, "description": "Field labels, person fields, locale, and fallback labels." }], "outputs": [{ "type": "ActivityChange[]", "description": "Ordered display-ready activity changes." }], "notes": ["Human-readable labels remain caller supplied."], "source": "packages/ui/src/lib/activity-format.ts"
+  },
+  {
+    "moduleKey": "platform-base", "packageName": "@brightweblabs/ui", "symbol": "MsgSeg", "kind": "type", "status": "stable", "runtime": "shared", "summary": "Type contract for plain and emphasized activity-message segments.", "auth": "none", "inputs": [], "outputs": [{ "type": "string | { b: string } | { v: string }", "description": "A single activity-message segment." }], "notes": ["Consumed by ActivityMessage and package activity formatters."], "source": "packages/ui/src/lib/activity-format.ts"
+  },
+  {
+    "moduleKey": "platform-base", "packageName": "@brightweblabs/ui", "symbol": "Avatar", "kind": "component", "status": "stable", "runtime": "client", "summary": "Tokenized avatar root with small, default, and large sizes.", "auth": "none", "inputs": [], "outputs": [{ "type": "React element", "description": "Avatar root surface." }], "notes": ["Compose with the exported avatar image, fallback, badge, and group helpers."], "source": "packages/ui/src/components/avatar.tsx"
+  },
+  {
+    "moduleKey": "platform-base", "packageName": "@brightweblabs/ui", "symbol": "AvatarImage", "kind": "component", "status": "stable", "runtime": "client", "summary": "Image primitive for the shared avatar component.", "auth": "none", "inputs": [], "outputs": [{ "type": "React element", "description": "Avatar image content." }], "notes": ["Use inside Avatar."], "source": "packages/ui/src/components/avatar.tsx"
+  },
+  {
+    "moduleKey": "platform-base", "packageName": "@brightweblabs/ui", "symbol": "AvatarFallback", "kind": "component", "status": "stable", "runtime": "client", "summary": "Fallback content for avatars without a loaded image.", "auth": "none", "inputs": [], "outputs": [{ "type": "React element", "description": "Avatar fallback content." }], "notes": ["Use inside Avatar."], "source": "packages/ui/src/components/avatar.tsx"
+  },
+  {
+    "moduleKey": "platform-base", "packageName": "@brightweblabs/ui", "symbol": "AvatarBadge", "kind": "component", "status": "stable", "runtime": "client", "summary": "Size-aware status badge positioned on an avatar.", "auth": "none", "inputs": [], "outputs": [{ "type": "React element", "description": "Avatar status badge." }], "notes": ["Use inside Avatar."], "source": "packages/ui/src/components/avatar.tsx"
+  },
+  {
+    "moduleKey": "platform-base", "packageName": "@brightweblabs/ui", "symbol": "AvatarGroup", "kind": "component", "status": "stable", "runtime": "client", "summary": "Overlapping layout container for a set of avatars.", "auth": "none", "inputs": [], "outputs": [{ "type": "React element", "description": "Avatar group container." }], "notes": ["Supports all shared avatar sizes."], "source": "packages/ui/src/components/avatar.tsx"
+  },
+  {
+    "moduleKey": "platform-base", "packageName": "@brightweblabs/ui", "symbol": "AvatarGroupCount", "kind": "component", "status": "stable", "runtime": "client", "summary": "Overflow count indicator for avatar groups.", "auth": "none", "inputs": [], "outputs": [{ "type": "React element", "description": "Avatar group count." }], "notes": ["Place after visible avatars in AvatarGroup."], "source": "packages/ui/src/components/avatar.tsx"
+  },
+  {
+    "moduleKey": "platform-base", "packageName": "@brightweblabs/ui", "symbol": "SearchField", "kind": "component", "status": "stable", "runtime": "client", "summary": "Controlled tokenized search field with optional inline clear action.", "auth": "none", "inputs": [], "outputs": [{ "type": "React element", "description": "Search input control." }], "notes": ["Supports compact and default sizes."], "source": "packages/ui/src/components/search-field.tsx"
+  },
+  {
+    "moduleKey": "platform-base", "packageName": "@brightweblabs/ui", "symbol": "Skeleton", "kind": "component", "status": "stable", "runtime": "shared", "summary": "Base tokenized loading placeholder block.", "auth": "none", "inputs": [], "outputs": [{ "type": "React element", "description": "Loading placeholder block." }], "notes": ["Uses the theme skeleton recipe and reduced-motion behavior."], "source": "packages/ui/src/components/skeleton.tsx"
+  },
+  {
+    "moduleKey": "platform-base", "packageName": "@brightweblabs/ui", "symbol": "SkeletonLine", "kind": "component", "status": "stable", "runtime": "shared", "summary": "Single-line text loading placeholder.", "auth": "none", "inputs": [], "outputs": [{ "type": "React element", "description": "Rounded loading line." }], "notes": ["Accepts any CSS width."], "source": "packages/ui/src/components/skeleton.tsx"
+  },
+  {
+    "moduleKey": "platform-base", "packageName": "@brightweblabs/ui", "symbol": "SkeletonText", "kind": "component", "status": "stable", "runtime": "shared", "summary": "Tapered stack of text loading placeholders.", "auth": "none", "inputs": [], "outputs": [{ "type": "React element", "description": "Loading text stack." }], "notes": ["The final line is shortened to resemble text."], "source": "packages/ui/src/components/skeleton.tsx"
+  },
+  {
+    "moduleKey": "platform-base", "packageName": "@brightweblabs/ui", "symbol": "SkeletonCard", "kind": "component", "status": "stable", "runtime": "shared", "summary": "Card-framed loading placeholder composed from skeleton primitives.", "auth": "none", "inputs": [], "outputs": [{ "type": "React element", "description": "Loading card surface." }], "notes": ["Uses only shared card and skeleton tokens."], "source": "packages/ui/src/components/skeleton.tsx"
+  },
+  {
+    "moduleKey": "platform-base", "packageName": "@brightweblabs/ui", "symbol": "SkeletonCircle", "kind": "component", "status": "stable", "runtime": "shared", "summary": "Circular loading placeholder for avatars and icon wells.", "auth": "none", "inputs": [], "outputs": [{ "type": "React element", "description": "Circular loading placeholder." }], "notes": ["Size accepts any CSS length."], "source": "packages/ui/src/components/skeleton.tsx"
+  },
+  {
+    "moduleKey": "platform-base", "packageName": "@brightweblabs/ui", "symbol": "TableRowsSkeleton", "kind": "component", "status": "stable", "runtime": "shared", "summary": "Configurable loading rows for shared tables.", "auth": "none", "inputs": [], "outputs": [{ "type": "React element", "description": "Table row placeholder fragment." }], "notes": ["Column shapes support text, chip, and action cells."], "source": "packages/ui/src/components/skeleton-table.tsx"
+  },
+  {
+    "moduleKey": "platform-base", "packageName": "@brightweblabs/ui", "symbol": "PhoneInput", "kind": "component", "status": "stable", "runtime": "client", "summary": "International phone input with searchable country selector and E.164 output.", "auth": "none", "inputs": [], "outputs": [{ "type": "React element", "description": "Controlled international phone input." }], "notes": ["Defaults to Portugal and prioritizes common BrightWeb markets."], "source": "packages/ui/src/components/phone-input.tsx"
+  },
+  {
+    "moduleKey": "platform-base", "packageName": "@brightweblabs/ui", "symbol": "ThemeProvider", "kind": "component", "status": "stable", "runtime": "client", "summary": "Persistent light, dark, and system theme provider for BrightWeb apps.", "auth": "none", "inputs": [], "outputs": [{ "type": "React element", "description": "Theme context provider." }], "notes": ["Synchronizes class, data-theme, color-scheme, localStorage, and system preference on the html element."], "source": "packages/ui/src/components/theme-provider.tsx"
+  },
+  {
+    "moduleKey": "platform-base", "packageName": "@brightweblabs/ui", "symbol": "useTheme", "kind": "hook", "status": "stable", "runtime": "client", "summary": "Reads and updates the package-owned BrightWeb theme context.", "auth": "none", "inputs": [], "outputs": [{ "type": "ThemeContextValue", "description": "Selected, resolved, and system themes plus the theme setter." }], "notes": ["Returns a safe light-theme fallback when used without ThemeProvider."], "source": "packages/ui/src/components/theme-provider.tsx"
+  },
+  {
+    "moduleKey": "platform-base", "packageName": "@brightweblabs/ui", "symbol": "badgeVariants", "kind": "helper", "status": "stable", "runtime": "shared", "summary": "Class-variance recipe for shared badge variants and sizes.", "auth": "none", "inputs": [], "outputs": [{ "type": "CVA variant function", "description": "Tokenized badge class string." }], "notes": ["Includes the tint variant and small text-ui-micro size."], "source": "packages/ui/src/components/badge.tsx"
+  },
+  {
+    "moduleKey": "platform-base", "packageName": "@brightweblabs/ui", "symbol": "SectionHeading", "kind": "component", "status": "stable", "runtime": "shared", "summary": "Application section heading with a themed icon chip, title, subtitle, and action slot.", "auth": "none", "inputs": [], "outputs": [{ "type": "React element", "description": "Tokenized section heading composition." }], "notes": ["The icon chip uses the theme section-icon recipe."], "source": "packages/ui/src/components/section-heading.tsx"
+  },
+  {
+    "moduleKey": "platform-base", "packageName": "@brightweblabs/ui", "symbol": "ActionButton", "kind": "component", "status": "stable", "runtime": "shared", "summary": "Brand-accent pill call-to-action button.", "auth": "none", "inputs": [], "outputs": [{ "type": "React element", "description": "Tokenized action button." }], "notes": ["Uses the exported actionClassName recipe."], "source": "packages/ui/src/components/action.tsx"
+  },
+  {
+    "moduleKey": "platform-base", "packageName": "@brightweblabs/ui", "symbol": "actionClassName", "kind": "helper", "status": "stable", "runtime": "shared", "summary": "Reusable class recipe for brand-accent pill actions.", "auth": "none", "inputs": [], "outputs": [{ "type": "string", "description": "Tokenized action class string." }], "notes": ["Apply to links or custom controls that match ActionButton."], "source": "packages/ui/src/components/action.tsx"
+  },
+  {
+    "moduleKey": "platform-base", "packageName": "@brightweblabs/ui", "symbol": "TablePagination", "kind": "component", "status": "stable", "runtime": "client", "summary": "Compact controlled pagination footer for application tables.", "auth": "none", "inputs": [], "outputs": [{ "type": "React element", "description": "Pagination summary and controls." }], "notes": ["Builds on the shared pagination primitives and uses English ARIA defaults."], "source": "packages/ui/src/components/table-pagination.tsx"
+  },
+  {
+    "moduleKey": "platform-base", "packageName": "@brightweblabs/ui", "symbol": "SurfaceCard", "kind": "component", "status": "stable", "runtime": "shared", "summary": "Thin article wrapper over the theme surface-card recipe.", "auth": "none", "inputs": [], "outputs": [{ "type": "React element", "description": "Theme-owned card surface." }], "notes": ["Set isLight to apply the theme is-light modifier."], "source": "packages/ui/src/components/surface-card.tsx"
+  },
+  {
+    "moduleKey": "platform-base", "packageName": "@brightweblabs/ui", "symbol": "StatTile", "kind": "component", "status": "stable", "runtime": "shared", "summary": "Labeled metric tile using the theme stat-cell recipe.", "auth": "none", "inputs": [], "outputs": [{ "type": "React element", "description": "Metric tile composition." }], "notes": ["Compose with StatValue for canonical metric typography."], "source": "packages/ui/src/components/stat-tile.tsx"
+  },
+  {
+    "moduleKey": "platform-base", "packageName": "@brightweblabs/ui", "symbol": "StatValue", "kind": "component", "status": "stable", "runtime": "shared", "summary": "Canonical metric value typography for StatTile.", "auth": "none", "inputs": [], "outputs": [{ "type": "React element", "description": "Tokenized metric value." }], "notes": ["Supports normal, large, and display metric sizes."], "source": "packages/ui/src/components/stat-tile.tsx"
+  },
+  {
+    "moduleKey": "platform-base", "packageName": "@brightweblabs/ui", "symbol": "StatusPill", "kind": "component", "status": "stable", "runtime": "shared", "summary": "Domain-neutral tinted status pill with small and normal sizes.", "auth": "none", "inputs": [], "outputs": [{ "type": "React element", "description": "Token-colored status pill." }], "notes": ["All component-owned colors are resolved through theme tintPill."], "source": "packages/ui/src/components/status-pill.tsx"
+  },
+  {
+    "moduleKey": "platform-base", "packageName": "@brightweblabs/ui", "symbol": "STATUS_PILL_BASE_CLASS", "kind": "helper", "status": "stable", "runtime": "shared", "summary": "Base structural class recipe for StatusPill.", "auth": "none", "inputs": [], "outputs": [{ "type": "string", "description": "Status pill base classes." }], "notes": ["Contains layout and typography only; colors come from tintPill."], "source": "packages/ui/src/components/status-pill.tsx"
+  },
+  {
+    "moduleKey": "platform-base", "packageName": "@brightweblabs/ui", "symbol": "STATUS_PILL_SIZE_CLASSES", "kind": "helper", "status": "stable", "runtime": "shared", "summary": "Small and normal size recipes for StatusPill.", "auth": "none", "inputs": [], "outputs": [{ "type": "Record", "description": "Status pill size class map." }], "notes": ["Uses BrightWeb text-ui typography utilities."], "source": "packages/ui/src/components/status-pill.tsx"
+  },
+  {
+    "moduleKey": "platform-base", "packageName": "@brightweblabs/ui", "symbol": "KpiBreakdownBar", "kind": "component", "status": "stable", "runtime": "client", "summary": "Segmented KPI proportion bar with a token-mapped legend and tooltips.", "auth": "none", "inputs": [], "outputs": [{ "type": "React element", "description": "Token-colored KPI breakdown." }], "notes": ["Consumers provide a domain-neutral tone-to-CSS-variable map."], "source": "packages/ui/src/components/kpi-breakdown-bar.tsx"
+  },
+  {
+    "moduleKey": "platform-base", "packageName": "@brightweblabs/ui", "symbol": "EmptyState", "kind": "component", "status": "stable", "runtime": "shared", "summary": "Centered empty state with icon, title, hint, and optional action.", "auth": "none", "inputs": [], "outputs": [{ "type": "React element", "description": "Tokenized empty state composition." }], "notes": ["All user-facing copy is supplied through props."], "source": "packages/ui/src/components/empty-state.tsx"
+  },
+  {
+    "moduleKey": "platform-base", "packageName": "@brightweblabs/ui", "symbol": "InitialsAvatar", "kind": "component", "status": "stable", "runtime": "client", "summary": "Avatar fallback that derives up to two initials from neutral label inputs.", "auth": "none", "inputs": [], "outputs": [{ "type": "React element", "description": "Tokenized initials avatar." }], "notes": ["Supports active and subtle semantic tones."], "source": "packages/ui/src/components/initials-avatar.tsx"
+  },
+  {
+    "moduleKey": "platform-base", "packageName": "@brightweblabs/ui", "symbol": "getInitials", "kind": "helper", "status": "stable", "runtime": "shared", "summary": "Derives up to two uppercase initials from a label and fallback.", "auth": "none", "inputs": [], "outputs": [{ "type": "string", "description": "One or two initials, or a question mark fallback." }], "notes": ["Used by InitialsAvatar."], "source": "packages/ui/src/components/initials-avatar.tsx"
+  },
+  {
+    "moduleKey": "platform-base", "packageName": "@brightweblabs/ui", "symbol": "RoleBadge", "kind": "component", "status": "stable", "runtime": "shared", "summary": "Domain-neutral role badge driven by a replaceable role-to-token map.", "auth": "none", "inputs": [], "outputs": [{ "type": "React element", "description": "Token-colored role badge." }], "notes": ["Defaults to the theme role token family and composes StatusPill."], "source": "packages/ui/src/components/role-badge.tsx"
+  },
+  {
+    "moduleKey": "platform-base", "packageName": "@brightweblabs/ui", "symbol": "DEFAULT_ROLE_TOKEN_MAP", "kind": "helper", "status": "stable", "runtime": "shared", "summary": "Default mapping from common neutral role buckets to theme role tokens.", "auth": "none", "inputs": [], "outputs": [{ "type": "Record", "description": "Role-to-CSS-variable map." }], "notes": ["Consumers can replace the map without changing RoleBadge."], "source": "packages/ui/src/components/role-badge.tsx"
+  },
+  {
+    "moduleKey": "platform-base", "packageName": "@brightweblabs/ui", "symbol": "getRoleLabel", "kind": "helper", "status": "stable", "runtime": "shared", "summary": "Converts a role identifier into a readable domain-neutral label.", "auth": "none", "inputs": [], "outputs": [{ "type": "string", "description": "Title-cased role label." }], "notes": ["Callers can bypass it by passing RoleBadge an explicit label."], "source": "packages/ui/src/components/role-badge.tsx"
+  },
+  {
+    "moduleKey": "platform-base", "packageName": "@brightweblabs/ui", "symbol": "resolveRoleToken", "kind": "helper", "status": "stable", "runtime": "shared", "summary": "Resolves a role token from a supplied map with a semantic-neutral fallback.", "auth": "none", "inputs": [], "outputs": [{ "type": "string", "description": "CSS custom-property name." }], "notes": ["Used by RoleBadge before applying tintPill."], "source": "packages/ui/src/components/role-badge.tsx"
+  },
+  {
     "moduleKey": "admin",
     "packageName": "@brightweblabs/module-admin/registration",
     "symbol": "adminModuleRegistration",
@@ -874,16 +1065,16 @@
     "packageName": "@brightweblabs/module-crm",
     "symbol": "listCrmOrganizations",
     "kind": "helper",
-    "status": "stable",
+    "status": "deprecated",
     "runtime": "server",
-    "summary": "Lists CRM organizations with reusable search and pagination.",
+    "summary": "Deprecated compatibility alias for the organizations module list helper.",
     "auth": "signed-in user required in the caller context",
     "inputs": [
       {
         "name": "supabase",
         "type": "SupabaseClient",
         "required": true,
-        "description": "Server-side Supabase client with CRM schema access."
+        "description": "Server-side Supabase client with organization schema access."
       },
       {
         "name": "params",
@@ -899,9 +1090,13 @@
       }
     ],
     "notes": [
-      "Use for app-owned CRM organization lists and selectors."
+      "Deprecated: import listOrganizations from @brightweblabs/module-orgs for new code.",
+      "The alias remains supported so module-crm's public API stays stable."
     ],
-    "source": "packages/module-crm/src/data.ts"
+    "replaces": [
+      "listOrganizations"
+    ],
+    "source": "packages/module-crm/src/index.ts"
   },
   {
     "moduleKey": "crm",
@@ -1275,6 +1470,142 @@
   },
   {
     "moduleKey": "crm",
+    "packageName": "@brightweblabs/module-crm/server",
+    "symbol": "createCrmContact",
+    "kind": "helper",
+    "status": "stable",
+    "runtime": "server",
+    "summary": "Validates and creates a CRM contact.",
+    "auth": "staff-authenticated Supabase client required; database policy enforces access",
+    "inputs": [
+      { "name": "supabase", "type": "SupabaseClient", "required": true, "description": "Authenticated server Supabase client." },
+      { "name": "input", "type": "CreateCrmContactInput", "required": true, "description": "Contact identity, status, source, organization, and owner fields." },
+      { "name": "options", "type": "CrmWriteOptions", "required": false, "description": "Optional activity actor context." }
+    ],
+    "outputs": [
+      { "type": "Promise<CrmContact>", "description": "The created CRM contact." }
+    ],
+    "notes": ["Normalizes email and validates email, phone, status, and required identity fields."],
+    "source": "packages/module-crm/src/server.ts"
+  },
+  {
+    "moduleKey": "crm",
+    "packageName": "@brightweblabs/module-crm/server",
+    "symbol": "updateCrmContact",
+    "kind": "helper",
+    "status": "stable",
+    "runtime": "server",
+    "summary": "Validates and updates mutable CRM contact fields.",
+    "auth": "staff-authenticated Supabase client required; database policy enforces access",
+    "inputs": [
+      { "name": "supabase", "type": "SupabaseClient", "required": true, "description": "Authenticated server Supabase client." },
+      { "name": "contactId", "type": "string", "required": true, "description": "CRM contact ID." },
+      { "name": "patch", "type": "UpdateCrmContactInput", "required": true, "description": "Mutable CRM contact fields." }
+    ],
+    "outputs": [
+      { "type": "Promise<CrmContact>", "description": "The updated CRM contact." }
+    ],
+    "notes": ["Status changes use setCrmContactStatus so SQL history remains complete."],
+    "source": "packages/module-crm/src/server.ts"
+  },
+  {
+    "moduleKey": "crm",
+    "packageName": "@brightweblabs/module-crm/server",
+    "symbol": "setCrmContactStatus",
+    "kind": "helper",
+    "status": "stable",
+    "runtime": "server",
+    "summary": "Changes one CRM contact status through the set_crm_status SQL function.",
+    "auth": "staff-authenticated Supabase client required; database function enforces access",
+    "inputs": [
+      { "name": "supabase", "type": "SupabaseClient", "required": true, "description": "Authenticated server Supabase client." },
+      { "name": "contactId", "type": "string", "required": true, "description": "CRM contact ID." },
+      { "name": "status", "type": "CrmContactStatus", "required": true, "description": "Target funnel status." },
+      { "name": "reason", "type": "string | null", "required": false, "description": "Optional status-change reason." }
+    ],
+    "outputs": [
+      { "type": "Promise<CrmContact>", "description": "The contact after the status transition." }
+    ],
+    "notes": ["The set_crm_status RPC owns crm_status_log writes and unchanged-status no-op behavior."],
+    "source": "packages/module-crm/src/server.ts"
+  },
+  {
+    "moduleKey": "crm",
+    "packageName": "@brightweblabs/module-crm/server",
+    "symbol": "bulkSetCrmContactStatus",
+    "kind": "helper",
+    "status": "stable",
+    "runtime": "server",
+    "summary": "Changes the status of multiple distinct CRM contacts.",
+    "auth": "staff-authenticated Supabase client required; database function enforces access",
+    "inputs": [
+      { "name": "supabase", "type": "SupabaseClient", "required": true, "description": "Authenticated server Supabase client." },
+      { "name": "contactIds", "type": "string[]", "required": true, "description": "CRM contact IDs to update." },
+      { "name": "status", "type": "CrmContactStatus", "required": true, "description": "Target funnel status." }
+    ],
+    "outputs": [
+      { "type": "Promise<CrmContact[]>", "description": "Contacts after their status transitions." }
+    ],
+    "notes": ["Deduplicates IDs and invokes set_crm_status once per contact."],
+    "source": "packages/module-crm/src/server.ts"
+  },
+  {
+    "moduleKey": "crm",
+    "packageName": "@brightweblabs/module-crm/server",
+    "symbol": "deleteCrmContact",
+    "kind": "helper",
+    "status": "stable",
+    "runtime": "server",
+    "summary": "Deletes one CRM contact and records generic CRM activity.",
+    "auth": "staff-authenticated Supabase client required; database policy enforces access",
+    "inputs": [
+      { "name": "supabase", "type": "SupabaseClient", "required": true, "description": "Authenticated server Supabase client." },
+      { "name": "contactId", "type": "string", "required": true, "description": "CRM contact ID." }
+    ],
+    "outputs": [
+      { "type": "Promise<{ deletedId: string }>", "description": "The deleted contact ID." }
+    ],
+    "notes": ["Mirrors the delete operation supported by the reference CRM application."],
+    "source": "packages/module-crm/src/server.ts"
+  },
+  {
+    "moduleKey": "crm",
+    "packageName": "@brightweblabs/module-crm",
+    "symbol": "handleCrmContactsPostRequest",
+    "kind": "handler",
+    "status": "stable",
+    "runtime": "server",
+    "summary": "Package-owned POST handler for CRM contact creation.",
+    "auth": "staff or admin role required",
+    "inputs": [
+      { "name": "request", "type": "Request", "required": true, "description": "JSON request containing CRM contact creation fields." }
+    ],
+    "outputs": [
+      { "type": "Response", "description": "201 JSON response with the created contact or an error envelope." }
+    ],
+    "notes": ["Rejects malformed JSON and non-staff callers before performing writes."],
+    "source": "packages/module-crm/src/handlers.ts"
+  },
+  {
+    "moduleKey": "crm",
+    "packageName": "@brightweblabs/module-crm",
+    "symbol": "handleCrmContactsPatchRequest",
+    "kind": "handler",
+    "status": "stable",
+    "runtime": "server",
+    "summary": "Package-owned PATCH handler for CRM contact and funnel updates.",
+    "auth": "staff or admin role required",
+    "inputs": [
+      { "name": "request", "type": "Request", "required": true, "description": "JSON request containing a contact ID or contact IDs and fields to update." }
+    ],
+    "outputs": [
+      { "type": "Response", "description": "JSON response with one updated contact or the updated contact IDs." }
+    ],
+    "notes": ["Supports single-contact field updates and single or bulk status transitions."],
+    "source": "packages/module-crm/src/handlers.ts"
+  },
+  {
+    "moduleKey": "crm",
     "packageName": "@brightweblabs/module-crm",
     "symbol": "getCrmDashboardData",
     "kind": "helper",
@@ -1301,6 +1632,242 @@
       "listCrmStatusTimeline"
     ],
     "source": "packages/module-crm/src/index.ts"
+  },
+  {
+    "moduleKey": "crm", "packageName": "@brightweblabs/module-crm", "symbol": "handleCrmTimelineGetRequest", "kind": "handler", "status": "stable", "runtime": "server", "summary": "Package-owned GET handler for contact status history.", "auth": "signed-in user required", "inputs": [{ "name": "request", "type": "Request", "required": true, "description": "Request with optional contactId, since, and limit query parameters." }], "outputs": [{ "type": "Response", "description": "JSON status-history entries." }], "notes": ["The default CRM UI uses this at /api/crm/timeline."], "source": "packages/module-crm/src/handlers.ts"
+  },
+  {
+    "moduleKey": "crm", "packageName": "@brightweblabs/module-crm/ui", "symbol": "createCrmUiClient", "kind": "helper", "status": "starter", "runtime": "client", "summary": "Creates the default CRM HTTP client without hardcoding URLs in components.", "auth": "inherits the app route session", "inputs": [{ "name": "basePath", "type": "string", "required": false, "description": "CRM API base path; defaults to /api/crm." }, { "name": "fetcher", "type": "typeof fetch", "required": false, "description": "Injectable fetch implementation." }], "outputs": [{ "type": "CrmUiClient", "description": "Client callbacks for CRM reads and writes." }], "notes": ["Starter status allows route envelopes to evolve before the next stable UI contract."], "source": "packages/module-crm/src/ui/client.ts"
+  },
+  {
+    "moduleKey": "crm", "packageName": "@brightweblabs/module-crm/ui", "symbol": "defaultCrmUiDictionary", "kind": "shared-helper", "status": "starter", "runtime": "shared", "summary": "English dictionary containing every default CRM UI string.", "auth": "none", "inputs": [], "outputs": [{ "type": "CrmUiDictionary", "description": "Default English CRM copy and formatters." }], "notes": ["Copy the object and override nested values for another locale."], "source": "packages/module-crm/src/ui/dictionary.ts"
+  },
+  {
+    "moduleKey": "crm", "packageName": "@brightweblabs/module-crm/ui", "symbol": "defaultCrmStages", "kind": "shared-helper", "status": "starter", "runtime": "shared", "summary": "Canonical ordered CRM funnel stage metadata.", "auth": "none", "inputs": [], "outputs": [{ "type": "CrmStageConfig[]", "description": "Five stages with labels and token names." }], "notes": ["Override through the stages prop on CRM surfaces."], "source": "packages/module-crm/src/ui/dictionary.ts"
+  },
+  {
+    "moduleKey": "crm", "packageName": "@brightweblabs/module-crm/ui", "symbol": "CrmContactsTable", "kind": "component", "status": "starter", "runtime": "client", "summary": "Searchable, sortable, selectable, paginated CRM contacts table.", "auth": "none; data and callbacks are supplied by the caller", "inputs": [{ "name": "props", "type": "CrmContactsTableProps", "required": true, "description": "Contacts result, query callbacks, columns, stages, and selection callbacks." }], "outputs": [{ "type": "React element", "description": "Default CRM contact list surface." }], "notes": ["Column order, visibility, labels, and custom cells are configurable."], "source": "packages/module-crm/src/ui/contacts-table.tsx"
+  },
+  {
+    "moduleKey": "crm", "packageName": "@brightweblabs/module-crm/ui", "symbol": "CrmFunnelStats", "kind": "component", "status": "starter", "runtime": "client", "summary": "Token-tinted funnel stage statistic tiles.", "auth": "none; data is supplied by the caller", "inputs": [{ "name": "props", "type": "CrmFunnelStatsProps", "required": true, "description": "Stats, loading state, dictionary, and stage metadata." }], "outputs": [{ "type": "React element", "description": "CRM funnel metric row." }], "notes": ["Stage colors resolve only through module tokens."], "source": "packages/module-crm/src/ui/funnel-stats.tsx"
+  },
+  {
+    "moduleKey": "crm", "packageName": "@brightweblabs/module-crm/ui", "symbol": "CrmContactDialog", "kind": "component", "status": "starter", "runtime": "client", "summary": "Controlled create and edit form for CRM contacts.", "auth": "none; submit callback owns authorization", "inputs": [{ "name": "props", "type": "CrmContactDialogProps", "required": true, "description": "Controlled dialog state, form options, and submit callback." }], "outputs": [{ "type": "React element", "description": "CRM contact form dialog." }], "notes": ["The component never assumes an API URL."], "source": "packages/module-crm/src/ui/contact-dialog.tsx"
+  },
+  {
+    "moduleKey": "crm", "packageName": "@brightweblabs/module-crm/ui", "symbol": "CrmStatusDialog", "kind": "component", "status": "starter", "runtime": "client", "summary": "Controlled single or bulk funnel status dialog with optional reason.", "auth": "none; submit callback owns authorization", "inputs": [{ "name": "props", "type": "CrmStatusDialogProps", "required": true, "description": "Contact IDs, stages, controlled state, and submit callback." }], "outputs": [{ "type": "React element", "description": "CRM status transition dialog." }], "notes": ["Lost status visually emphasizes the reason field."], "source": "packages/module-crm/src/ui/status-dialog.tsx"
+  },
+  {
+    "moduleKey": "crm", "packageName": "@brightweblabs/module-crm/ui", "symbol": "CrmTimeline", "kind": "component", "status": "starter", "runtime": "client", "summary": "CRM contact status-history timeline using shared activity messages.", "auth": "none; entries are supplied by the caller", "inputs": [{ "name": "props", "type": "CrmTimelineProps", "required": true, "description": "Status entries plus UI and activity dictionaries." }], "outputs": [{ "type": "React element", "description": "CRM activity timeline." }], "notes": ["Accepts the existing CRM activity dictionary contract."], "source": "packages/module-crm/src/ui/timeline.tsx"
+  },
+  {
+    "moduleKey": "crm", "packageName": "@brightweblabs/module-crm/ui", "symbol": "CrmDashboard", "kind": "component", "status": "starter", "runtime": "client", "summary": "Ready-to-mount CRM dashboard composition with default data and write orchestration.", "auth": "inherits the supplied client or default app route session", "inputs": [{ "name": "props", "type": "CrmDashboardProps", "required": false, "description": "Optional client, initial data, dictionary, columns, slots, stages, and page size." }], "outputs": [{ "type": "React element", "description": "Complete default CRM screen." }], "notes": ["Starter status is consistent across package-owned UI surfaces while their customization contract matures."], "source": "packages/module-crm/src/ui/dashboard.tsx"
+  },
+  {
+    "moduleKey": "orgs",
+    "packageName": "@brightweblabs/module-orgs/registration",
+    "symbol": "orgsModuleRegistration",
+    "kind": "registration",
+    "status": "stable",
+    "runtime": "shell",
+    "summary": "Registers the organizations foundation module without adding navigation.",
+    "auth": "none",
+    "inputs": [],
+    "outputs": [
+      {
+        "type": "ShellModuleRegistration",
+        "description": "Hidden shell registration for the organizations foundation."
+      }
+    ],
+    "notes": [
+      "Enabled automatically when CRM or Projects is selected."
+    ],
+    "source": "packages/module-orgs/src/registration.ts"
+  },
+  {
+    "moduleKey": "orgs",
+    "packageName": "@brightweblabs/module-orgs",
+    "symbol": "listOrganizations",
+    "kind": "helper",
+    "status": "stable",
+    "runtime": "server",
+    "summary": "Lists organizations with search and pagination.",
+    "auth": "signed-in user required in the caller context",
+    "inputs": [
+      {
+        "name": "supabase",
+        "type": "SupabaseClient",
+        "required": true,
+        "description": "Server-side Supabase client with organization access."
+      },
+      {
+        "name": "params",
+        "type": "OrganizationsListParams",
+        "required": false,
+        "description": "Optional page, pageSize, and search filters."
+      }
+    ],
+    "outputs": [
+      {
+        "type": "OrganizationsListResult",
+        "description": "Paginated organizations plus total counters."
+      }
+    ],
+    "notes": [
+      "Replaces module-crm's deprecated listCrmOrganizations name."
+    ],
+    "replaces": [
+      "listCrmOrganizations"
+    ],
+    "source": "packages/module-orgs/src/data.ts"
+  },
+  {
+    "moduleKey": "orgs",
+    "packageName": "@brightweblabs/module-orgs",
+    "symbol": "createOrganization",
+    "kind": "helper",
+    "status": "stable",
+    "runtime": "server",
+    "summary": "Creates an organization.",
+    "auth": "staff access enforced by database policy",
+    "inputs": [
+      {
+        "name": "supabase",
+        "type": "SupabaseClient",
+        "required": true,
+        "description": "Server-side Supabase client with organization write access."
+      },
+      {
+        "name": "input",
+        "type": "CreateOrganizationInput",
+        "required": true,
+        "description": "Organization fields to create."
+      }
+    ],
+    "outputs": [
+      {
+        "type": "Organization",
+        "description": "The created organization."
+      }
+    ],
+    "notes": [],
+    "source": "packages/module-orgs/src/data.ts"
+  },
+  {
+    "moduleKey": "orgs",
+    "packageName": "@brightweblabs/module-orgs",
+    "symbol": "updateOrganization",
+    "kind": "helper",
+    "status": "stable",
+    "runtime": "server",
+    "summary": "Updates an organization.",
+    "auth": "staff access enforced by database policy",
+    "inputs": [
+      {
+        "name": "supabase",
+        "type": "SupabaseClient",
+        "required": true,
+        "description": "Server-side Supabase client with organization write access."
+      },
+      {
+        "name": "organizationId",
+        "type": "string",
+        "required": true,
+        "description": "Organization identifier."
+      },
+      {
+        "name": "input",
+        "type": "UpdateOrganizationInput",
+        "required": true,
+        "description": "Organization fields to update."
+      }
+    ],
+    "outputs": [
+      {
+        "type": "Organization",
+        "description": "The updated organization."
+      }
+    ],
+    "notes": [],
+    "source": "packages/module-orgs/src/data.ts"
+  },
+  {
+    "moduleKey": "orgs",
+    "packageName": "@brightweblabs/module-orgs",
+    "symbol": "listOrganizationMembers",
+    "kind": "helper",
+    "status": "stable",
+    "runtime": "server",
+    "summary": "Lists members of an organization.",
+    "auth": "organization membership or staff access enforced by database policy",
+    "inputs": [
+      {
+        "name": "supabase",
+        "type": "SupabaseClient",
+        "required": true,
+        "description": "Server-side Supabase client with membership access."
+      },
+      {
+        "name": "organizationId",
+        "type": "string",
+        "required": true,
+        "description": "Organization identifier."
+      }
+    ],
+    "outputs": [
+      {
+        "type": "OrganizationMember[]",
+        "description": "Organization membership rows."
+      }
+    ],
+    "notes": [],
+    "source": "packages/module-orgs/src/data.ts"
+  },
+  {
+    "moduleKey": "orgs",
+    "packageName": "@brightweblabs/module-orgs",
+    "symbol": "setOrganizationMemberRole",
+    "kind": "helper",
+    "status": "stable",
+    "runtime": "server",
+    "summary": "Adds an organization member or updates the member role.",
+    "auth": "organization admin or staff access enforced by database policy",
+    "inputs": [
+      {
+        "name": "supabase",
+        "type": "SupabaseClient",
+        "required": true,
+        "description": "Server-side Supabase client with membership admin access."
+      },
+      {
+        "name": "organizationId",
+        "type": "string",
+        "required": true,
+        "description": "Organization identifier."
+      },
+      {
+        "name": "profileId",
+        "type": "string",
+        "required": true,
+        "description": "Member profile identifier."
+      },
+      {
+        "name": "role",
+        "type": "OrganizationMemberRole",
+        "required": true,
+        "description": "Admin or member role."
+      }
+    ],
+    "outputs": [
+      {
+        "type": "OrganizationMember",
+        "description": "The created or updated membership row."
+      }
+    ],
+    "notes": [
+      "Supported member roles are admin and member."
+    ],
+    "source": "packages/module-orgs/src/data.ts"
   },
   {
     "moduleKey": "projects",

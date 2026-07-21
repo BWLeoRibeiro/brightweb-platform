@@ -1,0 +1,139 @@
+/* Legacy MQ primitive aliases for incremental consumer migration. */
+:root {
+  --mq-ink-950: var(--brand-ink);
+  --mq-brand-500: var(--brand-accent);
+  --mq-brand-400: var(--brand-accent-soft);
+  --mq-neutral-500: var(--brand-neutral-500);
+  --mq-neutral-300: var(--brand-neutral-300);
+  --mq-neutral-200: var(--brand-neutral-200);
+  --mq-neutral-100: var(--brand-neutral-100);
+  --mq-white: var(--brand-white);
+  --mq-border-subtle: var(--brand-border-subtle);
+  --mq-surface-tint: var(--brand-surface-tint);
+  --mq-surface-dark: var(--brand-surface-dark);
+  --mq-shadow-soft: var(--brand-shadow-soft);
+  --mq-shadow-lift: var(--brand-shadow-lift);
+}
+
+@utility portal-micro {
+  font-family: var(--font-body), sans-serif;
+  font-size: var(--text-ui-micro);
+  font-weight: var(--font-weight-medium);
+  line-height: 1.3;
+  color: var(--muted-foreground);
+}
+@utility portal-label {
+  font-family: var(--font-body), sans-serif;
+  font-size: var(--text-ui-label);
+  font-weight: var(--font-weight-medium);
+  line-height: 1;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--muted-foreground);
+}
+@utility portal-meta {
+  font-family: var(--font-body), sans-serif;
+  font-size: var(--text-ui-meta);
+  font-weight: var(--font-weight-regular);
+  line-height: 1.4;
+  color: var(--muted-foreground);
+}
+@utility portal-body {
+  font-family: var(--font-body), sans-serif;
+  font-size: var(--text-ui-body);
+  font-weight: var(--font-weight-regular);
+  line-height: 1.5;
+  color: var(--foreground);
+}
+@utility portal-card-title {
+  font-family: var(--font-body), sans-serif;
+  font-size: var(--text-ui-card-title);
+  font-weight: var(--font-weight-medium);
+  line-height: 1.3;
+  letter-spacing: -0.025em;
+  color: var(--foreground);
+}
+@utility portal-subhead {
+  font-family: var(--font-display), sans-serif;
+  font-size: var(--text-ui-subhead);
+  font-weight: var(--font-weight-bold);
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+  color: var(--foreground);
+}
+@utility portal-panel-title {
+  font-family: var(--font-display), sans-serif;
+  font-size: var(--text-ui-panel-title);
+  font-weight: var(--font-weight-bold);
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  color: var(--foreground);
+}
+@utility portal-heading {
+  font-family: var(--font-display), sans-serif;
+  font-size: var(--text-ui-heading);
+  font-weight: var(--font-weight-bold);
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  color: var(--foreground);
+}
+@utility portal-title-sm {
+  font-family: var(--font-display), sans-serif;
+  font-size: var(--text-ui-title-sm);
+  font-weight: var(--font-weight-heavy);
+  line-height: 1.1;
+  letter-spacing: -0.03em;
+  color: var(--foreground);
+}
+@utility portal-title {
+  font-family: var(--font-display), sans-serif;
+  font-size: var(--text-ui-title);
+  font-weight: var(--font-weight-heavy);
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+  color: var(--foreground);
+}
+@utility portal-metric {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--text-ui-metric);
+  font-weight: var(--font-weight-heavy);
+  line-height: 1;
+  letter-spacing: -0.04em;
+  color: var(--foreground);
+}
+@utility portal-metric-xl {
+  font-family: var(--font-display), sans-serif;
+  font-variant-numeric: tabular-nums;
+  font-size: var(--text-ui-metric-xl);
+  font-weight: var(--font-weight-heavy);
+  line-height: 0.95;
+  letter-spacing: -0.04em;
+  color: var(--foreground);
+}
+@utility portal-metric-display {
+  font-family: var(--font-display), sans-serif;
+  font-variant-numeric: tabular-nums;
+  font-size: var(--text-ui-metric-display);
+  font-weight: var(--font-weight-heavy);
+  line-height: 1;
+  letter-spacing: -0.04em;
+  color: var(--foreground);
+}
+@utility portal-scroll {
+  overflow-y: auto;
+  overflow-y: overlay;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--foreground) 18%, transparent) transparent;
+
+  &::-webkit-scrollbar { width: 6px; height: 6px; }
+  &::-webkit-scrollbar-track { background: transparent; }
+  &::-webkit-scrollbar-thumb {
+    background-color: color-mix(in srgb, var(--foreground) 18%, transparent);
+    border-radius: 9999px;
+  }
+  &::-webkit-scrollbar-thumb:hover {
+    background-color: color-mix(in srgb, var(--foreground) 30%, transparent);
+  }
+}

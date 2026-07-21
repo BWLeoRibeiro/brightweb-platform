@@ -5,6 +5,8 @@ import {
   BRIGHTWEB_PACKAGE_NAMES,
   CLI_DISPLAY_NAME,
   MODULE_STARTER_FILES,
+  ORGS_PACKAGE_NAME,
+  PLATFORM_STARTER_FILES,
   SELECTABLE_MODULES,
 } from "./constants.mjs";
 import {
@@ -146,7 +148,7 @@ function parseConfiguredModules(content) {
   return enabledModules;
 }
 
-async function detectTemplate(targetDir, installedBrightwebPackages) {
+export async function detectTemplate(targetDir, installedBrightwebPackages) {
   if (await pathExists(path.join(targetDir, "config", "modules.ts"))) {
     return "platform";
   }
@@ -154,7 +156,7 @@ async function detectTemplate(targetDir, installedBrightwebPackages) {
   return installedBrightwebPackages.size > 0 ? "platform" : "site";
 }
 
-function detectDependencyMode(installedBrightwebPackages) {
+export function detectDependencyMode(installedBrightwebPackages) {
   for (const { version } of installedBrightwebPackages.values()) {
     if (typeof version === "string" && version.startsWith("workspace:")) {
       return "workspace";
@@ -220,6 +222,19 @@ function mergeManagedPackageUpdates({ manifest, targetVersions, installedBrightw
     changed = true;
   }
 
+  const requiredOrgsVersion = targetVersions[ORGS_PACKAGE_NAME];
+  if (requiredOrgsVersion && !installedBrightwebPackages.has(ORGS_PACKAGE_NAME)) {
+    nextManifest.dependencies = nextManifest.dependencies || {};
+    nextManifest.dependencies[ORGS_PACKAGE_NAME] = requiredOrgsVersion;
+    packageUpdates.push({
+      packageName: ORGS_PACKAGE_NAME,
+      from: null,
+      to: requiredOrgsVersion,
+      section: "dependencies",
+    });
+    changed = true;
+  }
+
   return {
     changed,
     packageUpdates,
@@ -229,6 +244,38 @@ function mergeManagedPackageUpdates({ manifest, targetVersions, installedBrightw
 
 async function getStarterFileStatus(targetDir, installedModules) {
   const starterFiles = [];
+
+  for (const relativePath of PLATFORM_STARTER_FILES) {
+    const sourcePath = path.join(TEMPLATE_ROOT, "base", relativePath);
+    const targetPath = path.join(targetDir, relativePath);
+    const exists = await pathExists(targetPath);
+
+    if (!exists) {
+      starterFiles.push({
+        moduleKey: "platform-base",
+        relativePath,
+        sourcePath,
+        targetPath,
+        status: "missing",
+        refreshable: false,
+      });
+      continue;
+    }
+
+    const [sourceContent, targetContent] = await Promise.all([
+      fs.readFile(sourcePath, "utf8"),
+      fs.readFile(targetPath, "utf8"),
+    ]);
+
+    starterFiles.push({
+      moduleKey: "platform-base",
+      relativePath,
+      sourcePath,
+      targetPath,
+      status: sourceContent === targetContent ? "current" : "drifted",
+      refreshable: false,
+    });
+  }
 
   for (const moduleKey of installedModules) {
     const templateFolder = SELECTABLE_MODULES.find((moduleDefinition) => moduleDefinition.key === moduleKey)?.templateFolder;
@@ -498,7 +545,8 @@ export async function buildBrightwebAppUpdatePlan(argvOptions = {}, runtimeOptio
   const starterFilesDrifted = starterFiles.filter((entry) => entry.status === "drifted");
 
   if (argvOptions.refreshStarters) {
-    for (const entry of starterFiles.filter((candidate) => candidate.status !== "current")) {
+    for (const entry of starterFiles.filter((candidate) =>
+      candidate.status !== "current" && (candidate.status === "missing" || candidate.refreshable !== false))) {
       fileWrites.push({
         relativePath: entry.relativePath,
         targetPath: entry.targetPath,
