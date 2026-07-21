@@ -1,5 +1,11 @@
 # @brightweblabs/module-orgs
 
+## 0.2.2
+
+### Patch Changes
+
+- @brightweblabs/app-shell@0.4.1
+
 ## 0.2.1
 
 ### Patch Changes

@@ -1,5 +1,11 @@
 # @brightweblabs/theme
 
+## 0.2.1
+
+### Patch Changes
+
+- 799817d: Verify OIDC trusted publishing for packages first published manually. No code changes.
+
 ## 0.2.0
 
 ### Minor Changes
