@@ -1,5 +1,15 @@
 # create-bw-app
 
+## 0.13.0
+
+### Minor Changes
+
+- a461564: Keep generated apps thin by removing demo pages, local feature components, and helper libraries; mount CRM and Admin package surfaces directly, expose the package-owned `AdminUsersPage`, and omit a Projects route until the package ships default UI.
+
+### Patch Changes
+
+- 046192f: Generate module-aware Tailwind source directives and use the shared BrightWeb theme tokens in platform starters.
+
 ## 0.12.0
 
 ### Minor Changes
