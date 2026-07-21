@@ -1,5 +1,11 @@
 # @brightweblabs/module-admin
 
+## 0.4.0
+
+### Minor Changes
+
+- a461564: Keep generated apps thin by removing demo pages, local feature components, and helper libraries; mount CRM and Admin package surfaces directly, expose the package-owned `AdminUsersPage`, and omit a Projects route until the package ships default UI.
+
 ## 0.3.5
 
 ### Patch Changes
