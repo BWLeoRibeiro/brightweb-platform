@@ -1,5 +1,11 @@
 # create-bw-app
 
+## 0.12.0
+
+### Minor Changes
+
+- 9cf3d8d: Add per-file scaffold intent, the `bw scaffold` command, and intent-aware doctor, adoption, upgrade, and removal behavior.
+
 ## 0.11.0
 
 ### Minor Changes
