@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { stdout as output } from "node:process";
 import { SELECTABLE_MODULES } from "./constants.mjs";
-import { TEMPLATE_ROOT, createAppContextFile, createDbInstallPlan, createNextConfig, createPlatformModulesConfigFile, createShellConfig, getDbModuleRegistry, getVersionMap, pathExists, readJsonIfPresent } from "./generator.mjs";
+import { TEMPLATE_ROOT, createAppContextFile, createDbInstallPlan, createNextConfig, createPlatformGlobalsCss, createPlatformModulesConfigFile, createShellConfig, getDbModuleRegistry, getVersionMap, pathExists, readJsonIfPresent } from "./generator.mjs";
 import { collectScaffoldFiles, findWorkspaceRoot, loadModuleCatalog, MODULE_PACKAGES, readAppManifest, resolveModuleClosure, satisfiesVersion, writeAppManifest } from "./app-manifest.mjs";
 import { applyMigrationWrites, planMigrationAppends } from "./migrations.mjs";
 
@@ -65,6 +65,7 @@ export async function addBrightwebModule(moduleKey, argvOptions = {}, runtimeOpt
   }
   const managedWrites = {
     "next.config.ts": createNextConfig({ template: "platform", selectedModules: installedModuleKeys }),
+    "app/globals.css": await createPlatformGlobalsCss(installedModuleKeys),
     "config/modules.ts": createPlatformModulesConfigFile(installedModuleKeys),
     "config/shell.ts": createShellConfig(installedModuleKeys),
     "docs/ai/app-context.json": createAppContextFile({ slug: appManifest.app.slug, template: "platform", selectedModules: installedModuleKeys.filter((key) => key !== "orgs"), dbInstallPlan }),

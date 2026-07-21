@@ -649,6 +649,7 @@ export function createAppContextFile({
           "docs/ai/README.md",
           "README.md",
           "app/globals.css",
+          "app/theme.css",
           "config/brand.ts",
           "config/modules.ts",
           "config/client.ts",
@@ -811,6 +812,27 @@ export function createNextConfig({ template, selectedModules }) {
     "export default nextConfig;",
     "",
   ].join("\n");
+}
+
+export async function createPlatformGlobalsCss(selectedModules) {
+  const template = await fs.readFile(path.join(TEMPLATE_ROOT, "base", "app", "globals.css"), "utf8");
+  const sourcePackages = [
+    "@brightweblabs/ui",
+    "@brightweblabs/app-shell",
+    ...SELECTABLE_MODULES
+      .filter((moduleDefinition) => selectedModules.includes(moduleDefinition.key))
+      .map((moduleDefinition) => moduleDefinition.packageName),
+  ];
+  const sourceBlock = [
+    "/* BRIGHTWEB_SOURCES_START */",
+    ...sourcePackages.map((packageName) => `@source "../node_modules/${packageName}/src";`),
+    "/* BRIGHTWEB_SOURCES_END */",
+  ].join("\n");
+
+  return template.replace(
+    /\/\* BRIGHTWEB_SOURCES_START \*\/[\s\S]*?\/\* BRIGHTWEB_SOURCES_END \*\//,
+    sourceBlock,
+  );
 }
 
 export function createShellConfig(selectedModules) {
@@ -1258,6 +1280,7 @@ async function scaffoldPlatformProject({
     )}\n`,
   );
   await fs.writeFile(path.join(targetDir, "next.config.ts"), createNextConfig({ template: "platform", selectedModules }));
+  await fs.writeFile(path.join(targetDir, "app", "globals.css"), await createPlatformGlobalsCss(selectedModules));
   await fs.writeFile(
     path.join(targetDir, "config", "brand.ts"),
     createPlatformBrandConfigFile({ slug: answers.slug, brandValues }),

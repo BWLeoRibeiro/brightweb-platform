@@ -2,6 +2,10 @@
 @import "@brightweblabs/theme/css";
 @import "@brightweblabs/module-crm/tokens.css";
 
+@source "../../../packages/ui/src";
+@source "../../../packages/app-shell/src";
+@source "../../../packages/module-crm/src";
+
 .shell {
   min-height: 100vh;
   padding: 32px 20px 56px;
@@ -72,7 +76,7 @@
 
 .stat-number {
   display: block;
-  font-family: Georgia, "Times New Roman", serif;
+  font-family: var(--font-display);
   font-size: clamp(2rem, 4vw, 3rem);
   line-height: 1;
   letter-spacing: -0.04em;
@@ -84,9 +88,22 @@
   border-top: 1px solid var(--border);
 }
 
+.eyebrow {
+  display: inline-flex;
+  width: fit-content;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--brand-accent) 12%, transparent);
+  color: var(--brand-accent);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
 .title {
   margin: 0;
-  font-family: Georgia, "Times New Roman", serif;
+  font-family: var(--font-display);
   font-size: clamp(2.4rem, 5.5vw, 4.8rem);
   line-height: 0.92;
   letter-spacing: -0.04em;
@@ -192,7 +209,7 @@
   margin-top: 12px;
   color: var(--muted-foreground);
   font-size: 13px;
-  font-family: "IBM Plex Mono", "SFMono-Regular", monospace;
+  font-family: var(--font-mono);
 }
 
 .check-row {
@@ -274,7 +291,7 @@
 
 .app-preview-header-copy h1 {
   margin-bottom: 8px;
-  font-family: Georgia, "Times New Roman", serif;
+  font-family: var(--font-display);
   font-size: clamp(2rem, 4vw, 3rem);
   line-height: 0.96;
   letter-spacing: -0.04em;
@@ -435,6 +452,31 @@
   background: var(--card);
   border: 1px solid var(--border);
   overflow: auto;
+}
+
+.status {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.status.ok {
+  background: color-mix(in srgb, var(--semantic-success) 14%, transparent);
+  color: var(--semantic-success-strong);
+}
+
+.status.warn {
+  background: color-mix(in srgb, var(--semantic-warning) 14%, transparent);
+  color: var(--semantic-warning-strong);
+}
+
+.status.error {
+  background: color-mix(in srgb, var(--destructive) 12%, transparent);
+  color: var(--destructive);
 }
 
 @media (max-width: 900px) {

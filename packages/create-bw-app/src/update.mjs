@@ -15,6 +15,7 @@ import {
   createDbInstallPlan,
   createNextConfig,
   createPackageJson,
+  createPlatformGlobalsCss,
   createPlatformModulesConfigFile,
   createShellConfig,
   detectPackageManager,
@@ -27,6 +28,7 @@ import {
 
 const MANAGED_PLATFORM_FILES = [
   "next.config.ts",
+  path.join("app", "globals.css"),
   path.join("config", "modules.ts"),
   path.join("config", "shell.ts"),
   path.join("docs", "ai", "app-context.json"),
@@ -490,6 +492,7 @@ export async function buildBrightwebAppUpdatePlan(argvOptions = {}, runtimeOptio
   if (template === "platform") {
     const canonicalConfigFiles = {
       "next.config.ts": createNextConfig({ template: "platform", selectedModules: installedModules }),
+      [path.join("app", "globals.css")]: await createPlatformGlobalsCss(installedModules),
       [path.join("config", "modules.ts")]: createPlatformModulesConfigFile(installedModules),
       [path.join("config", "shell.ts")]: createShellConfig(installedModules),
       [path.join("docs", "ai", "app-context.json")]: createAppContextFile({

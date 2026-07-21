@@ -18,6 +18,7 @@ async function readJsonIfPresent(filePath) {
 export const APP_MANIFEST_PATH = path.join(".brightweb", "app-manifest.json");
 export const MANAGED_APP_FILES = [
   "next.config.ts",
+  "app/globals.css",
   "config/modules.ts",
   "config/shell.ts",
   "docs/ai/app-context.json",

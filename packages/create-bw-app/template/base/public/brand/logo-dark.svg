@@ -2,6 +2,6 @@
   <rect width="44" height="44" rx="12" fill="#F5F4EC"/>
   <path d="M12 32V12H22.2C26.18 12 28.52 13.94 28.52 17.06C28.52 19.04 27.56 20.48 25.86 21.22C28.08 21.88 29.4 23.54 29.4 25.94C29.4 29.7 26.68 32 22.22 32H12ZM16.42 20.04H21.48C23.1 20.04 24.02 19.24 24.02 17.86C24.02 16.46 23.1 15.68 21.48 15.68H16.42V20.04ZM16.42 28.28H21.96C23.82 28.28 24.86 27.42 24.86 25.86C24.86 24.32 23.82 23.46 21.96 23.46H16.42V28.28Z" fill="#102015"/>
   <path d="M30.2 12H34.58L36.72 23.86L39.32 12H43.1L39 32H34.88L32.38 19.64L29.9 32H25.82L25.1 28.56H29.1L30.2 12Z" fill="#2C8A53"/>
-  <text x="58" y="19" fill="#F5F4EC" font-family="Georgia, serif" font-size="11" letter-spacing="2">BRIGHTWEB</text>
-  <text x="58" y="33" fill="#C8D0C9" font-family="'IBM Plex Sans', sans-serif" font-size="15">starter client</text>
+  <text x="58" y="19" fill="#F5F4EC" font-family="'Segoe UI', Arial, sans-serif" font-size="11" letter-spacing="2">BRIGHTWEB</text>
+  <text x="58" y="33" fill="#C8D0C9" font-family="'Segoe UI', Arial, sans-serif" font-size="15">starter client</text>
 </svg>
