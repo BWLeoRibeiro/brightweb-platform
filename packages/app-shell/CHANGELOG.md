@@ -1,5 +1,11 @@
 # @brightweblabs/app-shell
 
+## 0.4.1
+
+### Patch Changes
+
+- @brightweblabs/ui@1.0.1
+
 ## 0.4.0
 
 ### Minor Changes

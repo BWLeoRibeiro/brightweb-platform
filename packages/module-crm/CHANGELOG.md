@@ -1,5 +1,13 @@
 # @brightweblabs/module-crm
 
+## 0.5.2
+
+### Patch Changes
+
+- @brightweblabs/ui@1.0.1
+- @brightweblabs/app-shell@0.4.1
+- @brightweblabs/module-orgs@0.2.2
+
 ## 0.5.1
 
 ### Patch Changes
