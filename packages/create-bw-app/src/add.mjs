@@ -91,7 +91,8 @@ export async function addBrightwebModule(moduleKey, argvOptions = {}, runtimeOpt
   const now = new Date().toISOString();
   for (const key of newModules) appManifest.modules[key] = { version: catalog[key].version, installedAt: now, exposed: true };
   appManifest.migrationCursor = migrationPlan.nextCursor;
-  appManifest.scaffoldFiles = { ...appManifest.scaffoldFiles, ...await collectScaffoldFiles(targetDir, installedModuleKeys) };
+  const collectedScaffoldFiles = await collectScaffoldFiles(targetDir, installedModuleKeys);
+  appManifest.scaffoldFiles = { ...collectedScaffoldFiles, ...appManifest.scaffoldFiles };
   await writeAppManifest(targetDir, appManifest);
   output.write(`Installed ${newModules.length} module${newModules.length === 1 ? "" : "s"}. ${migrationPlan.writes.length > 0 ? "Run your Supabase migration apply command. " : ""}Run your package manager install command next.\n`);
   return { dryRun: false, newModules, migrationPlan };

@@ -52,7 +52,21 @@ export async function doctorBrightwebApp(argvOptions = {}, runtimeOptions = {}) 
   add(topologyProblems.length ? "FAIL" : "PASS", "topology", topologyProblems.join("; ") || "Module requirements are satisfied.");
 
   const scaffold = await scaffoldDrift(targetDir, appManifest.scaffoldFiles);
-  add(scaffold.drifted.length || scaffold.missing.length ? "FAIL" : "PASS", "scaffold", `${scaffold.current.length} current, ${scaffold.drifted.length} drifted, ${scaffold.missing.length} missing; drifted scaffold files: ${scaffold.drifted.length} (see bw diff --list)${scaffold.missing.length ? `; missing: ${scaffold.missing.join(", ")}` : ""}`);
+  const scaffoldGroups = {
+    current: scaffold.entries.filter((entry) => entry.status === "current" && entry.intent !== "skipped"),
+    owned: scaffold.entries.filter((entry) => entry.intent === "owned" && entry.status === "drifted"),
+    skipped: scaffold.entries.filter((entry) => entry.intent === "skipped" && entry.status === "missing"),
+    undecidedDrift: scaffold.entries.filter((entry) => entry.intent === "managed" && entry.status === "drifted"),
+    undecidedMissing: scaffold.entries.filter((entry) => entry.intent === "managed" && entry.status === "missing"),
+    mismatched: scaffold.entries.filter((entry) => (entry.intent === "owned" && entry.status === "missing") || (entry.intent === "skipped" && entry.status !== "missing")),
+  };
+  if (scaffoldGroups.owned.length) add("INFO", "scaffold-owned", `App-owned scaffold files: ${scaffoldGroups.owned.map((entry) => entry.relativePath).join(", ")}.`);
+  if (scaffoldGroups.skipped.length) add("INFO", "scaffold-skipped", `Intentionally skipped scaffold files: ${scaffoldGroups.skipped.map((entry) => entry.relativePath).join(", ")}.`);
+  if (scaffoldGroups.undecidedDrift.length) add("WARN", "scaffold-undecided-drift", `Unacknowledged drift: ${scaffoldGroups.undecidedDrift.map((entry) => entry.relativePath).join(", ")} (use bw scaffold own or bw diff).`);
+  if (scaffoldGroups.undecidedMissing.length) add("WARN", "scaffold-undecided-missing", `Unacknowledged missing files: ${scaffoldGroups.undecidedMissing.map((entry) => entry.relativePath).join(", ")} (use bw scaffold skip after review).`);
+  if (scaffoldGroups.mismatched.length) add("FAIL", "scaffold-intent-mismatch", `Recorded scaffold intent no longer matches reality: ${scaffoldGroups.mismatched.map((entry) => `${entry.relativePath} (${entry.intent}, ${entry.status})`).join(", ")}.`);
+  const scaffoldStatus = scaffoldGroups.mismatched.length ? "FAIL" : scaffoldGroups.undecidedDrift.length || scaffoldGroups.undecidedMissing.length ? "WARN" : "PASS";
+  add(scaffoldStatus, "scaffold", `${scaffoldGroups.current.length} current, ${scaffoldGroups.owned.length} owned, ${scaffoldGroups.skipped.length} skipped, ${scaffoldGroups.undecidedDrift.length} undecided-drift, ${scaffoldGroups.undecidedMissing.length} undecided-missing, ${scaffoldGroups.mismatched.length} intent-mismatch.`);
   add("INFO", "owned-surfaces", `Owned surfaces: ${(appManifest.ownedSurfaces || []).join(", ") || "none"}.`);
 
   const envNames = new Set(Object.keys(process.env));

@@ -18,7 +18,7 @@ import { inventoryScaffoldFiles, resolveTemplateRoot } from "./scaffold.mjs";
 import { detectDependencyMode, detectTemplate } from "./update.mjs";
 
 const PACKAGE_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const HELP = `Usage: bw adopt [options]\n\nOptions:\n  --target-dir <path>                 App directory (defaults to cwd)\n  --workspace-root <path>             BrightWeb workspace root\n  --cursor <key>=<migrationFilename>  Override a migration cursor (repeatable)\n  --owned-surface <name>              Record an app-owned surface (repeatable)\n  --allow-uncursored                   Allow doctor to warn instead of fail on null cursors\n  --force                              Replace an existing app manifest\n  --dry-run                            Print the manifest and warnings without writing\n  --help                               Show this help`;
+const HELP = `Usage: bw adopt [options]\n\nOptions:\n  --target-dir <path>                 App directory (defaults to cwd)\n  --workspace-root <path>             BrightWeb workspace root\n  --cursor <key>=<migrationFilename>  Override a migration cursor (repeatable)\n  --owned-surface <name>              Record an app-owned surface (repeatable)\n  --own <path>                        Mark an existing scaffold file app-owned (repeatable)\n  --skip <path>                       Mark a missing scaffold file intentionally absent (repeatable)\n  --allow-uncursored                   Allow doctor to warn instead of fail on null cursors\n  --force                              Replace an existing app manifest\n  --dry-run                            Print the manifest and warnings without writing\n  --help                               Show this help`;
 
 function asList(value) {
   if (value == null) return [];
@@ -123,10 +123,24 @@ export async function adoptBrightwebApp(argvOptions = {}, runtimeOptions = {}) {
   const scaffold = template === "platform"
     ? await inventoryScaffoldFiles({ targetDir, moduleKeys: Object.keys(modules), templateRoot })
     : { records: {}, unsupported: [] };
+  const ownedPaths = new Set(asList(argvOptions.own).map(String));
+  const skippedPaths = new Set(asList(argvOptions.skip).map(String));
+  for (const relativePath of [...ownedPaths, ...skippedPaths]) {
+    if (!scaffold.records[relativePath]) throw new Error(`${relativePath} is not a tracked scaffold file.`);
+  }
+  for (const relativePath of ownedPaths) {
+    if (skippedPaths.has(relativePath)) throw new Error(`${relativePath} cannot be both --own and --skip.`);
+    if (scaffold.records[relativePath].status === "missing") throw new Error(`Cannot own missing scaffold file: ${relativePath}`);
+    scaffold.records[relativePath].intent = "owned";
+  }
+  for (const relativePath of skippedPaths) {
+    if (scaffold.records[relativePath].status !== "missing") throw new Error(`Cannot skip existing scaffold file: ${relativePath}`);
+    scaffold.records[relativePath].intent = "skipped";
+  }
   for (const relativePath of scaffold.unsupported) warnings.push(`WARN ${relativePath}: installed-version template is unavailable; scaffold comparison is unsupported.`);
   for (const [relativePath, record] of Object.entries(scaffold.records)) {
-    if (record.status === "drifted") warnings.push(`WARN drifted scaffold file: ${relativePath}`);
-    if (record.status === "missing") warnings.push(`WARN missing scaffold file: ${relativePath} (not created; use bw diff and the current template as guidance).`);
+    if (record.status === "drifted" && record.intent !== "owned") warnings.push(`WARN drifted scaffold file: ${relativePath}`);
+    if (record.status === "missing" && record.intent !== "skipped") warnings.push(`WARN missing scaffold file: ${relativePath} (not created; use bw diff and the current template as guidance).`);
   }
 
   const overrides = parseCursorOverrides(argvOptions.cursor);

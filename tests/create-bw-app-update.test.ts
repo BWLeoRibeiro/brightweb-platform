@@ -25,6 +25,11 @@ const BRIGHTWEB_PACKAGES = [
   "@brightweblabs/ui",
 ];
 
+async function releaseVersion(packageName: string) {
+  const release = JSON.parse(await fs.readFile(path.join(REPO_ROOT, "brightweb-release.json"), "utf8"));
+  return release.packages[packageName];
+}
+
 async function makeTempDir(prefix: string) {
   return fs.mkdtemp(path.join(os.tmpdir(), prefix));
 }
@@ -205,9 +210,10 @@ test("updates legacy CRM apps with the required organizations package", async (t
   );
 
   const orgsUpdate = plan.packageUpdates.find((entry) => entry.packageName === "@brightweblabs/module-orgs");
+  const orgsVersion = await releaseVersion("@brightweblabs/module-orgs");
   assert.equal(orgsUpdate?.from, null);
-  assert.equal(orgsUpdate?.to, "^0.1.0");
-  assert.match(plan.fileWrites.find((entry) => entry.relativePath === "package.json")?.content ?? "", /"@brightweblabs\/module-orgs": "\^0\.1\.0"/);
+  assert.equal(orgsUpdate?.to, `^${orgsVersion}`);
+  assert.match(plan.fileWrites.find((entry) => entry.relativePath === "package.json")?.content ?? "", new RegExp(`"@brightweblabs/module-orgs": "\\^${orgsVersion.replaceAll(".", "\\.")}"`));
 });
 
 test("published platform scaffolds pin current brightweb package versions", async (t) => {
@@ -303,7 +309,7 @@ test("projects scaffolding resolves organizations without CRM", async (t) => {
   assert.equal(migrations.some((fileName) => fileName.includes("_crm__")), false);
 
   const manifest = await readJson(path.join(targetDir, "package.json"));
-  assert.equal(manifest.dependencies["@brightweblabs/module-orgs"], "^0.1.0");
+  assert.equal(manifest.dependencies["@brightweblabs/module-orgs"], `^${await releaseVersion("@brightweblabs/module-orgs")}`);
   assert.equal(manifest.dependencies["@brightweblabs/module-crm"], undefined);
   assert.match(await fs.readFile(path.join(targetDir, "config", "modules.ts"), "utf8"), /key: "orgs"[\s\S]*?enabled: true[\s\S]*?placement: "hidden"/);
   assert.match(await fs.readFile(path.join(targetDir, "config", "shell.ts"), "utf8"), /orgsModuleRegistration/);
@@ -551,7 +557,7 @@ test("published updates can fall back to baked-in brightweb versions when explic
   );
 
   const coreAuthUpdate = plan.packageUpdates.find((entry) => entry.packageName === "@brightweblabs/core-auth");
-  assert.equal(coreAuthUpdate?.to, "^0.3.3");
+  assert.equal(coreAuthUpdate?.to, `^${await releaseVersion("@brightweblabs/core-auth")}`);
 });
 
 test("scaffolds site AI handoff files with site-specific context", async (t) => {
@@ -760,7 +766,7 @@ test("apply rewrites only managed files and leaves app-owned pages alone", async
   );
 
   const manifest = await readJson(path.join(targetDir, "package.json"));
-  assert.equal(manifest.dependencies["@brightweblabs/module-crm"], "^0.4.1");
+  assert.equal(manifest.dependencies["@brightweblabs/module-crm"], `^${await releaseVersion("@brightweblabs/module-crm")}`);
   assert.equal(
     await fs.readFile(path.join(targetDir, "next.config.ts"), "utf8"),
     createNextConfig({ template: "platform", selectedModules: ["crm"] }),

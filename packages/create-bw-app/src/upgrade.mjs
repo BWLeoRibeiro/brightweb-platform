@@ -18,13 +18,16 @@ export async function upgradeBrightwebApp(moduleKey, argvOptions = {}, runtimeOp
   const plan = await buildBrightwebAppUpdatePlan(updateOptions, runtimeOptions);
   const drifted = [];
   const missing = [];
+  const intentional = [];
   for (const [relativePath, record] of Object.entries(appManifest.scaffoldFiles)) {
+    if (["owned", "skipped"].includes(record.intent)) intentional.push(relativePath);
     const filePath = path.join(targetDir, relativePath);
     if (!(await pathExists(filePath))) { missing.push(relativePath); continue; }
     if (await hashFile(filePath) !== record.hash) drifted.push(relativePath);
   }
-  const protectedPaths = new Set(drifted);
+  const protectedPaths = new Set([...drifted, ...intentional]);
   plan.fileWrites = plan.fileWrites.filter((entry) => entry.type !== "starter" || !protectedPaths.has(entry.relativePath));
+  plan.starterFilesToRefresh = plan.fileWrites.filter((entry) => entry.type === "starter").map((entry) => entry.relativePath);
   plan.starterFilesDrifted = Array.from(new Set([...plan.starterFilesDrifted, ...drifted]));
   plan.starterFilesMissing = Array.from(new Set([...plan.starterFilesMissing, ...missing]));
 
@@ -43,6 +46,7 @@ export async function upgradeBrightwebApp(moduleKey, argvOptions = {}, runtimeOp
   output.write(`bw upgrade\nPackages to update: ${plan.packageUpdates.length}\nManaged files to write: ${plan.fileWrites.length}\nMigrations to append: ${migrationPlan.writes.length}\n`);
   for (const relativePath of missing) output.write(`- missing: ${relativePath}\n`);
   for (const relativePath of drifted) output.write(`- drifted: ${relativePath}\n`);
+  for (const relativePath of intentional) output.write(`- intent-protected: ${relativePath}\n`);
   if (argvOptions.dryRun) return { dryRun: true, plan, migrationPlan, drifted, missing };
 
   for (const write of plan.fileWrites) {
@@ -58,6 +62,7 @@ export async function upgradeBrightwebApp(moduleKey, argvOptions = {}, runtimeOp
   for (const relativePath of plan.starterFilesToRefresh || []) {
     if (!protectedPaths.has(relativePath) && appManifest.scaffoldFiles[relativePath] && await pathExists(path.join(targetDir, relativePath))) {
       appManifest.scaffoldFiles[relativePath].hash = await hashFile(path.join(targetDir, relativePath));
+      appManifest.scaffoldFiles[relativePath].status = "current";
     }
   }
   await writeAppManifest(targetDir, appManifest);

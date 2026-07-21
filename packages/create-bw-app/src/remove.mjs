@@ -70,7 +70,7 @@ export async function removeBrightwebModule(moduleKey, argvOptions = {}, runtime
     if (record.module !== moduleKey) continue;
     const filePath = path.join(targetDir, relativePath);
     if (!(await pathExists(filePath))) continue;
-    if (await hashFile(filePath) === record.hash) cleanFiles.push(relativePath);
+    if ((record.intent || "managed") === "managed" && await hashFile(filePath) === record.hash) cleanFiles.push(relativePath);
     else driftedFiles.push(relativePath);
   }
   const notice = databaseNotice(moduleKey, catalog[moduleKey]?.manifest?.database?.ownedObjects || []);
