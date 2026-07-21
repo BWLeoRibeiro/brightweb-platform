@@ -124,6 +124,7 @@ test("bw add projects resolves orgs, writes overlays, migrations, and manifest s
   assert.equal(updated.modules.orgs.version, release.packages["@brightweblabs/module-orgs"]);
   assert.equal(updated.modules.projects.version, release.packages["@brightweblabs/module-projects"]);
   assert.equal(updated.migrationCursor.projects, "20260421201528_portal_read_indexes.sql");
+  assert.match(await fs.readFile(path.join(targetDir, "app", "globals.css"), "utf8"), /@source "\.\.\/node_modules\/@brightweblabs\/module-projects\/src";/);
   await fs.access(path.join(targetDir, "app", "playground", "projects", "page.tsx"));
   const migrations = await fs.readdir(path.join(targetDir, "supabase", "migrations"));
   assert.ok(migrations.some((name) => name.includes("_projects__20260316093000_projects_v1.sql")));

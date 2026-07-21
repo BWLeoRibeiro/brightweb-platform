@@ -624,6 +624,35 @@ test("detects package-only changes", async (t) => {
   assert.deepEqual(plan.configFilesToWrite, ["package.json"]);
 });
 
+test("scaffold and preview globals scan every consumed BrightWeb package", async (t) => {
+  const { tempRoot, targetDir } = await scaffoldPlatformApp({
+    modules: ["crm"],
+    workspaceRoot: REPO_ROOT,
+  });
+  t.after(async () => fs.rm(tempRoot, { recursive: true, force: true }));
+
+  const globals = await fs.readFile(path.join(targetDir, "app", "globals.css"), "utf8");
+  assert.match(globals, /@source "\.\.\/node_modules\/@brightweblabs\/ui\/src";/);
+  assert.match(globals, /@source "\.\.\/node_modules\/@brightweblabs\/app-shell\/src";/);
+  assert.match(globals, /@source "\.\.\/node_modules\/@brightweblabs\/module-crm\/src";/);
+  assert.doesNotMatch(globals, /module-(?:admin|projects)\/src/);
+
+  const manifest = await readJson(path.join(targetDir, ".brightweb", "app-manifest.json"));
+  assert.ok(manifest.managedFiles.includes("app/globals.css"));
+
+  const previewGlobals = await fs.readFile(path.join(REPO_ROOT, "apps", "platform-preview", "app", "globals.css"), "utf8");
+  assert.match(previewGlobals, /@source "\.\.\/\.\.\/\.\.\/packages\/ui\/src";/);
+  assert.match(previewGlobals, /@source "\.\.\/\.\.\/\.\.\/packages\/app-shell\/src";/);
+  assert.match(previewGlobals, /@source "\.\.\/\.\.\/\.\.\/packages\/module-crm\/src";/);
+});
+
+test("platform CRM preview uses injected mock data without API fetches", async () => {
+  const page = await fs.readFile(path.join(REPO_ROOT, "apps", "platform-preview", "app", "crm", "page.tsx"), "utf8");
+  assert.match(page, /client=\{mockClient\}/);
+  assert.match(page, /lead: 1, qualified: 1, proposal: 1, won: 1, lost: 1/);
+  assert.doesNotMatch(page, /createCrmUiClient|\/api\/crm|\bfetch\s*\(/);
+});
+
 test("detects config-only changes", async (t) => {
   const { tempRoot, targetDir } = await scaffoldPlatformApp({
     modules: ["crm"],

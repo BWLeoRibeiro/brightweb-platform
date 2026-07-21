@@ -26,7 +26,8 @@ This app is a normal Next.js App Router project with BrightWeb runtime wiring la
 - `config/bootstrap.ts`: bootstrap checklist content for `/bootstrap`.
 - `config/shell.ts`: managed app-shell registration and navigation wiring.
 - `config/shell.overrides.ts`: app-owned shell registration customizations preserved across updates.
-- `app/globals.css`: color tokens (raw brand + semantic mappings), typography, and global surface styling.
+- `app/theme.css`: app-owned color and typography token overrides.
+- `app/globals.css`: managed Tailwind source scanning and global surface styling.
 - `app/page.tsx`: starter landing page for the generated app.
 - `app/bootstrap/page.tsx`: setup checklist surface.
 - `app/preview/app-shell/page.tsx`: shell preview validation route.
@@ -36,7 +37,7 @@ This app is a normal Next.js App Router project with BrightWeb runtime wiring la
 ## Editing strategy
 
 - Change client identity first in `config/brand.ts`.
-- Change colors and theme tokens in `app/globals.css`.
+- Change colors and theme tokens in `app/theme.css`.
 - Check module presence in `config/modules.ts` before editing or creating module-specific routes.
 - Add app-specific UI in `components/` before forking shared package code.
 - Use `config/shell.overrides.ts` when navigation or toolbar behavior needs to change.

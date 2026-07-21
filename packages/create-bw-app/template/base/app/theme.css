@@ -1,0 +1,5 @@
+/* App-owned theme overrides belong here so managed source scanning and shared
+   starter styles in globals.css can be upgraded safely. */
+:root {
+  /* Example: --brand-accent: your-client-color; */
+}
