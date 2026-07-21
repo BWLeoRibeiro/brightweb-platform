@@ -1,5 +1,13 @@
 # @brightweblabs/core-auth
 
+## 0.3.4
+
+### Patch Changes
+
+- 3c0d84b: Align Supabase SSR and the shared Supabase client dependency across infrastructure, auth, and domain packages to avoid duplicate cookie implementations and incompatible client types.
+- Updated dependencies [3c0d84b]
+  - @brightweblabs/infra@0.3.1
+
 ## 0.3.3
 
 ### Patch Changes

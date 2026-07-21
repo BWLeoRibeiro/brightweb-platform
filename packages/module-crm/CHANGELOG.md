@@ -1,5 +1,36 @@
 # @brightweblabs/module-crm
 
+## 0.5.0
+
+### Minor Changes
+
+- 31d7611: Add the complete CRM contact write path, SQL-backed single and bulk funnel status transitions, staff-only HTTP handlers, the status-changed event contract, and scaffolded POST/PATCH routes.
+- 2bb53ad: Ship the package-owned default CRM dashboard, focused CRM UI surfaces, domain tokens, route-backed client, and a ready-to-render `/crm` scaffold route.
+- e7a7b89: Extract organizations, membership, invitations, and shared helpers into the organizations foundation module. Preserve the CRM organization-list alias and make CRM and Projects auto-resolve Organizations without forcing Projects to install CRM.
+
+### Patch Changes
+
+- 741ffec: Ship the BrightWeb v1 module manifest with the CRM package.
+- 3c0d84b: Align Supabase SSR and the shared Supabase client dependency across infrastructure, auth, and domain packages to avoid duplicate cookie implementations and incompatible client types.
+- 090bc48: Align workspace UI consumers with the Lucide 1.x peer range required by `@brightweblabs/ui` 1.0.
+- 3c0d84b: Complete module database ownership metadata, including cross-module integration objects, and align declared core compatibility with the published catalog.
+- f8b2157: Remove the CRM package's unused theme build dependency, trim unused theme CSS subpath exports while preserving the app-level CSS runtime contract, and retire the redundant CRM playground alias from new app scaffolds.
+- Updated dependencies [80b69b1]
+- Updated dependencies [3c0d84b]
+- Updated dependencies [090bc48]
+- Updated dependencies [3c0d84b]
+- Updated dependencies [2bb53ad]
+- Updated dependencies [e7a7b89]
+- Updated dependencies [798e75f]
+- Updated dependencies [3c0d84b]
+- Updated dependencies [80b69b1]
+- Updated dependencies [090bc48]
+  - @brightweblabs/ui@1.0.0
+  - @brightweblabs/infra@0.3.1
+  - @brightweblabs/core-auth@0.3.4
+  - @brightweblabs/module-orgs@0.2.0
+  - @brightweblabs/app-shell@0.4.0
+
 ## 0.4.1
 
 ### Patch Changes
