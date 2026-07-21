@@ -58,13 +58,21 @@ export async function scaffoldDrift(targetDir, scaffoldFiles = {}) {
   const current = [];
   const drifted = [];
   const missing = [];
+  const entries = [];
   for (const [relativePath, record] of Object.entries(scaffoldFiles)) {
     const appPath = path.join(targetDir, relativePath);
-    if (!(await pathExists(appPath))) missing.push(relativePath);
-    else if (await hashFile(appPath) === record.hash) current.push(relativePath);
+    const intent = record.intent || "managed";
+    let status = "missing";
+    if (await pathExists(appPath)) {
+      const matchesRecordedHash = await hashFile(appPath) === record.hash;
+      status = matchesRecordedHash && record.status !== "drifted" ? "current" : "drifted";
+    }
+    entries.push({ relativePath, module: record.module, status, intent });
+    if (status === "missing") missing.push(relativePath);
+    else if (status === "current") current.push(relativePath);
     else drifted.push(relativePath);
   }
-  return { current, drifted, missing };
+  return { current, drifted, missing, entries };
 }
 
 export async function findTrackedTemplate({ relativePath, manifest, targetDir, workspaceRoot }) {

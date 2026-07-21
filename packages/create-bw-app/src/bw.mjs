@@ -3,16 +3,17 @@ import { adoptBrightwebApp } from "./adopt.mjs";
 import { diffBrightwebScaffold } from "./diff.mjs";
 import { doctorBrightwebApp } from "./doctor.mjs";
 import { removeBrightwebModule } from "./remove.mjs";
+import { scaffoldBrightwebApp } from "./scaffold-cmd.mjs";
 import { updateBrightwebApp } from "./update.mjs";
 import { upgradeBrightwebApp } from "./upgrade.mjs";
 
-const HELP = `Usage: bw <command> [options]\n\nCommands:\n  add <moduleKey>       Install a module and its requirements\n  adopt                 Create an honest manifest for a legacy app\n  diff <relpath>        Compare a tracked scaffold file with its template\n  remove <moduleKey>    Conservatively remove module package wiring\n  upgrade [moduleKey]   Upgrade packages, managed files, and migrations\n  update                Alias for the legacy create-bw-app update flow\n  doctor                Validate app health and manifest consistency\n\nRun bw <command> --help for command-specific options.`;
+const HELP = `Usage: bw <command> [options]\n\nCommands:\n  add <moduleKey>       Install a module and its requirements\n  adopt                 Create an honest manifest for a legacy app\n  diff <relpath>        Compare a tracked scaffold file with its template\n  scaffold <action>     List or record per-file scaffold intent\n  remove <moduleKey>    Conservatively remove module package wiring\n  upgrade [moduleKey]   Upgrade packages, managed files, and migrations\n  update                Alias for the legacy create-bw-app update flow\n  doctor                Validate app health and manifest consistency\n\nRun bw <command> --help for command-specific options.`;
 
 function parseOptions(argv) {
   const options = {};
   const positionals = [];
   const booleanFlags = new Set(["help", "dry-run", "strict", "report", "install", "refresh-starters", "allow-stale-fallback", "allow-uncursored", "force", "list", "yes"]);
-  const repeatableFlags = new Set(["cursor", "owned-surface"]);
+  const repeatableFlags = new Set(["cursor", "owned-surface", "own", "skip"]);
   for (let index = 0; index < argv.length; index += 1) {
     const token = argv[index];
     if (!token.startsWith("--")) { positionals.push(token); continue; }
@@ -37,6 +38,7 @@ export async function runBwCli(argv = process.argv.slice(2), runtimeOptions = {}
     if (command === "add") await addBrightwebModule(positionals[0], options, runtimeOptions);
     else if (command === "adopt") await adoptBrightwebApp(options, runtimeOptions);
     else if (command === "diff") await diffBrightwebScaffold(positionals[0], options, runtimeOptions);
+    else if (command === "scaffold") await scaffoldBrightwebApp(positionals[0], positionals.slice(1), options, runtimeOptions);
     else if (command === "remove") await removeBrightwebModule(positionals[0], options, runtimeOptions);
     else if (command === "upgrade") await upgradeBrightwebApp(positionals[0], options, runtimeOptions);
     else if (command === "update") await updateBrightwebApp(options, runtimeOptions);

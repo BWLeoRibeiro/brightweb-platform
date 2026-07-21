@@ -89,7 +89,14 @@ export async function readAppManifest(targetDir, { required = true } = {}) {
 export async function writeAppManifest(targetDir, manifest) {
   const manifestPath = path.join(targetDir, APP_MANIFEST_PATH);
   await fs.mkdir(path.dirname(manifestPath), { recursive: true });
-  await fs.writeFile(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`, "utf8");
+  const temporaryPath = `${manifestPath}.${process.pid}.${crypto.randomBytes(6).toString("hex")}.tmp`;
+  try {
+    await fs.writeFile(temporaryPath, `${JSON.stringify(manifest, null, 2)}\n`, "utf8");
+    await fs.rename(temporaryPath, manifestPath);
+  } catch (error) {
+    await fs.rm(temporaryPath, { force: true }).catch(() => {});
+    throw error;
+  }
 }
 
 export function validateAppManifest(manifest) {
@@ -107,7 +114,7 @@ export function validateAppManifest(manifest) {
     if (!entry || !cleanVersion(entry.version) || typeof entry.installedAt !== "string" || typeof entry.exposed !== "boolean") errors.push(`modules.${key} is invalid`);
   }
   for (const [relativePath, entry] of Object.entries(manifest.scaffoldFiles || {})) {
-    if (!entry || typeof entry.module !== "string" || !/^sha256:[a-f0-9]{64}$/.test(entry.hash || "") || !["current", "drifted", "missing"].includes(entry.status)) errors.push(`scaffoldFiles.${relativePath} is invalid`);
+    if (!entry || typeof entry.module !== "string" || !/^sha256:[a-f0-9]{64}$/.test(entry.hash || "") || !["current", "drifted", "missing"].includes(entry.status) || (entry.intent != null && !["managed", "owned", "skipped"].includes(entry.intent))) errors.push(`scaffoldFiles.${relativePath} is invalid`);
   }
   if (manifest.lastDoctor != null && (typeof manifest.lastDoctor.at !== "string" || typeof manifest.lastDoctor.ok !== "boolean")) errors.push("lastDoctor is invalid");
   return errors;

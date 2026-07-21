@@ -10,6 +10,7 @@ Run commands from the generated app root, or pass `--target-dir`.
 bw add projects
 bw adopt --dry-run
 bw diff --list
+bw scaffold list
 bw remove crm
 bw upgrade
 bw doctor
@@ -21,7 +22,7 @@ bw doctor
 
 ### Upgrade an app
 
-`bw upgrade [moduleKey]` performs the managed package/config update and appends only migrations after each module's recorded cursor. It will not overwrite a tracked scaffold file whose recorded hash has drifted. `create-bw-app update` remains available with its original behavior for compatibility.
+`bw upgrade [moduleKey]` performs the managed package/config update and appends only migrations after each module's recorded cursor. It will not overwrite a tracked scaffold file whose recorded hash has drifted, or any file recorded as `owned` or `skipped`, including when `--refresh-starters` is used. `create-bw-app update` remains available with its original behavior for compatibility.
 
 An adopted module with a null migration cursor is blocked from upgrade until an operator records an explicit cursor. This prevents an unknown legacy history from being treated as a new database.
 
@@ -34,6 +35,7 @@ Start with a preview:
 ```bash
 bw adopt --dry-run --owned-surface shell
 bw adopt --owned-surface shell
+bw adopt --own app/crm/page.tsx --skip app/crm/layout.tsx
 ```
 
 Adoption records every tracked scaffold file as `current`, `drifted`, or `missing`; it does not overwrite drift or create missing files. Module migration cursors are inferred in this order:
@@ -48,7 +50,7 @@ The baseline heuristic stamps only the shipped v1 baseline. If the installed pac
 bw adopt --force --cursor crm=20260316092000_crm_v1.sql
 ```
 
-Use `--allow-uncursored` only to make the doctor result advisory while investigating; it does not unblock upgrades. Repeated `--owned-surface <name>` options record app-owned areas such as `shell` for doctor to report.
+Use `--allow-uncursored` only to make the doctor result advisory while investigating; it does not unblock upgrades. Repeated `--owned-surface <name>` options record app-owned areas such as `shell` for doctor to report. The more precise, repeatable `--own <path>` and `--skip <path>` options acknowledge existing and missing tracked scaffold files during adoption. A path cannot be owned if it is missing or skipped if it exists.
 
 #### MQ-style legacy walkthrough
 
@@ -71,6 +73,25 @@ bw diff app/crm/page.tsx
 
 Workspace apps use `packages/create-bw-app/template`. Published mode uses the bundled template from the installed CLI; if that template is unavailable, the command warns that comparison is unsupported.
 
+### Record scaffold intent
+
+Each `.brightweb/app-manifest.json` `scaffoldFiles.<path>` entry may include an `intent`:
+
+- `managed` (the default when `intent` is absent): BrightWeb compares the file with its recorded template hash.
+- `owned`: the app deliberately forked an existing file, so hash drift is informational.
+- `skipped`: the app deliberately omits the file, so its absence is informational.
+
+Use the scaffold command to inspect or change those decisions:
+
+```bash
+bw scaffold list
+bw scaffold own app/crm/page.tsx
+bw scaffold skip app/crm/layout.tsx
+bw scaffold manage app/crm/page.tsx app/crm/layout.tsx
+```
+
+`own`, `skip`, and `manage` accept multiple paths. `own` requires every path to exist; `skip` requires every path to be missing. `manage` returns a path to the default managed state and compares an existing file with the installed template again. Manifest updates are atomic.
+
 ### Remove a module
 
 `bw remove <moduleKey>` is plan-only unless `--yes` is supplied. It refuses removal when another installed module requires the target, removes package wiring and only scaffold files that still match their recorded template hash, leaves drifted files with a warning, and regenerates managed config.
@@ -92,6 +113,20 @@ bw doctor --strict
 ```
 
 `--report` records the timestamp and result in the app manifest. `--strict` makes warnings fail, including the current `db-objects` skip; live database checks are reserved for a later release.
+
+Scaffold health follows the recorded per-file decision:
+
+| Live state | Intent | Doctor result |
+| --- | --- | --- |
+| Current | Managed or absent | PASS-counted as `current` |
+| Drifted | Owned | INFO-counted as `owned` |
+| Missing | Skipped | INFO-counted as `skipped` |
+| Drifted | Managed or absent | WARN; fails only with `--strict` |
+| Missing | Managed or absent | WARN; fails only with `--strict` |
+| Missing | Owned | FAIL because intent and reality disagree |
+| Existing | Skipped | FAIL because intent and reality disagree |
+
+The scaffold summary reports current, owned, skipped, undecided drift/missing, and intent-mismatch counts. Use `bw scaffold own` or `bw scaffold skip` only after reviewing the divergence; these commands record a decision rather than changing app files.
 
 ## Safe workflow
 
