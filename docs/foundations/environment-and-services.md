@@ -2,7 +2,7 @@
 
 This page explains the generated environment keys, config ownership, and service expectations for the public BrightWeb scaffold. Use it after installation when you need to review the generated platform config and fill in `.env.local`.
 
-The current public scaffold only generates `.env.local` for the `platform` template. The `site` template does not require environment keys to render its starter page.
+The current public scaffold only generates `.env.local` for the `platform` template. The thin `site` shell has no required environment keys or default feature page.
 
 ## Exact `.env.local` flow
 
@@ -66,14 +66,14 @@ The current public scaffold only generates `.env.local` for the `platform` templ
 
 - Holds module metadata plus the enabled state for CRM, Projects, and Admin.
 - Generated from the module choices you made during scaffold time.
-- Edit this file when you want the starter routes and shell wiring to reflect a different module set.
+- Edit this file when you want package mounts and shell wiring to reflect a different module set.
 
 ## What each template expects
 
 ### Site
 
 - No generated `.env.local`
-- No required external services for the starter page
+- No required external services for the thin site shell
 - First customization usually happens in `config/site.ts`, `app/page.tsx`, and `app/globals.css`
 
 ### Platform
@@ -90,7 +90,7 @@ For platform apps:
 
 1. Run the app locally.
 2. Open `/`.
-3. Open `/bootstrap`.
+3. Run the build, then validate `/crm` or `/admin/users` when those package mounts are enabled.
 4. Confirm the starter reports the expected readiness state.
 5. Open the generated playground routes and confirm they either connect successfully or show the exact missing configuration you still need to fill in.
 

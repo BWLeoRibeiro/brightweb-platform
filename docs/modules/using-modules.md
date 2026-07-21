@@ -40,7 +40,7 @@ That means BrightWeb module usage is primarily a package and wiring model. The s
 | `@brightweblabs/module-admin/registration` | `adminModuleRegistration` | `stable` | Admin app-shell navigation and toolbar registration. |
 | `@brightweblabs/module-orgs` | `listOrganizations()`, `createOrganization()`, `updateOrganization()`, `listOrganizationMembers()`, `setOrganizationMemberRole()` | `stable` | Shared organization and membership data operations used by CRM and Projects. |
 | `@brightweblabs/module-orgs/registration` | `orgsModuleRegistration` | `stable` | Hidden foundation registration with no navigation. |
-| `@brightweblabs/module-crm` | `listCrmContacts()`, `listCrmOrganizations()`, `getCrmContactStatusStats()`, `listCrmOwnerOptions()`, `listCrmPrimaryContacts()`, `listCrmStatusTimeline()` | `stable` | Reusable CRM list, stats, owner-option, primary-contact, and timeline primitives for app-owned CRM UIs and workflows. |
+| `@brightweblabs/module-crm` | `listCrmContacts()`, `listCrmOrganizations()`, `getCrmContactStatusStats()`, `listCrmOwnerOptions()`, `listCrmPrimaryContacts()`, `listCrmStatusTimeline()` | `stable` | Reusable CRM primitives for package-owned CRM surfaces and workflows. |
 | `@brightweblabs/module-crm` | `handleCrmContactsGetRequest()`, `handleCrmOrganizationsGetRequest()`, `handleCrmStatsGetRequest()`, `handleCrmOwnersGetRequest()` | `stable` | Package-owned CRM GET handlers that can be mounted directly from Next.js routes. |
 | `@brightweblabs/module-crm` | `getCrmDashboardData()` | `starter` | Starter CRM dashboard payload for the scaffolded CRM page. |
 | `@brightweblabs/module-crm/registration` | `crmModuleRegistration` | `stable` | CRM app-shell navigation groups and toolbar registration. |
@@ -230,7 +230,7 @@ Auth email flows should stay on `supabase.auth.*` and Supabase Auth SMTP/project
 
 - Use `@brightweblabs/core-auth/server` to gate pages and get the current signed-in user context.
 - Use `@brightweblabs/core-auth/shared` for validation and callback URL helpers.
-- Use `@brightweblabs/module-admin` when you need admin user listing, role changes, or admin starter routes.
+- Use `@brightweblabs/module-admin` for admin user listing, role changes, handlers, and the mountable `AdminUsersPage`.
 
 ### CRM
 
@@ -239,14 +239,14 @@ Auth email flows should stay on `supabase.auth.*` and Supabase Auth SMTP/project
 - Load only the CRM slices a page needs. For example, a contacts-first page can skip `listCrmOwnerOptions()` and `listCrmPrimaryContacts()` until an assignment or organization-edit workflow needs them.
 - Mount the package-owned CRM GET handlers when you want the package to own the initial HTTP contract.
 - Treat `getCrmDashboardData()` as `starter` page glue for the scaffolded CRM screen.
-- Build your own forms, tables, actions, and workflows on top of the CRM schema and replace the starter page payload when needed.
+- Build reusable forms, tables, actions, and workflows in the CRM package, then keep the app route as a thin mount.
 
 ### Projects
 
 - Build on `listProjects()` and `getProjectPortfolioStats()` when you need reusable project listing and metrics helpers.
 - Use `getProjectDashboard()` and `getClientProjectHealth()` for detail and client-facing project views.
 - Use the task, milestone, link, and member helpers when your app owns project write flows.
-- Treat `getProjectsPortfolioPageData()` as `starter` page glue for the scaffolded portfolio screen.
+- Treat `getProjectsPortfolioPageData()` as `starter` package glue; the scaffold ships no Projects page until package-owned UI exists.
 - Use `projectsModuleRegistration` when you want project navigation and toolbar behavior in the shell.
 
 ## Related contract docs
@@ -275,14 +275,12 @@ Auth email flows should stay on `supabase.auth.*` and Supabase Auth SMTP/project
 - `packages/module-crm/src/registration.ts`
 - `packages/module-projects/src/index.ts`
 - `packages/module-projects/src/registration.ts`
-- `packages/create-bw-app/template/base/app/playground/auth/auth-playground.tsx`
 - `packages/create-bw-app/template/modules/admin/app/api/admin/users/route.ts`
 - `packages/create-bw-app/template/modules/admin/app/api/admin/users/roles/route.ts`
 - `packages/create-bw-app/template/modules/crm/app/api/crm/contacts/route.ts`
 - `packages/create-bw-app/template/modules/crm/app/api/crm/organizations/route.ts`
 - `packages/create-bw-app/template/modules/crm/app/api/crm/stats/route.ts`
 - `packages/create-bw-app/template/modules/crm/app/api/crm/owners/route.ts`
-- `packages/create-bw-app/template/modules/admin/app/playground/admin/page.tsx`
+- `packages/create-bw-app/template/modules/admin/app/admin/users/page.tsx`
 - `packages/create-bw-app/template/modules/crm/app/crm/page.tsx`
-- `packages/create-bw-app/template/modules/projects/app/playground/projects/page.tsx`
 - `apps/platform-preview/config/shell.ts`

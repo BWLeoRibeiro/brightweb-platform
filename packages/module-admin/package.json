@@ -22,7 +22,8 @@
     "./registration": "./src/registration.ts",
     "./roles": "./src/roles.ts",
     "./users": "./src/users.ts",
-    "./users-client": "./src/users-client.tsx"
+    "./users-client": "./src/users-client.tsx",
+    "./users-page": "./src/users-page.tsx"
   },
   "dependencies": {
     "@brightweblabs/app-shell": "workspace:*",

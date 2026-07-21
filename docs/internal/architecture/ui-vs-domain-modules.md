@@ -12,7 +12,7 @@ The current BrightWeb model separates shared platform ownership from application
 
 - Shared schema and RLS ownership.
 - Shared server and domain queries, helper functions, and package contracts.
-- Light starter surfaces to exercise package behavior in a scaffold.
+- Mountable package surfaces exercised through direct scaffold route exports.
 - Not a drop-in finished frontend product.
 
 > If you describe CRM or Projects as a full frontend module install, you will misrepresent the platform. The safer and more accurate statement is: these modules mainly install shared schema, logic, contracts, and starter wiring.

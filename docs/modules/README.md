@@ -1,17 +1,17 @@
 # Modules
 
-BrightWeb modules extend the platform through shared schema, domain logic, package helpers, shell registrations, and light starter wiring. The public promise for those modules is the **base contract** documented in this section.
+BrightWeb modules extend the platform through shared schema, domain logic, package helpers, shell registrations, and mountable package surfaces. The public promise for those modules is the **base contract** documented in this section.
 
-> The shared modules are primarily schema and domain modules. Applications built on BrightWeb are still expected to build their own product UI on top of the stable base contract and replace starter scaffolding as needed.
+> Generated apps stay thin. Product UI and reusable behavior belong in the owning package, while app repositories retain settings and direct mounts.
 
 ## Read this section with the right mental model
 
 The `platform` template has two layers:
 
 - the platform base, which always resolves to the `Core + Admin` database baseline
-- optional starter surfaces and package wiring, which may add admin, CRM, and Projects; CRM and Projects auto-include the hidden Organizations foundation
+- optional package wiring and mounts, which may add Admin, CRM, and Projects; CRM and Projects auto-include the hidden Organizations foundation
 
-Selecting `admin` in the scaffold affects the Admin starter UI and package wiring. It does not remove the Admin database baseline from platform mode.
+Selecting `admin` in the scaffold affects the Admin package mount and wiring. It does not remove the Admin database baseline from platform mode.
 
 ## Support tiers
 
@@ -28,10 +28,10 @@ Use [Base Contract](./base-contract.md) for the canonical support-tier rules and
 | Area | What it owns | What scaffold selection changes | Full UI |
 | --- | --- | --- | --- |
 | Platform Base | Core auth/profile foundations plus the Admin-backed database baseline that platform apps depend on. | Every `platform` app gets this runtime and database baseline. | No. It is the base runtime, not a finished product surface. |
-| Admin | Governance helpers, RBAC package wiring, and the optional Admin starter surface. | Selecting `admin` adds the Admin package wiring and starter routes such as `/playground/admin`. | No. It is a starter governance surface, not a full admin product. |
+| Admin | Governance helpers, RBAC package wiring, and a package-owned users surface. | Selecting `admin` adds `/admin/users` and direct package-owned API handler aliases. | Yes, for the default users surface. |
 | Organizations | Organizations, membership, invitations, and organization access helpers. | Auto-included when CRM or Projects is selected; hidden in navigation. | No. It is a shared domain foundation. |
-| CRM | CRM contacts and status logs, plus CRM-to-organizations integration. | Selecting CRM adds package wiring, shell registration, env flags, and the CRM playground. | No. Product-specific CRM UI remains app-owned. |
-| Projects | `projects`, `project_members`, `project_milestones`, `project_tasks`, `project_links`, `project_status_log`, plus follow-up access and activity behavior. | Selecting `projects` adds package wiring, shell registration, env flags, and `/playground/projects`. | No. It does not install a full project management frontend on its own. |
+| CRM | CRM contacts and status logs, plus CRM-to-organizations integration. | Selecting CRM adds package wiring, shell registration, env flags, and `/crm`. | Yes, for the package-owned default dashboard. |
+| Projects | `projects`, `project_members`, `project_milestones`, `project_tasks`, `project_links`, `project_status_log`, plus follow-up access and activity behavior. | Selecting `projects` adds package wiring and env flags, but no route or generated nav. | No default UI yet. |
 
 ## Pages in this section
 
@@ -45,7 +45,7 @@ Use [Base Contract](./base-contract.md) for the canonical support-tier rules and
 ## What module selection affects in the scaffold
 
 - generated package dependencies
-- copied starter playground and API files from the module template folders
+- copied direct page and API handler mounts from the module template folders
 - generated `next.config.ts`, env flags, and shell/config wiring for enabled packages
 - the client database stack plan when you scaffold in workspace mode
 

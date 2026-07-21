@@ -19,27 +19,27 @@ BrightWeb does not require a private workspace checkout for the public scaffold 
 
 | Template | Choose it when | What you get on day 1 | Services required to fully validate the starter |
 | --- | --- | --- | --- |
-| `platform` | You need shared auth, app-shell wiring, and optional BrightWeb business modules such as CRM or Projects. | An authenticated platform starter, generated config files, `.env.local`, `/bootstrap`, `/preview/app-shell`, `/playground/auth`, and optional module playground routes. | Supabase and Resend. Optional modules also need the matching database schema available in the target client database. |
-| `site` | You need a standalone marketing or editorial site without the heavier platform runtime. | A Next.js App Router site starter with local UI primitives, `config/site.ts`, and a styled homepage. | None for the starter itself. |
+| `platform` | You need shared auth, app-shell wiring, and optional BrightWeb business modules such as CRM or Projects. | A thin authenticated shell with settings, `.env.local`, migrations, and direct CRM/Admin package mounts when selected. | Supabase and Resend. Optional modules also need the matching database schema available in the target client database. |
+| `site` | You need a standalone marketing or editorial site without the heavier platform runtime. | A thin Next.js App Router shell with `config/site.ts`, theme tokens, and no default feature page. | None for the shell itself. |
 
 ## Service expectations by template
 
 ### Site
 
-- The site starter renders without a generated `.env.local`.
-- The starter is meant to be rebranded and extended locally through `config/site.ts`, `app/page.tsx`, and `app/globals.css`.
+- The site shell builds without a generated `.env.local`.
+- Identity and theme settings live in `config/site.ts` and `app/globals.css`; page UI belongs in a package.
 - Add third-party services only when your own site requirements need them.
 
 ### Platform
 
 - The platform starter writes `.env.local` for service values and generated config files for starter brand and module state.
-- The generated home page and bootstrap checklist can render before every service value is filled in, but they will show setup status instead of a fully ready state.
+- The scaffold can build before every service value is filled in, but package-mounted runtime routes require their real auth and service configuration.
 - Auth and module playground routes become genuinely useful only after the external services and database schema are configured.
 
 ## Module selection expectations
 
-- `crm`, `projects`, and `admin` control starter package wiring, generated runtime config, and optional starter routes.
-- The platform database baseline always includes `Core + Admin`. Selecting `admin` controls whether the Admin starter UI and package wiring are scaffolded.
+- `crm`, `projects`, and `admin` control package wiring, generated runtime config, and available package mounts.
+- The platform database baseline always includes `Core + Admin`. Selecting `admin` controls whether the Admin package mount and wiring are scaffolded.
 - Projects build on the Core + Admin + Organizations database baseline without requiring CRM.
 
 ## Recommended first path

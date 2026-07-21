@@ -4,7 +4,7 @@ The platform base is the default module-backed baseline for the **platform** tem
 
 If you scaffold a standalone `site` app, this page does not apply. It applies to the authenticated platform starter and the database/runtime layers that come with it.
 
-> Platform always resolves to the `Core + Admin` database baseline; selecting Admin only controls whether the Admin starter UI and package wiring are scaffolded.
+> Platform always resolves to the `Core + Admin` database baseline; selecting Admin only controls whether the Admin package mount and wiring are scaffolded.
 
 The practical platform base is currently **Core + Admin**.
 
@@ -38,9 +38,9 @@ Use [Base Contract](./base-contract.md) for the support-tier rules and [base-con
 
 | Concern | Current behavior |
 | --- | --- |
-| Scaffold wiring | Platform apps always get the baseline shell and `@brightweblabs/core-auth` package wiring. Admin UI package wiring is added when the Admin starter surface is selected. |
-| Starter routes | The platform starter includes `/playground/auth` for the Core auth layer. If Admin is selected, the module template also contributes `/playground/admin` plus the starter admin API routes. |
-| Database behavior | Platform always resolves to the `Core + Admin` database baseline; selecting Admin only controls whether the Admin starter UI and package wiring are scaffolded. |
+| Scaffold wiring | Platform apps always get the baseline shell and `@brightweblabs/core-auth` package wiring. Admin UI package wiring is added when Admin is selected. |
+| Package mounts | Core Auth adds no demo route. If Admin is selected, the template mounts `AdminUsersPage` at `/admin/users` and aliases the package-owned API handlers. |
+| Database behavior | Platform always resolves to the `Core + Admin` database baseline; selecting Admin only controls whether the Admin package mount and wiring are scaffolded. |
 | Site template | The standalone `site` template does not receive this platform base. |
 
 ## Supported base contract
@@ -59,6 +59,7 @@ The current platform-base contract is intentionally split into reusable and star
 ### Starter
 
 - `@brightweblabs/module-admin`: `getAdminUsersPageData()`
+- `@brightweblabs/module-admin`: `AdminUsersPage`
 
 ### Internal
 
@@ -92,21 +93,17 @@ const adminOnly = await requireServerPageRoleAccess("admin");
 
 ### Admin routes and data helpers
 
-If you select the Admin starter surface, the generated app can mount package-owned handlers and server data helpers.
+If you select Admin, the generated app directly mounts the package-owned page and handlers.
 
 ```ts
-export async function GET(request: Request) {
-  const { handleAdminUsersGetRequest } = await import("@brightweblabs/module-admin");
-  return handleAdminUsersGetRequest(request);
-}
+export { handleAdminUsersGetRequest as GET } from "@brightweblabs/module-admin";
 ```
 
 ```tsx
-const { getAdminUsersPageData } = await import("@brightweblabs/module-admin");
-const { users } = await getAdminUsersPageData();
+export { AdminUsersPage as default } from "@brightweblabs/module-admin";
 ```
 
-Treat `getAdminUsersPageData()` as starter page glue. Build app-owned admin pages on `listAdminUsers()` and the stable handlers when you need a longer-lived contract.
+Treat `getAdminUsersPageData()` as package page glue. Build reusable admin surfaces in the package on `listAdminUsers()` and the stable handlers.
 
 ### Shell registration
 

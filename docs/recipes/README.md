@@ -4,16 +4,16 @@ This section stays intentionally practical. Each page documents a real public wo
 
 ## What these pages are for
 
-- starting from the public scaffold and validating the starter routes
-- customizing the generated platform or site starter without guessing where the key files live
+- starting from the public scaffold and validating package mounts
+- customizing generated settings and theme seams without guessing where the key files live
 - documenting the manual workflows that still exist after generation
 
 ## Recipes in this section
 
-- [Platform First Run](./platform-first-run.md): scaffold a platform app, configure its environment, and verify the generated routes.
-- [Site First Customization](./site-first-customization.md): scaffold the site starter and make the first round of copy, CTA, and visual changes.
+- [Platform First Run](./platform-first-run.md): scaffold a platform app, configure its environment, and verify package mounts.
+- [Site First Customization](./site-first-customization.md): configure the thin site shell and mount package-owned UI.
 - [Add Modules After Scaffold](./add-modules-after-scaffold.md): add a module with `bw add`, with a manual fallback for older apps.
-- [Replace Starter Surfaces](./replace-starter-surfaces.md): move from starter pages and starter helpers to app-owned product routes.
+- [Extend Thin Package Mounts](./replace-starter-surfaces.md): add package-owned surfaces without growing app-local feature code.
 
 ## How to use these recipes
 

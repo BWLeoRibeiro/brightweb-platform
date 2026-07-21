@@ -6,7 +6,7 @@ export type StarterModuleConfig = {
   description: string;
   enabled: boolean;
   packageName: string;
-  playgroundHref?: string;
+  routeHref?: string;
   placement: "core" | "primary" | "admin";
 };
 
@@ -17,7 +17,6 @@ export const starterModuleConfig: StarterModuleConfig[] = [
     description: "Login, reset-password, callback URLs, and shared auth validation utilities.",
     enabled: true,
     packageName: "@brightweblabs/core-auth",
-    playgroundHref: "/playground/auth",
     placement: "core",
   },
   {
@@ -26,7 +25,7 @@ export const starterModuleConfig: StarterModuleConfig[] = [
     description: "Contacts and CRM server/data layer, with marketing-adjacent operational data stored in Supabase.",
     enabled: true,
     packageName: "@brightweblabs/module-crm",
-    playgroundHref: "/crm",
+    routeHref: "/crm",
     placement: "primary",
   },
   {
@@ -35,7 +34,6 @@ export const starterModuleConfig: StarterModuleConfig[] = [
     description: "Project portfolio, detail routes, and work-management server logic.",
     enabled: true,
     packageName: "@brightweblabs/module-projects",
-    playgroundHref: "/playground/projects",
     placement: "primary",
   },
   {
@@ -44,7 +42,7 @@ export const starterModuleConfig: StarterModuleConfig[] = [
     description: "User role governance, admin tools, and access-control surfaces.",
     enabled: true,
     packageName: "@brightweblabs/module-admin",
-    playgroundHref: "/playground/admin",
+    routeHref: "/admin/users",
     placement: "admin",
   },
 ];

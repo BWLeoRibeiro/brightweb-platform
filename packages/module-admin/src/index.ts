@@ -22,3 +22,4 @@ export {
   type AdminStateEventDetail,
 } from "./events";
 export { AdminUsersClient } from "./users-client";
+export { AdminUsersPage } from "./users-page";

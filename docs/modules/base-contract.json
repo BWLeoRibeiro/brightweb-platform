@@ -994,6 +994,27 @@
     "source": "packages/module-admin/src/users-client.tsx"
   },
   {
+    "moduleKey": "admin",
+    "packageName": "@brightweblabs/module-admin",
+    "symbol": "AdminUsersPage",
+    "kind": "component",
+    "status": "starter",
+    "runtime": "server",
+    "summary": "Package-owned admin users page that loads initial data and mounts the users client.",
+    "auth": "admin role required",
+    "inputs": [],
+    "outputs": [
+      {
+        "type": "React component",
+        "description": "Complete default admin users surface."
+      }
+    ],
+    "notes": [
+      "Mount directly from a thin app route at /admin/users."
+    ],
+    "source": "packages/module-admin/src/users-page.tsx"
+  },
+  {
     "moduleKey": "crm",
     "packageName": "@brightweblabs/module-crm/registration",
     "symbol": "crmModuleRegistration",

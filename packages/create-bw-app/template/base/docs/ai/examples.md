@@ -1,42 +1,21 @@
 # Agent Examples
 
-Use these workflows after reading `AGENTS.md`, `docs/ai/README.md`, and `docs/ai/app-context.json`.
-
 ## First local setup
 
-Goal: get the generated starter running with real credentials.
+- Fill `.env.local`.
+- Review `config/brand.ts`, `config/modules.ts`, and `app/theme.css`.
+- Run the app build.
+- Validate the package routes listed in `docs/ai/app-context.json`.
 
-- Review `.env.local` and replace placeholder values.
-- Review `config/brand.ts` and confirm client identity.
-- Review `app/theme.css` and confirm brand token overrides match the intended visual system.
-- Review `config/modules.ts` before touching module routes.
-- Run the local dev server for this app or workspace.
-- Validate `/`, `/bootstrap`, `/preview/app-shell`, and `/playground/auth`.
-- Validate `/crm`, `/playground/projects`, and `/playground/admin` only when those modules are enabled.
+## Add a product surface
 
-## Change brand identity
+- Implement and export the surface from its `@brightweblabs/*` package.
+- Add any package contract entry and tests there.
+- Add a route file containing only a direct package re-export.
+- Register the route in module and shell settings.
 
-Goal: update the starter to the real client name and support details.
+## Customize the shell
 
-- Edit `config/brand.ts`.
-- Edit `app/theme.css` when palette or theme token mapping needs to change.
-- Move route-specific presentation into `components/` when the home or preview surfaces need app-owned UI.
-- Check `config/client.ts` or `config/bootstrap.ts` if starter copy still references old defaults.
-- Validate the home page and `/preview/app-shell` after the change.
-
-## Replace starter routes with product routes
-
-Goal: move from validation surfaces to product-owned pages.
-
-- Build the real routes in `app/` first.
-- Keep reusable route UI in `components/` so the app follows the expected Next.js folder split.
-- Update `config/shell.overrides.ts` if navigation or toolbar behavior changes.
-- Remove `/bootstrap`, `/preview/app-shell`, or `/playground/*` only after links and config references are cleaned up.
-
-## Make a module-aware change
-
-Goal: add or modify functionality without assuming a module exists.
-
-- Check `config/modules.ts` first.
-- If the module is enabled, edit the app-owned route or API surface before considering package forks.
-- If the module is not enabled, do not create links or routes that assume it exists.
+- Keep package registrations intact.
+- Put app-specific href or visibility changes in `config/shell.overrides.ts`.
+- Rebuild and verify the affected mounted route.

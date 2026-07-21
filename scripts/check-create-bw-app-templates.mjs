@@ -2,6 +2,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { createBrightwebClientApp } from "../packages/create-bw-app/src/generator.mjs";
+import { findTemplateThinnessViolations } from "./template-thinness.mjs";
 
 const repoRoot = path.resolve(new URL("..", import.meta.url).pathname);
 const templateRoot = path.join(repoRoot, "packages", "create-bw-app", "template");
@@ -38,6 +39,11 @@ function isTextTemplate(filePath) {
 }
 
 async function main() {
+  const thinnessViolations = await findTemplateThinnessViolations(templateRoot);
+  if (thinnessViolations.length > 0) {
+    throw new Error(["Found non-thin scaffold routes.", ...thinnessViolations.map((violation) => `- ${violation}`)].join("\n"));
+  }
+
   const staticTemplateMatches = await scanDirectoryForBlockedToken(templateRoot, repoRoot);
   const generatedTemplateMatches = await scanGeneratedAppsForBlockedToken();
   const allMatches = [...staticTemplateMatches, ...generatedTemplateMatches];
@@ -50,7 +56,7 @@ async function main() {
     ].join("\n"));
   }
 
-  console.log("Template color ownership check passed.");
+  console.log("Template thinness and color ownership checks passed.");
 }
 
 async function scanDirectoryForBlockedToken(rootPath, relativeToPath, labelPrefix = "") {
