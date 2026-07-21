@@ -1,15 +1,15 @@
 {
   "contractVersion": 1,
   "packages": {
-    "@brightweblabs/app-shell": "0.3.1",
-    "@brightweblabs/core-auth": "0.3.3",
-    "@brightweblabs/infra": "0.3.0",
-    "@brightweblabs/module-admin": "0.3.3",
-    "@brightweblabs/module-crm": "0.4.1",
-    "@brightweblabs/module-orgs": "0.1.0",
-    "@brightweblabs/module-projects": "0.4.1",
-    "@brightweblabs/theme": "0.1.0",
-    "@brightweblabs/ui": "0.4.0",
-    "create-bw-app": "0.10.1"
+    "@brightweblabs/app-shell": "0.4.0",
+    "@brightweblabs/core-auth": "0.3.4",
+    "@brightweblabs/infra": "0.3.1",
+    "@brightweblabs/module-admin": "0.3.4",
+    "@brightweblabs/module-crm": "0.5.0",
+    "@brightweblabs/module-orgs": "0.2.0",
+    "@brightweblabs/module-projects": "0.4.2",
+    "@brightweblabs/theme": "0.2.0",
+    "@brightweblabs/ui": "1.0.0",
+    "create-bw-app": "0.11.0"
   }
 }

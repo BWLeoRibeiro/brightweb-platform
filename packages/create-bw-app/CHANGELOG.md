@@ -1,5 +1,24 @@
 # create-bw-app
 
+## 0.11.0
+
+### Minor Changes
+
+- df5a3bd: Add `bw adopt`, `bw diff`, and `bw remove` for safely bringing legacy apps under the manifest contract, inspecting scaffold drift, and removing module package wiring without touching migration history.
+- 31d7611: Add the complete CRM contact write path, SQL-backed single and bulk funnel status transitions, staff-only HTTP handlers, the status-changed event contract, and scaffolded POST/PATCH routes.
+- 2bb53ad: Ship the package-owned default CRM dashboard, focused CRM UI surfaces, domain tokens, route-backed client, and a ready-to-render `/crm` scaffold route.
+- e7a7b89: Extract organizations, membership, invitations, and shared helpers into the organizations foundation module. Preserve the CRM organization-list alias and make CRM and Projects auto-resolve Organizations without forcing Projects to install CRM.
+- 798e75f: Generate managed shell wiring with a preserved `config/shell.overrides.ts` customization seam.
+- 2bd1d84: Add the `bw` app lifecycle CLI, machine-readable app manifests, module installation, migration-aware upgrades, and app health checks.
+
+### Patch Changes
+
+- 741ffec: Align generated app dependency defaults with the current BrightWeb compatibility set.
+- 2191b72: Replace the legacy green starter mark in generated platform brand assets with a BrightWeb-owned BW mark.
+- 3c0d84b: Keep database ordering implementations in sync, load core compatibility from the shared catalog, include the shell override in agent context, and load CRM tokens in the playground route.
+- f8b2157: Remove the CRM package's unused theme build dependency, trim unused theme CSS subpath exports while preserving the app-level CSS runtime contract, and retire the redundant CRM playground alias from new app scaffolds.
+- 090bc48: Update generated app dependency defaults so scaffolded platform and site apps install the Lucide 1.x peer required by `@brightweblabs/ui` 1.0.
+
 ## 0.10.1
 
 ### Patch Changes

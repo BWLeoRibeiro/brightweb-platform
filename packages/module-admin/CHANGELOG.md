@@ -1,5 +1,25 @@
 # @brightweblabs/module-admin
 
+## 0.3.4
+
+### Patch Changes
+
+- 741ffec: Ship the BrightWeb v1 module manifest with the admin package.
+- 090bc48: Align workspace UI consumers with the Lucide 1.x peer range required by `@brightweblabs/ui` 1.0.
+- 3c0d84b: Complete module database ownership metadata, including cross-module integration objects, and align declared core compatibility with the published catalog.
+- Updated dependencies [80b69b1]
+- Updated dependencies [3c0d84b]
+- Updated dependencies [090bc48]
+- Updated dependencies [2bb53ad]
+- Updated dependencies [798e75f]
+- Updated dependencies [3c0d84b]
+- Updated dependencies [80b69b1]
+- Updated dependencies [090bc48]
+  - @brightweblabs/ui@1.0.0
+  - @brightweblabs/infra@0.3.1
+  - @brightweblabs/core-auth@0.3.4
+  - @brightweblabs/app-shell@0.4.0
+
 ## 0.3.3
 
 ### Patch Changes

@@ -1,5 +1,22 @@
 # @brightweblabs/ui
 
+## 1.0.0
+
+### Major Changes
+
+- 090bc48: Declare the merged BrightWeb UI system stable at 1.0.0. This breaking release moves React, React DOM, Next.js, and Lucide to peer dependencies, removes `next-themes` in favor of the package-owned `ThemeProvider`, and renames the MQ-specific `marketing` and `marketingLink` button variants to token-driven `accent` and `accentLink` variants. It also adds the merged avatar, search, skeleton, phone, password, sheet, tooltip, badge, card, table, and related component improvements and subpath exports.
+
+### Minor Changes
+
+- 80b69b1: Add domain-neutral Tier-2 application patterns for section headings, actions, table pagination, surface cards, stats, status pills, KPI breakdowns, empty states, initials avatars, and role badges.
+
+### Patch Changes
+
+- 2bb53ad: Ship the package-owned default CRM dashboard, focused CRM UI surfaces, domain tokens, route-backed client, and a ready-to-render `/crm` scaffold route.
+- Updated dependencies [b59df44]
+- Updated dependencies [f8b2157]
+  - @brightweblabs/theme@0.2.0
+
 ## 0.4.0
 
 ### Minor Changes
