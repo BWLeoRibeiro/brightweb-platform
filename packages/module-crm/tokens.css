@@ -1,3 +1,5 @@
+/* These tokens alias --semantic-* custom properties provided by @brightweblabs/theme at the app level.
+ * This is a CSS runtime contract, not a build dependency. */
 :root {
   --crm-stage-lead: var(--semantic-info);
   --crm-stage-lead-strong: var(--semantic-info-strong);

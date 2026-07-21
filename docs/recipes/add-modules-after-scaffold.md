@@ -43,7 +43,7 @@ Pre-manifest apps are not changed automatically. Use the fallback below until th
    - `config/shell.ts`
 3. Port the relevant dependency wiring, `transpilePackages`, module config, and shell registrations into your real app.
 4. Copy or recreate the starter route files you actually want:
-   - CRM: `app/playground/crm/page.tsx`
+   - CRM: `app/crm/page.tsx`
    - Projects: `app/playground/projects/page.tsx`
    - Admin: `app/playground/admin/page.tsx` and the admin API routes under `app/api/admin/users/`
 5. Install the added dependencies and run the app locally.

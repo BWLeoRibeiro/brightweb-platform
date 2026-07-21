@@ -12,7 +12,7 @@ Goal: get the generated starter running with real credentials.
 - Review `config/modules.ts` before touching module routes.
 - Run the local dev server for this app or workspace.
 - Validate `/`, `/bootstrap`, `/preview/app-shell`, and `/playground/auth`.
-- Validate `/playground/crm`, `/playground/projects`, and `/playground/admin` only when those modules are enabled.
+- Validate `/crm`, `/playground/projects`, and `/playground/admin` only when those modules are enabled.
 
 ## Change brand identity
 

@@ -179,8 +179,6 @@ importers:
         specifier: ^19.0.0
         version: 19.2.4
 
-  packages/core-marketing: {}
-
   packages/create-bw-app:
     dependencies:
       '@inquirer/prompts':
@@ -240,9 +238,6 @@ importers:
       '@brightweblabs/module-orgs':
         specifier: workspace:*
         version: link:../module-orgs
-      '@brightweblabs/theme':
-        specifier: workspace:*
-        version: link:../theme
       '@brightweblabs/ui':
         specifier: workspace:*
         version: link:../ui

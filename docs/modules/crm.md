@@ -25,7 +25,7 @@ Use [Base Contract](./base-contract.md) for the support-tier rules and [base-con
 | Concern | Current behavior |
 | --- | --- |
 | Scaffold wiring | Selecting CRM adds the package dependency and enables CRM-related shell/config wiring in generated platform apps. |
-| Starter routes | The module template contributes a ready-to-use `/crm` route, keeps `/playground/crm` as an alias, and mounts `/api/crm/contacts` (GET, POST, PATCH), `/api/crm/organizations`, `/api/crm/stats`, `/api/crm/owners`, and `/api/crm/timeline`. |
+| Starter routes | The module template contributes a ready-to-use `/crm` route and mounts `/api/crm/contacts` (GET, POST, PATCH), `/api/crm/organizations`, `/api/crm/stats`, `/api/crm/owners`, and `/api/crm/timeline`. |
 | Shell behavior | The module registration adds CRM navigation groups and toolbar route definitions. |
 | Dependency behavior | CRM resolves on top of `Core + Admin + Organizations`; orgs is enabled with hidden shell placement. |
 

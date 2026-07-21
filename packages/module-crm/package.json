@@ -31,7 +31,6 @@
     "@brightweblabs/core-auth": "workspace:*",
     "@brightweblabs/infra": "workspace:*",
     "@brightweblabs/module-orgs": "workspace:*",
-    "@brightweblabs/theme": "workspace:*",
     "@brightweblabs/ui": "workspace:*",
     "@supabase/supabase-js": "^2.105.3",
     "lucide-react": "^1.8.0",

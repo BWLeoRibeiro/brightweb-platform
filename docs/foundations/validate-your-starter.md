@@ -14,7 +14,7 @@ Before testing auth flows, confirm `NEXT_PUBLIC_APP_URL` matches the environment
 | `/bootstrap` | Client bootstrap checklist with identity, environment, services, enabled modules, and launch readiness sections. | “Blocked” or missing checks mean the generated env keys still need real values. |
 | `/preview/app-shell` | The generated app-shell preview based on `config/shell.ts` and the enabled module registrations. | Missing or incomplete nav items usually mean the shell config or `config/modules.ts` do not match your intended starter state. |
 | `/playground/auth` | Shared auth playground for validating the platform auth layer. | Callback or auth failures usually point to missing `NEXT_PUBLIC_APP_URL` or incomplete Supabase Auth setup. |
-| `/playground/crm` | CRM playground route if CRM was selected. It should either show a connected snapshot or a configuration-required panel. | A warning state usually means the CRM schema or required Supabase keys are missing. |
+| `/crm` | CRM route if CRM was selected. It should either show a connected snapshot or a configuration-required panel. | A warning state usually means the CRM schema or required Supabase keys are missing. |
 | `/playground/projects` | Projects playground route if Projects was selected. It should either show a portfolio snapshot or a configuration-required panel. | A warning state usually means the Projects schema or required Supabase keys are missing. |
 | `/playground/admin` | Admin playground route if Admin was selected. It should either show a governance snapshot or a configuration-required panel. | A warning state usually means the admin schema, admin-side env keys, or role-ready data are missing. |
 

@@ -1,16 +1,19 @@
 import fs from "node:fs/promises";
 import path from "node:path";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
-import { APP_DEPENDENCY_DEFAULTS } from "../packages/create-bw-app/src/constants.mjs";
+import { loadWorkspacePackages, parseRepoRoot } from "./compatibility-set.mjs";
 
-const repoRoot = path.resolve(new URL("..", import.meta.url).pathname);
+const defaultRepoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const repoRoot = parseRepoRoot(process.argv.slice(2), defaultRepoRoot);
 const compatibilityPath = path.join(repoRoot, "brightweb-release.json");
-const packagesDir = path.join(repoRoot, "packages");
 
 async function main() {
   const errors = [];
   const compatibilitySet = await readJson(compatibilityPath, "compatibility set", errors);
   if (!compatibilitySet) return report(errors);
+  const constantsUrl = pathToFileURL(path.join(repoRoot, "packages", "create-bw-app", "src", "constants.mjs"));
+  const { APP_DEPENDENCY_DEFAULTS } = await import(constantsUrl.href);
 
   if (compatibilitySet.contractVersion !== 1) errors.push("Compatibility set contractVersion must equal 1.");
   if (!compatibilitySet.packages || typeof compatibilitySet.packages !== "object" || Array.isArray(compatibilitySet.packages)) {
@@ -18,7 +21,7 @@ async function main() {
     return report(errors);
   }
 
-  const workspacePackages = await loadWorkspacePackages(errors);
+  const workspacePackages = await loadWorkspacePackages(repoRoot, errors);
   for (const [name, version] of workspacePackages) {
     if (!Object.hasOwn(compatibilitySet.packages, name)) {
       errors.push(`Compatibility set is missing workspace package "${name}" at version ${version}.`);
@@ -48,25 +51,6 @@ async function main() {
   }
 
   report(errors, `Validated ${workspacePackages.size} compatibility-set package versions and ${Object.keys(APP_DEPENDENCY_DEFAULTS).filter((name) => name.startsWith("@brightweblabs/")).length} app dependency defaults.`);
-}
-
-async function loadWorkspacePackages(errors) {
-  const packages = new Map();
-  const dirents = await fs.readdir(packagesDir, { withFileTypes: true });
-  for (const dirent of dirents.filter((entry) => entry.isDirectory()).sort((a, b) => a.name.localeCompare(b.name))) {
-    const packageJsonPath = path.join(packagesDir, dirent.name, "package.json");
-    let packageJson;
-    try {
-      packageJson = JSON.parse(await fs.readFile(packageJsonPath, "utf8"));
-    } catch {
-      continue;
-    }
-    if (packageJson.name === "create-bw-app" || packageJson.name?.startsWith("@brightweblabs/")) {
-      if (typeof packageJson.version !== "string") errors.push(`${packageJson.name} package.json is missing a string version.`);
-      else packages.set(packageJson.name, packageJson.version);
-    }
-  }
-  return packages;
 }
 
 async function readJson(filePath, label, errors) {

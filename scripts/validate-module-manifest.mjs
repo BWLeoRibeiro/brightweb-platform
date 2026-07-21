@@ -1,7 +1,11 @@
 import fs from "node:fs/promises";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 
-const repoRoot = path.resolve(new URL("..", import.meta.url).pathname);
+import { parseRepoRoot } from "./compatibility-set.mjs";
+
+const defaultRepoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const repoRoot = parseRepoRoot(process.argv.slice(2), defaultRepoRoot);
 const packagesDir = path.join(repoRoot, "packages");
 const registryPath = path.join(repoRoot, "supabase", "module-registry.json");
 const schemaPath = path.join(repoRoot, "docs", "modules", "module-manifest.schema.json");
@@ -307,6 +311,12 @@ function validateDatabaseOwnership(entries, errors) {
       const owner = namespaces.get(namespace);
       if (owner && owner !== entry.manifest.key) errors.push(`Database namespace prefix "${namespace}" is claimed by both "${owner}" and "${entry.manifest.key}".`);
       namespaces.set(namespace, entry.manifest.key);
+    }
+  }
+  for (const [objectName, author] of integrationObjects) {
+    const owner = ownedObjects.get(objectName);
+    if (owner && owner !== author) {
+      errors.push(`Database integration object "${objectName}" is authored by "${author}" but owned by "${owner}".`);
     }
   }
 }

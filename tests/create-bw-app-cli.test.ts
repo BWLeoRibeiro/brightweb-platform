@@ -57,7 +57,7 @@ async function legacyFixture() {
   for (const name of originalFiles) await fs.rm(path.join(migrationsDir, name));
   for (const [name, content] of Object.entries(baselineContents)) await fs.writeFile(path.join(migrationsDir, name), content);
   await fs.rm(path.join(fixture.targetDir, ".brightweb", "app-manifest.json"));
-  await fs.appendFile(path.join(fixture.targetDir, "app", "playground", "crm", "page.tsx"), "\n// adopted app drift\n");
+  await fs.appendFile(path.join(fixture.targetDir, "app", "crm", "page.tsx"), "\n// adopted app drift\n");
   return fixture;
 }
 
@@ -68,9 +68,8 @@ test("scaffold writes a valid app manifest", async (t) => {
   assert.deepEqual(validateAppManifest(manifest), []);
   assert.equal(manifest.app.template, "platform");
   assert.equal(manifest.modules.crm.version, "0.4.1");
-  assert.match(manifest.scaffoldFiles["app/playground/crm/page.tsx"].hash, /^sha256:/);
-  assert.match(manifest.scaffoldFiles["app/playground/crm/layout.tsx"].hash, /^sha256:/);
   assert.match(manifest.scaffoldFiles["app/crm/page.tsx"].hash, /^sha256:/);
+  assert.match(manifest.scaffoldFiles["app/crm/layout.tsx"].hash, /^sha256:/);
   assert.match(manifest.scaffoldFiles["app/api/crm/timeline/route.ts"].hash, /^sha256:/);
   const packageJson = await readJson(path.join(targetDir, "package.json"));
   assert.equal(packageJson.dependencies["@brightweblabs/theme"], "^0.1.0");
@@ -147,12 +146,12 @@ test("bw upgrade appends only unapplied migrations and preserves drifted scaffol
   for (const name of await fs.readdir(migrationsDir)) {
     if (name.includes("_crm__20260316092010_") || name.includes("_crm__20260421201523_")) await fs.rm(path.join(migrationsDir, name));
   }
-  const starterPath = path.join(targetDir, "app", "playground", "crm", "page.tsx");
+  const starterPath = path.join(targetDir, "app", "crm", "page.tsx");
   await fs.appendFile(starterPath, "\n// app-owned drift\n");
 
   const result = await upgradeBrightwebApp("crm", { targetDir, refreshStarters: true }, { workspaceRoot: REPO_ROOT, fetchImpl: mockNpmFetch });
   assert.equal(result.migrationPlan.writes.length, 2);
-  assert.ok(result.drifted.includes("app/playground/crm/page.tsx"));
+  assert.ok(result.drifted.includes("app/crm/page.tsx"));
   assert.match(await fs.readFile(starterPath, "utf8"), /app-owned drift/);
   const appended = await fs.readFile(result.migrationPlan.writes[0].targetPath, "utf8");
   assert.match(appended, /^-- bw-module: crm@0\.4\.1 20260316092010_crm_org_integration\.sql/);
@@ -195,7 +194,7 @@ test("bw doctor fails when a migration file is deleted", () => expectDoctorFault
 }, "migrations"));
 
 test("bw doctor fails when a scaffold file drifts", () => expectDoctorFault(async (targetDir) => {
-  await fs.appendFile(path.join(targetDir, "app", "playground", "crm", "page.tsx"), "\n// drift\n");
+  await fs.appendFile(path.join(targetDir, "app", "crm", "page.tsx"), "\n// drift\n");
 }, "scaffold"));
 
 test("bw doctor --report stamps lastDoctor", async (t) => {
@@ -216,7 +215,7 @@ test("bw adopt dry-runs without writes, then records baseline cursors and honest
   assert.deepEqual(await migrationSnapshot(targetDir), migrationsBefore);
   assert.equal(preview.manifest.migrationCursor.crm, "20260316092000_crm_v1.sql");
   assert.equal(preview.manifest.adoptionNotes.cursorStrategies.crm, "baseline-header");
-  assert.equal(preview.manifest.scaffoldFiles["app/playground/crm/page.tsx"].status, "drifted");
+  assert.equal(preview.manifest.scaffoldFiles["app/crm/page.tsx"].status, "drifted");
   assert.deepEqual(preview.manifest.ownedSurfaces, ["shell"]);
   assert.ok(preview.warnings.some((warning: string) => warning.includes("Later package migrations are UNAPPLIED")));
 
@@ -239,13 +238,13 @@ test("bw diff prints a real unified diff and identifies a clean file", async (t)
   t.after(() => fs.rm(root, { recursive: true, force: true }));
   const clean = await diffBrightwebScaffold("app/api/crm/contacts/route.ts", { targetDir }, { workspaceRoot: REPO_ROOT });
   assert.equal(clean.identical, true);
-  await fs.appendFile(path.join(targetDir, "app", "playground", "crm", "page.tsx"), "\n// app-owned change\n");
-  const changed = await diffBrightwebScaffold("app/playground/crm/page.tsx", { targetDir }, { workspaceRoot: REPO_ROOT });
+  await fs.appendFile(path.join(targetDir, "app", "crm", "page.tsx"), "\n// app-owned change\n");
+  const changed = await diffBrightwebScaffold("app/crm/page.tsx", { targetDir }, { workspaceRoot: REPO_ROOT });
   assert.equal(changed.identical, false);
   assert.match(changed.diff, /^--- a\/template\//);
   assert.match(changed.diff, /^\+\/\/ app-owned change$/m);
   const listed = await diffBrightwebScaffold(undefined, { targetDir, list: true }, { workspaceRoot: REPO_ROOT });
-  assert.ok(listed.drift.drifted.includes("app/playground/crm/page.tsx"));
+  assert.ok(listed.drift.drifted.includes("app/crm/page.tsx"));
 });
 
 test("bw remove refuses a required module and preserves migrations", async (t) => {
@@ -259,7 +258,7 @@ test("bw remove refuses a required module and preserves migrations", async (t) =
 test("bw remove deletes clean scaffold files, leaves drifted files, and never touches migrations", async (t) => {
   const { root, targetDir } = await scaffold(["crm"]);
   t.after(() => fs.rm(root, { recursive: true, force: true }));
-  const driftedPath = path.join(targetDir, "app", "playground", "crm", "page.tsx");
+  const driftedPath = path.join(targetDir, "app", "crm", "page.tsx");
   const cleanPath = path.join(targetDir, "app", "api", "crm", "contacts", "route.ts");
   await fs.appendFile(driftedPath, "\n// keep me\n");
   const migrationsBefore = await migrationSnapshot(targetDir);
@@ -273,7 +272,7 @@ test("bw remove deletes clean scaffold files, leaves drifted files, and never to
   const manifest = await readJson(path.join(targetDir, ".brightweb", "app-manifest.json"));
   assert.equal(packageJson.dependencies["@brightweblabs/module-crm"], undefined);
   assert.equal(manifest.modules.crm, undefined);
-  assert.equal(manifest.scaffoldFiles["app/playground/crm/page.tsx"], undefined);
+  assert.equal(manifest.scaffoldFiles["app/crm/page.tsx"], undefined);
   assert.deepEqual(await migrationSnapshot(targetDir), migrationsBefore);
 });
 

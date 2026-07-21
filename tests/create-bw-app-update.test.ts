@@ -329,13 +329,13 @@ test("scaffolds platform AI handoff files with platform-specific context", async
     "/bootstrap",
     "/preview/app-shell",
     "/playground/auth",
-    "/playground/crm",
+    "/crm",
     "/playground/projects",
   ]);
   assert.match(examples, /First local setup/);
   assert.match(agents, /docs\/ai\/app-context\.json/);
   assert.match(
-    await fs.readFile(path.join(targetDir, "app", "playground", "crm", "layout.tsx"), "utf8"),
+    await fs.readFile(path.join(targetDir, "app", "crm", "layout.tsx"), "utf8"),
     /@brightweblabs\/module-crm\/tokens\.css/,
   );
 });
@@ -650,7 +650,7 @@ test("reports missing and drifted starter files and only refreshes them with the
   });
   t.after(async () => fs.rm(tempRoot, { recursive: true, force: true }));
 
-  await fs.rm(path.join(targetDir, "app", "playground", "crm", "page.tsx"));
+  await fs.rm(path.join(targetDir, "app", "crm", "page.tsx"));
   await fs.rm(path.join(targetDir, "config", "shell.overrides.ts"));
   await fs.writeFile(path.join(targetDir, "app", "api", "crm", "stats", "route.ts"), "export {};\n", "utf8");
 
@@ -671,12 +671,12 @@ test("reports missing and drifted starter files and only refreshes them with the
 
   assert.deepEqual(dryPlan.starterFilesMissing, [
     "config/shell.overrides.ts",
-    "app/playground/crm/page.tsx",
+    "app/crm/page.tsx",
   ]);
   assert.deepEqual(dryPlan.starterFilesDrifted, ["app/api/crm/stats/route.ts"]);
   assert.deepEqual(refreshPlan.starterFilesToRefresh.sort(), [
     "app/api/crm/stats/route.ts",
-    "app/playground/crm/page.tsx",
+    "app/crm/page.tsx",
     "config/shell.overrides.ts",
   ]);
 });

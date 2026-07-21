@@ -17,7 +17,7 @@ export default function HomePage() {
             </p>
             <div className="actions">
               <Link href="/preview/app-shell" className="action">Preview App Shell</Link>
-              <Link href="/playground/crm" className="action secondary">Open CRM Playground</Link>
+              <Link href="/crm" className="action secondary">Open CRM</Link>
               <Link href="/bootstrap" className="action secondary">Open Preview Checklist</Link>
             </div>
           </div>

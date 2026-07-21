@@ -104,7 +104,7 @@ export function getStarterBootstrapChecklist() {
       {
         label: "Preview CRM module",
         done: hasModule(moduleKeys, "crm"),
-        detail: hasModule(moduleKeys, "crm") ? "/playground/crm" : "CRM not enabled",
+        detail: hasModule(moduleKeys, "crm") ? "/crm" : "CRM not enabled",
       },
       {
         label: "Preview Projects module",

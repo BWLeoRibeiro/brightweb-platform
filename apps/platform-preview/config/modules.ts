@@ -26,7 +26,7 @@ export const starterModuleConfig: StarterModuleConfig[] = [
     description: "Contacts and CRM server/data layer, with marketing-adjacent operational data stored in Supabase.",
     enabled: true,
     packageName: "@brightweblabs/module-crm",
-    playgroundHref: "/playground/crm",
+    playgroundHref: "/crm",
     placement: "primary",
   },
   {

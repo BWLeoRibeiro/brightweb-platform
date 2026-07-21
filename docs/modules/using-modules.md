@@ -283,6 +283,6 @@ Auth email flows should stay on `supabase.auth.*` and Supabase Auth SMTP/project
 - `packages/create-bw-app/template/modules/crm/app/api/crm/stats/route.ts`
 - `packages/create-bw-app/template/modules/crm/app/api/crm/owners/route.ts`
 - `packages/create-bw-app/template/modules/admin/app/playground/admin/page.tsx`
-- `packages/create-bw-app/template/modules/crm/app/playground/crm/page.tsx`
+- `packages/create-bw-app/template/modules/crm/app/crm/page.tsx`
 - `packages/create-bw-app/template/modules/projects/app/playground/projects/page.tsx`
 - `apps/platform-preview/config/shell.ts`

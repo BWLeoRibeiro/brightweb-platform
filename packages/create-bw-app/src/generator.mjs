@@ -343,7 +343,7 @@ export function createPlatformModulesConfigFile(selectedModules) {
     '    description: "Contacts and CRM server/data layer, with marketing-adjacent operational data stored in Supabase.",',
     `    enabled: ${String(selected.has("crm"))},`,
     '    packageName: "@brightweblabs/module-crm",',
-    '    playgroundHref: "/playground/crm",',
+    '    playgroundHref: "/crm",',
     '    placement: "primary",',
     "  },",
     "  {",
@@ -443,7 +443,7 @@ function getPlatformStarterRoutes(selectedModules) {
     "/bootstrap",
     "/preview/app-shell",
     "/playground/auth",
-    ...selectedModules.map((moduleKey) => `/playground/${moduleKey}`),
+    ...selectedModules.map((moduleKey) => moduleKey === "crm" ? "/crm" : `/playground/${moduleKey}`),
   ];
 }
 

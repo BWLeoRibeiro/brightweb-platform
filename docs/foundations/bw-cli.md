@@ -66,7 +66,7 @@ Expected output includes drift warnings for customized routes, possibly a missin
 
 ```bash
 bw diff --list
-bw diff app/playground/crm/page.tsx
+bw diff app/crm/page.tsx
 ```
 
 Workspace apps use `packages/create-bw-app/template`. Published mode uses the bundled template from the installed CLI; if that template is unavailable, the command warns that comparison is unsupported.
