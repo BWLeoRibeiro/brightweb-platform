@@ -8,7 +8,7 @@ The markdown in this folder is the source of truth for both the repository docs 
 
 - [Getting Started](./foundations/README.md): the external-first onboarding path from prerequisites through starter validation
 - [Modules](./modules/README.md): what the platform base includes and how CRM and Projects extend that baseline
-- [Recipes](./recipes/README.md): practical how-to pages for first-run customization, module expansion, and retiring starter surfaces
+- [Recipes](./recipes/README.md): practical how-to pages for validating and extending thin package mounts
 
 ## How to read the docs
 

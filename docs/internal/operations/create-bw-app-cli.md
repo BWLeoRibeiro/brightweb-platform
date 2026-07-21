@@ -61,7 +61,7 @@ The live preview app now lives separately at `apps/platform-preview`. It is a sm
 - the template is isolated from the live preview app
 - the CLI now supports two scaffold types:
   - `platform`: auth-first BrightWeb app with optional `crm`, `projects`, and `admin`
-  - `site`: standalone Next.js + Tailwind site starter with local UI primitives
+  - `site`: thin standalone Next.js + Tailwind shell with settings and no default feature page
 - module selection now controls copied module playground files, generated `next.config.ts`, generated `config/shell.ts`, and dependency wiring
 - published platform scaffolds also ship the resolved Supabase module baseline and client stack metadata for the selected modules
 - generated apps now get generated config files, `.gitignore`, `README.md`, `package.json`, and `next.config.ts`

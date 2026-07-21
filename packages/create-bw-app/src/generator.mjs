@@ -198,7 +198,7 @@ export function createDbInstallPlan({ selectedModules, workspaceMode, registry }
   const notes = [];
 
   if (!selectedModules.includes("admin") && resolvedOrder.includes("admin")) {
-    notes.push("Platform always resolves to the Core + Admin database baseline; selecting Admin only controls whether the Admin starter UI and package wiring are scaffolded.");
+    notes.push("Platform always resolves to the Core + Admin database baseline; selecting Admin only controls whether the Admin package mount and wiring are scaffolded.");
   }
 
   for (const moduleKey of resolvedOrder) {
@@ -315,7 +315,7 @@ export function createPlatformModulesConfigFile(selectedModules) {
     "  description: string;",
     "  enabled: boolean;",
     "  packageName: string;",
-    "  playgroundHref?: string;",
+    "  routeHref?: string;",
     '  placement: "core" | "primary" | "admin" | "hidden";',
     "};",
     "",
@@ -326,7 +326,6 @@ export function createPlatformModulesConfigFile(selectedModules) {
     '    description: "Login, reset-password, callback URLs, and shared auth validation utilities.",',
     "    enabled: true,",
     '    packageName: "@brightweblabs/core-auth",',
-    '    playgroundHref: "/playground/auth",',
     '    placement: "core",',
     "  },",
     "  {",
@@ -343,7 +342,7 @@ export function createPlatformModulesConfigFile(selectedModules) {
     '    description: "Contacts and CRM server/data layer, with marketing-adjacent operational data stored in Supabase.",',
     `    enabled: ${String(selected.has("crm"))},`,
     '    packageName: "@brightweblabs/module-crm",',
-    '    playgroundHref: "/crm",',
+    '    routeHref: "/crm",',
     '    placement: "primary",',
     "  },",
     "  {",
@@ -352,7 +351,6 @@ export function createPlatformModulesConfigFile(selectedModules) {
     '    description: "Project portfolio, detail routes, and work-management server logic.",',
     `    enabled: ${String(selected.has("projects"))},`,
     '    packageName: "@brightweblabs/module-projects",',
-    '    playgroundHref: "/playground/projects",',
     '    placement: "primary",',
     "  },",
     "  {",
@@ -361,7 +359,7 @@ export function createPlatformModulesConfigFile(selectedModules) {
     '    description: "User role governance, admin tools, and access-control surfaces.",',
     `    enabled: ${String(selected.has("admin"))},`,
     '    packageName: "@brightweblabs/module-admin",',
-    '    playgroundHref: "/playground/admin",',
+    '    routeHref: "/admin/users",',
     '    placement: "admin",',
     "  },",
     "];",
@@ -438,17 +436,15 @@ function createGitignore() {
 }
 
 function getPlatformStarterRoutes(selectedModules) {
-  return [
-    "/",
-    "/bootstrap",
-    "/preview/app-shell",
-    "/playground/auth",
-    ...selectedModules.map((moduleKey) => moduleKey === "crm" ? "/crm" : `/playground/${moduleKey}`),
-  ];
+  return selectedModules.flatMap((moduleKey) => {
+    if (moduleKey === "crm") return ["/crm"];
+    if (moduleKey === "admin") return ["/admin/users"];
+    return [];
+  });
 }
 
 function getSiteStarterRoutes() {
-  return ["/"];
+  return [];
 }
 
 function createPlatformReadme({
@@ -508,7 +504,7 @@ function createPlatformReadme({
           "",
         ]
       : []),
-    "## Starter routes",
+    "## Package mounts",
     "",
     ...getPlatformStarterRoutes(selectedModules).map((route) => `- \`${route}\``),
     "",
@@ -542,17 +538,17 @@ function createSiteReadme({ slug, workspaceMode, packageManager }) {
     "",
     "- Next.js App Router",
     "- Tailwind CSS v4",
-    "- Local shadcn-style component primitives",
+    "- App-owned settings and theme tokens",
     "",
     "## Local setup",
     "",
     ...localSteps,
     "",
-    "## Starter surfaces",
+    "## Package mounts",
     "",
     ...getSiteStarterRoutes().map((route) => `- \`${route}\``),
     "",
-    "Edit `config/site.ts` to change the site name, copy, and public links.",
+    "This thin scaffold intentionally ships no feature page. Add routes only as thin mounts of package-owned surfaces.",
     "",
     "## AI handoff",
     "",
@@ -591,33 +587,32 @@ export function createAppContextFile({
             "docs/ai/README.md",
             "README.md",
             "config/site.ts",
-            "app/page.tsx",
             "app/globals.css",
           ],
           appRoutesRoot: "app",
           configRoot: "config",
-          componentsRoot: "components",
-          uiComponentsRoot: "components/ui",
-          libRoot: "lib",
         },
         starterRoutes: getSiteStarterRoutes(),
         ownership: {
           appOwned: [
-            "app/**",
-            "components/**",
             "config/**",
             "docs/ai/**",
-            "lib/**",
             "public/**",
             "AGENTS.md",
             "README.md",
           ],
+          scaffoldManaged: [
+            "app/layout.tsx",
+            "app/globals.css",
+            "next.config.ts",
+            "postcss.config.mjs",
+            "tsconfig.json",
+          ],
           packageOwned: [],
         },
         agentRules: {
-          editConfigBeforeCopyTweaks: true,
-          keepUiPrimitiveChangesLocal: true,
-          treatStarterHomeAsAppOwned: true,
+          keepRoutesAsThinPackageMounts: true,
+          doNotAddFeatureOrLibraryCodeToTheApp: true,
         },
       },
       null,
@@ -652,27 +647,31 @@ export function createAppContextFile({
           "app/theme.css",
           "config/brand.ts",
           "config/modules.ts",
-          "config/client.ts",
-          "config/bootstrap.ts",
           "config/shell.ts",
           "config/shell.overrides.ts",
           ".env.local",
         ],
         appRoutesRoot: "app",
-        componentsRoot: "components",
         configRoot: "config",
         brandAssetsRoot: "public/brand",
       },
       starterRoutes: getPlatformStarterRoutes(selectedModules),
       ownership: {
         appOwned: [
-          "app/**",
-          "components/**",
           "config/**",
           "docs/ai/**",
           "public/brand/**",
           "AGENTS.md",
           "README.md",
+        ],
+        scaffoldManaged: [
+          "app/layout.tsx",
+          "app/globals.css",
+          "app/**/page.tsx",
+          "app/**/route.ts",
+          "next.config.ts",
+          "postcss.config.mjs",
+          "tsconfig.json",
         ],
         packageOwned: [
           ...CORE_PACKAGES,
@@ -684,8 +683,8 @@ export function createAppContextFile({
       },
       agentRules: {
         checkModulesBeforeEditing: true,
-        preferAppLevelCompositionOverPackageForks: true,
-        treatStarterRoutesAsRemovable: true,
+        keepRoutesAsThinPackageMounts: true,
+        moveFeatureAndLibraryCodeToPackages: true,
       },
     },
     null,
@@ -712,13 +711,9 @@ export function createPackageJson({
         lint: "tsc --noEmit",
       },
       dependencies: sortObjectKeys({
-        "class-variance-authority": versionMap["class-variance-authority"],
-        "clsx": versionMap.clsx,
-        "lucide-react": versionMap["lucide-react"],
         "next": versionMap.next,
         "react": versionMap.react,
         "react-dom": versionMap["react-dom"],
-        "tailwind-merge": versionMap["tailwind-merge"],
       }),
       devDependencies: sortObjectKeys({
         "@tailwindcss/postcss": versionMap["@tailwindcss/postcss"],
@@ -854,14 +849,9 @@ export function createShellConfig(selectedModules) {
     registrationLines.push('  if (enabled.has("crm")) registrations.push(crmModuleRegistration);');
   }
 
-  if (selectedModules.includes("projects")) {
-    importLines.push('import { projectsModuleRegistration } from "@brightweblabs/module-projects/registration";');
-    registrationLines.push('  if (enabled.has("projects")) registrations.push(projectsModuleRegistration);');
-  }
-
   return [
     "// MANAGED BY BRIGHTWEB — regenerated by create-bw-app update; put customizations in config/shell.overrides.ts",
-    'import { LayoutDashboard, Wrench } from "lucide-react";',
+    'import { Wrench } from "lucide-react";',
     "import {",
     "  applyShellRegistrationOverrides,",
     "  buildClientAppShellRegistration,",
@@ -875,16 +865,9 @@ export function createShellConfig(selectedModules) {
     'import { getEnabledStarterModules } from "./modules";',
     'import { shellRegistrationOverrides } from "./shell.overrides";',
     "",
-    "const dashboardModuleRegistration: ShellModuleRegistration<ShellContextualAction> = {",
-    '  key: "dashboard",',
-    '  placement: "primary",',
-    '  navItems: [{ href: "/dashboard", label: "Dashboard", icon: LayoutDashboard }],',
-    '  toolbarRoutes: [{ surface: "dashboard", match: { exact: ["/dashboard"] } }],',
-    "};",
-    "",
     "function getStarterModuleRegistrations() {",
     '  const enabled = new Set(getEnabledStarterModules().map((moduleConfig) => moduleConfig.key));',
-    "  const registrations: ShellModuleRegistration<ShellContextualAction>[] = [dashboardModuleRegistration];",
+    "  const registrations: ShellModuleRegistration<ShellContextualAction>[] = [];",
     "",
     ...registrationLines,
     "",
@@ -922,7 +905,7 @@ export function createShellConfig(selectedModules) {
     '      key: "tools",',
     '      label: "Ferramentas",',
     "      icon: Wrench,",
-    '      collapsedHref: enabledModules.find((moduleConfig) => moduleConfig.playgroundHref)?.playgroundHref || "/",',
+    '      collapsedHref: enabledModules.find((moduleConfig) => moduleConfig.routeHref)?.routeHref || "/",',
     "    },",
     "    modules,",
     "  };",
@@ -1035,7 +1018,7 @@ async function writeClientStack(baseRoot, slug, dbInstallPlan, options = {}) {
             : "Generated by create-bw-app in published mode.",
           `Selected app modules: ${dbInstallPlan.selectedLabels.length > 0 ? dbInstallPlan.selectedLabels.join(", ") : "none"}.`,
           `Resolved database stack: ${enabledModules.map((moduleKey) => getModuleLabel(moduleKey)).join(" -> ")}.`,
-          "Platform always resolves to the Core + Admin database baseline; selecting Admin only controls whether the Admin starter UI and package wiring are scaffolded.",
+          "Platform always resolves to the Core + Admin database baseline; selecting Admin only controls whether the Admin package mount and wiring are scaffolded.",
           "The database install order is resolved from supabase/module-registry.json.",
         ],
       },
@@ -1262,7 +1245,9 @@ async function scaffoldPlatformProject({
   for (const moduleDefinition of SELECTABLE_MODULES) {
     if (!selectedModules.includes(moduleDefinition.key)) continue;
     const moduleTemplateDir = path.join(TEMPLATE_ROOT, "modules", moduleDefinition.templateFolder);
-    await copyDirectory(moduleTemplateDir, targetDir);
+    if (await pathExists(moduleTemplateDir)) {
+      await copyDirectory(moduleTemplateDir, targetDir);
+    }
   }
 
   await fs.writeFile(

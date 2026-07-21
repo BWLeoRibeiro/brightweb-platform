@@ -10,7 +10,7 @@ export const TEMPLATE_OPTIONS = [
   {
     key: "site",
     label: "Site",
-    description: "Standalone Next.js + Tailwind site starter with a local UI layer.",
+    description: "Thin Next.js + Tailwind site shell for package-owned surfaces.",
   },
 ];
 
@@ -55,7 +55,7 @@ export const MODULE_STARTER_FILES = {
   admin: [
     "app/api/admin/users/route.ts",
     "app/api/admin/users/roles/route.ts",
-    "app/playground/admin/page.tsx",
+    "app/admin/users/page.tsx",
   ],
   crm: [
     "app/crm/layout.tsx",
@@ -67,7 +67,6 @@ export const MODULE_STARTER_FILES = {
     "app/api/crm/timeline/route.ts",
   ],
   projects: [
-    "app/playground/projects/page.tsx",
   ],
 };
 
@@ -92,13 +91,9 @@ export const APP_DEPENDENCY_DEFAULTS = {
 };
 
 export const SITE_DEPENDENCY_DEFAULTS = {
-  "class-variance-authority": "^0.7.1",
-  "clsx": "^2.1.1",
-  "lucide-react": "^1.8.0",
   "next": "16.1.6",
   "react": "19.2.3",
   "react-dom": "19.2.3",
-  "tailwind-merge": "^3.4.0",
 };
 
 export const APP_DEV_DEPENDENCY_DEFAULTS = {
@@ -149,6 +144,6 @@ Update options:
   --package-manager <name>       Override package manager: pnpm, npm, yarn, or bun
   --allow-stale-fallback         Use baked-in BrightWeb package versions if npm lookup fails
   --install                      Run install after writing package changes
-  --refresh-starters             Rewrite starter route files from the latest template
+  --refresh-starters             Rewrite tracked package mount files from the latest template
   --dry-run                      Print the update plan without writing files
 `.trim();

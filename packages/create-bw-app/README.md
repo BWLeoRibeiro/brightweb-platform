@@ -35,7 +35,7 @@ bw upgrade
 bw doctor
 ```
 
-- `bw add <moduleKey>` resolves requirements, installs module wiring and starter overlays, and appends migrations.
+- `bw add <moduleKey>` resolves requirements, installs thin package mounts and module wiring, and appends migrations.
 - `bw upgrade [moduleKey]` includes the existing managed update flow plus forward-only module migrations.
 - `bw doctor` checks package, config, scaffold, environment-name, and migration consistency. Add `--report` to stamp the result in the app manifest.
 - All mutating commands support `--dry-run`.
@@ -58,7 +58,7 @@ Current updater behavior:
 - fails the update if npm resolution fails unless you pass `--allow-stale-fallback`
 - re-syncs managed BrightWeb config files such as `next.config.ts`, `config/modules.ts`, and `config/shell.ts`
 - preserves app-owned shell customizations in the scaffolded `config/shell.overrides.ts`
-- reports missing or drifted starter files and only rewrites them with `--refresh-starters`
+- reports missing or drifted scaffold mounts and only rewrites them with `--refresh-starters`
 - prints the follow-up install command unless `--install` is passed
 - preserves unrelated third-party dependencies and app-owned product pages
 
@@ -69,10 +69,10 @@ Current updater behavior:
 - prompts for optional platform modules: `admin`, `crm`, and `projects`
 - prompts to install dependencies immediately
 - copies a clean Next.js App Router starter template
-- platform apps include BrightWeb auth, shell wiring, and optional module starter surfaces
-- platform apps include a local `components/` folder for app-owned UI alongside the shared BrightWeb packages
+- platform apps include BrightWeb auth, shell wiring, and optional direct package mounts
+- generated route files contain direct `@brightweblabs/*` re-exports only
 - platform apps in published mode also write `supabase/config.toml`, a CLI-ready flat `supabase/migrations/` folder, `supabase/module-registry.json`, `supabase/clients/<slug>/stack.json`, and the resolved shared SQL migrations under `supabase/modules/<module>/migrations`
-- site apps include Next.js, Tailwind CSS v4, and local component primitives
+- site apps include a thin Next.js and Tailwind CSS shell with no default feature page or local component library
 - writes `package.json`, `next.config.ts`, `.gitignore`, and `README.md` for both templates
 - platform apps also write `.env.local`, `AGENTS.md`, `docs/ai/README.md`, `docs/ai/examples.md`, `docs/ai/app-context.json`, and generated config files for brand and module state
 - site apps also write `AGENTS.md`, `docs/ai/README.md`, `docs/ai/examples.md`, and `docs/ai/app-context.json` for app-local AI handoff
@@ -88,7 +88,7 @@ When this package runs in BrightWeb workspace mode, it can:
 - create `supabase/clients/<slug>/stack.json`
 - create a client-only migrations folder so database planning stays aligned with scaffolded modules
 
-Platform mode always resolves to the `Core + Admin` database baseline. Selecting `admin` affects the Admin starter UI and package wiring, not whether the Admin database layer exists.
+Platform mode always resolves to the `Core + Admin` database baseline. Selecting `admin` affects the Admin package mount and wiring, not whether the Admin database layer exists.
 
 ## Related references
 

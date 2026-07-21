@@ -13,7 +13,7 @@ BrightWeb resolves module order from the registry, not from ad hoc assumptions. 
 
 | Install shape | Resolved order | Note |
 | --- | --- | --- |
-| Base only | Core → Admin | Platform always resolves to the `Core + Admin` database baseline; selecting Admin only controls whether the Admin starter UI and package wiring are scaffolded. |
+| Base only | Core → Admin | Platform always resolves to the `Core + Admin` database baseline; selecting Admin only controls whether the Admin package mount and wiring are scaffolded. |
 | Base + CRM | Core → Admin → Organizations → CRM | Shared organization schema lands before CRM contacts and integration seams. |
 | Base + Projects | Core → Admin → Organizations → Projects | Projects receives organization structure without installing CRM. |
 | Base + CRM + Projects | Core → Admin → Organizations → CRM → Projects | CRM and Projects share Organizations; requested module order breaks the tie between the two leaf modules. |
@@ -23,7 +23,7 @@ BrightWeb resolves module order from the registry, not from ad hoc assumptions. 
 - `supabase/module-registry.json` defines the module graph.
 - `scripts/_db-modules.mjs` resolves enabled modules into a concrete apply order.
 
-> Base-only nuance: platform always resolves to the `Core + Admin` database baseline; selecting Admin only controls whether the Admin starter UI and package wiring are scaffolded.
+> Base-only nuance: platform always resolves to the `Core + Admin` database baseline; selecting Admin only controls whether the Admin package mount and wiring are scaffolded.
 
 ## Related docs
 

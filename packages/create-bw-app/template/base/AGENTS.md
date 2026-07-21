@@ -1,32 +1,27 @@
 # AGENTS.md
 
-This generated project is a BrightWeb platform starter. Use this file as the local entrypoint for AI agents working inside the app.
+This is a thin BrightWeb platform app. The app owns environment values and settings; reusable UI, domain behavior, and helpers belong in `@brightweblabs/*` packages.
 
 ## Start here
 
-- `README.md`: local setup commands and starter routes.
-- `docs/ai/README.md`: app-specific routing guide for agents.
-- `docs/ai/examples.md`: common setup and customization flows.
-- `docs/ai/app-context.json`: machine-readable app summary for quick discovery.
-- `components/`: local app components used by starter routes and future product surfaces.
-- `config/brand.ts`: client identity, naming, and contact defaults.
+- `README.md`: setup commands and mounted package routes.
+- `docs/ai/app-context.json`: machine-readable module, path, and ownership summary.
+- `config/brand.ts`: client identity and contact defaults.
+- `config/modules.ts`: selected module set and route metadata.
+- `config/shell.overrides.ts`: app-owned shell customizations.
 - `app/theme.css`: app-owned theme token overrides.
-- `app/globals.css`: managed Tailwind source scanning and shared visual styling.
-- `config/modules.ts`: selected module set and runtime enablement.
-- `config/client.ts`: starter-facing derived state used by the home page and setup surfaces.
-- `.env.local`: runtime service values for local development.
+- `.env.local`: runtime service values.
 
 ## Working rules
 
-- Treat `/bootstrap`, `/preview/app-shell`, and `/playground/*` as starter validation surfaces. They are app-owned and can be removed after setup if links and references are cleaned up too.
-- Keep identity/contact in `config/brand.ts`, and keep app-owned color/theme overrides in `app/theme.css`.
-- Check `config/modules.ts` before assuming CRM, Projects, or Admin routes exist.
-- Prefer composing app-level routes and config before forking logic from `@brightweblabs/*` packages.
-- Keep edits local to this app unless the change is intentionally shared across multiple BrightWeb projects.
+- Keep every `route.ts` as a direct package re-export; a `page.tsx` may instead import one package component and return only that mount.
+- Do not add feature components, demos, hooks, data access, or helper libraries to this app.
+- Put reusable behavior in the owning package, then mount its export here.
+- Keep identity and theme changes in config and theme files.
+- Check `config/modules.ts` before assuming an optional route exists. Projects currently has no default UI route.
 
 ## First validation pass
 
-1. Run the local dev server from this project or workspace.
-2. Open `/`, `/bootstrap`, `/preview/app-shell`, and `/playground/auth`.
-3. If optional modules are enabled, open the matching `/playground/*` route for each one.
-4. Confirm `.env.local` contains real service values before debugging runtime behavior.
+1. Fill `.env.local` with real service values.
+2. Run the local type check or build.
+3. Validate `/crm` and `/admin/users` only when their modules are enabled.

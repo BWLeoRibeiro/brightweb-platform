@@ -24,11 +24,11 @@ Use [Base Contract](./base-contract.md) for the support-tier rules and [base-con
 | Concern | Current behavior |
 | --- | --- |
 | Scaffold wiring | Selecting Projects adds the package dependency and enables project-related shell/config wiring in generated platform apps. |
-| Starter routes | The current module template contributes the `/playground/projects` starter surface in the scaffold. |
-| Shell behavior | The module registration adds project navigation items and project-specific toolbar surfaces. |
+| Package mounts | None. The scaffold does not create a placeholder route until the package exports default UI. |
+| Shell behavior | The package exports an opt-in registration, but the scaffold does not install it while no default Projects route exists. |
 | Dependency behavior | Projects resolves on top of Core + Admin + Organizations; CRM is not installed unless explicitly selected. |
 
-> Projects does **not** install a full project management frontend product on its own. It mainly installs shared schema, access rules, and server and domain contracts that applications build on top of.
+> Projects does **not** install a default frontend or generated navigation. It installs shared schema, access rules, and server/domain contracts; add reusable UI to the package before mounting its route and opting into its shell registration.
 
 ## Supported base contract
 
@@ -85,7 +85,7 @@ export default async function ProjectsPage() {
 
 Use `getProjectsPortfolioPageData()` when you want a starter portfolio payload for a page, and use lower-level helpers such as `listProjects()` when you need more custom filtering or pagination behavior.
 
-Treat the portfolio page helper as starter page glue. Build app-owned project surfaces on the lower-level stable helpers when you need a longer-lived contract.
+Treat the portfolio page helper as starter page glue. Build package-owned project surfaces on the lower-level stable helpers before adding a thin app mount.
 
 ### Load a project dashboard in a server page
 

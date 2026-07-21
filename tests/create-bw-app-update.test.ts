@@ -3,7 +3,6 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
-import { pathToFileURL } from "node:url";
 import { runCreateBwAppCli } from "../packages/create-bw-app/src/cli.mjs";
 import {
   createBrightwebClientApp,
@@ -251,10 +250,8 @@ test("CRM scaffolds expose package-owned contact write handlers", async (t) => {
     "utf8",
   );
 
-  assert.match(route, /export const POST = createModuleRouteHandler/);
-  assert.match(route, /"handleCrmContactsPostRequest"/);
-  assert.match(route, /export const PATCH = createModuleRouteHandler/);
-  assert.match(route, /"handleCrmContactsPatchRequest"/);
+  assert.match(route, /export \{ handleCrmContactsPostRequest as POST \} from "@brightweblabs\/module-crm"/);
+  assert.match(route, /export \{ handleCrmContactsPatchRequest as PATCH \} from "@brightweblabs\/module-crm"/);
 });
 
 test("published platform scaffolds resolved supabase migrations for the selected modules", async (t) => {
@@ -312,7 +309,9 @@ test("projects scaffolding resolves organizations without CRM", async (t) => {
   assert.equal(manifest.dependencies["@brightweblabs/module-orgs"], `^${await releaseVersion("@brightweblabs/module-orgs")}`);
   assert.equal(manifest.dependencies["@brightweblabs/module-crm"], undefined);
   assert.match(await fs.readFile(path.join(targetDir, "config", "modules.ts"), "utf8"), /key: "orgs"[\s\S]*?enabled: true[\s\S]*?placement: "hidden"/);
-  assert.match(await fs.readFile(path.join(targetDir, "config", "shell.ts"), "utf8"), /orgsModuleRegistration/);
+  const shellConfig = await fs.readFile(path.join(targetDir, "config", "shell.ts"), "utf8");
+  assert.match(shellConfig, /orgsModuleRegistration/);
+  assert.doesNotMatch(shellConfig, /projectsModuleRegistration/);
 });
 
 test("scaffolds platform AI handoff files with platform-specific context", async (t) => {
@@ -328,16 +327,9 @@ test("scaffolds platform AI handoff files with platform-specific context", async
 
   assert.equal(context.template, "platform");
   assert.deepEqual(context.modules.enabled, ["crm", "projects"]);
-  assert.equal(context.paths.componentsRoot, "components");
+  assert.equal(context.paths.componentsRoot, undefined);
   assert.ok(context.paths.readFirst.includes("config/shell.overrides.ts"));
-  assert.deepEqual(context.starterRoutes, [
-    "/",
-    "/bootstrap",
-    "/preview/app-shell",
-    "/playground/auth",
-    "/crm",
-    "/playground/projects",
-  ]);
+  assert.deepEqual(context.starterRoutes, ["/crm"]);
   assert.match(examples, /First local setup/);
   assert.match(agents, /docs\/ai\/app-context\.json/);
   assert.match(
@@ -346,22 +338,18 @@ test("scaffolds platform AI handoff files with platform-specific context", async
   );
 });
 
-test("scaffolds platform starter components into a local components folder", async (t) => {
+test("scaffolds only direct package mounts and no local component library", async (t) => {
   const { tempRoot, targetDir } = await scaffoldPlatformApp({
     modules: ["crm"],
   });
   t.after(async () => fs.rm(tempRoot, { recursive: true, force: true }));
 
-  const componentsDirEntries = await fs.readdir(path.join(targetDir, "components"));
-  const previewPage = await fs.readFile(path.join(targetDir, "app", "preview", "app-shell", "page.tsx"), "utf8");
-  const authPage = await fs.readFile(path.join(targetDir, "app", "playground", "auth", "page.tsx"), "utf8");
-
-  assert.deepEqual(
-    componentsDirEntries.sort(),
-    ["app-shell-preview.tsx", "auth-playground.tsx"],
+  await assert.rejects(fs.access(path.join(targetDir, "components")));
+  await assert.rejects(fs.access(path.join(targetDir, "app", "page.tsx")));
+  assert.match(
+    await fs.readFile(path.join(targetDir, "app", "crm", "page.tsx"), "utf8"),
+    /return <CrmDashboard \/>/,
   );
-  assert.match(previewPage, /components\/app-shell-preview/);
-  assert.match(authPage, /components\/auth-playground/);
 });
 
 test("scaffolds a managed shell config and app-owned registration override seam", async (t) => {
@@ -381,14 +369,13 @@ test("scaffolds a managed shell config and app-owned registration override seam"
   assert.match(shellOverrides, /overrideNavHref/);
 });
 
-test("scaffolds platform env defaults with expanded resend keys and local resend adapter", async (t) => {
+test("scaffolds platform env defaults without a local Resend adapter", async (t) => {
   const { tempRoot, targetDir } = await scaffoldPlatformApp({
     modules: ["admin"],
   });
   t.after(async () => fs.rm(tempRoot, { recursive: true, force: true }));
 
   const envFile = await fs.readFile(path.join(targetDir, ".env.local"), "utf8");
-  const adapter = await fs.readFile(path.join(targetDir, "lib", "email", "resend-base.ts"), "utf8");
 
   assert.match(envFile, /^RESEND_API_KEY=$/m);
   assert.match(envFile, /^RESEND_FROM_TRANSACTIONAL=$/m);
@@ -397,73 +384,7 @@ test("scaffolds platform env defaults with expanded resend keys and local resend
   assert.match(envFile, /^RESEND_WEBHOOK_SECRET=$/m);
   assert.match(envFile, /^MARKETING_WORKER_SECRET=$/m);
   assert.match(envFile, /^MARKETING_TEST_EMAIL=$/m);
-  assert.match(adapter, /from "@brightweblabs\/infra\/server"/);
-  assert.match(adapter, /verifyResendWebhookSignature/);
-});
-
-test("starter env readiness requires resend keys only for admin-enabled stacks", async (t) => {
-  const { tempRoot, targetDir } = await scaffoldPlatformApp({
-    modules: ["crm"],
-  });
-  t.after(async () => fs.rm(tempRoot, { recursive: true, force: true }));
-
-  const envModule = await import(pathToFileURL(path.join(targetDir, "config", "env.ts")).href);
-
-  const keysToManage = [
-    "NEXT_PUBLIC_APP_URL",
-    "NEXT_PUBLIC_SUPABASE_URL",
-    "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY",
-    "SUPABASE_SECRET_DEFAULT_KEY",
-    "RESEND_API_KEY",
-    "RESEND_FROM_TRANSACTIONAL",
-    "RESEND_FROM_MARKETING",
-    "CONTACT_TO_EMAIL",
-    "RESEND_WEBHOOK_SECRET",
-    "MARKETING_WORKER_SECRET",
-    "MARKETING_TEST_EMAIL",
-  ] as const;
-
-  const originalEnv = Object.fromEntries(keysToManage.map((key) => [key, process.env[key]]));
-  t.after(() => {
-    for (const key of keysToManage) {
-      const value = originalEnv[key];
-      if (value === undefined) {
-        delete process.env[key];
-      } else {
-        process.env[key] = value;
-      }
-    }
-  });
-
-  process.env.NEXT_PUBLIC_APP_URL = "http://localhost:3000";
-  process.env.NEXT_PUBLIC_SUPABASE_URL = "https://example.supabase.co";
-  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY = "sb_publishable_test";
-  process.env.SUPABASE_SECRET_DEFAULT_KEY = "sb_secret_test";
-  delete process.env.RESEND_API_KEY;
-  delete process.env.RESEND_FROM_TRANSACTIONAL;
-  delete process.env.RESEND_FROM_MARKETING;
-  delete process.env.CONTACT_TO_EMAIL;
-  delete process.env.RESEND_WEBHOOK_SECRET;
-  delete process.env.MARKETING_WORKER_SECRET;
-  delete process.env.MARKETING_TEST_EMAIL;
-
-  const crmReadiness = envModule.isStarterEnvReady(["core-auth", "crm"]);
-  assert.equal(crmReadiness.allReady, true);
-
-  const adminReadiness = envModule.isStarterEnvReady(["core-auth", "admin"]);
-  assert.equal(adminReadiness.allReady, false);
-  assert.deepEqual(
-    adminReadiness.missing.map((item: { key: string }) => item.key).sort(),
-    [
-      "CONTACT_TO_EMAIL",
-      "MARKETING_TEST_EMAIL",
-      "MARKETING_WORKER_SECRET",
-      "RESEND_API_KEY",
-      "RESEND_FROM_MARKETING",
-      "RESEND_FROM_TRANSACTIONAL",
-      "RESEND_WEBHOOK_SECRET",
-    ],
-  );
+  await assert.rejects(fs.access(path.join(targetDir, "lib", "email", "resend-base.ts")));
 });
 
 test("detects workspace dependency mode from installed brightweb packages", async (t) => {
@@ -570,8 +491,10 @@ test("scaffolds site AI handoff files with site-specific context", async (t) => 
 
   assert.equal(context.template, "site");
   assert.equal(context.modules, undefined);
-  assert.deepEqual(context.starterRoutes, ["/"]);
-  assert.equal(context.paths.uiComponentsRoot, "components/ui");
+  assert.deepEqual(context.starterRoutes, []);
+  assert.equal(context.paths.uiComponentsRoot, undefined);
+  await assert.rejects(fs.access(path.join(targetDir, "app", "page.tsx")));
+  await assert.rejects(fs.access(path.join(targetDir, "components")));
   assert.match(examples, /Change site identity/);
   assert.match(agents, /config\/site\.ts/);
 });

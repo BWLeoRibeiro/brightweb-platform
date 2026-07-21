@@ -238,7 +238,7 @@ Wire that registration into your app shell when you want CRM navigation groups a
 
 ### Build beyond the default UI
 
-Use the package-owned screen until a product needs a materially different workflow. At that point, compose the individual surfaces or build app-owned UI on the stable data and write helpers while retaining the default route handlers.
+Use the package-owned screen until a product needs a materially different workflow. At that point, compose a new package-owned surface on the stable data and write helpers while retaining the default route handlers.
 
 ## How To Build On This
 
