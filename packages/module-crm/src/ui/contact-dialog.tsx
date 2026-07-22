@@ -42,6 +42,8 @@ export type CrmContactDialogProps = {
   stages?: CrmStageConfig[];
   onOpenChange: (open: boolean) => void;
   onSubmit: (input: CrmContactFormInput) => Promise<void> | void;
+  onTimeline?: (contact: CrmContact) => void;
+  onDelete?: (contact: CrmContact) => void;
 };
 
 export function CrmContactDialog({
@@ -53,6 +55,8 @@ export function CrmContactDialog({
   stages,
   onOpenChange,
   onSubmit,
+  onTimeline,
+  onDelete,
 }: CrmContactDialogProps) {
   const [value, setValue] = useState(() => initialValue(contact));
   const [saving, setSaving] = useState(false);
@@ -112,6 +116,8 @@ export function CrmContactDialog({
             </Field>
           </FieldGroup>
           <AlertDialogFooter>
+            {contact && onTimeline ? <Button type="button" variant="ghost" onClick={() => onTimeline(contact)}>{dictionary.contactDialog.timeline}</Button> : null}
+            {contact && onDelete ? <Button type="button" variant="ghost" onClick={() => onDelete(contact)}>{dictionary.contactDialog.delete}</Button> : null}
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>{dictionary.contactDialog.cancel}</Button>
             <Button type="submit" disabled={saving}>{saving ? dictionary.contactDialog.saving : contact ? dictionary.contactDialog.save : dictionary.contactDialog.create}</Button>
           </AlertDialogFooter>

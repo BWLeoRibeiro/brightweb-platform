@@ -1,9 +1,13 @@
 "use client";
 
-import { ArrowDown, Building2, Users } from "lucide-react";
+import { ArrowDown, Building2, Trash2, Users } from "lucide-react";
 import type { ReactNode } from "react";
 import {
   Button,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
   EmptyState,
   SearchField,
   StatusPill,
@@ -54,6 +58,8 @@ export type CrmContactsTableProps = {
   onParamsChange?: (params: CrmContactsListParams) => void;
   onRowClick?: (contact: CrmContact) => void;
   onBulkStatus?: (contactIds: string[]) => void;
+  onBulkDelete?: (contactIds: string[]) => void;
+  onQuickStatus?: (contact: CrmContact, status: CrmStageConfig["value"]) => void;
   renderRowActions?: (contact: CrmContact) => ReactNode;
 };
 
@@ -70,6 +76,8 @@ export function CrmContactsTable({
   onParamsChange,
   onRowClick,
   onBulkStatus,
+  onBulkDelete,
+  onQuickStatus,
   renderRowActions,
 }: CrmContactsTableProps) {
   const visibleColumns = columns.filter((column) => !column.hidden);
@@ -89,7 +97,22 @@ export function CrmContactsTable({
       case "email": return contact.email ?? dictionary.table.noContact;
       case "organization": return contact.organizations?.name ?? dictionary.table.unavailable;
       case "owner": return owner?.label ?? dictionary.table.unavailable;
-      case "status": return stage ? <StatusPill token={stage.token}>{stage.label}</StatusPill> : contact.status;
+      case "status": return stage ? (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button type="button" onClick={(event) => event.stopPropagation()}>
+              <StatusPill token={stage.token}>{stage.label}</StatusPill>
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start">
+            {resolvedStages.filter((item) => item.value !== contact.status).map((item) => (
+              <DropdownMenuItem key={item.value} onClick={(event) => { event.stopPropagation(); onQuickStatus?.(contact, item.value); }}>
+                <StatusPill token={item.token}>{item.label}</StatusPill>
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      ) : contact.status;
       case "updated": return new Intl.DateTimeFormat(dictionary.locale, { dateStyle: "medium" }).format(new Date(contact.updated_at));
     }
   };
@@ -105,11 +128,33 @@ export function CrmContactsTable({
           aria-label={dictionary.table.searchPlaceholder}
           className="max-w-md"
         />
+        <select
+          value={params.status ?? ""}
+          onChange={(event) => updateParams({ status: event.target.value || null, page: 1 })}
+          aria-label={dictionary.table.allSegments}
+          className="h-10 rounded-[var(--radius-control)] border border-hairline bg-card px-3 text-ui-meta text-foreground"
+        >
+          <option value="">{dictionary.table.allSegments}</option>
+          {resolvedStages.map((stage) => <option key={stage.value} value={stage.value}>{stage.label}</option>)}
+        </select>
+        <select
+          value={params.sort ?? "date_desc"}
+          onChange={(event) => updateParams({ sort: event.target.value as CrmContactSort, page: 1 })}
+          aria-label={dictionary.table.organizeBy}
+          className="h-10 rounded-[var(--radius-control)] border border-hairline bg-card px-3 text-ui-meta text-foreground"
+        >
+          <option value="date_desc">{dictionary.table.sortNewest}</option>
+          <option value="name">{dictionary.table.sortName}</option>
+          <option value="company">{dictionary.table.sortCompany}</option>
+        </select>
         {selectedIds.length > 0 ? (
           <div className="ml-auto flex items-center gap-3 rounded-[var(--radius-card)] border border-hairline bg-muted px-3 py-2">
             <span className="text-ui-meta font-semibold text-foreground">{dictionary.table.selectedCount(selectedIds.length)}</span>
             <Button type="button" size="sm" variant="outline" onClick={() => onBulkStatus?.(selectedIds)}>
               {dictionary.table.changeStatus}
+            </Button>
+            <Button type="button" size="sm" variant="outline" onClick={() => onBulkDelete?.(selectedIds)}>
+              <Trash2 className="size-3.5" aria-hidden />{dictionary.table.deleteSelected}
             </Button>
           </div>
         ) : null}
@@ -167,7 +212,7 @@ export function CrmContactsTable({
       </Table>
 
       {!loading && data.items.length === 0 ? (
-        <EmptyState icon={params.search ? Users : Building2} title={dictionary.table.emptyTitle} hint={dictionary.table.emptyHint} className="flex-1" />
+        <EmptyState icon={params.search ? Users : Building2} title={loading ? dictionary.table.emptyLoading : dictionary.table.emptyTitle} hint={loading ? dictionary.table.emptyLoadingHint : dictionary.table.emptyHint} className="flex-1" />
       ) : null}
       {!loading && data.total > 0 ? (
         <TablePagination

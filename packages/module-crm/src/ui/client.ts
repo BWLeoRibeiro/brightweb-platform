@@ -48,9 +48,13 @@ export function createCrmUiClient(basePath = "/api/crm", fetcher: typeof fetch =
       );
       return result.items;
     },
-    async listTimeline(contactId: string) {
-      const query = new URLSearchParams({ contactId });
+    async listTimeline(contactId?: string) {
+      const query = new URLSearchParams();
+      if (contactId) query.set("contactId", contactId);
       return readJson(await fetcher(`${endpoint("timeline")}?${query.toString()}`));
+    },
+    async getReport() {
+      return readJson(await fetcher(endpoint("report")));
     },
     async createContact(input) {
       const result = await readJson<{ data: { contact: CrmContact } }>(await fetcher(endpoint("contacts"), {
@@ -73,6 +77,13 @@ export function createCrmUiClient(basePath = "/api/crm", fetcher: typeof fetch =
         method: "PATCH",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ contactIds, status, reason }),
+      }));
+    },
+    async deleteContacts(contactIds: string[]) {
+      await readJson(await fetcher(endpoint("contacts"), {
+        method: "DELETE",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ contactIds }),
       }));
     },
   };

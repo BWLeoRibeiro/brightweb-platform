@@ -60,9 +60,11 @@ export const MODULE_STARTER_FILES = {
   crm: [
     "app/crm/layout.tsx",
     "app/crm/page.tsx",
+    "app/crm/report/page.tsx",
     "app/api/crm/contacts/route.ts",
     "app/api/crm/organizations/route.ts",
     "app/api/crm/owners/route.ts",
+    "app/api/crm/report/route.ts",
     "app/api/crm/stats/route.ts",
     "app/api/crm/timeline/route.ts",
   ],

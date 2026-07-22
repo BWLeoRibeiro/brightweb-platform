@@ -23,7 +23,7 @@
       "title": "CRM",
       "file": "crm.json",
       "doc": "../crm.md",
-      "entryCount": 29,
+      "entryCount": 48,
       "summary": "CRM shell registration, stable read/write helpers, package-owned request handlers, and starter dashboard glue."
     },
     {

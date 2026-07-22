@@ -58,8 +58,8 @@ export function CrmStatusDialog({ open, contactIds, initialStatus = "lead", dict
       <AlertDialogContent>
         <form onSubmit={submit}>
           <AlertDialogHeader>
-            <AlertDialogTitle>{contactIds.length > 1 ? dictionary.statusDialog.bulkTitle : dictionary.statusDialog.singleTitle}</AlertDialogTitle>
-            <AlertDialogDescription>{dictionary.statusDialog.description}</AlertDialogDescription>
+            <AlertDialogTitle>{status === "lost" ? dictionary.statusDialog.lossTitle : contactIds.length > 1 ? dictionary.statusDialog.bulkTitle : dictionary.statusDialog.singleTitle}</AlertDialogTitle>
+            <AlertDialogDescription>{status === "lost" ? dictionary.statusDialog.lossDescription : dictionary.statusDialog.description}</AlertDialogDescription>
           </AlertDialogHeader>
           <div className="mt-5 grid gap-4">
             <Field>
@@ -76,7 +76,7 @@ export function CrmStatusDialog({ open, contactIds, initialStatus = "lead", dict
           </div>
           <AlertDialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>{dictionary.statusDialog.cancel}</Button>
-            <Button type="submit" disabled={saving || contactIds.length === 0}>{saving ? dictionary.statusDialog.saving : dictionary.statusDialog.confirm}</Button>
+            <Button type="submit" disabled={saving || contactIds.length === 0 || (status === "lost" && !reason.trim())}>{saving ? dictionary.statusDialog.saving : dictionary.statusDialog.confirm}</Button>
           </AlertDialogFooter>
         </form>
       </AlertDialogContent>

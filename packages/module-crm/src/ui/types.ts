@@ -6,6 +6,7 @@ import type {
   CrmContactsListParams,
   CrmContactsListResult,
   CrmOwnerOption,
+  CrmReportData,
   CrmStatusLog,
 } from "../data";
 import type { CrmContactStatus, CreateCrmContactInput, UpdateCrmContactInput } from "../server";
@@ -36,6 +37,32 @@ export type CrmContactFormInput = CreateCrmContactInput & UpdateCrmContactInput 
   status: CrmContactStatus;
 };
 
+export type CrmOrganization = {
+  id: string;
+  name: string | null;
+  industry?: string | null;
+  company_size?: string | null;
+  budget_range?: string | null;
+  website_url?: string | null;
+  address?: string | null;
+  taxIdentifierValue?: string | null;
+  primary_contact_id?: string | null;
+  created_at?: string;
+};
+
+/** @deprecated Use CrmOrganization. */
+export type CrmOrganizationOption = CrmOrganization;
+
+export type CrmOrganizationFieldConfig = {
+  showIndustry?: boolean;
+  showCompanySize?: boolean;
+  showBudgetRange?: boolean;
+  showWebsite?: boolean;
+  showAddress?: boolean;
+  showTaxIdentifier?: boolean;
+  taxIdentifierLabel?: string;
+};
+
 export type CrmUiDictionary = {
   locale: string;
   dashboard: {
@@ -43,9 +70,15 @@ export type CrmUiDictionary = {
     subtitle: string;
     addContact: string;
     loadError: string;
+    reportEyebrow: string;
+    reportTitle: string;
+    reportDescription: string;
+    openReport: string;
+    marketing: string;
   };
   stats: {
     title: string;
+    subtitle: string;
     total: string;
     loading: string;
   };
@@ -53,12 +86,22 @@ export type CrmUiDictionary = {
     title: string;
     subtitle: string;
     searchPlaceholder: string;
+    allSegments: string;
+    organizeBy: string;
+    sortNewest: string;
+    sortName: string;
+    sortCompany: string;
     selectAll: string;
+    selectAllShort: string;
     selectContact: (name: string) => string;
+    selectShort: string;
     selectedCount: (count: number) => string;
     changeStatus: string;
+    deleteSelected: string;
     emptyTitle: string;
+    emptyLoading: string;
     emptyHint: string;
+    emptyLoadingHint: string;
     noContact: string;
     pageSummary: (total: number) => string;
     pageLabel: (page: number, totalPages: number) => string;
@@ -76,6 +119,8 @@ export type CrmUiDictionary = {
     create: string;
     save: string;
     saving: string;
+    delete: string;
+    timeline: string;
     fields: {
       firstName: string;
       lastName: string;
@@ -102,44 +147,136 @@ export type CrmUiDictionary = {
     status: string;
     reason: string;
     reasonPlaceholder: string;
+    lossTitle: string;
+    lossDescription: string;
     lossReasonHint: string;
     cancel: string;
     confirm: string;
     saving: string;
   };
+  deleteDialog: {
+    singleTitle: string;
+    bulkTitle: string;
+    singleDescription: string;
+    bulkDescription: (count: number) => string;
+    cancel: string;
+    confirm: string;
+    deleting: string;
+  };
   timeline: {
     title: string;
+    subtitle: string;
+    expand: string;
+    searchPlaceholder: string;
     emptyTitle: string;
     emptyHint: string;
+    noResultsTitle: string;
+    noResultsHint: string;
     systemActor: string;
     reasonLabel: string;
+  };
+  organizations: {
+    title: string;
+    subtitle: string;
+    expand: string;
+    searchPlaceholder: string;
+    emptyTitle: string;
+    emptyHint: string;
+    contactCount: (count: number) => string;
+    industry: string;
+    companySize: string;
+    budgetRange: string;
+    website: string;
+    address: string;
+    taxIdentifier: string;
+    unavailable: string;
+  };
+  report: {
+    loading: string;
+    loadError: string;
+    eyebrow: string;
+    titlePrefix: string;
+    titleAccent: string;
+    qualified: string;
+    won: string;
+    lost: string;
+    updated: string;
+    back: string;
+    totalContacts: string;
+    portfolio: string;
+    qualification: string;
+    baseShare: string;
+    winRate: string;
+    closedShare: string;
+    statusTitle: string;
+    statusSubtitle: string;
+    closeTitle: string;
+    closeSubtitle: string;
+    wonContacts: string;
+    lostContacts: string;
+    closedDeals: string;
+    sourceTitle: string;
+    sourceSubtitle: string;
+    ownerTitle: string;
+    ownerSubtitle: string;
+    organizationTitle: string;
+    organizationSubtitle: string;
+    totalOrganizations: string;
+    withContacts: string;
+    coverage: string;
+    withoutContacts: (count: number) => string;
+    coverageHint: string;
+    topOrganizations: string;
+    topOrganizationsSubtitle: string;
+    noContacts: string;
+    noSources: string;
+    noOwners: string;
+    noOrganizations: string;
+    noIndustry: string;
+    noWebsite: string;
   };
   stages: Record<CrmContactStatus, string>;
   activity: CrmActivityDictionary;
 };
 
-export type CrmOrganizationOption = { id: string; name: string | null };
-
 export type CrmDashboardData = {
   contacts: CrmContactsListResult;
   stats: CrmContactStatusStats;
   owners: CrmOwnerOption[];
-  organizations: CrmOrganizationOption[];
+  organizations: CrmOrganization[];
+  timeline?: CrmStatusLog[];
 };
 
 export type CrmUiClient = {
   listContacts: (params?: CrmContactsListParams) => Promise<CrmContactsListResult>;
   getStats: () => Promise<CrmContactStatusStats>;
   listOwners: () => Promise<CrmOwnerOption[]>;
-  listOrganizations: () => Promise<CrmOrganizationOption[]>;
-  listTimeline: (contactId: string) => Promise<CrmStatusLog[]>;
+  listOrganizations: () => Promise<CrmOrganization[]>;
+  listTimeline: (contactId?: string) => Promise<CrmStatusLog[]>;
+  getReport: () => Promise<CrmReportData>;
   createContact: (input: CrmContactFormInput) => Promise<CrmContact>;
   updateContact: (contactId: string, input: CrmContactFormInput) => Promise<CrmContact>;
   setStatus: (contactIds: string[], status: CrmContactStatus, reason?: string | null) => Promise<void>;
+  deleteContacts: (contactIds: string[]) => Promise<void>;
 };
 
 export type CrmDashboardSlots = {
-  aboveTable?: ReactNode;
+  aboveStats?: ReactNode;
   besideStats?: ReactNode;
+  aboveTable?: ReactNode;
+  sidebarTop?: ReactNode;
+  sidebarBottom?: ReactNode;
+  reportBanner?: ReactNode;
   rowActions?: (contact: CrmContact) => ReactNode;
+};
+
+export type CrmReportSlots = {
+  afterHero?: ReactNode;
+  beforeDistributions?: ReactNode;
+  afterDistributions?: ReactNode;
+};
+
+export type CrmNavigationConfig = {
+  reportHref?: string;
+  marketingHref?: string;
 };

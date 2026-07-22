@@ -16,8 +16,8 @@ Use [Base Contract](./base-contract.md) for the support-tier rules and [base-con
 | Concern | Current behavior |
 | --- | --- |
 | CRM package | `@brightweblabs/module-crm` exports server/data contracts; `@brightweblabs/module-crm/ui` exports the default CRM screen and its focused surfaces. |
-| Server helpers | The package exports reusable CRM read helpers, contact create/update/delete operations, SQL-backed single and bulk status transitions, plus the starter `getCrmDashboardData()` helper. |
-| Route handlers | The package exports package-owned GET handlers plus staff-only POST and PATCH handlers for the contacts endpoint. |
+| Server helpers | The package exports reusable CRM read helpers, the complete `getCrmReportData()` aggregate, contact create/update/delete operations, SQL-backed single and bulk status transitions, plus the starter `getCrmDashboardData()` helper. |
+| Route handlers | The package exports package-owned CRM reads and report handlers plus staff-only POST, PATCH, and DELETE handlers for contacts. |
 | Shared dependencies | The package depends on `@brightweblabs/module-orgs` and also reads shared platform tables such as `profiles` and `user_role_assignments`. |
 
 ## Whether it adds starter routes and wiring
@@ -25,11 +25,11 @@ Use [Base Contract](./base-contract.md) for the support-tier rules and [base-con
 | Concern | Current behavior |
 | --- | --- |
 | Scaffold wiring | Selecting CRM adds the package dependency and enables CRM-related shell/config wiring in generated platform apps. |
-| Starter routes | The module template contributes a ready-to-use `/crm` route and mounts `/api/crm/contacts` (GET, POST, PATCH), `/api/crm/organizations`, `/api/crm/stats`, `/api/crm/owners`, and `/api/crm/timeline`. |
+| Starter routes | The module template contributes ready-to-use `/crm` and `/crm/report` routes and mounts `/api/crm/contacts` (GET, POST, PATCH, DELETE), `/api/crm/organizations`, `/api/crm/stats`, `/api/crm/owners`, `/api/crm/timeline`, and `/api/crm/report`. |
 | Shell behavior | The module registration adds CRM navigation groups and toolbar route definitions. |
 | Dependency behavior | CRM resolves on top of `Core + Admin + Organizations`; orgs is enabled with hidden shell placement. |
 
-> The CRM module now ships a focused default frontend. Product-specific UI can customize or replace it without copying package code.
+> The CRM module ships the full dashboard and operational report experience. Product-specific UI can customize or replace either surface without copying package code.
 
 ## Supported base contract
 
@@ -59,7 +59,8 @@ The current CRM contract is intentionally small:
 ### Starter
 
 - `@brightweblabs/module-crm`: `getCrmDashboardData()`
-- `@brightweblabs/module-crm/ui`: `CrmDashboard` and its package-owned CRM surfaces, dictionary, stage metadata, and default client
+- `@brightweblabs/module-crm`: `getCrmReportData()`, `handleCrmReportGetRequest()`, and `handleCrmContactsDeleteRequest()`
+- `@brightweblabs/module-crm/ui`: `CrmDashboard`, `CrmReport`, `CrmReportPage`, organization/timeline browsers, dialogs, Portuguese dictionary, stage metadata, and default client
 
 The dashboard helper and default UI are marked `starter`: they are supported fast-start surfaces, but their composition may evolve before becoming stable. The smaller server helper and request-handler contracts remain stable.
 
@@ -77,9 +78,9 @@ export default function CrmPage() {
 
 The scaffold imports `@brightweblabs/theme/css` globally and `@brightweblabs/module-crm/tokens.css` from the CRM route layout. The default `createCrmUiClient()` calls the scaffolded routes under `/api/crm`; pass a different base path or fetch implementation when needed.
 
-### The five customization points
+### Customization points
 
-1. **Locale dictionary.** Every CRM-owned string comes from `CrmUiDictionary`. Start with the English dictionary and replace the values you need:
+1. **Locale dictionary.** Every CRM-owned string comes from `CrmUiDictionary`. Portuguese (`pt-PT`) is the shipped default; copy the dictionary and replace values for another locale:
 
    ```tsx
    import { CrmDashboard, defaultCrmUiDictionary } from "@brightweblabs/module-crm/ui";
@@ -96,20 +97,26 @@ The scaffold imports `@brightweblabs/theme/css` globally and `@brightweblabs/mod
 
    ```tsx
    <CrmDashboard columns={[
-     { key: "name", label: "Contact" },
+     { key: "name", label: "Contacto" },
      { key: "status" },
      { key: "email", hidden: true },
-     { key: "organization", render: (contact) => contact.organizations?.name ?? "—" },
+     { key: "organization", render: (contact) => contact.organizations?.name ?? "–" },
    ]} />
    ```
 
-3. **Slots.** Add content above the table, beside the funnel stats, or on every row without forking the dashboard:
+3. **Slots.** Add content around stats/table/sidebar, override the report banner, render row actions, or insert content between report sections without forking either page:
 
    ```tsx
    <CrmDashboard slots={{
      aboveTable: <CampaignFilter />,
      besideStats: <RevenueForecast />,
+     sidebarTop: <TerritorySummary />,
      rowActions: (contact) => <ContactMenu contactId={contact.id} />,
+   }} />
+
+   <CrmReport data={data} slots={{
+     afterHero: <ForecastNotice />,
+     beforeDistributions: <RevenueBreakdown />,
    }} />
    ```
 
@@ -117,14 +124,20 @@ The scaffold imports `@brightweblabs/theme/css` globally and `@brightweblabs/mod
 
    ```tsx
    <CrmDashboard stages={[
-     { value: "lead", label: "Inbox", token: "--crm-stage-lead" },
-     { value: "won", label: "Customer", token: "--crm-stage-won" },
+     { value: "lead", label: "Entrada", token: "--crm-stage-lead" },
+     { value: "won", label: "Cliente", token: "--crm-stage-won" },
    ]} />
    ```
 
 5. **Theming.** Change `--crm-stage-*` and `--crm-stage-*-strong` aliases in a theme file. Components expose no color props; the shipped aliases map only to BrightWeb `--semantic-*` tokens.
 
-The individual `CrmContactsTable`, `CrmFunnelStats`, `CrmContactDialog`, `CrmStatusDialog`, and `CrmTimeline` exports accept data and callbacks, so they can also be composed without `CrmDashboard` or rendered in tests without a network.
+6. **Organization fields.** Configure industry, size, budget, website, address, and the optional tax identifier through `organizationFields`. Tax identifier display is off by default.
+
+7. **Optional navigation.** Override `reportHref` through `navigation`; provide `marketingHref` only when the host app has a marketing route. Marketing is absent by default.
+
+The individual table, stats, dialogs, organization browser, timeline browser, timeline, and report exports accept data and callbacks, so they can be composed independently and rendered in tests without a network.
+
+The generic controller layer is also exported: `useCrmDashboardController`, `useCrmDataSync`, `useCrmDerivedState`, `useCrmContactActions`, `useCrmOrganizationActions`, `useCrmBulkActions`, `useCrmMutations`, and `useCrmWindowEvents`. Use these when replacing a whole surface while retaining the package's state, selection, mutation, and host-event conventions.
 
 ## How to use it in an app
 
@@ -227,6 +240,8 @@ The current starter mounts the contacts write handlers and the read endpoints:
 - `/api/crm/organizations`
 - `/api/crm/stats`
 - `/api/crm/owners`
+- `/api/crm/timeline`
+- `/api/crm/report`
 
 ### Register CRM in the app shell
 
@@ -242,7 +257,7 @@ Use the package-owned screen until a product needs a materially different workfl
 
 ## How To Build On This
 
-- Start with `CrmDashboard` for a working contact and funnel experience, then use its five customization points before forking UI.
+- Start with `CrmDashboard` and `CrmReportPage` for the complete CRM experience, then use their customization points before forking UI.
 - Build on the stable CRM read and write helpers for contacts, stats, funnel transitions, and owner options; use `@brightweblabs/module-orgs` for organization data.
 - Build on the `stable` CRM shell registration when you want shared CRM navigation and toolbar wiring.
 - Use `getCrmDashboardData()` when you want the current scaffolded CRM page payload quickly.

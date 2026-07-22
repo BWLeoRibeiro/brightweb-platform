@@ -56,6 +56,46 @@ export type CrmContactStatusStats = {
   byStatus: Record<string, number>;
 };
 
+export type CrmReportData = {
+  generatedAt: string;
+  summary: {
+    totalContacts: number;
+    qualifiedContacts: number;
+    qualificationRate: number;
+    wonContacts: number;
+    lostContacts: number;
+    closedDeals: number;
+    winRate: number;
+    contactsWithOrganization: number;
+    organizationCoverage: number;
+  };
+  byStatus: Array<{ status: string; label: string; count: number; share: number }>;
+  bySource: Array<{ source: string; label: string; count: number; share: number }>;
+  byOwner: Array<{ ownerId: string | null; label: string; count: number; share: number }>;
+  organizationCoverage: {
+    totalOrganizations: number;
+    organizationsWithContacts: number;
+    organizationsWithoutContacts: number;
+    share: number;
+    topOrganizations: Array<{
+      organizationId: string;
+      name: string;
+      industry: string | null;
+      websiteUrl: string | null;
+      contactCount: number;
+    }>;
+  };
+  recentActivity: Array<{
+    id: string;
+    contactLabel: string;
+    previousStatus: string | null;
+    newStatus: string;
+    reason: string | null;
+    changedAt: string;
+    changedBy: string;
+  }>;
+};
+
 export type CrmPrimaryContactsListParams = {
   limit?: number;
 };
@@ -393,4 +433,133 @@ export async function listCrmStatusTimeline(
     contact_label: contactMap.get(entry.contact_id) ?? "Contacto",
     changed_by_label: entry.changed_by_user_id ? (changedByMap.get(entry.changed_by_user_id) ?? null) : null,
   }));
+}
+
+function reportPercentage(value: number, total: number) {
+  return total > 0 ? Math.round((value / total) * 100) : 0;
+}
+
+function reportSource(value: string | null) {
+  return value?.trim().toLowerCase() || "manual";
+}
+
+export async function getCrmReportData(supabase: SupabaseClient): Promise<CrmReportData> {
+  const [contactsResult, organizationsResult, timeline] = await Promise.all([
+    supabase
+      .from("crm_contacts")
+      .select("id, first_name, last_name, email, status, source, owner_id, organization_id")
+      .order("updated_at", { ascending: false }),
+    supabase
+      .from("organizations")
+      .select("id, name, industry, website_url")
+      .order("created_at", { ascending: false }),
+    listCrmStatusTimeline(supabase, { limit: 12, since: "1970-01-01T00:00:00.000Z" }),
+  ]);
+
+  if (contactsResult.error) throw new Error(contactsResult.error.message);
+  if (organizationsResult.error) throw new Error(organizationsResult.error.message);
+
+  type ReportContact = Pick<CrmContact, "id" | "first_name" | "last_name" | "email" | "status" | "source" | "owner_id" | "organization_id">;
+  type ReportOrganization = { id: string; name: string; industry: string | null; website_url: string | null };
+  const contacts = (contactsResult.data ?? []) as ReportContact[];
+  const organizations = (organizationsResult.data ?? []) as ReportOrganization[];
+  const totalContacts = contacts.length;
+  const qualifiedContacts = contacts.filter((contact) => ["qualified", "proposal", "won"].includes(contact.status)).length;
+  const wonContacts = contacts.filter((contact) => contact.status === "won").length;
+  const lostContacts = contacts.filter((contact) => contact.status === "lost").length;
+  const closedDeals = wonContacts + lostContacts;
+  const contactsWithOrganization = contacts.filter((contact) => Boolean(contact.organization_id)).length;
+  const statusLabels: Record<string, string> = {
+    lead: "Novo",
+    qualified: "Qualificado",
+    proposal: "Proposta",
+    won: "Ganho",
+    lost: "Perdido",
+  };
+  const byStatus = CRM_CONTACT_STATUSES.map((status) => {
+    const count = contacts.filter((contact) => (contact.status || "lead") === status).length;
+    return { status, label: statusLabels[status] ?? status, count, share: reportPercentage(count, totalContacts) };
+  });
+
+  const sourceCounts = new Map<string, number>();
+  const ownerCounts = new Map<string | null, number>();
+  const organizationCounts = new Map<string, number>();
+  contacts.forEach((contact) => {
+    const source = reportSource(contact.source);
+    sourceCounts.set(source, (sourceCounts.get(source) ?? 0) + 1);
+    const ownerId = contact.owner_id ?? null;
+    ownerCounts.set(ownerId, (ownerCounts.get(ownerId) ?? 0) + 1);
+    if (contact.organization_id) organizationCounts.set(contact.organization_id, (organizationCounts.get(contact.organization_id) ?? 0) + 1);
+  });
+
+  const ownerIds = Array.from(ownerCounts.keys()).filter((value): value is string => Boolean(value));
+  const ownerProfilesResult = ownerIds.length > 0
+    ? await supabase.from("profiles").select("id, first_name, last_name, email").in("id", ownerIds)
+    : { data: [], error: null };
+  if (ownerProfilesResult.error) throw new Error(ownerProfilesResult.error.message);
+  const ownerMap = new Map(((ownerProfilesResult.data ?? []) as Array<{ id: string; first_name: string | null; last_name: string | null; email: string | null }>).map((profile) => [profile.id, profile]));
+
+  const bySource = Array.from(sourceCounts, ([source, count]) => ({
+    source,
+    label: source.replaceAll("_", " "),
+    count,
+    share: reportPercentage(count, totalContacts),
+  })).sort((left, right) => right.count - left.count || left.label.localeCompare(right.label, "pt-PT"));
+  const byOwner = Array.from(ownerCounts, ([ownerId, count]) => {
+    const profile = ownerId ? ownerMap.get(ownerId) : undefined;
+    const label = !ownerId
+      ? "Sem responsável"
+      : profile
+        ? buildProfileDisplayName(profile) ?? profile.email ?? "Responsável desconhecido"
+        : "Responsável desconhecido";
+    return { ownerId, label, count, share: reportPercentage(count, totalContacts) };
+  }).sort((left, right) => right.count - left.count || left.label.localeCompare(right.label, "pt-PT"));
+
+  const organizationIds = new Set(organizations.map((organization) => organization.id));
+  const organizationsWithContacts = Array.from(organizationCounts.keys()).filter((id) => organizationIds.has(id)).length;
+  const topOrganizations = organizations
+    .map((organization) => ({
+      organizationId: organization.id,
+      name: organization.name,
+      industry: organization.industry,
+      websiteUrl: organization.website_url,
+      contactCount: organizationCounts.get(organization.id) ?? 0,
+    }))
+    .filter((organization) => organization.contactCount > 0)
+    .sort((left, right) => right.contactCount - left.contactCount || left.name.localeCompare(right.name, "pt-PT"))
+    .slice(0, 6);
+
+  return {
+    generatedAt: new Date().toISOString(),
+    summary: {
+      totalContacts,
+      qualifiedContacts,
+      qualificationRate: reportPercentage(qualifiedContacts, totalContacts),
+      wonContacts,
+      lostContacts,
+      closedDeals,
+      winRate: reportPercentage(wonContacts, closedDeals),
+      contactsWithOrganization,
+      organizationCoverage: reportPercentage(contactsWithOrganization, totalContacts),
+    },
+    byStatus,
+    bySource,
+    byOwner,
+    organizationCoverage: {
+      totalOrganizations: organizations.length,
+      organizationsWithContacts,
+      organizationsWithoutContacts: Math.max(organizations.length - organizationsWithContacts, 0),
+      share: reportPercentage(organizationsWithContacts, organizations.length),
+      topOrganizations,
+    },
+    recentActivity: timeline.map((entry) => ({
+      id: entry.id,
+      contactLabel: entry.contact_label,
+      previousStatus: entry.previous_status,
+      newStatus: entry.new_status,
+      reason: entry.reason,
+      changedAt: entry.changed_at,
+      changedBy: entry.changed_by_label ?? "Sistema",
+    })),
+  };
 }

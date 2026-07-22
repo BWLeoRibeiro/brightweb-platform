@@ -26,6 +26,7 @@ export {
   CRM_STATUS_TIMELINE_DEFAULT_DAYS,
   CRM_STATUS_TIMELINE_DEFAULT_LIMIT,
   getCrmContactStatusStats,
+  getCrmReportData,
   listCrmContacts,
   listCrmOwnerOptions,
   listCrmPrimaryContacts,
@@ -37,6 +38,7 @@ export {
   type CrmContactsListResult,
   type CrmOwnerOption,
   type CrmPrimaryContact,
+  type CrmReportData,
   type CrmPrimaryContactsData,
   type CrmPrimaryContactsListParams,
   type CrmStatusLog,
@@ -44,11 +46,13 @@ export {
   type CrmStatusTimelineParams,
 } from "./data";
 export {
+  handleCrmContactsDeleteRequest,
   handleCrmContactsGetRequest,
   handleCrmContactsPatchRequest,
   handleCrmContactsPostRequest,
   handleCrmOrganizationsGetRequest,
   handleCrmOwnersGetRequest,
+  handleCrmReportGetRequest,
   handleCrmStatsGetRequest,
   handleCrmTimelineGetRequest,
 } from "./handlers";

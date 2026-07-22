@@ -653,8 +653,8 @@
   },
   {
     "moduleKey": "crm", "packageName": "@brightweblabs/module-crm/ui", "symbol": "defaultCrmUiDictionary", "kind": "shared-helper", "status": "starter", "runtime": "shared",
-    "summary": "English dictionary containing every default CRM UI string.", "auth": "none", "inputs": [],
-    "outputs": [{ "type": "CrmUiDictionary", "description": "Default English CRM copy and formatters." }], "notes": ["Copy the object and override nested values for another locale."], "source": "packages/module-crm/src/ui/dictionary.ts"
+    "summary": "Portuguese dictionary containing every default CRM UI string.", "auth": "none", "inputs": [],
+    "outputs": [{ "type": "CrmUiDictionary", "description": "Default Portuguese CRM copy and formatters." }], "notes": ["Copy the object and override nested values for another locale."], "source": "packages/module-crm/src/ui/dictionary.ts"
   },
   {
     "moduleKey": "crm", "packageName": "@brightweblabs/module-crm/ui", "symbol": "defaultCrmStages", "kind": "shared-helper", "status": "starter", "runtime": "shared",
@@ -690,5 +690,57 @@
     "moduleKey": "crm", "packageName": "@brightweblabs/module-crm/ui", "symbol": "CrmDashboard", "kind": "component", "status": "starter", "runtime": "client",
     "summary": "Ready-to-mount CRM dashboard composition with default data and write orchestration.", "auth": "inherits the supplied client or default app route session", "inputs": [{ "name": "props", "type": "CrmDashboardProps", "required": false, "description": "Optional client, initial data, dictionary, columns, slots, stages, and page size." }],
     "outputs": [{ "type": "React element", "description": "Complete default CRM screen." }], "notes": ["Starter status is consistent across package-owned UI surfaces while their customization contract matures."], "source": "packages/module-crm/src/ui/dashboard.tsx"
-  }
+  },
+  {
+    "moduleKey": "crm", "packageName": "@brightweblabs/module-crm", "symbol": "getCrmReportData", "kind": "helper", "status": "starter", "runtime": "server",
+    "summary": "Builds the complete operational CRM report payload.", "auth": "signed-in user required in the caller context",
+    "inputs": [{ "name": "supabase", "type": "SupabaseClient", "required": true, "description": "Server-side Supabase client with CRM, organization, and profile access." }],
+    "outputs": [{ "type": "CrmReportData", "description": "Pipeline, source, owner, organization, and recent-activity aggregates." }], "notes": ["Keeps report aggregation inside the module instead of app routes."], "source": "packages/module-crm/src/data.ts"
+  },
+  {
+    "moduleKey": "crm", "packageName": "@brightweblabs/module-crm", "symbol": "handleCrmReportGetRequest", "kind": "handler", "status": "starter", "runtime": "server",
+    "summary": "Package-owned GET handler for the CRM report payload.", "auth": "signed-in user required", "inputs": [{ "name": "request", "type": "Request", "required": true, "description": "Incoming report request." }],
+    "outputs": [{ "type": "Response", "description": "JSON CRM report data." }], "notes": ["The default report page uses this at /api/crm/report."], "source": "packages/module-crm/src/handlers.ts"
+  },
+  {
+    "moduleKey": "crm", "packageName": "@brightweblabs/module-crm", "symbol": "handleCrmContactsDeleteRequest", "kind": "handler", "status": "starter", "runtime": "server",
+    "summary": "Package-owned DELETE handler for one or more CRM contacts.", "auth": "staff or admin required", "inputs": [{ "name": "request", "type": "Request", "required": true, "description": "Request containing contactIds." }],
+    "outputs": [{ "type": "Response", "description": "JSON deleted contact identifiers." }], "notes": ["Used by single and bulk delete interactions."], "source": "packages/module-crm/src/handlers.ts"
+  },
+  {
+    "moduleKey": "crm", "packageName": "@brightweblabs/module-crm/ui", "symbol": "CrmOrganizationsBrowser", "kind": "component", "status": "starter", "runtime": "client",
+    "summary": "Searchable organization browser sheet with configurable fields.", "auth": "none; data is supplied by the caller", "inputs": [{ "name": "props", "type": "CrmOrganizationsBrowserProps", "required": true, "description": "Organizations, field configuration, counts, and controlled state." }],
+    "outputs": [{ "type": "React element", "description": "Organization browser sheet." }], "notes": ["Tax identifier display is disabled unless explicitly configured."], "source": "packages/module-crm/src/ui/organizations-browser.tsx"
+  },
+  {
+    "moduleKey": "crm", "packageName": "@brightweblabs/module-crm/ui", "symbol": "CrmTimelineBrowser", "kind": "component", "status": "starter", "runtime": "client",
+    "summary": "Searchable full CRM timeline sheet.", "auth": "none; entries are supplied by the caller", "inputs": [{ "name": "props", "type": "CrmTimelineBrowserProps", "required": true, "description": "Timeline entries, loading state, dictionary, and controlled state." }],
+    "outputs": [{ "type": "React element", "description": "Timeline browser sheet." }], "notes": ["Composes the shared CrmTimeline surface."], "source": "packages/module-crm/src/ui/timeline-browser.tsx"
+  },
+  {
+    "moduleKey": "crm", "packageName": "@brightweblabs/module-crm/ui", "symbol": "CrmDeleteDialog", "kind": "component", "status": "starter", "runtime": "client",
+    "summary": "Controlled single and bulk CRM contact deletion confirmation.", "auth": "none; confirm callback owns authorization", "inputs": [{ "name": "props", "type": "CrmDeleteDialogProps", "required": true, "description": "Contact identifiers, dictionary, controlled state, and confirm callback." }],
+    "outputs": [{ "type": "React element", "description": "Delete confirmation dialog." }], "notes": ["All copy is supplied by the CRM dictionary."], "source": "packages/module-crm/src/ui/delete-dialog.tsx"
+  },
+  {
+    "moduleKey": "crm", "packageName": "@brightweblabs/module-crm/ui", "symbol": "CrmReport", "kind": "component", "status": "starter", "runtime": "client",
+    "summary": "Complete operational CRM report surface.", "auth": "none; data is supplied by the caller", "inputs": [{ "name": "props", "type": "CrmReportProps", "required": true, "description": "Report data, dictionary, stages, navigation, and slots." }],
+    "outputs": [{ "type": "React element", "description": "CRM report page." }], "notes": ["Report sections expose before and after composition slots."], "source": "packages/module-crm/src/ui/report.tsx"
+  },
+  {
+    "moduleKey": "crm", "packageName": "@brightweblabs/module-crm/ui", "symbol": "CrmReportPage", "kind": "component", "status": "starter", "runtime": "client",
+    "summary": "Thin-mount CRM report controller using the injectable UI client.", "auth": "inherits the supplied client or default app route session", "inputs": [{ "name": "props", "type": "CrmReportPageProps", "required": false, "description": "Optional client, initial data, dictionary, stages, navigation, and slots." }],
+    "outputs": [{ "type": "React element", "description": "Loading, error, or complete CRM report surface." }], "notes": ["Designed for the scaffolded /crm/report page."], "source": "packages/module-crm/src/ui/report.tsx"
+  },
+  { "moduleKey": "crm", "packageName": "@brightweblabs/module-crm/ui", "symbol": "useCrmDashboardController", "kind": "hook", "status": "starter", "runtime": "client", "summary": "Owns reusable CRM dashboard query, contact, selection, and edit state.", "auth": "none", "inputs": [{ "name": "initialData", "type": "Partial<CrmDashboardData>", "required": false, "description": "Optional initial dashboard data." }], "outputs": [{ "type": "CRM dashboard controller state", "description": "State values and setters for a CRM dashboard." }], "notes": ["Generic controller extracted from the reference dashboard."], "source": "packages/module-crm/src/ui/hooks.ts" },
+  { "moduleKey": "crm", "packageName": "@brightweblabs/module-crm/ui", "symbol": "useCrmDataSync", "kind": "hook", "status": "starter", "runtime": "client", "summary": "Synchronizes a contacts query through the injectable CRM client.", "auth": "inherits the supplied client", "inputs": [{ "name": "options", "type": "Crm data sync options", "required": true, "description": "Client, query, and result callbacks." }], "outputs": [{ "type": "CRM data sync state", "description": "Loading state and refresh callback." }], "notes": ["Generic data synchronization hook."], "source": "packages/module-crm/src/ui/hooks.ts" },
+  { "moduleKey": "crm", "packageName": "@brightweblabs/module-crm/ui", "symbol": "useCrmDerivedState", "kind": "hook", "status": "starter", "runtime": "client", "summary": "Derives owner, organization, contact-count, and selection maps.", "auth": "none", "inputs": [{ "name": "options", "type": "CRM collections", "required": true, "description": "Contacts, owners, organizations, and selected IDs." }], "outputs": [{ "type": "CRM derived state", "description": "Memoized lookup maps and visible selection state." }], "notes": ["Generic derived-state hook."], "source": "packages/module-crm/src/ui/hooks.ts" },
+  { "moduleKey": "crm", "packageName": "@brightweblabs/module-crm/ui", "symbol": "useCrmContactActions", "kind": "hook", "status": "starter", "runtime": "client", "summary": "Normalizes contact create and view actions.", "auth": "none", "inputs": [{ "name": "handlers", "type": "CRM contact action handlers", "required": true, "description": "Create and view callbacks." }], "outputs": [{ "type": "CRM contact actions", "description": "Stable create and view callbacks." }], "notes": ["Generic contact action hook."], "source": "packages/module-crm/src/ui/hooks.ts" },
+  { "moduleKey": "crm", "packageName": "@brightweblabs/module-crm/ui", "symbol": "useCrmOrganizationActions", "kind": "hook", "status": "starter", "runtime": "client", "summary": "Normalizes organization browse and view actions.", "auth": "none", "inputs": [{ "name": "handlers", "type": "CRM organization action handlers", "required": true, "description": "Browse and optional view callbacks." }], "outputs": [{ "type": "CRM organization actions", "description": "Stable browse and view callbacks." }], "notes": ["Generic organization action hook."], "source": "packages/module-crm/src/ui/hooks.ts" },
+  { "moduleKey": "crm", "packageName": "@brightweblabs/module-crm/ui", "symbol": "useCrmBulkActions", "kind": "hook", "status": "starter", "runtime": "client", "summary": "Owns reusable contact selection operations.", "auth": "none", "inputs": [{ "name": "options", "type": "CRM bulk selection options", "required": true, "description": "Selected IDs and change callback." }], "outputs": [{ "type": "CRM bulk actions", "description": "Toggle and clear selection callbacks." }], "notes": ["Generic bulk-selection hook."], "source": "packages/module-crm/src/ui/hooks.ts" },
+  { "moduleKey": "crm", "packageName": "@brightweblabs/module-crm/ui", "symbol": "useCrmMutations", "kind": "hook", "status": "starter", "runtime": "client", "summary": "Wraps CRM contact mutations with shared pending and completion behavior.", "auth": "inherits the supplied client", "inputs": [{ "name": "client", "type": "CrmUiClient", "required": true, "description": "Injectable CRM client." }], "outputs": [{ "type": "CRM mutation actions", "description": "Create, update, status, delete, and pending state." }], "notes": ["Generic mutation hook."], "source": "packages/module-crm/src/ui/hooks.ts" },
+  { "moduleKey": "crm", "packageName": "@brightweblabs/module-crm/ui", "symbol": "useCrmWindowEvents", "kind": "hook", "status": "starter", "runtime": "client", "summary": "Connects optional host window events to CRM UI actions.", "auth": "none", "inputs": [{ "name": "handlers", "type": "CRM window event handlers", "required": true, "description": "Optional callbacks for supported events." }], "outputs": [{ "type": "void", "description": "Registers and cleans up event listeners." }], "notes": ["Use only when a host shell dispatches CRM events."], "source": "packages/module-crm/src/ui/hooks.ts" },
+  { "moduleKey": "crm", "packageName": "@brightweblabs/module-crm/ui", "symbol": "CRM_UI_EVENTS", "kind": "shared-helper", "status": "starter", "runtime": "shared", "summary": "Canonical host event names recognized by CRM hooks.", "auth": "none", "inputs": [], "outputs": [{ "type": "CRM event-name map", "description": "Namespaced CRM window event constants." }], "notes": ["Avoids app-defined event strings."], "source": "packages/module-crm/src/ui/hooks.ts" },
+  { "moduleKey": "crm", "packageName": "@brightweblabs/module-crm/ui", "symbol": "CRM_SURFACE_CLASS_NAME", "kind": "shared-helper", "status": "starter", "runtime": "shared", "summary": "Token-only CRM primary surface class recipe.", "auth": "none", "inputs": [], "outputs": [{ "type": "string", "description": "CRM surface utility classes." }], "notes": ["Contains no app-defined classes or literal colors."], "source": "packages/module-crm/src/ui/report.tsx" },
+  { "moduleKey": "crm", "packageName": "@brightweblabs/module-crm/ui", "symbol": "CRM_SHEET_CLASS_NAME", "kind": "shared-helper", "status": "starter", "runtime": "shared", "summary": "Token-only CRM browser sheet class recipe.", "auth": "none", "inputs": [], "outputs": [{ "type": "string", "description": "CRM sheet utility classes." }], "notes": ["Shared by organization and timeline browsers."], "source": "packages/module-crm/src/ui/organizations-browser.tsx" }
 ]
