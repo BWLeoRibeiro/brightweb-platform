@@ -35,7 +35,7 @@ export const starterModuleConfig: StarterModuleConfig[] = [
     description: "Project portfolio, detail routes, and work-management server logic.",
     enabled: true,
     packageName: "@brightweblabs/module-projects",
-    playgroundHref: "/playground/projects",
+    playgroundHref: "/projects",
     placement: "primary",
   },
   {

@@ -1315,5 +1315,108 @@
     ],
     "source": "packages/module-projects/src/data.ts",
     "notes": []
+  },
+  {
+    "moduleKey": "projects",
+    "packageName": "@brightweblabs/module-projects/ui",
+    "symbol": "ProjectsPage",
+    "kind": "component",
+    "status": "stable",
+    "runtime": "client",
+    "summary": "Renders the package-owned Projects portfolio with injectable data, Portuguese defaults, and configurable navigation.",
+    "auth": "host application controls route access",
+    "inputs": [
+      {
+        "name": "props",
+        "type": "ProjectsPageProps",
+        "required": true,
+        "description": "Initial portfolio data, optional client, dictionary, navigation, and slots."
+      }
+    ],
+    "outputs": [
+      {
+        "type": "ReactElement",
+        "description": "The MQ-compatible Projects portfolio surface."
+      }
+    ],
+    "source": "packages/module-projects/src/ui/projects-page.tsx",
+    "notes": []
+  },
+  {
+    "moduleKey": "projects",
+    "packageName": "@brightweblabs/module-projects/ui",
+    "symbol": "ProjectDetailPage",
+    "kind": "component",
+    "status": "stable",
+    "runtime": "client",
+    "summary": "Renders the package-owned project detail overview with editable cards, links, team, and activity.",
+    "auth": "host application supplies permissions derived from route access",
+    "inputs": [
+      {
+        "name": "props",
+        "type": "ProjectDetailPageProps",
+        "required": true,
+        "description": "Initial dashboard data, client, permissions, navigation, dictionary, member colors, and slots."
+      }
+    ],
+    "outputs": [
+      {
+        "type": "ReactElement",
+        "description": "The MQ-compatible project detail surface."
+      }
+    ],
+    "source": "packages/module-projects/src/ui/project-detail-page.tsx",
+    "notes": []
+  },
+  {
+    "moduleKey": "projects",
+    "packageName": "@brightweblabs/module-projects/ui",
+    "symbol": "createProjectsUiClient",
+    "kind": "helper",
+    "status": "stable",
+    "runtime": "client",
+    "summary": "Creates the default HTTP-backed injectable client for Projects UI surfaces.",
+    "auth": "host endpoints enforce access",
+    "inputs": [
+      {
+        "name": "basePath",
+        "type": "string",
+        "required": false,
+        "description": "Projects API base path."
+      },
+      {
+        "name": "fetcher",
+        "type": "typeof fetch",
+        "required": false,
+        "description": "Optional fetch-compatible transport."
+      }
+    ],
+    "outputs": [
+      {
+        "type": "ProjectsUiClient",
+        "description": "Client implementation for list, detail, and mutation UI flows."
+      }
+    ],
+    "source": "packages/module-projects/src/ui/client.ts",
+    "notes": []
+  },
+  {
+    "moduleKey": "projects",
+    "packageName": "@brightweblabs/module-projects/ui",
+    "symbol": "ProjectsToolbarControls",
+    "kind": "component",
+    "status": "stable",
+    "runtime": "client",
+    "summary": "Renders MQ-compatible Projects search, filter, and create controls for the app shell header.",
+    "auth": "none",
+    "inputs": [],
+    "outputs": [
+      {
+        "type": "ReactElement",
+        "description": "Independent Projects toolbar controls."
+      }
+    ],
+    "source": "packages/module-projects/src/ui/toolbar-controls.tsx",
+    "notes": []
   }
 ]

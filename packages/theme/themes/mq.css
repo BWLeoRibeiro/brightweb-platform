@@ -70,6 +70,8 @@
   --project-hero-muted: rgba(246, 251, 255, 0.66);
   --project-hero-subtle: rgba(246, 251, 255, 0.46);
   --project-hero-border: rgba(145, 211, 241, 0.2);
+  --project-hero-base: #061827;
+  --project-hero-shadow: 0 18px 50px rgba(6, 29, 51, 0.14);
   --project-surface-padding: 1.25rem;
 }
 
@@ -160,6 +162,8 @@
   --project-hero-muted: rgba(246, 251, 255, 0.66);
   --project-hero-subtle: rgba(246, 251, 255, 0.46);
   --project-hero-border: color-mix(in srgb, var(--accent) 20%, transparent);
+  --project-hero-base: #0c2433;
+  --project-hero-shadow: 0 18px 50px rgba(0, 0, 0, 0.32);
 }
 
 :root.light,
@@ -206,4 +210,6 @@
   --project-hero-muted: rgba(246, 251, 255, 0.66);
   --project-hero-subtle: rgba(246, 251, 255, 0.46);
   --project-hero-border: rgba(145, 211, 241, 0.2);
+  --project-hero-base: #061827;
+  --project-hero-shadow: 0 18px 50px rgba(6, 29, 51, 0.14);
 }

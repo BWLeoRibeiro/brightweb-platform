@@ -3,14 +3,14 @@
 import { ArrowLeft, BriefcaseBusiness, Eye, KanbanSquare, Plus, RotateCcw } from "lucide-react";
 import type { ShellContextualAction, ShellModuleRegistration } from "@brightweblabs/app-shell";
 
-export const projectsModuleRegistration: ShellModuleRegistration<ShellContextualAction> = {
+export function createProjectsModuleRegistration(baseHref = "/projetos"): ShellModuleRegistration<ShellContextualAction> { return {
   key: "projects",
   placement: "primary",
-  navItems: [{ href: "/projetos", label: "Projetos", icon: BriefcaseBusiness }],
+  navItems: [{ href: baseHref, label: "Projetos", icon: BriefcaseBusiness }],
   toolbarRoutes: [
     { surface: "project-board", match: { includes: ["/tarefas", "/quadro"] } },
-    { surface: "project-detail", match: { prefixes: ["/projetos/"] } },
-    { surface: "projects", match: { exact: ["/projetos"] } },
+    { surface: "project-detail", match: { prefixes: [`${baseHref}/`] } },
+    { surface: "projects", match: { exact: [baseHref] } },
   ],
   toolbarActions: {
     projects: [
@@ -26,4 +26,6 @@ export const projectsModuleRegistration: ShellModuleRegistration<ShellContextual
       { label: "Visão geral", icon: Eye, action: "projects-open-detail" },
     ],
   },
-};
+}; }
+
+export const projectsModuleRegistration = createProjectsModuleRegistration();

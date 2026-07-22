@@ -39,8 +39,8 @@
       "title": "Projects",
       "file": "projects.json",
       "doc": "../projects.md",
-      "entryCount": 44,
-      "summary": "Projects shell registration, stable portfolio helpers, and starter portfolio helper."
+      "entryCount": 48,
+      "summary": "Projects shell registration, stable portfolio helpers, package-owned list and detail UI, and starter portfolio glue."
     }
   ]
 }

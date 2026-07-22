@@ -109,7 +109,7 @@ export function getStarterBootstrapChecklist() {
       {
         label: "Preview Projects module",
         done: hasModule(moduleKeys, "projects"),
-        detail: hasModule(moduleKeys, "projects") ? "/playground/projects" : "Projects not enabled",
+        detail: hasModule(moduleKeys, "projects") ? "/projects" : "Projects not enabled",
       },
       {
         label: "Preview Admin module",

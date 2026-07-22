@@ -24,11 +24,11 @@ Use [Base Contract](./base-contract.md) for the support-tier rules and [base-con
 | Concern | Current behavior |
 | --- | --- |
 | Scaffold wiring | Selecting Projects adds the package dependency and enables project-related shell/config wiring in generated platform apps. |
-| Package mounts | None. The scaffold does not create a placeholder route until the package exports default UI. |
-| Shell behavior | The package exports an opt-in registration, but the scaffold does not install it while no default Projects route exists. |
+| Package mounts | `@brightweblabs/module-projects/ui` exports package-owned portfolio and detail surfaces; hosts mount them on their preferred routes. |
+| Shell behavior | The package exports registration plus independent Projects toolbar controls for host-owned shell layouts. |
 | Dependency behavior | Projects resolves on top of Core + Admin + Organizations; CRM is not installed unless explicitly selected. |
 
-> Projects does **not** install a default frontend or generated navigation. It installs shared schema, access rules, and server/domain contracts; add reusable UI to the package before mounting its route and opting into its shell registration.
+> Projects ships reusable UI but does not force a route. Mount `ProjectsPage` and `ProjectDetailPage` in the host app, then opt into shell registration with the route prefix used by that app.
 
 ## Supported base contract
 
@@ -61,6 +61,12 @@ The current Projects contract splits reusable shared contracts, reusable server 
 ### Starter
 
 - `@brightweblabs/module-projects`: `getProjectsPortfolioPageData()`
+
+### Stable package UI
+
+- `@brightweblabs/module-projects/ui`: `ProjectsPage`, `ProjectDetailPage`
+- `@brightweblabs/module-projects/ui`: `createProjectsUiClient()`, `ProjectsUiProvider`
+- `@brightweblabs/module-projects/ui`: `ProjectsToolbarControls`, `defaultProjectsUiDictionary`
 
 ### Internal
 
@@ -111,9 +117,18 @@ import { projectsModuleRegistration } from "@brightweblabs/module-projects/regis
 
 Wire that registration into your app shell when you want the Projects navigation item plus project-specific toolbar surfaces.
 
-### Build application-owned project UI
+### Mount the package-owned project UI
 
-The package gives you shared schema, access rules, and server-side data helpers. The actual portfolio screens, detail pages, boards, forms, and workflow UI remain application-owned.
+```tsx
+import { ProjectsPage } from "@brightweblabs/module-projects/ui";
+import "@brightweblabs/module-projects/tokens.css";
+
+export default function ProjectsRoute() {
+  return <ProjectsPage initialData={initialData} organizations={organizations} />;
+}
+```
+
+Pass a `ProjectsUiClient` to use non-default endpoints or local preview data. `ProjectDetailPage` accepts the same client plus `initialData`, host-derived permissions, configurable navigation, and composition slots.
 
 ## How To Build On This
 

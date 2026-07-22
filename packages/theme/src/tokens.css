@@ -304,6 +304,8 @@
   --project-hero-muted: var(--brand-panel-muted);
   --project-hero-subtle: var(--brand-panel-subtle);
   --project-hero-border: var(--brand-panel-border);
+  --project-hero-base: var(--brand-surface-dark);
+  --project-hero-shadow: var(--brand-shadow-soft);
   --project-surface-padding: 1.25rem;
   --row-sweep-tint: var(--foreground);
   --surface-card: color-mix(in srgb, var(--foreground) 2%, var(--card) 98%);

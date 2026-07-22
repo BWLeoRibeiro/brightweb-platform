@@ -2,6 +2,8 @@
 
 Every entry is an L3 experience token. “—” in the MQ column means MQ does not need a direct override: the default is the exact pre-extraction value, or the recipe follows MQ through its L0-L2 dependencies.
 
+Brief 23 adds `--project-hero-base` and `--project-hero-shadow` to the theme and centralizes the remaining literal MQ Projects recipes in `@brightweblabs/module-projects/tokens.css`; package component source contains no raw color recipes.
+
 ## Files changed
 
 - Release notes: `.changeset/calm-crm-dashboard.md`, `.changeset/crm-pixel-parity.md`.
