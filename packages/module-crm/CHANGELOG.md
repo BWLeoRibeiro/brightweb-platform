@@ -1,5 +1,18 @@
 # @brightweblabs/module-crm
 
+## 0.7.0
+
+### Minor Changes
+
+- 1a86493: Translate the CRM dashboard to the MQ composition with the contacts table, Timeline and Organizações right rail, embedded report hero, exported shell toolbar controls, and theme-controlled CRM geometry and typography.
+
+### Patch Changes
+
+- Updated dependencies [1a86493]
+  - @brightweblabs/app-shell@0.5.0
+  - @brightweblabs/ui@1.0.2
+  - @brightweblabs/module-orgs@0.2.3
+
 ## 0.6.0
 
 ### Minor Changes
