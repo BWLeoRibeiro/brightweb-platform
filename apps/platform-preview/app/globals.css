@@ -3,10 +3,12 @@
 @import "@brightweblabs/theme/themes/mq";  /* MQ theme for parity comparison */
 @import "@brightweblabs/theme/themes/mq-aliases";
 @import "@brightweblabs/module-crm/tokens.css";
+@import "@brightweblabs/module-projects/tokens.css";
 
 @source "../../../packages/ui/src";
 @source "../../../packages/app-shell/src";
 @source "../../../packages/module-crm/src";
+@source "../../../packages/module-projects/src";
 
 .shell {
   min-height: 100vh;
