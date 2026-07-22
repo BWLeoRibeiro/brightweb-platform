@@ -130,7 +130,7 @@ export const defaultCrmUiDictionary: CrmUiDictionary = {
   },
   organizations: {
     title: "Organizações",
-    subtitle: "Carteira de organizações",
+    subtitle: "Últimas adicionadas",
     expand: "Ver todas as organizações",
     searchPlaceholder: "Pesquisar organizações...",
     emptyTitle: "Nenhuma organização",

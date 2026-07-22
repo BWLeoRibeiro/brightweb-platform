@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowDown, Trash2, Users } from "lucide-react";
+import { Trash2, Users } from "lucide-react";
 import type { ReactNode } from "react";
 import {
   Button,
@@ -31,12 +31,6 @@ const defaultColumns: CrmTableColumnConfig[] = [
   { key: "status" },
   { key: "updated" },
 ];
-
-const columnSort: Partial<Record<CrmTableColumnKey, CrmContactSort>> = {
-  name: "name",
-  organization: "company",
-  updated: "date_desc",
-};
 
 const CRM_TABLE_SURFACE =
   "rounded-[var(--radius-card)] border border-border-hairline bg-[color:var(--project-surface-primary)] shadow-none";
@@ -193,14 +187,9 @@ export function CrmContactsTable({
             </TableHead>
             {visibleColumns.map((column) => {
               const label = column.label ?? dictionary.table.columns[column.key];
-              const sort = columnSort[column.key];
               return (
                 <TableHead key={column.key} className={`portal-label h-9 px-4 ${columnWidth[column.key]} ${columnVisibility[column.key] ?? ""}`}>
-                  {sort ? (
-                    <button type="button" className="inline-flex items-center gap-1" onClick={() => updateParams({ sort, page: 1 })} aria-label={dictionary.table.sortBy(label)}>
-                      {label}<ArrowDown className="size-3" aria-hidden />
-                    </button>
-                  ) : <span className="text-ui-label text-foreground">{label}</span>}
+                  {label}
                 </TableHead>
               );
             })}
