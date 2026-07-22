@@ -35,6 +35,7 @@ const defaultColumns: CrmTableColumnConfig[] = [
 const CRM_TABLE_SURFACE =
   "rounded-[var(--radius-card)] border border-border-hairline bg-[color:var(--project-surface-primary)] shadow-none";
 const CRM_TABLE_DIVIDERS = "[&_tr]:border-[color:var(--hairline)]";
+// Percentages are table-layout constraints whose sum leaves a fixed 5% selection column.
 const columnWidth: Record<CrmTableColumnKey, string> = {
   name: "w-[30%]",
   organization: "w-[18%]",
@@ -131,7 +132,7 @@ export function CrmContactsTable({
   };
 
   return (
-    <SurfaceCard className={`${CRM_TABLE_SURFACE} scroll-mt-28 flex h-[calc(100dvh-12rem)] min-h-[560px] min-w-0 w-full max-w-full flex-col overflow-hidden p-0`}>
+    <SurfaceCard className={`${CRM_TABLE_SURFACE} scroll-mt-28 flex h-[calc(100dvh-var(--crm-table-viewport-offset))] min-h-[var(--crm-table-min-height)] min-w-0 w-full max-w-full flex-col overflow-hidden p-0`}>
       {showToolbar ? <div className="flex flex-wrap items-center gap-3 border-b border-hairline p-4">
         <SearchField
           value={params.search ?? ""}
@@ -176,7 +177,7 @@ export function CrmContactsTable({
       <Table containerClassName="overflow-x-hidden" className={`${data.total === 0 ? "h-full table-fixed" : "table-fixed"} ${CRM_TABLE_DIVIDERS}`}>
         <TableHeader>
           <TableRow className="border-b border-[color:var(--hairline-strong)] bg-[color:var(--elevate-2)] hover:bg-[color:var(--elevate-2)] [&_th]:align-middle [&_th]:text-[length:var(--portal-text-micro)] [&_th]:text-[color:var(--foreground)]">
-            <TableHead className="h-9 w-[5%] px-4">
+            <TableHead className="h-[var(--table-header-height)] w-[5%] px-[var(--table-cell-padding-x)]">
               <input
                 type="checkbox"
                 checked={allSelected}
@@ -201,7 +202,7 @@ export function CrmContactsTable({
             const name = contactName(contact, dictionary.table.noContact);
             return (
               <TableRow key={contact.id} data-state={selectedIds.includes(contact.id) ? "selected" : undefined} className={onRowClick ? "cursor-pointer" : undefined} onClick={() => onRowClick?.(contact)}>
-                <TableCell className="w-[5%] px-4 py-2" onClick={(event) => event.stopPropagation()}>
+                <TableCell className="w-[5%] px-[var(--table-cell-padding-x)] py-[var(--table-cell-padding-y)]" onClick={(event) => event.stopPropagation()}>
                   <input
                     type="checkbox"
                     checked={selectedIds.includes(contact.id)}
@@ -210,7 +211,7 @@ export function CrmContactsTable({
                     className="h-3.5 w-3.5 rounded border border-border-strong"
                   />
                 </TableCell>
-                {visibleColumns.map((column) => <TableCell key={column.key} className={`max-w-0 px-4 py-2 paragraph-small text-[color:var(--muted-foreground)] ${columnVisibility[column.key] ?? ""} ${column.key === "organization" || column.key === "owner" ? "truncate" : ""}`}>{renderCell(column, contact)}</TableCell>)}
+                {visibleColumns.map((column) => <TableCell key={column.key} className={`max-w-0 px-[var(--table-cell-padding-x)] py-[var(--table-cell-padding-y)] paragraph-small text-[color:var(--muted-foreground)] ${columnVisibility[column.key] ?? ""} ${column.key === "organization" || column.key === "owner" ? "truncate" : ""}`}>{renderCell(column, contact)}</TableCell>)}
                 {renderRowActions ? <TableCell className="px-4 py-2" onClick={(event) => event.stopPropagation()}>{renderRowActions(contact)}</TableCell> : null}
               </TableRow>
             );
@@ -218,7 +219,7 @@ export function CrmContactsTable({
           {data.total === 0 ? (
             <TableRow className="h-full">
               <TableCell colSpan={visibleColumns.length + 1 + (renderRowActions ? 1 : 0)} className="h-full p-0">
-                <div className="flex h-full min-h-[420px] flex-col items-center justify-center gap-3 px-6 py-14 text-center">
+                <div className="flex h-full min-h-[var(--crm-table-empty-min-height)] flex-col items-center justify-center gap-3 px-6 py-14 text-center">
                   <div className="flex size-11 items-center justify-center rounded-[var(--radius-card)] border border-border-hairline bg-[color:var(--muted)]">
                     <Users className="size-5 text-foreground/30 dark:text-foreground/45" aria-hidden />
                   </div>

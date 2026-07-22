@@ -30,7 +30,7 @@ export function ToolbarNewMenu({ id, icon: Icon, label = "Novo", tooltip, items 
             <button
               type="button"
               id={id}
-              className="inline-flex h-9 items-center gap-2 whitespace-nowrap rounded-[10px] border border-transparent bg-[color:var(--accent)] px-3 text-[13px] font-extrabold text-[color:var(--accent-foreground)] shadow-[0_4px_14px_rgba(91,197,242,0.26)]"
+              className="inline-flex h-9 items-center gap-2 whitespace-nowrap rounded-[var(--radius-control)] border border-transparent bg-[color:var(--accent)] px-3 text-[length:var(--text-ui-action)] font-extrabold text-[color:var(--accent-foreground)] shadow-[var(--shadow-toolbar-control)]"
             >
               <Icon className="size-3.5" />
               {label}

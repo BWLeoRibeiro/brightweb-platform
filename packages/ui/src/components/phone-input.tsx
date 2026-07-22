@@ -74,7 +74,7 @@ export function PhoneInput({ value, onChange, onBlur, defaultCountry = "pt", dis
       </button>
 
       {open ? (
-        <div ref={dropdownRef} className="absolute left-0 top-full z-50 mt-1.5 w-56 rounded-[var(--radius-card)] border border-[color:var(--hairline-strong)] bg-popover text-popover-foreground shadow-[0_12px_28px_var(--elevate-3)]">
+        <div ref={dropdownRef} className="absolute left-0 top-full z-50 mt-1.5 w-56 rounded-[var(--radius-card)] border border-[color:var(--hairline-strong)] bg-popover text-popover-foreground shadow-[var(--shadow-phone-dropdown)]">
           <div className="border-b border-[color:var(--hairline)] px-2.5 py-2">
             <input autoFocus value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search…" className="w-full border-0 bg-transparent text-ui-meta text-foreground outline-none placeholder:text-foreground/40" />
           </div>

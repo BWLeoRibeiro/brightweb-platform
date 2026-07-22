@@ -35,7 +35,7 @@ export function CrmDashboardSidebar({
   onOpenOrganization,
 }: CrmDashboardSidebarProps) {
   return (
-    <div className="min-w-0 space-y-[18px] self-start md:col-span-1">
+    <div className="min-w-0 space-y-[var(--crm-sidebar-gap)] self-start md:col-span-1">
       <SurfaceCard className={`${CRM_SIDEBAR_SURFACE} self-start p-0`}>
         <div className="px-4 pb-2 pt-4">
           <SectionHeading
@@ -56,15 +56,15 @@ export function CrmDashboardSidebar({
                 <div key={index} className="flex items-center gap-3">
                   <SkeletonCircle size="1.75rem" />
                   <div className="flex-1 space-y-1.5">
-                    <Skeleton rounded="999px" className="h-[0.55rem] w-[55%]" />
-                    <Skeleton rounded="999px" className="h-[0.5rem] w-[32%]" />
+                    <Skeleton rounded="var(--radius-pill)" className="h-[var(--skeleton-line-height-compact)] w-[55%]" />
+                    <Skeleton rounded="var(--radius-pill)" className="h-[var(--skeleton-line-height-xs)] w-[32%]" />
                   </div>
                 </div>
               ))}
             </div>
           ) : null}
           {!isRefreshing && timelineEntries.length === 0 ? <p className="paragraph-mini text-[color:var(--muted-foreground)]">{dictionary.timeline.emptyHint}</p> : null}
-          <ol className="flex flex-col pl-[10px]">
+          <ol className="flex flex-col pl-[var(--timeline-list-inset)]">
             {timelineEntries.slice(0, 3).map((entry, index, list) => (
               <CrmActivityCard key={entry.id} item={entry} isLast={index === list.length - 1} locale={dictionary.locale} dictionary={dictionary.activity} systemActor={dictionary.timeline.systemActor} />
             ))}
@@ -105,7 +105,7 @@ export function CrmDashboardSidebar({
                   ) : <p className="mt-1 paragraph-mini leading-tight text-[color:var(--muted-foreground)]">{dictionary.report.noWebsite}</p>}
                 </div>
                 <div className="flex shrink-0 items-center gap-1.5">
-                  <Badge variant="outline" className="h-6 min-w-6 justify-center rounded-full border-border-hairline-soft bg-transparent px-2 text-[11px] font-semibold text-[color:var(--muted-foreground)]">
+                  <Badge variant="outline" className="h-6 min-w-6 justify-center rounded-full border-border-hairline-soft bg-transparent px-2 text-[length:var(--text-ui-label)] font-semibold text-[color:var(--muted-foreground)]">
                     {contactsByOrganization.get(organization.id) ?? 0}
                   </Badge>
                   <Button type="button" variant="ghost" size="icon-sm" className="size-7 rounded-full text-muted-foreground hover:bg-muted hover:text-foreground" onClick={() => onOpenOrganization(organization)} aria-label={dictionary.organizations.expand}>

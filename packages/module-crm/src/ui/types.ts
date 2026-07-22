@@ -116,7 +116,6 @@ export type CrmUiDictionary = {
     pageLabel: (page: number, totalPages: number) => string;
     previousPage: string;
     nextPage: string;
-    sortBy: (label: string) => string;
     unavailable: string;
     columns: Record<CrmTableColumnKey, string>;
   };

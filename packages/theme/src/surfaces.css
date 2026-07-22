@@ -31,12 +31,7 @@
   border-radius: var(--radius-card);
   opacity: 0;
   transition: opacity 300ms ease;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    color-mix(in srgb, var(--row-sweep-tint, var(--foreground)) 9%, transparent) 50%,
-    transparent
-  );
+  background: var(--row-hover-sweep);
 }
 
 .group:hover > .row-hover-sweep,
@@ -47,34 +42,34 @@
 /* ── Canonical tinted-pill recipes ────────────────────────────────────── */
 @layer components {
   .tint-soft {
-    border-color: color-mix(in srgb, var(--tint) 34%, transparent);
-    background-color: color-mix(in srgb, var(--tint) 10%, var(--card));
+    border-color: var(--tint-soft-border);
+    background-color: var(--tint-soft-bg);
     color: var(--tint-strong);
   }
 
   .tint-soft:hover {
-    background-color: color-mix(in srgb, var(--tint) 14%, var(--card));
+    background-color: var(--tint-soft-hover);
   }
 
   .tint-hero {
-    border-color: color-mix(in srgb, var(--tint) 46%, transparent);
-    background-color: color-mix(in srgb, var(--tint) 16%, transparent);
-    color: color-mix(in srgb, var(--tint) 18%, white);
+    border-color: var(--tint-hero-border);
+    background-color: var(--tint-hero-bg);
+    color: var(--tint-hero-fg);
   }
 
   .tint-hero:hover {
-    background-color: color-mix(in srgb, var(--tint) 24%, transparent);
+    background-color: var(--tint-hero-hover);
   }
 }
 
 .section-icon {
   display: flex;
-  width: 1.875rem;
-  height: 1.875rem;
+  width: var(--section-icon-size);
+  height: var(--section-icon-size);
   flex-shrink: 0;
   align-items: center;
   justify-content: center;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--muted);
   color: var(--muted-foreground);
 }
@@ -87,7 +82,7 @@
 @keyframes surface-fade-in {
   from {
     opacity: 0;
-    transform: translateY(10px);
+    transform: translateY(var(--surface-enter-offset));
   }
   to {
     opacity: 1;
@@ -139,8 +134,8 @@
 .eyebrow {
   display: inline-flex;
   width: fit-content;
-  padding: 6px 10px;
-  border-radius: 999px;
+  padding: var(--space-eyebrow-y) var(--radius-control);
+  border-radius: var(--radius-pill);
   background: var(--brand-surface-tint);
   color: var(--brand-accent);
   font-size: var(--text-ui-label);
@@ -152,24 +147,24 @@
 .status {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
-  border-radius: 999px;
+  gap: var(--space-xs);
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: var(--radius-pill);
   font-size: var(--text-ui-meta);
   font-weight: var(--font-weight-bold);
 }
 
 .status.ok {
-  background: color-mix(in srgb, var(--semantic-success) 14%, transparent);
+  background: var(--surface-status-success);
   color: var(--semantic-success-strong);
 }
 
 .status.warn {
-  background: color-mix(in srgb, var(--semantic-warning) 14%, transparent);
+  background: var(--surface-status-warning);
   color: var(--semantic-warning-strong);
 }
 
 .status.error {
-  background: color-mix(in srgb, var(--semantic-danger) 12%, transparent);
+  background: var(--surface-status-danger);
   color: var(--semantic-danger-strong);
 }

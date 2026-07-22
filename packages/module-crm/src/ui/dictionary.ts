@@ -54,7 +54,6 @@ export const defaultCrmUiDictionary: CrmUiDictionary = {
     pageLabel: (page, totalPages) => `Página ${page} de ${totalPages}`,
     previousPage: "Ir para a página anterior",
     nextPage: "Ir para a página seguinte",
-    sortBy: (label) => `Ordenar por ${label}`,
     unavailable: "–",
     columns: {
       name: "Nome",

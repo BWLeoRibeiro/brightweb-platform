@@ -16,8 +16,8 @@ import type { AccountMenuProps } from "../types";
 
 function avatarRoleClass(role: "team" | "client") {
   return role === "team"
-    ? "bg-[color:color-mix(in_srgb,var(--role-team)_20%,var(--card))] text-[color:var(--role-team-strong)]"
-    : "bg-[color:color-mix(in_srgb,var(--role-client)_20%,var(--card))] text-[color:var(--role-client-strong)]";
+    ? "bg-[color:var(--surface-account-team)] text-[color:var(--role-team-strong)]"
+    : "bg-[color:var(--surface-account-client)] text-[color:var(--role-client-strong)]";
 }
 
 export function AccountMenu({
@@ -49,21 +49,21 @@ export function AccountMenu({
           <button
             id="rail-account-menu-trigger"
             className={collapsed
-              ? "flex items-center justify-center rounded-full p-2xs text-foreground/80 transition-colors hover:bg-[color-mix(in_srgb,var(--foreground)_5%,transparent)]"
-              : "flex w-full items-center gap-[0.6875rem] rounded-xl border border-transparent bg-[color-mix(in_srgb,var(--foreground)_3%,var(--card)_97%)] px-xs py-[0.4375rem] text-left transition-colors hover:border-[color:var(--border)] hover:bg-[color-mix(in_srgb,var(--foreground)_5%,transparent)]"}
+              ? "flex items-center justify-center rounded-full p-2xs text-foreground/80 transition-colors hover:bg-[color:var(--surface-account-hover)]"
+              : "flex w-full items-center gap-[var(--shell-account-gap)] rounded-xl border border-transparent bg-[color:var(--surface-account)] px-xs py-[var(--shell-account-padding-y)] text-left transition-colors hover:border-[color:var(--border)] hover:bg-[color:var(--surface-account-hover)]"}
             aria-label="Menu da conta"
           >
             <span className="relative inline-flex shrink-0">
-              <span className={cn("inline-flex h-8 w-8 items-center justify-center rounded-full text-[13px] font-extrabold", avatarTone)}>
+              <span className={cn("inline-flex h-8 w-8 items-center justify-center rounded-full text-[length:var(--text-ui-action)] font-extrabold", avatarTone)}>
                 {userInitials || <User className="size-4" />}
               </span>
-              <span className="absolute -bottom-px -right-px size-[0.625rem] rounded-full border-2 border-[color:var(--card)] bg-emerald-500" />
+              <span className="absolute -bottom-px -right-px size-[var(--account-presence-size)] rounded-full border-2 border-[color:var(--card)] bg-[color:var(--account-presence)]" />
             </span>
             {!collapsed ? (
               <>
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate text-[13px] font-bold leading-tight text-[color:var(--foreground)]" title={displayName ?? undefined}>{displayName}</span>
-                  <span className="block truncate text-[11px] leading-tight text-[color:var(--muted-foreground)]" title={secondaryLabel}>{secondaryLabel}</span>
+                  <span className="block truncate text-[length:var(--text-ui-action)] font-bold leading-tight text-[color:var(--foreground)]" title={displayName ?? undefined}>{displayName}</span>
+                  <span className="block truncate text-[length:var(--text-ui-label)] leading-tight text-[color:var(--muted-foreground)]" title={secondaryLabel}>{secondaryLabel}</span>
                 </span>
                 <ChevronDown className="size-4 shrink-0 text-foreground/45" />
               </>
@@ -71,8 +71,8 @@ export function AccountMenu({
           </button>
         ) : (
           <button id="header-account-menu-trigger" className="inline-flex items-center gap-xs px-2xs.5 pr-xs text-foreground/80" aria-label="Menu da conta">
-            <span className={cn("inline-flex h-7 w-7 items-center justify-center rounded-full text-[11px] font-semibold", avatarTone)}>{userInitials || <User className="size-3.5" />}</span>
-            <span className="hidden max-w-[7rem] truncate text-[12px] font-semibold leading-none text-[color:var(--foreground)] xl:inline">{compactLabel}</span>
+            <span className={cn("inline-flex h-7 w-7 items-center justify-center rounded-full text-[length:var(--text-ui-label)] font-semibold", avatarTone)}>{userInitials || <User className="size-3.5" />}</span>
+            <span className="hidden max-w-[7rem] truncate text-[length:var(--text-ui-meta)] font-semibold leading-none text-[color:var(--foreground)] xl:inline">{compactLabel}</span>
             <ChevronDown className="hidden size-3.5 text-foreground/45 xl:block" />
           </button>
         )}

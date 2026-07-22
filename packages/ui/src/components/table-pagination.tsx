@@ -73,9 +73,9 @@ export function TablePagination({
                   changePage(item);
                 }}
                 className={cn(
-                  "size-8 rounded-full text-[11px] font-semibold",
+                  "size-8 rounded-full text-[length:var(--text-ui-label)] font-semibold",
                   item === safePage
-                    ? "border-[color:color-mix(in_srgb,var(--accent)_36%,transparent)] bg-[color:color-mix(in_srgb,var(--accent)_10%,var(--card))] text-[color:var(--foreground)]"
+                    ? "border-[color:var(--border-pagination-active)] bg-[color:var(--surface-pagination-active)] text-[color:var(--foreground)]"
                     : "text-[color:var(--muted-foreground)] hover:bg-[color:var(--muted)] hover:text-[color:var(--foreground)]",
                 )}
               >

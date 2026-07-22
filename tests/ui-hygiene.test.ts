@@ -10,6 +10,13 @@ const crmUiSourceRoot = path.join(repoRoot, "packages", "module-crm", "src", "ui
 const typographyPath = path.join(repoRoot, "packages", "theme", "src", "typography.css");
 const tokensPath = path.join(repoRoot, "packages", "theme", "src", "tokens.css");
 const mqAliasesPath = path.join(repoRoot, "packages", "theme", "themes", "mq-aliases.css");
+const themeComponentPaths = [
+  path.join(repoRoot, "packages", "theme", "src", "base.css"),
+  path.join(repoRoot, "packages", "theme", "src", "surfaces.css"),
+  path.join(repoRoot, "packages", "theme", "src", "theme.css"),
+  path.join(repoRoot, "packages", "theme", "src", "typography.css"),
+  mqAliasesPath,
+];
 
 async function sourceFiles(directory: string): Promise<string[]> {
   const entries = await readdir(directory, { withFileTypes: true });
@@ -17,7 +24,7 @@ async function sourceFiles(directory: string): Promise<string[]> {
     const entryPath = path.join(directory, entry.name);
     return entry.isDirectory() ? sourceFiles(entryPath) : [entryPath];
   }));
-  return nested.flat().filter((filePath) => /\.(?:ts|tsx)$/.test(filePath));
+  return nested.flat().filter((filePath) => /\.(?:css|ts|tsx)$/.test(filePath));
 }
 
 async function sourcesAt(sourceRoot: string) {
@@ -39,20 +46,25 @@ function assertPatternAbsent(files: Awaited<ReturnType<typeof sourcesAt>>, patte
 test("ui source follows the BrightWeb typography and color hygiene rules", async () => {
   const files = await sourcesAt(uiSourceRoot);
   assertPatternAbsent(files, /\bfont-medium\b/, "font-medium is not part of the loaded weight ladder");
-  assertPatternAbsent(files, /#[0-9a-f]{3,8}\b/i, "raw hex colors must be represented by theme tokens");
+  assertPatternAbsent(files, /#[0-9a-f]{3,8}\b|rgba?\(|color-mix\(/i, "raw color recipes must be represented by theme tokens");
 });
 
 test("app-shell source uses only tokenized color and typography utilities", async () => {
   const files = await sourcesAt(appShellSourceRoot);
   assertPatternAbsent(files, /\bfont-medium\b/, "font-medium is not part of the loaded weight ladder");
   assertPatternAbsent(files, /\b(?:bg|border)-(?:black|white)\//, "black/white alpha utilities lock the shell to a theme");
-  assertPatternAbsent(files, /#[0-9a-f]{3,8}\b/i, "raw hex colors must be represented by theme tokens");
+  assertPatternAbsent(files, /#[0-9a-f]{3,8}\b|rgba?\(|color-mix\(/i, "raw color recipes must be represented by theme tokens");
 });
 
 test("module CRM UI follows the BrightWeb typography and color hygiene rules", async () => {
   const files = await sourcesAt(crmUiSourceRoot);
   assertPatternAbsent(files, /\bfont-medium\b/, "font-medium is not part of the loaded weight ladder");
-  assertPatternAbsent(files, /#[0-9a-f]{3,8}\b/i, "raw hex colors must be represented by theme tokens");
+  assertPatternAbsent(files, /#[0-9a-f]{3,8}\b|rgba?\(|color-mix\(/i, "raw color recipes must be represented by theme tokens");
+});
+
+test("theme component styles keep color recipes in token definition files", async () => {
+  const files = await Promise.all(themeComponentPaths.map(async (filePath) => ({ filePath, source: await readFile(filePath, "utf8") })));
+  assertPatternAbsent(files, /#[0-9a-f]{3,8}\b|rgba?\(|color-mix\(/i, "theme component colors must be represented by tokens.css or theme palette overrides");
 });
 
 test("every text-ui utility used by ui exists in theme typography", async () => {

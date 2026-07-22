@@ -85,10 +85,15 @@
   --radius-control: 0.625rem;
   --radius-card: 0.75rem;
   --radius-panel: 1rem;
+  --radius-swatch: 0.125rem;
+  --radius-pill: 999px;
+  --radius-scrollbar: 9999px;
 
   --text-ui-micro: 0.625rem;
   --text-ui-label: 0.6875rem;
   --text-ui-meta: 0.75rem;
+  --text-ui-chip: 0.78125rem;
+  --text-ui-action: 0.8125rem;
   --text-ui-body: 0.875rem;
   --text-ui-card-title: 0.9375rem;
   --text-ui-subhead: 1.125rem;
@@ -96,6 +101,11 @@
   --text-ui-heading: 1.5rem;
   --text-ui-title-sm: 1.875rem;
   --text-ui-title: clamp(1.75rem, 1.6rem + 0.7vw, 2rem);
+  --text-ui-shell-title: 1.3125rem;
+  --text-ui-report-title: 1.75rem;
+  --text-ui-report-title-lg: 2.25rem;
+  --text-ui-calendar: 0.8rem;
+  --text-ui-report-metric: 2.5rem;
   --text-ui-metric: 2.75rem;
   --text-ui-metric-xl: 3.5rem;
   --text-ui-metric-display: var(--text-ui-metric);
@@ -124,6 +134,131 @@
   --border-hairline-soft: color-mix(in srgb, var(--foreground) 12%, transparent);
   --border-strong: color-mix(in srgb, var(--foreground) 24%, transparent);
   --surface-hover: color-mix(in srgb, var(--foreground) 4%, var(--card) 96%);
+  --surface-overlay: color-mix(in srgb, var(--foreground) 50%, transparent);
+  --surface-overlay-strong: color-mix(in srgb, var(--foreground) 55%, transparent);
+  --surface-tooltip: color-mix(in srgb, var(--popover) 95%, transparent);
+  --surface-badge-tint: color-mix(in srgb, currentColor 14%, transparent);
+  --surface-button-soft: color-mix(in srgb, var(--foreground) 3.5%, var(--card));
+  --surface-button-soft-hover: color-mix(in srgb, var(--foreground) 7%, var(--card));
+  --border-button-soft-hover: color-mix(in srgb, var(--foreground) 16%, transparent);
+  --surface-selection: color-mix(in srgb, var(--accent) 12%, var(--card));
+  --border-selection: color-mix(in srgb, var(--accent) 40%, var(--hairline));
+  --surface-pagination-active: color-mix(in srgb, var(--accent) 10%, var(--card));
+  --border-pagination-active: color-mix(in srgb, var(--accent) 36%, transparent);
+  --surface-danger-subtle: color-mix(in srgb, var(--semantic-danger) 10%, transparent);
+  --surface-account-team: color-mix(in srgb, var(--role-team) 20%, var(--card));
+  --surface-account-client: color-mix(in srgb, var(--role-client) 20%, var(--card));
+  --surface-account: color-mix(in srgb, var(--foreground) 3%, var(--card) 97%);
+  --surface-account-hover: color-mix(in srgb, var(--foreground) 5%, transparent);
+  --account-presence: #10b981;
+  --account-presence-size: 0.625rem;
+  --surface-status-success: color-mix(in srgb, var(--semantic-success) 14%, transparent);
+  --surface-status-warning: color-mix(in srgb, var(--semantic-warning) 14%, transparent);
+  --surface-status-danger: color-mix(in srgb, var(--semantic-danger) 12%, transparent);
+  --scrollbar-thumb: color-mix(in srgb, var(--foreground) 18%, transparent);
+  --scrollbar-thumb-hover: color-mix(in srgb, var(--foreground) 30%, transparent);
+
+  --toast-success-bg: color-mix(in srgb, var(--primary) 12%, var(--background));
+  --toast-success-border: color-mix(in srgb, var(--primary) 30%, var(--background));
+  --toast-warning-bg: color-mix(in srgb, var(--accent) 12%, var(--background));
+  --toast-warning-text: color-mix(in srgb, var(--accent) 80%, var(--foreground));
+  --toast-warning-border: color-mix(in srgb, var(--accent) 30%, var(--background));
+  --toast-error-bg: color-mix(in srgb, var(--destructive) 12%, var(--background));
+  --toast-error-border: color-mix(in srgb, var(--destructive) 30%, var(--background));
+  --toast-info-bg: color-mix(in srgb, var(--secondary) 15%, var(--background));
+  --toast-info-text: color-mix(in srgb, var(--secondary) 70%, var(--foreground));
+  --toast-info-border: color-mix(in srgb, var(--secondary) 30%, var(--background));
+
+  --shadow-accent-control: 0 4px 14px color-mix(in srgb, var(--brand-accent) 26%, transparent);
+  --shadow-toolbar-control: 0 4px 14px rgba(91, 197, 242, 0.26);
+  --shadow-toolbar-popover: 0 18px 44px rgba(10, 21, 26, 0.16), 0 2px 10px rgba(10, 21, 26, 0.08);
+  --shadow-tooltip: 0 14px 34px var(--elevate-3);
+  --shadow-dialog: 0 24px 64px var(--elevate-3);
+  --shadow-phone-dropdown: 0 12px 28px var(--elevate-3);
+
+  --report-hero-glow: radial-gradient(circle, color-mix(in srgb, var(--accent) 38%, transparent), transparent 70%);
+  --report-hero-rule: linear-gradient(90deg, transparent, color-mix(in srgb, var(--accent) 60%, transparent), transparent);
+
+  --shell-frame-offset: 0.75rem;
+  --shell-sidebar-width: 15rem;
+  --shell-sidebar-collapsed-width: 4rem;
+  --shell-sidebar-toggle-offset: 3.25rem;
+  --shell-sidebar-toggle-size: 1.625rem;
+  --shell-sidebar-toggle-inset: -0.8125rem;
+  --shell-brand-height: 2.25rem;
+  --shell-nav-item-height: 2.625rem;
+  --shell-nav-item-collapsed-size: 2.75rem;
+  --shell-nav-icon-well-size: 1.6875rem;
+  --shell-nav-icon-radius: 0.5rem;
+  --shell-nav-icon-size: 0.9375rem;
+  --shell-nav-divider-width: 2.25rem;
+  --shell-nav-child-height: 2.25rem;
+  --shell-nav-child-enter-offset: 0.25rem;
+  --shell-nav-active-indicator-inset: 0.5625rem;
+  --shell-nav-active-indicator-collapsed-inset: 0.6875rem;
+  --shell-nav-active-indicator-width: 0.1875rem;
+  --shell-nav-active-indicator-offset: -0.0625rem;
+  --shell-nav-context-dot-size: 0.5rem;
+  --shell-nav-context-dot-offset: -0.1875rem;
+  --shell-nav-context-dot-border: 0.125rem;
+  --shell-header-divider-height: 1.25rem;
+  --shell-account-gap: 0.6875rem;
+  --shell-account-padding-y: 0.4375rem;
+  --shell-surface-border: color-mix(in srgb, var(--foreground) 10%, transparent);
+  --shell-surface-hover: color-mix(in srgb, var(--card) 78%, var(--foreground) 3%);
+  --shell-surface-active: color-mix(in srgb, var(--accent) 11%, var(--card) 89%);
+  --shell-hairline: color-mix(in srgb, var(--foreground) 7%, transparent);
+  --shell-icon-bg: color-mix(in srgb, var(--foreground) 4.5%, var(--card) 95.5%);
+  --shell-group-open: color-mix(in srgb, var(--foreground) 2.6%, transparent);
+  --shell-shadow: 0 16px 38px rgba(10, 21, 26, 0.06), 0 2px 10px rgba(10, 21, 26, 0.04);
+  --shell-background: #f4f8fb;
+  --shell-sidebar-background: linear-gradient(180deg, color-mix(in srgb, var(--card) 94%, white 6%) 0%, color-mix(in srgb, var(--card) 98%, transparent) 100%);
+  --shell-control-muted: color-mix(in srgb, var(--foreground) 58%, transparent);
+  --shell-nav-foreground: color-mix(in srgb, var(--foreground) 70%, transparent);
+  --shell-nav-active-border: color-mix(in srgb, var(--accent) 28%, var(--shell-surface-border));
+  --shell-nav-active-icon-bg: color-mix(in srgb, var(--accent) 18%, var(--card) 82%);
+  --shell-nav-active-icon-fg: color-mix(in srgb, var(--accent) 82%, black 18%);
+  --shell-nav-context-icon-bg: color-mix(in srgb, var(--accent) 16%, var(--card) 84%);
+  --shell-nav-context-icon-fg: color-mix(in srgb, var(--accent) 80%, black 20%);
+  --shell-nav-child-fg: color-mix(in srgb, var(--foreground) 64%, transparent);
+  --shell-nav-child-icon-fg: color-mix(in srgb, var(--foreground) 48%, transparent);
+  --shell-nav-child-active-bg: color-mix(in srgb, var(--accent) 13%, var(--card) 87%);
+  --shell-nav-child-active-border: color-mix(in srgb, var(--accent) 26%, var(--shell-surface-border));
+  --shell-navbar-fg: #0a151a;
+  --shell-navbar-muted: #8e8f9a;
+  --shell-navbar-hairline: color-mix(in srgb, #0a151a 8%, transparent);
+
+  --toolbar-popover-width: 18.75rem;
+  --toolbar-chip-height: 1.875rem;
+  --toolbar-search-min-width: 13.125rem;
+  --toolbar-icon-size: 0.9375rem;
+  --radius-toolbar-popover: 0.875rem;
+  --crm-sidebar-gap: 1.125rem;
+  --crm-report-copy-max-width: 34rem;
+  --crm-report-metric-min-width: 6.5rem;
+  --timeline-list-inset: 0.625rem;
+  --timeline-line-offset: 0.28125rem;
+  --timeline-marker-offset: 0.3125rem;
+  --table-header-height: 2.25rem;
+  --table-cell-padding-x: 1rem;
+  --table-cell-padding-y: 0.5rem;
+  --crm-table-viewport-offset: 12rem;
+  --crm-table-min-height: 35rem;
+  --crm-table-empty-min-height: 26.25rem;
+  --report-stat-min-width: 9rem;
+  --dialog-width: 28rem;
+  --sheet-width: 24rem;
+  --crm-sheet-width: 32rem;
+  --menu-min-width: 8rem;
+  --chart-tooltip-min-width: 8rem;
+  --skeleton-line-height: 0.6rem;
+  --skeleton-line-height-lg: 0.7rem;
+  --skeleton-line-height-compact: 0.55rem;
+  --skeleton-line-height-xs: 0.5rem;
+  --section-icon-size: 1.875rem;
+  --surface-enter-offset: 0.625rem;
+  --space-eyebrow-y: 0.375rem;
+  --scrollbar-size: 0.375rem;
 
   --skeleton: color-mix(in srgb, var(--foreground) 7%, transparent);
   --skeleton-strong: color-mix(in srgb, var(--foreground) 11%, transparent);
@@ -175,6 +310,26 @@
   --surface-card-light: var(--card);
   --surface-card-padding: 1.25rem;
   --stat-cell-padding: 1rem;
+}
+
+/* Dynamic tint recipes resolve where components provide --tint. */
+@layer components {
+  .row-hover-sweep {
+    --row-hover-sweep: linear-gradient(90deg, transparent, color-mix(in srgb, var(--row-sweep-tint, var(--foreground)) 9%, transparent) 50%, transparent);
+  }
+
+  .tint-soft {
+    --tint-soft-border: color-mix(in srgb, var(--tint) 34%, transparent);
+    --tint-soft-bg: color-mix(in srgb, var(--tint) 10%, var(--card));
+    --tint-soft-hover: color-mix(in srgb, var(--tint) 14%, var(--card));
+  }
+
+  .tint-hero {
+    --tint-hero-border: color-mix(in srgb, var(--tint) 46%, transparent);
+    --tint-hero-bg: color-mix(in srgb, var(--tint) 16%, transparent);
+    --tint-hero-fg: color-mix(in srgb, var(--tint) 18%, white);
+    --tint-hero-hover: color-mix(in srgb, var(--tint) 24%, transparent);
+  }
 }
 
 /* Dark mode redefines the primitives and semantic base before re-deriving L1. */
@@ -262,6 +417,19 @@
   --brand-panel-surface-raised: color-mix(in srgb, var(--card) 72%, var(--brand-accent));
   --surface-card: color-mix(in srgb, var(--foreground) 2%, var(--card) 98%);
   --surface-card-light: color-mix(in srgb, var(--card) 92%, var(--brand-white) 8%);
+
+  --shell-surface-border: rgba(255, 255, 255, 0.11);
+  --shell-surface-hover: rgba(19, 37, 52, 0.96);
+  --shell-surface-active: rgba(24, 62, 82, 0.82);
+  --shell-hairline: rgba(255, 255, 255, 0.08);
+  --shell-icon-bg: rgba(255, 255, 255, 0.055);
+  --shell-group-open: rgba(255, 255, 255, 0.025);
+  --shell-shadow: 0 22px 46px rgba(0, 0, 0, 0.3), 0 4px 16px rgba(0, 0, 0, 0.2);
+  --shell-background: #06121b;
+  --shell-sidebar-background: linear-gradient(180deg, rgba(7, 18, 28, 0.92) 0%, rgba(10, 23, 33, 0.94) 100%);
+  --shell-navbar-fg: #f6fbff;
+  --shell-navbar-muted: #8da3b0;
+  --shell-navbar-hairline: rgba(255, 255, 255, 0.08);
 }
 
 /* Explicit light scope wins when a theme class/attribute is toggled at runtime. */

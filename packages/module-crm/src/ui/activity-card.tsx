@@ -45,9 +45,9 @@ export function CrmActivityCard({
 
   return (
     <li className="relative flex gap-3 pb-4 last:pb-0">
-      {!isLast ? <span className="absolute left-[4.5px] top-[10px] h-full w-px bg-[color:var(--border)]" aria-hidden /> : null}
+      {!isLast ? <span className="absolute left-[var(--timeline-line-offset)] top-[var(--timeline-list-inset)] h-full w-px bg-[color:var(--border)]" aria-hidden /> : null}
       <span
-        className="relative z-10 mt-[5px] size-2.5 shrink-0 rounded-full ring-2 ring-[color:var(--card)]"
+        className="relative z-10 mt-[var(--timeline-marker-offset)] size-2.5 shrink-0 rounded-full ring-2 ring-[color:var(--card)]"
         style={{ backgroundColor: CRM_STAGE_TINTS[item.new_status] ?? "var(--muted-foreground)" }}
         aria-hidden
       />
