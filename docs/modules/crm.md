@@ -99,7 +99,7 @@ The scaffold imports `@brightweblabs/theme/css` globally and `@brightweblabs/mod
    <CrmDashboard columns={[
      { key: "name", label: "Contacto" },
      { key: "status" },
-     { key: "email", hidden: true },
+     { key: "owner", hidden: true },
      { key: "organization", render: (contact) => contact.organizations?.name ?? "–" },
    ]} />
    ```

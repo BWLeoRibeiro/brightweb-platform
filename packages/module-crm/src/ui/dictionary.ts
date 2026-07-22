@@ -58,7 +58,6 @@ export const defaultCrmUiDictionary: CrmUiDictionary = {
     unavailable: "–",
     columns: {
       name: "Nome",
-      email: "Email",
       organization: "Organização",
       owner: "Responsável",
       status: "Estado",

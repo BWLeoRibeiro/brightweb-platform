@@ -18,7 +18,7 @@ export type CrmStageConfig = {
   token: `--${string}`;
 };
 
-export type CrmTableColumnKey = "name" | "email" | "organization" | "owner" | "status" | "updated";
+export type CrmTableColumnKey = "name" | "organization" | "owner" | "status" | "updated";
 
 export type CrmTableColumnRenderContext = {
   owner?: CrmOwnerOption;

@@ -28,7 +28,6 @@ import type { CrmStageConfig, CrmTableColumnConfig, CrmTableColumnKey, CrmUiDict
 
 const defaultColumns: CrmTableColumnConfig[] = [
   { key: "name" },
-  { key: "email" },
   { key: "organization" },
   { key: "owner" },
   { key: "status" },
@@ -95,8 +94,12 @@ export function CrmContactsTable({
     const stage = stageMap.get(contact.status as CrmStageConfig["value"]);
     if (column.render) return column.render(contact, { owner, stage, dictionary });
     switch (column.key) {
-      case "name": return <span className="font-semibold text-foreground">{contactName(contact, dictionary.table.noContact)}</span>;
-      case "email": return contact.email ?? dictionary.table.noContact;
+      case "name": return (
+        <div className="min-w-0 space-y-0.5">
+          <p className="truncate text-ui-body font-semibold leading-tight text-foreground">{contactName(contact, dictionary.table.noContact)}</p>
+          <p className="truncate text-ui-meta leading-tight text-muted-foreground">{contact.email ?? contact.phone ?? dictionary.table.noContact}</p>
+        </div>
+      );
       case "organization": return contact.organizations?.name ?? dictionary.table.unavailable;
       case "owner": return owner?.label ?? dictionary.table.unavailable;
       case "status": return stage ? (
@@ -115,7 +118,7 @@ export function CrmContactsTable({
           </DropdownMenuContent>
         </DropdownMenu>
       ) : contact.status;
-      case "updated": return new Intl.DateTimeFormat(dictionary.locale, { dateStyle: "medium" }).format(new Date(contact.updated_at));
+      case "updated": return new Intl.DateTimeFormat(dictionary.locale, { day: "2-digit", month: "short" }).format(new Date(contact.updated_at));
     }
   };
 

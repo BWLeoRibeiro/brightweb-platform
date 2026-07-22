@@ -95,11 +95,18 @@ test("CRM UI dictionary overrides every rendered label source", () => {
   assert.match(html, /Pessoa/);
 });
 
-test("CRM column config can hide and relabel built-in columns", () => {
-  const html = renderToStaticMarkup(h(CrmContactsTable, { data: contacts, columns: [{ key: "name", label: "Contacto" }, { key: "email", hidden: true }] }));
-  assert.match(html, /Contacto/);
+test("CRM table nests contact details under the name and uses MQ's short updated date", () => {
+  const html = renderToStaticMarkup(h(CrmContactsTable, { data: contacts }));
+  assert.match(html, /Ada Lovelace.*ada@example\.com/s);
+  assert.match(html, /18\/07/);
   assert.doesNotMatch(html, />Email</);
-  assert.doesNotMatch(html, /ada@example\.com/);
+});
+
+test("CRM column config can hide and relabel built-in columns", () => {
+  const html = renderToStaticMarkup(h(CrmContactsTable, { data: contacts, columns: [{ key: "name", label: "Contacto" }, { key: "owner", hidden: true }] }));
+  assert.match(html, /Contacto/);
+  assert.match(html, /ada@example\.com/);
+  assert.doesNotMatch(html, />Responsável</);
 });
 
 test("CRM stage config controls order, labels, and token metadata", () => {
