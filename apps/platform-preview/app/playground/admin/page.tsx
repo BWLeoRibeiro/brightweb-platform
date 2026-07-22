@@ -25,7 +25,7 @@ export default async function AdminPlaygroundPage() {
           </div>
         </article>
 
-        <article className="grid">
+        <article className="preview-grid">
           <div className="panel">
             <div className="panel-inner">
               <p className="status ok">Connected</p>

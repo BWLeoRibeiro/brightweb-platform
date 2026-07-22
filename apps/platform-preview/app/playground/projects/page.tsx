@@ -26,7 +26,7 @@ export default async function ProjectsPlaygroundPage() {
           </div>
         </article>
 
-        <article className="grid">
+        <article className="preview-grid">
           <div className="panel">
             <div className="panel-inner">
               <p className={`status ${data.schemaMissing ? "warn" : "ok"}`}>{data.schemaMissing ? "Schema missing" : "Connected"}</p>

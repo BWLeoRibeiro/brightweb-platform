@@ -23,7 +23,7 @@ export default function ProjectsLayout({ children }: Readonly<{ children: React.
   return <AppShellFrame
     collapsed={isSidebarCollapsed}
     sidebar={<DesktopSidebar brand={config.brand} isSidebarCollapsed={isSidebarCollapsed} isToolActive={config.toolsSection.items.some((item) => isActive(item.href))} toolsExpanded={toolsExpanded} visiblePrimaryNav={config.primaryNav} adminNavItem={config.adminNavItem} visibleToolNav={config.toolsSection.items} crmNavGroup={crmNavGroup} crmGroupExpanded={crmExpanded} isCrmGroupActive={pathname.startsWith("/crm")} isNavItemActive={isActive} isToolLinkActive={isActive} isCrmChildActive={isActive} onToggleSidebar={() => setIsSidebarCollapsed((value) => !value)} onToggleTools={() => setToolsExpanded((value) => !value)} onToggleCrmGroup={() => setCrmExpanded((value) => !value)} account={{ displayName, isStaff: true, onSignOut: async () => {}, onThemeChange: () => {}, user: mockUser, userInitials: computeInitials(displayName) }} />}
-    header={<AppHeader kicker="Projetos" title={projectId ? "Visão geral" : "Portfólio"}>{pathname === "/projects" ? <ProjectsToolbarControls /> : null}</AppHeader>}
+    header={<AppHeader kicker={projectId ? "Projeto" : "Portefólio"} title={projectId ? "Detalhe" : "Projetos"}>{pathname === "/projects" ? <ProjectsToolbarControls /> : null}</AppHeader>}
     mobileNav={<MobileNav toolsExpanded={toolsExpanded} visiblePrimaryNav={config.primaryNav} visibleToolNav={config.toolsSection.items} isNavItemActive={isActive} isToolLinkActive={isActive} onToggleTools={() => setToolsExpanded((value) => !value)} />}
   >{children}</AppShellFrame>;
 }

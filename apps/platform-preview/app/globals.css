@@ -121,7 +121,9 @@
   line-height: 1.6;
 }
 
-.grid {
+/* Renamed from .grid — the bare name collided with Tailwind's `grid` utility
+   and forced a 250px column template onto package components. */
+.preview-grid {
   display: grid;
   gap: 18px;
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));

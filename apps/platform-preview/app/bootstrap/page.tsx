@@ -22,7 +22,7 @@ export default function BootstrapPage() {
         <section className="panel">
           <div className="panel-inner">
             <h2>Client summary</h2>
-            <div className="grid">
+            <div className="preview-grid">
               <article className="panel" style={{ background: "rgba(255,255,255,0.72)" }}>
                 <div className="panel-inner">
                   <p className="status ok">{checklist.client.brand.slug}</p>
@@ -47,7 +47,7 @@ export default function BootstrapPage() {
           </div>
         </section>
 
-        <section className="grid" style={{ marginTop: 18 }}>
+        <section className="preview-grid" style={{ marginTop: 18 }}>
           {checklist.sections.map((section) => (
             <article key={section.key} className="panel">
               <div className="panel-inner">

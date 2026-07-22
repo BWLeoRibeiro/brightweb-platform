@@ -60,6 +60,32 @@
   --semantic-neutral: #71717a;
   --semantic-neutral-strong: #52525b;
 
+  --project-state-planned: var(--semantic-info);
+  --project-state-planned-strong: var(--semantic-info-strong);
+  --project-state-active: var(--semantic-success);
+  --project-state-active-strong: var(--semantic-success-strong);
+  --project-state-blocked: var(--semantic-special);
+  --project-state-blocked-strong: var(--semantic-special-strong);
+  --project-state-completed: var(--semantic-success);
+  --project-state-completed-strong: var(--semantic-success-strong);
+  --project-state-canceled: var(--semantic-neutral);
+  --project-state-canceled-strong: var(--semantic-neutral-strong);
+  --project-risk-at-risk: var(--semantic-warning);
+  --project-risk-at-risk-strong: var(--semantic-warning-strong);
+  --project-risk-overdue: var(--semantic-danger);
+  --project-risk-overdue-strong: var(--semantic-danger-strong);
+  --project-risk-overdue-soft: var(--semantic-danger-soft);
+  /* Ink to use ON a solid health fill: light-mode fills are saturated so
+     ink flips per theme (see dark block). */
+  --project-risk-overdue-ink: #ffffff;
+  --project-risk-at-risk-ink: #3a2a05;
+  --project-state-completed-ink: #06281e;
+  --project-health-on-track: var(--project-state-active-strong);
+  --project-health-at-risk: var(--project-risk-at-risk);
+  --project-health-at-risk-strong: var(--project-risk-at-risk-strong);
+  --project-health-off-track: var(--project-risk-overdue);
+  --project-health-progress: var(--project-state-active);
+
   /* ── L3: experience tokens ─────────────────────────────────────────── */
   --space-2xs: 0.25rem;
   --space-xs: 0.5rem;
@@ -389,6 +415,11 @@
   --semantic-danger-soft: #fda4af;
   --semantic-neutral: #a1a1aa;
   --semantic-neutral-strong: #d4d4d8;
+
+  /* Dark-mode health fills are light pastels, so on-fill ink stays dark. */
+  --project-risk-overdue-ink: #350a11;
+  --project-risk-at-risk-ink: #3a2a05;
+  --project-state-completed-ink: #06281e;
 
   --skeleton: color-mix(in srgb, var(--foreground) 9%, transparent);
   --skeleton-strong: color-mix(in srgb, var(--foreground) 14%, transparent);
