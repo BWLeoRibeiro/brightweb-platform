@@ -12,6 +12,7 @@ import { CrmDeleteDialog } from "./delete-dialog";
 import { defaultCrmUiDictionary, resolveCrmStages } from "./dictionary";
 import { CRM_UI_EVENTS } from "./hooks";
 import { CrmOrganizationsBrowser } from "./organizations-browser";
+import { CrmOrganizationSheet, type CrmOrganizationFormInput } from "./organization-sheet";
 import { CrmStatusDialog } from "./status-dialog";
 import { CrmTimelineBrowser } from "./timeline-browser";
 import { CrmReportBanner, type CrmReportBannerSummary } from "./report-banner";
@@ -56,6 +57,8 @@ export function CrmDashboard({ client: providedClient, initialData, dictionary =
   const [timelineOpen, setTimelineOpen] = useState(false);
   const [contactTimelineOpen, setContactTimelineOpen] = useState(false);
   const [organizationsOpen, setOrganizationsOpen] = useState(false);
+  const [organizationSheetOpen, setOrganizationSheetOpen] = useState(false);
+  const [editingOrganization, setEditingOrganization] = useState<CrmOrganization | null>(null);
   const skippedInitialContacts = useRef(Boolean(initialData?.contacts));
 
   const loadContacts = async (nextParams: CrmContactsListParams) => {
@@ -100,6 +103,13 @@ export function CrmDashboard({ client: providedClient, initialData, dictionary =
   };
   const openDelete = (ids: string[]) => { setDeleteTargets(ids); setDeleteDialogOpen(true); };
   const deleteContacts = async (ids: string[]) => { await client.deleteContacts(ids); setSelectedIds([]); setContactDialogOpen(false); await refresh(); };
+  const openOrganization = (organization: CrmOrganization) => { setEditingOrganization(organization); setOrganizationsOpen(false); setOrganizationSheetOpen(true); };
+  const createOrganization = () => { setEditingOrganization(null); setOrganizationsOpen(false); setOrganizationSheetOpen(true); };
+  const saveOrganization = async (input: CrmOrganizationFormInput, current?: CrmOrganization | null) => {
+    setOrganizations((items) => current
+      ? items.map((item) => item.id === current.id ? { ...item, ...input } : item)
+      : [...items, { id: `local-${Date.now()}`, ...input }]);
+  };
   const contactsByOrganization = useMemo(() => {
     const counts = new Map<string, number>();
     contacts.items.forEach((contact) => { if (contact.organization_id) counts.set(contact.organization_id, (counts.get(contact.organization_id) ?? 0) + 1); });
@@ -120,7 +130,7 @@ export function CrmDashboard({ client: providedClient, initialData, dictionary =
 
   useEffect(() => {
     const createContact = () => { setEditingContact(null); setContactDialogOpen(true); };
-    const openOrganizationList = () => setOrganizationsOpen(true);
+    const openOrganizationList = () => createOrganization();
     const setSearch = (event: Event) => setParams((current) => ({ ...current, search: (event as CustomEvent<{ search?: string }>).detail?.search ?? "", page: 1 }));
     const setSegment = (event: Event) => setParams((current) => ({ ...current, status: (event as CustomEvent<{ status?: CrmContactStatus | null }>).detail?.status ?? null, page: 1 }));
     const setSort = (event: Event) => setParams((current) => ({ ...current, sort: (event as CustomEvent<{ sort?: CrmContactsListParams["sort"] }>).detail?.sort ?? "date_desc", page: 1 }));
@@ -152,7 +162,7 @@ export function CrmDashboard({ client: providedClient, initialData, dictionary =
         <div className="min-w-0 space-y-4 overflow-hidden md:col-span-2">
           <CrmContactsTable data={contacts} params={params} owners={owners} loading={loading} dictionary={dictionary} stages={resolvedStages} columns={columns} selectedIds={selectedIds} onSelectedIdsChange={setSelectedIds} onParamsChange={setParams} onRowClick={openContact} onBulkStatus={(ids) => openStatus(ids)} onBulkDelete={openDelete} onQuickStatus={(contact, status) => openStatus([contact.id], status)} renderRowActions={slots?.rowActions} showToolbar={false} />
         </div>
-        <div className="min-w-0 md:col-span-1">{slots?.sidebarTop}<CrmDashboardSidebar timelineEntries={timeline} organizations={organizations} contactsByOrganization={contactsByOrganization} isRefreshing={loading} isLoadingOrganizations={loading} dictionary={dictionary} onOpenTimeline={() => setTimelineOpen(true)} onOpenOrganizations={() => setOrganizationsOpen(true)} onOpenOrganization={() => setOrganizationsOpen(true)} />{slots?.sidebarBottom}</div>
+        <div className="min-w-0 md:col-span-1">{slots?.sidebarTop}<CrmDashboardSidebar timelineEntries={timeline} organizations={organizations} contactsByOrganization={contactsByOrganization} isRefreshing={loading} isLoadingOrganizations={loading} dictionary={dictionary} onOpenTimeline={() => setTimelineOpen(true)} onOpenOrganizations={() => setOrganizationsOpen(true)} onOpenOrganization={openOrganization} />{slots?.sidebarBottom}</div>
       </section>
       {slots?.reportBanner ?? (navigation.reportHref ? <CrmReportBanner summary={reportSummary} href={navigation.reportHref} dictionary={dictionary} /> : null)}
       <CrmContactDialog open={contactDialogOpen} contact={editingContact} organizations={organizations} owners={owners} dictionary={dictionary} stages={resolvedStages} onOpenChange={setContactDialogOpen} onSubmit={saveContact} onTimeline={(contact) => { setEditingContact(contact); setContactDialogOpen(false); setContactTimelineOpen(true); }} onDelete={(contact) => { setContactDialogOpen(false); openDelete([contact.id]); }} />
@@ -160,7 +170,8 @@ export function CrmDashboard({ client: providedClient, initialData, dictionary =
       <CrmDeleteDialog open={deleteDialogOpen} contactIds={deleteTargets} dictionary={dictionary} onOpenChange={setDeleteDialogOpen} onConfirm={deleteContacts} />
       <CrmTimelineBrowser open={timelineOpen} entries={timeline} loading={timelineLoading} dictionary={dictionary} onOpenChange={setTimelineOpen} />
       <CrmTimelineBrowser open={contactTimelineOpen} entries={contactTimeline} loading={timelineLoading} dictionary={dictionary} onOpenChange={setContactTimelineOpen} />
-      <CrmOrganizationsBrowser open={organizationsOpen} organizations={organizations} contactsByOrganization={contactsByOrganization} fields={organizationFields} dictionary={dictionary} onOpenChange={setOrganizationsOpen} />
+      <CrmOrganizationsBrowser open={organizationsOpen} organizations={organizations} contactsByOrganization={contactsByOrganization} fields={organizationFields} dictionary={dictionary} onOpenChange={setOrganizationsOpen} onSelect={openOrganization} />
+      <CrmOrganizationSheet open={organizationSheetOpen} organization={editingOrganization} dictionary={dictionary} onOpenChange={setOrganizationSheetOpen} onSubmit={saveOrganization} />
     </div>
   );
 }

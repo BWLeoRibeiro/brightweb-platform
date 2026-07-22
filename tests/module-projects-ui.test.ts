@@ -39,6 +39,8 @@ test("Projects UI ships Portuguese defaults and configurable shell registration"
   const registration = createProjectsModuleRegistration("/projects");
   assert.equal(registration.navItems?.[0]?.href, "/projects");
   assert.deepEqual(registration.toolbarActions?.projects?.map((item) => item.action), ["projects-refresh", "projects-new-menu"]);
+  assert.deepEqual(registration.toolbarActions?.["project-detail"]?.map((item) => [item.label, item.placement]), [["Projetos", "back"], ["Ver tarefas", "contextual"]]);
+  assert.deepEqual(registration.toolbarActions?.["project-board"]?.map((item) => item.action), ["projects-back-to-portfolio"]);
 });
 
 test("Projects package UI contains the literal list/detail translation and no raw component colors", () => {

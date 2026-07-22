@@ -159,6 +159,18 @@
 .navbarSpacer { flex: 1; }
 .navbarDivider { width: 1px; height: var(--shell-header-divider-height); background: var(--shell-navbar-hairline); flex-shrink: 0; }
 .navbarUtility { display: inline-flex; align-items: center; gap: var(--space-xs); }
+.navbarCrumbs { display: inline-flex; align-items: center; gap: var(--space-xs); }
+.navbarCrumb { display: inline-flex; align-items: center; gap: var(--space-xs); }
+.navbarCrumbSeparator { color: var(--shell-navbar-muted); }
+.navbarCrumbLink { display: inline-flex; height: var(--toolbar-chip-height); align-items: center; gap: var(--space-2xs); border: 1px solid var(--shell-surface-border); border-radius: 999px; background: var(--card); padding: 0 var(--space-sm); color: var(--shell-navbar-muted); font-size: var(--text-ui-action); font-weight: 700; cursor: pointer; }
+.navbarCrumbLink:hover { border-color: var(--accent); color: var(--foreground); }
+.navbarContextAction { display: inline-flex; height: var(--toolbar-chip-height); align-items: center; gap: var(--space-xs); border: 1px solid var(--shell-surface-border); border-radius: var(--radius-control); background: var(--surface-button-soft); padding: 0 var(--space-sm); color: var(--foreground); font-size: var(--text-ui-action); font-weight: 700; cursor: pointer; }
+.navbarContextAction:hover { border-color: var(--border-button-soft-hover); background: var(--surface-button-soft-hover); }
+.navbarContextAction svg { width: var(--toolbar-icon-size); height: var(--toolbar-icon-size); }
+.navbarIconButton { position: relative; display: inline-flex; width: var(--toolbar-chip-height); height: var(--toolbar-chip-height); align-items: center; justify-content: center; border: 1px solid transparent; border-radius: 999px; background: transparent; color: var(--shell-control-muted); cursor: pointer; }
+.navbarIconButton:hover { border-color: var(--shell-surface-border); background: var(--shell-surface-hover); color: var(--foreground); }
+.navbarIconButton svg { width: var(--toolbar-icon-size); height: var(--toolbar-icon-size); }
+.navbarBellBadge { position: absolute; right: -0.25rem; top: -0.25rem; display: inline-flex; min-width: 1.125rem; height: 1.125rem; align-items: center; justify-content: center; border: 2px solid var(--card); border-radius: 999px; background: var(--badge-count-bg); padding-inline: var(--space-2xs); color: var(--badge-count-fg); font-size: 0.6875rem; font-weight: 800; line-height: 1; }
 
 @media (min-width: 1024px) {
   .shellDesktopFrame { display: grid; grid-template-columns: var(--shell-sidebar-width) minmax(0, 1fr); column-gap: var(--space-md); align-items: start; padding-left: var(--shell-frame-offset); }

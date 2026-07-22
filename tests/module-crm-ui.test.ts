@@ -14,6 +14,7 @@ import {
   CrmDeleteDialog,
   CrmFunnelStats,
   CrmOrganizationsBrowser,
+  CrmOrganizationSheet,
   CrmReport,
   CrmReportPage,
   CrmStatusDialog,
@@ -63,6 +64,7 @@ test("CRM UI surfaces render from data without network access", () => {
   assert.doesNotThrow(() => renderToStaticMarkup(h(CrmStatusDialog, { open: false, contactIds: [contact.id], onOpenChange: () => {}, onSubmit: () => {} })));
   assert.doesNotThrow(() => renderToStaticMarkup(h(CrmDeleteDialog, { open: false, contactIds: [contact.id], onOpenChange: () => {}, onConfirm: () => {} })));
   assert.doesNotThrow(() => renderToStaticMarkup(h(CrmOrganizationsBrowser, { open: false, organizations: [], onOpenChange: () => {} })));
+  assert.doesNotThrow(() => renderToStaticMarkup(h(CrmOrganizationSheet, { open: false, onOpenChange: () => {}, onSubmit: () => {} })));
   assert.doesNotThrow(() => renderToStaticMarkup(h(CrmTimelineBrowser, { open: false, entries: timeline, onOpenChange: () => {} })));
   assert.match(renderToStaticMarkup(h(CrmReport, { data: report })), /Pulso do/);
   assert.match(renderToStaticMarkup(h(CrmReportPage, { initialData: report })), /Distribuição por estado/);
@@ -76,6 +78,17 @@ test("CRM dashboard follows the MQ table, right rail, and report hero compositio
   assert.match(html, /Relatório do CRM/);
   assert.doesNotMatch(html, /Visão geral do funil/);
   assert.ok(html.indexOf("Ada Lovelace") < html.indexOf("Relatório do CRM"));
+});
+
+test("CRM contact and organization details use right-side sheets instead of centered dialogs", () => {
+  const contactSource = readFileSync(join(process.cwd(), "packages/module-crm/src/ui/contact-dialog.tsx"), "utf8");
+  const organizationSource = readFileSync(join(process.cwd(), "packages/module-crm/src/ui/organization-sheet.tsx"), "utf8");
+  assert.match(contactSource, /<Sheet open=/);
+  assert.match(contactSource, /sheetShellClassName/);
+  assert.match(contactSource, /sheetViewControlClassName/);
+  assert.doesNotMatch(contactSource, /AlertDialog/);
+  assert.match(organizationSource, /<Sheet open=/);
+  assert.match(organizationSource, /SheetSection/);
 });
 
 test("CRM shell toolbar controls are exported as independent surfaces", () => {

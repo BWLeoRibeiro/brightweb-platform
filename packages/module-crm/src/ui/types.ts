@@ -129,6 +129,15 @@ export type CrmUiDictionary = {
     saving: string;
     delete: string;
     timeline: string;
+    viewEyebrow: string;
+    editEyebrow: string;
+    createEyebrow: string;
+    createDescription: string;
+    createdOn: (date: string) => string;
+    noName: string;
+    information: string;
+    pipeline: string;
+    edit: string;
     fields: {
       firstName: string;
       lastName: string;
@@ -198,6 +207,25 @@ export type CrmUiDictionary = {
     address: string;
     taxIdentifier: string;
     unavailable: string;
+    newTitle: string;
+    viewEyebrow: string;
+    editEyebrow: string;
+    createEyebrow: string;
+    createDescription: string;
+    fallbackDescription: string;
+    identity: string;
+    profile: string;
+    name: string;
+    namePlaceholder: string;
+    selectIndustry: string;
+    websitePlaceholder: string;
+    taxIdentifierLong: string;
+    taxIdentifierPlaceholder: string;
+    addressPlaceholder: string;
+    edit: string;
+    save: string;
+    saving: string;
+    cancel: string;
   };
   toolbar: {
     filters: string;

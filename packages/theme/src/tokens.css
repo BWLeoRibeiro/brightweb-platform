@@ -301,6 +301,12 @@
 
   --badge-count-bg: var(--semantic-danger);
   --badge-count-fg: var(--brand-white);
+  --sheet-edit-border: color-mix(in srgb, var(--accent) 24%, var(--border));
+  --sheet-edit-surface: color-mix(in srgb, var(--accent) 4%, var(--card));
+  --sheet-edit-header: color-mix(in srgb, var(--accent) 20%, var(--card));
+  --sheet-edit-control-border: color-mix(in srgb, var(--accent) 22%, var(--border));
+  --sheet-edit-control-ring: color-mix(in srgb, var(--accent) 22%, transparent);
+  --sheet-edit-header-surface: linear-gradient(135deg, color-mix(in srgb, var(--accent) 16%, transparent), transparent 62%);
   --on-fill-danger: var(--brand-white);
   --on-fill-warning: #3a2a05;
   --on-fill-success: #06281e;

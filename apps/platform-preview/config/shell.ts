@@ -8,7 +8,7 @@ import {
 } from "@brightweblabs/app-shell";
 import { adminModuleRegistration } from "@brightweblabs/module-admin/registration";
 import { crmModuleRegistration } from "@brightweblabs/module-crm/registration";
-import { projectsModuleRegistration } from "@brightweblabs/module-projects/registration";
+import { projectsPreviewModuleRegistration } from "@brightweblabs/module-projects/registration";
 import { starterBrandConfig } from "./brand";
 import { getEnabledStarterModules } from "./modules";
 
@@ -23,7 +23,7 @@ function getStarterModuleRegistrations() {
   const enabled = new Set(getEnabledStarterModules().map((moduleConfig) => moduleConfig.key));
   const registrations: ShellModuleRegistration<ShellContextualAction>[] = [dashboardModuleRegistration];
 
-  if (enabled.has("projects")) registrations.push(projectsModuleRegistration);
+  if (enabled.has("projects")) registrations.push(projectsPreviewModuleRegistration);
   if (enabled.has("crm")) registrations.push(crmModuleRegistration);
   if (enabled.has("admin")) registrations.push(adminModuleRegistration);
 

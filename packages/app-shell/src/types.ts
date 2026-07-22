@@ -76,6 +76,7 @@ export type ShellContextualAction = {
   label: string;
   icon: LucideIcon;
   action?: string;
+  placement?: "back" | "contextual";
 };
 
 export type ShellModulePlacement = "primary" | "tools" | "admin" | "hidden";

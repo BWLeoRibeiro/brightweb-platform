@@ -1,5 +1,30 @@
 export { AppHeader } from "./components/app-header";
 export type { AppHeaderProps } from "./components/app-header";
+export type { AppHeaderBreadcrumb } from "./components/app-header";
+export { AlertsMenu } from "./components/alerts-menu";
+export type { AlertsMenuProps, ShellNotification } from "./components/alerts-menu";
+export {
+  AppSheetBody,
+  AppSheetFooter,
+  AppSheetHeader,
+  SheetSection,
+  sheetAccentTextareaClassName,
+  sheetBodyClassName,
+  sheetDatePickerButtonClassName,
+  sheetEditControlClassName,
+  sheetFieldLabelClassName,
+  sheetFooterClassName,
+  sheetHeaderClassName,
+  sheetHeaderEditingClassName,
+  sheetSectionClassName,
+  sheetSectionEditingClassName,
+  sheetSectionHeaderClassName,
+  sheetSectionHeaderEditingClassName,
+  sheetSectionTitleClassName,
+  sheetShellClassName,
+  sheetViewControlClassName,
+} from "./components/app-sheet";
+export type { AppSheetHeaderProps } from "./components/app-sheet";
 export { AppShellFrame } from "./components/app-shell-frame";
 export type { AppShellFrameProps } from "./components/app-shell-frame";
 export { AccountMenu } from "./components/account-menu";

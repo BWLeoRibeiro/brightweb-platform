@@ -11,18 +11,18 @@ import {
   computeInitials,
   getShellNavGroup,
   type NavGroupConfig,
-  type ResolvedClientAppShellConfig,
 } from "@brightweblabs/app-shell";
 import { CrmToolbarControls } from "@brightweblabs/module-crm/ui";
 import "@brightweblabs/module-crm/tokens.css";
 
 import { getStarterShellConfig } from "../../config/shell";
+import { previewNotifications } from "../../config/notifications";
 
 const mockUser = { email: "admin@starter-client.test", user_metadata: { first_name: "Starter", last_name: "Admin" } };
 
 export default function CrmLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   const pathname = usePathname();
-  const { shellPreview: config } = getStarterShellConfig() as { shellPreview: ResolvedClientAppShellConfig };
+  const { shellPreview: config, toolbarRoutes, toolbarActions } = getStarterShellConfig();
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [toolsExpanded, setToolsExpanded] = useState(false);
   const [crmExpanded, setCrmExpanded] = useState(true);
@@ -41,7 +41,7 @@ export default function CrmLayout({ children }: Readonly<{ children: React.React
         }
         return next;
       })} onToggleTools={() => setToolsExpanded((current) => !current)} onToggleCrmGroup={() => setCrmExpanded((current) => !current)} account={{ displayName, isStaff: true, onSignOut: async () => {}, onThemeChange: () => {}, user: mockUser, userInitials: computeInitials(displayName) }} />}
-      header={<AppHeader kicker="CRM" title={pathname === "/crm/report" ? "Relatório" : "Contactos"}>{pathname === "/crm" ? <CrmToolbarControls /> : null}</AppHeader>}
+      header={<AppHeader kicker="Relações" title={pathname === "/crm/report" ? "Relatórios" : "CRM"} count={pathname === "/crm" ? 5 : undefined} pathname={pathname} toolbarRoutes={toolbarRoutes} toolbarActions={toolbarActions} notifications={{ notifications: previewNotifications, unreadCount: previewNotifications.length }}>{pathname === "/crm" ? <CrmToolbarControls /> : null}</AppHeader>}
       mobileNav={<MobileNav toolsExpanded={toolsExpanded} visiblePrimaryNav={config.primaryNav} visibleToolNav={config.toolsSection.items} isNavItemActive={isActive} isToolLinkActive={isActive} onToggleTools={() => setToolsExpanded((current) => !current)} />}
     >
       {children}

@@ -7,7 +7,7 @@
       "title": "Platform Base",
       "file": "platform-base.json",
       "doc": "../platform-base.md",
-      "entryCount": 57,
+      "entryCount": 59,
       "summary": "Core auth and admin-backed platform base surfaces."
     },
     {
@@ -23,7 +23,7 @@
       "title": "CRM",
       "file": "crm.json",
       "doc": "../crm.md",
-      "entryCount": 54,
+      "entryCount": 55,
       "summary": "CRM shell registration, stable read/write helpers, package-owned request handlers, and starter dashboard glue."
     },
     {

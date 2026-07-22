@@ -605,5 +605,11 @@
   },
   {
     "moduleKey": "platform-base", "packageName": "@brightweblabs/ui", "symbol": "resolveRoleToken", "kind": "helper", "status": "stable", "runtime": "shared", "summary": "Resolves a role token from a supplied map with a semantic-neutral fallback.", "auth": "none", "inputs": [], "outputs": [{ "type": "string", "description": "CSS custom-property name." }], "notes": ["Used by RoleBadge before applying tintPill."], "source": "packages/ui/src/components/role-badge.tsx"
+  },
+  {
+    "moduleKey": "platform-base", "packageName": "@brightweblabs/app-shell", "symbol": "AppSheetHeader", "kind": "component", "status": "stable", "runtime": "shared", "summary": "Shared MQ-compatible header chrome for right-side application sheets.", "auth": "none", "inputs": [{ "name": "props", "type": "AppSheetHeaderProps", "required": true, "description": "Sheet heading, leading visual, edit state, and optional aside." }], "outputs": [{ "type": "React element", "description": "Tokenized sheet header." }], "notes": ["Compose with AppSheetBody, AppSheetFooter, and SheetSection."], "source": "packages/app-shell/src/components/app-sheet.tsx"
+  },
+  {
+    "moduleKey": "platform-base", "packageName": "@brightweblabs/app-shell", "symbol": "AlertsMenu", "kind": "component", "status": "stable", "runtime": "client", "summary": "Injectable shell notification bell and dropdown with loading, error, and empty states.", "auth": "none; notification data is supplied by the app", "inputs": [{ "name": "props", "type": "AlertsMenuProps", "required": false, "description": "Notifications, unread count, state, and lifecycle callbacks." }], "outputs": [{ "type": "React element", "description": "Notification bell and dropdown panel." }], "notes": ["Renders the bell and MQ empty state when no data source is supplied."], "source": "packages/app-shell/src/components/alerts-menu.tsx"
   }
 ]

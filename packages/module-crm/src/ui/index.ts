@@ -8,6 +8,7 @@ export { defaultCrmStages, defaultCrmUiDictionary } from "./dictionary";
 export * from "./funnel-stats";
 export * from "./hooks";
 export * from "./organizations-browser";
+export * from "./organization-sheet";
 export * from "./report";
 export * from "./report-banner";
 export * from "./status-dialog";

@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeft, BriefcaseBusiness, Eye, KanbanSquare, Plus, RotateCcw } from "lucide-react";
+import { ArrowLeft, BriefcaseBusiness, KanbanSquare, Plus, RotateCcw } from "lucide-react";
 import type { ShellContextualAction, ShellModuleRegistration } from "@brightweblabs/app-shell";
 
 export function createProjectsModuleRegistration(baseHref = "/projetos"): ShellModuleRegistration<ShellContextualAction> { return {
@@ -18,15 +18,14 @@ export function createProjectsModuleRegistration(baseHref = "/projetos"): ShellM
       { label: "Novo", icon: Plus, action: "projects-new-menu" },
     ],
     "project-detail": [
-      { label: "Portfólio", icon: ArrowLeft, action: "projects-back-to-portfolio" },
-      { label: "Tarefas", icon: KanbanSquare, action: "projects-open-board" },
+      { label: "Projetos", icon: ArrowLeft, action: "projects-back-to-portfolio", placement: "back" },
+      { label: "Ver tarefas", icon: KanbanSquare, action: "projects-open-board", placement: "contextual" },
     ],
     "project-board": [
-      { label: "Portfólio", icon: ArrowLeft, action: "projects-back-to-portfolio" },
-      { label: "Visão geral", icon: Eye, action: "projects-open-detail" },
-      { label: "Nova tarefa", icon: Plus, action: "projects-new-task" },
+      { label: "Projetos", icon: ArrowLeft, action: "projects-back-to-portfolio", placement: "back" },
     ],
   },
 }; }
 
 export const projectsModuleRegistration = createProjectsModuleRegistration();
+export const projectsPreviewModuleRegistration = createProjectsModuleRegistration("/projects");
