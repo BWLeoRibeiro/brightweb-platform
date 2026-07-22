@@ -6,6 +6,7 @@ import { createElement as h } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 
 import type { CrmContact, CrmContactsListResult, CrmStatusLog } from "../packages/module-crm/src/data.ts";
+import { crmModuleRegistration } from "../packages/module-crm/src/registration.ts";
 import {
   CrmContactDialog,
   CrmContactsTable,
@@ -18,6 +19,9 @@ import {
   CrmStatusDialog,
   CrmTimeline,
   CrmTimelineBrowser,
+  CrmToolbarCreateMenu,
+  CrmToolbarFiltersPill,
+  CrmToolbarSearchChip,
   CRM_UI_EVENTS,
   defaultCrmUiDictionary,
   useCrmBulkActions,
@@ -65,6 +69,22 @@ test("CRM UI surfaces render from data without network access", () => {
   assert.match(renderToStaticMarkup(h(CrmDashboard, { initialData: { contacts, stats: { total: 1, byStatus: { lead: 1 } }, owners: [], organizations: [], timeline } })), /Ada Lovelace/);
 });
 
+test("CRM dashboard follows the MQ table, right rail, and report hero composition", () => {
+  const html = renderToStaticMarkup(h(CrmDashboard, { initialData: { contacts, stats: { total: 1, byStatus: { lead: 1 } }, owners: [], organizations: [{ id: "org-1", name: "Analytical Engines" }], timeline } }));
+  assert.match(html, /Timeline/);
+  assert.match(html, /Organizações/);
+  assert.match(html, /Relatório do CRM/);
+  assert.doesNotMatch(html, /Visão geral do funil/);
+  assert.ok(html.indexOf("Ada Lovelace") < html.indexOf("Relatório do CRM"));
+});
+
+test("CRM shell toolbar controls are exported as independent surfaces", () => {
+  assert.match(renderToStaticMarkup(h(CrmToolbarSearchChip, { value: "", onChange: () => {} })), /Pesquisar contactos/);
+  assert.match(renderToStaticMarkup(h(CrmToolbarFiltersPill, { status: null, sort: "date_desc", onApply: () => {} })), /Filtros/);
+  assert.match(renderToStaticMarkup(h(CrmToolbarCreateMenu)), /Criar/);
+  assert.deepEqual(crmModuleRegistration.toolbarActions?.crm?.map((item) => item.action), ["crm-search", "crm-filters", "crm-create-menu"]);
+});
+
 test("CRM UI dictionary overrides every rendered label source", () => {
   const dictionary: CrmUiDictionary = {
     ...defaultCrmUiDictionary,
@@ -75,11 +95,18 @@ test("CRM UI dictionary overrides every rendered label source", () => {
   assert.match(html, /Pessoa/);
 });
 
-test("CRM column config can hide and relabel built-in columns", () => {
-  const html = renderToStaticMarkup(h(CrmContactsTable, { data: contacts, columns: [{ key: "name", label: "Contacto" }, { key: "email", hidden: true }] }));
-  assert.match(html, /Contacto/);
+test("CRM table nests contact details under the name and uses MQ's short updated date", () => {
+  const html = renderToStaticMarkup(h(CrmContactsTable, { data: contacts }));
+  assert.match(html, /Ada Lovelace.*ada@example\.com/s);
+  assert.match(html, /18\/07/);
   assert.doesNotMatch(html, />Email</);
-  assert.doesNotMatch(html, /ada@example\.com/);
+});
+
+test("CRM column config can hide and relabel built-in columns", () => {
+  const html = renderToStaticMarkup(h(CrmContactsTable, { data: contacts, columns: [{ key: "name", label: "Contacto" }, { key: "owner", hidden: true }] }));
+  assert.match(html, /Contacto/);
+  assert.match(html, /ada@example\.com/);
+  assert.doesNotMatch(html, />Responsável</);
 });
 
 test("CRM stage config controls order, labels, and token metadata", () => {
@@ -118,13 +145,13 @@ test("CRM default dictionary is Portuguese and covers a substantial full-page co
   assert.equal(defaultCrmUiDictionary.report.eyebrow, "Relatório operacional");
 });
 
-test("CRM UI files use package theme utilities without MQ-local styling", () => {
+test("CRM UI files use package theme utilities with the theme-provided MQ compatibility contract", () => {
   const directory = join(process.cwd(), "packages/module-crm/src/ui");
   const source = readdirSync(directory).filter((file) => /\.(ts|tsx)$/.test(file)).map((file) => readFileSync(join(directory, file), "utf8")).join("\n");
   assert.doesNotMatch(source, /#[0-9a-f]{3,8}\b/i);
   assert.doesNotMatch(source, /\bfont-medium\b/);
-  assert.doesNotMatch(source, /\bportal-/);
-  assert.doesNotMatch(source, /\bproject-(?:surface|item|hero)/);
+  assert.match(source, /\bportal-/);
+  assert.match(source, /\bproject-(?:surface|item|hero)/);
 });
 
 test("CRM controller hooks and host event contract are exported", () => {

@@ -32,6 +32,35 @@
   color: var(--muted-foreground);
 }
 
+/* Size-only utilities for component recipes that supply their own weight and rhythm. */
+@utility text-ui-chip {
+  font-size: var(--text-ui-chip);
+}
+
+@utility text-ui-action {
+  font-size: var(--text-ui-action);
+}
+
+@utility text-ui-calendar {
+  font-size: var(--text-ui-calendar);
+}
+
+@utility text-ui-shell-title {
+  font-size: var(--text-ui-shell-title);
+}
+
+@utility text-ui-report-title {
+  font-size: var(--text-ui-report-title);
+}
+
+@utility text-ui-report-title-lg {
+  font-size: var(--text-ui-report-title-lg);
+}
+
+@utility text-ui-report-metric {
+  font-size: var(--text-ui-report-metric);
+}
+
 @utility text-ui-body {
   font-family: var(--font-body), sans-serif;
   font-size: var(--text-ui-body);
@@ -130,20 +159,20 @@
   overflow-y: overlay;
   overflow-x: hidden;
   scrollbar-width: thin;
-  scrollbar-color: color-mix(in srgb, var(--foreground) 18%, transparent) transparent;
+  scrollbar-color: var(--scrollbar-thumb) transparent;
 
   &::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
+    width: var(--scrollbar-size);
+    height: var(--scrollbar-size);
   }
   &::-webkit-scrollbar-track {
     background: transparent;
   }
   &::-webkit-scrollbar-thumb {
-    background-color: color-mix(in srgb, var(--foreground) 18%, transparent);
-    border-radius: 9999px;
+    background-color: var(--scrollbar-thumb);
+    border-radius: var(--radius-scrollbar);
   }
   &::-webkit-scrollbar-thumb:hover {
-    background-color: color-mix(in srgb, var(--foreground) 30%, transparent);
+    background-color: var(--scrollbar-thumb-hover);
   }
 }

@@ -42,7 +42,7 @@ export function KpiBreakdownBar({ items, toneTokens, className }: KpiBreakdownBa
                 </TooltipTrigger>
                 <TooltipContent>
                   <span className="flex items-center gap-2">
-                    <span className="size-2 rounded-[2px]" style={tokenStyle(token)} />
+                    <span className="size-2 rounded-[var(--radius-swatch)]" style={tokenStyle(token)} />
                     <span>{item.label}</span>
                     <span className="font-bold tabular-nums">{item.value}</span>
                   </span>
@@ -58,7 +58,7 @@ export function KpiBreakdownBar({ items, toneTokens, className }: KpiBreakdownBa
           return (
             <div key={`${item.tone}:${item.label}`} className="flex items-center justify-between gap-2 text-ui-meta">
               <span className="flex min-w-0 items-center gap-2 text-muted-foreground">
-                <span className="size-1.5 shrink-0 rounded-[2px]" style={token ? tokenStyle(token) : undefined} />
+                <span className="size-1.5 shrink-0 rounded-[var(--radius-swatch)]" style={token ? tokenStyle(token) : undefined} />
                 <span className="truncate">{item.label}</span>
               </span>
               <span className="font-mono font-bold tabular-nums text-foreground">{item.value}</span>

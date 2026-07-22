@@ -13,9 +13,9 @@ const buttonVariants = cva(
         destructive:
           "bg-destructive text-destructive-foreground hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:bg-destructive/60 dark:focus-visible:ring-destructive/40",
         brand:
-          "bg-[color:var(--brand-accent)] text-[color:var(--accent-foreground)] !font-extrabold shadow-[0_4px_14px_color-mix(in_srgb,var(--brand-accent)_26%,transparent)] hover:brightness-[1.05]",
+          "bg-[color:var(--brand-accent)] text-[color:var(--accent-foreground)] !font-extrabold shadow-[var(--shadow-accent-control)] hover:brightness-[1.05]",
         soft:
-          "border border-[color:var(--border)] bg-[color:color-mix(in_srgb,var(--foreground)_3.5%,var(--card))] text-foreground hover:border-[color:color-mix(in_srgb,var(--foreground)_16%,transparent)] hover:bg-[color:color-mix(in_srgb,var(--foreground)_7%,var(--card))]",
+          "border border-[color:var(--border)] bg-[color:var(--surface-button-soft)] text-foreground hover:border-[color:var(--border-button-soft-hover)] hover:bg-[color:var(--surface-button-soft-hover)]",
         outline:
           "border bg-background shadow-xs hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:hover:bg-input/50",
         secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80",

@@ -73,5 +73,6 @@ export function getStarterShellConfig() {
     shellConfig: builtRegistration.shellConfig,
     shellPreview,
     toolbarRoutes: builtRegistration.toolbarRoutes,
+    toolbarActions: builtRegistration.toolbarActions,
   };
 }

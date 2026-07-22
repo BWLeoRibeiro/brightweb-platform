@@ -9,7 +9,7 @@ export function Skeleton({ className = "", rounded = "var(--radius)", style }: {
 }
 
 export function SkeletonLine({ w = "100%", className = "" }: { w?: string; className?: string }) {
-  return <Skeleton rounded="999px" className={`h-[0.6rem] ${className}`} style={{ width: w }} />;
+  return <Skeleton rounded="var(--radius-pill)" className={`h-[var(--skeleton-line-height)] ${className}`} style={{ width: w }} />;
 }
 
 export function SkeletonText({ lines = 3, className = "" }: { lines?: number; className?: string }) {
@@ -32,7 +32,7 @@ export function SkeletonCard({ lines = 3, meta = true, className = "", bodyClass
   return (
     <div className={`flex flex-col gap-4 rounded-[var(--radius-card)] border border-border bg-card p-5 shadow-[0_1px_2px_var(--hairline)] ${className}`}>
       <div className="flex flex-col gap-2">
-        <SkeletonLine w="45%" className="h-[0.7rem]" />
+        <SkeletonLine w="45%" className="h-[var(--skeleton-line-height-lg)]" />
         {meta ? <SkeletonLine w="28%" /> : null}
       </div>
       <SkeletonText lines={lines} className={bodyClassName} />

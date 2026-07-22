@@ -37,11 +37,11 @@ export function TablePagination({
   };
 
   return (
-    <div className={cn("flex min-w-0 flex-col gap-2 border-t border-hairline px-4 py-2 md:flex-row md:items-center md:justify-between", className)}>
+    <div className={cn("flex min-w-0 flex-col gap-2 border-t border-[color:var(--border)] px-4 py-2 md:flex-row md:items-center md:justify-between", className)}>
       {summary ? (
-        <p className="min-w-0 truncate text-ui-meta">
-          <span className="font-semibold text-foreground">{pageLabel(safePage, safeTotalPages)}</span>
-          <span className="px-1.5 text-border">·</span>
+        <p className="min-w-0 truncate portal-meta leading-tight text-[color:var(--muted-foreground)]">
+          <span className="font-semibold text-[color:var(--foreground)]">{pageLabel(safePage, safeTotalPages)}</span>
+          <span className="px-1.5 text-[color:var(--border)]">·</span>
           {summary}
         </p>
       ) : null}
@@ -57,7 +57,7 @@ export function TablePagination({
                 event.preventDefault();
                 changePage(safePage - 1);
               }}
-              className={cn("size-8 rounded-full border border-transparent text-muted-foreground hover:border-hairline-strong hover:bg-surface-hover hover:text-foreground", safePage === 1 && "pointer-events-none opacity-45")}
+              className={cn("size-8 rounded-full border border-transparent text-[color:var(--muted-foreground)] hover:border-[color:var(--border)] hover:bg-[color:var(--muted)] hover:text-[color:var(--foreground)]", safePage === 1 && "pointer-events-none opacity-45")}
             >
               <ChevronLeft className="size-4" />
             </PaginationLink>
@@ -73,8 +73,10 @@ export function TablePagination({
                   changePage(item);
                 }}
                 className={cn(
-                  "size-8 rounded-full text-ui-label normal-case tracking-normal",
-                  item === safePage ? "border-hairline-strong bg-elevate-2 text-foreground" : "text-muted-foreground hover:bg-surface-hover hover:text-foreground",
+                  "size-8 rounded-full text-[length:var(--text-ui-label)] font-semibold",
+                  item === safePage
+                    ? "border-[color:var(--border-pagination-active)] bg-[color:var(--surface-pagination-active)] text-[color:var(--foreground)]"
+                    : "text-[color:var(--muted-foreground)] hover:bg-[color:var(--muted)] hover:text-[color:var(--foreground)]",
                 )}
               >
                 {item}
@@ -95,7 +97,7 @@ export function TablePagination({
                 event.preventDefault();
                 changePage(safePage + 1);
               }}
-              className={cn("size-8 rounded-full border border-transparent text-muted-foreground hover:border-hairline-strong hover:bg-surface-hover hover:text-foreground", safePage === safeTotalPages && "pointer-events-none opacity-45")}
+              className={cn("size-8 rounded-full border border-transparent text-[color:var(--muted-foreground)] hover:border-[color:var(--border)] hover:bg-[color:var(--muted)] hover:text-[color:var(--foreground)]", safePage === safeTotalPages && "pointer-events-none opacity-45")}
             >
               <ChevronRight className="size-4" />
             </PaginationLink>

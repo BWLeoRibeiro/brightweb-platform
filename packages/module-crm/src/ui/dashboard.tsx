@@ -1,21 +1,20 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { BarChart3, Building2, Clock3, Expand, Megaphone, Plus, UsersRound } from "lucide-react";
-import { Badge, Button, SectionHeading, SurfaceCard } from "@brightweblabs/ui";
 
 import type { CrmContact, CrmContactsListParams, CrmContactsListResult, CrmContactStatusStats, CrmOwnerOption, CrmStatusLog } from "../data";
 import type { CrmContactStatus } from "../server";
 import { createCrmUiClient } from "./client";
 import { CrmContactDialog } from "./contact-dialog";
 import { CrmContactsTable } from "./contacts-table";
+import { CrmDashboardSidebar } from "./dashboard-sidebar";
 import { CrmDeleteDialog } from "./delete-dialog";
 import { defaultCrmUiDictionary, resolveCrmStages } from "./dictionary";
-import { CrmFunnelStats } from "./funnel-stats";
+import { CRM_UI_EVENTS } from "./hooks";
 import { CrmOrganizationsBrowser } from "./organizations-browser";
 import { CrmStatusDialog } from "./status-dialog";
-import { CrmTimeline } from "./timeline";
 import { CrmTimelineBrowser } from "./timeline-browser";
+import { CrmReportBanner, type CrmReportBannerSummary } from "./report-banner";
 import type { CrmContactFormInput, CrmDashboardData, CrmDashboardSlots, CrmNavigationConfig, CrmOrganization, CrmOrganizationFieldConfig, CrmStageConfig, CrmTableColumnConfig, CrmUiClient, CrmUiDictionary } from "./types";
 
 const emptyContacts: CrmContactsListResult = { items: [], page: 1, pageSize: 20, total: 0, totalPages: 1 };
@@ -106,30 +105,62 @@ export function CrmDashboard({ client: providedClient, initialData, dictionary =
     contacts.items.forEach((contact) => { if (contact.organization_id) counts.set(contact.organization_id, (counts.get(contact.organization_id) ?? 0) + 1); });
     return counts;
   }, [contacts.items]);
+  const reportSummary = useMemo<CrmReportBannerSummary>(() => {
+    const now = Date.now();
+    const countSince = (days: number) => contacts.items.filter((contact) => now - new Date(contact.created_at).getTime() <= days * 86_400_000).length;
+    const changedSince = (status: string, days: number) => timeline.filter((entry) => entry.new_status === status && now - new Date(entry.changed_at).getTime() <= days * 86_400_000).length;
+    return {
+      qualifiedLast30Days: changedSince("qualified", 30),
+      wonLast30Days: changedSince("won", 30),
+      newLast7Days: countSince(7),
+      newLast30Days: countSince(30),
+      newLastYear: countSince(365),
+    };
+  }, [contacts.items, timeline]);
+
+  useEffect(() => {
+    const createContact = () => { setEditingContact(null); setContactDialogOpen(true); };
+    const openOrganizationList = () => setOrganizationsOpen(true);
+    const setSearch = (event: Event) => setParams((current) => ({ ...current, search: (event as CustomEvent<{ search?: string }>).detail?.search ?? "", page: 1 }));
+    const setSegment = (event: Event) => setParams((current) => ({ ...current, status: (event as CustomEvent<{ status?: CrmContactStatus | null }>).detail?.status ?? null, page: 1 }));
+    const setSort = (event: Event) => setParams((current) => ({ ...current, sort: (event as CustomEvent<{ sort?: CrmContactsListParams["sort"] }>).detail?.sort ?? "date_desc", page: 1 }));
+    window.addEventListener(CRM_UI_EVENTS.createContact, createContact);
+    window.addEventListener(CRM_UI_EVENTS.createOrganization, openOrganizationList);
+    window.addEventListener(CRM_UI_EVENTS.setSearch, setSearch);
+    window.addEventListener(CRM_UI_EVENTS.selectSegment, setSegment);
+    window.addEventListener(CRM_UI_EVENTS.setSort, setSort);
+    return () => {
+      window.removeEventListener(CRM_UI_EVENTS.createContact, createContact);
+      window.removeEventListener(CRM_UI_EVENTS.createOrganization, openOrganizationList);
+      window.removeEventListener(CRM_UI_EVENTS.setSearch, setSearch);
+      window.removeEventListener(CRM_UI_EVENTS.selectSegment, setSegment);
+      window.removeEventListener(CRM_UI_EVENTS.setSort, setSort);
+    };
+  }, []);
+
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent(CRM_UI_EVENTS.state, { detail: { search: params.search ?? "", status: params.status ?? null, sort: params.sort ?? "date_desc" } }));
+  }, [params.search, params.sort, params.status]);
 
   return (
-    <section className="grid gap-6">
-      <SectionHeading icon={UsersRound} title={dictionary.dashboard.title} subtitle={dictionary.dashboard.subtitle} action={<div className="flex items-center gap-2">{navigation.marketingHref ? <Button href={navigation.marketingHref} type="button" variant="outline"><Megaphone className="size-4" aria-hidden />{dictionary.dashboard.marketing}</Button> : null}<Button type="button" onClick={() => { setEditingContact(null); setContactDialogOpen(true); }}><Plus className="size-4" aria-hidden />{dictionary.dashboard.addContact}</Button></div>} />
+    <div className="flex w-full flex-col gap-6 pt-0">
       {loadFailed ? <p role="alert" className="rounded-[var(--radius-card)] border border-destructive/30 bg-destructive/10 px-4 py-3 text-ui-body text-destructive">{dictionary.dashboard.loadError}</p> : null}
-      {slots?.reportBanner ?? (navigation.reportHref ? <SurfaceCard className="flex flex-wrap items-center justify-between gap-4 p-5"><div className="flex min-w-0 items-start gap-3"><span className="section-icon" aria-hidden><BarChart3 className="size-3.5" /></span><div><p className="text-ui-label text-muted-foreground">{dictionary.dashboard.reportEyebrow}</p><p className="mt-1 text-ui-panel-title">{dictionary.dashboard.reportTitle}</p><p className="mt-1 text-ui-body text-muted-foreground">{dictionary.dashboard.reportDescription}</p></div></div><Button href={navigation.reportHref} variant="outline">{dictionary.dashboard.openReport}</Button></SurfaceCard> : null)}
       {slots?.aboveStats}
-      <div className={slots?.besideStats ? "grid gap-4 xl:grid-cols-[minmax(0,1fr)_auto]" : undefined}><CrmFunnelStats stats={stats} loading={loading && stats.total === 0} dictionary={dictionary} stages={resolvedStages} />{slots?.besideStats}</div>
+      {slots?.besideStats}
       {slots?.aboveTable}
-      <div className="grid min-w-0 gap-6 xl:grid-cols-[minmax(0,1fr)_20rem]">
-        <CrmContactsTable data={contacts} params={params} owners={owners} loading={loading} dictionary={dictionary} stages={resolvedStages} columns={columns} selectedIds={selectedIds} onSelectedIdsChange={setSelectedIds} onParamsChange={setParams} onRowClick={openContact} onBulkStatus={(ids) => openStatus(ids)} onBulkDelete={openDelete} onQuickStatus={(contact, status) => openStatus([contact.id], status)} renderRowActions={slots?.rowActions} />
-        <aside className="grid content-start gap-4">
-          {slots?.sidebarTop}
-          <SurfaceCard className="p-4"><SectionHeading icon={Clock3} title={dictionary.timeline.title} subtitle={dictionary.timeline.subtitle} action={<Button type="button" variant="ghost" size="icon-sm" onClick={() => setTimelineOpen(true)} aria-label={dictionary.timeline.expand}><Expand className="size-3.5" aria-hidden /></Button>} /><div className="mt-4"><CrmTimeline entries={timeline.slice(0, 4)} loading={loading && timeline.length === 0} dictionary={dictionary} /></div></SurfaceCard>
-          <SurfaceCard className="p-4"><SectionHeading icon={Building2} title={dictionary.organizations.title} subtitle={dictionary.organizations.subtitle} action={<Button type="button" variant="ghost" size="icon-sm" onClick={() => setOrganizationsOpen(true)} aria-label={dictionary.organizations.expand}><Expand className="size-3.5" aria-hidden /></Button>} /><div className="mt-4 grid gap-2">{organizations.slice(0, 5).map((organization) => <button key={organization.id} type="button" onClick={() => setOrganizationsOpen(true)} className="flex items-center justify-between gap-3 rounded-[var(--radius-card)] border border-hairline bg-elevate-1 px-3 py-2 text-left"><span className="truncate text-ui-body font-semibold text-foreground">{organization.name}</span><Badge variant="outline">{contactsByOrganization.get(organization.id) ?? 0}</Badge></button>)}</div></SurfaceCard>
-          {slots?.sidebarBottom}
-        </aside>
-      </div>
+      <section className="grid w-full items-start gap-6 md:grid-cols-3">
+        <div className="min-w-0 space-y-4 overflow-hidden md:col-span-2">
+          <CrmContactsTable data={contacts} params={params} owners={owners} loading={loading} dictionary={dictionary} stages={resolvedStages} columns={columns} selectedIds={selectedIds} onSelectedIdsChange={setSelectedIds} onParamsChange={setParams} onRowClick={openContact} onBulkStatus={(ids) => openStatus(ids)} onBulkDelete={openDelete} onQuickStatus={(contact, status) => openStatus([contact.id], status)} renderRowActions={slots?.rowActions} showToolbar={false} />
+        </div>
+        <div className="min-w-0 md:col-span-1">{slots?.sidebarTop}<CrmDashboardSidebar timelineEntries={timeline} organizations={organizations} contactsByOrganization={contactsByOrganization} isRefreshing={loading} isLoadingOrganizations={loading} dictionary={dictionary} onOpenTimeline={() => setTimelineOpen(true)} onOpenOrganizations={() => setOrganizationsOpen(true)} onOpenOrganization={() => setOrganizationsOpen(true)} />{slots?.sidebarBottom}</div>
+      </section>
+      {slots?.reportBanner ?? (navigation.reportHref ? <CrmReportBanner summary={reportSummary} href={navigation.reportHref} dictionary={dictionary} /> : null)}
       <CrmContactDialog open={contactDialogOpen} contact={editingContact} organizations={organizations} owners={owners} dictionary={dictionary} stages={resolvedStages} onOpenChange={setContactDialogOpen} onSubmit={saveContact} onTimeline={(contact) => { setEditingContact(contact); setContactDialogOpen(false); setContactTimelineOpen(true); }} onDelete={(contact) => { setContactDialogOpen(false); openDelete([contact.id]); }} />
       <CrmStatusDialog open={statusDialogOpen} contactIds={statusTargets} initialStatus={statusInitial} dictionary={dictionary} stages={resolvedStages} onOpenChange={setStatusDialogOpen} onSubmit={saveStatus} />
       <CrmDeleteDialog open={deleteDialogOpen} contactIds={deleteTargets} dictionary={dictionary} onOpenChange={setDeleteDialogOpen} onConfirm={deleteContacts} />
       <CrmTimelineBrowser open={timelineOpen} entries={timeline} loading={timelineLoading} dictionary={dictionary} onOpenChange={setTimelineOpen} />
       <CrmTimelineBrowser open={contactTimelineOpen} entries={contactTimeline} loading={timelineLoading} dictionary={dictionary} onOpenChange={setContactTimelineOpen} />
       <CrmOrganizationsBrowser open={organizationsOpen} organizations={organizations} contactsByOrganization={contactsByOrganization} fields={organizationFields} dictionary={dictionary} onOpenChange={setOrganizationsOpen} />
-    </section>
+    </div>
   );
 }

@@ -1,5 +1,7 @@
 @import "tailwindcss";
 @import "@brightweblabs/theme/css";
+@import "@brightweblabs/theme/themes/mq";  /* MQ theme for parity comparison */
+@import "@brightweblabs/theme/themes/mq-aliases";
 @import "@brightweblabs/module-crm/tokens.css";
 
 @source "../../../packages/ui/src";
@@ -508,4 +510,5 @@
     grid-template-columns: 1fr;
     display: grid;
   }
+
 }

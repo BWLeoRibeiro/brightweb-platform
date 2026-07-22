@@ -16,7 +16,7 @@ const badgeVariants = cva(
         outline: "border-border text-foreground [a&]:hover:bg-accent [a&]:hover:text-accent-foreground",
         ghost: "[a&]:hover:bg-accent [a&]:hover:text-accent-foreground",
         link: "text-primary underline-offset-4 [a&]:hover:underline",
-        tint: "text-current [background-color:color-mix(in_srgb,currentColor_14%,transparent)]",
+        tint: "text-current [background-color:var(--surface-badge-tint)]",
       },
       size: {
         default: "gap-1 px-2 py-0.5 text-xs font-semibold",

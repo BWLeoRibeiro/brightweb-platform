@@ -8,9 +8,13 @@ import type { CrmContactFormInput, CrmDashboardData, CrmOrganization, CrmUiClien
 
 export const CRM_UI_EVENTS = {
   createContact: "brightweb:crm:create-contact",
+  createOrganization: "brightweb:crm:create-organization",
   openOrganizations: "brightweb:crm:open-organizations",
   openTimeline: "brightweb:crm:open-timeline",
   selectSegment: "brightweb:crm:select-segment",
+  setSearch: "brightweb:crm:set-search",
+  setSort: "brightweb:crm:set-sort",
+  state: "brightweb:crm:state",
 } as const;
 
 export function useCrmDashboardController(initialData?: Partial<CrmDashboardData>, pageSize = 20) {

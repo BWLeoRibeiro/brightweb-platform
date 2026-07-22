@@ -1,14 +1,16 @@
 import Image from "next/image";
 import Link from "next/link";
-import { PanelLeftClose, PanelLeftOpen, Wrench } from "lucide-react";
+import { ChevronLeft, Wrench } from "lucide-react";
 import { cn } from "../lib/utils";
 import { SidebarNavLink, SidebarSectionToggle, SidebarSubNavLink } from "./nav-primitives";
 import type { DesktopSidebarProps } from "../types";
+import { AccountMenu } from "./account-menu";
+import styles from "./shell-surfaces.module.css";
 
 export function DesktopSidebar({
   className,
   brand,
-  collapsedToolsHref,
+  account,
   isSidebarCollapsed,
   isToolActive,
   toolsExpanded,
@@ -26,19 +28,22 @@ export function DesktopSidebar({
   onToggleCrmGroup,
 }: DesktopSidebarProps) {
   return (
-    <aside className={className}>
+    <aside className={cn(styles.sidebarRoot, styles.desktopSidebarFrame, isSidebarCollapsed && styles.desktopSidebarCollapsed, className)}>
       <button
+        type="button"
         onClick={onToggleSidebar}
-        className="absolute -right-4 top-4 z-30 inline-flex h-8 w-8 items-center justify-center rounded-full border border-hairline-strong bg-background text-foreground/80 shadow-sm transition-colors hover:border-border-strong hover:bg-surface-hover hover:text-foreground"
+        className={styles.sidebarToggle}
         aria-label={isSidebarCollapsed ? "Expandir menu lateral" : "Colapsar menu lateral"}
+        title={isSidebarCollapsed ? "Expandir" : "Colapsar"}
       >
-        {isSidebarCollapsed ? <PanelLeftOpen className="size-4" /> : <PanelLeftClose className="size-4" />}
+        <ChevronLeft />
       </button>
 
-      <div className={cn("pb-7 pt-9", isSidebarCollapsed ? "px-2" : "px-7")}>
+      <div className={styles.sidebarTop}>
         <Link
           href={brand.href}
-          className={cn("mb-4", isSidebarCollapsed ? "flex w-full justify-center" : "inline-flex")}
+          prefetch={false}
+          className={styles.sidebarBrand}
           aria-label={brand.ariaLabel}
         >
           {isSidebarCollapsed ? (
@@ -47,7 +52,7 @@ export function DesktopSidebar({
               alt={brand.alt}
               width={brand.collapsedLogo.width}
               height={brand.collapsedLogo.height}
-              className="h-12 w-auto max-w-full object-contain"
+              className="h-9 w-auto max-w-full object-contain"
               priority
             />
           ) : (
@@ -57,7 +62,7 @@ export function DesktopSidebar({
                 alt={brand.alt}
                 width={brand.lightLogo.width}
                 height={brand.lightLogo.height}
-                className="h-8 w-auto object-contain dark:hidden"
+                className="h-9 w-auto max-w-full object-contain dark:hidden"
                 priority
               />
               <Image
@@ -65,7 +70,7 @@ export function DesktopSidebar({
                 alt={brand.alt}
                 width={brand.darkLogo.width}
                 height={brand.darkLogo.height}
-                className="hidden h-8 w-auto object-contain dark:block"
+                className="hidden h-9 w-auto max-w-full object-contain dark:block"
                 priority
               />
             </>
@@ -73,7 +78,7 @@ export function DesktopSidebar({
         </Link>
       </div>
 
-      <nav className={cn("min-h-0 flex-1 space-y-1.5 overflow-y-auto", isSidebarCollapsed ? "px-1.5" : "px-4")}>
+      <nav className={styles.sidebarNav}>
         {visiblePrimaryNav.map(({ href, label, icon: Icon }) => (
           <SidebarNavLink
             key={href}
@@ -85,30 +90,27 @@ export function DesktopSidebar({
           />
         ))}
 
-        {isSidebarCollapsed ? (
-          <SidebarNavLink
-            href={crmNavGroup.children[0]?.href ?? "/crm"}
-            icon={crmNavGroup.icon}
-            label={crmNavGroup.label}
-            title={crmNavGroup.label}
-            collapsed
-            active={isCrmGroupActive}
-          />
-        ) : (
-          <div className="space-y-1">
+        {crmNavGroup.children.length > 0 ? <span className={styles.navDivider} aria-hidden /> : null}
+
+        {crmNavGroup.children.length > 0 ? (
+          <div className={cn(styles.navGroup, !isSidebarCollapsed && crmGroupExpanded && styles.navGroupOpen, isCrmGroupActive && styles.navGroupHasActive)}>
             <SidebarSectionToggle
               controlsId="crm-nav-desktop"
               expanded={crmGroupExpanded}
               icon={crmNavGroup.icon}
               label={crmNavGroup.label}
-              onToggle={onToggleCrmGroup}
+              onToggle={() => {
+                if (isSidebarCollapsed) onToggleSidebar();
+                onToggleCrmGroup();
+              }}
             />
 
             <div
               id="crm-nav-desktop"
-              className={cn("overflow-hidden transition-all duration-300", crmGroupExpanded ? "max-h-40 opacity-100" : "max-h-0 opacity-0")}
+              className={styles.navChildren}
             >
-              <div className="space-y-1 pl-4">
+              <div className={styles.navChildrenInner}>
+                <div className={styles.navChildList}>
                 {crmNavGroup.children.map(({ href, label, icon: Icon }) => (
                   <SidebarSubNavLink
                     key={href}
@@ -118,45 +120,31 @@ export function DesktopSidebar({
                     active={isCrmChildActive(href)}
                   />
                 ))}
+                </div>
               </div>
             </div>
           </div>
-        )}
-
-        {adminNavItem ? (
-          <SidebarNavLink
-            href={adminNavItem.href}
-            icon={adminNavItem.icon}
-            label={adminNavItem.label}
-            collapsed={isSidebarCollapsed}
-            active={isNavItemActive(adminNavItem.href)}
-          />
         ) : null}
 
-        {isSidebarCollapsed ? (
-          <SidebarNavLink
-            href={collapsedToolsHref}
-            icon={Wrench}
-            label="Ferramentas"
-            title="Ferramentas"
-            collapsed
-            active={isToolActive}
-          />
-        ) : (
-          <div className="space-y-1">
+        {visibleToolNav.length > 0 ? (
+          <div className={cn(styles.navGroup, !isSidebarCollapsed && toolsExpanded && styles.navGroupOpen, isToolActive && styles.navGroupHasActive)}>
             <SidebarSectionToggle
               controlsId="tools-nav-desktop"
               expanded={toolsExpanded}
               icon={Wrench}
               label="Ferramentas"
-              onToggle={onToggleTools}
+              onToggle={() => {
+                if (isSidebarCollapsed) onToggleSidebar();
+                onToggleTools();
+              }}
             />
 
             <div
               id="tools-nav-desktop"
-              className={cn("overflow-hidden transition-all duration-300", toolsExpanded ? "max-h-40 opacity-100" : "max-h-0 opacity-0")}
+              className={styles.navChildren}
             >
-              <div className="space-y-1 pl-4">
+              <div className={styles.navChildrenInner}>
+                <div className={styles.navChildList}>
                 {visibleToolNav.map(({ href, label, icon: Icon }) => (
                   <SidebarSubNavLink
                     key={href}
@@ -166,11 +154,30 @@ export function DesktopSidebar({
                     active={isToolLinkActive(href)}
                   />
                 ))}
+                </div>
               </div>
             </div>
           </div>
-        )}
+        ) : null}
+
+        {adminNavItem ? (
+          <>
+            <span className={styles.navDivider} aria-hidden />
+            <SidebarNavLink
+              href={adminNavItem.href}
+              icon={adminNavItem.icon}
+              label={adminNavItem.label}
+              collapsed={isSidebarCollapsed}
+              active={isNavItemActive(adminNavItem.href)}
+            />
+          </>
+        ) : null}
       </nav>
+      {account ? (
+        <div className={styles.sidebarAccount}>
+          <AccountMenu {...account} variant="rail" collapsed={isSidebarCollapsed} />
+        </div>
+      ) : null}
     </aside>
   );
 }

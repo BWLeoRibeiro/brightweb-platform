@@ -133,6 +133,8 @@ const modules = [
 
 This is the current mechanism for getting module-owned nav items, nav groups, and toolbar route/action registration into the platform shell.
 
+The CRM dashboard follows the MQ shell contract: search, filters, and create actions are not duplicated inside the page. Render `CrmToolbarControls` for the `crm` toolbar surface (or compose the exported `CrmToolbarSearchChip`, `CrmToolbarFiltersPill`, and `CrmToolbarCreateMenu` controls individually). A standalone `CrmDashboard` remains usable for table, dialog, timeline, and organization interactions, but its shell-owned search/filter/create controls are intentionally absent.
+
 ### 3. Mount starter API routes by delegating to package handlers
 
 Admin and CRM expose route-handler helpers that can be re-exported from your Next.js route files.

@@ -17,7 +17,7 @@ import {
 import { defaultCrmUiDictionary } from "./dictionary";
 import type { CrmOrganization, CrmOrganizationFieldConfig, CrmUiDictionary } from "./types";
 
-export const CRM_SHEET_CLASS_NAME = "h-screen w-full gap-0 border-l border-hairline bg-background sm:max-w-[32rem]";
+export const CRM_SHEET_CLASS_NAME = "h-screen w-full gap-0 border-l border-hairline bg-background sm:max-w-[var(--crm-sheet-width)]";
 
 export type CrmOrganizationsBrowserProps = {
   open: boolean;

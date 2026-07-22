@@ -18,7 +18,7 @@ export type CrmStageConfig = {
   token: `--${string}`;
 };
 
-export type CrmTableColumnKey = "name" | "email" | "organization" | "owner" | "status" | "updated";
+export type CrmTableColumnKey = "name" | "organization" | "owner" | "status" | "updated";
 
 export type CrmTableColumnRenderContext = {
   owner?: CrmOwnerOption;
@@ -74,6 +74,15 @@ export type CrmUiDictionary = {
     reportTitle: string;
     reportDescription: string;
     openReport: string;
+    reportAriaLabel: string;
+    qualifiedSingular: string;
+    qualifiedPlural: string;
+    wonSingular: string;
+    wonPlural: string;
+    inLast30Days: string;
+    last7Days: string;
+    last30Days: string;
+    last12Months: string;
     marketing: string;
   };
   stats: {
@@ -107,7 +116,6 @@ export type CrmUiDictionary = {
     pageLabel: (page: number, totalPages: number) => string;
     previousPage: string;
     nextPage: string;
-    sortBy: (label: string) => string;
     unavailable: string;
     columns: Record<CrmTableColumnKey, string>;
   };
@@ -190,6 +198,16 @@ export type CrmUiDictionary = {
     address: string;
     taxIdentifier: string;
     unavailable: string;
+  };
+  toolbar: {
+    filters: string;
+    clear: string;
+    status: string;
+    organize: string;
+    apply: string;
+    create: string;
+    newContact: string;
+    newOrganization: string;
   };
   report: {
     loading: string;

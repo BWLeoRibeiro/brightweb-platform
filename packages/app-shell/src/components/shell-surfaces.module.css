@@ -1,0 +1,171 @@
+.shellRoot {
+  position: relative;
+  min-height: 100vh;
+  overflow-x: clip;
+  background: var(--shell-background);
+  color: var(--foreground);
+}
+
+.shellDesktopFrame { position: relative; }
+
+.desktopSidebarFrame {
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: var(--shell-sidebar-width);
+  border: 1px solid var(--shell-surface-border);
+  border-color: var(--shell-surface-border);
+  border-radius: var(--radius-panel);
+  background: var(--shell-sidebar-background);
+  box-shadow: var(--shell-shadow);
+}
+
+.desktopSidebarCollapsed { width: var(--shell-sidebar-collapsed-width); }
+.desktopContent { display: flex; min-width: 0; min-height: 100vh; flex-direction: column; }
+
+.headerBar {
+  display: none;
+  position: sticky;
+  top: var(--shell-frame-offset);
+  z-index: 20;
+  margin-bottom: var(--space-sm);
+}
+
+.sidebarRoot { position: relative; display: flex; flex-direction: column; }
+.sidebarRoot.desktopSidebarFrame { display: none; }
+
+.sidebarToggle {
+  position: absolute;
+  top: var(--shell-sidebar-toggle-offset);
+  right: var(--shell-sidebar-toggle-inset);
+  z-index: 5;
+  display: flex;
+  height: var(--shell-sidebar-toggle-size);
+  width: var(--shell-sidebar-toggle-size);
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  border: 1px solid var(--shell-surface-border);
+  background: var(--card);
+  color: var(--shell-control-muted);
+  box-shadow: var(--shell-shadow);
+  cursor: pointer;
+  transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease;
+}
+.sidebarToggle:hover { border-color: var(--accent); background: var(--shell-surface-hover); color: var(--foreground); }
+.sidebarToggle svg { height: var(--shell-nav-icon-size); width: var(--shell-nav-icon-size); transition: transform 220ms ease; }
+.desktopSidebarCollapsed .sidebarToggle svg { transform: rotate(180deg); }
+
+.sidebarTop {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  height: var(--shell-brand-height);
+  box-sizing: content-box;
+  padding: var(--space-md) var(--space-md) var(--space-sm) calc(var(--space-sm) + var(--space-sm) + 1px);
+}
+.desktopSidebarCollapsed .sidebarTop { justify-content: center; padding-inline: 0; }
+.sidebarBrand { display: flex; flex: 1; align-items: center; justify-content: flex-start; min-width: 0; height: var(--shell-brand-height); }
+.desktopSidebarCollapsed .sidebarBrand { justify-content: center; }
+
+.sidebarNav {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--space-2xs);
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: var(--space-sm);
+}
+.desktopSidebarCollapsed .sidebarNav { align-items: center; padding: var(--space-sm) 0; }
+.sidebarNav::-webkit-scrollbar { width: 6px; }
+.sidebarNav::-webkit-scrollbar-thumb { background: var(--shell-surface-border); border-radius: 99px; }
+.desktopSidebarCollapsed .sidebarNav::-webkit-scrollbar { width: 0; }
+
+.navDivider { display: none; }
+.desktopSidebarCollapsed .navDivider { display: block; width: var(--shell-nav-divider-width); height: 1px; background: var(--shell-hairline); margin: var(--space-xs) 0; }
+
+.navItem {
+  position: relative;
+  display: flex;
+  width: 100%;
+  height: var(--shell-nav-item-height);
+  align-items: center;
+  gap: var(--space-sm);
+  border: 1px solid transparent;
+  border-radius: var(--radius-card);
+  background: transparent;
+  padding: 0 var(--space-sm);
+  color: var(--shell-nav-foreground);
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease;
+}
+.desktopSidebarCollapsed .navItem { width: var(--shell-nav-item-collapsed-size); height: var(--shell-nav-item-collapsed-size); justify-content: center; gap: 0; padding: 0; }
+.navItem:hover { border-color: var(--shell-surface-border); background: var(--shell-surface-hover); color: var(--foreground); }
+.navItem:hover .navIcon { color: var(--foreground); }
+.navIcon { position: relative; display: inline-flex; height: var(--shell-nav-icon-well-size); width: var(--shell-nav-icon-well-size); flex-shrink: 0; align-items: center; justify-content: center; border-radius: var(--shell-nav-icon-radius); background: var(--shell-icon-bg); color: var(--shell-control-muted); transition: background-color 150ms ease, color 150ms ease; }
+.navIcon svg { height: 1rem; width: 1rem; }
+.navLabel { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--text-ui-action); font-weight: 600; line-height: 1.2; letter-spacing: -0.01em; }
+.navCaret { margin-left: auto; flex-shrink: 0; height: var(--shell-nav-icon-size); width: var(--shell-nav-icon-size); opacity: 0.42; transition: transform 240ms ease, opacity 150ms ease; }
+.desktopSidebarCollapsed .navLabel, .desktopSidebarCollapsed .navCaret { display: none; }
+.navItemActive { background: var(--shell-surface-active); border-color: var(--shell-nav-active-border); color: var(--foreground); }
+.navItemActive::before { content: ""; position: absolute; left: var(--shell-nav-active-indicator-offset); top: var(--shell-nav-active-indicator-inset); bottom: var(--shell-nav-active-indicator-inset); width: var(--shell-nav-active-indicator-width); border-radius: 0 var(--shell-nav-active-indicator-width) var(--shell-nav-active-indicator-width) 0; background: var(--accent); }
+.desktopSidebarCollapsed .navItemActive::before { left: calc(var(--shell-nav-active-indicator-inset) * -1); top: var(--shell-nav-active-indicator-collapsed-inset); bottom: var(--shell-nav-active-indicator-collapsed-inset); }
+.navItemActive .navIcon { background: var(--shell-nav-active-icon-bg); color: var(--shell-nav-active-icon-fg); }
+.navItemActive .navLabel { font-weight: 700; }
+
+.navGroup { width: 100%; border-radius: var(--radius-card); transition: background-color 200ms ease; }
+.desktopSidebarCollapsed .navGroup { width: auto; }
+.navGroupOpen { background: var(--shell-group-open); }
+.desktopSidebarCollapsed .navGroupOpen { background: transparent; }
+.navGroupOpen > .navItem .navCaret { transform: rotate(180deg); }
+.navGroupHasActive:not(.navGroupOpen) > .navItem .navIcon, .desktopSidebarCollapsed .navGroupHasActive > .navItem .navIcon { background: var(--shell-nav-context-icon-bg); color: var(--shell-nav-context-icon-fg); }
+.navGroupHasActive:not(.navGroupOpen) > .navItem .navIcon::after, .desktopSidebarCollapsed .navGroupHasActive > .navItem .navIcon::after { content: ""; position: absolute; top: var(--shell-nav-context-dot-offset); right: var(--shell-nav-context-dot-offset); height: var(--shell-nav-context-dot-size); width: var(--shell-nav-context-dot-size); border-radius: 999px; background: var(--accent); border: var(--shell-nav-context-dot-border) solid var(--card); }
+.navChildren { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 260ms ease; }
+.navGroupOpen .navChildren { grid-template-rows: 1fr; }
+.desktopSidebarCollapsed .navChildren { display: none; }
+.navChildrenInner { overflow: hidden; }
+.navChildList { display: flex; flex-direction: column; gap: var(--space-2xs); margin: 0 var(--space-xs) var(--space-xs); padding: var(--space-2xs) 0 0 var(--space-md); }
+.navChild { position: relative; display: flex; width: 100%; height: var(--shell-nav-child-height); align-items: center; gap: var(--space-sm); border: 1px solid transparent; border-radius: var(--radius-control); padding: 0 var(--space-sm); color: var(--shell-nav-child-fg); opacity: 0; transform: translateX(calc(var(--shell-nav-child-enter-offset) * -1)); transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease; }
+.navGroupOpen .navChild { opacity: 1; transform: none; transition: opacity 200ms ease 60ms, transform 200ms ease 60ms, background-color 150ms ease, color 150ms ease; }
+.navChild:hover { background: var(--shell-surface-hover); color: var(--foreground); }
+.navChild svg { height: 1rem; width: 1rem; flex-shrink: 0; color: var(--shell-nav-child-icon-fg); }
+.navChildActive { background: var(--shell-nav-child-active-bg); border-color: var(--shell-nav-child-active-border); color: var(--foreground); }
+.navChildActive svg { color: var(--shell-nav-active-icon-fg); }
+.navChildActive .navLabel { font-weight: 700; }
+.sidebarAccount { margin: var(--space-xs) var(--space-sm) var(--space-sm); padding-top: var(--space-sm); }
+.desktopSidebarCollapsed .sidebarAccount { display: flex; justify-content: center; margin-inline: 0; }
+
+.mainContent { min-width: 0; flex: 1; padding: var(--space-sm) var(--space-md) var(--space-lg); }
+.mobileNav { display: block; padding: var(--space-md) var(--space-md) 0; }
+
+.navbarBar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-xs) var(--space-md);
+  border-bottom: 1px solid var(--shell-navbar-hairline);
+  background: var(--shell-background);
+  border-radius: var(--radius-panel);
+  font-family: inherit;
+}
+.navbarTitle { display: flex; align-items: flex-end; gap: var(--space-xs); }
+.navbarKicker { display: block; font-size: var(--text-ui-micro); font-weight: 800; line-height: 1.3; text-transform: uppercase; letter-spacing: 0.16em; color: var(--accent); }
+.navbarTitle h1 { margin: 0; font-size: var(--text-ui-shell-title); font-weight: 800; line-height: 1.238; letter-spacing: -0.025em; white-space: nowrap; color: var(--shell-navbar-fg); }
+.navbarCount { font-size: var(--text-ui-meta); font-weight: 700; color: var(--shell-navbar-muted); font-variant-numeric: tabular-nums; }
+.navbarSpacer { flex: 1; }
+.navbarDivider { width: 1px; height: var(--shell-header-divider-height); background: var(--shell-navbar-hairline); flex-shrink: 0; }
+.navbarUtility { display: inline-flex; align-items: center; gap: var(--space-xs); }
+
+@media (min-width: 1024px) {
+  .shellDesktopFrame { display: grid; grid-template-columns: var(--shell-sidebar-width) minmax(0, 1fr); column-gap: var(--space-md); align-items: start; padding-left: var(--shell-frame-offset); }
+  .shellDesktopFrameCollapsed { grid-template-columns: var(--shell-sidebar-collapsed-width) minmax(0, 1fr); }
+  .sidebarRoot.desktopSidebarFrame { display: flex; position: sticky; top: var(--shell-frame-offset); height: calc(100vh - (var(--shell-frame-offset) * 2)); width: 100%; }
+  .headerBar { display: block; }
+  .desktopContent { min-width: 0; padding-right: var(--shell-frame-offset); }
+  .mainContent { padding: var(--space-sm) var(--space-md) var(--space-xl); }
+  .mobileNav { display: none; }
+}

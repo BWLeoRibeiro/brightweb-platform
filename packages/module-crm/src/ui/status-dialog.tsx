@@ -68,7 +68,7 @@ export function CrmStatusDialog({ open, contactIds, initialStatus = "lead", dict
                 {resolvedStages.map((stage) => <option key={stage.value} value={stage.value}>{stage.label}</option>)}
               </select>
             </Field>
-            <Field className={status === "lost" ? "rounded-[var(--radius-card)] border border-[color:var(--crm-stage-lost)] bg-[color:color-mix(in_srgb,var(--crm-stage-lost)_10%,transparent)] p-4" : undefined}>
+            <Field className={status === "lost" ? "rounded-[var(--radius-card)] border border-[color:var(--crm-stage-lost)] bg-[color:var(--surface-danger-subtle)] p-4" : undefined}>
               <FieldLabel htmlFor="crm-status-reason">{dictionary.statusDialog.reason}</FieldLabel>
               <Input id="crm-status-reason" value={reason} onChange={(event) => setReason(event.target.value)} placeholder={dictionary.statusDialog.reasonPlaceholder} />
               {status === "lost" ? <FieldDescription className="text-[color:var(--crm-stage-lost-strong)]">{dictionary.statusDialog.lossReasonHint}</FieldDescription> : null}

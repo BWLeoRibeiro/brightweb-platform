@@ -19,6 +19,48 @@ function customProperties(css: string) {
   return new Set(Array.from(css.matchAll(/(--[a-z0-9-]+)\s*:/g), (match) => match[1]));
 }
 
+const tokenizedVisualContract = [
+  "--text-ui-chip", "--text-ui-action", "--text-ui-shell-title", "--text-ui-report-title",
+  "--text-ui-report-title-lg", "--text-ui-calendar", "--text-ui-report-metric",
+  "--radius-swatch", "--radius-pill", "--radius-scrollbar", "--surface-overlay", "--surface-overlay-strong", "--surface-tooltip", "--surface-badge-tint",
+  "--surface-button-soft", "--surface-button-soft-hover", "--border-button-soft-hover",
+  "--surface-selection", "--border-selection", "--surface-pagination-active", "--border-pagination-active",
+  "--surface-danger-subtle", "--surface-account-team", "--surface-account-client", "--surface-account",
+  "--surface-account-hover", "--account-presence", "--account-presence-size", "--row-hover-sweep",
+  "--surface-status-success", "--surface-status-warning", "--surface-status-danger", "--scrollbar-thumb",
+  "--scrollbar-thumb-hover", "--toast-success-bg", "--toast-success-border", "--toast-warning-bg",
+  "--toast-warning-text", "--toast-warning-border", "--toast-error-bg", "--toast-error-border",
+  "--toast-info-bg", "--toast-info-text", "--toast-info-border", "--shadow-accent-control",
+  "--shadow-toolbar-control", "--shadow-toolbar-popover", "--shadow-tooltip", "--shadow-dialog",
+  "--shadow-phone-dropdown", "--report-hero-glow", "--report-hero-rule", "--shell-frame-offset",
+  "--shell-sidebar-width", "--shell-sidebar-collapsed-width", "--shell-sidebar-toggle-offset",
+  "--shell-sidebar-toggle-size", "--shell-sidebar-toggle-inset", "--shell-brand-height",
+  "--shell-nav-item-height", "--shell-nav-item-collapsed-size", "--shell-nav-icon-well-size", "--shell-nav-icon-radius",
+  "--shell-nav-icon-size", "--shell-nav-divider-width", "--shell-nav-child-height",
+  "--shell-nav-child-enter-offset", "--shell-nav-active-indicator-inset",
+  "--shell-nav-active-indicator-collapsed-inset", "--shell-nav-active-indicator-width",
+  "--shell-nav-active-indicator-offset",
+  "--shell-nav-context-dot-size", "--shell-nav-context-dot-offset", "--shell-nav-context-dot-border",
+  "--shell-header-divider-height", "--shell-account-gap", "--shell-account-padding-y",
+  "--shell-surface-border", "--shell-surface-hover", "--shell-surface-active", "--shell-hairline",
+  "--shell-icon-bg", "--shell-group-open", "--shell-shadow", "--shell-background",
+  "--shell-sidebar-background", "--shell-control-muted", "--shell-nav-foreground",
+  "--shell-nav-active-border", "--shell-nav-active-icon-bg", "--shell-nav-active-icon-fg",
+  "--shell-nav-context-icon-bg", "--shell-nav-context-icon-fg", "--shell-nav-child-fg",
+  "--shell-nav-child-icon-fg", "--shell-nav-child-active-bg", "--shell-nav-child-active-border",
+  "--shell-navbar-fg", "--shell-navbar-muted", "--shell-navbar-hairline", "--toolbar-popover-width",
+  "--toolbar-chip-height", "--toolbar-search-min-width", "--toolbar-icon-size", "--radius-toolbar-popover",
+  "--crm-sidebar-gap", "--crm-report-copy-max-width", "--crm-report-metric-min-width",
+  "--timeline-list-inset", "--timeline-line-offset", "--timeline-marker-offset", "--table-header-height",
+  "--table-cell-padding-x", "--table-cell-padding-y", "--crm-table-viewport-offset",
+  "--crm-table-min-height", "--crm-table-empty-min-height", "--report-stat-min-width", "--dialog-width",
+  "--sheet-width", "--crm-sheet-width", "--menu-min-width", "--chart-tooltip-min-width",
+  "--skeleton-line-height", "--skeleton-line-height-lg", "--skeleton-line-height-compact",
+  "--skeleton-line-height-xs", "--section-icon-size", "--surface-enter-offset", "--space-eyebrow-y",
+  "--scrollbar-size", "--tint-soft-border", "--tint-soft-bg", "--tint-soft-hover", "--tint-hero-border",
+  "--tint-hero-bg", "--tint-hero-fg", "--tint-hero-hover",
+] as const;
+
 test("theme CSS keeps hex literals in palette files", async () => {
   const files = (await fs.readdir(sourceRoot)).filter((file) => file.endsWith(".css") && file !== "tokens.css");
   for (const file of files) {
@@ -53,6 +95,30 @@ test("every Tailwind color mapping references a defined token", async () => {
   assert.ok(mappings.length > 0, "expected color mappings in theme.css");
   for (const [, token] of mappings) {
     assert.ok(tokens.has(token), `${token} is referenced by theme.css but absent from tokens.css`);
+  }
+});
+
+test("tokenized package visuals have defaults and live consumers", async () => {
+  const tokensCss = await read("src/tokens.css");
+  const defaults = customProperties(tokensCss.slice(0, tokensCss.indexOf("/* Dark mode")));
+  const packageRoots = ["app-shell", "module-crm", "theme", "ui"];
+  const packageSources = (await Promise.all(packageRoots.map(async (packageName) => {
+    const root = path.join(repoRoot, "packages", packageName, "src");
+    const files: string[] = [];
+    async function visit(directory: string) {
+      for (const entry of await fs.readdir(directory, { withFileTypes: true })) {
+        const entryPath = path.join(directory, entry.name);
+        if (entry.isDirectory()) await visit(entryPath);
+        else if (/\.(?:css|ts|tsx)$/.test(entry.name) && entry.name !== "tokens.css") files.push(await fs.readFile(entryPath, "utf8"));
+      }
+    }
+    await visit(root);
+    return files.join("\n");
+  }))).join("\n");
+
+  for (const token of tokenizedVisualContract) {
+    assert.ok(defaults.has(token), `${token} must have a neutral default in tokens.css`);
+    assert.ok(packageSources.includes(`var(${token})`), `${token} must have a package consumer`);
   }
 });
 
