@@ -2,6 +2,9 @@
 
 import { ArrowLeft, BriefcaseBusiness, KanbanSquare, Plus, RotateCcw } from "lucide-react";
 import type { ShellContextualAction, ShellModuleRegistration } from "@brightweblabs/app-shell";
+import { ProjectSummaryCard } from "./ui/shared/project-summary-card";
+import { ProjectSummaryCardSkeleton } from "./ui/shared/project-summary-card-skeleton";
+import { TaskDueMeta, TaskPriorityTag, TaskStatusTag } from "./ui/shared/task-tags";
 
 export function createProjectsModuleRegistration(baseHref = "/projetos"): ShellModuleRegistration<ShellContextualAction> { return {
   key: "projects",
@@ -24,6 +27,11 @@ export function createProjectsModuleRegistration(baseHref = "/projetos"): ShellM
     "project-board": [
       { label: "Projetos", icon: ArrowLeft, action: "projects-back-to-portfolio", placement: "back" },
     ],
+  },
+  dashboardContribution: {
+    key: "projects",
+    sections: ["projects", "tasks"],
+    projectComponents: { ProjectSummaryCard, ProjectSummaryCardSkeleton, TaskDueMeta, TaskPriorityTag, TaskStatusTag },
   },
 }; }
 

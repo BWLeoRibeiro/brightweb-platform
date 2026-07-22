@@ -15,6 +15,7 @@ BrightWeb themes follow one cascade: L0 brand primitives feed L1 shadcn semantic
 | `--surface-account-team`, `--surface-account-client`, `--surface-account`, `--surface-account-hover`, `--account-presence` | Account rail identity, presence, and interaction surfaces. |
 | `--account-presence-size`, `--radius-swatch`, `--radius-pill`, `--radius-scrollbar` | Presence, swatch, pill, avatar, and scrollbar geometry. |
 | `--row-hover-sweep`, `--surface-status-success`, `--surface-status-warning`, `--surface-status-danger` | Shared row and status surfaces. |
+| `--dashboard-*` | Aggregate dashboard glows, shadows, task groups, milestone states, and local shell contrast recipes. |
 | `--tint-soft-border`, `--tint-soft-bg`, `--tint-soft-hover`, `--tint-hero-border`, `--tint-hero-bg`, `--tint-hero-fg`, `--tint-hero-hover` | Dynamic tint recipes resolved where a component supplies `--tint`. |
 | `--scrollbar-thumb`, `--scrollbar-thumb-hover`, `--scrollbar-size` | Shared scrollbar colour and geometry. |
 | `--toast-success-bg`, `--toast-success-border`, `--toast-warning-bg`, `--toast-warning-text`, `--toast-warning-border`, `--toast-error-bg`, `--toast-error-border`, `--toast-info-bg`, `--toast-info-text`, `--toast-info-border` | Sonner semantic toast palette. |

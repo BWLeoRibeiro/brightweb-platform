@@ -2,10 +2,12 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   applyShellRegistrationOverrides,
+  buildClientAppShellRegistration,
   matchesShellPath,
   overrideNavHref,
   resolveShellToolbarSurface,
 } from "../packages/app-shell/src/config.ts";
+import { mergeDashboardRefreshEventDetails, normalizeDashboardRefreshSections } from "../packages/app-shell/src/dashboard/events.ts";
 import type { ShellModuleRegistration, ShellToolbarRouteConfig } from "../packages/app-shell/src/types.ts";
 
 test("matches exact and dynamic shell paths", () => {
@@ -95,4 +97,33 @@ test("warns about unknown registration override keys and lists known keys", () =
   }
 
   assert.deepEqual(warnings, ["Unknown shell registration override keys: typo. Known keys: crm."]);
+});
+
+test("normalizes dashboard refresh sections", () => {
+  assert.deepEqual(normalizeDashboardRefreshSections(), ["projects", "crm", "tasks"]);
+  assert.deepEqual(normalizeDashboardRefreshSections([]), ["projects", "crm", "tasks"]);
+  assert.deepEqual(normalizeDashboardRefreshSections(["tasks", "projects", "tasks"]), ["tasks", "projects"]);
+});
+
+test("merges dashboard refresh sections and keeps latest diagnostics", () => {
+  assert.deepEqual(mergeDashboardRefreshEventDetails(
+    { source: "realtime", domain: "projects", eventType: "project.updated", sections: ["projects", "tasks"] },
+    { source: "realtime", domain: "crm", eventType: "contact.updated", sections: ["crm"] },
+  ), { source: "realtime", domain: "crm", eventType: "contact.updated", sections: ["projects", "tasks", "crm"] });
+  assert.deepEqual(mergeDashboardRefreshEventDetails(
+    { source: "realtime", domain: "crm", eventType: "contact.updated", sections: ["crm"] },
+    { source: "realtime", domain: "projects", eventType: "activity.created" },
+  ), { source: "realtime", domain: "projects", eventType: "activity.created", sections: ["crm", "projects", "tasks"] });
+});
+
+test("builds dashboard contributions from enabled module registrations", () => {
+  const built = buildClientAppShellRegistration({
+    brand: {} as never,
+    toolsSection: { key: "tools", label: "Tools", icon: (() => null) as never },
+    modules: [
+      { key: "projects", dashboardContribution: { key: "projects", sections: ["projects", "tasks"] } },
+      { key: "crm", dashboardContribution: { key: "crm", sections: ["crm"] } },
+    ],
+  });
+  assert.deepEqual(built.dashboardContributions.map((item) => item.sections), [["projects", "tasks"], ["crm"]]);
 });

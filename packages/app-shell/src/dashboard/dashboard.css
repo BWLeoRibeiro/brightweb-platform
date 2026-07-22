@@ -1,0 +1,18 @@
+.dashboard-root {
+  --dashboard-status-lead: var(--semantic-info, var(--accent));
+  --dashboard-status-qualified: var(--semantic-warning, var(--project-risk-at-risk));
+  --dashboard-status-proposal: var(--accent);
+  --dashboard-status-won: var(--semantic-success, var(--project-state-active));
+  --dashboard-status-lost: var(--muted-foreground);
+  --dashboard-danger-foreground: var(--project-risk-overdue-strong);
+}
+
+.dashboard-surface {
+  border-radius: var(--radius-card);
+  border: 1px solid var(--border);
+  background: var(--card);
+  box-shadow: var(--dashboard-shadow-sm);
+}
+
+.dashboard-status-dot { background: var(--tint); }
+.dashboard-error { border-color: var(--dashboard-danger-border); background: var(--dashboard-danger-soft); color: var(--dashboard-danger-foreground); }

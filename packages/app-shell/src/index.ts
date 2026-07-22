@@ -82,3 +82,4 @@ export type {
   ToolNavItem,
 } from "./types";
 export { computeInitials } from "./utils";
+export * from "./dashboard/index";

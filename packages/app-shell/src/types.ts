@@ -1,4 +1,5 @@
 import type { LucideIcon } from "lucide-react";
+import type { DashboardSurfaceContribution } from "./dashboard/types";
 
 export type AppNavItem = {
   href: string;
@@ -124,6 +125,7 @@ export type ShellModuleRegistration<TAction = never> = {
   moduleGroups?: ShellNavGroupConfig[];
   toolbarRoutes?: ShellToolbarRouteConfig[];
   toolbarActions?: Partial<Record<ShellToolbarSurface, TAction[]>>;
+  dashboardContribution?: DashboardSurfaceContribution;
 };
 
 export type ShellRegistrationOverride = (
@@ -142,6 +144,7 @@ export type BuiltClientAppShellRegistration<TAction = never> = {
   shellConfig: ClientAppShellConfig;
   toolbarRoutes: ShellToolbarRouteConfig[];
   toolbarActions: Partial<Record<ShellToolbarSurface, TAction[]>>;
+  dashboardContributions: DashboardSurfaceContribution[];
 };
 
 export type ResolvedShellNavGroupConfig = Omit<ShellNavGroupConfig, "children"> & {

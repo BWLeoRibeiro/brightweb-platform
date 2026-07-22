@@ -109,6 +109,23 @@ Treat `getAdminUsersPageData()` as package page glue. Build reusable admin surfa
 
 If your app uses `@brightweblabs/app-shell`, the Admin starter also wires `adminModuleRegistration` into the shell configuration so admin nav and toolbar surfaces appear in the platform runtime.
 
+### Aggregate dashboard
+
+`AppDashboard` is the shell-owned aggregate dashboard. Give it a `DashboardDataClient`, optional server-loaded `initialData`, and the `dashboardContributions` returned by `buildClientAppShellRegistration()`. CRM contributes the client section; Projects contributes the project, task, and milestone sections plus its package-native cards and tags. If a module is absent, its tab and bento cells are omitted.
+
+Import `@brightweblabs/app-shell/dashboard.css` once in the route layout. The dashboard dictionary defaults to MQ's Portuguese copy and can be replaced through the `dictionary` prop.
+
+```tsx
+const built = buildClientAppShellRegistration(registration);
+
+<AppDashboard
+  client={dashboardClient}
+  contributions={built.dashboardContributions}
+  initialData={initialDashboardData}
+  viewerFirstName={viewer.firstName}
+/>
+```
+
 ## How To Build On This
 
 - Build on `stable` auth helpers, admin handlers, and admin listing helpers for project-owned server logic.

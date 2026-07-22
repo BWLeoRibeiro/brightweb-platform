@@ -3357,5 +3357,11 @@
     ],
     "source": "packages/module-projects/src/ui/toolbar-controls.tsx",
     "notes": []
+  },
+  {
+    "moduleKey": "platform-base", "packageName": "@brightweblabs/app-shell", "symbol": "AppDashboard", "kind": "component", "status": "stable", "runtime": "client", "summary": "MQ-compatible aggregate dashboard composed from registered CRM and Projects contributions.", "auth": "none; the host app supplies authorized dashboard data", "inputs": [{ "name": "props", "type": "AppDashboardProps", "required": true, "description": "Injectable data client, module contributions, initial data, viewer name, and optional dictionary." }], "outputs": [{ "type": "React element", "description": "Aggregate dashboard with registration-gated module sections." }], "notes": ["Import @brightweblabs/app-shell/dashboard.css and pass dashboardContributions from buildClientAppShellRegistration."], "source": "packages/app-shell/src/dashboard/dashboard-client.tsx"
+  },
+  {
+    "moduleKey": "platform-base", "packageName": "@brightweblabs/app-shell", "symbol": "DashboardDataClient", "kind": "type", "status": "stable", "runtime": "shared", "summary": "Injectable transport contract for aggregate dashboard overview, Projects, CRM, and task payloads.", "auth": "host endpoints enforce access", "inputs": [], "outputs": [{ "type": "DashboardDataClient", "description": "Four loader methods whose payloads are validated by the packaged dashboard parsers." }], "notes": ["Apps may return either bare section data or the MQ-compatible { data, error } envelope."], "source": "packages/app-shell/src/dashboard/types.ts"
   }
 ]

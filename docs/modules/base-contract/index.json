@@ -7,7 +7,7 @@
       "title": "Platform Base",
       "file": "platform-base.json",
       "doc": "../platform-base.md",
-      "entryCount": 59,
+      "entryCount": 61,
       "summary": "Core auth and admin-backed platform base surfaces."
     },
     {
