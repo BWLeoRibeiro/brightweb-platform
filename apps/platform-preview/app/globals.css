@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "@brightweblabs/theme/css";
+@import "@brightweblabs/theme/themes/mq";  /* MQ theme for parity comparison */
 @import "@brightweblabs/module-crm/tokens.css";
 
 @source "../../../packages/ui/src";
