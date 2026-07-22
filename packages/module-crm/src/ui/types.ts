@@ -74,6 +74,15 @@ export type CrmUiDictionary = {
     reportTitle: string;
     reportDescription: string;
     openReport: string;
+    reportAriaLabel: string;
+    qualifiedSingular: string;
+    qualifiedPlural: string;
+    wonSingular: string;
+    wonPlural: string;
+    inLast30Days: string;
+    last7Days: string;
+    last30Days: string;
+    last12Months: string;
     marketing: string;
   };
   stats: {
@@ -190,6 +199,16 @@ export type CrmUiDictionary = {
     address: string;
     taxIdentifier: string;
     unavailable: string;
+  };
+  toolbar: {
+    filters: string;
+    clear: string;
+    status: string;
+    organize: string;
+    apply: string;
+    create: string;
+    newContact: string;
+    newOrganization: string;
   };
   report: {
     loading: string;

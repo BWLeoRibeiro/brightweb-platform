@@ -6,6 +6,7 @@ import { createElement as h } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 
 import type { CrmContact, CrmContactsListResult, CrmStatusLog } from "../packages/module-crm/src/data.ts";
+import { crmModuleRegistration } from "../packages/module-crm/src/registration.ts";
 import {
   CrmContactDialog,
   CrmContactsTable,
@@ -18,6 +19,9 @@ import {
   CrmStatusDialog,
   CrmTimeline,
   CrmTimelineBrowser,
+  CrmToolbarCreateMenu,
+  CrmToolbarFiltersPill,
+  CrmToolbarSearchChip,
   CRM_UI_EVENTS,
   defaultCrmUiDictionary,
   useCrmBulkActions,
@@ -63,6 +67,22 @@ test("CRM UI surfaces render from data without network access", () => {
   assert.match(renderToStaticMarkup(h(CrmReport, { data: report })), /Pulso do/);
   assert.match(renderToStaticMarkup(h(CrmReportPage, { initialData: report })), /Distribuição por estado/);
   assert.match(renderToStaticMarkup(h(CrmDashboard, { initialData: { contacts, stats: { total: 1, byStatus: { lead: 1 } }, owners: [], organizations: [], timeline } })), /Ada Lovelace/);
+});
+
+test("CRM dashboard follows the MQ table, right rail, and report hero composition", () => {
+  const html = renderToStaticMarkup(h(CrmDashboard, { initialData: { contacts, stats: { total: 1, byStatus: { lead: 1 } }, owners: [], organizations: [{ id: "org-1", name: "Analytical Engines" }], timeline } }));
+  assert.match(html, /Timeline/);
+  assert.match(html, /Organizações/);
+  assert.match(html, /Relatório do CRM/);
+  assert.doesNotMatch(html, /Visão geral do funil/);
+  assert.ok(html.indexOf("Ada Lovelace") < html.indexOf("Relatório do CRM"));
+});
+
+test("CRM shell toolbar controls are exported as independent surfaces", () => {
+  assert.match(renderToStaticMarkup(h(CrmToolbarSearchChip, { value: "", onChange: () => {} })), /Pesquisar contactos/);
+  assert.match(renderToStaticMarkup(h(CrmToolbarFiltersPill, { status: null, sort: "date_desc", onApply: () => {} })), /Filtros/);
+  assert.match(renderToStaticMarkup(h(CrmToolbarCreateMenu)), /Criar/);
+  assert.deepEqual(crmModuleRegistration.toolbarActions?.crm?.map((item) => item.action), ["crm-search", "crm-filters", "crm-create-menu"]);
 });
 
 test("CRM UI dictionary overrides every rendered label source", () => {

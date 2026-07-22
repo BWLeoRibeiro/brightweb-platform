@@ -61,6 +61,7 @@ export type CrmContactsTableProps = {
   onBulkDelete?: (contactIds: string[]) => void;
   onQuickStatus?: (contact: CrmContact, status: CrmStageConfig["value"]) => void;
   renderRowActions?: (contact: CrmContact) => ReactNode;
+  showToolbar?: boolean;
 };
 
 export function CrmContactsTable({
@@ -79,6 +80,7 @@ export function CrmContactsTable({
   onBulkDelete,
   onQuickStatus,
   renderRowActions,
+  showToolbar = true,
 }: CrmContactsTableProps) {
   const visibleColumns = columns.filter((column) => !column.hidden);
   const resolvedStages = resolveCrmStages(dictionary, stages);
@@ -118,8 +120,8 @@ export function CrmContactsTable({
   };
 
   return (
-    <SurfaceCard className="flex min-h-[32rem] min-w-0 flex-col overflow-hidden p-0">
-      <div className="flex flex-wrap items-center gap-3 border-b border-hairline p-4">
+    <SurfaceCard className="flex h-[calc(100dvh-12rem)] min-h-[35rem] min-w-0 flex-col overflow-hidden p-0">
+      {showToolbar ? <div className="flex flex-wrap items-center gap-3 border-b border-hairline p-4">
         <SearchField
           value={params.search ?? ""}
           onChange={(search) => updateParams({ search, page: 1 })}
@@ -158,7 +160,7 @@ export function CrmContactsTable({
             </Button>
           </div>
         ) : null}
-      </div>
+      </div> : selectedIds.length > 0 ? <div className="flex items-center justify-end gap-3 border-b border-hairline p-3"><span className="text-ui-meta font-semibold text-foreground">{dictionary.table.selectedCount(selectedIds.length)}</span><Button type="button" size="sm" variant="outline" onClick={() => onBulkStatus?.(selectedIds)}>{dictionary.table.changeStatus}</Button><Button type="button" size="sm" variant="outline" onClick={() => onBulkDelete?.(selectedIds)}><Trash2 className="size-3.5" aria-hidden />{dictionary.table.deleteSelected}</Button></div> : null}
 
       <Table className="min-w-[52rem]">
         <TableHeader>

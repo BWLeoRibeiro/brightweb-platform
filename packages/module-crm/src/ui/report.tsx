@@ -57,13 +57,15 @@ export function CrmReport({ data, dictionary = defaultCrmUiDictionary, stages, b
   return (
     <div className="flex w-full flex-col gap-6">
       <header className="brand-panel relative overflow-hidden rounded-[var(--radius-panel)] p-6 text-primary-foreground md:p-8">
+        <div aria-hidden className="pointer-events-none absolute -right-24 -top-28 h-80 w-80 rounded-full bg-[radial-gradient(circle,color-mix(in_srgb,var(--accent)_38%,transparent),transparent_70%)] blur-3xl" />
+        <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-px bg-[linear-gradient(90deg,transparent,color-mix(in_srgb,var(--accent)_60%,transparent),transparent)]" />
         <div className="relative flex flex-col gap-7 lg:flex-row lg:items-end lg:justify-between">
           <div className="min-w-0 lg:flex-1">
-            <p className="inline-flex items-center gap-2 text-ui-label text-current/65"><BarChart3 className="size-3.5" aria-hidden />{dictionary.report.eyebrow}</p>
+            <div className="flex items-center justify-between gap-3"><p className="inline-flex items-center gap-2 text-ui-label text-current/65"><BarChart3 className="size-3.5 text-accent" aria-hidden />{dictionary.report.eyebrow}</p><Button href={backHref} variant="outline" size="sm" className="border-current/25 bg-current/10 text-current hover:bg-current/15 lg:hidden"><ArrowLeft className="size-3.5" aria-hidden />{dictionary.report.back}</Button></div>
             <h1 className="mt-4 text-ui-title">{dictionary.report.titlePrefix} <span className="text-accent">{dictionary.report.titleAccent}</span></h1>
             <p className="mt-3 text-ui-body text-current/70"><span className="font-semibold text-current">{data.summary.qualifiedContacts}</span> {dictionary.report.qualified}<span className="mx-1.5 opacity-40">·</span><span className="font-semibold text-current">{data.summary.wonContacts}</span> {dictionary.report.won}<span className="mx-1.5 opacity-40">·</span><span className="font-semibold text-current">{data.summary.lostContacts}</span> {dictionary.report.lost}</p>
             <p className="mt-2 text-ui-meta text-current/65">{dictionary.report.updated} {new Intl.DateTimeFormat(dictionary.locale, { dateStyle: "medium", timeStyle: "short" }).format(new Date(data.generatedAt))}</p>
-            <Button href={backHref} variant="outline" size="sm" className="mt-5 border-current/25 bg-current/10 text-current hover:bg-current/15"><ArrowLeft className="size-3.5" aria-hidden />{dictionary.report.back}</Button>
+            <Button href={backHref} variant="outline" size="sm" className="mt-5 hidden border-current/25 bg-current/10 text-current hover:bg-current/15 lg:inline-flex"><ArrowLeft className="size-3.5" aria-hidden />{dictionary.report.back}</Button>
           </div>
           <div className="flex shrink-0 flex-wrap gap-3 lg:flex-nowrap">
             <HeroMetric label={dictionary.report.totalContacts} value={data.summary.totalContacts} metricLabel={dictionary.report.portfolio} />

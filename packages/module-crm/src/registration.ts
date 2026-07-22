@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowUpDown, BarChart2, Mail, Plus, SlidersHorizontal, UserRound, Users } from "lucide-react";
+import { BarChart2, Filter, Mail, Plus, Search, UserRound, Users } from "lucide-react";
 import type { ShellContextualAction, ShellModuleRegistration } from "@brightweblabs/app-shell";
 
 export const crmModuleRegistration: ShellModuleRegistration<ShellContextualAction> = {
@@ -28,9 +28,9 @@ export const crmModuleRegistration: ShellModuleRegistration<ShellContextualActio
   ],
   toolbarActions: {
     crm: [
-      { label: "Organizar tabela", icon: ArrowUpDown, action: "crm-organize-menu" },
-      { label: "Segmentar", icon: SlidersHorizontal, action: "crm-segment-menu" },
-      { label: "Novo", icon: Plus, action: "crm-new-menu" },
+      { label: "Procurar contactos", icon: Search, action: "crm-search" },
+      { label: "Filtros", icon: Filter, action: "crm-filters" },
+      { label: "Criar", icon: Plus, action: "crm-create-menu" },
     ],
   },
 };

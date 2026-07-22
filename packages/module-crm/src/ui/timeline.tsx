@@ -13,19 +13,21 @@ export type CrmTimelineProps = {
   loading?: boolean;
   dictionary?: CrmUiDictionary;
   activityDictionary?: CrmActivityDictionary;
+  embedded?: boolean;
 };
 
-export function CrmTimeline({ entries, loading = false, dictionary = defaultCrmUiDictionary, activityDictionary = dictionary.activity }: CrmTimelineProps) {
+export function CrmTimeline({ entries, loading = false, dictionary = defaultCrmUiDictionary, activityDictionary = dictionary.activity, embedded = false }: CrmTimelineProps) {
   if (loading) {
-    return <SurfaceCard className="grid gap-4 p-5" aria-label={dictionary.timeline.title}>{Array.from({ length: 3 }, (_, index) => <Skeleton key={index} className="h-12 w-full" />)}</SurfaceCard>;
+    const content = <div className="grid gap-4" aria-label={dictionary.timeline.title}>{Array.from({ length: 3 }, (_, index) => <Skeleton key={index} className="h-12 w-full" />)}</div>;
+    return embedded ? content : <SurfaceCard className="p-5">{content}</SurfaceCard>;
   }
   if (entries.length === 0) {
-    return <SurfaceCard><EmptyState icon={Clock3} title={dictionary.timeline.emptyTitle} hint={dictionary.timeline.emptyHint} /></SurfaceCard>;
+    const content = <EmptyState icon={Clock3} title={dictionary.timeline.emptyTitle} hint={dictionary.timeline.emptyHint} />;
+    return embedded ? content : <SurfaceCard>{content}</SurfaceCard>;
   }
 
-  return (
-    <SurfaceCard className="p-5">
-      <ol className="grid gap-5" aria-label={dictionary.timeline.title}>
+  const content = (
+      <ol className="flex flex-col pl-[10px]" aria-label={dictionary.timeline.title}>
         {entries.map((entry) => {
           const segments = composeCrmMessage({
             eventType: "crm_contact_status_changed",
@@ -36,15 +38,18 @@ export function CrmTimeline({ entries, loading = false, dictionary = defaultCrmU
             },
           }, entry.changed_by_label ?? dictionary.timeline.systemActor, activityDictionary);
           return (
-            <li key={entry.id} className="relative border-l border-hairline pl-5 text-ui-body text-muted-foreground">
-              <span className="absolute -left-1 top-1 size-2 rounded-full bg-[color:var(--crm-stage-lead)]" aria-hidden />
-              <p><ActivityMessage segs={segments} /></p>
-              <time className="mt-1 block text-ui-micro" dateTime={entry.changed_at}>{new Intl.DateTimeFormat(dictionary.locale, { dateStyle: "medium", timeStyle: "short" }).format(new Date(entry.changed_at))}</time>
+            <li key={entry.id} className="relative flex gap-3 pb-4 text-ui-meta text-muted-foreground last:pb-0">
+              <span className="absolute left-[4.5px] top-[10px] h-full w-px bg-hairline last:hidden" aria-hidden />
+              <span className="relative z-10 mt-[5px] size-2.5 shrink-0 rounded-full bg-[color:var(--crm-stage-lead)] ring-2 ring-card" aria-hidden />
+              <div className="min-w-0 flex-1">
+              <div className="flex items-start justify-between gap-2"><p className="leading-snug"><ActivityMessage segs={segments} /></p>
+              <time className="shrink-0 text-ui-micro" dateTime={entry.changed_at}>{new Intl.DateTimeFormat(dictionary.locale, { dateStyle: "short", timeStyle: "short" }).format(new Date(entry.changed_at))}</time></div>
               {entry.reason ? <p className="mt-1 text-ui-meta"><span className="font-semibold text-foreground">{dictionary.timeline.reasonLabel}:</span> {entry.reason}</p> : null}
+              </div>
             </li>
           );
         })}
       </ol>
-    </SurfaceCard>
   );
+  return embedded ? content : <SurfaceCard className="p-5">{content}</SurfaceCard>;
 }
