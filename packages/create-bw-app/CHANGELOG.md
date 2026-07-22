@@ -1,5 +1,11 @@
 # create-bw-app
 
+## 0.13.1
+
+### Patch Changes
+
+- e4afe0e: Port the complete CRM dashboard and operational report into the module package, with Portuguese dictionary defaults, reusable organization and timeline browsers, bulk actions, report data helpers, and thin starter routes for `/crm` and `/crm/report`.
+
 ## 0.13.0
 
 ### Minor Changes

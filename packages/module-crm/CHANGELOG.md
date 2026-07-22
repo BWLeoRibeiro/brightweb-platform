@@ -1,5 +1,11 @@
 # @brightweblabs/module-crm
 
+## 0.6.0
+
+### Minor Changes
+
+- e4afe0e: Port the complete CRM dashboard and operational report into the module package, with Portuguese dictionary defaults, reusable organization and timeline browsers, bulk actions, report data helpers, and thin starter routes for `/crm` and `/crm/report`.
+
 ## 0.5.2
 
 ### Patch Changes
