@@ -1,5 +1,6 @@
 import { Mail, Phone } from "lucide-react";
 import { buildProjectMemberEmailHref, buildProjectMemberPhoneHref } from "./contact-links";
+import { defaultProjectsUiDictionary } from "../dictionary";
 
 type ContactActionButtonsProps = {
   label: string | null;
@@ -21,8 +22,8 @@ export function ContactActionButtons({
   projectReference,
   iconClassName,
   linkClassName,
-  phoneAriaPrefix = "Ligar para",
-  emailAriaPrefix = "Enviar email para",
+  phoneAriaPrefix = defaultProjectsUiDictionary.people.call,
+  emailAriaPrefix = defaultProjectsUiDictionary.people.email,
 }: ContactActionButtonsProps) {
   return (
     <>
@@ -30,7 +31,7 @@ export function ContactActionButtons({
         <a
           href={buildProjectMemberPhoneHref(phone)}
           className={linkClassName}
-          aria-label={`${phoneAriaPrefix} ${label ?? "contacto"}`}
+          aria-label={`${phoneAriaPrefix} ${label ?? defaultProjectsUiDictionary.people.contact}`}
           title={`${phoneAriaPrefix} ${phone}`}
         >
           <Phone className={iconClassName ?? "size-3.5"} />
@@ -40,7 +41,7 @@ export function ContactActionButtons({
         <a
           href={buildProjectMemberEmailHref(email, projectName, projectReference)}
           className={linkClassName}
-          aria-label={`${emailAriaPrefix} ${label ?? "contacto"}`}
+          aria-label={`${emailAriaPrefix} ${label ?? defaultProjectsUiDictionary.people.contact}`}
           title={`${emailAriaPrefix} ${email}`}
         >
           <Mail className={iconClassName ?? "size-3.5"} />

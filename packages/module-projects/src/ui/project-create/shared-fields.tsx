@@ -10,6 +10,7 @@ import {
   sheetFieldLabelClassName,
 } from "../shared/sheet-section";
 import { cn } from "../utils";
+import { defaultProjectsUiDictionary } from "../dictionary";
 import { Button } from "@brightweblabs/ui";
 import { Calendar } from "@brightweblabs/ui";
 import { Field, FieldContent, FieldGroup, FieldLabel } from "@brightweblabs/ui";
@@ -104,7 +105,7 @@ export function DateField({
               )}
             >
               <CalendarIcon className="mr-1.5 h-3.5 w-3.5" />
-              {parsedValue ? format(parsedValue, "dd/MM/yyyy") : "Selecionar data"}
+              {parsedValue ? format(parsedValue, "dd/MM/yyyy") : defaultProjectsUiDictionary.create.selectDate}
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-auto p-0" align="start">

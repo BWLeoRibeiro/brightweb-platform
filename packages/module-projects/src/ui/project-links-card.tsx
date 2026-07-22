@@ -1,6 +1,7 @@
 "use client";
 
-import { useProjectsUiClient } from "./context";
+import { useProjectsUiClient, useProjectsUiDictionary } from "./context";
+import { defaultProjectsUiDictionary } from "./dictionary";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { ExternalLink, FileText, FolderOpen, Globe, Link2, PencilLine, Save, Table2, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -60,25 +61,25 @@ type LinkFormState = {
 
 const LINK_KIND_CONFIG = {
   doc: {
-    label: "Documento",
+    label: defaultProjectsUiDictionary.links.kinds.doc,
     icon: FileText,
     iconBgClass: "bg-[color:var(--project-ui-color-11)]",
     iconClass: "text-[color:var(--project-ui-color-12)]",
   },
   sheet: {
-    label: "Folha",
+    label: defaultProjectsUiDictionary.links.kinds.sheet,
     icon: Table2,
     iconBgClass: "bg-[color:var(--project-ui-color-13)]",
     iconClass: "text-[color:var(--project-state-active-strong)]",
   },
   drive: {
-    label: "Drive",
+    label: defaultProjectsUiDictionary.links.kinds.drive,
     icon: FolderOpen,
     iconBgClass: "bg-[color:var(--project-ui-color-14)]",
     iconClass: "text-[color:var(--project-risk-at-risk-strong)]",
   },
   other: {
-    label: "Link",
+    label: defaultProjectsUiDictionary.links.kinds.other,
     icon: Globe,
     iconBgClass: "bg-[color:var(--project-ui-color-15)]",
     iconClass: "text-[color:var(--muted-foreground)]",
@@ -107,20 +108,22 @@ function normalizeLinkForm(form: LinkFormState) {
 }
 
 function LinksEmptyState() {
+  const dictionary = useProjectsUiDictionary();
   return (
     <div className="flex flex-col items-center justify-center gap-3 px-6 py-14 text-center">
       <div className="flex size-11 items-center justify-center rounded-2xl border border-black/10 bg-foreground/5">
         <Link2 className="size-5 text-foreground/30" />
       </div>
       <div>
-        <p className="text-sm font-semibold text-foreground/60">Sem links</p>
-        <p className="mt-1 text-xs text-foreground/40">Adicione links-chave para centralizar recursos importantes.</p>
+        <p className="text-sm font-semibold text-foreground/60">{dictionary.links.noLinks}</p>
+        <p className="mt-1 text-xs text-foreground/40">{dictionary.links.noLinksHint}</p>
       </div>
     </div>
   );
 }
 
 function LinkVisibilityPill({ visibility }: { visibility: string }) {
+  const dictionary = useProjectsUiDictionary();
   const isStaff = visibility === "staff";
 
   return (
@@ -132,7 +135,7 @@ function LinkVisibilityPill({ visibility }: { visibility: string }) {
           : "border-[color:var(--project-ui-color-17)] bg-[color:var(--project-ui-color-18)] text-[color:var(--project-ui-color-19)]"
       }
     >
-      {isStaff ? "Interno" : "Cliente"}
+      {isStaff ? dictionary.links.internal : dictionary.people.client}
     </ProjectPill>
   );
 }
@@ -140,6 +143,7 @@ function LinkVisibilityPill({ visibility }: { visibility: string }) {
 export function ProjectLinksCard({
   projectId, canCreateItems, canManageItems }: ProjectLinksCardProps) {
   const client = useProjectsUiClient();
+  const dictionary = useProjectsUiDictionary();
   const router = useRouter();
   const links = useProjectDetailLinks();
   const { applyLinksPayload } = useProjectDetailActions();
@@ -204,7 +208,7 @@ export function ProjectLinksCard({
     if (!editingLink || linkMode !== "edit" || isSavingLink || !linkLabel.trim() || !linkUrl.trim() || !isLinkEditDirty) return;
     const normalizedLinkUrl = normalizeProjectLinkUrl(linkUrl);
     if (!isValidProjectLinkUrl(normalizedLinkUrl)) {
-      toast.error("URL inválido. Usa um endereço como https://exemplo.com.");
+      toast.error(dictionary.create.invalidUrl);
       return;
     }
     setIsSavingLink(true);
@@ -223,12 +227,12 @@ export function ProjectLinksCard({
       });
       const payload = await response.json().catch(() => null);
       if (!response.ok) {
-        const message = typeof payload?.error === "string" ? payload.error : "Não foi possível atualizar o link.";
+        const message = typeof payload?.error === "string" ? payload.error : dictionary.links.updateError;
         throw new Error(message);
       }
       const didApplyLinks = applyLinksPayload(payload);
 
-      toast.success("Link atualizado.");
+      toast.success(dictionary.links.updated);
       setEditingLink(null);
       setLinkEditBaseline(null);
       setLinkMode("view");
@@ -236,7 +240,7 @@ export function ProjectLinksCard({
         router.refresh();
       }
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Erro ao atualizar link.");
+      toast.error(error instanceof Error ? error.message : dictionary.links.updateFallbackError);
     } finally {
       setIsSavingLink(false);
     }
@@ -251,12 +255,12 @@ export function ProjectLinksCard({
       });
       const payload = await response.json().catch(() => null);
       if (!response.ok) {
-        const message = typeof payload?.error === "string" ? payload.error : "Não foi possível eliminar o link.";
+        const message = typeof payload?.error === "string" ? payload.error : dictionary.links.deleteError;
         throw new Error(message);
       }
       const didApplyLinks = applyLinksPayload(payload);
 
-      toast.success("Link eliminado.");
+      toast.success(dictionary.links.deleted);
       setLinkDeleteDialogOpen(false);
       setEditingLink(null);
       setLinkEditBaseline(null);
@@ -265,7 +269,7 @@ export function ProjectLinksCard({
         router.refresh();
       }
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Erro ao eliminar link.");
+      toast.error(error instanceof Error ? error.message : dictionary.links.deleteFallbackError);
     } finally {
       setIsDeletingLink(false);
     }
@@ -277,12 +281,12 @@ export function ProjectLinksCard({
         <ProjectSurfaceCard className="self-start">
           <ProjectSurfaceSectionHeader
             icon={Link2}
-            title="Links-chave"
+        title={dictionary.links.keyLinks}
             subtitle="Atalhos para recursos importantes"
             rightSlot={
               canCreateItems ? (
                 <SectionAddButton
-                  label="Adicionar link"
+              label={dictionary.links.addLink}
                   onClick={() => dispatchProjectsEvent(PROJECTS_EVENTS.openNewLink)}
                 />
               ) : null
@@ -338,10 +342,10 @@ export function ProjectLinksCard({
                             onClick={() => openEditLink(link)}
                           >
                             <PencilLine className="size-4" />
-                            <span className="sr-only">Editar link</span>
+                            <span className="sr-only">{dictionary.forms.editLink}</span>
                           </Button>
                         </TooltipTrigger>
-                        <TooltipContent side="top">Editar link</TooltipContent>
+                        <TooltipContent side="top">{dictionary.forms.editLink}</TooltipContent>
                       </Tooltip>
                     ) : null}
                     <a
@@ -375,16 +379,16 @@ export function ProjectLinksCard({
             <AppSheetHeader
               icon={Link2}
               editing={linkMode !== "view"}
-              eyebrow={linkMode === "view" ? "A visualizar" : "A editar"}
-              title={<>{linkMode === "view" ? (linkLabel.trim() || "Link") : "Editar link"}</>}
-              description={<>{linkMode === "view" ? (linkUrl.trim() || "Sem URL") : "Atualiza um recurso importante para a equipa do projeto."}</>}
+              eyebrow={linkMode === "view" ? dictionary.board.viewEyebrow : dictionary.board.editEyebrow}
+              title={<>{linkMode === "view" ? (linkLabel.trim() || dictionary.links.kinds.other) : dictionary.forms.editLink}</>}
+              description={<>{linkMode === "view" ? (linkUrl.trim() || dictionary.links.noUrl) : dictionary.links.editDescription}</>}
             />
 
             <form onSubmit={submitLink} className="flex min-h-0 flex-1 flex-col">
               <div className={`${sheetBodyClassName} space-y-4`}>
-                <SheetSection title="Link" editing={linkMode !== "view"} bodyClassName="space-y-3 px-4 py-3">
+                <SheetSection title={dictionary.links.kinds.other} editing={linkMode !== "view"} bodyClassName="space-y-3 px-4 py-3">
                 <label className={cn("mt-0 block", sheetFieldLabelClassName)}>
-                  Nome
+                    {dictionary.forms.name}
                   <Input
                     value={linkLabel}
                     onChange={(event) => setLinkLabel(event.target.value)}
@@ -394,7 +398,7 @@ export function ProjectLinksCard({
                   />
                 </label>
                 <label className={cn("mt-0 block", sheetFieldLabelClassName)}>
-                  URL
+                    {dictionary.forms.url}
                   <Input
                     type="text"
                     inputMode="url"
@@ -412,29 +416,29 @@ export function ProjectLinksCard({
                 </label>
                 <div className="grid gap-4 sm:grid-cols-2">
                   <label className={cn("mt-0 block", sheetFieldLabelClassName)}>
-                    Tipo
+                    {dictionary.forms.kind}
                     <select
                       value={linkKind}
                       onChange={(event) => setLinkKind(event.target.value)}
                       disabled={linkMode === "view"}
                       className={cn(linkMode === "view" ? sheetViewControlClassName : sheetEditControlClassName, "mt-1.5 text-foreground outline-none")}
                     >
-                      <option value="other">Outro</option>
-                      <option value="doc">Documento</option>
-                      <option value="sheet">Folha de cálculo</option>
-                      <option value="drive">Pasta/Drive</option>
+                      <option value="other">{dictionary.create.linkKinds.other}</option>
+                      <option value="doc">{dictionary.create.linkKinds.doc}</option>
+                      <option value="sheet">{dictionary.create.linkKinds.sheet}</option>
+                      <option value="drive">{dictionary.create.linkKinds.drive}</option>
                     </select>
                   </label>
                   <label className={cn("mt-0 block", sheetFieldLabelClassName)}>
-                    Visibilidade
+                    {dictionary.forms.visibility}
                     <select
                       value={linkVisibility}
                       onChange={(event) => setLinkVisibility(event.target.value)}
                       disabled={linkMode === "view"}
                       className={cn(linkMode === "view" ? sheetViewControlClassName : sheetEditControlClassName, "mt-1.5 text-foreground outline-none")}
                     >
-                      <option value="staff">Equipa interna</option>
-                      <option value="client">Cliente</option>
+                      <option value="staff">{dictionary.create.internalTeam}</option>
+                      <option value="client">{dictionary.people.client}</option>
                     </select>
                   </label>
                 </div>
@@ -449,7 +453,7 @@ export function ProjectLinksCard({
                     disabled={isDeletingLink || isSavingLink}
                   >
                     <Trash2 className="mr-1.5 h-3.5 w-3.5" />
-                    Eliminar link
+                      {dictionary.links.deleteLink}
                   </Button>
                 ) : null}
               </div>
@@ -470,7 +474,7 @@ export function ProjectLinksCard({
                       }}
                     >
                       <PencilLine className="mr-2 h-4 w-4" />
-                      Editar link
+                      {dictionary.forms.editLink}
                     </Button>
                   ) : null
                 ) : (
@@ -481,7 +485,7 @@ export function ProjectLinksCard({
                       disabled={isSavingLink || !linkLabel.trim() || !linkUrl.trim() || !isLinkEditDirty}
                     >
                       <Save className="mr-2 h-4 w-4" />
-                      {isSavingLink ? "A guardar..." : "Guardar"}
+                      {isSavingLink ? dictionary.actions.saving : dictionary.actions.save}
                     </Button>
                     <Button
                       type="button"
@@ -498,7 +502,7 @@ export function ProjectLinksCard({
                         setLinkMode("view");
                       }}
                     >
-                      Cancelar
+                      {dictionary.actions.cancel}
                     </Button>
                   </>
                 )}
@@ -510,19 +514,19 @@ export function ProjectLinksCard({
         <AlertDialog open={isLinkDeleteDialogOpen} onOpenChange={setLinkDeleteDialogOpen}>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>Eliminar link?</AlertDialogTitle>
+              <AlertDialogTitle>{dictionary.links.deleteTitle}</AlertDialogTitle>
               <AlertDialogDescription>
-                Esta ação remove o link do projeto. Esta operação não pode ser desfeita.
+                {dictionary.links.deleteDescription}
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel disabled={isDeletingLink}>Cancelar</AlertDialogCancel>
+              <AlertDialogCancel disabled={isDeletingLink}>{dictionary.actions.cancel}</AlertDialogCancel>
               <AlertDialogAction
                 onClick={deleteLink}
                 disabled={isDeletingLink}
                 className="bg-rose-600 text-white hover:bg-rose-700 focus-visible:ring-rose-500/60"
               >
-                {isDeletingLink ? "A eliminar..." : "Eliminar link"}
+                {isDeletingLink ? dictionary.editItems.deleting : dictionary.links.deleteLink}
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>

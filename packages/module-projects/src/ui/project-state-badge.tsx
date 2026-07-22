@@ -7,6 +7,7 @@ import {
 import { isProjectHealth, type ProjectHealth, type ProjectStatus } from "../contracts";
 import { tintPill } from "@brightweblabs/theme/tint";
 import { cn } from "./utils";
+import { defaultProjectsUiDictionary } from "./dictionary";
 
 type ProjectBadgeSize = ProjectPillSize;
 type ProjectHealthTone = ProjectHealth | "neutral";
@@ -15,17 +16,11 @@ type ProjectPillSurface = "default" | "hero";
 export const PROJECT_BADGE_SIZE_CLASSES: Record<ProjectBadgeSize, string> = PROJECT_PILL_SIZE_CLASSES;
 
 export const PROJECT_STATUS_LABELS: Record<ProjectStatus, string> = {
-  planned: "Planeamento",
-  active: "Ativo",
-  blocked: "Bloqueado",
-  completed: "Concluído",
-  canceled: "Cancelado",
+  ...defaultProjectsUiDictionary.badge.status,
 };
 
 export const PROJECT_HEALTH_LABELS: Record<ProjectHealth, string> = {
-  on_track: "Dentro do prazo",
-  at_risk: "Em risco",
-  off_track: "Fora do prazo",
+  ...defaultProjectsUiDictionary.badge.health,
 };
 
 /** Base hue token per status / health tone. The opacity stops live in the

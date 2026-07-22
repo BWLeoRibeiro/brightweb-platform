@@ -3,4 +3,4 @@
 "@brightweblabs/theme": patch
 ---
 
-Add package-owned Projects portfolio and detail UI surfaces with Portuguese defaults, injectable data clients, and preview-ready navigation.
+Add literal Projects portfolio, detail, toolbar, task-board, and client-role UI parity with dictionary-owned Portuguese copy, injectable data clients, tokenized styling, and list/detail/board/tasks preview routes.

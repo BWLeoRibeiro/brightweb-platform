@@ -1,6 +1,7 @@
 "use client";
 
-import { useProjectsUiClient } from "./context";
+import { useProjectsUiClient, useProjectsUiDictionary } from "./context";
+import { defaultProjectsUiDictionary } from "./dictionary";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { Pencil, Plus, Save, Users, X } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -34,14 +35,14 @@ type ProjectMemberOption = {
 const PROJECT_MEMBER_SCOPE_LABELS: Record<ProjectMemberOption["organizationRole"], string> = {
   admin: "BeGreen admin",
   staff: "BeGreen staff",
-  org_admin: "Cliente · admin",
-  org_member: "Cliente",
+  org_admin: defaultProjectsUiDictionary.people.clientAdmin,
+  org_member: defaultProjectsUiDictionary.people.client,
 };
 
 const MAX_ADD_RESULTS = 25;
 
-// Internos (equipa BeGreen) podem ser Gestor, Colaborador ou Observador.
-// Clientes são sempre Observador — nunca mexem no projeto.
+// Internal identities can receive any project role.
+// Client identities are read-only observers.
 function isInternalIdentity(role: ProjectMemberOption["organizationRole"]): boolean {
   return role === "staff" || role === "admin";
 }
@@ -56,7 +57,7 @@ function MemberIdentity({ member }: { member: ProjectMemberOption }) {
     <div className="min-w-0 flex-1">
       <span className="block truncate text-sm font-semibold text-foreground">{member.label}</span>
       <span className="block truncate text-xs text-foreground/60">
-        {member.email ?? "Sem email"} · {PROJECT_MEMBER_SCOPE_LABELS[member.organizationRole]}
+        {member.email ?? defaultProjectsUiDictionary.people.noEmail} · {PROJECT_MEMBER_SCOPE_LABELS[member.organizationRole]}
       </span>
     </div>
   );
@@ -84,7 +85,7 @@ function TeamMemberRow({ member, role, onRoleChange, onRemove }: TeamMemberRowPr
           <option value="observer">{PROJECT_MEMBER_ROLE_LABELS_PT.observer}</option>
         </select>
       ) : (
-        // Cliente: papel fixo em Observador, sem opção de alterar.
+        // Client role is fixed and cannot be changed.
         <span className="inline-flex h-7 items-center rounded-md border border-black/8 bg-background/60 px-2 text-xs text-foreground/60 dark:border-white/10">
           {PROJECT_MEMBER_ROLE_LABELS_PT.observer}
         </span>
@@ -97,7 +98,7 @@ function TeamMemberRow({ member, role, onRoleChange, onRemove }: TeamMemberRowPr
         onClick={onRemove}
       >
         <X className="size-4" />
-        <span className="sr-only">Remover do projeto</span>
+        <span className="sr-only">{defaultProjectsUiDictionary.team.removeFromProject}</span>
       </Button>
     </div>
   );
@@ -132,6 +133,7 @@ type ProjectMembersEditSheetProps = {
 export function ProjectMembersEditSheet({
   projectId, initialMembers }: ProjectMembersEditSheetProps) {
   const client = useProjectsUiClient();
+  const dictionary = useProjectsUiDictionary();
   const router = useRouter();
   const [isClientMounted, setIsClientMounted] = useState(false);
   const [open, setOpen] = useState(false);
@@ -170,7 +172,7 @@ export function ProjectMembersEditSheet({
         });
         const payload = await response.json().catch(() => null);
         if (!response.ok) {
-          const message = typeof payload?.error === "string" ? payload.error : "Não foi possível carregar opções da equipa.";
+          const message = typeof payload?.error === "string" ? payload.error : dictionary.team.loadOptionsError;
           throw new Error(message);
         }
 
@@ -191,7 +193,7 @@ export function ProjectMembersEditSheet({
         });
       } catch (error) {
         if (!isMounted) return;
-        toast.error(error instanceof Error ? error.message : "Erro ao carregar equipa.");
+        toast.error(error instanceof Error ? error.message : dictionary.team.loadFallbackError);
       } finally {
         if (isMounted) setIsLoading(false);
       }
@@ -208,7 +210,7 @@ export function ProjectMembersEditSheet({
     return new Map(memberOptions.map((option) => [option.profileId, option]));
   }, [memberOptions]);
 
-  // A equipa já alocada — sempre visível, internos primeiro, depois por nome.
+  // Allocated people stay visible, internal identities first, then by name.
   const teamMembers = useMemo(() => {
     return Object.keys(selectedMembers)
       .map((profileId) => optionsByProfile.get(profileId))
@@ -220,7 +222,7 @@ export function ProjectMembersEditSheet({
       });
   }, [optionsByProfile, selectedMembers]);
 
-  // Resultados para adicionar — só aparecem com pesquisa, nunca uma lista despejada.
+  // Addition candidates only appear after a search.
   const addResults = useMemo(() => {
     const needle = memberSearch.trim().toLowerCase();
     if (!needle) return [];
@@ -278,15 +280,15 @@ export function ProjectMembersEditSheet({
       });
       const payload = await response.json().catch(() => null);
       if (!response.ok) {
-        const message = typeof payload?.error === "string" ? payload.error : "Não foi possível guardar a equipa.";
+        const message = typeof payload?.error === "string" ? payload.error : dictionary.team.saveError;
         throw new Error(message);
       }
 
-      toast.success("Equipa atualizada.");
+      toast.success(dictionary.team.updated);
       setOpen(false);
       router.refresh();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Erro ao guardar equipa.");
+      toast.error(error instanceof Error ? error.message : dictionary.team.saveFallbackError);
     } finally {
       setIsSaving(false);
     }
@@ -295,7 +297,7 @@ export function ProjectMembersEditSheet({
   if (!isClientMounted) {
     return (
       <TooltipProvider>
-        <SectionIconButton icon={Pencil} label="Editar equipa" disabled />
+        <SectionIconButton icon={Pencil} label={dictionary.team.edit} disabled />
       </TooltipProvider>
     );
   }
@@ -305,14 +307,14 @@ export function ProjectMembersEditSheet({
   return (
     <TooltipProvider>
       <Sheet open={open} onOpenChange={setOpen}>
-        <SectionIconButton icon={Pencil} label="Editar equipa" onClick={() => setOpen(true)} />
+        <SectionIconButton icon={Pencil} label={dictionary.team.edit} onClick={() => setOpen(true)} />
         <SheetContent className={sheetShellClassName}>
         <AppSheetHeader
           icon={Users}
           editing
-          eyebrow="A editar"
-          title={<>Equipa alocada</>}
-          description={<>Equipa interna assume qualquer papel; clientes entram como observadores.</>}
+          eyebrow={dictionary.board.editEyebrow}
+          title={<>{dictionary.detail.allocatedTeam}</>}
+          description={<>{dictionary.team.description}</>}
         />
 
         <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
@@ -328,11 +330,11 @@ export function ProjectMembersEditSheet({
               </div>
             ) : (
               <>
-                {/* Equipa já no projeto */}
+                {/* Existing project members */}
                 <section className="space-y-2">
-                  <SectionHeading title="Equipa neste projeto" count={teamMembers.length} />
+                  <SectionHeading title={dictionary.team.inProject} count={teamMembers.length} />
                   {teamMembers.length === 0 ? (
-                    <p className="text-xs text-foreground/60">Ainda ninguém alocado. Pesquisa abaixo para adicionar.</p>
+                    <p className="text-xs text-foreground/60">{dictionary.team.noneAllocated}</p>
                   ) : (
                     <div className="space-y-2">
                       {teamMembers.map((member) => (
@@ -348,20 +350,20 @@ export function ProjectMembersEditSheet({
                   )}
                 </section>
 
-                {/* Adicionar pessoas — sempre por pesquisa */}
+                {/* Search-driven member addition */}
                 <section className="space-y-2">
-                  <SectionHeading title="Adicionar pessoas" />
+                  <SectionHeading title={dictionary.team.addPeople} />
                   <SearchField
                     size="sm"
                     value={memberSearch}
                     onChange={setMemberSearch}
                     onClear={() => setMemberSearch("")}
-                    placeholder="Pesquisar equipa interna ou clientes por nome ou email"
+                    placeholder={dictionary.team.searchPlaceholder}
                   />
                   {needle === "" ? (
-                    <p className="text-xs text-foreground/55">Escreve um nome ou email para encontrar pessoas a adicionar.</p>
+                    <p className="text-xs text-foreground/55">{dictionary.team.searchHint}</p>
                   ) : addResults.length === 0 ? (
-                    <p className="text-xs text-foreground/55">Sem resultados para “{needle}”.</p>
+                    <p className="text-xs text-foreground/55">{dictionary.team.noResults(needle)}</p>
                   ) : (
                     <div className="space-y-2">
                       {addResults.slice(0, MAX_ADD_RESULTS).map((member) => (
@@ -369,7 +371,7 @@ export function ProjectMembersEditSheet({
                       ))}
                       {addResults.length > MAX_ADD_RESULTS ? (
                         <p className="text-xs text-foreground/55">
-                          A mostrar {MAX_ADD_RESULTS} de {addResults.length}. Refina a pesquisa.
+                          {dictionary.team.resultLimit(MAX_ADD_RESULTS, addResults.length)}
                         </p>
                       ) : null}
                     </div>
@@ -382,10 +384,10 @@ export function ProjectMembersEditSheet({
           <SheetFooter className={`${sheetFooterClassName} flex-row gap-2`}>
             <Button type="submit" className="flex-1" disabled={isSaving || isLoading}>
               <Save className="mr-2 h-4 w-4" />
-              {isSaving ? "A guardar..." : "Guardar equipa"}
+              {isSaving ? dictionary.actions.saving : dictionary.team.save}
             </Button>
             <Button type="button" variant="outline" className="flex-1" onClick={() => setOpen(false)} disabled={isSaving}>
-              Cancelar
+              {dictionary.actions.cancel}
             </Button>
           </SheetFooter>
         </form>

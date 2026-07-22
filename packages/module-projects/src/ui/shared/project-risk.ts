@@ -1,12 +1,13 @@
 import type { ProjectListItem } from "../../types";
+import { defaultProjectsUiDictionary } from "../dictionary";
 
 export type ProjectRisk = "overdue" | "at_risk";
 
 // Shared risk vocabulary so the portfolio card and the detail hero read the
-// same: a late project says "Atrasado" in the list and on its own page.
+// same risk wording in the list and on its own page.
 export const PROJECT_RISK_META: Record<ProjectRisk, { label: string; var: string }> = {
-  overdue: { label: "Atrasado", var: "var(--project-risk-overdue)" },
-  at_risk: { label: "Em risco", var: "var(--project-risk-at-risk)" },
+  overdue: { label: defaultProjectsUiDictionary.status.delayed, var: "var(--project-risk-overdue)" },
+  at_risk: { label: defaultProjectsUiDictionary.status.at_risk, var: "var(--project-risk-at-risk)" },
 };
 
 export function isPastDate(value: string | null) {

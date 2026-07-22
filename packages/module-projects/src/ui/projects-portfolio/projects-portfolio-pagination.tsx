@@ -1,6 +1,7 @@
 "use client";
 
 import { TablePagination } from "@brightweblabs/ui";
+import { useProjectsUiDictionary } from "../context";
 
 type ProjectsPortfolioPaginationProps = {
   page: number;
@@ -13,6 +14,7 @@ export function ProjectsPortfolioPagination({
   totalPages,
   onPageChange,
 }: ProjectsPortfolioPaginationProps) {
+  const dictionary = useProjectsUiDictionary();
   if (totalPages <= 1) return null;
 
   return (
@@ -21,9 +23,9 @@ export function ProjectsPortfolioPagination({
       totalPages={totalPages}
       onPageChange={(nextPage) => onPageChange(nextPage)}
       className="mt-lg"
-      previousLabel="Ir para a página anterior"
-      nextLabel="Ir para a próxima página"
-      pageLabel={(current, count) => `Página ${current} de ${count}`}
+      previousLabel={dictionary.portfolio.previousPage}
+      nextLabel={dictionary.portfolio.nextPage}
+      pageLabel={dictionary.portfolio.page}
     />
   );
 }

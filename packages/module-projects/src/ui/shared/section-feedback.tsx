@@ -1,5 +1,6 @@
 import type { LucideIcon } from "lucide-react";
 import { Loader2 } from "lucide-react";
+import { defaultProjectsUiDictionary } from "../dictionary";
 
 type SectionEmptyStateProps = {
   message: string;
@@ -21,7 +22,7 @@ type SectionLoadingStateProps = {
   message?: string;
 };
 
-export function SectionLoadingState({ message = "A carregar..." }: SectionLoadingStateProps) {
+export function SectionLoadingState({ message = defaultProjectsUiDictionary.detail.loading }: SectionLoadingStateProps) {
   return (
     <div className="inline-flex items-center gap-2 paragraph-small text-muted-foreground">
       <Loader2 className="size-3.5 animate-spin" />

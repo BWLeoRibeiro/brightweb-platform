@@ -1,6 +1,6 @@
 "use client";
 
-import { useProjectsUiClient } from "../context";
+import { useProjectsUiClient, useProjectsUiDictionary } from "../context";
 import { useMemo, useState, type FormEvent } from "react";
 import { format } from "date-fns";
 import { CalendarIcon, Flag, Save } from "lucide-react";
@@ -35,6 +35,7 @@ type ProjectMilestoneCreateSheetProps = {
 
 export function ProjectMilestoneCreateSheet({ projectId, initialOpen = false }: ProjectMilestoneCreateSheetProps) {
   const client = useProjectsUiClient();
+  const dictionary = useProjectsUiDictionary();
   const router = useRouter();
   const [open, setOpen] = useState(initialOpen);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -64,12 +65,12 @@ export function ProjectMilestoneCreateSheet({ projectId, initialOpen = false }: 
         status,
         targetDate: targetDate || undefined,
       });
-      toast.success("Milestone criada com sucesso.");
+      toast.success(dictionary.create.milestoneCreated);
       setOpen(false);
       resetForm();
       router.refresh();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Erro ao criar milestone.");
+      toast.error(error instanceof Error ? error.message : dictionary.create.milestoneCreateFallbackError);
     } finally {
       setIsSubmitting(false);
     }
@@ -81,16 +82,16 @@ export function ProjectMilestoneCreateSheet({ projectId, initialOpen = false }: 
         <AppSheetHeader
           icon={Flag}
           editing
-          eyebrow="A criar"
-          title={<>Nova milestone</>}
-          description={<>Regista um novo marco para acompanhar o progresso do projeto.</>}
+          eyebrow={dictionary.create.creatingEyebrow}
+          title={<>{dictionary.forms.newMilestone}</>}
+          description={<>{dictionary.create.milestoneDescription}</>}
         />
 
         <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
           <div className={`${sheetBodyClassName} space-y-4`}>
-            <SheetSection title="Milestone" editing bodyClassName="space-y-3 px-4 py-3">
+            <SheetSection title={dictionary.detail.milestones.slice(0, -1)} editing bodyClassName="space-y-3 px-4 py-3">
               <div>
-                <label className={sheetFieldLabelClassName} htmlFor="milestone-create-title">Título</label>
+                <label className={sheetFieldLabelClassName} htmlFor="milestone-create-title">{dictionary.forms.title}</label>
                 <Input
                   id="milestone-create-title"
                   value={title}
@@ -100,21 +101,21 @@ export function ProjectMilestoneCreateSheet({ projectId, initialOpen = false }: 
                 />
               </div>
               <div>
-                <label className={sheetFieldLabelClassName} htmlFor="milestone-create-status">Estado</label>
+                <label className={sheetFieldLabelClassName} htmlFor="milestone-create-status">{dictionary.forms.status}</label>
                 <select
                   id="milestone-create-status"
                   value={status}
                   onChange={(event) => setStatus(event.target.value)}
                   className={cn(sheetEditControlClassName, "mt-1.5 text-foreground outline-none")}
                 >
-                  <option value="pending">Pendente</option>
-                  <option value="in_progress">Em progresso</option>
-                  <option value="achieved">Concluído</option>
-                  <option value="delayed">Atrasado</option>
+                  <option value="pending">{dictionary.status.pending}</option>
+                  <option value="in_progress">{dictionary.status.in_progress}</option>
+                  <option value="achieved">{dictionary.status.achieved}</option>
+                  <option value="delayed">{dictionary.status.delayed}</option>
                 </select>
               </div>
               <div>
-                <label className={sheetFieldLabelClassName} htmlFor="milestone-create-date">Data-alvo (opcional)</label>
+                <label className={sheetFieldLabelClassName} htmlFor="milestone-create-date">{dictionary.create.targetDateOptional}</label>
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button
@@ -128,7 +129,7 @@ export function ProjectMilestoneCreateSheet({ projectId, initialOpen = false }: 
                       )}
                     >
                       <CalendarIcon className="mr-2 h-4 w-4" />
-                      {targetDateValue ? format(targetDateValue, "dd/MM/yyyy") : "Selecionar data"}
+                      {targetDateValue ? format(targetDateValue, "dd/MM/yyyy") : dictionary.create.selectDate}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0" align="start">
@@ -148,10 +149,10 @@ export function ProjectMilestoneCreateSheet({ projectId, initialOpen = false }: 
           <SheetFooter className={`${sheetFooterClassName} flex-row gap-2`}>
             <Button type="submit" className="flex-1" disabled={isSubmitting || !title.trim()}>
               <Save className="mr-2 h-4 w-4" />
-              {isSubmitting ? "A criar..." : "Criar milestone"}
+              {isSubmitting ? dictionary.create.creating : dictionary.create.createMilestone}
             </Button>
             <Button type="button" variant="outline" className="flex-1" onClick={() => setOpen(false)}>
-              Cancelar
+              {dictionary.actions.cancel}
             </Button>
           </SheetFooter>
         </form>

@@ -3,6 +3,7 @@
 import { FolderKanban } from "lucide-react";
 import type { ListProjectsPayload } from "../projects-list-response-parser";
 import { ProjectSummaryCard } from "../shared/project-summary-card";
+import { useProjectsUiDictionary } from "../context";
 
 type ProjectsPortfolioListProps = {
   data: ListProjectsPayload;
@@ -13,6 +14,7 @@ export function ProjectsPortfolioList({
   data,
   hasActiveFilters,
 }: ProjectsPortfolioListProps) {
+  const dictionary = useProjectsUiDictionary();
   return (
     <div>
       {data.items.length === 0 ? (
@@ -22,12 +24,12 @@ export function ProjectsPortfolioList({
           </div>
           <div>
             <p className="text-sm font-semibold text-[color:var(--muted-foreground)]">
-              {hasActiveFilters ? "Sem resultados" : "Nenhum projeto"}
+              {hasActiveFilters ? dictionary.portfolio.filteredEmptyTitle : dictionary.portfolio.emptyTitle}
             </p>
             <p className="mt-1 text-xs text-[color:var(--muted-foreground)]">
               {hasActiveFilters
-                ? "Ajusta os filtros para encontrar projetos."
-                : "Cria o primeiro projeto para começar a acompanhar progresso."}
+                ? dictionary.portfolio.filteredEmptyHint
+                : dictionary.portfolio.emptyHint}
             </p>
           </div>
         </div>

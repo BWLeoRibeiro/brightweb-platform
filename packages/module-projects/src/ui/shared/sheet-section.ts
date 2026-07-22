@@ -17,7 +17,7 @@ export const sheetSectionEditingClassName =
   "border-[color:var(--project-ui-color-81)] bg-[color:var(--project-ui-color-82)]";
 
 // The section-header strip while editing: an accent wash so the card titles
-// ("Informação", "Pipeline") read as active, paired with the tinted body.
+// Section names read as active, paired with the tinted body.
 export const sheetSectionHeaderEditingClassName =
   "border-b-[color:var(--project-ui-color-81)] bg-[color:var(--project-ui-color-77)]";
 

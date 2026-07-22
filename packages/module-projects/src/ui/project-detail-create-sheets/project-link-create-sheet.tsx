@@ -1,6 +1,6 @@
 "use client";
 
-import { useProjectsUiClient } from "../context";
+import { useProjectsUiClient, useProjectsUiDictionary } from "../context";
 import { useState, type FormEvent } from "react";
 import { Link2, Save } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -33,6 +33,7 @@ type ProjectLinkCreateSheetProps = {
 export function ProjectLinkCreateSheet({
   projectId, initialOpen = false }: ProjectLinkCreateSheetProps) {
   const client = useProjectsUiClient();
+  const dictionary = useProjectsUiDictionary();
   const router = useRouter();
   const detailActions = useOptionalProjectDetailActions();
   const [open, setOpen] = useState(initialOpen);
@@ -59,7 +60,7 @@ export function ProjectLinkCreateSheet({
 
     const normalizedUrl = normalizeProjectLinkUrl(url);
     if (!isValidProjectLinkUrl(normalizedUrl)) {
-      toast.error("URL inválido. Usa um endereço como https://exemplo.com.");
+      toast.error(dictionary.create.invalidUrl);
       return;
     }
 
@@ -77,19 +78,19 @@ export function ProjectLinkCreateSheet({
       });
       const payload = await response.json().catch(() => null);
       if (!response.ok) {
-        const message = typeof payload?.error === "string" ? payload.error : "Não foi possível criar o link.";
+        const message = typeof payload?.error === "string" ? payload.error : dictionary.errors.createLink;
         throw new Error(message);
       }
       const didApplyLinks = detailActions?.applyLinksPayload(payload) ?? false;
 
-      toast.success("Link criado com sucesso.");
+      toast.success(dictionary.create.linkCreated);
       setOpen(false);
       resetForm();
       if (!didApplyLinks) {
         router.refresh();
       }
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Erro ao criar link.");
+      toast.error(error instanceof Error ? error.message : dictionary.create.linkCreateFallbackError);
     } finally {
       setIsSubmitting(false);
     }
@@ -101,16 +102,16 @@ export function ProjectLinkCreateSheet({
         <AppSheetHeader
           icon={Link2}
           editing
-          eyebrow="A criar"
-          title={<>Novo link</>}
-          description={<>Centraliza um recurso importante para a equipa do projeto.</>}
+          eyebrow={dictionary.create.creatingEyebrow}
+          title={<>{dictionary.forms.newLink}</>}
+          description={<>{dictionary.create.linkDescription}</>}
         />
 
         <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
           <div className={`${sheetBodyClassName} space-y-4`}>
-            <SheetSection title="Link" editing bodyClassName="space-y-3 px-4 py-3">
+            <SheetSection title={dictionary.detail.links.slice(0, -1)} editing bodyClassName="space-y-3 px-4 py-3">
               <div>
-                <label className={sheetFieldLabelClassName} htmlFor="link-create-label">Nome</label>
+                <label className={sheetFieldLabelClassName} htmlFor="link-create-label">{dictionary.forms.name}</label>
                 <Input
                   id="link-create-label"
                   value={label}
@@ -120,7 +121,7 @@ export function ProjectLinkCreateSheet({
                 />
               </div>
               <div>
-                <label className={sheetFieldLabelClassName} htmlFor="link-create-url">URL</label>
+                <label className={sheetFieldLabelClassName} htmlFor="link-create-url">{dictionary.forms.url}</label>
                 <Input
                   id="link-create-url"
                   type="text"
@@ -138,29 +139,29 @@ export function ProjectLinkCreateSheet({
               </div>
               <div className="grid gap-3 sm:grid-cols-2">
                 <div>
-                  <label className={sheetFieldLabelClassName} htmlFor="link-create-kind">Tipo</label>
+                  <label className={sheetFieldLabelClassName} htmlFor="link-create-kind">{dictionary.forms.kind}</label>
                   <select
                     id="link-create-kind"
                     value={kind}
                     onChange={(event) => setKind(event.target.value)}
                     className={cn(sheetEditControlClassName, "mt-1.5 text-foreground outline-none")}
                   >
-                    <option value="other">Outro</option>
-                    <option value="doc">Documento</option>
-                    <option value="sheet">Folha de cálculo</option>
-                    <option value="drive">Pasta/Drive</option>
+                    <option value="other">{dictionary.create.linkKinds.other}</option>
+                    <option value="doc">{dictionary.create.linkKinds.doc}</option>
+                    <option value="sheet">{dictionary.create.linkKinds.sheet}</option>
+                    <option value="drive">{dictionary.create.linkKinds.drive}</option>
                   </select>
                 </div>
                 <div>
-                  <label className={sheetFieldLabelClassName} htmlFor="link-create-visibility">Visibilidade</label>
+                  <label className={sheetFieldLabelClassName} htmlFor="link-create-visibility">{dictionary.forms.visibility}</label>
                   <select
                     id="link-create-visibility"
                     value={visibility}
                     onChange={(event) => setVisibility(event.target.value)}
                     className={cn(sheetEditControlClassName, "mt-1.5 text-foreground outline-none")}
                   >
-                    <option value="staff">Equipa interna</option>
-                    <option value="client">Cliente</option>
+                    <option value="staff">{dictionary.create.internalTeam}</option>
+                    <option value="client">{dictionary.people.client}</option>
                   </select>
                 </div>
               </div>
@@ -169,10 +170,10 @@ export function ProjectLinkCreateSheet({
           <SheetFooter className={`${sheetFooterClassName} flex-row gap-2`}>
             <Button type="submit" className="flex-1" disabled={isSubmitting || !label.trim() || !url.trim()}>
               <Save className="mr-2 h-4 w-4" />
-              {isSubmitting ? "A criar..." : "Criar link"}
+              {isSubmitting ? dictionary.create.creating : dictionary.create.createLink}
             </Button>
             <Button type="button" variant="outline" className="flex-1" onClick={() => setOpen(false)}>
-              Cancelar
+              {dictionary.actions.cancel}
             </Button>
           </SheetFooter>
         </form>

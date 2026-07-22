@@ -21,6 +21,7 @@ import { toActivityChanges } from "@brightweblabs/ui/activity-format";
 import { ActivityMessage } from "@brightweblabs/ui";
 import { activityActorName, composeProjectMessage } from "../activity-messages";
 import type { ProjectActivityItem } from "../types";
+import { useProjectsUiDictionary } from "./context";
 
 type ProjectRecentActivityProps = {
   activity: ProjectActivityItem[];
@@ -64,6 +65,7 @@ function ActivityRow({ item, showDetails = false }: { item: ProjectActivityItem;
 }
 
 export function ProjectRecentActivity({ activity }: ProjectRecentActivityProps) {
+  const dictionary = useProjectsUiDictionary();
   const [isSheetOpen, setSheetOpen] = useState(false);
   const previewItems = activity.slice(0, PREVIEW_ITEMS);
 
@@ -71,17 +73,17 @@ export function ProjectRecentActivity({ activity }: ProjectRecentActivityProps) 
     <>
       <ProjectSurfaceSectionHeader
         icon={Clock3}
-        title="Atividade recente"
-        subtitle="Últimas alterações do projeto"
+        title={dictionary.detail.recentActivity}
+        subtitle={dictionary.detail.recentActivitySubtitle}
         rightSlot={(
           <TooltipProvider>
-            <SectionIconButton icon={Expand} label="Expandir atividade" onClick={() => setSheetOpen(true)} />
+            <SectionIconButton icon={Expand} label={dictionary.detail.expandActivity} onClick={() => setSheetOpen(true)} />
           </TooltipProvider>
         )}
       />
 
       {activity.length === 0 ? (
-        <p className="portal-meta mt-4 px-1 py-2">Sem atividade registada.</p>
+        <p className="portal-meta mt-4 px-1 py-2">{dictionary.detail.noActivity}</p>
       ) : (
         <ul className="portal-scroll mt-4 h-[17.75rem] rounded-[var(--radius-card)] border border-[color:var(--border)]">
           {previewItems.map((item) => (
@@ -94,12 +96,12 @@ export function ProjectRecentActivity({ activity }: ProjectRecentActivityProps) 
         <SheetContent className={sheetShellClassName}>
           <AppSheetHeader
             icon={Activity}
-            title={<>Atividade completa</>}
-            description={<>Todas as alterações relacionadas com este projeto.</>}
+            title={<>{dictionary.detail.fullActivity}</>}
+            description={<>{dictionary.detail.fullActivityDescription}</>}
           />
           <div className={sheetBodyClassName}>
             {activity.length === 0 ? (
-              <p className="portal-meta px-1 py-2">Sem atividade registada.</p>
+              <p className="portal-meta px-1 py-2">{dictionary.detail.noActivity}</p>
             ) : (
               <ul className="overflow-hidden rounded-[var(--radius-card)] border border-[color:var(--border)]">
                 {activity.map((item) => (

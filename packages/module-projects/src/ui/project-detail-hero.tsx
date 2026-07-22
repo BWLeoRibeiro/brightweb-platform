@@ -16,7 +16,7 @@ import { ArrowUpRight, Building2, CalendarDays, ListChecks, UserRound } from "lu
 import type { LucideIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import type { ReactNode } from "react";
-import { useProjectsNavigation } from "./context";
+import { useProjectsNavigation, useProjectsUiDictionary } from "./context";
 
 type ProjectDetailHeroProps = {
   canOpenEditProject: boolean;
@@ -101,6 +101,7 @@ function ProjectHeroActions({
 function ViewOrganizationButton({ project }: { project: ProjectListItem }) {
   const router = useRouter();
   const navigation = useProjectsNavigation();
+  const dictionary = useProjectsUiDictionary();
   return (
     <button
       type="button"
@@ -113,7 +114,7 @@ function ViewOrganizationButton({ project }: { project: ProjectListItem }) {
       }}
       className="inline-flex items-center gap-1 text-[12px] font-semibold text-[color:var(--project-hero-muted)] underline-offset-2 transition-colors hover:text-[color:var(--project-hero-foreground)] hover:underline"
     >
-      Ver organização
+      {dictionary.detail.viewOrganization}
       <ArrowUpRight className="size-3" />
     </button>
   );
@@ -128,6 +129,7 @@ function ProjectHeroFactGrid({
   projectReference: string;
   canViewOrganization: boolean;
 }) {
+  const dictionary = useProjectsUiDictionary();
   const completion = getCompletionPercent(project.taskStats.done, project.taskStats.total);
   const isComplete = completion >= 100;
   const risk = resolveProjectRisk(project);
@@ -135,8 +137,8 @@ function ProjectHeroFactGrid({
 
   return (
     <div className="grid gap-x-8 gap-y-5 sm:grid-cols-2 xl:grid-cols-4">
-      <ProjectHeroFact icon={UserRound} label="Gestor de projeto" avatarLabel={project.ownerLabel} avatarRoleColor="manager">
-        {project.ownerLabel ?? <span className="font-normal italic text-[color:var(--project-hero-muted)]">Por atribuir</span>}
+      <ProjectHeroFact icon={UserRound} label={dictionary.detail.projectManager} avatarLabel={project.ownerLabel} avatarRoleColor="manager">
+        {project.ownerLabel ?? <span className="font-normal italic text-[color:var(--project-hero-muted)]">{dictionary.detail.unassigned}</span>}
         <ContactActionButtons
           label={project.ownerLabel}
           email={project.ownerEmail}
@@ -149,12 +151,12 @@ function ProjectHeroFactGrid({
 
       <ProjectHeroFact
         icon={Building2}
-        label="Responsável org."
+        label={dictionary.detail.organizationOwner}
         avatarLabel={project.organizationOwnerLabel}
         avatarRoleColor="client"
         meta={canViewOrganization ? <ViewOrganizationButton project={project} /> : null}
       >
-        {project.organizationOwnerLabel ?? <span className="font-normal italic text-[color:var(--project-hero-muted)]">Não definido</span>}
+        {project.organizationOwnerLabel ?? <span className="font-normal italic text-[color:var(--project-hero-muted)]">{dictionary.detail.notDefined}</span>}
         <ContactActionButtons
           label={project.organizationOwnerLabel}
           email={project.organizationOwnerEmail}
@@ -165,16 +167,16 @@ function ProjectHeroFactGrid({
         />
       </ProjectHeroFact>
 
-      <ProjectHeroFact icon={CalendarDays} label="Prazo do projeto">
+      <ProjectHeroFact icon={CalendarDays} label={dictionary.detail.projectDueDate}>
         <span style={deadlineTone ? { color: deadlineTone } : undefined}>{formatProjectDate(project.targetDate)}</span>
       </ProjectHeroFact>
 
       <ProjectHeroFact
         icon={ListChecks}
-        label="Tarefas"
+        label={dictionary.detail.tasks}
         meta={project.taskStats.overdue > 0 ? `${project.taskStats.overdue} atrasada${project.taskStats.overdue !== 1 ? "s" : ""}` : null}
       >
-        <span className="flex w-full items-center gap-2" title={`${completion}% concluído`}>
+        <span className="flex w-full items-center gap-2" title={dictionary.detail.completionTitle(completion)}>
           <ProjectProgressBar
             completed={project.taskStats.done}
             total={project.taskStats.total}
@@ -191,6 +193,7 @@ function ProjectHeroFactGrid({
 }
 
 export function ProjectDetailHero({ canOpenEditProject, canViewOrganization }: ProjectDetailHeroProps) {
+  const dictionary = useProjectsUiDictionary();
   const project = useProjectDetailProject();
   const isCanceledProject = project.status === "canceled";
   const summaryPreview = truncateProjectSummary(project.summary);
@@ -222,8 +225,8 @@ export function ProjectDetailHero({ canOpenEditProject, canViewOrganization }: P
 
         {isCanceledProject ? (
           <div className="mt-5 rounded-[var(--radius-card)] border border-[color:var(--project-ui-color-04)] bg-[color:var(--project-ui-color-05)] px-4 py-3">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[color:var(--project-ui-color-06)]">Motivo do cancelamento</p>
-            <p className="mt-1 text-sm text-[color:var(--project-ui-color-07)]">{project.cancellationReason ?? "Sem motivo registado."}</p>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[color:var(--project-ui-color-06)]">{dictionary.detail.cancellationReason}</p>
+            <p className="mt-1 text-sm text-[color:var(--project-ui-color-07)]">{project.cancellationReason ?? dictionary.detail.noCancellationReason}</p>
           </div>
         ) : null}
 

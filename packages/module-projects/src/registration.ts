@@ -24,6 +24,7 @@ export function createProjectsModuleRegistration(baseHref = "/projetos"): ShellM
     "project-board": [
       { label: "Portfólio", icon: ArrowLeft, action: "projects-back-to-portfolio" },
       { label: "Visão geral", icon: Eye, action: "projects-open-detail" },
+      { label: "Nova tarefa", icon: Plus, action: "projects-new-task" },
     ],
   },
 }; }

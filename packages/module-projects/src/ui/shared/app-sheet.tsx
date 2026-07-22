@@ -22,7 +22,7 @@ type AppSheetHeaderProps = {
   icon?: LucideIcon;
   /** Custom leading visual replacing the icon chip (e.g. a status avatar). */
   leading?: ReactNode;
-  /** Small uppercase eyebrow above the title (e.g. "A visualizar"). */
+  /** Small uppercase eyebrow above the title. */
   eyebrow?: ReactNode;
   title: ReactNode;
   description?: ReactNode;

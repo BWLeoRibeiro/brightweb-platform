@@ -10,7 +10,7 @@ import {
   type ProjectsStatusFilter,
 } from "../events";
 import type { ListProjectsPayload } from "../projects-list-response-parser";
-import { useProjectsUiClient } from "../context";
+import { useProjectsUiClient, useProjectsUiDictionary } from "../context";
 
 const PAGE_SIZE = 12;
 
@@ -24,6 +24,7 @@ export function useProjectsPortfolioController(
   options: UseProjectsPortfolioControllerOptions = {},
 ) {
   const client = useProjectsUiClient();
+  const dictionary = useProjectsUiDictionary();
   const { initialUpdatedAt = null, loadOnMount = false } = options;
   const [data, setData] = useState(initialData);
   const [page, setPage] = useState(Math.max(1, initialData.page || 1));
@@ -52,7 +53,7 @@ export function useProjectsPortfolioController(
     } catch (error) {
       if (error instanceof Error && error.name === "AbortError") return false;
       if (requestAbortRef.current !== controller) return false;
-      toast.error(error instanceof Error ? error.message : "Erro ao atualizar projetos.");
+      toast.error(error instanceof Error ? error.message : dictionary.portfolio.refreshError);
       return false;
     } finally {
       if (requestAbortRef.current !== controller) return;
@@ -60,7 +61,7 @@ export function useProjectsPortfolioController(
       setIsLoading(false);
       dispatchProjectsEvent(PROJECTS_EVENTS.refreshComplete);
     }
-  }, [client, health, page, search, status]);
+  }, [client, dictionary.portfolio.refreshError, health, page, search, status]);
 
   useEffect(() => {
     return () => {
@@ -91,10 +92,10 @@ export function useProjectsPortfolioController(
   const refreshProjects = useCallback((detail?: ProjectsRefreshEventDetail) => {
     void loadProjects().then((refreshed) => {
       if (refreshed && detail?.source !== "realtime") {
-        toast.success("Projetos atualizados.");
+        toast.success(dictionary.portfolio.refreshSuccess);
       }
     });
-  }, [loadProjects]);
+  }, [dictionary.portfolio.refreshSuccess, loadProjects]);
 
   const handleSetSearch = useCallback((query: string) => {
     setSearch(query);

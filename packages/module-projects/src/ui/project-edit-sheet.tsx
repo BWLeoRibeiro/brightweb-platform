@@ -1,6 +1,6 @@
 "use client";
 
-import { useProjectsUiClient } from "./context";
+import { useProjectsUiClient, useProjectsUiDictionary } from "./context";
 import { useProjectsNavigation } from "./context";
 import { useEffect, useMemo, useState, type MouseEvent } from "react";
 import { format } from "date-fns";
@@ -95,6 +95,7 @@ function parseIsoDate(value: string): Date | undefined {
 export function ProjectEditSheet({
   projectId, initial: initialProp, initialOpen = false }: ProjectEditSheetProps) {
   const client = useProjectsUiClient();
+  const dictionary = useProjectsUiDictionary();
   const navigation = useProjectsNavigation();
   const router = useRouter();
   const detailData = useOptionalProjectDetailData();
@@ -165,7 +166,7 @@ export function ProjectEditSheet({
           signal: controller.signal,
         });
         const payload = await response.json();
-        if (!response.ok) throw new Error(typeof payload?.error === "string" ? payload.error : "Erro de permissões.");
+        if (!response.ok) throw new Error(typeof payload?.error === "string" ? payload.error : dictionary.projectEdit.permissionError);
         if (!isMounted) return;
         const nextRole = payload?.data?.projectRole;
         if (nextRole === "admin" || nextRole === "owner" || nextRole === "contributor" || nextRole === "observer") {
@@ -176,7 +177,7 @@ export function ProjectEditSheet({
       } catch (error) {
         if (!isMounted) return;
         setRole("observer");
-        toast.error(error instanceof Error ? error.message : "Não foi possível validar permissões.");
+        toast.error(error instanceof Error ? error.message : dictionary.projectEdit.validatePermissionError);
       } finally {
         if (isMounted) setIsLoadingRole(false);
       }
@@ -236,18 +237,18 @@ export function ProjectEditSheet({
       });
       const result = await response.json();
       if (!response.ok) {
-        const message = typeof result?.error === "string" ? result.error : "Não foi possível guardar alterações.";
+        const message = typeof result?.error === "string" ? result.error : dictionary.projectEdit.saveError;
         throw new Error(message);
       }
       const didApplyDashboard = detailActions?.applyDashboardPayload(result) ?? false;
 
-      toast.success("Projeto atualizado.");
+      toast.success(dictionary.projectEdit.updated);
       setOpen(false);
       if (!didApplyDashboard) {
         router.refresh();
       }
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Erro ao guardar projeto.");
+      toast.error(error instanceof Error ? error.message : dictionary.projectEdit.saveFallbackError);
     } finally {
       setIsSaving(false);
     }
@@ -260,17 +261,17 @@ export function ProjectEditSheet({
       const response = await client.requestRaw(`/api/projects/${projectId}`, { method: "DELETE" });
       const result = await response.json();
       if (!response.ok) {
-        const message = typeof result?.error === "string" ? result.error : "Não foi possível eliminar o projeto.";
+        const message = typeof result?.error === "string" ? result.error : dictionary.projectEdit.deleteError;
         throw new Error(message);
       }
 
-      toast.success("Projeto eliminado.");
+      toast.success(dictionary.projectEdit.deleted);
       setDeleteDialogOpen(false);
       setOpen(false);
       router.push(navigation.listHref);
       router.refresh();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Erro ao eliminar projeto.");
+      toast.error(error instanceof Error ? error.message : dictionary.projectEdit.deleteFallbackError);
     } finally {
       setIsDeleting(false);
     }
@@ -282,30 +283,30 @@ export function ProjectEditSheet({
         <AppSheetHeader
           icon={FolderKanban}
           editing={editing}
-          eyebrow={isLoadingRole ? undefined : editing ? "A editar" : "A visualizar"}
-          title={<>Editar projeto</>}
+          eyebrow={isLoadingRole ? undefined : editing ? dictionary.board.editEyebrow : dictionary.board.viewEyebrow}
+          title={<>{dictionary.forms.editProject}</>}
           description={
             <span className="flex items-center gap-1.5">
               {isLoadingRole ? (
                 <>
                   <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  A validar permissões...
+                  {dictionary.projectEdit.validating}
                 </>
               ) : role === "observer" ? (
-                "Perfil em modo leitura."
+                dictionary.projectEdit.readOnly
               ) : (
-                "Atualiza os dados do projeto."
+                dictionary.projectEdit.description
               )}
             </span>
           }
         />
 
         <div className={`${sheetBodyClassName} space-y-4`}>
-          <SheetSection title="Projeto" editing={editing}>
+          <SheetSection title={dictionary.projectEdit.projectSection} editing={editing}>
             <FieldGroup className={cn("gap-0 px-0 py-1", !editing && "divide-y divide-black/6 dark:divide-white/8")}>
               <Field className="gap-1.5 px-4 py-2">
                 <FieldLabel className={sheetFieldLabelClassName} htmlFor="project-edit-name">
-                  Nome
+                  {dictionary.forms.name}
                 </FieldLabel>
                 <FieldContent>
                   <Input
@@ -320,7 +321,7 @@ export function ProjectEditSheet({
 
               <Field className="gap-1.5 px-4 py-2">
                 <FieldLabel className={sheetFieldLabelClassName} htmlFor="project-edit-code">
-                  Código
+                  {dictionary.forms.code}
                 </FieldLabel>
                 <FieldContent>
                   <Input
@@ -335,7 +336,7 @@ export function ProjectEditSheet({
 
               <Field className="gap-1.5 px-4 py-2">
                 <FieldLabel className={sheetFieldLabelClassName} htmlFor="project-edit-summary">
-                  Resumo
+                  {dictionary.forms.summary}
                 </FieldLabel>
                 <FieldContent>
                   <textarea
@@ -345,7 +346,7 @@ export function ProjectEditSheet({
                     value={form.summary}
                     onChange={(event) => setField("summary", event.target.value)}
                     disabled={!isFieldEditable("summary")}
-                    placeholder="Objetivo, entregáveis e contexto do projeto..."
+                    placeholder={dictionary.projectEdit.summaryPlaceholder}
                   />
                 </FieldContent>
               </Field>
@@ -356,7 +357,7 @@ export function ProjectEditSheet({
                     className={sheetFieldLabelClassName}
                     htmlFor="project-edit-cancellation-reason"
                   >
-                    Motivo cancelamento
+                    {dictionary.projectEdit.cancellationReasonLabel}
                   </FieldLabel>
                   <FieldContent>
                     <textarea
@@ -366,7 +367,7 @@ export function ProjectEditSheet({
                       value={form.cancellationReason}
                       onChange={(event) => setField("cancellationReason", event.target.value)}
                       disabled={!isFieldEditable("cancellationReason")}
-                      placeholder="Porque é que o projeto foi cancelado?"
+                      placeholder={dictionary.projectEdit.cancellationPlaceholder}
                     />
                   </FieldContent>
                 </Field>
@@ -374,11 +375,11 @@ export function ProjectEditSheet({
             </FieldGroup>
           </SheetSection>
 
-          <SheetSection title="Planeamento" editing={editing}>
+          <SheetSection title={dictionary.projectEdit.planning} editing={editing}>
             <FieldGroup className={cn("gap-0 px-0 py-1", !editing && "divide-y divide-black/6 dark:divide-white/8")}>
               <Field className="gap-1.5 px-4 py-2">
                 <FieldLabel className={sheetFieldLabelClassName} htmlFor="project-edit-status">
-                  Estado
+                  {dictionary.forms.status}
                 </FieldLabel>
                 <FieldContent>
                   <select
@@ -392,18 +393,18 @@ export function ProjectEditSheet({
                     }}
                     disabled={!isFieldEditable("status")}
                   >
-                    <option value="planned">Planeamento</option>
-                    <option value="active">Ativo</option>
-                    <option value="blocked">Bloqueado</option>
-                    <option value="completed">Concluído</option>
-                    <option value="canceled">Cancelado</option>
+                    <option value="planned">{dictionary.badge.status.planned}</option>
+                    <option value="active">{dictionary.badge.status.active}</option>
+                    <option value="blocked">{dictionary.badge.status.blocked}</option>
+                    <option value="completed">{dictionary.badge.status.completed}</option>
+                    <option value="canceled">{dictionary.badge.status.canceled}</option>
                   </select>
                 </FieldContent>
               </Field>
 
               <Field className="gap-1.5 px-4 py-2">
                 <FieldLabel className={sheetFieldLabelClassName} htmlFor="project-edit-target-date">
-                  Data alvo
+                  {dictionary.projectEdit.targetDate}
                 </FieldLabel>
                 <FieldContent>
                   <Popover>
@@ -422,7 +423,7 @@ export function ProjectEditSheet({
                         )}
                       >
                         <CalendarIcon className="mr-1.5 h-3.5 w-3.5" />
-                        {targetDateValue ? format(targetDateValue, "dd/MM/yyyy") : "Selecionar data"}
+                        {targetDateValue ? format(targetDateValue, "dd/MM/yyyy") : dictionary.create.selectDate}
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0" align="start">
@@ -445,11 +446,11 @@ export function ProjectEditSheet({
           {canDeleteProject ? (
             <div className="overflow-hidden rounded-2xl border border-rose-300/60 bg-rose-50/45 dark:border-rose-500/30 dark:bg-rose-500/10">
               <div className="bg-rose-500 px-4 py-2.5">
-                <p className="text-[11px] font-semibold uppercase tracking-widest text-white/90">Zona de perigo</p>
+                <p className="text-[11px] font-semibold uppercase tracking-widest text-white/90">{dictionary.projectEdit.dangerZone}</p>
               </div>
               <div className="space-y-3 px-4 py-3">
                 <p className="text-xs text-rose-700/90 dark:text-rose-200/90">
-                  Eliminar o projeto remove também tarefas, milestones, links e membros.
+                  {dictionary.projectEdit.dangerDescription}
                 </p>
                 <Button
                   type="button"
@@ -458,7 +459,7 @@ export function ProjectEditSheet({
                   onClick={() => setDeleteDialogOpen(true)}
                   disabled={isDeleting}
                 >
-                  {isDeleting ? "A eliminar..." : "Eliminar projeto"}
+                  {isDeleting ? dictionary.projectEdit.deleting : dictionary.projectEdit.deleteProject}
                 </Button>
               </div>
             </div>
@@ -470,15 +471,15 @@ export function ProjectEditSheet({
             <>
               <Button type="button" className="flex-1" onClick={handleSave} disabled={!canEditAnyField || isSaving || isDeleting}>
                 <Save className="mr-2 h-4 w-4" />
-                {isSaving ? "A guardar..." : "Guardar"}
+                {isSaving ? dictionary.actions.saving : dictionary.actions.save}
               </Button>
               <Button type="button" variant="outline" className="flex-1" onClick={() => setOpen(false)} disabled={isSaving || isDeleting}>
-                Cancelar
+                {dictionary.actions.cancel}
               </Button>
             </>
           ) : (
             <Button type="button" variant="outline" className="w-full" onClick={() => setOpen(false)}>
-              Fechar
+              {dictionary.actions.close}
             </Button>
           )}
         </SheetFooter>
@@ -492,9 +493,9 @@ export function ProjectEditSheet({
       >
         <AlertDialogContent className="max-w-[430px]">
           <AlertDialogHeader>
-            <AlertDialogTitle>Eliminar projeto?</AlertDialogTitle>
+            <AlertDialogTitle>{dictionary.projectEdit.deleteTitle}</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta ação remove permanentemente o projeto e todos os dados associados (tarefas, milestones, links e equipa).
+              {dictionary.projectEdit.deleteDescription}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -502,7 +503,7 @@ export function ProjectEditSheet({
               className="rounded-full border-black/10 px-4 text-xs dark:border-white/15"
               disabled={isDeleting}
             >
-              Cancelar
+              {dictionary.actions.cancel}
             </AlertDialogCancel>
             <AlertDialogAction
               className="rounded-full bg-rose-600 px-4 text-xs text-white hover:bg-rose-700"
@@ -512,7 +513,7 @@ export function ProjectEditSheet({
               }}
               disabled={isDeleting}
             >
-              {isDeleting ? "A eliminar…" : "Confirmar eliminação"}
+              {isDeleting ? dictionary.projectEdit.deletingEllipsis : dictionary.projectEdit.confirmDelete}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

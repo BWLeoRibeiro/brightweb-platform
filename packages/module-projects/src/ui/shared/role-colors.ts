@@ -4,7 +4,7 @@
 //   team    → BeGreen staff/admin (internal). Admins fold into team on avatars;
 //             their distinct `admin` color is reserved for the admin panel badges.
 //   client  → people from a client organization (primary contact, org admin/member).
-//   manager → the project owner / "gestor de projeto" (highlight).
+//   manager → the highlighted project owner.
 //   accent  → neutral fallback when the person's role is unknown.
 export type RoleColor = "team" | "client" | "manager" | "admin";
 export type AvatarRoleColor = RoleColor | "accent";

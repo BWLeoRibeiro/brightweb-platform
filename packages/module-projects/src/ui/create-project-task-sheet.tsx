@@ -1,6 +1,6 @@
 "use client";
 
-import { useProjectsUiClient } from "./context";
+import { useProjectsUiClient, useProjectsUiDictionary } from "./context";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { format } from "date-fns";
 import { CalendarIcon, ClipboardList, Save } from "lucide-react";
@@ -52,6 +52,7 @@ function parseIsoDate(value: string): Date | undefined {
 
 export function CreateProjectTaskSheet({ projects, initialOpen = false }: CreateProjectTaskSheetProps) {
   const client = useProjectsUiClient();
+  const dictionary = useProjectsUiDictionary();
   const [open, setOpen] = useState(initialOpen);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [projectId, setProjectId] = useState(projects[0]?.id ?? "");
@@ -115,12 +116,12 @@ export function CreateProjectTaskSheet({ projects, initialOpen = false }: Create
         dueDate: dueDate || undefined,
         blockedReason: isBlockedStatus ? (blockedReason.trim() || undefined) : undefined,
       });
-      toast.success("Tarefa criada com sucesso.");
+      toast.success(dictionary.create.taskCreated);
       setOpen(false);
       resetForm();
       dispatchProjectsEvent(PROJECTS_EVENTS.refresh);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Erro ao criar tarefa.");
+      toast.error(error instanceof Error ? error.message : dictionary.create.taskCreateFallbackError);
     } finally {
       setIsSubmitting(false);
     }
@@ -132,17 +133,17 @@ export function CreateProjectTaskSheet({ projects, initialOpen = false }: Create
         <AppSheetHeader
           icon={ClipboardList}
           editing
-          eyebrow="A criar"
-          title={<>Nova tarefa</>}
-          description={<>Adiciona uma nova tarefa a um projeto existente.</>}
+          eyebrow={dictionary.create.creatingEyebrow}
+          title={<>{dictionary.forms.newTask}</>}
+          description={<>{dictionary.create.taskExistingProjectDescription}</>}
         />
 
         <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col gap-0">
           <div className={`${sheetBodyClassName} space-y-4`}>
-            <SheetSection title="Detalhes" editing>
+            <SheetSection title={dictionary.create.details} editing>
               <FieldGroup className="gap-0 px-0 py-1">
                 <Field className="gap-1.5 px-4 py-2">
-                  <FieldLabel className={sheetFieldLabelClassName}>Projeto</FieldLabel>
+                  <FieldLabel className={sheetFieldLabelClassName}>{dictionary.projectEdit.projectSection}</FieldLabel>
                   <FieldContent>
                     <select
                       id="task-project-id"
@@ -159,11 +160,11 @@ export function CreateProjectTaskSheet({ projects, initialOpen = false }: Create
                         </option>
                       ))}
                     </select>
-                    {projects.length === 0 ? <p className="mt-1 text-[10px] text-foreground/55">Sem projetos disponíveis.</p> : null}
+                    {projects.length === 0 ? <p className="mt-1 text-[10px] text-foreground/55">{dictionary.create.noProjects}</p> : null}
                   </FieldContent>
                 </Field>
                 <Field className="gap-1.5 px-4 py-2">
-                  <FieldLabel className={sheetFieldLabelClassName}>Título</FieldLabel>
+                  <FieldLabel className={sheetFieldLabelClassName}>{dictionary.forms.title}</FieldLabel>
                   <FieldContent>
                     <Input
                       id="task-title"
@@ -175,7 +176,7 @@ export function CreateProjectTaskSheet({ projects, initialOpen = false }: Create
                   </FieldContent>
                 </Field>
                 <Field className="gap-1.5 px-4 py-2">
-                  <FieldLabel className={sheetFieldLabelClassName}>Descrição</FieldLabel>
+                  <FieldLabel className={sheetFieldLabelClassName}>{dictionary.forms.description}</FieldLabel>
                   <FieldContent>
                     <textarea
                       id="task-description"
@@ -183,18 +184,18 @@ export function CreateProjectTaskSheet({ projects, initialOpen = false }: Create
                       className={cn("mt-1.5 min-h-[72px]", sheetAccentTextareaClassName)}
                       value={description}
                       onChange={(event) => setDescription(event.target.value)}
-                      placeholder="Contexto, objetivo e critério de conclusão..."
+                      placeholder={dictionary.create.taskDescriptionPlaceholder}
                     />
                   </FieldContent>
                 </Field>
               </FieldGroup>
             </SheetSection>
 
-            <SheetSection title="Planeamento" editing>
+            <SheetSection title={dictionary.projectEdit.planning} editing>
               <FieldGroup className="gap-0 px-0 py-1">
                 <div className="grid grid-cols-2 gap-3">
                   <Field className="gap-1.5 px-4 py-2">
-                    <FieldLabel className={sheetFieldLabelClassName}>Estado</FieldLabel>
+                    <FieldLabel className={sheetFieldLabelClassName}>{dictionary.forms.status}</FieldLabel>
                     <FieldContent>
                       <select
                         id="task-status"
@@ -202,15 +203,15 @@ export function CreateProjectTaskSheet({ projects, initialOpen = false }: Create
                         value={status}
                         onChange={(event) => setStatus(event.target.value)}
                       >
-                        <option value="todo">Por fazer</option>
-                        <option value="in_progress">Em progresso</option>
-                        <option value="blocked">Bloqueada</option>
-                        <option value="done">Concluída</option>
+                        <option value="todo">{dictionary.board.columns.todo}</option>
+                        <option value="in_progress">{dictionary.board.columns.in_progress}</option>
+                        <option value="blocked">{dictionary.board.columns.blocked}</option>
+                        <option value="done">{dictionary.board.columns.done}</option>
                       </select>
                     </FieldContent>
                   </Field>
                   <Field className="gap-1.5 px-4 py-2">
-                    <FieldLabel className={sheetFieldLabelClassName}>Prioridade</FieldLabel>
+                    <FieldLabel className={sheetFieldLabelClassName}>{dictionary.forms.priority}</FieldLabel>
                     <FieldContent>
                       <select
                         id="task-priority"
@@ -218,16 +219,16 @@ export function CreateProjectTaskSheet({ projects, initialOpen = false }: Create
                         value={priority}
                         onChange={(event) => setPriority(event.target.value)}
                       >
-                        <option value="low">Baixa</option>
-                        <option value="medium">Média</option>
-                        <option value="high">Alta</option>
-                        <option value="critical">Crítica</option>
+                        <option value="low">{dictionary.board.priority.low}</option>
+                        <option value="medium">{dictionary.board.priority.medium}</option>
+                        <option value="high">{dictionary.board.priority.high}</option>
+                        <option value="critical">{dictionary.create.critical}</option>
                       </select>
                     </FieldContent>
                   </Field>
                 </div>
                 <Field className="gap-1.5 px-4 py-2">
-                  <FieldLabel className={sheetFieldLabelClassName}>Data limite (opcional)</FieldLabel>
+                  <FieldLabel className={sheetFieldLabelClassName}>{dictionary.create.dueDateOptional}</FieldLabel>
                   <FieldContent>
                     <Popover>
                       <PopoverTrigger asChild>
@@ -242,7 +243,7 @@ export function CreateProjectTaskSheet({ projects, initialOpen = false }: Create
                           )}
                         >
                           <CalendarIcon className="mr-1.5 h-3.5 w-3.5" />
-                          {dueDateValue ? format(dueDateValue, "dd/MM/yyyy") : "Selecionar data"}
+                          {dueDateValue ? format(dueDateValue, "dd/MM/yyyy") : dictionary.create.selectDate}
                         </Button>
                       </PopoverTrigger>
                       <PopoverContent className="w-auto p-0" align="start">
@@ -261,14 +262,14 @@ export function CreateProjectTaskSheet({ projects, initialOpen = false }: Create
                 {isBlockedStatus ? (
                   <Field className="gap-1.5 px-4 py-2">
                     <FieldLabel className={sheetFieldLabelClassName}>
-                      Motivo de bloqueio
+                      {dictionary.forms.blockedReason}
                     </FieldLabel>
                     <FieldContent>
                       <Input
                         id="task-blocked-reason"
                         value={blockedReason}
                         onChange={(event) => setBlockedReason(event.target.value)}
-                        placeholder="Descreve o que está a bloquear esta tarefa"
+                        placeholder={dictionary.create.blockedReasonPlaceholder}
                         required
                         className={cn(sheetEditControlClassName, "mt-1.5")}
                       />
@@ -282,10 +283,10 @@ export function CreateProjectTaskSheet({ projects, initialOpen = false }: Create
           <SheetFooter className={`${sheetFooterClassName} flex-row gap-2`}>
             <Button type="submit" className="flex-1" disabled={!canSubmit || isSubmitting || projects.length === 0}>
               <Save className="mr-2 h-4 w-4" />
-              {isSubmitting ? "A criar..." : "Criar tarefa"}
+              {isSubmitting ? dictionary.create.creating : dictionary.create.createTask}
             </Button>
             <Button type="button" variant="outline" className="flex-1" onClick={() => setOpen(false)} disabled={isSubmitting}>
-              Cancelar
+              {dictionary.actions.cancel}
             </Button>
           </SheetFooter>
         </form>

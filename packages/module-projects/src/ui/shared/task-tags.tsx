@@ -4,6 +4,7 @@ import { portalMonoTabularClassName as MONO } from "./typography";
 import type { ProjectTask } from "../../types";
 import { tintPill } from "@brightweblabs/theme/tint";
 import { cn } from "../utils";
+import { defaultProjectsUiDictionary } from "../dictionary";
 
 /** A canonical tint plus the bespoke "medium priority" accent tint. */
 type TintResult = { className: string; style?: CSSProperties };
@@ -13,17 +14,17 @@ type TintResult = { className: string; style?: CSSProperties };
 // never drift apart.
 
 export const taskPriorityLabels: Record<string, string> = {
-  low: "Baixa",
-  medium: "Média",
-  high: "Alta",
-  urgent: "Urgente",
+  low: defaultProjectsUiDictionary.board.priority.low,
+  medium: defaultProjectsUiDictionary.board.priority.medium,
+  high: defaultProjectsUiDictionary.board.priority.high,
+  urgent: defaultProjectsUiDictionary.board.priority.urgent,
 };
 
 export const taskStatusLabels: Record<string, string> = {
-  todo: "Por fazer",
-  in_progress: "Em progresso",
-  blocked: "Bloqueada",
-  done: "Concluída",
+  todo: defaultProjectsUiDictionary.board.columns.todo,
+  in_progress: defaultProjectsUiDictionary.board.columns.in_progress,
+  blocked: defaultProjectsUiDictionary.board.columns.blocked,
+  done: defaultProjectsUiDictionary.board.columns.done,
 };
 
 export function formatTaskShortDate(value: string | null | undefined) {
@@ -89,7 +90,7 @@ export function TaskPriorityTag({ task }: { task: Pick<ProjectTask, "priority" |
   const label = taskPriorityLabels[task.priority] ?? task.priority;
   const tint = priorityTagClass(task.priority, task.status);
   return (
-    <TaskTag className={tint.className} style={tint.style} title={`Prioridade: ${label}`}>
+    <TaskTag className={tint.className} style={tint.style} title={defaultProjectsUiDictionary.board.priorityTooltip(label)}>
       {label}
     </TaskTag>
   );
@@ -97,12 +98,12 @@ export function TaskPriorityTag({ task }: { task: Pick<ProjectTask, "priority" |
 
 export function TaskStatusTag({ task }: { task: Pick<ProjectTask, "status" | "blockedReason"> }) {
   const isBlocked = task.status === "blocked";
-  const fullText = isBlocked ? task.blockedReason?.trim() || "Bloqueada" : taskStatusLabels[task.status] ?? task.status;
+  const fullText = isBlocked ? task.blockedReason?.trim() || defaultProjectsUiDictionary.board.columns.blocked : taskStatusLabels[task.status] ?? task.status;
   const tint = statusTagClass(task.status);
   return (
     <TaskTag className={tint.className} style={tint.style} title={fullText}>
       <span className={cn("size-1.5 rounded-full", statusDotClass(task.status))} />
-      {isBlocked ? "Bloqueada" : fullText}
+      {isBlocked ? defaultProjectsUiDictionary.board.columns.blocked : fullText}
     </TaskTag>
   );
 }
@@ -113,10 +114,10 @@ export function TaskMilestoneMeta({ title, className }: { title: string | null; 
   return (
     <span
       className={cn("portal-micro inline-flex min-w-0 items-center gap-1", title ? "text-foreground/45" : "text-foreground/30", className)}
-      title={title ?? "Sem marco associado"}
+      title={title ?? defaultProjectsUiDictionary.board.noMilestoneAssociated}
     >
       <Flag className="size-3 shrink-0" />
-      <span className="truncate">{title ?? "Sem marco"}</span>
+      <span className="truncate">{title ?? defaultProjectsUiDictionary.board.noMilestoneShort}</span>
     </span>
   );
 }
@@ -125,10 +126,10 @@ export function TaskAssigneeMeta({ label, className }: { label: string | null; c
   return (
     <span
       className={cn("portal-micro inline-flex min-w-0 items-center gap-1", label ? "text-foreground/45" : "text-foreground/30", className)}
-      title={label ?? "Sem responsável"}
+      title={label ?? defaultProjectsUiDictionary.board.noAssignee}
     >
       <User className="size-3 shrink-0" />
-      <span className="truncate">{label ?? "Sem responsável"}</span>
+      <span className="truncate">{label ?? defaultProjectsUiDictionary.board.noAssignee}</span>
     </span>
   );
 }
@@ -153,10 +154,10 @@ export function TaskDueMeta({
           : "text-foreground/30",
         className,
       )}
-      title={dueDate ? undefined : "Sem data definida"}
+      title={dueDate ? undefined : defaultProjectsUiDictionary.board.noDateDefined}
     >
       {dueDate ? <CalendarDays className="size-3" /> : <CalendarOff className="size-3" />}
-      {dueDate ? formatTaskShortDate(dueDate) : "Sem data"}
+      {dueDate ? formatTaskShortDate(dueDate) : defaultProjectsUiDictionary.board.noDate}
     </span>
   );
 }

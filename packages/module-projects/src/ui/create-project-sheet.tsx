@@ -1,6 +1,6 @@
 "use client";
 
-import { useProjectsUiClient } from "./context";
+import { useProjectsUiClient, useProjectsUiDictionary } from "./context";
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
 import { Building2, FolderKanban, Loader2, Plus, Save, Users2 } from "lucide-react";
 import { toast } from "sonner";
@@ -66,6 +66,7 @@ type CreateProjectSheetProps = {
 
 export function CreateProjectSheet({ organizations, initialOpen = false }: CreateProjectSheetProps) {
   const client = useProjectsUiClient();
+  const dictionary = useProjectsUiDictionary();
   const [open, setOpen] = useState(initialOpen);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isCreatingOrganization, setIsCreatingOrganization] = useState(false);
@@ -105,7 +106,7 @@ export function CreateProjectSheet({ organizations, initialOpen = false }: Creat
     ],
   );
 
-  // Mirrors `isProjectDirty` for the nested "Nova organização" sheet.
+  // Mirrors `isProjectDirty` for the nested organization sheet.
   const isOrganizationDirty = useMemo(
     () =>
       Boolean(
@@ -162,7 +163,7 @@ export function CreateProjectSheet({ organizations, initialOpen = false }: Creat
       const response = await client.requestRaw("/api/projects/organizations", { cache: "no-store" });
       const payload = await response.json().catch(() => null);
       if (!response.ok) {
-        const message = typeof payload?.error === "string" ? payload.error : "Não foi possível carregar organizações.";
+        const message = typeof payload?.error === "string" ? payload.error : dictionary.projectCreate.loadOrganizationsError;
         throw new Error(message);
       }
 
@@ -183,7 +184,7 @@ export function CreateProjectSheet({ organizations, initialOpen = false }: Creat
       setHasLoadedOrganizations(true);
     } catch (error) {
       setHasLoadedOrganizations(true);
-      toast.error(error instanceof Error ? error.message : "Não foi possível carregar organizações.");
+      toast.error(error instanceof Error ? error.message : dictionary.projectCreate.loadOrganizationsError);
     } finally {
       setLoadingOrganizations(false);
     }
@@ -204,7 +205,7 @@ export function CreateProjectSheet({ organizations, initialOpen = false }: Creat
     const email = organizationCreation.organizationInviteDraft.email.trim().toLowerCase();
     if (!email) return;
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      toast.error("Email de convite inválido.");
+      toast.error(dictionary.projectCreate.invalidInviteEmail);
       return;
     }
 
@@ -240,7 +241,7 @@ export function CreateProjectSheet({ organizations, initialOpen = false }: Creat
 
       const payload = await response.json();
       if (!response.ok) {
-        const errorMessage = typeof payload?.error === "string" ? payload.error : "Não foi possível criar a organização.";
+        const errorMessage = typeof payload?.error === "string" ? payload.error : dictionary.projectCreate.createOrganizationError;
         throw new Error(errorMessage);
       }
 
@@ -254,7 +255,7 @@ export function CreateProjectSheet({ organizations, initialOpen = false }: Creat
         }
         | undefined;
       if (!created?.id || !created?.name) {
-        throw new Error("Resposta inválida ao criar organização.");
+        throw new Error(dictionary.projectCreate.invalidOrganizationResponse);
       }
 
       const nextOrganizations = [...organizationOptions.filter((organization) => organization.id !== created.id), created]
@@ -268,15 +269,15 @@ export function CreateProjectSheet({ organizations, initialOpen = false }: Creat
       const directCount = (inviteSummary?.directAssignments ?? 0) + (inviteSummary?.updatedExistingMembers ?? 0);
       if (organizationCreation.organizationInvites.length > 0) {
         const failedEmailCount = inviteSummary?.failedEmailDeliveries ?? 0;
-        toast.success(`Organização criada. ${pendingCount} convite(s) pendente(s), ${directCount} membro(s) aplicado(s) diretamente.`);
+        toast.success(dictionary.projectCreate.organizationCreatedWithInvites(pendingCount, directCount));
         if (failedEmailCount > 0) {
-          toast.error(`${failedEmailCount} convite(s) foram criados, mas o email não foi enviado. Verifique a configuração do Resend.`);
+          toast.error(dictionary.projectCreate.inviteEmailFailed(failedEmailCount));
         }
       } else {
-        toast.success("Organização criada com sucesso.");
+        toast.success(dictionary.projectCreate.organizationCreated);
       }
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Erro ao criar organização.");
+      toast.error(error instanceof Error ? error.message : dictionary.projectCreate.organizationCreateFallbackError);
     } finally {
       setIsCreatingOrganization(false);
     }
@@ -302,7 +303,7 @@ export function CreateProjectSheet({ organizations, initialOpen = false }: Creat
         summary: projectForm.summary.trim() || undefined,
       });
 
-      toast.success("Projeto criado. Podes completar a configuração agora ou mais tarde.");
+      toast.success(dictionary.projectCreate.projectCreated);
       setOpen(false);
       projectForm.resetProjectForm(organizationOptions);
       setup.setSetupOpen(true);
@@ -313,7 +314,7 @@ export function CreateProjectSheet({ organizations, initialOpen = false }: Creat
       );
       dispatchProjectsEvent(PROJECTS_EVENTS.refresh);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Erro interno ao criar projeto.");
+      toast.error(error instanceof Error ? error.message : dictionary.projectCreate.projectCreateFallbackError);
     } finally {
       setIsSubmitting(false);
     }
@@ -333,7 +334,7 @@ export function CreateProjectSheet({ organizations, initialOpen = false }: Creat
           .map((member, index) => `${index + 1}. ${ownerLabelByProfileId.get(member.profileId) ?? member.profileId}`)
           .join("\n");
         const selectedRaw = window.prompt(
-          `Existem vários gestores de projeto atribuídos. Escolhe qual deve ficar como responsável:\n${optionsText}`,
+          dictionary.projectCreate.chooseOwner(optionsText),
           "1",
         );
 
@@ -344,12 +345,12 @@ export function CreateProjectSheet({ organizations, initialOpen = false }: Creat
 
         const selectedIndex = Number.parseInt(selectedRaw, 10) - 1;
         if (!Number.isFinite(selectedIndex) || selectedIndex < 0 || selectedIndex >= ownerCandidates.length) {
-          throw new Error("Seleção inválida. Guarda novamente e escolhe um número da lista.");
+          throw new Error(dictionary.projectCreate.invalidSelection);
         }
 
         const selectedOwnerProfileId = ownerCandidates[selectedIndex]?.profileId;
         if (!selectedOwnerProfileId) {
-          throw new Error("Não foi possível validar o responsável selecionado.");
+          throw new Error(dictionary.projectCreate.ownerValidationError);
         }
 
         membersPayload = membersPayload.map((member) => (
@@ -379,7 +380,7 @@ export function CreateProjectSheet({ organizations, initialOpen = false }: Creat
 
       const projectPayload = await projectResponse.json();
       if (!projectResponse.ok) {
-        const message = typeof projectPayload?.error === "string" ? projectPayload.error : "Erro ao guardar detalhes do projeto.";
+        const message = typeof projectPayload?.error === "string" ? projectPayload.error : dictionary.projectCreate.saveDetailsError;
         throw new Error(message);
       }
 
@@ -388,15 +389,15 @@ export function CreateProjectSheet({ organizations, initialOpen = false }: Creat
         const message =
           typeof membersPayloadResponse?.error === "string"
             ? membersPayloadResponse.error
-            : "Erro ao guardar equipa do projeto.";
+            : dictionary.projectCreate.saveTeamError;
         throw new Error(message);
       }
 
-      toast.success("Configuração do projeto guardada.");
+      toast.success(dictionary.projectCreate.setupSaved);
       setup.closeSetupSheet();
       dispatchProjectsEvent(PROJECTS_EVENTS.refresh);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Não foi possível guardar a configuração avançada.");
+      toast.error(error instanceof Error ? error.message : dictionary.projectCreate.setupSaveError);
     } finally {
       setup.setSavingSetup(false);
     }
@@ -409,16 +410,16 @@ export function CreateProjectSheet({ organizations, initialOpen = false }: Creat
           <AppSheetHeader
             icon={FolderKanban}
             editing
-            eyebrow="A criar"
-            title={<>Novo projeto</>}
-            description={<>Define o projeto inicial para a organização e entra no fluxo de execução.</>}
+            eyebrow={dictionary.create.creatingEyebrow}
+            title={<>{dictionary.forms.newProject}</>}
+            description={<>{dictionary.projectCreate.description}</>}
           />
 
           <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col gap-0">
             <div className={`${sheetBodyClassName} space-y-4`}>
-              <FormSection title="Projeto">
+              <FormSection title={dictionary.projectEdit.projectSection}>
                 <Field className="gap-1.5 px-4 py-2">
-                  <FieldLabel className={sheetFieldLabelClassName}>Organização</FieldLabel>
+                  <FieldLabel className={sheetFieldLabelClassName}>{dictionary.forms.organization}</FieldLabel>
                   <FieldContent>
                     <div className="mt-1.5 flex items-center gap-2">
                       <select
@@ -436,7 +437,7 @@ export function CreateProjectSheet({ organizations, initialOpen = false }: Creat
                             </option>
                           ))
                         ) : (
-                          <option value="">Sem organizações disponíveis</option>
+                          <option value="">{dictionary.projectCreate.noOrganizations}</option>
                         )}
                       </select>
                       <Button
@@ -447,18 +448,18 @@ export function CreateProjectSheet({ organizations, initialOpen = false }: Creat
                         onClick={() => organizationCreation.setOrganizationSheetOpen(true)}
                       >
                         <Plus className="mr-1 h-3 w-3" />
-                        Nova
+                        {dictionary.projectCreate.newOrganizationShort}
                       </Button>
                     </div>
                     {isLoadingOrganizations ? (
-                      <p className="mt-1 text-[10px] text-foreground/55">A carregar organizações...</p>
+                      <p className="mt-1 text-[10px] text-foreground/55">{dictionary.projectCreate.loadingOrganizations}</p>
                     ) : !hasOrganizations ? (
-                      <p className="mt-1 text-[10px] text-foreground/55">Cria uma organização para continuar.</p>
+                      <p className="mt-1 text-[10px] text-foreground/55">{dictionary.projectCreate.createOrganizationToContinue}</p>
                     ) : null}
                   </FieldContent>
                 </Field>
                 <Field className="gap-1.5 px-4 py-2">
-                  <FieldLabel className={sheetFieldLabelClassName}>Nome do projeto</FieldLabel>
+                  <FieldLabel className={sheetFieldLabelClassName}>{dictionary.projectCreate.projectName}</FieldLabel>
                   <FieldContent>
                     <Input
                       id="project-name"
@@ -470,7 +471,7 @@ export function CreateProjectSheet({ organizations, initialOpen = false }: Creat
                   </FieldContent>
                 </Field>
                 <Field className="gap-1.5 px-4 py-2">
-                  <FieldLabel className={sheetFieldLabelClassName}>Código (opcional)</FieldLabel>
+                  <FieldLabel className={sheetFieldLabelClassName}>{dictionary.projectCreate.optionalCode}</FieldLabel>
                   <FieldContent>
                     <Input
                       id="project-code"
@@ -481,11 +482,11 @@ export function CreateProjectSheet({ organizations, initialOpen = false }: Creat
                       }}
                       className={cn(sheetEditControlClassName, "mt-1.5")}
                     />
-                    <p className="mt-0.5 text-[10px] text-foreground/55">Gerado automaticamente, mas podes ajustar.</p>
+                    <p className="mt-0.5 text-[10px] text-foreground/55">{dictionary.projectCreate.generatedCodeHint}</p>
                   </FieldContent>
                 </Field>
                 <Field className="gap-1.5 px-4 py-2">
-                  <FieldLabel className={sheetFieldLabelClassName}>Resumo</FieldLabel>
+                  <FieldLabel className={sheetFieldLabelClassName}>{dictionary.forms.summary}</FieldLabel>
                   <FieldContent>
                     <textarea
                       id="project-summary"
@@ -493,37 +494,37 @@ export function CreateProjectSheet({ organizations, initialOpen = false }: Creat
                       className={cn("mt-1.5 min-h-[72px]", sheetAccentTextareaClassName)}
                       value={projectForm.summary}
                       onChange={(event) => projectForm.setSummary(event.target.value)}
-                      placeholder="Objetivo, entregáveis e contexto do projeto..."
+                      placeholder={dictionary.projectEdit.summaryPlaceholder}
                     />
                   </FieldContent>
                 </Field>
               </FormSection>
 
-              <FormSection title="Planeamento">
+              <FormSection title={dictionary.projectEdit.planning}>
                 <SelectField
                   id="project-status"
-                  label="Estado"
+                  label={dictionary.forms.status}
                   value={projectForm.status}
                   onChange={(nextStatus) => {
                     projectForm.setStatus(nextStatus);
                     if (nextStatus !== "canceled") projectForm.setCancellationReason("");
                   }}
                 >
-                  <option value="planned">Planeamento</option>
-                  <option value="active">Ativo</option>
-                  <option value="blocked">Bloqueado</option>
-                  <option value="completed">Concluído</option>
-                  <option value="canceled">Cancelado</option>
+                  <option value="planned">{dictionary.badge.status.planned}</option>
+                  <option value="active">{dictionary.badge.status.active}</option>
+                  <option value="blocked">{dictionary.badge.status.blocked}</option>
+                  <option value="completed">{dictionary.badge.status.completed}</option>
+                  <option value="canceled">{dictionary.badge.status.canceled}</option>
                 </SelectField>
                 <DateField
                   id="project-target-date"
-                  label="Data alvo"
+                  label={dictionary.projectEdit.targetDate}
                   value={projectForm.targetDate}
                   onChange={projectForm.setTargetDate}
                 />
                 {projectForm.status === "canceled" ? (
                   <Field className="gap-1.5 px-4 py-2">
-                    <FieldLabel className={sheetFieldLabelClassName}>Motivo cancelamento</FieldLabel>
+                    <FieldLabel className={sheetFieldLabelClassName}>{dictionary.projectEdit.cancellationReasonLabel}</FieldLabel>
                     <FieldContent>
                       <textarea
                         id="project-cancellation-reason"
@@ -531,7 +532,7 @@ export function CreateProjectSheet({ organizations, initialOpen = false }: Creat
                         className={cn("mt-1.5 min-h-[72px]", sheetAccentTextareaClassName)}
                         value={projectForm.cancellationReason}
                         onChange={(event) => projectForm.setCancellationReason(event.target.value)}
-                        placeholder="Porque é que o projeto foi cancelado?"
+                        placeholder={dictionary.projectEdit.cancellationPlaceholder}
                       />
                     </FieldContent>
                   </Field>
@@ -542,10 +543,10 @@ export function CreateProjectSheet({ organizations, initialOpen = false }: Creat
             <SheetFooter className={`${sheetFooterClassName} flex-row gap-2`}>
               <Button type="submit" className="flex-1" disabled={!hasOrganizations || !projectForm.isFormValid || isSubmitting}>
                 <Save className="mr-2 h-4 w-4" />
-                {isSubmitting ? "A criar..." : "Criar projeto"}
+                {isSubmitting ? dictionary.create.creating : dictionary.projectCreate.createProject}
               </Button>
               <Button type="button" variant="outline" className="flex-1" onClick={handleProjectCancel} disabled={isSubmitting}>
-                Cancelar
+                {dictionary.actions.cancel}
               </Button>
             </SheetFooter>
           </form>
@@ -559,15 +560,15 @@ export function CreateProjectSheet({ organizations, initialOpen = false }: Creat
                 <AppSheetHeader
                   icon={Building2}
                   editing
-                  eyebrow="A criar"
-                  title={<>Nova organização</>}
-                  description={<>Ficha de empresa para consultorias</>}
+                  eyebrow={dictionary.create.creatingEyebrow}
+                  title={<>{dictionary.projectCreate.newOrganization}</>}
+                  description={<>{dictionary.projectCreate.organizationDescription}</>}
                 />
 
                 <div className={`${sheetBodyClassName} space-y-4`}>
-                  <FormSection title="Identificação">
+                  <FormSection title={dictionary.projectCreate.identification}>
                     <Field className="gap-1.5 px-4 py-2">
-                      <FieldLabel className={sheetFieldLabelClassName}>Nome</FieldLabel>
+                      <FieldLabel className={sheetFieldLabelClassName}>{dictionary.forms.name}</FieldLabel>
                       <FieldContent>
                         <Input
                           value={organizationCreation.organizationForm.name}
@@ -578,11 +579,11 @@ export function CreateProjectSheet({ organizations, initialOpen = false }: Creat
                       </FieldContent>
                     </Field>
                     <SelectField
-                      label="Indústria"
+                      label={dictionary.projectCreate.industry}
                       value={organizationCreation.organizationForm.industry}
                       onChange={(value) => organizationCreation.setOrganizationForm((prev) => ({ ...prev, industry: value }))}
                     >
-                      <option value="">Selecionar indústria</option>
+                      <option value="">{dictionary.projectCreate.selectIndustry}</option>
                       {industryOptions.map((industry) => (
                         <option key={industry} value={industry}>
                           {industry}
@@ -590,7 +591,7 @@ export function CreateProjectSheet({ organizations, initialOpen = false }: Creat
                       ))}
                     </SelectField>
                     <Field className="gap-1.5 px-4 py-2">
-                      <FieldLabel className={sheetFieldLabelClassName}>Website</FieldLabel>
+                      <FieldLabel className={sheetFieldLabelClassName}>{dictionary.projectCreate.website}</FieldLabel>
                       <FieldContent>
                         <Input
                           value={organizationCreation.organizationForm.websiteUrl}
@@ -601,7 +602,7 @@ export function CreateProjectSheet({ organizations, initialOpen = false }: Creat
                       </FieldContent>
                     </Field>
                     <Field className="gap-1.5 px-4 py-2">
-                      <FieldLabel className={sheetFieldLabelClassName}>Identificador fiscal</FieldLabel>
+                      <FieldLabel className={sheetFieldLabelClassName}>{dictionary.projectCreate.taxIdentifier}</FieldLabel>
                       <FieldContent>
                         <Input
                           value={organizationCreation.organizationForm.taxIdentifierValue}
@@ -613,11 +614,11 @@ export function CreateProjectSheet({ organizations, initialOpen = false }: Creat
                       </FieldContent>
                     </Field>
                     <Field className="gap-1.5 px-4 py-2">
-                      <FieldLabel className={sheetFieldLabelClassName}>Morada</FieldLabel>
+                      <FieldLabel className={sheetFieldLabelClassName}>{dictionary.projectCreate.address}</FieldLabel>
                       <FieldContent>
                         <div className="mt-0.5 space-y-2">
                           <div>
-                            <p className="text-[10px] uppercase tracking-wider text-foreground/45">Linha 1</p>
+                            <p className="text-[10px] uppercase tracking-wider text-foreground/45">{dictionary.projectCreate.line1}</p>
                             <Input
                               value={organizationCreation.organizationForm.addressLine1}
                               onChange={(event) => organizationCreation.setOrganizationForm((prev) => ({ ...prev, addressLine1: event.target.value }))}
@@ -626,11 +627,11 @@ export function CreateProjectSheet({ organizations, initialOpen = false }: Creat
                             />
                           </div>
                           <div>
-                            <p className="text-[10px] uppercase tracking-wider text-foreground/45">Linha 2</p>
+                            <p className="text-[10px] uppercase tracking-wider text-foreground/45">{dictionary.projectCreate.line2}</p>
                             <Input
                               value={organizationCreation.organizationForm.addressLine2}
                               onChange={(event) => organizationCreation.setOrganizationForm((prev) => ({ ...prev, addressLine2: event.target.value }))}
-                              placeholder="Andar, sala, referência"
+                              placeholder={dictionary.projectCreate.line2Placeholder}
                               className={cn(sheetEditControlClassName, "mt-1.5")}
                             />
                           </div>
@@ -639,7 +640,7 @@ export function CreateProjectSheet({ organizations, initialOpen = false }: Creat
                     </Field>
                     <div className="grid grid-cols-2 gap-px">
                       <Field className="gap-1.5 px-4 py-2">
-                        <FieldLabel className={sheetFieldLabelClassName}>Código postal</FieldLabel>
+                        <FieldLabel className={sheetFieldLabelClassName}>{dictionary.projectCreate.zipCode}</FieldLabel>
                         <FieldContent>
                           <Input
                             value={organizationCreation.organizationForm.zipCode}
@@ -650,7 +651,7 @@ export function CreateProjectSheet({ organizations, initialOpen = false }: Creat
                         </FieldContent>
                       </Field>
                       <Field className="border-l border-black/6 px-4 py-2 dark:border-white/8">
-                        <FieldLabel className={sheetFieldLabelClassName}>País</FieldLabel>
+                        <FieldLabel className={sheetFieldLabelClassName}>{dictionary.projectCreate.country}</FieldLabel>
                         <FieldContent>
                           <Input
                             value={organizationCreation.organizationForm.country}
@@ -663,10 +664,10 @@ export function CreateProjectSheet({ organizations, initialOpen = false }: Creat
                     </div>
                   </FormSection>
 
-                  <FormSection title="Perfil">
+                  <FormSection title={dictionary.projectCreate.profile}>
                     <div className="grid grid-cols-2 gap-px">
                       <SelectField
-                        label="Dimensão"
+                        label={dictionary.projectCreate.companySize}
                         value={organizationCreation.organizationForm.companySize}
                         onChange={(value) => organizationCreation.setOrganizationForm((prev) => ({ ...prev, companySize: value }))}
                       >
@@ -678,7 +679,7 @@ export function CreateProjectSheet({ organizations, initialOpen = false }: Creat
                         ))}
                       </SelectField>
                       <SelectField
-                        label="Orçamento"
+                        label={dictionary.projectCreate.budget}
                         value={organizationCreation.organizationForm.budgetRange}
                         onChange={(value) => organizationCreation.setOrganizationForm((prev) => ({ ...prev, budgetRange: value }))}
                         className="border-l border-black/6 px-4 py-2 dark:border-white/8"
@@ -693,7 +694,7 @@ export function CreateProjectSheet({ organizations, initialOpen = false }: Creat
                     </div>
                   </FormSection>
 
-                  <SheetSection title="Membros" editing bodyClassName="space-y-3 px-4 py-3">
+                  <SheetSection title={dictionary.projectCreate.members} editing bodyClassName="space-y-3 px-4 py-3">
                       <div className="grid grid-cols-[1fr_auto_auto] gap-2">
                         <Input
                           value={organizationCreation.organizationInviteDraft.email}
@@ -706,17 +707,17 @@ export function CreateProjectSheet({ organizations, initialOpen = false }: Creat
                           value={organizationCreation.organizationInviteDraft.role}
                           onChange={(event) => organizationCreation.setOrganizationInviteDraft((prev) => ({ ...prev, role: event.target.value === "admin" ? "admin" : "member" }))}
                         >
-                          <option value="member">Membro</option>
-                          <option value="admin">Admin</option>
+                          <option value="member">{dictionary.people.member}</option>
+                          <option value="admin">{dictionary.projectCreate.admin}</option>
                         </select>
                         <Button type="button" variant="outline" size="sm" className="h-8" onClick={addOrganizationInvite}>
                           <Plus className="mr-1 h-3 w-3" />
-                          Adicionar
+                          {dictionary.projectCreate.add}
                         </Button>
                       </div>
 
                       {organizationCreation.organizationInvites.length === 0 ? (
-                        <p className="text-xs text-foreground/55">Opcional: adiciona convites para enviar após criar a organização.</p>
+                        <p className="text-xs text-foreground/55">{dictionary.projectCreate.optionalInvites}</p>
                       ) : (
                         <div className="space-y-1.5">
                           {organizationCreation.organizationInvites.map((invite) => (
@@ -727,14 +728,14 @@ export function CreateProjectSheet({ organizations, initialOpen = false }: Creat
                               <span className="truncate text-foreground">{invite.email}</span>
                               <div className="flex items-center gap-2">
                                 <span className="rounded-full border border-black/10 px-2 py-0.5 text-[10px] uppercase tracking-wide text-foreground/70 dark:border-white/15">
-                                  {invite.role === "admin" ? "Admin" : "Membro"}
+                                  {invite.role === "admin" ? dictionary.projectCreate.admin : dictionary.people.member}
                                 </span>
                                 <button
                                   type="button"
                                   className="text-rose-600 transition-colors hover:text-rose-700 dark:text-rose-400 dark:hover:text-rose-300"
                                   onClick={() => removeOrganizationInvite(invite.email)}
                                 >
-                                  Remover
+                                  {dictionary.projectCreate.remove}
                                 </button>
                               </div>
                             </div>
@@ -742,7 +743,7 @@ export function CreateProjectSheet({ organizations, initialOpen = false }: Creat
                         </div>
                       )}
                       <p className="text-[11px] text-foreground/55">
-                        O contacto principal é sincronizado automaticamente a partir dos membros com papel Admin.
+                        {dictionary.projectCreate.primaryContactHint}
                       </p>
                   </SheetSection>
                 </div>
@@ -750,7 +751,7 @@ export function CreateProjectSheet({ organizations, initialOpen = false }: Creat
                 <SheetFooter className={`${sheetFooterClassName} flex-row gap-2`}>
                   <Button type="submit" className="flex-1" disabled={!organizationCreation.hasOrganizationName || isCreatingOrganization}>
                     <Save className="mr-2 h-4 w-4" />
-                    {isCreatingOrganization ? "A criar..." : "Criar organização"}
+                    {isCreatingOrganization ? dictionary.create.creating : dictionary.projectCreate.createOrganization}
                   </Button>
                   <Button
                     type="button"
@@ -759,7 +760,7 @@ export function CreateProjectSheet({ organizations, initialOpen = false }: Creat
                     onClick={handleOrganizationCancel}
                     disabled={isCreatingOrganization}
                   >
-                    Cancelar
+                    {dictionary.actions.cancel}
                   </Button>
                 </SheetFooter>
               </form>
@@ -773,25 +774,25 @@ export function CreateProjectSheet({ organizations, initialOpen = false }: Creat
           <AppSheetHeader
             icon={Users2}
             editing
-            eyebrow="A editar"
-            title={<>Configurar equipa</>}
-            description={<>{setup.setupState?.projectName ? `Projeto: ${setup.setupState.projectName}` : "Define a equipa do projeto."}</>}
+            eyebrow={dictionary.board.editEyebrow}
+            title={<>{dictionary.projectCreate.configureTeam}</>}
+            description={<>{setup.setupState?.projectName ? dictionary.projectCreate.projectNamePrefix(setup.setupState.projectName) : dictionary.projectCreate.defineTeam}</>}
           />
 
           {setup.loadingSetupData || !setup.setupState ? (
             <div className={`${sheetBodyClassName} flex items-center justify-center py-12`}>
               <p className="inline-flex items-center gap-2 text-sm text-foreground/70">
                 <Loader2 className="size-4 animate-spin" />
-                A preparar detalhes do projeto...
+                {dictionary.projectCreate.preparing}
               </p>
             </div>
           ) : (
             <form onSubmit={handleSaveSetup} className="flex min-h-0 flex-1 flex-col gap-0">
               <div className={`${sheetBodyClassName} space-y-4`}>
-                <SheetSection title="Equipa do projeto" editing>
+                <SheetSection title={dictionary.projectCreate.projectTeam} editing>
                   <FieldGroup className="gap-0 px-0 py-1">
                     <Field className="gap-1.5 px-4 py-2">
-                      <FieldLabel className={sheetFieldLabelClassName}>Equipa neste projeto</FieldLabel>
+                      <FieldLabel className={sheetFieldLabelClassName}>{dictionary.projectCreate.teamInProject}</FieldLabel>
                       <FieldContent>
                         <div className="mt-1">
                           <SearchField
@@ -799,12 +800,12 @@ export function CreateProjectSheet({ organizations, initialOpen = false }: Creat
                             value={setup.memberSearch}
                             onChange={setup.setMemberSearch}
                             onClear={() => setup.setMemberSearch("")}
-                            placeholder="Pesquisar por nome"
+                            placeholder={dictionary.projectCreate.searchByName}
                           />
                         </div>
                         <div className="mt-1 space-y-2">
-                          {setup.memberOptions.length === 0 ? <p className="text-xs text-foreground/60">Sem utilizadores disponíveis para atribuição.</p> : null}
-                          {setup.memberOptions.length > 0 && setup.filteredMemberOptions.length === 0 ? <p className="text-xs text-foreground/60">Sem resultados para essa pesquisa.</p> : null}
+                          {setup.memberOptions.length === 0 ? <p className="text-xs text-foreground/60">{dictionary.projectCreate.noUsers}</p> : null}
+                          {setup.memberOptions.length > 0 && setup.filteredMemberOptions.length === 0 ? <p className="text-xs text-foreground/60">{dictionary.projectCreate.noSearchResults}</p> : null}
                           {setup.filteredMemberOptions.map((member) => {
                             const selectedRole = setup.setupState?.members[member.profileId];
                             return (
@@ -819,7 +820,7 @@ export function CreateProjectSheet({ organizations, initialOpen = false }: Creat
                                 <label htmlFor={`member-${member.profileId}`} className="min-w-0 flex-1 text-sm">
                                   <span className="block truncate font-semibold text-foreground">{member.label}</span>
                                   <span className="block truncate text-xs text-foreground/60">
-                                    {member.email ?? "Sem email"} · {PROJECT_MEMBER_SCOPE_LABELS[member.organizationRole]}
+                                    {member.email ?? dictionary.people.noEmail} · {PROJECT_MEMBER_SCOPE_LABELS[member.organizationRole]}
                                   </span>
                                 </label>
                                 <select
@@ -844,7 +845,7 @@ export function CreateProjectSheet({ organizations, initialOpen = false }: Creat
               <SheetFooter className={`${sheetFooterClassName} flex-row gap-2`}>
                 <Button type="submit" className="flex-1" disabled={setup.savingSetup}>
                   <Save className="mr-2 h-4 w-4" />
-                  {setup.savingSetup ? "A guardar..." : "Guardar configuração"}
+                  {setup.savingSetup ? dictionary.actions.saving : dictionary.projectCreate.saveConfiguration}
                 </Button>
                 <Button
                   type="button"
@@ -853,7 +854,7 @@ export function CreateProjectSheet({ organizations, initialOpen = false }: Creat
                   onClick={setup.closeSetupSheet}
                   disabled={setup.savingSetup}
                 >
-                  Concluir depois
+                  {dictionary.projectCreate.finishLater}
                 </Button>
               </SheetFooter>
             </form>
@@ -864,13 +865,13 @@ export function CreateProjectSheet({ organizations, initialOpen = false }: Creat
       <AlertDialog open={isProjectDiscardDialogOpen} onOpenChange={setProjectDiscardDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Descartar alterações?</AlertDialogTitle>
+            <AlertDialogTitle>{dictionary.projectCreate.discardTitle}</AlertDialogTitle>
             <AlertDialogDescription>
-              As alterações que fez ainda não foram guardadas. Se sair agora, perde-as.
+              {dictionary.projectCreate.discardDescription}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Continuar a editar</AlertDialogCancel>
+            <AlertDialogCancel>{dictionary.projectCreate.continueEditing}</AlertDialogCancel>
             <AlertDialogAction
               className="bg-rose-600 text-white hover:bg-rose-700"
               onClick={() => {
@@ -878,7 +879,7 @@ export function CreateProjectSheet({ organizations, initialOpen = false }: Creat
                 performProjectCancel();
               }}
             >
-              Descartar
+              {dictionary.projectCreate.discard}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -887,13 +888,13 @@ export function CreateProjectSheet({ organizations, initialOpen = false }: Creat
       <AlertDialog open={isOrganizationDiscardDialogOpen} onOpenChange={setOrganizationDiscardDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Descartar alterações?</AlertDialogTitle>
+            <AlertDialogTitle>{dictionary.projectCreate.discardTitle}</AlertDialogTitle>
             <AlertDialogDescription>
-              As alterações que fez ainda não foram guardadas. Se sair agora, perde-as.
+              {dictionary.projectCreate.discardDescription}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Continuar a editar</AlertDialogCancel>
+            <AlertDialogCancel>{dictionary.projectCreate.continueEditing}</AlertDialogCancel>
             <AlertDialogAction
               className="bg-rose-600 text-white hover:bg-rose-700"
               onClick={() => {
@@ -901,7 +902,7 @@ export function CreateProjectSheet({ organizations, initialOpen = false }: Creat
                 performOrganizationCancel();
               }}
             >
-              Descartar
+              {dictionary.projectCreate.discard}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

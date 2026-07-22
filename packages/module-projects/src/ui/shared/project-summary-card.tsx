@@ -10,7 +10,7 @@ import { PROJECT_RISK_META, resolveProjectRisk } from "./project-risk";
 import { getCompletionPercent } from "./project-progress";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@brightweblabs/ui";
 import type { ProjectListItem } from "../../types";
-import { useProjectsNavigation } from "../context";
+import { useProjectsNavigation, useProjectsUiDictionary } from "../context";
 
 const SURFACE =
   "rounded-[var(--radius-card)] border border-[color:var(--border)] bg-[color:var(--card)] shadow-[0_1px_2px_var(--project-ui-color-67)]";
@@ -19,14 +19,6 @@ export type ProjectSummaryCardItem = Pick<
   ProjectListItem,
   "id" | "organizationName" | "name" | "code" | "status" | "health" | "ownerLabel" | "targetDate" | "taskStats"
 >;
-
-const PROJECT_STATUS_META: Record<ProjectSummaryCardItem["status"], { label: string; dot: string }> = {
-  planned: { label: "A planear", dot: "bg-[color:var(--project-state-planned)]" },
-  active: { label: "Ativo", dot: "bg-[color:var(--project-state-active)]" },
-  blocked: { label: "Bloqueado", dot: "bg-[color:var(--project-state-blocked)]" },
-  completed: { label: "Concluído", dot: "bg-[color:var(--project-state-completed)]" },
-  canceled: { label: "Cancelado", dot: "bg-[color:var(--project-state-canceled)]" },
-};
 
 function formatShortDate(iso: string | null | undefined) {
   if (!iso) return "-";
@@ -41,8 +33,16 @@ function codeOf(project: ProjectSummaryCardItem) {
 
 export function ProjectSummaryCard({ project }: { project: ProjectSummaryCardItem }) {
   const navigation = useProjectsNavigation();
+  const dictionary = useProjectsUiDictionary();
   const router = useRouter();
-  const statusMeta = PROJECT_STATUS_META[project.status] ?? PROJECT_STATUS_META.active;
+  const projectStatusMeta: Record<ProjectSummaryCardItem["status"], { label: string; dot: string }> = {
+    planned: { label: dictionary.status.planned, dot: "bg-[color:var(--project-state-planned)]" },
+    active: { label: dictionary.status.active, dot: "bg-[color:var(--project-state-active)]" },
+    blocked: { label: dictionary.status.blocked, dot: "bg-[color:var(--project-state-blocked)]" },
+    completed: { label: dictionary.status.completed, dot: "bg-[color:var(--project-state-completed)]" },
+    canceled: { label: dictionary.status.canceled, dot: "bg-[color:var(--project-state-canceled)]" },
+  };
+  const statusMeta = projectStatusMeta[project.status] ?? projectStatusMeta.active;
   const risk = resolveProjectRisk(project);
   const riskMeta = risk ? PROJECT_RISK_META[risk] : null;
   const progress = getCompletionPercent(project.taskStats?.done ?? 0, project.taskStats?.total ?? 0);
@@ -68,9 +68,9 @@ export function ProjectSummaryCard({ project }: { project: ProjectSummaryCardIte
     event.stopPropagation();
     try {
       await navigator.clipboard.writeText(projectCode);
-      toast.success("Project ID copied");
+      toast.success(dictionary.messages.projectIdCopied);
     } catch {
-      toast.error("Could not copy Project ID");
+      toast.error(dictionary.messages.projectIdCopyError);
     }
   }
 
@@ -89,7 +89,7 @@ export function ProjectSummaryCard({ project }: { project: ProjectSummaryCardIte
               <ArrowUpRight className="h-3.5 w-3.5 text-[color:var(--muted-foreground)] opacity-0 transition group-hover:text-[color:var(--accent)] group-hover:opacity-100" />
             </span>
           </TooltipTrigger>
-          <TooltipContent>Abrir projeto</TooltipContent>
+          <TooltipContent>{dictionary.detail.openProject}</TooltipContent>
         </Tooltip>
 
         {/* header — fixed height so pills/progress align across cards */}
@@ -109,7 +109,7 @@ export function ProjectSummaryCard({ project }: { project: ProjectSummaryCardIte
                 {statusMeta.label}
               </span>
             </TooltipTrigger>
-            <TooltipContent>Estado: {statusMeta.label}</TooltipContent>
+            <TooltipContent>{dictionary.detail.statusTooltip(statusMeta.label)}</TooltipContent>
           </Tooltip>
           {riskMeta ? (
             <span
@@ -131,7 +131,7 @@ export function ProjectSummaryCard({ project }: { project: ProjectSummaryCardIte
           <div className="portal-meta flex items-center justify-between">
             <span className="inline-flex min-w-0 items-center gap-2">
               <ProjectOwnerAvatar label={project.ownerLabel} size="sm" roleColor="manager" />
-              <span className="truncate">{project.ownerLabel ?? "sem responsável"}</span>
+              <span className="truncate">{project.ownerLabel ?? dictionary.detail.noOwnerLowercase}</span>
             </span>
             <Tooltip>
               <TooltipTrigger asChild>
@@ -139,7 +139,7 @@ export function ProjectSummaryCard({ project }: { project: ProjectSummaryCardIte
                   {progress}%
                 </span>
               </TooltipTrigger>
-              <TooltipContent>Progresso: {progress}%</TooltipContent>
+              <TooltipContent>{dictionary.detail.progressTooltip(progress)}</TooltipContent>
             </Tooltip>
           </div>
           <div className="mt-[7px] h-1.5 w-full overflow-hidden rounded-full bg-[color:var(--project-ui-color-71)]">
@@ -165,7 +165,7 @@ export function ProjectSummaryCard({ project }: { project: ProjectSummaryCardIte
                 {projectCode}
               </button>
             </TooltipTrigger>
-            <TooltipContent>Copiar Project ID</TooltipContent>
+            <TooltipContent>{dictionary.detail.copyProjectId}</TooltipContent>
           </Tooltip>
           <Tooltip>
             <TooltipTrigger asChild>
@@ -176,7 +176,7 @@ export function ProjectSummaryCard({ project }: { project: ProjectSummaryCardIte
                 </span>
               </span>
             </TooltipTrigger>
-            <TooltipContent>Tarefas concluídas</TooltipContent>
+            <TooltipContent>{dictionary.detail.completedTasks}</TooltipContent>
           </Tooltip>
           <Tooltip>
             <TooltipTrigger asChild>
@@ -187,7 +187,7 @@ export function ProjectSummaryCard({ project }: { project: ProjectSummaryCardIte
                 </span>
               </span>
             </TooltipTrigger>
-            <TooltipContent>Prazo</TooltipContent>
+            <TooltipContent>{dictionary.detail.dueDate}</TooltipContent>
           </Tooltip>
         </div>
       </article>

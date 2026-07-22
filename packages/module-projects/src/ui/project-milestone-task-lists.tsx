@@ -18,7 +18,9 @@ import {
 import { TooltipProvider } from "@brightweblabs/ui";
 import type { ProjectMilestone, ProjectTask } from "../types";
 import { cn } from "./utils";
-import { useProjectsNavigation } from "./context";
+import { useProjectsNavigation, useProjectsUiDictionary } from "./context";
+import type { ProjectsUiDictionary } from "./types";
+import { defaultProjectsUiDictionary } from "./dictionary";
 
 type ProjectMilestonesAndTasksListsProps = {
   projectId: string;
@@ -33,13 +35,6 @@ type TaskGroupKey = "overdue" | "today" | "this_week" | "later";
 type TaskGroup = { key: TaskGroupKey; label: string; tasks: ProjectTask[] };
 
 type CollapsedTaskGroupsState = Record<TaskGroupKey, boolean>;
-
-const milestoneStatusLabels: Record<string, string> = {
-  pending: "Pendente",
-  in_progress: "Em progresso",
-  achieved: "Concluído",
-  delayed: "Atrasado",
-};
 
 const milestoneStatusDotClass: Record<string, string> = {
   pending: "bg-foreground/20",
@@ -56,10 +51,10 @@ const taskPriorityOrder: Record<string, number> = {
 };
 
 const taskGroupMeta: Array<{ key: TaskGroupKey; label: string }> = [
-  { key: "overdue", label: "Atrasadas" },
-  { key: "today", label: "Hoje" },
-  { key: "this_week", label: "Esta semana" },
-  { key: "later", label: "Mais tarde" },
+  { key: "overdue", label: defaultProjectsUiDictionary.detail.taskGroups.overdue },
+  { key: "today", label: defaultProjectsUiDictionary.detail.taskGroups.today },
+  { key: "this_week", label: defaultProjectsUiDictionary.detail.taskGroups.thisWeek },
+  { key: "later", label: defaultProjectsUiDictionary.detail.taskGroups.later },
 ];
 
 // Each group header carries a hint of its urgency: overdue red, today amber,
@@ -166,7 +161,7 @@ function formatDayOfMonth(value: string | null | undefined) {
   return String(date.getDate()).padStart(2, "0");
 }
 
-function formatRelativeDue(value: string | null | undefined): string | null {
+function formatRelativeDue(value: string | null | undefined, dictionary: ProjectsUiDictionary): string | null {
   if (!value) return null;
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return null;
@@ -175,11 +170,11 @@ function formatRelativeDue(value: string | null | undefined): string | null {
   const target = new Date(date);
   target.setHours(0, 0, 0, 0);
   const days = Math.round((target.getTime() - today.getTime()) / 86_400_000);
-  if (days === 0) return "hoje";
-  if (days === 1) return "amanhã";
-  if (days === -1) return "ontem";
-  if (days > 1) return `em ${days} dias`;
-  return `há ${Math.abs(days)} dias`;
+  if (days === 0) return dictionary.detail.today;
+  if (days === 1) return dictionary.detail.tomorrow;
+  if (days === -1) return dictionary.detail.yesterday;
+  if (days > 1) return dictionary.detail.inDays(days);
+  return dictionary.detail.daysAgo(Math.abs(days));
 }
 
 // The calendar chip carries the milestone's health as its background, so the
@@ -317,6 +312,8 @@ export function ProjectMilestonesAndTasksLists({
   onEditTask,
 }: ProjectMilestonesAndTasksListsProps) {
   const navigation = useProjectsNavigation();
+  const dictionary = useProjectsUiDictionary();
+  const milestoneStatusLabels: Record<string, string> = { pending: dictionary.status.pending, in_progress: dictionary.status.in_progress, achieved: dictionary.status.achieved, delayed: dictionary.status.delayed };
   const [collapsedTaskGroups, setCollapsedTaskGroups] = useState<CollapsedTaskGroupsState>(initialCollapsedTaskGroups);
 
   const milestoneById = useMemo(() => new Map(milestones.map((m) => [m.id, m])), [milestones]);
@@ -386,11 +383,11 @@ export function ProjectMilestonesAndTasksLists({
         <ProjectSurfaceCard className="is-light flex h-full flex-col">
           <ProjectSurfaceSectionHeader
             icon={Flag}
-            title="Milestones"
-            subtitle="Objetivos e marcos do projeto"
+            title={dictionary.detail.milestones}
+            subtitle={dictionary.detail.milestonesSubtitle}
             rightSlot={canEditItems ? (
               <SectionAddButton
-                label="Adicionar milestone"
+                label={dictionary.detail.addMilestone}
                 onClick={() => dispatchProjectsEvent(PROJECTS_EVENTS.openNewMilestone)}
               />
             ) : null}
@@ -399,13 +396,13 @@ export function ProjectMilestonesAndTasksLists({
             {milestones.length === 0 ? (
               <ProjectSectionEmptyState
                 icon={Flag}
-                title="Sem milestones"
-                hint="Adicione milestones para acompanhar os marcos do projeto."
+                title={dictionary.detail.noMilestones}
+                hint={dictionary.detail.noMilestonesHint}
               />
             ) : null}
             {milestones.map((milestone) => {
               const progress = taskProgressByMilestone.get(milestone.id);
-              const relativeDue = formatRelativeDue(milestone.targetDate);
+              const relativeDue = formatRelativeDue(milestone.targetDate, dictionary);
               const isProgressComplete = progress ? progress.total > 0 && progress.done >= progress.total : false;
               const isAchieved = milestone.status === "achieved";
               const isOverdue = !isAchieved && milestoneVisualHealth(milestone) === "off_track";
@@ -441,7 +438,7 @@ export function ProjectMilestonesAndTasksLists({
                     ) : (
                       <>
                         <CalendarOff className="size-4 opacity-60" />
-                        <span className="block text-[7px] font-semibold uppercase tracking-[0.04em] opacity-70">S/ data</span>
+                        <span className="block text-[7px] font-semibold uppercase tracking-[0.04em] opacity-70">{dictionary.detail.noDateShort}</span>
                       </>
                     )}
                   </div>
@@ -459,7 +456,7 @@ export function ProjectMilestonesAndTasksLists({
                           <span className={`${MONO} portal-meta tabular-nums text-foreground/70`}>{progress.done}/{progress.total}</span>
                         </span>
                       ) : (
-                        <span className="portal-micro shrink-0 text-foreground/35">sem tarefas</span>
+                        <span className="portal-micro shrink-0 text-foreground/35">{dictionary.detail.noTasksLowercase}</span>
                       )}
                     </div>
                     <div className="portal-meta mt-1 flex min-w-0 items-center gap-x-2 whitespace-nowrap">
@@ -484,11 +481,11 @@ export function ProjectMilestonesAndTasksLists({
         <ProjectSurfaceCard className="is-light flex h-full flex-col xl:col-span-2">
           <ProjectSurfaceSectionHeader
             icon={ListChecks}
-            title="Tarefas"
-            subtitle="Execução e prioridades em curso"
+            title={dictionary.detail.tasks}
+            subtitle={dictionary.detail.tasksSubtitle}
             rightSlot={canEditItems ? (
               <SectionAddButton
-                label="Adicionar tarefa"
+                label={dictionary.detail.addTask}
                 onClick={() => dispatchProjectsEvent(PROJECTS_EVENTS.openNewTask)}
               />
             ) : null}
@@ -497,8 +494,8 @@ export function ProjectMilestonesAndTasksLists({
             {visibleTasks.length === 0 ? (
               <ProjectSectionEmptyState
                 icon={ListChecks}
-                title="Sem tarefas"
-                hint="Crie tarefas para planear e acompanhar a execução."
+                title={dictionary.detail.noTasks}
+                hint={dictionary.detail.noTasksHint}
               />
             ) : null}
             {visibleTaskGroups.map((taskGroup) => {
@@ -526,7 +523,7 @@ export function ProjectMilestonesAndTasksLists({
                 className="portal-meta flex items-center justify-center gap-1.5 border-t border-[color:var(--border)] px-3 py-2 font-semibold text-[color:var(--muted-foreground)] transition-colors hover:bg-[color:var(--project-ui-color-09)] hover:text-[color:var(--accent)]"
               >
                 <SquareKanban className="size-3.5" />
-                Ver mais {hiddenTaskCount} {hiddenTaskCount === 1 ? "tarefa" : "tarefas"}
+                {dictionary.detail.moreTasks(hiddenTaskCount)}
               </Link>
             ) : null}
           </div>

@@ -3,6 +3,7 @@
 import { useProjectsUiClient } from "../context";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
+import { defaultProjectsUiDictionary } from "../dictionary";
 import { PROJECT_MEMBER_ROLE_LABELS_PT, type ProjectMemberRole } from "../../contracts";
 
 type ProjectMemberOption = {
@@ -20,10 +21,10 @@ type ProjectSetupState = {
 };
 
 export const PROJECT_MEMBER_SCOPE_LABELS: Record<ProjectMemberOption["organizationRole"], string> = {
-  admin: "BeGreen admin",
-  staff: "BeGreen staff",
-  org_admin: "Org admin",
-  org_member: "Org membro",
+  admin: defaultProjectsUiDictionary.projectCreate.scopeLabels.admin,
+  staff: defaultProjectsUiDictionary.projectCreate.scopeLabels.staff,
+  org_admin: defaultProjectsUiDictionary.projectCreate.scopeLabels.organizationAdmin,
+  org_member: defaultProjectsUiDictionary.projectCreate.scopeLabels.organizationMember,
 };
 
 export function useProjectSetupState() {
@@ -58,7 +59,7 @@ export function useProjectSetupState() {
 
       const membersPayload = await membersResponse.json();
       if (!membersResponse.ok) {
-        const message = typeof membersPayload?.error === "string" ? membersPayload.error : "Erro ao carregar membros da organização.";
+        const message = typeof membersPayload?.error === "string" ? membersPayload.error : defaultProjectsUiDictionary.team.setupLoadMembersError;
         throw new Error(message);
       }
 
@@ -78,7 +79,7 @@ export function useProjectSetupState() {
         members: membersMap,
       });
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Não foi possível preparar a configuração avançada.");
+      toast.error(error instanceof Error ? error.message : defaultProjectsUiDictionary.team.setupPrepareError);
       closeSetupSheet();
     } finally {
       setLoadingSetupData(false);

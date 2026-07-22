@@ -1,6 +1,6 @@
 "use client";
 
-import { useProjectsUiClient } from "./context";
+import { useProjectsUiClient, useProjectsUiDictionary } from "./context";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Check, ChevronDown, Loader2 } from "lucide-react";
@@ -55,6 +55,7 @@ const PROJECT_STATUS_MENU_HOVER_CLASSES: Record<ProjectStatus, string> = {
 export function ProjectStatusQuickAction({
   className, surface = "default" }: ProjectStatusQuickActionProps) {
   const client = useProjectsUiClient();
+  const dictionary = useProjectsUiDictionary();
   const router = useRouter();
   const project = useProjectDetailProject();
   const { applyDashboardPayload } = useProjectDetailActions();
@@ -95,19 +96,19 @@ export function ProjectStatusQuickAction({
       });
       const payload = await response.json();
       if (!response.ok) {
-        throw new Error(typeof payload?.error === "string" ? payload.error : "Não foi possível atualizar o estado.");
+        throw new Error(typeof payload?.error === "string" ? payload.error : dictionary.statusAction.updateError);
       }
 
       setCancellationReason(nextStatus === "canceled" ? normalizedReason : "");
       const didApplyDashboard = applyDashboardPayload(payload);
-      toast.success("Estado do projeto atualizado.");
+      toast.success(dictionary.statusAction.updated);
       if (!didApplyDashboard) {
         router.refresh();
       }
     } catch (error) {
       setStatus(previousStatus);
       setCancellationReason(previousCancellationReason);
-      toast.error(error instanceof Error ? error.message : "Erro ao atualizar o estado do projeto.");
+      toast.error(error instanceof Error ? error.message : dictionary.statusAction.updateFallbackError);
     } finally {
       setIsSaving(false);
       setPendingStatus(null);
@@ -129,7 +130,7 @@ export function ProjectStatusQuickAction({
   const handleConfirmCancel = () => {
     const normalizedReason = cancellationReason.trim();
     if (!normalizedReason || pendingStatus !== "canceled") {
-      toast.error("Indica o motivo do cancelamento.");
+      toast.error(dictionary.statusAction.cancellationReasonRequired);
       return;
     }
 
@@ -137,7 +138,7 @@ export function ProjectStatusQuickAction({
     void handleChange("canceled", normalizedReason);
   };
 
-  const currentStatusLabel = PROJECT_STATUS_LABELS[status] ?? "Estado";
+  const currentStatusLabel = PROJECT_STATUS_LABELS[status] ?? dictionary.forms.status;
   const triggerTint = projectStatusTint(status, surface === "hero" ? "hero" : "default");
 
   return (
@@ -160,7 +161,7 @@ export function ProjectStatusQuickAction({
                 <button
                   type="button"
                   id="project-status-quick-action-trigger"
-                  aria-label="Alterar estado do projeto"
+                  aria-label={dictionary.statusAction.changeStatus}
                 >
                   <span>{currentStatusLabel}</span>
                   {isSaving ? (
@@ -172,7 +173,7 @@ export function ProjectStatusQuickAction({
                 </ProjectPill>
               </DropdownMenuTrigger>
             </TooltipTrigger>
-            <TooltipContent side="top">Alterar estado do projeto</TooltipContent>
+            <TooltipContent side="top">{dictionary.statusAction.changeStatus}</TooltipContent>
           </Tooltip>
         </TooltipProvider>
         <DropdownMenuContent align="start" className="w-fit min-w-[170px]">
@@ -209,22 +210,22 @@ export function ProjectStatusQuickAction({
       >
         <AlertDialogContent className="max-w-[480px]">
           <AlertDialogHeader>
-            <AlertDialogTitle>Cancelar projeto</AlertDialogTitle>
+            <AlertDialogTitle>{dictionary.statusAction.cancelProject}</AlertDialogTitle>
             <AlertDialogDescription>
-              Indica o motivo do cancelamento. Este motivo será mostrado na visão geral do projeto.
+              {dictionary.statusAction.cancelDescription}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <textarea
             rows={4}
             value={cancellationReason}
             onChange={(event) => setCancellationReason(event.target.value)}
-            placeholder="Ex.: orçamento suspenso, mudança de prioridade, decisão do cliente..."
+            placeholder={dictionary.statusAction.cancelPlaceholder}
             className="w-full rounded-xl border border-black/12 bg-background/70 px-3 py-2 text-sm text-foreground placeholder:text-foreground/40 focus:border-primary/50 focus:outline-none focus:ring-2 focus:ring-primary/20 dark:border-white/15 dark:bg-white/[0.04]"
             disabled={isSaving}
           />
           <AlertDialogFooter>
             <AlertDialogCancel className="rounded-full px-4 text-xs" disabled={isSaving}>
-              Fechar
+              {dictionary.statusAction.close}
             </AlertDialogCancel>
             <AlertDialogAction
               className="rounded-full bg-rose-600 px-4 text-xs text-white hover:bg-rose-700"
@@ -234,7 +235,7 @@ export function ProjectStatusQuickAction({
               }}
               disabled={isSaving}
             >
-              Confirmar cancelamento
+              {dictionary.statusAction.confirmCancellation}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -5,6 +5,7 @@ import test from "node:test";
 
 import type { ProjectDashboardData, ProjectLink } from "../packages/module-projects/src/types.ts";
 import { defaultProjectsUiDictionary } from "../packages/module-projects/src/ui/dictionary.ts";
+import { parseProjectBoardApiError, parseTaskListPayload } from "../packages/module-projects/src/ui/project-board-response-parser.ts";
 import { parseProjectDashboardPayload, parseProjectLinksPayload, projectDetailDataReducer } from "../packages/module-projects/src/ui/project-detail-data-provider.tsx";
 import { createProjectsModuleRegistration } from "../packages/module-projects/src/registration.ts";
 
@@ -24,6 +25,14 @@ test("Projects detail reducer replaces links without changing the dashboard reco
   assert.deepEqual(projectDetailDataReducer(dashboard, { type: "replace-links", links }), { ...dashboard, links });
 });
 
+test("Projects board parser accepts task lists and preserves API errors", () => {
+  const task = { id: "task-1", projectId: project.id, milestoneId: null, title: "Board task", description: null, status: "todo", health: "on_track", priority: "medium", assigneeProfileId: null, assigneeLabel: null, reporterProfileId: null, reporterLabel: null, dueDate: null, position: 1, blockedReason: null, createdAt: project.createdAt, updatedAt: project.updatedAt } as const;
+  assert.deepEqual(parseTaskListPayload({ data: [task] }), [task]);
+  assert.equal(parseTaskListPayload({ data: [{ id: "task-1" }] }), null);
+  assert.equal(parseProjectBoardApiError({ error: "Move rejected" }, "Fallback"), "Move rejected");
+  assert.equal(parseProjectBoardApiError({}, "Fallback"), "Fallback");
+});
+
 test("Projects UI ships Portuguese defaults and configurable shell registration", () => {
   assert.equal(defaultProjectsUiDictionary.locale, "pt-PT");
   assert.equal(defaultProjectsUiDictionary.status.planned, "A planear");
@@ -38,5 +47,19 @@ test("Projects package UI contains the literal list/detail translation and no ra
   const source = files(root).filter((file) => /\.(?:ts|tsx)$/.test(file)).map((file) => readFileSync(file, "utf8")).join("\n");
   assert.doesNotMatch(source, /#[0-9a-f]{3,8}\b|rgba?\(|color-mix\(/i);
   assert.doesNotMatch(source, /\bfont-medium\b/);
-  for (const symbol of ["ProjectsPage", "ProjectDetailPage", "ProjectsToolbarControls", "ProjectDetailDataProvider"]) assert.match(readFileSync(join(root, "index.ts"), "utf8"), new RegExp(symbol.replace("ProjectsToolbarControls", "toolbar-controls").replace("ProjectDetailDataProvider", "project-detail-data-provider").replace("ProjectsPage", "projects-page").replace("ProjectDetailPage", "project-detail-page")));
+  for (const symbol of ["ProjectsPage", "ProjectDetailPage", "ProjectsToolbarControls", "ProjectDetailDataProvider", "ProjectBoardKanban", "ProjectTasksPage", "ProjectBoardLoading"]) assert.match(readFileSync(join(root, "index.ts"), "utf8"), new RegExp(symbol.replace("ProjectsToolbarControls", "toolbar-controls").replace("ProjectDetailDataProvider", "project-detail-data-provider").replace("ProjectsPage", "projects-page").replace("ProjectDetailPage", "project-detail-page").replace("ProjectBoardKanban", "project-board-kanban").replace("ProjectTasksPage", "project-tasks-page").replace("ProjectBoardLoading", "project-board-loading")));
+});
+
+test("Projects Portuguese UI copy is owned by the dictionary", () => {
+  const root = join(process.cwd(), "packages/module-projects/src/ui");
+  const files = (directory: string): string[] => readdirSync(directory, { withFileTypes: true }).flatMap((entry) => entry.isDirectory() ? files(join(directory, entry.name)) : [join(directory, entry.name)]);
+  const source = files(root).filter((file) => /\.(?:ts|tsx)$/.test(file) && !file.endsWith("dictionary.ts")).map((file) => readFileSync(file, "utf8")).join("\n");
+  assert.doesNotMatch(source, /[À-ÿ]|\b(?:Atrasadas|Bloqueada|Concluída|Criar|Editar|Eliminar|Equipa|Filtros|Hoje|Marcos|Nenhum|Novo|Portefólio|Prioridade|Projeto|Responsável|Sem|Tarefa|Todas|Utilizador)\b/);
+});
+
+test("Projects preview exposes list, detail, board, and tasks routes", () => {
+  const previewRoot = join(process.cwd(), "apps/platform-preview/app/projects");
+  for (const route of ["page.tsx", "[id]/page.tsx", "[id]/board/page.tsx", "[id]/tasks/page.tsx"]) {
+    assert.match(readFileSync(join(previewRoot, route), "utf8"), /ProjectsPage|ProjectDetailPage|ProjectBoardPage|ProjectTasksPage/);
+  }
 });

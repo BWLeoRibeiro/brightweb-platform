@@ -1,6 +1,6 @@
 "use client";
 
-import { useProjectsUiClient } from "../context";
+import { useProjectsUiClient, useProjectsUiDictionary } from "../context";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { format } from "date-fns";
 import { CalendarIcon, ListChecks, Save } from "lucide-react";
@@ -39,6 +39,7 @@ export function ProjectTaskCreateSheet({
   initialOpen = false,
 }: ProjectTaskCreateSheetProps) {
   const client = useProjectsUiClient();
+  const dictionary = useProjectsUiDictionary();
   const router = useRouter();
   const [open, setOpen] = useState(initialOpen);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -56,10 +57,10 @@ export function ProjectTaskCreateSheet({
       members
         .map((member) => ({
           profileId: member.profileId,
-          label: member.label.trim() || "Sem nome",
+          label: member.label.trim() || dictionary.people.noName,
         }))
         .sort((a, b) => a.label.localeCompare(b.label, "pt-PT", { sensitivity: "base" })),
-    [members],
+    [dictionary.people.noName, members],
   );
 
   useEffect(() => {
@@ -105,12 +106,12 @@ export function ProjectTaskCreateSheet({
         dueDate: dueDate || undefined,
         blockedReason: blockedReason.trim() || undefined,
       });
-      toast.success("Tarefa criada com sucesso.");
+      toast.success(dictionary.create.taskCreated);
       setOpen(false);
       resetForm();
       router.refresh();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Erro ao criar tarefa.");
+      toast.error(error instanceof Error ? error.message : dictionary.create.taskCreateFallbackError);
     } finally {
       setIsSubmitting(false);
     }
@@ -122,16 +123,16 @@ export function ProjectTaskCreateSheet({
         <AppSheetHeader
           icon={ListChecks}
           editing
-          eyebrow="A criar"
-          title="Nova tarefa"
-          description="Adiciona uma nova tarefa e liga-a a um responsável ou milestone."
+          eyebrow={dictionary.create.creatingEyebrow}
+          title={dictionary.forms.newTask}
+          description={dictionary.create.taskDescription}
         />
 
         <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
           <div className={`${sheetBodyClassName} space-y-4`}>
-            <SheetSection title="Tarefa" editing bodyClassName="space-y-3 px-4 py-3">
+            <SheetSection title={dictionary.board.task} editing bodyClassName="space-y-3 px-4 py-3">
               <div>
-                <label className={sheetFieldLabelClassName} htmlFor="task-create-title">Título</label>
+                <label className={sheetFieldLabelClassName} htmlFor="task-create-title">{dictionary.forms.title}</label>
                 <Input
                   id="task-create-title"
                   value={title}
@@ -141,7 +142,7 @@ export function ProjectTaskCreateSheet({
                 />
               </div>
               <div>
-                <label className={sheetFieldLabelClassName} htmlFor="task-create-desc">Descrição (opcional)</label>
+                <label className={sheetFieldLabelClassName} htmlFor="task-create-desc">{dictionary.create.optionalDescription}</label>
                 <textarea
                   id="task-create-desc"
                   value={description}
@@ -152,47 +153,47 @@ export function ProjectTaskCreateSheet({
               </div>
             </SheetSection>
 
-            <SheetSection title="Classificação e atribuição" editing bodyClassName="space-y-3 px-4 py-3">
+            <SheetSection title={dictionary.create.classification} editing bodyClassName="space-y-3 px-4 py-3">
               <div className="grid gap-3 sm:grid-cols-2">
                 <div>
-                  <label className={sheetFieldLabelClassName} htmlFor="task-create-status">Estado</label>
+                  <label className={sheetFieldLabelClassName} htmlFor="task-create-status">{dictionary.forms.status}</label>
                   <select
                     id="task-create-status"
                     value={status}
                     onChange={(event) => setStatus(event.target.value)}
                     className={cn(sheetEditControlClassName, "mt-1.5 text-foreground outline-none")}
                   >
-                    <option value="todo">Por fazer</option>
-                    <option value="in_progress">Em progresso</option>
-                    <option value="blocked">Bloqueada</option>
-                    <option value="done">Concluída</option>
+                    <option value="todo">{dictionary.board.columns.todo}</option>
+                    <option value="in_progress">{dictionary.board.columns.in_progress}</option>
+                    <option value="blocked">{dictionary.board.columns.blocked}</option>
+                    <option value="done">{dictionary.board.columns.done}</option>
                   </select>
                 </div>
                 <div>
-                  <label className={sheetFieldLabelClassName} htmlFor="task-create-priority">Prioridade</label>
+                  <label className={sheetFieldLabelClassName} htmlFor="task-create-priority">{dictionary.forms.priority}</label>
                   <select
                     id="task-create-priority"
                     value={priority}
                     onChange={(event) => setPriority(event.target.value)}
                     className={cn(sheetEditControlClassName, "mt-1.5 text-foreground outline-none")}
                   >
-                    <option value="low">Baixa</option>
-                    <option value="medium">Média</option>
-                    <option value="high">Alta</option>
-                    <option value="urgent">Urgente</option>
+                    <option value="low">{dictionary.board.priority.low}</option>
+                    <option value="medium">{dictionary.board.priority.medium}</option>
+                    <option value="high">{dictionary.board.priority.high}</option>
+                    <option value="urgent">{dictionary.board.priority.urgent}</option>
                   </select>
                 </div>
               </div>
               <div className="grid gap-3 sm:grid-cols-2">
                 <div>
-                  <label className={sheetFieldLabelClassName} htmlFor="task-create-milestone">Milestone (opcional)</label>
+                  <label className={sheetFieldLabelClassName} htmlFor="task-create-milestone">{dictionary.create.milestoneOptional}</label>
                   <select
                     id="task-create-milestone"
                     value={milestoneId}
                     onChange={(event) => setMilestoneId(event.target.value)}
                     className={cn(sheetEditControlClassName, "mt-1.5 text-foreground outline-none")}
                   >
-                    <option value="">Sem milestone</option>
+                    <option value="">{dictionary.board.noMilestone}</option>
                     {milestones.map((milestone) => (
                       <option key={milestone.id} value={milestone.id}>
                         {milestone.title}
@@ -201,14 +202,14 @@ export function ProjectTaskCreateSheet({
                   </select>
                 </div>
                 <div>
-                  <label className={sheetFieldLabelClassName} htmlFor="task-create-assignee">Responsável (opcional)</label>
+                  <label className={sheetFieldLabelClassName} htmlFor="task-create-assignee">{dictionary.create.assigneeOptional}</label>
                   <select
                     id="task-create-assignee"
                     value={assigneeProfileId}
                     onChange={(event) => setAssigneeProfileId(event.target.value)}
                     className={cn(sheetEditControlClassName, "mt-1.5 text-foreground outline-none")}
                   >
-                    <option value="">Sem responsável</option>
+                    <option value="">{dictionary.board.noAssignee}</option>
                     {memberOptions.map((member) => (
                       <option key={member.profileId} value={member.profileId}>
                         {member.label}
@@ -218,7 +219,7 @@ export function ProjectTaskCreateSheet({
                 </div>
               </div>
               <div>
-                <label className={sheetFieldLabelClassName} htmlFor="task-create-due">Data limite (opcional)</label>
+                <label className={sheetFieldLabelClassName} htmlFor="task-create-due">{dictionary.create.dueDateOptional}</label>
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button
@@ -232,7 +233,7 @@ export function ProjectTaskCreateSheet({
                       )}
                     >
                       <CalendarIcon className="mr-2 h-4 w-4" />
-                      {dueDateValue ? format(dueDateValue, "dd/MM/yyyy") : "Selecionar data"}
+                      {dueDateValue ? format(dueDateValue, "dd/MM/yyyy") : dictionary.create.selectDate}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0" align="start">
@@ -248,7 +249,7 @@ export function ProjectTaskCreateSheet({
                 </Popover>
               </div>
               <div>
-                <label className={sheetFieldLabelClassName} htmlFor="task-create-blocked">Motivo de bloqueio (opcional)</label>
+                <label className={sheetFieldLabelClassName} htmlFor="task-create-blocked">{dictionary.create.blockedReasonOptional}</label>
                 <Input
                   id="task-create-blocked"
                   value={blockedReason}
@@ -261,10 +262,10 @@ export function ProjectTaskCreateSheet({
           <SheetFooter className={`${sheetFooterClassName} flex-row gap-2`}>
             <Button type="submit" className="flex-1" disabled={isSubmitting || !title.trim()}>
               <Save className="mr-2 h-4 w-4" />
-              {isSubmitting ? "A criar..." : "Criar tarefa"}
+              {isSubmitting ? dictionary.create.creating : dictionary.create.createTask}
             </Button>
             <Button type="button" variant="outline" className="flex-1" onClick={() => setOpen(false)}>
-              Cancelar
+              {dictionary.actions.cancel}
             </Button>
           </SheetFooter>
         </form>

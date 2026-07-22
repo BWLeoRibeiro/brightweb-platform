@@ -3,6 +3,7 @@ import { PROJECT_MEMBER_ROLE_LABELS_PT } from "../../contracts";
 import type { RoleColor } from "./role-colors";
 import { tintPill } from "@brightweblabs/theme/tint";
 import { cn } from "../utils";
+import { defaultProjectsUiDictionary } from "../dictionary";
 
 type MemberRoleBadgeProps = {
   role: string;
@@ -21,8 +22,8 @@ const BADGE_ROLE_TINT: Record<RoleColor, string> = {
 };
 
 const ROLE_LABELS: Record<string, string> = {
-  admin: "Admin",
-  member: "Membro",
+  admin: defaultProjectsUiDictionary.people.admin,
+  member: defaultProjectsUiDictionary.people.member,
   owner: PROJECT_MEMBER_ROLE_LABELS_PT.owner,
   contributor: PROJECT_MEMBER_ROLE_LABELS_PT.contributor,
   observer: PROJECT_MEMBER_ROLE_LABELS_PT.observer,
@@ -32,11 +33,11 @@ export function getMemberRoleLabel(role: string) {
   return ROLE_LABELS[role] ?? role;
 }
 
-// A client is shown as "Cliente" and the project owner as "Gestor de projeto",
+// Clients and project owners receive role-specific display labels,
 // regardless of the raw membership role (clients are auto-added as observers).
 // "Observador" is therefore reserved for internal people added to watch a project.
 export function getMemberDisplayLabel(role: string, colorRole?: RoleColor | null) {
-  if (colorRole === "client") return "Cliente";
+  if (colorRole === "client") return defaultProjectsUiDictionary.people.client;
   if (colorRole === "manager") return PROJECT_MEMBER_ROLE_LABELS_PT.owner;
   return getMemberRoleLabel(role);
 }

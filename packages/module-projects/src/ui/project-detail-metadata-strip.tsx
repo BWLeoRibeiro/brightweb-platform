@@ -6,6 +6,7 @@ import { useProjectDetailProject } from "./project-detail-data-provider";
 import { portalMonoTabularClassName as MONO } from "./shared/typography";
 import { Popover, PopoverContent, PopoverTrigger } from "@brightweblabs/ui";
 import { formatElapsedSince, formatProjectDateTime } from "./shared/formatters";
+import { useProjectsUiDictionary } from "./context";
 
 function MetadataRow({ icon: Icon, label, value }: { icon: LucideIcon; label: string; value: string }) {
   const isEmpty = value === "-" || value === "–";
@@ -25,15 +26,16 @@ function MetadataRow({ icon: Icon, label, value }: { icon: LucideIcon; label: st
 }
 
 export function ProjectDetailMetadataStrip() {
+  const dictionary = useProjectsUiDictionary();
   const project = useProjectDetailProject();
 
   const items: Array<{ icon: LucideIcon; label: string; value: string }> = [
-    { icon: CalendarClock, label: "Criado", value: formatProjectDateTime(project.createdAt) },
-    { icon: Hourglass, label: "Idade", value: formatElapsedSince(project.createdAt) },
-    { icon: Zap, label: "Ativado", value: formatProjectDateTime(project.activatedAt) },
-    { icon: History, label: "Atualizado", value: formatProjectDateTime(project.updatedAt) },
+    { icon: CalendarClock, label: dictionary.detail.created, value: formatProjectDateTime(project.createdAt) },
+    { icon: Hourglass, label: dictionary.detail.age, value: formatElapsedSince(project.createdAt) },
+    { icon: Zap, label: dictionary.detail.activated, value: formatProjectDateTime(project.activatedAt) },
+    { icon: History, label: dictionary.detail.updated, value: formatProjectDateTime(project.updatedAt) },
     ...(project.completedAt
-      ? [{ icon: CheckCircle2, label: "Concluído", value: formatProjectDateTime(project.completedAt) }]
+      ? [{ icon: CheckCircle2, label: dictionary.detail.completed, value: formatProjectDateTime(project.completedAt) }]
       : []),
   ];
 
@@ -46,13 +48,13 @@ export function ProjectDetailMetadataStrip() {
             className="portal-label inline-flex items-center gap-1.5 rounded-[var(--radius)] border border-border-hairline-soft bg-transparent px-2.5 py-1.5 text-foreground/55 transition-colors hover:bg-[color:var(--muted)] hover:text-foreground"
           >
             <Info className="size-3" />
-            Detalhes
+            {dictionary.detail.details}
             <ChevronDown className="size-3 opacity-70" />
           </button>
         </PopoverTrigger>
         <PopoverContent align="end" className="w-64 p-0">
           <div className="border-b border-border-hairline-soft px-3 py-2.5">
-            <span className="portal-label text-foreground/45">Detalhes</span>
+            <span className="portal-label text-foreground/45">{dictionary.detail.details}</span>
           </div>
           <div className="divide-y divide-border-hairline-soft px-3 py-1">
             {items.map((item) => (

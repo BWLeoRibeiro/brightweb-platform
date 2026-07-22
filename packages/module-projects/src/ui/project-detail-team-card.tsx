@@ -9,6 +9,7 @@ import { Users } from "lucide-react";
 import { ProjectMembersEditSheetLazy } from "./project-lazy-panels";
 import { useProjectDetailData } from "./project-detail-data-provider";
 import { memberRoleToColorFallback, type AvatarRoleColor, type RoleColor } from "./shared/role-colors";
+import { useProjectsUiDictionary } from "./context";
 
 type ProjectDetailTeamCardProps = {
   canManageMembers: boolean;
@@ -21,6 +22,7 @@ const CONTACT_ICON_LINK_CLASS =
 
 export function ProjectDetailTeamCard({ canManageMembers, memberColorRoles }: ProjectDetailTeamCardProps) {
   const { project, members } = useProjectDetailData();
+  const dictionary = useProjectsUiDictionary();
   const colorRoleFor = (profileId: string, role: string): RoleColor => {
     const resolved = (memberColorRoles[profileId] ?? memberRoleToColorFallback(role)) as AvatarRoleColor;
     return resolved === "accent" ? "team" : resolved;
@@ -38,8 +40,8 @@ export function ProjectDetailTeamCard({ canManageMembers, memberColorRoles }: Pr
     <ProjectSurfaceCard className="self-start">
       <ProjectSurfaceSectionHeader
         icon={Users}
-        title="Equipa alocada"
-        subtitle="Pessoas ligadas a este projeto"
+        title={dictionary.detail.allocatedTeam}
+        subtitle={dictionary.detail.allocatedTeamSubtitle}
         rightSlot={
           canManageMembers ? (
             <ProjectMembersEditSheetLazy
@@ -51,7 +53,7 @@ export function ProjectDetailTeamCard({ canManageMembers, memberColorRoles }: Pr
       />
       {sortedMembers.length === 0 ? (
         <div className="mt-4">
-          <SectionEmptyState message="Sem membros alocados." icon={Users} />
+          <SectionEmptyState message={dictionary.detail.noAllocatedMembers} icon={Users} />
         </div>
       ) : (
         <ul className="portal-scroll mt-4 h-[17.75rem] rounded-[var(--radius-card)] border border-[color:var(--border)]">

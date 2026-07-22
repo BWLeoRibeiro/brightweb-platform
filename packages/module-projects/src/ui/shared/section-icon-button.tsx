@@ -8,7 +8,7 @@ import { cn } from "../utils";
 
 type SectionIconButtonProps = {
   icon: LucideIcon;
-  /** Used for both the tooltip and the accessible label, e.g. "Editar equipa". */
+  /** Used for both the tooltip and the accessible label. */
   label: string;
   onClick?: () => void;
   disabled?: boolean;

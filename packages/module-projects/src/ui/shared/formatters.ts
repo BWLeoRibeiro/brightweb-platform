@@ -59,7 +59,8 @@ export function formatElapsedSince(value: string) {
 }
 
 export function truncateProjectSummary(summary: string | null, maxChars = 280) {
-  if (!summary) return "Sem resumo definido.";
+  if (!summary) return defaultProjectsUiDictionary.detail.noSummary;
   if (summary.length <= maxChars) return summary;
   return `${summary.slice(0, maxChars).trimEnd()}…`;
 }
+import { defaultProjectsUiDictionary } from "../dictionary";

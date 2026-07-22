@@ -4,6 +4,7 @@ import { CalendarClock, Clock3, TriangleAlert, Zap } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@brightweblabs/ui";
 import { cn } from "../utils";
 import type { ProjectsHealthFilter, ProjectsStatusFilter } from "../events";
+import { useProjectsUiDictionary } from "../context";
 
 type ProjectsPortfolioStatsProps = {
   portfolioStats: {
@@ -24,12 +25,13 @@ export function ProjectsPortfolioStats({
   health,
   onApplyFilters,
 }: ProjectsPortfolioStatsProps) {
+  const dictionary = useProjectsUiDictionary();
   const totalProjects = Math.max(portfolioStats.total, 1);
   const topStats = [
     {
-      label: "Planeamento",
+      label: dictionary.portfolio.planning,
       value: portfolioStats.planned,
-      description: "ainda por iniciar",
+      description: dictionary.portfolio.plannedDescription,
       Icon: CalendarClock,
       pct: Math.round((portfolioStats.planned / totalProjects) * 100),
       statusFilter: "planned" as ProjectsStatusFilter,
@@ -46,9 +48,9 @@ export function ProjectsPortfolioStats({
       pctCn: "text-[color:var(--project-ui-color-48)]",
     },
     {
-      label: "Ativos",
+      label: dictionary.portfolio.active,
       value: portfolioStats.active,
-      description: "em execução",
+      description: dictionary.portfolio.activeDescription,
       Icon: Zap,
       pct: Math.round((portfolioStats.active / totalProjects) * 100),
       statusFilter: "active" as ProjectsStatusFilter,
@@ -65,9 +67,9 @@ export function ProjectsPortfolioStats({
       pctCn: "text-[color:var(--project-ui-color-53)]",
     },
     {
-      label: "Em risco",
+      label: dictionary.portfolio.atRisk,
       value: portfolioStats.atRisk,
-      description: "saúde a exigir atenção",
+      description: dictionary.portfolio.atRiskDescription,
       Icon: TriangleAlert,
       pct: Math.round((portfolioStats.atRisk / totalProjects) * 100),
       statusFilter: "all" as ProjectsStatusFilter,
@@ -84,9 +86,9 @@ export function ProjectsPortfolioStats({
       pctCn: "text-[color:var(--project-ui-color-59)]",
     },
     {
-      label: "Atrasados",
+      label: dictionary.portfolio.overdueProjects,
       value: portfolioStats.overdue,
-      description: "fora do prazo",
+      description: dictionary.portfolio.overdueDescription,
       Icon: Clock3,
       pct: Math.round((portfolioStats.overdue / totalProjects) * 100),
       statusFilter: "all" as ProjectsStatusFilter,
@@ -150,7 +152,7 @@ export function ProjectsPortfolioStats({
                 </button>
               </TooltipTrigger>
               <TooltipContent side="top">
-                {isActive ? "Filtro ativo. Clique para limpar." : `Filtrar por ${stat.label.toLowerCase()}.`}
+                {isActive ? dictionary.portfolio.activeFilterHint : dictionary.portfolio.filterBy(stat.label)}
               </TooltipContent>
             </Tooltip>
           );

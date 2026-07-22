@@ -85,8 +85,205 @@
   --project-ui-color-81: color-mix(in srgb,var(--accent) 24%,var(--border));
   --project-ui-color-82: color-mix(in srgb,var(--accent) 4%,var(--card));
   --project-ui-color-83: color-mix(in srgb, var(--accent) 72%, var(--foreground));
+  --project-board-todo-surface: color-mix(in srgb,var(--foreground) 3%,var(--card));
+  --project-board-progress-border: color-mix(in srgb,var(--semantic-info) 32%,transparent);
+  --project-board-progress-surface: color-mix(in srgb,var(--semantic-info) 12%,var(--card));
+  --project-board-blocked-border: color-mix(in srgb,var(--project-risk-overdue) 30%,transparent);
+  --project-board-blocked-surface: color-mix(in srgb,var(--project-risk-overdue) 11%,var(--card));
+  --project-board-done-border: color-mix(in srgb,var(--project-state-completed) 30%,transparent);
+  --project-board-done-surface: color-mix(in srgb,var(--project-state-completed) 11%,var(--card));
+  --project-board-drop-ring: color-mix(in srgb,var(--accent) 55%,transparent);
+  --project-board-card-shadow: 0 1px 2px rgba(10,21,26,0.04);
+  --project-board-card-hover-border: color-mix(in srgb,var(--accent) 40%,transparent);
+  --project-board-card-hover-shadow: 0 8px 22px rgba(10,21,26,0.08);
+  --project-board-reason-border: color-mix(in srgb,var(--project-risk-overdue) 24%,transparent);
+  --project-board-reason-surface: color-mix(in srgb,var(--project-risk-overdue) 8%,transparent);
+  --project-board-blocked-reason-border: color-mix(in srgb,var(--project-risk-at-risk) 30%,transparent);
+  --project-board-blocked-reason-surface: color-mix(in srgb,var(--project-risk-at-risk) 10%,var(--card));
 }
 
 .dark, [data-theme="dark"] {
   --sheet-header-tint: color-mix(in srgb, var(--primary) 12%, transparent);
+}
+
+/* Portfolio grid — ported verbatim from MQ globals.css (.projects-portfolio-grid).
+   Responsive column template + reserved rows so pagination doesn't reflow. */
+.projects-portfolio-grid {
+  --projects-card-min-height: 158px;
+  --projects-page-rows: 12;
+  align-content: start;
+  align-items: start;
+  grid-template-columns: minmax(0, 1fr);
+  grid-auto-rows: auto;
+  min-height: calc((var(--projects-card-min-height) * var(--projects-page-rows)) + (1rem * (var(--projects-page-rows) - 1)));
+}
+
+@media (min-width: 768px) {
+  .projects-portfolio-grid {
+    --projects-page-rows: 6;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1024px) {
+  .projects-portfolio-grid {
+    --projects-page-rows: 4;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1280px) {
+  .projects-portfolio-grid {
+    --projects-page-rows: 3;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+/* Project component surfaces — ported verbatim from MQ globals.css. */
+:root {
+  --project-item-padding: 0.75rem;
+  --project-cell-padding: 1rem;
+}
+
+@keyframes dashboard-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.project-chip-code {
+  font-size: 0.5rem;
+  line-height: 1;
+  font-weight: 400;
+  letter-spacing: 0.01em;
+}
+
+.project-surface-card {
+  border-radius: var(--radius-card);
+  border: 1px solid var(--border-hairline);
+  background: var(--project-surface-secondary);
+  padding: var(--project-surface-padding);
+  animation: dashboard-fade-in 640ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+.dark .project-surface-card {
+  border-color: var(--border-hairline);
+  background: var(--project-surface-secondary);
+}
+
+.project-surface-card.is-light {
+  background: var(--project-surface-primary);
+}
+
+.dark .project-surface-card.is-light,
+.theme-dark .project-surface-card.is-light {
+  background: color-mix(in srgb, var(--card) 92%, white 8%);
+}
+
+.project-item-card {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  border-radius: var(--radius-card);
+  border: 1px solid var(--border-hairline-soft);
+  padding: var(--project-item-padding);
+  text-align: left;
+  background: var(--project-surface-item);
+}
+
+.project-section-icon {
+  display: flex;
+  width: 1.875rem;
+  height: 1.875rem;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: var(--muted);
+  color: var(--muted-foreground);
+}
+
+.project-stat-cell {
+  padding: var(--project-cell-padding);
+}
+
+.project-contact-icon {
+  display: inline-flex;
+  width: 1.5rem;
+  height: 1.5rem;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border-hairline);
+  border-radius: 999px;
+  color: var(--muted-foreground);
+  transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease;
+}
+
+.project-contact-icon:hover {
+  border-color: var(--border-strong);
+  background: var(--muted);
+  color: var(--foreground);
+}
+
+.project-hero-contact-icon {
+  display: inline-flex;
+  width: 1.5rem;
+  height: 1.5rem;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--project-hero-border);
+  border-radius: 999px;
+  color: var(--project-hero-muted);
+  transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease;
+}
+
+.project-hero-contact-icon:hover {
+  border-color: rgba(246, 251, 255, 0.4);
+  background: rgba(246, 251, 255, 0.08);
+  color: var(--project-hero-foreground);
+}
+
+.project-item-card.is-interactive {
+  cursor: pointer;
+  transition: background-color 160ms ease, border-color 160ms ease;
+}
+
+.project-item-card.is-interactive:hover {
+  border-color: color-mix(in srgb, var(--accent) 46%, var(--foreground) 12%);
+  background: var(--card);
+}
+
+.dark .project-item-card.is-interactive:hover {
+  border-color: color-mix(in srgb, var(--accent) 46%, var(--foreground) 12%);
+}
+
+.project-group-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  border-top: 1px solid var(--border-hairline);
+  padding-top: 0.75rem;
+  padding-left: 0.25rem;
+  padding-right: 0.25rem;
+}
+
+.project-group-header:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.project-group-title {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--muted-foreground);
 }

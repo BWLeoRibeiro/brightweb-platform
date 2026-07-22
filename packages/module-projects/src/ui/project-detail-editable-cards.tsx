@@ -1,6 +1,6 @@
 "use client";
 
-import { useProjectsUiClient } from "./context";
+import { useProjectsUiClient, useProjectsUiDictionary } from "./context";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { format } from "date-fns";
 import { CalendarIcon, Flag, ListChecks, PencilLine, Save, Trash2 } from "lucide-react";
@@ -47,6 +47,7 @@ import {
 import { ProjectMilestonesAndTasksLists } from "./project-milestone-task-lists";
 import { TaskPriorityTag, TaskStatusTag } from "./shared/task-tags";
 import type { ProjectMilestone, ProjectTask } from "../types";
+import { defaultProjectsUiDictionary } from "./dictionary";
 
 type ProjectMilestonesAndTasksCardsProps = {
   projectId: string;
@@ -57,10 +58,10 @@ type SheetMode = "view" | "edit";
 const sheetViewValueClassName = "mt-1.5 text-sm text-foreground";
 
 const milestoneStatusLabels: Record<string, string> = {
-  pending: "Pendente",
-  in_progress: "Em progresso",
-  achieved: "Concluído",
-  delayed: "Atrasado",
+  pending: defaultProjectsUiDictionary.status.pending,
+  in_progress: defaultProjectsUiDictionary.status.in_progress,
+  achieved: defaultProjectsUiDictionary.status.achieved,
+  delayed: defaultProjectsUiDictionary.status.delayed,
 };
 
 type MilestoneFormState = {
@@ -120,6 +121,7 @@ export function ProjectMilestonesAndTasksCards({
   canEditItems,
 }: ProjectMilestonesAndTasksCardsProps) {
   const client = useProjectsUiClient();
+  const dictionary = useProjectsUiDictionary();
   const router = useRouter();
   const { milestones, tasks, members } = useProjectDetailData();
   const [isSavingMilestone, setIsSavingMilestone] = useState(false);
@@ -247,10 +249,10 @@ export function ProjectMilestonesAndTasksCards({
       members
         .map((member) => ({
           profileId: member.profileId,
-          label: member.label.trim() || "Sem nome",
+          label: member.label.trim() || dictionary.people.noName,
         }))
         .sort((a, b) => a.label.localeCompare(b.label, "pt-PT", { sensitivity: "base" })),
-    [members],
+    [dictionary.people.noName, members],
   );
 
   const openEditMilestone = (milestone: ProjectMilestone) => {
@@ -287,13 +289,13 @@ export function ProjectMilestonesAndTasksCards({
         status: milestoneStatus,
         targetDate: milestoneTargetDate,
       });
-      toast.success("Milestone atualizada.");
+      toast.success(dictionary.editItems.milestoneUpdated);
       setEditingMilestone(null);
       setMilestoneEditBaseline(null);
       setMilestoneMode("view");
       router.refresh();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Erro ao atualizar milestone.");
+      toast.error(error instanceof Error ? error.message : dictionary.editItems.milestoneUpdateFallbackError);
     } finally {
       setIsSavingMilestone(false);
     }
@@ -315,13 +317,13 @@ export function ProjectMilestonesAndTasksCards({
         dueDate: taskDueDate,
         blockedReason: isTaskBlocked ? taskBlockedReason : "",
       });
-      toast.success("Tarefa atualizada.");
+      toast.success(dictionary.board.updated);
       setEditingTask(null);
       setTaskEditBaseline(null);
       setTaskMode("view");
       router.refresh();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Erro ao atualizar tarefa.");
+      toast.error(error instanceof Error ? error.message : dictionary.editItems.taskUpdateFallbackError);
     } finally {
       setIsSavingTask(false);
     }
@@ -332,14 +334,14 @@ export function ProjectMilestonesAndTasksCards({
     setIsDeletingMilestone(true);
     try {
       await deleteMilestoneAction(client, projectId, editingMilestone.id);
-      toast.success("Milestone eliminada.");
+      toast.success(dictionary.editItems.milestoneDeleted);
       setMilestoneDeleteDialogOpen(false);
       setEditingMilestone(null);
       setMilestoneEditBaseline(null);
       setMilestoneMode("view");
       router.refresh();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Erro ao eliminar milestone.");
+      toast.error(error instanceof Error ? error.message : dictionary.editItems.milestoneDeleteFallbackError);
     } finally {
       setIsDeletingMilestone(false);
     }
@@ -350,14 +352,14 @@ export function ProjectMilestonesAndTasksCards({
     setIsDeletingTask(true);
     try {
       await deleteTaskAction(client, projectId, editingTask.id);
-      toast.success("Tarefa eliminada.");
+      toast.success(dictionary.board.deleted);
       setTaskDeleteDialogOpen(false);
       setEditingTask(null);
       setTaskEditBaseline(null);
       setTaskMode("view");
       router.refresh();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Erro ao eliminar tarefa.");
+      toast.error(error instanceof Error ? error.message : dictionary.editItems.taskDeleteFallbackError);
     } finally {
       setIsDeletingTask(false);
     }
@@ -389,8 +391,8 @@ export function ProjectMilestonesAndTasksCards({
           <AppSheetHeader
             icon={Flag}
             editing={milestoneMode !== "view"}
-            eyebrow={milestoneMode === "view" ? "A visualizar" : "A editar"}
-            title={<>{milestoneMode === "view" ? (milestoneTitle.trim() || "Milestone") : "Editar milestone"}</>}
+            eyebrow={milestoneMode === "view" ? dictionary.board.viewEyebrow : dictionary.board.editEyebrow}
+            title={<>{milestoneMode === "view" ? (milestoneTitle.trim() || dictionary.detail.milestones.slice(0, -1)) : dictionary.forms.editMilestone}</>}
             description={
               <>
                 {milestoneMode === "view"
@@ -400,16 +402,16 @@ export function ProjectMilestonesAndTasksCards({
                     ]
                       .filter(Boolean)
                       .join(" · ")
-                  : "Atualiza os dados deste marco do projeto."}
+                  : dictionary.editItems.milestoneDescription}
               </>
             }
           />
           <form onSubmit={submitMilestone} className="flex min-h-0 flex-1 flex-col">
             <div className={`${sheetBodyClassName} space-y-4`}>
-              <SheetSection title="Milestone" editing={milestoneMode !== "view"} bodyClassName="space-y-3 px-4 py-3">
+              <SheetSection title={dictionary.detail.milestones.slice(0, -1)} editing={milestoneMode !== "view"} bodyClassName="space-y-3 px-4 py-3">
                 {milestoneMode === "edit" ? (
                   <div>
-                    <label className={sheetFieldLabelClassName} htmlFor="milestone-edit-title">Título</label>
+                    <label className={sheetFieldLabelClassName} htmlFor="milestone-edit-title">{dictionary.forms.title}</label>
                     <Input
                       id="milestone-edit-title"
                       value={milestoneTitle}
@@ -420,7 +422,7 @@ export function ProjectMilestonesAndTasksCards({
                   </div>
                 ) : null}
                 <div>
-                  <label className={sheetFieldLabelClassName} htmlFor="milestone-edit-status">Estado</label>
+                  <label className={sheetFieldLabelClassName} htmlFor="milestone-edit-status">{dictionary.forms.status}</label>
                   {milestoneMode === "view" ? (
                     <p className={sheetViewValueClassName}>{milestoneStatusLabels[milestoneStatus] ?? "—"}</p>
                   ) : (
@@ -430,18 +432,18 @@ export function ProjectMilestonesAndTasksCards({
                     onChange={(event) => setMilestoneStatus(event.target.value)}
                     className={cn(sheetEditControlClassName, "mt-1.5 block w-full text-foreground outline-none")}
                   >
-                    <option value="pending">Pendente</option>
-                    <option value="in_progress">Em progresso</option>
-                    <option value="achieved">Concluído</option>
-                    <option value="delayed">Atrasado</option>
+                    <option value="pending">{dictionary.status.pending}</option>
+                    <option value="in_progress">{dictionary.status.in_progress}</option>
+                    <option value="achieved">{dictionary.status.achieved}</option>
+                    <option value="delayed">{dictionary.status.delayed}</option>
                   </select>
                   )}
                 </div>
                 <div>
-                  <label className={sheetFieldLabelClassName} htmlFor="milestone-edit-date">Data-alvo (opcional)</label>
+                  <label className={sheetFieldLabelClassName} htmlFor="milestone-edit-date">{dictionary.create.targetDateOptional}</label>
                   {milestoneMode === "view" ? (
                     <p className={sheetViewValueClassName}>
-                      {milestoneTargetDateValue ? format(milestoneTargetDateValue, "dd/MM/yyyy") : "Sem data"}
+                      {milestoneTargetDateValue ? format(milestoneTargetDateValue, "dd/MM/yyyy") : dictionary.detail.noDate}
                     </p>
                   ) : (
                   <Popover>
@@ -457,7 +459,7 @@ export function ProjectMilestonesAndTasksCards({
                         )}
                       >
                         <CalendarIcon className="mr-2 h-4 w-4" />
-                        {milestoneTargetDateValue ? format(milestoneTargetDateValue, "dd/MM/yyyy") : "Selecionar data"}
+                      {milestoneTargetDateValue ? format(milestoneTargetDateValue, "dd/MM/yyyy") : dictionary.create.selectDate}
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0" align="start">
@@ -484,7 +486,7 @@ export function ProjectMilestonesAndTasksCards({
                   disabled={isDeletingMilestone || isSavingMilestone}
                 >
                   <Trash2 className="mr-1.5 h-3.5 w-3.5" />
-                  Eliminar milestone
+                  {dictionary.editItems.deleteMilestone}
                 </Button>
               ) : null}
             </div>
@@ -504,7 +506,7 @@ export function ProjectMilestonesAndTasksCards({
                     }}
                   >
                     <PencilLine className="mr-2 h-4 w-4" />
-                    Editar milestone
+                    {dictionary.forms.editMilestone}
                   </Button>
                 ) : null
               ) : (
@@ -515,7 +517,7 @@ export function ProjectMilestonesAndTasksCards({
                     disabled={isSavingMilestone || !milestoneTitle.trim() || !isMilestoneEditDirty}
                   >
                     <Save className="mr-2 h-4 w-4" />
-                    {isSavingMilestone ? "A guardar..." : "Guardar"}
+                    {isSavingMilestone ? dictionary.actions.saving : dictionary.actions.save}
                   </Button>
                   <Button
                     type="button"
@@ -531,7 +533,7 @@ export function ProjectMilestonesAndTasksCards({
                       setMilestoneMode("view");
                     }}
                   >
-                    Cancelar
+                    {dictionary.actions.cancel}
                   </Button>
                 </>
               )}
@@ -555,24 +557,24 @@ export function ProjectMilestonesAndTasksCards({
           <AppSheetHeader
             icon={ListChecks}
             editing={taskMode !== "view"}
-            eyebrow={taskMode === "view" ? "A visualizar" : "A editar"}
-            title={<>{taskMode === "view" ? (taskTitle.trim() || "Tarefa") : "Editar tarefa"}</>}
+            eyebrow={taskMode === "view" ? dictionary.board.viewEyebrow : dictionary.board.editEyebrow}
+            title={<>{taskMode === "view" ? (taskTitle.trim() || dictionary.board.task) : dictionary.forms.editTask}</>}
             description={
               <>
                 {taskMode === "view"
                   ? editingTask?.createdAt
-                    ? `Criado a ${format(new Date(editingTask.createdAt), "dd/MM/yyyy")}`
-                    : "Tarefa"
-                  : "Atualiza estado, prioridade e responsáveis desta tarefa."}
+                    ? dictionary.board.createdAt(format(new Date(editingTask.createdAt), "dd/MM/yyyy"))
+                    : dictionary.board.task
+                  : dictionary.board.editDescription}
               </>
             }
           />
           <form onSubmit={submitTask} className="flex min-h-0 flex-1 flex-col">
             <div className={`${sheetBodyClassName} space-y-4`}>
-              <SheetSection title="Tarefa" editing={taskMode !== "view"} bodyClassName="space-y-3 px-4 py-3">
+              <SheetSection title={dictionary.board.task} editing={taskMode !== "view"} bodyClassName="space-y-3 px-4 py-3">
               {taskMode === "edit" ? (
                 <div>
-                  <label className={sheetFieldLabelClassName} htmlFor="task-edit-title">Título</label>
+                  <label className={sheetFieldLabelClassName} htmlFor="task-edit-title">{dictionary.forms.title}</label>
                   <Input
                     id="task-edit-title"
                     value={taskTitle}
@@ -583,10 +585,10 @@ export function ProjectMilestonesAndTasksCards({
                 </div>
               ) : null}
               <div>
-                <label className={sheetFieldLabelClassName} htmlFor="task-edit-description">Descrição (opcional)</label>
+                <label className={sheetFieldLabelClassName} htmlFor="task-edit-description">{dictionary.create.optionalDescription}</label>
                 {taskMode === "view" ? (
                   <p className={cn(sheetViewValueClassName, "whitespace-pre-wrap")}>
-                    {taskDescription.trim() || "Sem descrição"}
+                    {taskDescription.trim() || dictionary.board.noDescription}
                   </p>
                 ) : (
                   <textarea
@@ -600,7 +602,7 @@ export function ProjectMilestonesAndTasksCards({
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
-                  <label className={sheetFieldLabelClassName} htmlFor="task-edit-status">Estado</label>
+                  <label className={sheetFieldLabelClassName} htmlFor="task-edit-status">{dictionary.forms.status}</label>
                   {taskMode === "view" ? (
                     <div className="mt-1.5">
                       <TaskStatusTag task={{ status: taskStatus as ProjectTask["status"], blockedReason: taskBlockedReason }} />
@@ -612,15 +614,15 @@ export function ProjectMilestonesAndTasksCards({
                       onChange={(event) => setTaskStatus(event.target.value)}
                       className={cn(sheetEditControlClassName, "mt-1.5 block w-full text-foreground outline-none")}
                     >
-                      <option value="todo">Por fazer</option>
-                      <option value="in_progress">Em progresso</option>
-                      <option value="blocked">Bloqueada</option>
-                      <option value="done">Concluída</option>
+                      <option value="todo">{dictionary.board.columns.todo}</option>
+                      <option value="in_progress">{dictionary.board.columns.in_progress}</option>
+                      <option value="blocked">{dictionary.board.columns.blocked}</option>
+                      <option value="done">{dictionary.board.columns.done}</option>
                     </select>
                   )}
                 </div>
                 <div>
-                  <label className={sheetFieldLabelClassName} htmlFor="task-edit-priority">Prioridade</label>
+                  <label className={sheetFieldLabelClassName} htmlFor="task-edit-priority">{dictionary.forms.priority}</label>
                   {taskMode === "view" ? (
                     <div className="mt-1.5">
                       <TaskPriorityTag task={{ priority: taskPriority as ProjectTask["priority"], status: taskStatus as ProjectTask["status"] }} />
@@ -632,20 +634,20 @@ export function ProjectMilestonesAndTasksCards({
                       onChange={(event) => setTaskPriority(event.target.value)}
                       className={cn(sheetEditControlClassName, "mt-1.5 block w-full text-foreground outline-none")}
                     >
-                      <option value="low">Baixa</option>
-                      <option value="medium">Média</option>
-                      <option value="high">Alta</option>
-                      <option value="urgent">Urgente</option>
+                      <option value="low">{dictionary.board.priority.low}</option>
+                      <option value="medium">{dictionary.board.priority.medium}</option>
+                      <option value="high">{dictionary.board.priority.high}</option>
+                      <option value="urgent">{dictionary.board.priority.urgent}</option>
                     </select>
                   )}
                 </div>
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
-                  <label className={sheetFieldLabelClassName} htmlFor="task-edit-milestone">Milestone (opcional)</label>
+                  <label className={sheetFieldLabelClassName} htmlFor="task-edit-milestone">{dictionary.create.milestoneOptional}</label>
                   {taskMode === "view" ? (
                     <p className={sheetViewValueClassName}>
-                      {milestones.find((milestone) => milestone.id === taskMilestoneId)?.title ?? "Sem milestone"}
+                      {milestones.find((milestone) => milestone.id === taskMilestoneId)?.title ?? dictionary.board.noMilestone}
                     </p>
                   ) : (
                     <select
@@ -654,7 +656,7 @@ export function ProjectMilestonesAndTasksCards({
                       onChange={(event) => setTaskMilestoneId(event.target.value)}
                       className={cn(sheetEditControlClassName, "mt-1.5 block w-full text-foreground outline-none")}
                     >
-                      <option value="">Sem milestone</option>
+                      <option value="">{dictionary.board.noMilestone}</option>
                       {milestones.map((milestone) => (
                         <option key={milestone.id} value={milestone.id}>
                           {milestone.title}
@@ -664,10 +666,10 @@ export function ProjectMilestonesAndTasksCards({
                   )}
                 </div>
                 <div>
-                  <label className={sheetFieldLabelClassName} htmlFor="task-edit-assignee">Responsável (opcional)</label>
+                  <label className={sheetFieldLabelClassName} htmlFor="task-edit-assignee">{dictionary.create.assigneeOptional}</label>
                   {taskMode === "view" ? (
                     <p className={sheetViewValueClassName}>
-                      {memberOptions.find((member) => member.profileId === taskAssigneeProfileId)?.label ?? "Sem responsável"}
+                      {memberOptions.find((member) => member.profileId === taskAssigneeProfileId)?.label ?? dictionary.board.noAssignee}
                     </p>
                   ) : (
                     <select
@@ -676,7 +678,7 @@ export function ProjectMilestonesAndTasksCards({
                       onChange={(event) => setTaskAssigneeProfileId(event.target.value)}
                       className={cn(sheetEditControlClassName, "mt-1.5 block w-full text-foreground outline-none")}
                     >
-                      <option value="">Sem responsável</option>
+                      <option value="">{dictionary.board.noAssignee}</option>
                       {memberOptions.map((member) => (
                         <option key={member.profileId} value={member.profileId}>
                           {member.label}
@@ -687,10 +689,10 @@ export function ProjectMilestonesAndTasksCards({
                 </div>
               </div>
               <div>
-                <label className={sheetFieldLabelClassName} htmlFor="task-edit-due">Data limite (opcional)</label>
+                <label className={sheetFieldLabelClassName} htmlFor="task-edit-due">{dictionary.create.dueDateOptional}</label>
                 {taskMode === "view" ? (
                   <p className={sheetViewValueClassName}>
-                    {taskDueDateValue ? format(taskDueDateValue, "dd/MM/yyyy") : "Sem data"}
+                    {taskDueDateValue ? format(taskDueDateValue, "dd/MM/yyyy") : dictionary.board.noDate}
                   </p>
                 ) : (
                   <Popover>
@@ -706,7 +708,7 @@ export function ProjectMilestonesAndTasksCards({
                         )}
                       >
                         <CalendarIcon className="mr-2 h-4 w-4" />
-                        {taskDueDateValue ? format(taskDueDateValue, "dd/MM/yyyy") : "Selecionar data"}
+                    {taskDueDateValue ? format(taskDueDateValue, "dd/MM/yyyy") : dictionary.create.selectDate}
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0" align="start">
@@ -724,10 +726,10 @@ export function ProjectMilestonesAndTasksCards({
               </div>
               {isTaskBlocked ? (
                 <div>
-                  <label className={sheetFieldLabelClassName} htmlFor="task-edit-blocked">Motivo de bloqueio</label>
+                  <label className={sheetFieldLabelClassName} htmlFor="task-edit-blocked">{dictionary.forms.blockedReason}</label>
                   {taskMode === "view" ? (
                     <p className="mt-1.5 rounded-md border border-amber-500/25 bg-amber-500/10 px-3 py-2 text-sm text-amber-700 dark:text-amber-400">
-                      {taskBlockedReason.trim() || "Sem motivo indicado."}
+                      {taskBlockedReason.trim() || dictionary.board.noBlockedReason}
                     </p>
                   ) : (
                     <Input
@@ -751,7 +753,7 @@ export function ProjectMilestonesAndTasksCards({
                   disabled={isDeletingTask || isSavingTask}
                 >
                   <Trash2 className="mr-1.5 h-3.5 w-3.5" />
-                  Eliminar tarefa
+                  {dictionary.board.deleteTask}
                 </Button>
               ) : null}
             </div>
@@ -776,7 +778,7 @@ export function ProjectMilestonesAndTasksCards({
                     }}
                   >
                     <PencilLine className="mr-2 h-4 w-4" />
-                    Editar tarefa
+                    {dictionary.forms.editTask}
                   </Button>
                 ) : null
               ) : (
@@ -787,7 +789,7 @@ export function ProjectMilestonesAndTasksCards({
                     disabled={isSavingTask || !taskTitle.trim() || !isTaskEditDirty || (isTaskBlocked && !taskBlockedReason.trim())}
                   >
                     <Save className="mr-2 h-4 w-4" />
-                    {isSavingTask ? "A guardar..." : "Guardar"}
+                    {isSavingTask ? dictionary.actions.saving : dictionary.actions.save}
                   </Button>
                   <Button
                     type="button"
@@ -808,7 +810,7 @@ export function ProjectMilestonesAndTasksCards({
                       setTaskMode("view");
                     }}
                   >
-                    Cancelar
+                    {dictionary.actions.cancel}
                   </Button>
                 </>
               )}
@@ -820,19 +822,19 @@ export function ProjectMilestonesAndTasksCards({
       <AlertDialog open={isMilestoneDeleteDialogOpen} onOpenChange={setMilestoneDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Eliminar milestone?</AlertDialogTitle>
+            <AlertDialogTitle>{dictionary.editItems.deleteMilestoneTitle}</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta ação remove a milestone do projeto. Esta operação não pode ser desfeita.
+              {dictionary.editItems.deleteMilestoneDescription}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={isDeletingMilestone}>Cancelar</AlertDialogCancel>
+            <AlertDialogCancel disabled={isDeletingMilestone}>{dictionary.actions.cancel}</AlertDialogCancel>
             <AlertDialogAction
               onClick={deleteMilestone}
               disabled={isDeletingMilestone}
               className="bg-rose-600 text-white hover:bg-rose-700 focus-visible:ring-rose-500/60"
             >
-              {isDeletingMilestone ? "A eliminar..." : "Eliminar milestone"}
+              {isDeletingMilestone ? dictionary.editItems.deleting : dictionary.editItems.deleteMilestone}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -841,19 +843,19 @@ export function ProjectMilestonesAndTasksCards({
       <AlertDialog open={isTaskDeleteDialogOpen} onOpenChange={setTaskDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Eliminar tarefa?</AlertDialogTitle>
+            <AlertDialogTitle>{dictionary.board.deleteTitle}</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta ação remove a tarefa do projeto. Esta operação não pode ser desfeita.
+              {dictionary.editItems.deleteTaskDescription}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={isDeletingTask}>Cancelar</AlertDialogCancel>
+            <AlertDialogCancel disabled={isDeletingTask}>{dictionary.actions.cancel}</AlertDialogCancel>
             <AlertDialogAction
               onClick={deleteTask}
               disabled={isDeletingTask}
               className="bg-rose-600 text-white hover:bg-rose-700 focus-visible:ring-rose-500/60"
             >
-              {isDeletingTask ? "A eliminar..." : "Eliminar tarefa"}
+              {isDeletingTask ? dictionary.editItems.deleting : dictionary.board.deleteTask}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
