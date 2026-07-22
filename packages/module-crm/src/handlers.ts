@@ -1,15 +1,18 @@
 import { requireServerUserAccess } from "@brightweblabs/core-auth/server";
 import {
+  createCrmContactsDeleteHandler,
   createCrmContactsGetHandler,
   createCrmContactsPatchHandler,
   createCrmContactsPostHandler,
   createCrmOrganizationsGetHandler,
   createCrmOwnersGetHandler,
+  createCrmReportGetHandler,
   createCrmStatsGetHandler,
   createCrmTimelineGetHandler,
 } from "./http";
 import {
   getCrmContactStatusStats,
+  getCrmReportData,
   listCrmContacts,
   listCrmOrganizations,
   listCrmOwnerOptions,
@@ -18,6 +21,7 @@ import {
 import {
   bulkSetCrmContactStatus,
   createCrmContact,
+  deleteCrmContact,
   updateCrmContact,
 } from "./server";
 
@@ -28,9 +32,11 @@ const crmDependencies = {
   getStats: getCrmContactStatusStats,
   listOwners: listCrmOwnerOptions,
   listTimeline: listCrmStatusTimeline,
+  getReport: getCrmReportData,
   createContact: createCrmContact,
   updateContact: updateCrmContact,
   setContactStatus: bulkSetCrmContactStatus,
+  deleteContact: deleteCrmContact,
 };
 
 export const handleCrmContactsGetRequest = createCrmContactsGetHandler(crmDependencies);
@@ -39,6 +45,8 @@ export const handleCrmContactsPostRequest = createCrmContactsPostHandler(crmDepe
 
 export const handleCrmContactsPatchRequest = createCrmContactsPatchHandler(crmDependencies);
 
+export const handleCrmContactsDeleteRequest = createCrmContactsDeleteHandler(crmDependencies);
+
 export const handleCrmOrganizationsGetRequest = createCrmOrganizationsGetHandler(crmDependencies);
 
 export const handleCrmStatsGetRequest = createCrmStatsGetHandler(crmDependencies);
@@ -46,3 +54,5 @@ export const handleCrmStatsGetRequest = createCrmStatsGetHandler(crmDependencies
 export const handleCrmOwnersGetRequest = createCrmOwnersGetHandler(crmDependencies);
 
 export const handleCrmTimelineGetRequest = createCrmTimelineGetHandler(crmDependencies);
+
+export const handleCrmReportGetRequest = createCrmReportGetHandler(crmDependencies);

@@ -17,12 +17,14 @@ const owners = [
 ];
 
 const organizations = [
-  { id: "org-analytical", name: "Analytical Engines" },
-  { id: "org-compiler", name: "Compiler Works" },
-  { id: "org-orbital", name: "Orbital Research" },
-  { id: "org-lunar", name: "Lunar Systems" },
-  { id: "org-network", name: "Network Labs" },
+  { id: "org-analytical", name: "Analytical Engines", industry: "Tecnologia", company_size: "10-50", budget_range: "25.000 € - 50.000 €", website_url: "https://example.com", address: "Lisboa", taxIdentifierValue: "PT500000001" },
+  { id: "org-compiler", name: "Compiler Works", industry: "Educação", company_size: "50-100", budget_range: "50.000 € - 100.000 €", website_url: "https://example.com", address: "Porto" },
+  { id: "org-orbital", name: "Orbital Research", industry: "Energia", company_size: "100++", budget_range: "100.000 €+", website_url: "https://example.com", address: "Coimbra" },
+  { id: "org-lunar", name: "Lunar Systems", industry: "Indústria Transformadora", company_size: "10-50", budget_range: "10.000 € - 25.000 €", website_url: null, address: "Braga" },
+  { id: "org-network", name: "Network Labs", industry: "Tecnologia", company_size: "1-10", budget_range: "5.000 € - 10.000 €", website_url: null, address: "Aveiro" },
 ];
+
+const timeline: CrmStatusLog[] = contacts.map((contact, index) => ({ id: `timeline-${contact.id}`, contact_id: contact.id, previous_status: index === 0 ? null : "lead", new_status: contact.status, reason: index === 4 ? "Sem alinhamento de orçamento" : null, changed_at: contact.updated_at, changed_by_user_id: null, changed_by_label: index % 2 === 0 ? "Leo Martins" : "Maya Costa", contact_label: [contact.first_name, contact.last_name].filter(Boolean).join(" ") }));
 
 function listContacts(params: CrmContactsListParams = {}): CrmContactsListResult {
   const search = params.search?.trim().toLowerCase();
@@ -54,12 +56,15 @@ const mockClient: CrmUiClient = {
   async listOwners() { return owners; },
   async listOrganizations() { return organizations; },
   async listTimeline(contactId): Promise<CrmStatusLog[]> {
+    if (!contactId) return timeline;
     const contact = contacts.find((candidate) => candidate.id === contactId);
-    return contact ? [{ id: `timeline-${contact.id}`, contact_id: contact.id, previous_status: null, new_status: contact.status, reason: "Preview data", changed_at: contact.updated_at, changed_by_user_id: null, changed_by_label: "BrightWeb preview", contact_label: [contact.first_name, contact.last_name].filter(Boolean).join(" ") }] : [];
+    return contact ? timeline.filter((entry) => entry.contact_id === contact.id) : [];
   },
+  async getReport() { throw new Error("O relatório de pré-visualização usa dados locais."); },
   async createContact(input: CrmContactFormInput) { return { ...contacts[0], id: "contact-preview", first_name: input.firstName ?? null, last_name: input.lastName ?? null, email: input.email ?? null, phone: input.phone ?? null, status: input.status, source: input.source ?? null, owner_id: input.ownerId ?? null, organization_id: input.organizationId ?? null }; },
   async updateContact(contactId, input) { return { ...contacts.find((contact) => contact.id === contactId) ?? contacts[0], id: contactId, first_name: input.firstName ?? null, last_name: input.lastName ?? null, email: input.email ?? null, phone: input.phone ?? null, status: input.status, source: input.source ?? null, owner_id: input.ownerId ?? null, organization_id: input.organizationId ?? null }; },
   async setStatus() {},
+  async deleteContacts() {},
 };
 
 const initialData = {
@@ -67,6 +72,7 @@ const initialData = {
   stats: { total: contacts.length, byStatus: { lead: 1, qualified: 1, proposal: 1, won: 1, lost: 1 } },
   owners,
   organizations,
+  timeline,
 };
 
 export default function CrmPage() {

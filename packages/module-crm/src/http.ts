@@ -4,6 +4,7 @@ import {
   CRM_ORGANIZATIONS_DEFAULT_PAGE_SIZE,
   CRM_ORGANIZATIONS_MAX_PAGE_SIZE,
   getCrmContactStatusStats,
+  getCrmReportData,
   listCrmContacts,
   listCrmOrganizations,
   listCrmOwnerOptions,
@@ -13,6 +14,7 @@ import { ptCrmActivityDictionary } from "./activity-messages";
 import {
   bulkSetCrmContactStatus,
   createCrmContact,
+  deleteCrmContact,
   updateCrmContact,
   type CreateCrmContactInput,
   type CrmContactStatus,
@@ -94,9 +96,11 @@ type CrmHttpDependencies = {
   getStats: typeof getCrmContactStatusStats;
   listOwners: typeof listCrmOwnerOptions;
   listTimeline: typeof listCrmStatusTimeline;
+  getReport: typeof getCrmReportData;
   createContact: typeof createCrmContact;
   updateContact: typeof updateCrmContact;
   setContactStatus: typeof bulkSetCrmContactStatus;
+  deleteContact: typeof deleteCrmContact;
 };
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -201,6 +205,12 @@ export function createCrmTimelineGetHandler(dependencies: CrmHttpDependencies) {
   });
 }
 
+export function createCrmReportGetHandler(dependencies: CrmHttpDependencies) {
+  return withUserAccess(dependencies, async (supabase) => {
+    return json(await dependencies.getReport(supabase as never));
+  });
+}
+
 export function createCrmContactsPostHandler(dependencies: CrmHttpDependencies) {
   return async function handleCrmContactsPostRequest(request: Request): Promise<Response> {
     const access = await dependencies.getAccess();
@@ -288,6 +298,29 @@ export function createCrmContactsPatchHandler(dependencies: CrmHttpDependencies)
         : json({ data: { updatedIds: contactIds } });
     } catch (error) {
       return json({ error: error instanceof Error ? error.message : "CRM contacts could not be updated." }, { status: 400 });
+    }
+  };
+}
+
+export function createCrmContactsDeleteHandler(dependencies: CrmHttpDependencies) {
+  return async function handleCrmContactsDeleteRequest(request: Request): Promise<Response> {
+    const access = await dependencies.getAccess();
+    if (!access.ok) return json({ error: access.error }, { status: access.status });
+    const forbidden = requireStaffAccess(access);
+    if (forbidden) return forbidden;
+    const payload = await parseJsonObject(request);
+    if (!payload) return json({ error: "Invalid JSON object payload." }, { status: 400 });
+    const contactIds = contactIdsFromPayload(payload);
+    if (contactIds.length === 0) return json({ error: "A contact ID is required." }, { status: 400 });
+    try {
+      await Promise.all(contactIds.map((contactId) => dependencies.deleteContact(
+        access.supabase as never,
+        contactId,
+        { actorProfileId: access.profileId ?? null },
+      )));
+      return json({ data: { deletedIds: contactIds } });
+    } catch (error) {
+      return json({ error: error instanceof Error ? error.message : "CRM contacts could not be deleted." }, { status: 400 });
     }
   };
 }
