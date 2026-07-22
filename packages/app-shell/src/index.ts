@@ -1,4 +1,7 @@
 export { AppHeader } from "./components/app-header";
+export type { AppHeaderProps } from "./components/app-header";
+export { AppShellFrame } from "./components/app-shell-frame";
+export type { AppShellFrameProps } from "./components/app-shell-frame";
 export { AccountMenu } from "./components/account-menu";
 export {
   applyShellRegistrationOverrides,

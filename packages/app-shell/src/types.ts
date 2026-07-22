@@ -156,7 +156,8 @@ export type ResolvedClientAppShellConfig = Omit<ClientAppShellConfig, "primaryNa
 export type DesktopSidebarProps = {
   className?: string;
   brand: ShellBrand;
-  collapsedToolsHref: string;
+  collapsedToolsHref?: string;
+  account?: AccountMenuProps;
   isSidebarCollapsed: boolean;
   isToolActive: boolean;
   toolsExpanded: boolean;
@@ -194,4 +195,13 @@ export type AccountMenuProps = {
   onSignOut: () => Promise<void>;
   user: LayoutUser | null | undefined;
   userInitials: string;
+  onThemeChange?: (theme: "light" | "dark" | "system") => void;
+  variant?: "header" | "rail";
+  collapsed?: boolean;
+  links?: Partial<{
+    staffDashboard: string;
+    account: string;
+    projects: string;
+    home: string;
+  }>;
 };

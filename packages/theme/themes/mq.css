@@ -59,6 +59,18 @@
   --brand-panel-muted: rgba(246, 251, 255, 0.66);
   --brand-panel-subtle: rgba(246, 251, 255, 0.46);
   --brand-panel-border: rgba(145, 211, 241, 0.2);
+  --project-surface-primary: var(--card);
+  --project-surface-secondary: color-mix(in srgb, var(--foreground) 2%, var(--card) 98%);
+  --project-surface-item: color-mix(in srgb, var(--card) 96%, transparent);
+  --project-surface-hero: color-mix(in srgb, var(--accent) 8%, var(--card) 92%);
+  --project-surface-hero-border: color-mix(in srgb, var(--accent) 26%, var(--foreground) 8%);
+  --project-hero-surface: linear-gradient(158deg, #02070d 0%, #06111c 30%, #071d2b 63%, #123747 100%);
+  --project-hero-surface-raised: #0b2634;
+  --project-hero-foreground: #f6fbff;
+  --project-hero-muted: rgba(246, 251, 255, 0.66);
+  --project-hero-subtle: rgba(246, 251, 255, 0.46);
+  --project-hero-border: rgba(145, 211, 241, 0.2);
+  --project-surface-padding: 1.25rem;
 }
 
 :root.dark,
@@ -137,6 +149,17 @@
   --brand-panel-muted: rgba(246, 251, 255, 0.66);
   --brand-panel-subtle: rgba(246, 251, 255, 0.46);
   --brand-panel-border: color-mix(in srgb, var(--accent) 20%, transparent);
+  --project-surface-primary: var(--card);
+  --project-surface-secondary: color-mix(in srgb, var(--foreground) 2%, var(--card) 98%);
+  --project-surface-item: color-mix(in srgb, var(--card) 96%, transparent);
+  --project-surface-hero: color-mix(in srgb, var(--accent) 8%, var(--card) 92%);
+  --project-surface-hero-border: color-mix(in srgb, var(--accent) 26%, var(--foreground) 8%);
+  --project-hero-surface: linear-gradient(158deg, #0c2433 0%, #143b4e 52%, #1b4f66 100%);
+  --project-hero-surface-raised: #0b2634;
+  --project-hero-foreground: #f6fbff;
+  --project-hero-muted: rgba(246, 251, 255, 0.66);
+  --project-hero-subtle: rgba(246, 251, 255, 0.46);
+  --project-hero-border: color-mix(in srgb, var(--accent) 20%, transparent);
 }
 
 :root.light,
@@ -174,4 +197,13 @@
   --border: var(--brand-border-subtle);
   --input: rgba(10, 21, 26, 0.08);
   --ring: rgba(91, 197, 242, 0.42);
+  --project-surface-primary: var(--card);
+  --project-surface-secondary: color-mix(in srgb, var(--foreground) 2%, var(--card) 98%);
+  --project-surface-item: color-mix(in srgb, var(--card) 96%, transparent);
+  --project-hero-surface: linear-gradient(158deg, #02070d 0%, #06111c 30%, #071d2b 63%, #123747 100%);
+  --project-hero-surface-raised: #0b2634;
+  --project-hero-foreground: #f6fbff;
+  --project-hero-muted: rgba(246, 251, 255, 0.66);
+  --project-hero-subtle: rgba(246, 251, 255, 0.46);
+  --project-hero-border: rgba(145, 211, 241, 0.2);
 }

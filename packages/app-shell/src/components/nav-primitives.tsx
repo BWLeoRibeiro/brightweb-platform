@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ChevronDown, Wrench, type LucideIcon } from "lucide-react";
 import { cn } from "../lib/utils";
+import styles from "./shell-surfaces.module.css";
 
 type SidebarNavLinkProps = {
   active: boolean;
@@ -39,18 +40,6 @@ type MobileTogglePillProps = {
   onToggle: () => void;
 };
 
-function getSidebarItemClasses(active: boolean) {
-  return active
-    ? "border-primary/35 bg-primary/10 text-foreground"
-    : "border-transparent bg-transparent text-foreground/70 hover:border-hairline hover:bg-elevate-2 hover:text-foreground";
-}
-
-function getSidebarIconClasses(active: boolean) {
-  return active
-    ? "bg-primary/18 text-primary"
-    : "bg-elevate-2 text-foreground/65 group-hover:text-primary";
-}
-
 function getMobilePillClasses(active: boolean) {
   return active
     ? "border-primary/35 bg-primary/10 text-foreground"
@@ -68,22 +57,19 @@ export function SidebarNavLink({
   return (
     <Link
       href={href}
+      prefetch={false}
       title={collapsed ? title ?? label : undefined}
       className={cn(
-        "group relative flex items-center rounded-2xl border py-3 text-sm font-semibold transition-all",
-        collapsed ? "justify-center px-2" : "gap-3 px-4",
-        getSidebarItemClasses(active),
+        styles.navItem,
+        active && styles.navItemActive,
       )}
     >
       <span
-        className={cn(
-          "inline-flex size-8 items-center justify-center rounded-xl transition-colors",
-          getSidebarIconClasses(active),
-        )}
+        className={styles.navIcon}
       >
         <Icon className="size-4" />
       </span>
-      {!collapsed ? label : null}
+      {!collapsed ? <span className={styles.navLabel}>{label}</span> : null}
     </Link>
   );
 }
@@ -97,26 +83,17 @@ export function SidebarSectionToggle({
 }: SidebarSectionToggleProps) {
   return (
     <button
+      type="button"
       onClick={onToggle}
-      className={cn(
-        "flex w-full items-center gap-3 rounded-2xl border px-4 py-3 text-left text-sm font-semibold transition-all",
-        expanded
-          ? "border-primary/35 bg-primary/10 text-foreground"
-          : "border-transparent text-foreground/70 hover:border-hairline hover:bg-elevate-2 hover:text-foreground",
-      )}
+      className={styles.navItem}
       aria-expanded={expanded}
       aria-controls={controlsId}
     >
-      <span
-        className={cn(
-          "inline-flex size-8 items-center justify-center rounded-xl",
-          expanded ? "bg-primary/18 text-primary" : "bg-elevate-2 text-foreground/65",
-        )}
-      >
+      <span className={styles.navIcon}>
         <Icon className="size-4" />
       </span>
-      {label}
-      <ChevronDown className={cn("ml-auto size-4 opacity-70 transition-transform", expanded && "rotate-180")} />
+      <span className={styles.navLabel}>{label}</span>
+      <ChevronDown className={styles.navCaret} />
     </button>
   );
 }
@@ -125,15 +102,11 @@ export function SidebarSubNavLink({ active, href, icon: Icon, label }: SidebarSu
   return (
     <Link
       href={href}
-      className={cn(
-        "flex items-center gap-2 rounded-xl border px-3 py-2 text-sm transition-colors",
-        active
-          ? "border-primary/35 bg-primary/10 text-foreground"
-          : "border-transparent text-foreground/70 hover:border-hairline hover:bg-elevate-2 hover:text-foreground",
-      )}
+      prefetch={false}
+      className={cn(styles.navChild, active && styles.navChildActive)}
     >
-      <Icon className="size-4 text-primary" />
-      {label}
+      <Icon className="size-4" />
+      <span className={styles.navLabel}>{label}</span>
     </Link>
   );
 }

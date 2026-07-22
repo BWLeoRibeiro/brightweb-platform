@@ -1,6 +1,13 @@
 const CANDIDATE_SUFFIXES = [".ts", ".tsx", "/index.ts", "/index.tsx"];
 
 export async function load(url, context, defaultLoad) {
+  if (url.endsWith(".css")) {
+    return {
+      format: "module",
+      shortCircuit: true,
+      source: "export default new Proxy({}, { get: (_, key) => String(key) });",
+    };
+  }
   if (!url.endsWith(".tsx")) return defaultLoad(url, context, defaultLoad);
   const [{ readFile }, ts] = await Promise.all([import("node:fs/promises"), import("typescript")]);
   const source = await readFile(new URL(url), "utf8");

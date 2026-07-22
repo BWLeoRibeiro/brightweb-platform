@@ -1,11 +1,7 @@
 "use client";
 
-import { useMemo, useState, type ReactNode } from "react";
-import { AccountMenu, AppHeader, DesktopSidebar, MobileNav, computeInitials, getShellNavGroup, type NavGroupConfig, type ResolvedClientAppShellConfig } from "@brightweblabs/app-shell";
 import type { CrmContact, CrmContactsListParams, CrmContactsListResult, CrmStatusLog } from "@brightweblabs/module-crm";
-import { CrmDashboard, CrmToolbarControls, type CrmContactFormInput, type CrmUiClient } from "@brightweblabs/module-crm/ui";
-import { Users } from "lucide-react";
-import { getStarterShellConfig } from "../../config/shell";
+import { CrmDashboard, type CrmContactFormInput, type CrmUiClient } from "@brightweblabs/module-crm/ui";
 
 const contacts: CrmContact[] = [
   { id: "contact-ada", first_name: "Ada", last_name: "Lovelace", email: "ada@analytical.example", phone: "+351912345671", status: "lead", source: "Referral", owner_id: "owner-leo", organization_id: "org-analytical", created_at: "2026-07-02T09:00:00.000Z", updated_at: "2026-07-18T14:30:00.000Z", organizations: { name: "Analytical Engines" } },
@@ -80,32 +76,5 @@ const initialData = {
 };
 
 export default function CrmPage() {
-  return <CrmPreviewShell><CrmDashboard client={mockClient} initialData={initialData} /></CrmPreviewShell>;
-}
-
-const mockUser = { email: "admin@starter-client.test", user_metadata: { first_name: "Starter", last_name: "Admin" } };
-
-function CrmPreviewShell({ children }: { children: ReactNode }) {
-  const { shellPreview: config } = getStarterShellConfig() as { shellPreview: ResolvedClientAppShellConfig };
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
-  const [toolsExpanded, setToolsExpanded] = useState(false);
-  const [crmExpanded, setCrmExpanded] = useState(true);
-  const crmNavGroup = useMemo(() => getShellNavGroup(config, "crm") ?? ({ label: "CRM", icon: Users, children: [{ href: "/crm", label: "Contactos", icon: Users }] } satisfies NavGroupConfig), [config]);
-  const activeHref = "/crm";
-  const isActive = (href: string) => href === activeHref;
-  const displayName = "Starter Admin";
-  return (
-    <div className="crm-preview-shell">
-      <DesktopSidebar className="crm-preview-sidebar" brand={config.brand} collapsedToolsHref={config.toolsSection.items[0]?.href ?? "/"} isSidebarCollapsed={isSidebarCollapsed} isToolActive={false} toolsExpanded={toolsExpanded} visiblePrimaryNav={config.primaryNav} adminNavItem={config.adminNavItem} visibleToolNav={config.toolsSection.items} crmNavGroup={crmNavGroup} crmGroupExpanded={crmExpanded} isCrmGroupActive isNavItemActive={isActive} isToolLinkActive={isActive} isCrmChildActive={isActive} onToggleSidebar={() => setIsSidebarCollapsed((current) => !current)} onToggleTools={() => setToolsExpanded((current) => !current)} onToggleCrmGroup={() => setCrmExpanded((current) => !current)} />
-      <div className="crm-preview-main">
-        <AppHeader className="crm-preview-header">
-          <div className="min-w-0"><p className="text-ui-label text-muted-foreground">CRM</p><h1 className="text-ui-panel-title">Contactos</h1></div>
-          <CrmToolbarControls />
-          <AccountMenu displayName={displayName} isStaff onSignOut={async () => {}} user={mockUser} userInitials={computeInitials(displayName)} />
-        </AppHeader>
-        <div className="crm-preview-mobile-nav"><MobileNav className="panel" toolsExpanded={toolsExpanded} visiblePrimaryNav={config.primaryNav} visibleToolNav={config.toolsSection.items} isNavItemActive={isActive} isToolLinkActive={isActive} onToggleTools={() => setToolsExpanded((current) => !current)} /></div>
-        <main className="crm-preview-content">{children}</main>
-      </div>
-    </div>
-  );
+  return <CrmDashboard client={mockClient} initialData={initialData} />;
 }

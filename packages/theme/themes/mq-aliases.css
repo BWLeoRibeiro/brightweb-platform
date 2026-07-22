@@ -137,3 +137,26 @@
     background-color: color-mix(in srgb, var(--foreground) 30%, transparent);
   }
 }
+
+.paragraph-large,
+.paragraph-small,
+.paragraph-mini {
+  font-family: var(--font-body), sans-serif;
+  font-weight: var(--font-weight-regular);
+  color: var(--foreground);
+}
+
+.paragraph-large {
+  font-size: var(--type-paragraph-large);
+  line-height: 1.55;
+}
+
+.paragraph-small {
+  font-size: var(--type-paragraph-small);
+  line-height: 1.5;
+}
+
+.paragraph-mini {
+  font-size: var(--type-paragraph-mini);
+  line-height: 1.45;
+}

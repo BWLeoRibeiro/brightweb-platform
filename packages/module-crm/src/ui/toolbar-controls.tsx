@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Filter, Plus, Search } from "lucide-react";
+import { Building2, Filter, Plus, Search, UserPlus } from "lucide-react";
 import { ToolbarNewMenu } from "@brightweblabs/app-shell";
 import { Button, Input, Popover, PopoverContent, PopoverTrigger, TooltipProvider } from "@brightweblabs/ui";
 
@@ -28,9 +28,9 @@ export type CrmToolbarSearchChipProps = {
 
 export function CrmToolbarSearchChip({ value, onChange, dictionary = defaultCrmUiDictionary }: CrmToolbarSearchChipProps) {
   return (
-    <label className="flex h-10 items-center gap-2 rounded-full border border-hairline-strong bg-popover px-3 text-muted-foreground">
-      <Search className="size-3.5 shrink-0" aria-hidden />
-      <Input value={value} onChange={(event) => onChange(event.target.value)} placeholder={dictionary.table.searchPlaceholder} aria-label={dictionary.table.searchPlaceholder} className="h-8 w-40 border-0 bg-transparent px-0 text-ui-meta shadow-none focus-visible:ring-0 xl:w-56" />
+    <label className="inline-flex h-9 min-w-[210px] items-center gap-2 rounded-[10px] border border-[color:var(--hairline-strong)] bg-[color:var(--elevate-1)] px-3 text-[color:var(--muted-foreground)]">
+      <Search className="size-[15px] shrink-0" aria-hidden />
+      <Input value={value} onChange={(event) => onChange(event.target.value)} placeholder={dictionary.table.searchPlaceholder} aria-label={dictionary.table.searchPlaceholder} className="h-8 w-full border-0 bg-transparent px-0 text-[13px] text-[color:var(--foreground)] shadow-none focus-visible:ring-0" />
     </label>
   );
 }
@@ -54,38 +54,38 @@ export function CrmToolbarFiltersPill({ status, sort, stages, dictionary = defau
   return (
     <Popover open={open} onOpenChange={(next) => next ? begin() : setOpen(false)}>
       <PopoverTrigger asChild>
-        <button type="button" className="inline-flex h-10 items-center gap-2 rounded-full border border-hairline-strong bg-popover px-3 text-ui-meta font-semibold text-foreground/75 transition-colors hover:bg-surface-hover hover:text-foreground" onClick={() => open ? setOpen(false) : begin()}>
-          <Filter className="size-3.5" aria-hidden />
+        <button type="button" className="inline-flex h-9 items-center gap-2 whitespace-nowrap rounded-[10px] border border-[color:var(--hairline-strong)] bg-[color:var(--elevate-1)] px-3 text-[13px] font-extrabold text-[color:var(--foreground)] transition-colors hover:border-[color:var(--border-strong)] hover:bg-[color:var(--surface-hover)]" onClick={() => open ? setOpen(false) : begin()}>
+          <Filter className="size-[15px] text-[color:var(--muted-foreground)]" aria-hidden />
           {dictionary.toolbar.filters}
           {activeCount > 0 ? <span className="inline-flex size-5 items-center justify-center rounded-full bg-accent text-ui-micro text-accent-foreground">{activeCount}</span> : null}
         </button>
       </PopoverTrigger>
-      <PopoverContent align="start" className="w-80 p-0">
-        <div className="flex items-center justify-between border-b border-hairline px-4 py-3">
-          <span className="text-ui-panel-title">{dictionary.toolbar.filters}</span>
-          <button type="button" className="text-ui-meta text-muted-foreground hover:text-foreground" onClick={() => { setDraftStatus(null); setDraftSort("date_desc"); }}>{dictionary.toolbar.clear}</button>
+      <PopoverContent align="end" className="w-[300px] rounded-[14px] border-[color:var(--hairline)] bg-[color:var(--popover)] p-4 shadow-[0_18px_44px_rgba(10,21,26,0.16),0_2px_10px_rgba(10,21,26,0.08)]">
+        <div className="mb-3 flex items-center justify-between">
+          <span className="text-[13px] font-extrabold text-[color:var(--foreground)]">{dictionary.toolbar.filters}</span>
+          <button type="button" className="p-0 text-xs font-bold text-[color:var(--muted-foreground)] hover:text-[color:var(--accent)]" onClick={() => { setDraftStatus(null); setDraftSort("date_desc"); }}>{dictionary.toolbar.clear}</button>
         </div>
-        <div className="grid gap-4 p-4">
-          <div className="grid gap-2">
-            <span className="text-ui-label">{dictionary.toolbar.status}</span>
+        <div className="grid gap-3">
+          <div>
+            <span className="mb-2 block text-[10px] font-extrabold uppercase tracking-[0.1em] text-[color:var(--muted-foreground)]">{dictionary.toolbar.status}</span>
             <div className="flex flex-wrap gap-2">
               {[{ value: null, label: dictionary.table.allSegments }, ...resolvedStages.map((stage) => ({ value: stage.value, label: stage.label }))].map((option) => (
-                <button key={option.value ?? "all"} type="button" className={`rounded-full border px-3 py-1.5 text-ui-meta ${draftStatus === option.value ? "border-accent bg-accent/10 text-foreground" : "border-hairline text-muted-foreground"}`} onClick={() => setDraftStatus(option.value)}>{option.label}</button>
+                <button key={option.value ?? "all"} type="button" className={`inline-flex h-[30px] items-center rounded-full border px-3 text-[12.5px] font-semibold ${draftStatus === option.value ? "border-[color:color-mix(in_srgb,var(--accent)_40%,var(--hairline))] bg-[color:color-mix(in_srgb,var(--accent)_12%,var(--card))] text-[color:var(--foreground)]" : "border-[color:var(--hairline)] bg-[color:var(--elevate-1)] text-[color:var(--foreground)]"}`} onClick={() => setDraftStatus(option.value)}>{option.label}</button>
               ))}
             </div>
           </div>
-          <div className="grid gap-2">
-            <span className="text-ui-label">{dictionary.toolbar.organize}</span>
+          <div>
+            <span className="mb-2 block text-[10px] font-extrabold uppercase tracking-[0.1em] text-[color:var(--muted-foreground)]">{dictionary.toolbar.organize}</span>
             <div className="flex flex-wrap gap-2">
               {([
                 ["date_desc", dictionary.table.sortNewest],
                 ["name", dictionary.table.sortName],
                 ["company", dictionary.table.sortCompany],
-              ] as const).map(([value, label]) => <button key={value} type="button" className={`rounded-full border px-3 py-1.5 text-ui-meta ${draftSort === value ? "border-accent bg-accent/10 text-foreground" : "border-hairline text-muted-foreground"}`} onClick={() => setDraftSort(value)}>{label}</button>)}
+              ] as const).map(([value, label]) => <button key={value} type="button" className={`inline-flex h-[30px] items-center rounded-full border px-3 text-[12.5px] font-semibold ${draftSort === value ? "border-[color:color-mix(in_srgb,var(--accent)_40%,var(--hairline))] bg-[color:color-mix(in_srgb,var(--accent)_12%,var(--card))] text-[color:var(--foreground)]" : "border-[color:var(--hairline)] bg-[color:var(--elevate-1)] text-[color:var(--foreground)]"}`} onClick={() => setDraftSort(value)}>{label}</button>)}
             </div>
           </div>
         </div>
-        <div className="border-t border-hairline p-3"><Button type="button" className="w-full" onClick={() => { onApply(draftStatus, draftSort); setOpen(false); }}>{dictionary.toolbar.apply}</Button></div>
+        <div className="mt-4"><Button type="button" className="h-9 w-full rounded-[10px] bg-[color:var(--accent)] text-[13px] font-extrabold text-[color:var(--accent-foreground)]" onClick={() => { onApply(draftStatus, draftSort); setOpen(false); }}>{dictionary.toolbar.apply}</Button></div>
       </PopoverContent>
     </Popover>
   );
@@ -95,8 +95,8 @@ export type CrmToolbarCreateMenuProps = { dictionary?: CrmUiDictionary };
 
 export function CrmToolbarCreateMenu({ dictionary = defaultCrmUiDictionary }: CrmToolbarCreateMenuProps) {
   return <TooltipProvider><ToolbarNewMenu id="crm-create-menu" icon={Plus} label={dictionary.toolbar.create} tooltip={dictionary.toolbar.create} items={[
-    { label: dictionary.toolbar.newContact, onSelect: () => window.dispatchEvent(new Event(CRM_UI_EVENTS.createContact)) },
-    { label: dictionary.toolbar.newOrganization, onSelect: () => window.dispatchEvent(new Event(CRM_UI_EVENTS.createOrganization)) },
+    { icon: UserPlus, label: dictionary.toolbar.newContact, onSelect: () => window.dispatchEvent(new Event(CRM_UI_EVENTS.createContact)) },
+    { icon: Building2, label: dictionary.toolbar.newOrganization, onSelect: () => window.dispatchEvent(new Event(CRM_UI_EVENTS.createOrganization)) },
   ]} /></TooltipProvider>;
 }
 

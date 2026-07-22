@@ -145,13 +145,13 @@ test("CRM default dictionary is Portuguese and covers a substantial full-page co
   assert.equal(defaultCrmUiDictionary.report.eyebrow, "Relatório operacional");
 });
 
-test("CRM UI files use package theme utilities without MQ-local styling", () => {
+test("CRM UI files use package theme utilities with the theme-provided MQ compatibility contract", () => {
   const directory = join(process.cwd(), "packages/module-crm/src/ui");
   const source = readdirSync(directory).filter((file) => /\.(ts|tsx)$/.test(file)).map((file) => readFileSync(join(directory, file), "utf8")).join("\n");
   assert.doesNotMatch(source, /#[0-9a-f]{3,8}\b/i);
   assert.doesNotMatch(source, /\bfont-medium\b/);
-  assert.doesNotMatch(source, /\bportal-/);
-  assert.doesNotMatch(source, /\bproject-(?:surface|item|hero)/);
+  assert.match(source, /\bportal-/);
+  assert.match(source, /\bproject-(?:surface|item|hero)/);
 });
 
 test("CRM controller hooks and host event contract are exported", () => {

@@ -8,6 +8,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@brightweblabs/ui/toolt
 import { cn } from "../lib/utils";
 
 type NewMenuItem = {
+  icon?: LucideIcon;
   label: string;
   onSelect: () => void;
 };
@@ -29,7 +30,7 @@ export function ToolbarNewMenu({ id, icon: Icon, label = "Novo", tooltip, items 
             <button
               type="button"
               id={id}
-              className="inline-flex items-center gap-1.5 rounded-full border border-hairline-strong bg-popover px-3 py-2 text-xs font-semibold text-foreground/75 transition-colors hover:border-border-strong hover:bg-surface-hover hover:text-foreground"
+              className="inline-flex h-9 items-center gap-2 whitespace-nowrap rounded-[10px] border border-transparent bg-[color:var(--accent)] px-3 text-[13px] font-extrabold text-[color:var(--accent-foreground)] shadow-[0_4px_14px_rgba(91,197,242,0.26)]"
             >
               <Icon className="size-3.5" />
               {label}
@@ -37,9 +38,10 @@ export function ToolbarNewMenu({ id, icon: Icon, label = "Novo", tooltip, items 
             </button>
           </DropdownMenuTrigger>
         </TooltipTrigger>
-        <DropdownMenuContent align="start" className="w-fit min-w-0 whitespace-nowrap">
+        <DropdownMenuContent align="end" className="w-52 border-[color:var(--hairline)] bg-[color:var(--popover)]">
           {items.map((item) => (
             <DropdownMenuItem key={item.label} className="whitespace-nowrap" onClick={item.onSelect}>
+              {item.icon ? <item.icon className="size-4" /> : null}
               {item.label}
             </DropdownMenuItem>
           ))}

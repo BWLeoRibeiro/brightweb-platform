@@ -26,33 +26,33 @@ export function CrmReportBanner({ summary, href, dictionary = defaultCrmUiDictio
 
   return (
     <section>
-      <a href={href} aria-label={dictionary.dashboard.reportAriaLabel} className="brand-panel group relative block overflow-hidden rounded-[var(--radius-panel)] p-6 text-primary-foreground outline-none transition focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background md:p-7">
-        <div aria-hidden className="pointer-events-none absolute -right-24 -top-28 h-80 w-80 rounded-full bg-[radial-gradient(circle,color-mix(in_srgb,var(--accent)_38%,transparent),transparent_70%)] blur-3xl" />
-        <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-px bg-[linear-gradient(90deg,transparent,color-mix(in_srgb,var(--accent)_60%,transparent),transparent)]" />
+      <a href={href} aria-label={dictionary.dashboard.reportAriaLabel} className="brand-panel group relative block overflow-hidden rounded-[var(--radius-panel)] p-6 text-[color:var(--project-hero-foreground)] outline-none transition focus-visible:ring-2 focus-visible:ring-[color:var(--ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--background)] md:p-7">
+        <div aria-hidden className="pointer-events-none absolute -right-24 -top-28 h-80 w-80 rounded-full blur-3xl opacity-100 transition-opacity duration-300 group-hover:opacity-100 dark:opacity-40 dark:group-hover:opacity-60" style={{ background: "radial-gradient(circle, color-mix(in srgb, var(--accent) 38%, transparent), transparent 70%)" }} />
+        <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-px" style={{ background: "linear-gradient(90deg, transparent, color-mix(in srgb, var(--accent) 60%, transparent), transparent)" }} />
         <div className="relative flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
           <div className="min-w-0 lg:flex-1">
-            <p className="inline-flex items-center gap-2 text-ui-label text-current/65">
-              <BarChart3 className="size-3.5 text-accent" aria-hidden />
+            <p className="inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--project-hero-muted)" }}>
+              <BarChart3 className="h-3.5 w-3.5" style={{ color: "var(--accent)" }} aria-hidden />
               {dictionary.dashboard.reportEyebrow}
             </p>
-            <h2 className="mt-4 text-ui-title text-current">{dictionary.dashboard.reportTitle}</h2>
-            <p className="mt-3 max-w-[34rem] text-ui-body text-current/70">
-              <span className="font-semibold text-accent">{summary.qualifiedLast30Days}</span>{" "}
+            <h2 className="font-display mt-4 text-[28px] font-extrabold leading-[1.04] tracking-[-0.035em] md:text-[36px]" style={{ color: "var(--project-hero-foreground)" }}>{dictionary.dashboard.reportTitle}</h2>
+            <p className="mt-3 max-w-[34rem] text-[15px]" style={{ color: "var(--project-hero-muted)" }}>
+              <span className="font-semibold" style={{ color: "var(--accent)" }}>{summary.qualifiedLast30Days}</span>{" "}
               {summary.qualifiedLast30Days === 1 ? dictionary.dashboard.qualifiedSingular : dictionary.dashboard.qualifiedPlural}
               <span className="mx-1.5 opacity-40">·</span>
-              <span className="font-semibold text-current">{summary.wonLast30Days}</span>{" "}
+              <span className="font-semibold" style={{ color: "var(--project-hero-foreground)" }}>{summary.wonLast30Days}</span>{" "}
               {summary.wonLast30Days === 1 ? dictionary.dashboard.wonSingular : dictionary.dashboard.wonPlural} {dictionary.dashboard.inLast30Days}
             </p>
-            <span className="mt-5 inline-flex items-center gap-1.5 rounded-full bg-accent px-4 py-2 text-ui-meta font-semibold text-accent-foreground transition-[filter] group-hover:brightness-105">
+            <span className="mt-5 inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-[13px] font-semibold transition-[filter] group-hover:brightness-[1.05]" style={{ background: "var(--accent)", color: "var(--accent-foreground)" }}>
               {dictionary.dashboard.openReport}
               <ArrowUpRight className="size-4 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" aria-hidden />
             </span>
           </div>
           <div className="grid shrink-0 grid-cols-3 gap-3">
             {metrics.map((metric) => (
-              <div key={metric.label} className="flex min-w-[104px] flex-col justify-center rounded-[var(--radius-card)] border border-current/20 bg-current/10 px-4 py-4">
-                <span className="font-display text-[40px] font-black leading-[0.9] tracking-[-0.05em] text-current">{metric.value}</span>
-                <span className="mt-2 text-ui-micro uppercase tracking-[0.1em] text-current/65">{metric.label}</span>
+              <div key={metric.label} className="flex min-w-[104px] flex-col justify-center rounded-[var(--radius-card)] border px-4 py-4" style={{ borderColor: "var(--project-hero-border)", background: "var(--project-hero-surface-raised)" }}>
+                <span className="font-display text-[40px] font-black leading-[0.9] tracking-[-0.05em]" style={{ color: "var(--project-hero-foreground)" }}>{metric.value}</span>
+                <span className="mt-2 text-[11px] uppercase tracking-[0.1em]" style={{ color: "var(--project-hero-muted)" }}>{metric.label}</span>
               </div>
             ))}
           </div>
