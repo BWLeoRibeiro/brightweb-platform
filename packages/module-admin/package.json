@@ -6,7 +6,8 @@
   "types": "./src/index.ts",
   "files": [
     "src",
-    "brightweb.module.json"
+    "brightweb.module.json",
+    "tokens.css"
   ],
   "license": "MIT",
   "repository": {
@@ -21,6 +22,8 @@
     "./events": "./src/events.ts",
     "./registration": "./src/registration.ts",
     "./roles": "./src/roles.ts",
+    "./tokens.css": "./tokens.css",
+    "./ui": "./src/ui/index.ts",
     "./users": "./src/users.ts",
     "./users-client": "./src/users-client.tsx",
     "./users-page": "./src/users-page.tsx"
@@ -31,6 +34,7 @@
     "@brightweblabs/infra": "workspace:*",
     "@brightweblabs/ui": "workspace:*",
     "lucide-react": "^1.8.0",
+    "motion": "^12.37.0",
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "sonner": "^2.0.7"

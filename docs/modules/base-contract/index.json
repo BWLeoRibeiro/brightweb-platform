@@ -15,8 +15,8 @@
       "title": "Admin",
       "file": "admin.json",
       "doc": "../platform-base.md",
-      "entryCount": 11,
-      "summary": "Admin server helpers, handlers, and a package-owned users surface."
+      "entryCount": 13,
+      "summary": "Admin server helpers, handlers, and packaged users, invitations, and toolbar UI."
     },
     {
       "moduleKey": "crm",

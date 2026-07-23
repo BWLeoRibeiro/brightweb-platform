@@ -44,7 +44,7 @@ export const starterModuleConfig: StarterModuleConfig[] = [
     description: "User role governance, admin tools, and access-control surfaces.",
     enabled: true,
     packageName: "@brightweblabs/module-admin",
-    playgroundHref: "/playground/admin",
+    playgroundHref: "/admin",
     placement: "admin",
   },
 ];
