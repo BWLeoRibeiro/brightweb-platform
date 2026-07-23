@@ -49,7 +49,7 @@ Tier definitions:
 | `ChartContainer`, `ChartTooltip`, `ChartTooltipContent`, `ChartLegend`, `ChartLegendContent`, `ChartStyle` | `@brightweblabs/ui` | `packages/ui/src/components/chart.tsx` | pattern | downstream apps | — | Recharts context and presentation family. |
 | `Breadcrumb` family | `@brightweblabs/ui` | `packages/ui/src/components/breadcrumb.tsx` | primitive | downstream apps | — | Root, list, item, link, page, separator, and ellipsis exports. |
 | `Toaster` | `@brightweblabs/ui` | `packages/ui/src/components/sonner.tsx` | surface | platform-preview, downstream apps | — | Theme-aware Sonner host. |
-| `ThemeProvider` | `@brightweblabs/ui` | `packages/ui/src/components/theme-provider.tsx` | surface | platform-preview, downstream apps | — | Theme context and document integration. |
+| `ThemeProvider`, `ThemeScript`, `useTheme` | `@brightweblabs/app-shell` | `packages/app-shell/src/theme` | surface | platform-preview, downstream apps | — | Persistent shell-owned theme context plus pre-hydration document integration. |
 
 ## `@brightweblabs/app-shell`
 

@@ -42,6 +42,7 @@ export {
 export { DesktopSidebar } from "./components/desktop-sidebar";
 export { MobileNav } from "./components/mobile-nav";
 export { ThemeMenu } from "./components/theme-menu";
+export * from "./theme/index";
 export {
   ToolbarDropdownChip,
   ToolbarFiltersPill,

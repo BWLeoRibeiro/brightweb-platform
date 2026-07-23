@@ -1,5 +1,7 @@
+"use client";
+
 import Link from "next/link";
-import { ChevronDown, FolderKanban, House, LayoutDashboard, LogOut, Moon, Sun, SunMoon, User } from "lucide-react";
+import { Check, ChevronDown, FolderKanban, House, LayoutDashboard, LogOut, Moon, Sun, SunMoon, User } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,6 +14,8 @@ import {
   DropdownMenuTrigger,
 } from "@brightweblabs/ui/dropdown-menu";
 import { cn } from "../lib/utils";
+import { useTheme } from "../theme/theme-provider";
+import type { ThemeMode } from "../theme/theme-controller";
 import type { AccountMenuProps } from "../types";
 
 function avatarRoleClass(role: "team" | "client") {
@@ -31,6 +35,7 @@ export function AccountMenu({
   collapsed = false,
   links,
 }: AccountMenuProps) {
+  const themeController = useTheme();
   const compactLabel = displayName?.trim().split(/\s+/)[0] || user?.email || "Conta";
   const isRail = variant === "rail";
   const secondaryLabel = user?.email ?? (isStaff ? "Administrador" : "Conta");
@@ -41,6 +46,16 @@ export function AccountMenu({
     projects: links?.projects ?? "/account/projetos",
     home: links?.home ?? "/",
   };
+  const hasThemeMenu = themeController.isThemeProviderMounted || Boolean(onThemeChange);
+  const handleThemeChange = (theme: ThemeMode) => {
+    if (themeController.isThemeProviderMounted) themeController.setTheme(theme);
+    onThemeChange?.(theme);
+  };
+  const themeOptions = [
+    { mode: "light", label: "Claro", icon: Sun },
+    { mode: "dark", label: "Escuro", icon: Moon },
+    { mode: "system", label: "Sistema", icon: SunMoon },
+  ] as const;
 
   return (
     <DropdownMenu modal={false}>
@@ -101,15 +116,25 @@ export function AccountMenu({
           </>
         )}
         <DropdownMenuItem asChild><Link href={hrefs.home} prefetch={false} className="flex items-center gap-xs"><House className="size-4" />Site principal</Link></DropdownMenuItem>
-        {onThemeChange ? (
+        {hasThemeMenu ? (
           <>
             <DropdownMenuSeparator />
             <DropdownMenuSub>
               <DropdownMenuSubTrigger className="gap-xs"><SunMoon className="size-4" />Tema</DropdownMenuSubTrigger>
               <DropdownMenuSubContent className="border-[color:var(--hairline)] bg-[color:var(--popover)]">
-                <DropdownMenuItem onClick={() => onThemeChange("light")} className="gap-xs"><Sun className="size-4" />Claro</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => onThemeChange("dark")} className="gap-xs"><Moon className="size-4" />Escuro</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => onThemeChange("system")} className="gap-xs"><SunMoon className="size-4" />Sistema</DropdownMenuItem>
+                {themeOptions.map(({ mode, label, icon: Icon }) => (
+                  <DropdownMenuItem
+                    key={mode}
+                    onClick={() => handleThemeChange(mode)}
+                    className="gap-xs"
+                    aria-checked={themeController.isThemeProviderMounted ? themeController.theme === mode : undefined}
+                    role="menuitemradio"
+                  >
+                    <Icon className="size-4" />
+                    {label}
+                    <Check className={cn("ml-auto size-3.5", themeController.isThemeProviderMounted && themeController.theme === mode ? "opacity-100" : "opacity-0")} />
+                  </DropdownMenuItem>
+                ))}
               </DropdownMenuSubContent>
             </DropdownMenuSub>
           </>

@@ -40,7 +40,7 @@ export default function CrmLayout({ children }: Readonly<{ children: React.React
           setCrmExpanded(false);
         }
         return next;
-      })} onToggleTools={() => setToolsExpanded((current) => !current)} onToggleCrmGroup={() => setCrmExpanded((current) => !current)} account={{ displayName, isStaff: true, onSignOut: async () => {}, onThemeChange: () => {}, user: mockUser, userInitials: computeInitials(displayName) }} />}
+      })} onToggleTools={() => setToolsExpanded((current) => !current)} onToggleCrmGroup={() => setCrmExpanded((current) => !current)} account={{ displayName, isStaff: true, onSignOut: async () => {}, user: mockUser, userInitials: computeInitials(displayName) }} />}
       header={<AppHeader kicker="Relações" title={pathname === "/crm/report" ? "Relatórios" : "CRM"} count={pathname === "/crm" ? 5 : undefined} pathname={pathname} toolbarRoutes={toolbarRoutes} toolbarActions={toolbarActions} notifications={{ notifications: previewNotifications, unreadCount: previewNotifications.length }}>{pathname === "/crm" ? <CrmToolbarControls /> : null}</AppHeader>}
       mobileNav={<MobileNav toolsExpanded={toolsExpanded} visiblePrimaryNav={config.primaryNav} visibleToolNav={config.toolsSection.items} isNavItemActive={isActive} isToolLinkActive={isActive} onToggleTools={() => setToolsExpanded((current) => !current)} />}
     >

@@ -1,5 +1,6 @@
 import type { LucideIcon } from "lucide-react";
 import type { DashboardSurfaceContribution } from "./dashboard/types";
+import type { ThemeMode } from "./theme/theme-controller";
 
 export type AppNavItem = {
   href: string;
@@ -190,7 +191,7 @@ export type MobileNavProps = {
 };
 
 export type ThemeMenuProps = {
-  onThemeChange: (theme: "light" | "dark" | "system") => void;
+  onThemeChange: (theme: ThemeMode) => void;
 };
 
 export type AccountMenuProps = {
@@ -199,7 +200,7 @@ export type AccountMenuProps = {
   onSignOut: () => Promise<void>;
   user: LayoutUser | null | undefined;
   userInitials: string;
-  onThemeChange?: (theme: "light" | "dark" | "system") => void;
+  onThemeChange?: (theme: ThemeMode) => void;
   variant?: "header" | "rail";
   collapsed?: boolean;
   links?: Partial<{

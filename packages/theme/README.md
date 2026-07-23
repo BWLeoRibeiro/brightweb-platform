@@ -2,6 +2,29 @@
 
 BrightWeb themes follow one cascade: L0 brand primitives feed L1 shadcn semantics, L2 describes brand-agnostic states, and L3 exposes component and experience controls. Package components consume L1-L3 tokens only; theme files such as `themes/mq.css` override values without changing component code.
 
+## Runtime theme switching
+
+Theme tokens respond to both `html.dark` and `html[data-theme="dark"]`. Platform apps should use the shell-owned controller so those selectors never drift:
+
+```tsx
+import { ThemeProvider, ThemeScript } from "@brightweblabs/app-shell";
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <ThemeScript defaultTheme="light" />
+      </head>
+      <body>
+        <ThemeProvider defaultTheme="light">{children}</ThemeProvider>
+      </body>
+    </html>
+  );
+}
+```
+
+`ThemeScript` applies the stored `bw-theme` mode before hydration to prevent a light-theme flash. `ThemeProvider` keeps the root class, `data-theme`, and `color-scheme` synchronized, persists `"light" | "dark" | "system"`, and follows `prefers-color-scheme` while system mode is selected. Account menus rendered below the provider use this controller automatically.
+
 ## L3 visual tokens
 
 | Tokens | Purpose |
