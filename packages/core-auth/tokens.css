@@ -9,7 +9,6 @@
   --auth-panel-foreground: var(--foreground-inverse);
   --auth-panel-muted: var(--foreground-inverse-muted);
   --auth-panel-border: color-mix(in srgb, var(--brand-accent) 22%, transparent);
-  --auth-control-focus: var(--ring);
   --auth-success-surface: var(--surface-status-success);
   --auth-success-border: color-mix(in srgb, var(--semantic-success) 30%, transparent);
   --auth-success-foreground: var(--semantic-success-strong);

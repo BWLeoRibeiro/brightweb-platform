@@ -11,7 +11,6 @@
   "dependencies": {
     "@brightweblabs/app-shell": "workspace:*",
     "@brightweblabs/core-auth": "workspace:*",
-    "@brightweblabs/infra": "workspace:*",
     "@brightweblabs/module-admin": "workspace:*",
     "@brightweblabs/module-crm": "workspace:*",
     "@brightweblabs/module-projects": "workspace:*",

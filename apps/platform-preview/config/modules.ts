@@ -17,7 +17,7 @@ export const starterModuleConfig: StarterModuleConfig[] = [
     description: "Login, reset-password, callback URLs, and shared auth validation utilities.",
     enabled: true,
     packageName: "@brightweblabs/core-auth",
-    playgroundHref: "/playground/auth",
+    playgroundHref: "/login",
     placement: "core",
   },
   {

@@ -15,7 +15,7 @@ export default function BootstrapPage() {
           </p>
           <div className="actions">
             <Link href="/" className="action">Back to preview overview</Link>
-            <Link href="/playground/auth" className="action secondary">Open playgrounds</Link>
+            <Link href="/login" className="action secondary">Open auth preview</Link>
           </div>
         </section>
 

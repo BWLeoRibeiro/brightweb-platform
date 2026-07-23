@@ -1,6 +1,6 @@
 # BrightWeb UI component inventory
 
-This inventory records the reusable visual APIs shipped by the platform as of Brief 27. “Used by” names package consumers rather than individual files. A dash in the MQ origin column means the component is a platform primitive or predates the file-by-file MQ translation ledgers.
+This inventory records the reusable visual APIs included in the current release line through Brief 35. “Used by” names package consumers rather than individual files. A dash in the MQ origin column means the component is a platform primitive or predates the file-by-file MQ translation ledgers.
 
 Tier definitions:
 
@@ -49,8 +49,6 @@ Tier definitions:
 | `ChartContainer`, `ChartTooltip`, `ChartTooltipContent`, `ChartLegend`, `ChartLegendContent`, `ChartStyle` | `@brightweblabs/ui` | `packages/ui/src/components/chart.tsx` | pattern | downstream apps | — | Recharts context and presentation family. |
 | `Breadcrumb` family | `@brightweblabs/ui` | `packages/ui/src/components/breadcrumb.tsx` | primitive | downstream apps | — | Root, list, item, link, page, separator, and ellipsis exports. |
 | `Toaster` | `@brightweblabs/ui` | `packages/ui/src/components/sonner.tsx` | surface | platform-preview, downstream apps | — | Theme-aware Sonner host. |
-| `ThemeProvider`, `ThemeScript`, `useTheme` | `@brightweblabs/app-shell` | `packages/app-shell/src/theme` | surface | platform-preview, downstream apps | — | Persistent shell-owned theme context plus pre-hydration document integration. |
-
 ## `@brightweblabs/app-shell`
 
 | Component | Package | Path | Tier (primitive / pattern / surface) | Used by (packages) | MQ origin (file) | Notes |
@@ -62,6 +60,8 @@ Tier definitions:
 | `AlertsMenu` | `@brightweblabs/app-shell` | `packages/app-shell/src/components/alerts-menu.tsx` | surface | AppHeader, platform-preview | — | Notification popover. Its compact empty state intentionally differs from `EmptyState`. |
 | `AccountMenu` | `@brightweblabs/app-shell` | `packages/app-shell/src/components/account-menu.tsx` | surface | DesktopSidebar | — | Account, role, theme, and sign-out popover. Literal account avatar markup is retained. |
 | `ThemeMenu` | `@brightweblabs/app-shell` | `packages/app-shell/src/components/theme-menu.tsx` | pattern | AccountMenu | — | Theme selection menu. |
+| `ThemeProvider`, `ThemeScript`, `useTheme` | `@brightweblabs/app-shell` | `packages/app-shell/src/theme` | surface | platform-preview, downstream apps | — | Persistent light/dark/system controller, pre-hydration document script, root synchronization, and consumer hook. |
+| `useShellNavState`, `createShellNavState`, `shellNavStateReducer` | `@brightweblabs/app-shell` | `packages/app-shell/src/use-shell-nav-state.ts` | pattern | AppShellFrame, downstream shells | — | Registration-keyed navigation state with pathname-aware groups and collapse resets. |
 | `SidebarNavLink`, `SidebarSectionToggle`, `SidebarSubNavLink` | `@brightweblabs/app-shell` | `packages/app-shell/src/components/nav-primitives.tsx` | pattern | DesktopSidebar | — | Internal sidebar navigation patterns. |
 | `MobileNavPill`, `MobileTogglePill` | `@brightweblabs/app-shell` | `packages/app-shell/src/components/nav-primitives.tsx` | pattern | MobileNav | — | Internal mobile navigation pills; not status pills. |
 | `ToolbarNewMenu`, `ToolbarFilterToggle`, `ToolbarFiltersPill`, `ToolbarDropdownChip`, `ToolbarSearchRefreshPill` | `@brightweblabs/app-shell` | `packages/app-shell/src/components/toolbar-shared.tsx` | pattern | module-crm, module-projects, platform-preview | — | Canonical shell toolbar compositions. Module filter contents remain literal within the shared containers. |
@@ -73,10 +73,20 @@ Tier definitions:
 | `NotFoundPage` | `@brightweblabs/app-shell` | `packages/app-shell/src/status-pages/not-found-page.tsx` | surface | platform-preview, downstream apps | `app/not-found.tsx` | Standalone tokenized 404 frame with dictionary copy, optional brand logo, and configurable back action. |
 | `ErrorPage` | `@brightweblabs/app-shell` | `packages/app-shell/src/status-pages/error-page.tsx` | surface | platform-preview, downstream apps | `app/(app)/error.tsx` | Client error-boundary surface retaining reset/retry behavior and a configurable home action. |
 
+## `@brightweblabs/core-auth` surfaces
+
+| Component | Package | Path | Tier (primitive / pattern / surface) | Used by (packages) | MQ origin (file) | Notes |
+| --- | --- | --- | --- | --- | --- | --- |
+| `AuthLayout`, `AuthCard`, `AuthHeading`, `AuthNotice` | `@brightweblabs/core-auth/ui` | `packages/core-auth/src/ui/auth-layout.tsx` | pattern | core-auth screens | MQ auth layout and global auth rules | Shared branded frame, vessel, heading, and feedback compositions. |
+| `AuthUiProvider`, `useAuthUi`, `createAuthUiClient` | `@brightweblabs/core-auth/ui` | `packages/core-auth/src/ui/context.tsx`, `packages/core-auth/src/ui/client.ts` | pattern | platform-preview, downstream auth routes | — | Injectable dictionary, route, and browser-client boundary; UI components do not import Supabase. |
+| `LoginPage`, `ForgotPasswordPage`, `ResetPasswordPage`, `SignupPage` | `@brightweblabs/core-auth/ui` | `packages/core-auth/src/ui/*-page.tsx` | surface | platform-preview, downstream apps | Matching MQ auth routes | Packaged credential and recovery surfaces with invite-only signup as the default policy. |
+| `InvitePage`, `ConfirmedPage`, `PostLoginPage` | `@brightweblabs/core-auth/ui` | `packages/core-auth/src/ui/invite-page.tsx`, `confirmed-page.tsx`, `post-login-page.tsx` | surface | platform-preview, downstream apps | Matching MQ auth routes | Organization/admin invitation, confirmation, and guarded post-login routing surfaces. |
+
 ## Module UI surfaces and shared patterns
 
 | Component | Package | Path | Tier (primitive / pattern / surface) | Used by (packages) | MQ origin (file) | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
+| `AdminUsersClient`, `AdminUsersLoading`, `AdminToolbarControls`, `AdminRolePill` | `@brightweblabs/module-admin/ui` | `packages/module-admin/src/ui/` | surface | platform-preview | MQ admin users route and components | Injectable users/roles/invitations surface with packaged loading and shell toolbar controls. |
 | `CrmDashboard` | `@brightweblabs/module-crm/ui` | `packages/module-crm/src/ui/dashboard.tsx` | surface | platform-preview | — (pre-ledger CRM port) | CRM aggregate surface. |
 | `CrmContactsTable` | `@brightweblabs/module-crm/ui` | `packages/module-crm/src/ui/contacts-table.tsx` | surface | module-crm | — (pre-ledger CRM port) | Uses shared Table, Checkbox, StatusPill, and TablePagination. Its icon-led no-data table cell differs from general `EmptyState`. |
 | `CrmDashboardSidebar` | `@brightweblabs/module-crm/ui` | `packages/module-crm/src/ui/dashboard-sidebar.tsx` | surface | module-crm | — (pre-ledger CRM port) | CRM timeline/organization sidebar cards. |

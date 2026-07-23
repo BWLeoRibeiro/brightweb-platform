@@ -53,8 +53,26 @@ test("post-login preserves guarded role routing and delayed shimmer", async () =
 test("auth tokens have neutral defaults and MQ overrides", async () => {
   const defaults = await read("tokens.css");
   const mq = await readFile(path.join(repoRoot, "packages", "theme", "themes", "mq.css"), "utf8");
-  const tokens = Array.from(defaults.matchAll(/(--auth-[a-z0-9-]+)\s*:/g), (match) => match[1]);
-  assert.ok(tokens.length >= 18);
+  const tokens = Array.from(defaults.matchAll(/(--auth-[a-z0-9-]+)\s*:/g), (match) => match[1]).sort();
+  assert.deepEqual(tokens, [
+    "--auth-card-border",
+    "--auth-card-radius",
+    "--auth-card-shadow",
+    "--auth-card-surface",
+    "--auth-error-border",
+    "--auth-error-foreground",
+    "--auth-error-surface",
+    "--auth-panel-border",
+    "--auth-panel-foreground",
+    "--auth-panel-muted",
+    "--auth-panel-surface",
+    "--auth-skeleton-highlight",
+    "--auth-skeleton-surface",
+    "--auth-success-border",
+    "--auth-success-foreground",
+    "--auth-success-surface",
+    "--auth-wash",
+  ]);
   for (const token of tokens) assert.match(mq, new RegExp(`${token.replaceAll("-", "\\-")}\\s*:`));
 });
 

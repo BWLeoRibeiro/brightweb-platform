@@ -99,7 +99,7 @@ export function getStarterBootstrapChecklist() {
       {
         label: "Preview Auth flows",
         done: true,
-        detail: "/playground/auth",
+        detail: "/login",
       },
       {
         label: "Preview CRM module",

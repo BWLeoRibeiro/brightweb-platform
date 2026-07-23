@@ -74,17 +74,11 @@
   --project-risk-at-risk-strong: var(--semantic-warning-strong);
   --project-risk-overdue: var(--semantic-danger);
   --project-risk-overdue-strong: var(--semantic-danger-strong);
-  --project-risk-overdue-soft: var(--semantic-danger-soft);
   /* Ink to use ON a solid health fill: light-mode fills are saturated so
      ink flips per theme (see dark block). */
   --project-risk-overdue-ink: #ffffff;
   --project-risk-at-risk-ink: #3a2a05;
   --project-state-completed-ink: #06281e;
-  --project-health-on-track: var(--project-state-active-strong);
-  --project-health-at-risk: var(--project-risk-at-risk);
-  --project-health-at-risk-strong: var(--project-risk-at-risk-strong);
-  --project-health-off-track: var(--project-risk-overdue);
-  --project-health-progress: var(--project-state-active);
 
   /* ── L3: experience tokens ─────────────────────────────────────────── */
   --space-2xs: 0.25rem;
@@ -136,17 +130,6 @@
   --text-ui-metric-xl: 3.5rem;
   --text-ui-metric-display: var(--text-ui-metric);
   --portal-text-micro: 0.625rem;
-  --portal-text-label: 0.6875rem;
-  --portal-text-meta: 0.75rem;
-  --portal-text-body: 0.875rem;
-  --portal-text-card-title: 0.9375rem;
-  --portal-text-subhead: 1.125rem;
-  --portal-text-panel: 1.25rem;
-  --portal-text-heading: 1.5rem;
-  --portal-text-title-sm: 1.875rem;
-  --portal-text-title: clamp(1.75rem, 1.6rem + 0.7vw, 2rem);
-  --portal-text-metric: 2.75rem;
-  --portal-text-metric-lg: 3.5rem;
   --type-paragraph-large: 1.09375rem;
   --type-heading-2: clamp(2rem, 4vw, 2.8125rem);
   --type-paragraph: 1rem;
@@ -333,8 +316,6 @@
   --project-surface-primary: var(--card);
   --project-surface-secondary: color-mix(in srgb, var(--foreground) 2%, var(--card) 98%);
   --project-surface-item: color-mix(in srgb, var(--card) 96%, transparent);
-  --project-surface-hero: color-mix(in srgb, var(--accent) 8%, var(--card) 92%);
-  --project-surface-hero-border: color-mix(in srgb, var(--accent) 26%, var(--foreground) 8%);
   --project-hero-surface: var(--brand-panel-surface);
   --project-hero-surface-raised: var(--brand-panel-surface-raised);
   --project-hero-foreground: var(--brand-panel-foreground);

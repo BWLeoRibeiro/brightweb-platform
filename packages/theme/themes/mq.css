@@ -68,7 +68,6 @@
   --auth-panel-foreground: var(--brand-panel-foreground);
   --auth-panel-muted: var(--brand-panel-muted);
   --auth-panel-border: var(--brand-panel-border);
-  --auth-control-focus: var(--ring);
   --auth-success-surface: var(--surface-status-success);
   --auth-success-border: color-mix(in srgb, var(--semantic-success) 30%, transparent);
   --auth-success-foreground: var(--semantic-success-strong);
@@ -80,8 +79,6 @@
   --project-surface-primary: var(--card);
   --project-surface-secondary: color-mix(in srgb, var(--foreground) 2%, var(--card) 98%);
   --project-surface-item: color-mix(in srgb, var(--card) 96%, transparent);
-  --project-surface-hero: color-mix(in srgb, var(--accent) 8%, var(--card) 92%);
-  --project-surface-hero-border: color-mix(in srgb, var(--accent) 26%, var(--foreground) 8%);
   --project-hero-surface: linear-gradient(158deg, #02070d 0%, #06111c 30%, #071d2b 63%, #123747 100%);
   --project-hero-surface-raised: #0b2634;
   --project-hero-foreground: #f6fbff;
@@ -172,8 +169,6 @@
   --project-surface-primary: var(--card);
   --project-surface-secondary: color-mix(in srgb, var(--foreground) 2%, var(--card) 98%);
   --project-surface-item: color-mix(in srgb, var(--card) 96%, transparent);
-  --project-surface-hero: color-mix(in srgb, var(--accent) 8%, var(--card) 92%);
-  --project-surface-hero-border: color-mix(in srgb, var(--accent) 26%, var(--foreground) 8%);
   --project-hero-surface: linear-gradient(158deg, #0c2433 0%, #143b4e 52%, #1b4f66 100%);
   --project-hero-surface-raised: #0b2634;
   --project-hero-foreground: #f6fbff;

@@ -28,7 +28,7 @@ Current preview routes:
 - `/`
 - `/bootstrap`
 - `/preview/app-shell`
-- `/playground/auth`
+- `/login`
 - `/admin` (redirects to the packaged `/admin/users` surface)
 - `/dashboard`
 - `/crm`

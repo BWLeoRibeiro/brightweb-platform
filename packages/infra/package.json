@@ -23,6 +23,7 @@
   "dependencies": {
     "@supabase/ssr": "^0.10.2",
     "@supabase/supabase-js": "^2.105.3",
-    "next": "16.1.6"
+    "next": "16.1.6",
+    "server-only": "^0.0.1"
   }
 }

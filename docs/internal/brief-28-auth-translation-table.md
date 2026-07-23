@@ -44,7 +44,6 @@ Defaults live in `@brightweblabs/core-auth/tokens.css` at the auth experience la
 | `--auth-panel-foreground` | L3 auth | `--foreground-inverse` | `--brand-panel-foreground` |
 | `--auth-panel-muted` | L3 auth | `--foreground-inverse-muted` | `--brand-panel-muted` |
 | `--auth-panel-border` | L3 auth | accent mix | `--brand-panel-border` |
-| `--auth-control-focus` | L3 auth | `--ring` | MQ `--ring` |
 | `--auth-success-surface` | L3 auth | `--surface-status-success` | MQ semantic success surface |
 | `--auth-success-border` | L3 auth | semantic success mix | MQ semantic success mix |
 | `--auth-success-foreground` | L3 auth | `--semantic-success-strong` | MQ semantic success strong |
