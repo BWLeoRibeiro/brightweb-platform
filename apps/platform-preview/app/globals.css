@@ -3,12 +3,14 @@
 @import "@brightweblabs/theme/themes/mq";  /* MQ theme for parity comparison */
 @import "@brightweblabs/theme/themes/mq-aliases";
 @import "@brightweblabs/module-crm/tokens.css";
+@import "@brightweblabs/module-admin/tokens.css";
 @import "@brightweblabs/module-projects/tokens.css";
 @import "@brightweblabs/core-auth/tokens.css";
 
 @source "../../../packages/ui/src";
 @source "../../../packages/app-shell/src";
 @source "../../../packages/module-crm/src";
+@source "../../../packages/module-admin/src";
 @source "../../../packages/module-projects/src";
 @source "../../../packages/core-auth/src";
 

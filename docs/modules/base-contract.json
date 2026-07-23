@@ -976,12 +976,12 @@
   },
   {
     "moduleKey": "admin",
-    "packageName": "@brightweblabs/module-admin/users-client",
+    "packageName": "@brightweblabs/module-admin/ui",
     "symbol": "AdminUsersClient",
-    "kind": "helper",
-    "status": "internal",
+    "kind": "component",
+    "status": "stable",
     "runtime": "client",
-    "summary": "Packaged admin users table UI used by the current starter surface.",
+    "summary": "Packaged admin users and invitations management surface.",
     "auth": "admin role required for the mounted route",
     "inputs": [
       {
@@ -989,6 +989,18 @@
         "type": "AdminUsersListResult",
         "required": true,
         "description": "Initial admin users payload."
+      },
+      {
+        "name": "client",
+        "type": "AdminUiClient",
+        "required": false,
+        "description": "Injectable admin data and mutation client."
+      },
+      {
+        "name": "dictionary",
+        "type": "AdminUiDictionary",
+        "required": false,
+        "description": "Localized admin UI copy."
       }
     ],
     "outputs": [
@@ -998,9 +1010,71 @@
       }
     ],
     "notes": [
-      "App-owned admin UI should not depend on this packaged client component in v1."
+      "Use with AdminToolbarControls inside the packaged app shell."
     ],
-    "source": "packages/module-admin/src/users-client.tsx"
+    "source": "packages/module-admin/src/ui/admin-users.tsx"
+  },
+  {
+    "moduleKey": "admin",
+    "packageName": "@brightweblabs/module-admin/ui",
+    "symbol": "createAdminUiClient",
+    "kind": "helper",
+    "status": "stable",
+    "runtime": "client",
+    "summary": "Creates the default HTTP-backed client for packaged admin UI.",
+    "auth": "mounted endpoints must enforce admin access",
+    "inputs": [
+      {
+        "name": "basePath",
+        "type": "string",
+        "required": false,
+        "description": "Base admin users API path."
+      },
+      {
+        "name": "fetcher",
+        "type": "typeof fetch",
+        "required": false,
+        "description": "Injectable fetch implementation."
+      }
+    ],
+    "outputs": [
+      {
+        "type": "AdminUiClient",
+        "description": "Client implementing users, roles, and invitation operations."
+      }
+    ],
+    "notes": [
+      "Inject an app-specific AdminUiClient when endpoint shapes differ."
+    ],
+    "source": "packages/module-admin/src/ui/client.ts"
+  },
+  {
+    "moduleKey": "admin",
+    "packageName": "@brightweblabs/module-admin/ui",
+    "symbol": "AdminToolbarControls",
+    "kind": "component",
+    "status": "stable",
+    "runtime": "client",
+    "summary": "MQ-parity search and role-filter toolbar controls for admin users.",
+    "auth": "admin role required for the mounted route",
+    "inputs": [
+      {
+        "name": "dictionary",
+        "type": "AdminUiDictionary",
+        "required": false,
+        "description": "Localized admin UI copy."
+      }
+    ],
+    "outputs": [
+      {
+        "type": "React component",
+        "description": "Toolbar controls synchronized through admin UI events."
+      }
+    ],
+    "notes": [
+      "Render as AppHeader children for the admin-users toolbar surface."
+    ],
+    "source": "packages/module-admin/src/ui/toolbar-controls.tsx"
   },
   {
     "moduleKey": "admin",

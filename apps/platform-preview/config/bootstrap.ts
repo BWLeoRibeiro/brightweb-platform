@@ -114,7 +114,7 @@ export function getStarterBootstrapChecklist() {
       {
         label: "Preview Admin module",
         done: hasModule(moduleKeys, "admin"),
-        detail: hasModule(moduleKeys, "admin") ? "/playground/admin" : "Admin not enabled",
+        detail: hasModule(moduleKeys, "admin") ? "/admin" : "Admin not enabled",
       },
       {
         label: "Deploy only after env readiness is green",
