@@ -60,7 +60,7 @@ test("Projects Portuguese UI copy is owned by the dictionary", () => {
 });
 
 test("Projects preview exposes list, detail, board, and tasks routes", () => {
-  const previewRoot = join(process.cwd(), "apps/platform-preview/app/projects");
+  const previewRoot = join(process.cwd(), "apps/platform-preview/app/(shell)/projects");
   for (const route of ["page.tsx", "[id]/page.tsx", "[id]/board/page.tsx", "[id]/tasks/page.tsx"]) {
     assert.match(readFileSync(join(previewRoot, route), "utf8"), /ProjectsPage|ProjectDetailPage|ProjectBoardPage|ProjectTasksPage/);
   }

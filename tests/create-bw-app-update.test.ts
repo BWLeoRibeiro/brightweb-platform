@@ -570,7 +570,7 @@ test("scaffold and preview globals scan every consumed BrightWeb package", async
 });
 
 test("platform CRM preview uses injected mock data without API fetches", async () => {
-  const page = await fs.readFile(path.join(REPO_ROOT, "apps", "platform-preview", "app", "crm", "page.tsx"), "utf8");
+  const page = await fs.readFile(path.join(REPO_ROOT, "apps", "platform-preview", "app", "(shell)", "crm", "page.tsx"), "utf8");
   assert.match(page, /client=\{mockClient\}/);
   assert.match(page, /lead: 1, qualified: 1, proposal: 1, won: 1, lost: 1/);
   assert.doesNotMatch(page, /createCrmUiClient|\/api\/crm|\bfetch\s*\(/);

@@ -1,7 +1,7 @@
 "use client";
 
 import { AppDashboard } from "@brightweblabs/app-shell";
-import { getStarterShellConfig } from "../../config/shell";
+import { getStarterShellConfig } from "../../../config/shell";
 import { dashboardDataClient, dashboardInitialData } from "./mock-data";
 
 export default function DashboardPreviewPage() {

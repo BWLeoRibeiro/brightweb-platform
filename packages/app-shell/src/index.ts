@@ -83,5 +83,17 @@ export type {
   ToolNavItem,
 } from "./types";
 export { computeInitials } from "./utils";
+export {
+  createShellNavState,
+  getActiveShellNavGroupKeys,
+  shellNavStateReducer,
+  useShellNavState,
+} from "./use-shell-nav-state";
+export type {
+  ShellNavState,
+  ShellNavStateAction,
+  ShellNavStateGroup,
+  UseShellNavStateOptions,
+} from "./use-shell-nav-state";
 export * from "./dashboard/index";
 export * from "./status-pages/index";
