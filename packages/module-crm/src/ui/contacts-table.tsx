@@ -141,7 +141,7 @@ export function CrmContactsTable({
           onClear={() => updateParams({ search: "", page: 1 })}
           placeholder={dictionary.table.searchPlaceholder}
           aria-label={dictionary.table.searchPlaceholder}
-          className="max-w-md"
+          className="max-w-[28rem]"
         />
         <select
           value={params.status ?? ""}

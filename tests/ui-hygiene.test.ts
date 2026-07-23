@@ -125,6 +125,16 @@ test("package and preview selection controls use the shared Checkbox primitive",
   );
 });
 
+test("package and preview source avoid named max-width utilities that resolve to space tokens", async () => {
+  const packageFiles = (await sourcesAt(packagesSourceRoot)).filter(({ filePath }) => /\.(?:ts|tsx)$/.test(filePath));
+  const previewFiles = (await sourcesAt(previewSourceRoot)).filter(({ filePath }) => /\.(?:ts|tsx)$/.test(filePath));
+  assertPatternAbsent(
+    [...packageFiles, ...previewFiles],
+    /\bmax-w-(?:xs|sm|md|lg|xl|2xl|3xl|4xl|5xl|6xl|7xl)\b/,
+    "named max-w-* utilities resolve to --space-* tokens (~16px) in this Tailwind v4 setup; use max-w-[Xrem]",
+  );
+});
+
 test("theme component styles keep color recipes in token definition files", async () => {
   const files = await Promise.all(themeComponentPaths.map(async (filePath) => ({ filePath, source: await readFile(filePath, "utf8") })));
   assertPatternAbsent(files, /#[0-9a-f]{3,8}\b|rgba?\(|color-mix\(/i, "theme component colors must be represented by tokens.css or theme palette overrides");

@@ -29,7 +29,7 @@ export function ErrorPage({
 
   return (
     <section className="flex min-h-[calc(100dvh-8rem)] items-center justify-center px-6 py-20 text-center">
-      <div className="max-w-xl">
+      <div className="max-w-[36rem]">
         <p className="label text-[var(--mq-brand-400)]">{dictionary.error.label}</p>
         <h1 className="heading-2 mt-4">
           {dictionary.error.heading}<span className="text-accent">.</span>
