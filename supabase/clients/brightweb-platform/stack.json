@@ -1,0 +1,8 @@
+{
+  "client": {
+    "slug": "brightweb-platform",
+    "name": "BrightWeb Platform (dev test)"
+  },
+  "enabledModules": ["core", "admin", "orgs", "crm", "projects"],
+  "clientMigrationPath": "supabase/clients/brightweb-platform/migrations"
+}

@@ -10,3 +10,8 @@ coverage/
 apps/__smoke-*/
 supabase/.generated/
 .vercel
+
+# Local environment files (never commit secrets)
+.env
+.env.local
+.env.*.local
