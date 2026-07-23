@@ -21,6 +21,7 @@ const themeComponentPaths = [
   path.join(repoRoot, "packages", "theme", "src", "typography.css"),
   mqAliasesPath,
 ];
+const cascadeSensitiveProperties = /^(?:align-|background(?:-|$)|border(?:-|$)|box-|color$|column-gap$|display$|flex(?:-|$)|font(?:-|$)|gap$|grid(?:-|$)|height$|inset(?:-|$)|justify-|left$|letter-spacing$|line-height$|margin(?:-|$)|max-|min-|opacity$|overflow(?:-|$)|padding(?:-|$)|position$|right$|row-gap$|text-|top$|transform$|vertical-align$|white-space$|width$)/;
 
 async function sourceFiles(directory: string): Promise<string[]> {
   const entries = await readdir(directory, { withFileTypes: true });
@@ -45,6 +46,32 @@ function assertPatternAbsent(files: Awaited<ReturnType<typeof sourcesAt>>, patte
     return matches.map((match) => `${path.relative(repoRoot, filePath)}:${source.slice(0, match.index).split("\n").length} ${match[0]}`);
   });
   assert.deepEqual(violations, [], `${label}:\n${violations.join("\n")}`);
+}
+
+function unlayeredCascadeSensitiveClassRules(source: string) {
+  const cleanSource = source.replace(/\/\*[\s\S]*?\*\//g, (comment) => comment.replace(/[^\n]/g, " "));
+  const stack: Array<{ prelude: string; openIndex: number; isLayer: boolean }> = [];
+  const violations: Array<{ line: number; selector: string }> = [];
+  let boundary = 0;
+
+  for (let index = 0; index < cleanSource.length; index += 1) {
+    if (cleanSource[index] === "{") {
+      const prelude = cleanSource.slice(boundary, index).trim();
+      stack.push({ prelude, openIndex: index, isLayer: /^@layer(?:\s|$)/.test(prelude) });
+      boundary = index + 1;
+      continue;
+    }
+    if (cleanSource[index] !== "}") continue;
+    const block = stack.pop();
+    if (!block) continue;
+    const declarations = Array.from(cleanSource.slice(block.openIndex + 1, index).matchAll(/(?:^|[;{])\s*([\w-]+)\s*:/g), (match) => match[1]);
+    const isTokenDefinition = declarations.length > 0 && declarations.every((property) => property.startsWith("--") || property === "color-scheme");
+    if (!block.prelude.startsWith("@") && /(^|[\s>+~,(])\.[_a-zA-Z][\w-]*/.test(block.prelude) && !stack.some((ancestor) => ancestor.isLayer) && !isTokenDefinition && declarations.some((property) => cascadeSensitiveProperties.test(property))) {
+      violations.push({ line: cleanSource.slice(0, Math.max(0, block.openIndex - block.prelude.length)).split("\n").length, selector: block.prelude.replace(/\s+/g, " ") });
+    }
+    boundary = index + 1;
+  }
+  return violations;
 }
 
 test("ui source follows the BrightWeb typography and color hygiene rules", async () => {
@@ -101,6 +128,25 @@ test("package and preview selection controls use the shared Checkbox primitive",
 test("theme component styles keep color recipes in token definition files", async () => {
   const files = await Promise.all(themeComponentPaths.map(async (filePath) => ({ filePath, source: await readFile(filePath, "utf8") })));
   assertPatternAbsent(files, /#[0-9a-f]{3,8}\b|rgba?\(|color-mix\(/i, "theme component colors must be represented by tokens.css or theme palette overrides");
+});
+
+test("package CSS keeps cascade-sensitive class recipes in explicit layers", async () => {
+  const cssFiles = (await sourceFiles(packagesSourceRoot)).filter((filePath) => filePath.endsWith(".css") && !filePath.endsWith(".module.css"));
+  const violations = (await Promise.all(cssFiles.map(async (filePath) => {
+    const source = await readFile(filePath, "utf8");
+    return unlayeredCascadeSensitiveClassRules(source).map(({ line, selector }) => `${path.relative(repoRoot, filePath)}:${line} ${selector}`);
+  }))).flat();
+  assert.deepEqual(violations, [], `Package class recipes that affect box model, color, or typography must use @layer components (element resets use @layer base):\n${violations.join("\n")}`);
+});
+
+test("package CSS layer guard allows tokens and flags unsafe class recipes", () => {
+  const violations = unlayeredCascadeSensitiveClassRules(`
+    :root, .dark { --surface: white; color-scheme: dark; }
+    @layer components { .safe { padding: 1rem; } }
+    @keyframes enter { to { opacity: 1; } }
+    .unsafe { padding: 1rem; }
+  `);
+  assert.deepEqual(violations.map(({ selector }) => selector), [".unsafe"]);
 });
 
 test("every text-ui utility used by ui exists in theme typography", async () => {

@@ -67,7 +67,8 @@
   }
 }
 
-.section-icon {
+@layer components {
+  .section-icon {
   display: flex;
   width: var(--section-icon-size);
   height: var(--section-icon-size);
@@ -79,8 +80,9 @@
   color: var(--muted-foreground);
 }
 
-.stat-cell {
-  padding: var(--stat-cell-padding);
+  .stat-cell {
+    padding: var(--stat-cell-padding);
+  }
 }
 
 /* Skeleton shimmer respects reduced-motion with a quiet breathe fallback. */
@@ -111,7 +113,8 @@
   }
 }
 
-.skeleton-ghost {
+@layer components {
+  .skeleton-ghost {
   position: relative;
   overflow: hidden;
   background: var(--skeleton);
@@ -169,7 +172,8 @@
   color: var(--semantic-warning-strong);
 }
 
-.status.error {
-  background: var(--surface-status-danger);
-  color: var(--semantic-danger-strong);
+  .status.error {
+    background: var(--surface-status-danger);
+    color: var(--semantic-danger-strong);
+  }
 }

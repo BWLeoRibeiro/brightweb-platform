@@ -104,7 +104,8 @@
 
 /* Portfolio grid — ported verbatim from MQ globals.css (.projects-portfolio-grid).
    Responsive column template + reserved rows so pagination doesn't reflow. */
-.projects-portfolio-grid {
+@layer components {
+  .projects-portfolio-grid {
   --projects-card-min-height: 158px;
   --projects-page-rows: 12;
   align-content: start;
@@ -128,10 +129,11 @@
   }
 }
 
-@media (min-width: 1280px) {
-  .projects-portfolio-grid {
-    --projects-page-rows: 3;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+  @media (min-width: 1280px) {
+    .projects-portfolio-grid {
+      --projects-page-rows: 3;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
   }
 }
 
@@ -152,7 +154,8 @@
   }
 }
 
-.project-surface-card {
+@layer components {
+  .project-surface-card {
   border-radius: var(--radius-card);
   border: 1px solid var(--border-hairline);
   background: var(--project-surface-secondary);
@@ -264,7 +267,8 @@
   padding-right: 0.25rem;
 }
 
-.project-group-header:first-child {
-  border-top: 0;
-  padding-top: 0;
+  .project-group-header:first-child {
+    border-top: 0;
+    padding-top: 0;
+  }
 }

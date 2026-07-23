@@ -20,7 +20,8 @@
   --auth-skeleton-highlight: color-mix(in srgb, var(--card) 72%, transparent);
 }
 
-.auth-layout {
+@layer components {
+  .auth-layout {
   position: relative;
   display: grid;
   min-height: 100svh;
@@ -260,6 +261,7 @@
   animation: auth-shimmer 1.2s infinite;
   transform: translateX(-100%);
 }
+}
 
 @keyframes auth-spin {
   to { transform: rotate(360deg); }
@@ -269,7 +271,8 @@
   to { transform: translateX(100%); }
 }
 
-@media (min-width: 64rem) {
+@layer components {
+  @media (min-width: 64rem) {
   .auth-layout[data-variant="split"] {
     grid-template-columns: minmax(24rem, 0.9fr) minmax(30rem, 1.1fr);
   }
@@ -279,9 +282,10 @@
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
+  @media (prefers-reduced-motion: reduce) {
   .auth-spinner,
   .auth-skeleton-line::after {
     animation-duration: 1.8s;
   }
+}
 }

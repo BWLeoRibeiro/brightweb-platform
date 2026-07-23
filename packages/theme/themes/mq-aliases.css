@@ -151,7 +151,8 @@
   }
 }
 
-.paragraph-large,
+@layer components {
+  .paragraph-large,
 .paragraph-small,
 .paragraph-mini {
   font-family: var(--font-body), sans-serif;
@@ -168,7 +169,8 @@
   line-height: 1.5;
 }
 
-.paragraph-mini {
-  font-size: var(--type-paragraph-mini);
-  line-height: 1.45;
+  .paragraph-mini {
+    font-size: var(--type-paragraph-mini);
+    line-height: 1.45;
+  }
 }

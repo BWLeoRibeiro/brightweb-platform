@@ -39,7 +39,8 @@
   --line: var(--border);
 }
 
-* {
+@layer base {
+  * {
   box-sizing: border-box;
 }
 
@@ -76,6 +77,7 @@ a {
   text-decoration: none;
 }
 
-::selection {
-  background: rgba(38, 105, 70, 0.18);
+  ::selection {
+    background: rgba(38, 105, 70, 0.18);
+  }
 }
