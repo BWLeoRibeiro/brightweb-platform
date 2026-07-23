@@ -569,11 +569,28 @@ test("scaffold and preview globals scan every consumed BrightWeb package", async
   assert.match(previewGlobals, /@source "\.\.\/\.\.\/\.\.\/packages\/module-crm\/src";/);
 });
 
-test("platform CRM preview uses injected mock data without API fetches", async () => {
+test("platform CRM preview uses the packaged live API client", async () => {
   const page = await fs.readFile(path.join(REPO_ROOT, "apps", "platform-preview", "app", "(shell)", "crm", "page.tsx"), "utf8");
-  assert.match(page, /client=\{mockClient\}/);
-  assert.match(page, /lead: 1, qualified: 1, proposal: 1, won: 1, lost: 1/);
-  assert.doesNotMatch(page, /createCrmUiClient|\/api\/crm|\bfetch\s*\(/);
+  const crmApiRoot = path.join(REPO_ROOT, "apps", "platform-preview", "app", "api", "crm");
+  const contactsRoute = await fs.readFile(path.join(crmApiRoot, "contacts", "route.ts"), "utf8");
+  assert.match(page, /<CrmDashboard \/>/);
+  assert.doesNotMatch(page, /client=|initialData=|mockClient/);
+  assert.match(contactsRoute, /handleCrmContactsGetRequest\(request\)/);
+  assert.match(contactsRoute, /handleCrmContactsPostRequest\(request\)/);
+  assert.match(contactsRoute, /handleCrmContactsPatchRequest\(request\)/);
+  assert.match(contactsRoute, /handleCrmContactsDeleteRequest\(request\)/);
+
+  for (const [route, handler] of Object.entries({
+    organizations: "handleCrmOrganizationsGetRequest",
+    owners: "handleCrmOwnersGetRequest",
+    report: "handleCrmReportGetRequest",
+    stats: "handleCrmStatsGetRequest",
+    timeline: "handleCrmTimelineGetRequest",
+  })) {
+    const source = await fs.readFile(path.join(crmApiRoot, route, "route.ts"), "utf8");
+    assert.match(source, /dynamic = "force-dynamic"/);
+    assert.ok(source.includes(`${handler}(request)`));
+  }
 });
 
 test("detects config-only changes", async (t) => {

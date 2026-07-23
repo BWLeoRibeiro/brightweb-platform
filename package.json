@@ -13,6 +13,7 @@
     "db:materialize": "node ./scripts/materialize-client-migrations.mjs",
     "db:new": "node ./scripts/new-migration.mjs",
     "db:plan": "node ./scripts/plan-client-migrations.mjs",
+    "db:seed": "pnpm --filter platform-preview db:seed",
     "dev": "pnpm --filter platform-preview dev",
     "dev:docs": "pnpm --filter dev-docs dev",
     "build": "pnpm --filter platform-preview build",

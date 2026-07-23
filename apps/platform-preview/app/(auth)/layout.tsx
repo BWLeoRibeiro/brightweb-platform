@@ -1,5 +1,5 @@
-import { AuthPreviewProvider } from "./auth-preview-provider";
+import { AuthProvider } from "./auth-provider";
 
 export default function PreviewAuthLayout({ children }: { children: React.ReactNode }) {
-  return <AuthPreviewProvider>{children}</AuthPreviewProvider>;
+  return <AuthProvider>{children}</AuthProvider>;
 }

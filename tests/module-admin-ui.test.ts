@@ -39,14 +39,15 @@ test("admin package exposes users, invitations, toolbar, loading, and tokens", a
   assert.match(registration, /admin-filters/);
 });
 
-test("preview replaces the legacy playground with packaged admin routes", async () => {
+test("preview mounts the live packaged admin page and routes", async () => {
   const overview = await read("apps/platform-preview/app/(shell)/admin/page.tsx");
   const users = await read("apps/platform-preview/app/(shell)/admin/users/page.tsx");
-  const layout = await read("apps/platform-preview/app/(shell)/layout.tsx");
+  const layout = await read("apps/platform-preview/app/(shell)/shell-layout-client.tsx");
+  const usersRoute = await read("apps/platform-preview/app/api/admin/users/route.ts");
 
   assert.match(overview, /redirect\("\/admin\/users"\)/);
-  assert.match(users, /AdminUsersClient/);
-  assert.match(users, /AdminUiClient/);
+  assert.match(users, /AdminUsersPage as default/);
+  assert.match(usersRoute, /handleAdminUsersGetRequest/);
   assert.match(layout, /AppShellFrame/);
   assert.match(layout, /AdminToolbarControls/);
 });

@@ -93,6 +93,9 @@ importers:
       '@brightweblabs/core-auth':
         specifier: workspace:*
         version: link:../../packages/core-auth
+      '@brightweblabs/infra':
+        specifier: workspace:*
+        version: link:../../packages/infra
       '@brightweblabs/module-admin':
         specifier: workspace:*
         version: link:../../packages/module-admin
@@ -108,6 +111,9 @@ importers:
       '@brightweblabs/ui':
         specifier: workspace:*
         version: link:../../packages/ui
+      '@supabase/supabase-js':
+        specifier: ^2.105.3
+        version: 2.110.7
       lucide-react:
         specifier: ^1.8.0
         version: 1.25.0(react@19.2.4)
