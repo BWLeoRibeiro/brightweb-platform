@@ -15,11 +15,15 @@
   },
   "exports": {
     "./client": "./src/client.ts",
+    "./routes": "./src/routes.ts",
     "./server": "./src/server.ts",
-    "./shared": "./src/shared.ts"
+    "./shared": "./src/shared.ts",
+    "./tokens.css": "./tokens.css",
+    "./ui": "./src/ui/index.ts"
   },
   "dependencies": {
     "@brightweblabs/infra": "workspace:*",
+    "@brightweblabs/ui": "workspace:*",
     "@supabase/supabase-js": "^2.105.3",
     "next": "16.1.6"
   },

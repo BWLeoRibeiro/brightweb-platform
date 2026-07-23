@@ -1,5 +1,5 @@
-import { AuthPlayground } from "./auth-playground";
+import { redirect } from "next/navigation";
 
 export default function AuthPlaygroundPage() {
-  return <AuthPlayground />;
+  redirect("/login");
 }

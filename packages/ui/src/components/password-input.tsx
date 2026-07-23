@@ -8,10 +8,19 @@ import { Input } from "./input";
 
 interface PasswordInputProps extends Omit<React.ComponentProps<"input">, "type"> {
   showToggle?: boolean;
+  showPasswordLabel?: string;
+  hidePasswordLabel?: string;
 }
 
 const PasswordInput = React.forwardRef<HTMLInputElement, PasswordInputProps>(
-  ({ className, disabled, showToggle = true, ...props }, ref) => {
+  ({
+    className,
+    disabled,
+    showToggle = true,
+    showPasswordLabel = "Show password",
+    hidePasswordLabel = "Hide password",
+    ...props
+  }, ref) => {
     const [showPassword, setShowPassword] = React.useState(false);
     return (
       <div className="relative w-full">
@@ -22,7 +31,7 @@ const PasswordInput = React.forwardRef<HTMLInputElement, PasswordInputProps>(
             onClick={() => setShowPassword((current) => !current)}
             className="absolute right-2 top-1/2 flex size-8 -translate-y-1/2 items-center justify-center rounded-[var(--radius)] text-foreground/40 transition-colors hover:text-foreground/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 disabled:pointer-events-none disabled:opacity-50"
             disabled={disabled}
-            aria-label={showPassword ? "Hide password" : "Show password"}
+            aria-label={showPassword ? hidePasswordLabel : showPasswordLabel}
           >
             {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
           </button>

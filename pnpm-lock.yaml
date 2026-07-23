@@ -169,6 +169,9 @@ importers:
       '@brightweblabs/infra':
         specifier: workspace:*
         version: link:../infra
+      '@brightweblabs/ui':
+        specifier: workspace:*
+        version: link:../ui
       '@supabase/supabase-js':
         specifier: ^2.105.3
         version: 2.110.7
