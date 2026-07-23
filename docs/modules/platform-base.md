@@ -130,6 +130,29 @@ const built = buildClientAppShellRegistration(registration);
 />
 ```
 
+### Not-found and error routes
+
+`NotFoundPage` and `ErrorPage` package the MQ Portuguese status surfaces for thin
+Next.js route mounts. `NotFoundPage` owns a neutral full-page frame and accepts an
+optional `brandLogo` plus `footerBackHref` and `footerBackLabel` overrides.
+`ErrorPage` is a client component with the standard Next.js `error` and `reset`
+contract.
+
+```tsx
+// app/not-found.tsx
+export { NotFoundPage as default } from "@brightweblabs/app-shell";
+```
+
+```tsx
+// app/error.tsx
+"use client";
+
+export { ErrorPage as default } from "@brightweblabs/app-shell";
+```
+
+Import `@brightweblabs/theme/themes/mq-aliases` after the base theme CSS to use
+the literal MQ `heading-2`, `paragraph`, and `label` typography aliases.
+
 ## How To Build On This
 
 - Build on `stable` auth helpers, admin handlers, and admin listing helpers for project-owned server logic.

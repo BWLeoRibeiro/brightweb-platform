@@ -148,8 +148,11 @@
   --portal-text-metric: 2.75rem;
   --portal-text-metric-lg: 3.5rem;
   --type-paragraph-large: 1.09375rem;
+  --type-heading-2: clamp(2rem, 4vw, 2.8125rem);
+  --type-paragraph: 1rem;
   --type-paragraph-small: 0.875rem;
   --type-paragraph-mini: 0.75rem;
+  --type-label: 0.625rem;
 
   --elevate-1: color-mix(in srgb, var(--foreground) 3%, transparent);
   --elevate-2: color-mix(in srgb, var(--foreground) 5%, transparent);

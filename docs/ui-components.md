@@ -70,6 +70,8 @@ Tier definitions:
 | `DashboardSectionHeading` | `@brightweblabs/app-shell` | `packages/app-shell/src/dashboard/primitives.tsx` | pattern | AppDashboard | `components/app/portal-section-heading.tsx` | Dashboard’s exact MQ heading composition. |
 | `AppDashboard`, `DashboardClient` | `@brightweblabs/app-shell` | `packages/app-shell/src/dashboard/dashboard-client.tsx` | surface | platform-preview; module contributions from module-crm and module-projects | `app/(app)/dashboard/dashboard-client.tsx` | Aliases for the aggregate dashboard surface. Local KPI bars, tags, contact avatars, empty states, and task grids remain literal for parity. |
 | `DashboardLoading` | `@brightweblabs/app-shell` | `packages/app-shell/src/dashboard/dashboard-loading.tsx` | surface | platform-preview | `app/(app)/dashboard/loading.tsx` | Dashboard route fallback. |
+| `NotFoundPage` | `@brightweblabs/app-shell` | `packages/app-shell/src/status-pages/not-found-page.tsx` | surface | platform-preview, downstream apps | `app/not-found.tsx` | Standalone tokenized 404 frame with dictionary copy, optional brand logo, and configurable back action. |
+| `ErrorPage` | `@brightweblabs/app-shell` | `packages/app-shell/src/status-pages/error-page.tsx` | surface | platform-preview, downstream apps | `app/(app)/error.tsx` | Client error-boundary surface retaining reset/retry behavior and a configurable home action. |
 
 ## Module UI surfaces and shared patterns
 

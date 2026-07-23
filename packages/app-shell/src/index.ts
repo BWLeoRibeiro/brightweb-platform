@@ -84,3 +84,4 @@ export type {
 } from "./types";
 export { computeInitials } from "./utils";
 export * from "./dashboard/index";
+export * from "./status-pages/index";

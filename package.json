@@ -22,7 +22,7 @@
     "release:publish": "changeset publish",
     "start": "pnpm --filter platform-preview start",
     "start:docs": "pnpm --filter dev-docs start",
-    "test": "node --experimental-strip-types --loader ./tests/support/ts-extension-loader.mjs --test ./tests/app-shell-config.test.ts ./tests/app-shell-theme.test.ts ./tests/base-contract-contracts.test.ts ./tests/compatibility-set-sync.test.ts ./tests/core-auth-ui.test.ts ./tests/create-bw-app-update.test.ts ./tests/create-bw-app-cli.test.ts ./tests/module-admin-ui.test.ts ./tests/module-crm-ui.test.ts ./tests/module-crm-writes.test.ts ./tests/module-projects-ui.test.ts ./tests/module-manifest-validator.test.ts ./tests/template-thinness.test.ts ./tests/theme-contract.test.ts ./tests/ui-hygiene.test.ts ./tests/ui-patterns.test.ts",
+    "test": "node --experimental-strip-types --loader ./tests/support/ts-extension-loader.mjs --test ./tests/app-shell-config.test.ts ./tests/app-shell-theme.test.ts ./tests/app-shell-status-pages.test.ts ./tests/base-contract-contracts.test.ts ./tests/compatibility-set-sync.test.ts ./tests/core-auth-ui.test.ts ./tests/create-bw-app-update.test.ts ./tests/create-bw-app-cli.test.ts ./tests/module-admin-ui.test.ts ./tests/module-crm-ui.test.ts ./tests/module-crm-writes.test.ts ./tests/module-projects-ui.test.ts ./tests/module-manifest-validator.test.ts ./tests/template-thinness.test.ts ./tests/theme-contract.test.ts ./tests/ui-hygiene.test.ts ./tests/ui-patterns.test.ts",
     "lint": "pnpm --filter platform-preview lint",
     "lint:docs": "pnpm --filter dev-docs lint"
   },

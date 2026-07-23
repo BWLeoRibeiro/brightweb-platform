@@ -3440,5 +3440,14 @@
   },
   {
     "moduleKey": "platform-base", "packageName": "@brightweblabs/app-shell", "symbol": "DashboardDataClient", "kind": "type", "status": "stable", "runtime": "shared", "summary": "Injectable transport contract for aggregate dashboard overview, Projects, CRM, and task payloads.", "auth": "host endpoints enforce access", "inputs": [], "outputs": [{ "type": "DashboardDataClient", "description": "Four loader methods whose payloads are validated by the packaged dashboard parsers." }], "notes": ["Apps may return either bare section data or the MQ-compatible { data, error } envelope."], "source": "packages/app-shell/src/dashboard/types.ts"
+  },
+  {
+    "moduleKey": "platform-base", "packageName": "@brightweblabs/app-shell", "symbol": "NotFoundPage", "kind": "component", "status": "stable", "runtime": "shared", "summary": "Standalone MQ-compatible not-found surface with Portuguese defaults and a neutral full-page frame.", "auth": "none", "inputs": [{ "name": "props", "type": "NotFoundPageProps", "required": false, "description": "Optional brand logo, dictionary, and back-action overrides." }], "outputs": [{ "type": "React element", "description": "Tokenized full-page 404 surface." }], "notes": ["Mount directly from app/not-found.tsx or wrap in an app-owned site shell."], "source": "packages/app-shell/src/status-pages/not-found-page.tsx"
+  },
+  {
+    "moduleKey": "platform-base", "packageName": "@brightweblabs/app-shell", "symbol": "ErrorPage", "kind": "component", "status": "stable", "runtime": "client", "summary": "MQ-compatible application error-boundary surface with retry and home actions.", "auth": "none", "inputs": [{ "name": "props", "type": "ErrorPageProps", "required": true, "description": "Next.js error, reset callback, optional dictionary, and back-action overrides." }], "outputs": [{ "type": "React element", "description": "Tokenized error-boundary surface." }], "notes": ["Re-export from a client app/error.tsx boundary; reset preserves Next.js retry behavior."], "source": "packages/app-shell/src/status-pages/error-page.tsx"
+  },
+  {
+    "moduleKey": "platform-base", "packageName": "@brightweblabs/app-shell", "symbol": "defaultAppShellStatusPagesDictionary", "kind": "shared-helper", "status": "stable", "runtime": "shared", "summary": "MQ-verbatim Portuguese copy for packaged not-found and error surfaces.", "auth": "none", "inputs": [], "outputs": [{ "type": "AppShellStatusPagesDictionary", "description": "Portuguese not-found and error labels." }], "notes": ["Pass a replacement dictionary to either status-page component to localize the surface."], "source": "packages/app-shell/src/status-pages/dictionary.ts"
   }
 ]
