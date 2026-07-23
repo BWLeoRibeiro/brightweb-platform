@@ -6,7 +6,7 @@ The map was fixed before implementation. MQ is read-only. Board/task-route files
 
 | MQ source (relative to `projetos/`) | Package destination | Status |
 | --- | --- | --- |
-| `[projectId]/_components/project-activity-card-loader.tsx` | `packages/module-projects/src/ui/project-activity-card-loader.tsx` | Translated |
+| `[projectId]/_components/project-activity-card-loader.tsx` | — | Removed in Brief 27 after the translated loader remained unreferenced |
 | `[projectId]/_components/project-activity-card.tsx` | `packages/module-projects/src/ui/project-activity-card.tsx` | Translated |
 | `[projectId]/_components/project-detail-create-sheets/date-utils.ts` | `packages/module-projects/src/ui/project-detail-create-sheets/date-utils.ts` | Translated |
 | `[projectId]/_components/project-detail-create-sheets/project-detail-create-sheets-mount.tsx` | `packages/module-projects/src/ui/project-detail-create-sheets/project-detail-create-sheets-mount.tsx` | Translated |
@@ -18,7 +18,7 @@ The map was fixed before implementation. MQ is read-only. Board/task-route files
 | `[projectId]/_components/project-detail-editable-cards.tsx` | `packages/module-projects/src/ui/project-detail-editable-cards.tsx` | Translated |
 | `[projectId]/_components/project-detail-hero.tsx` | `packages/module-projects/src/ui/project-detail-hero.tsx` | Translated |
 | `[projectId]/_components/project-detail-metadata-strip.tsx` | `packages/module-projects/src/ui/project-detail-metadata-strip.tsx` | Translated |
-| `[projectId]/_components/project-detail-stats-strip.tsx` | `packages/module-projects/src/ui/project-detail-stats-strip.tsx` | Translated |
+| `[projectId]/_components/project-detail-stats-strip.tsx` | — | Removed in Brief 27 after the translated strip remained unreferenced |
 | `[projectId]/_components/project-detail-team-card.tsx` | `packages/module-projects/src/ui/project-detail-team-card.tsx` | Translated |
 | `[projectId]/_components/project-edit-header-button.tsx` | `packages/module-projects/src/ui/project-edit-header-button.tsx` | Translated |
 | `[projectId]/_components/project-edit-sheet.tsx` | `packages/module-projects/src/ui/project-edit-sheet.tsx` | Translated |
@@ -59,7 +59,7 @@ The map was fixed before implementation. MQ is read-only. Board/task-route files
 | MQ source (relative to portal) | Package destination | Status |
 | --- | --- | --- |
 | `components/projects/contact-action-buttons.tsx` | `packages/module-projects/src/ui/shared/contact-action-buttons.tsx` | Translated |
-| `components/projects/member-initials-avatar.tsx` | `packages/module-projects/src/ui/shared/member-initials-avatar.tsx` | Translated |
+| `components/projects/member-initials-avatar.tsx` | `packages/module-projects/src/ui/shared/project-owner-avatar.tsx` | Normalized to the shared Projects avatar during the board/task parity pass |
 | `components/projects/member-role-badge.tsx` | `packages/module-projects/src/ui/shared/member-role-badge.tsx` | Translated |
 | `components/projects/project-overview-stat-card.tsx` | `packages/module-projects/src/ui/shared/project-overview-stat-card.tsx` | Translated |
 | `components/projects/project-owner-avatar.tsx` | `packages/module-projects/src/ui/shared/project-owner-avatar.tsx` | Translated |

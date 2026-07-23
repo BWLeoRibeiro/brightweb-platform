@@ -29,6 +29,7 @@
     "./calendar": "./src/components/calendar.tsx",
     "./card": "./src/components/card.tsx",
     "./chart": "./src/components/chart.tsx",
+    "./checkbox": "./src/components/checkbox.tsx",
     "./dropdown-menu": "./src/components/dropdown-menu.tsx",
     "./empty-state": "./src/components/empty-state.tsx",
     "./field": "./src/components/field.tsx",

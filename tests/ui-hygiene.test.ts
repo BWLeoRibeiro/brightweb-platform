@@ -4,6 +4,8 @@ import path from "node:path";
 import test from "node:test";
 
 const repoRoot = path.resolve(new URL("..", import.meta.url).pathname);
+const packagesSourceRoot = path.join(repoRoot, "packages");
+const previewSourceRoot = path.join(repoRoot, "apps", "platform-preview", "app");
 const uiSourceRoot = path.join(repoRoot, "packages", "ui", "src");
 const appShellSourceRoot = path.join(repoRoot, "packages", "app-shell", "src");
 const crmUiSourceRoot = path.join(repoRoot, "packages", "module-crm", "src", "ui");
@@ -67,6 +69,16 @@ test("module Projects UI follows the BrightWeb typography and color hygiene rule
   const files = await sourcesAt(projectsUiSourceRoot);
   assertPatternAbsent(files, /\bfont-medium\b/, "font-medium is not part of the loaded weight ladder");
   assertPatternAbsent(files, /#[0-9a-f]{3,8}\b|rgba?\(|color-mix\(/i, "raw color recipes must be represented by theme tokens");
+});
+
+test("package and preview selection controls use the shared Checkbox primitive", async () => {
+  const packageFiles = (await sourcesAt(packagesSourceRoot)).filter(({ filePath }) => !filePath.startsWith(uiSourceRoot));
+  const previewFiles = await sourcesAt(previewSourceRoot);
+  assertPatternAbsent(
+    [...packageFiles, ...previewFiles],
+    /<input\b[^>]*\btype\s*=\s*["']checkbox["']/i,
+    "raw checkbox inputs must use @brightweblabs/ui Checkbox",
+  );
 });
 
 test("theme component styles keep color recipes in token definition files", async () => {

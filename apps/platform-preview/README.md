@@ -30,8 +30,13 @@ Current preview routes:
 - `/preview/app-shell`
 - `/playground/auth`
 - `/playground/admin`
+- `/dashboard`
 - `/crm`
-- `/playground/projects`
+- `/crm/report`
+- `/projects`
+- `/projects/[id]`
+- `/projects/[id]/board`
+- `/projects/[id]/tasks`
 
 Preview app config files:
 

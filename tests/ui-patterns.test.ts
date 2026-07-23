@@ -30,6 +30,16 @@ test("every Tier-2 pattern has a package subpath and root export", async () => {
   }
 });
 
+test("Checkbox exposes the native selection-control contract", async () => {
+  const packageJson = JSON.parse(await readFile(path.join(repoRoot, "packages/ui/package.json"), "utf8"));
+  const rootSource = await readFile(path.join(repoRoot, "packages/ui/src/index.ts"), "utf8");
+  const checkboxSource = await readFile(path.join(repoRoot, "packages/ui/src/components/checkbox.tsx"), "utf8");
+
+  assert.equal(packageJson.exports["./checkbox"], "./src/components/checkbox.tsx");
+  assert.match(rootSource, /components\/checkbox/);
+  assert.match(checkboxSource, /<input type="checkbox" \{\.\.\.props\} \/>/);
+});
+
 for (const [subpath, symbols] of Object.entries(patternExports)) {
   test(`${subpath} exposes its documented Tier-2 API`, async () => {
     const source = await readFile(path.join(repoRoot, `packages/ui/src/components/${subpath}.tsx`), "utf8");

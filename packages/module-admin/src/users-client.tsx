@@ -15,6 +15,7 @@ import {
 } from "@brightweblabs/ui/alert-dialog";
 import { Badge } from "@brightweblabs/ui/badge";
 import { Button } from "@brightweblabs/ui/button";
+import { Checkbox } from "@brightweblabs/ui/checkbox";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -349,8 +350,7 @@ export function AdminUsersClient({ initialUsers }: AdminUsersClientProps) {
             <TableHeader>
               <TableRow>
                 <TableHead className="heading-6 w-12 px-2">
-                  <input
-                    type="checkbox"
+                  <Checkbox
                     checked={allOnPageSelected}
                     onChange={(event) => setAllPageSelection(event.target.checked)}
                     className="h-4 w-4 rounded border border-foreground/30"
@@ -381,8 +381,7 @@ export function AdminUsersClient({ initialUsers }: AdminUsersClientProps) {
                 rows.map((row) => (
                   <TableRow key={row.profileId} className="hover:bg-black/3 dark:hover:bg-white/5">
                     <TableCell className="px-2">
-                      <input
-                        type="checkbox"
+                      <Checkbox
                         checked={selectedIds.includes(row.profileId)}
                         onChange={() => toggleSelection(row.profileId)}
                         className="h-4 w-4 rounded border border-foreground/30"

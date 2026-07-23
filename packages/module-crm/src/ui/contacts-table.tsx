@@ -4,6 +4,7 @@ import { Trash2, Users } from "lucide-react";
 import type { ReactNode } from "react";
 import {
   Button,
+  Checkbox,
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -178,8 +179,7 @@ export function CrmContactsTable({
         <TableHeader>
           <TableRow className="border-b border-[color:var(--hairline-strong)] bg-[color:var(--elevate-2)] hover:bg-[color:var(--elevate-2)] [&_th]:align-middle [&_th]:text-[length:var(--portal-text-micro)] [&_th]:text-[color:var(--foreground)]">
             <TableHead className="h-[var(--table-header-height)] w-[5%] px-[var(--table-cell-padding-x)]">
-              <input
-                type="checkbox"
+              <Checkbox
                 checked={allSelected}
                 onChange={() => onSelectedIdsChange?.(allSelected ? selectedIds.filter((id) => !visibleIds.includes(id)) : Array.from(new Set([...selectedIds, ...visibleIds])))}
                 aria-label={dictionary.table.selectAll}
@@ -203,8 +203,7 @@ export function CrmContactsTable({
             return (
               <TableRow key={contact.id} data-state={selectedIds.includes(contact.id) ? "selected" : undefined} className={onRowClick ? "cursor-pointer" : undefined} onClick={() => onRowClick?.(contact)}>
                 <TableCell className="w-[5%] px-[var(--table-cell-padding-x)] py-[var(--table-cell-padding-y)]" onClick={(event) => event.stopPropagation()}>
-                  <input
-                    type="checkbox"
+                  <Checkbox
                     checked={selectedIds.includes(contact.id)}
                     onChange={(event) => onSelectedIdsChange?.(event.target.checked ? [...selectedIds, contact.id] : selectedIds.filter((id) => id !== contact.id))}
                     aria-label={dictionary.table.selectContact(name)}

@@ -66,8 +66,6 @@
   --project-ui-color-62: color-mix(in srgb,var(--project-risk-overdue-strong) 76%,transparent);
   --project-ui-color-63: color-mix(in srgb,var(--project-risk-overdue-strong) 50%,transparent);
   --project-ui-color-64: color-mix(in srgb,var(--project-risk-overdue-strong) 70%,transparent);
-  --project-ui-color-65: color-mix(in srgb,var(--accent) 45%,var(--border));
-  --project-ui-color-66: color-mix(in srgb,var(--accent) 16%,transparent);
   --project-ui-color-67: rgba(10,21,26,0.04);
   --project-ui-color-68: color-mix(in srgb,var(--accent) 55%,var(--border));
   --project-ui-color-69: color-mix(in srgb, var(--project-dynamic-risk) 12%, transparent);
@@ -82,8 +80,6 @@
   --project-ui-color-78: color-mix(in srgb,var(--accent) 88%,black);
   --project-ui-color-79: #cdeeff;
   --project-ui-color-80: color-mix(in srgb,var(--accent) 40%,transparent);
-  --project-ui-color-81: color-mix(in srgb,var(--accent) 24%,var(--border));
-  --project-ui-color-82: color-mix(in srgb,var(--accent) 4%,var(--card));
   --project-ui-color-83: color-mix(in srgb, var(--accent) 72%, var(--foreground));
   --project-board-todo-surface: color-mix(in srgb,var(--foreground) 3%,var(--card));
   --project-board-progress-border: color-mix(in srgb,var(--semantic-info) 32%,transparent);
@@ -154,13 +150,6 @@
     opacity: 1;
     transform: translateY(0);
   }
-}
-
-.project-chip-code {
-  font-size: 0.5rem;
-  line-height: 1;
-  font-weight: 400;
-  letter-spacing: 0.01em;
 }
 
 .project-surface-card {
@@ -278,12 +267,4 @@
 .project-group-header:first-child {
   border-top: 0;
   padding-top: 0;
-}
-
-.project-group-title {
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.14em;
-  color: var(--muted-foreground);
 }

@@ -25,7 +25,7 @@ import {
   sheetFieldLabelClassName,
 } from "./shared/sheet-section";
 import { cn } from "./utils";
-import { SearchField } from "@brightweblabs/ui";
+import { Checkbox, SearchField } from "@brightweblabs/ui";
 import {
   useOrganizationCreationState,
 } from "./project-create/use-organization-creation-state";
@@ -810,9 +810,8 @@ export function CreateProjectSheet({ organizations, initialOpen = false }: Creat
                             const selectedRole = setup.setupState?.members[member.profileId];
                             return (
                               <div key={member.profileId} className="flex items-center gap-2 rounded-xl border border-black/8 bg-background/70 px-3 py-2 dark:border-white/10">
-                                <input
+                                <Checkbox
                                   id={`member-${member.profileId}`}
-                                  type="checkbox"
                                   className="size-4 accent-primary"
                                   checked={Boolean(selectedRole)}
                                   onChange={() => setup.toggleMember(member.profileId)}
