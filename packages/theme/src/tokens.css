@@ -167,6 +167,8 @@
   --surface-button-soft: color-mix(in srgb, var(--foreground) 3.5%, var(--card));
   --surface-button-soft-hover: color-mix(in srgb, var(--foreground) 7%, var(--card));
   --border-button-soft-hover: color-mix(in srgb, var(--foreground) 16%, transparent);
+  --surface-button-brand: color-mix(in srgb, var(--brand-accent) 84%, var(--foreground));
+  --foreground-accent-link: color-mix(in srgb, var(--brand-accent) 45%, var(--foreground));
   --surface-selection: color-mix(in srgb, var(--accent) 12%, var(--card));
   --border-selection: color-mix(in srgb, var(--accent) 40%, var(--hairline));
   --surface-pagination-active: color-mix(in srgb, var(--accent) 10%, var(--card));

@@ -70,7 +70,7 @@ export function AccountMenu({
             ) : null}
           </button>
         ) : (
-          <button id="header-account-menu-trigger" className="inline-flex items-center gap-xs px-2xs.5 pr-xs text-foreground/80" aria-label="Menu da conta">
+          <button id="header-account-menu-trigger" className="inline-flex items-center gap-xs rounded-full px-2xs.5 pr-xs text-foreground/80 transition-colors hover:bg-[color:var(--surface-account-hover)] hover:text-foreground" aria-label="Menu da conta">
             <span className={cn("inline-flex h-7 w-7 items-center justify-center rounded-full text-[length:var(--text-ui-label)] font-semibold", avatarTone)}>{userInitials || <User className="size-3.5" />}</span>
             <span className="hidden max-w-[7rem] truncate text-[length:var(--text-ui-meta)] font-semibold leading-none text-[color:var(--foreground)] xl:inline">{compactLabel}</span>
             <ChevronDown className="hidden size-3.5 text-foreground/45 xl:block" />

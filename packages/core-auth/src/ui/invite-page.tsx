@@ -120,7 +120,7 @@ export function InvitePage({ invitationId, kind = "organization" }: { invitation
               description={currentUser ? (sameEmail ? d.sameAccountDescription : d.otherAccountDescription) : unavailable ? d.unavailable[unavailable].description : description}
             />
             {currentUser ? (
-              <Button asChild className="h-11 w-full rounded-full bg-primary font-semibold paragraph-small text-primary-foreground hover:bg-primary/80">
+              <Button asChild className="h-11 w-full rounded-full">
                 <Link href={sameEmail ? `/auth/post-login?invitationId=${encodeURIComponent(invitationId)}` : "/login"}>
                   {sameEmail ? dictionary.common.continue : dictionary.common.login}
                 </Link>
@@ -151,11 +151,11 @@ export function InvitePage({ invitationId, kind = "organization" }: { invitation
                     <Field><FieldLabel htmlFor="confirmPassword" className="mb-1.5 paragraph-small font-semibold text-foreground/60">{dictionary.common.confirmPassword}</FieldLabel><FieldContent><PasswordInput id="confirmPassword" value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} required minLength={8} autoComplete="new-password" showPasswordLabel={dictionary.common.showPassword} hidePasswordLabel={dictionary.common.hidePassword} /></FieldContent></Field>
                   </>
                 )}
-                <Button type="submit" className="h-11 w-full rounded-full bg-primary font-semibold paragraph-small text-primary-foreground hover:bg-primary/80" disabled={submitting}>{step === "identity" ? dictionary.common.continue : submitting ? d.creating : d.create}</Button>
+                <Button type="submit" className="h-11 w-full rounded-full" disabled={submitting}>{step === "identity" ? dictionary.common.continue : submitting ? d.creating : d.create}</Button>
                 {step === "password" ? <Button type="button" variant="ghost" className="h-10 w-full rounded-full" disabled={submitting} onClick={() => { setError(null); setStep("identity"); }}>{dictionary.common.back}</Button> : null}
               </form>
             )}
-            <div className="flex items-center justify-center gap-1.5 pt-1"><span className="paragraph-mini text-foreground/40">{d.alreadyAccount}</span><Button variant="link" size="link" asChild><Link href={loginHref} className="paragraph-mini font-semibold text-primary hover:text-accent">{dictionary.common.login}</Link></Button></div>
+            <div className="flex items-center justify-center gap-1.5 pt-1"><span className="paragraph-mini text-foreground/40">{d.alreadyAccount}</span><Button variant="link" size="link" asChild><Link href={loginHref} className="paragraph-mini font-semibold text-primary hover:text-primary/80">{dictionary.common.login}</Link></Button></div>
           </>
         )}
       </AuthCard>

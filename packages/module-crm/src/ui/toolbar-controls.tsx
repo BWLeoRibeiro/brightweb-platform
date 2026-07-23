@@ -57,13 +57,13 @@ export function CrmToolbarFiltersPill({ status, sort, stages, dictionary = defau
         <button type="button" className="inline-flex h-9 items-center gap-2 whitespace-nowrap rounded-[var(--radius-control)] border border-[color:var(--hairline-strong)] bg-[color:var(--elevate-1)] px-3 text-[length:var(--text-ui-action)] font-extrabold text-[color:var(--foreground)] transition-colors hover:border-[color:var(--border-strong)] hover:bg-[color:var(--surface-hover)]" onClick={() => open ? setOpen(false) : begin()}>
           <Filter className="size-[var(--toolbar-icon-size)] text-[color:var(--muted-foreground)]" aria-hidden />
           {dictionary.toolbar.filters}
-          {activeCount > 0 ? <span className="inline-flex size-5 items-center justify-center rounded-full bg-accent text-ui-micro text-accent-foreground">{activeCount}</span> : null}
+          {activeCount > 0 ? <span className="inline-flex size-5 items-center justify-center rounded-full bg-[color:var(--surface-button-brand)] text-ui-micro text-accent-foreground">{activeCount}</span> : null}
         </button>
       </PopoverTrigger>
       <PopoverContent align="end" className="w-[var(--toolbar-popover-width)] rounded-[var(--radius-toolbar-popover)] border-[color:var(--hairline)] bg-[color:var(--popover)] p-4 shadow-[var(--shadow-toolbar-popover)]">
         <div className="mb-3 flex items-center justify-between">
           <span className="text-[length:var(--text-ui-action)] font-extrabold text-[color:var(--foreground)]">{dictionary.toolbar.filters}</span>
-          <button type="button" className="p-0 text-xs font-bold text-[color:var(--muted-foreground)] hover:text-[color:var(--accent)]" onClick={() => { setDraftStatus(null); setDraftSort("date_desc"); }}>{dictionary.toolbar.clear}</button>
+          <button type="button" className="p-0 text-xs font-bold text-[color:var(--muted-foreground)] underline-offset-2 hover:text-[color:var(--foreground)] hover:underline" onClick={() => { setDraftStatus(null); setDraftSort("date_desc"); }}>{dictionary.toolbar.clear}</button>
         </div>
         <div className="grid gap-3">
           <div>
@@ -85,7 +85,7 @@ export function CrmToolbarFiltersPill({ status, sort, stages, dictionary = defau
             </div>
           </div>
         </div>
-        <div className="mt-4"><Button type="button" className="h-9 w-full rounded-[var(--radius-control)] bg-[color:var(--accent)] text-[length:var(--text-ui-action)] font-extrabold text-[color:var(--accent-foreground)]" onClick={() => { onApply(draftStatus, draftSort); setOpen(false); }}>{dictionary.toolbar.apply}</Button></div>
+        <div className="mt-4"><Button type="button" variant="brand" className="h-9 w-full rounded-[var(--radius-control)] text-[length:var(--text-ui-action)]" onClick={() => { onApply(draftStatus, draftSort); setOpen(false); }}>{dictionary.toolbar.apply}</Button></div>
       </PopoverContent>
     </Popover>
   );

@@ -47,14 +47,14 @@ export function ForgotPasswordPage() {
                 <Input id="email" type="email" placeholder={dictionary.common.emailPlaceholder} value={email} onChange={(event) => setEmail(event.target.value)} required disabled={loading} aria-describedby={error ? "forgot-password-error" : undefined} aria-invalid={!!error} />
               </FieldContent>
             </Field>
-            <Button type="submit" className="h-11 w-full rounded-full bg-primary font-semibold paragraph-small text-primary-foreground hover:bg-primary/80" disabled={loading}>
+            <Button type="submit" className="h-11 w-full rounded-full" disabled={loading}>
               {loading ? d.submitting : d.submit}
             </Button>
           </form>
         )}
         <div className="flex items-center justify-center gap-1.5 pt-1">
           <span className="paragraph-mini text-foreground/40">{d.remember}</span>
-          <Button variant="link" size="link" asChild><Link href="/login" className="paragraph-mini font-semibold text-primary hover:text-accent">{dictionary.common.login}</Link></Button>
+          <Button variant="link" size="link" asChild><Link href="/login" className="paragraph-mini font-semibold text-primary hover:text-primary/80">{dictionary.common.login}</Link></Button>
         </div>
       </AuthCard>
     </AuthLayout>

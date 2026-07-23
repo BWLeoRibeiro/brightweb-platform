@@ -31,4 +31,11 @@
   input {
     font: inherit;
   }
+
+  /* Hand-rolled controls keep a visible keyboard state. Component utilities
+     can replace this fallback with their own focus-visible treatment. */
+  :where(button, a[href], [role="button"]):focus-visible {
+    outline: 2px solid currentColor;
+    outline-offset: 2px;
+  }
 }

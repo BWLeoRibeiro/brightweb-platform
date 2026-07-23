@@ -96,7 +96,7 @@ export function ResetPasswordPage() {
               <PasswordInput id="confirmPassword" placeholder={dictionary.common.passwordPlaceholder} value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} required minLength={8} autoComplete="new-password" aria-describedby={error ? "reset-password-error" : undefined} aria-invalid={!!error} showPasswordLabel={dictionary.common.showPassword} hidePasswordLabel={dictionary.common.hidePassword} />
             </FieldContent>
           </Field>
-          <Button type="submit" className="h-11 w-full rounded-full bg-primary font-semibold paragraph-small text-primary-foreground hover:bg-primary/80" disabled={loading || preparing}>
+          <Button type="submit" className="h-11 w-full rounded-full" disabled={loading || preparing}>
             {preparing ? d.preparing : loading ? d.submitting : d.submit}
           </Button>
         </form>

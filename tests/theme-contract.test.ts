@@ -24,6 +24,7 @@ const tokenizedVisualContract = [
   "--text-ui-report-title-lg", "--text-ui-calendar", "--text-ui-report-metric",
   "--radius-swatch", "--radius-pill", "--radius-scrollbar", "--surface-overlay", "--surface-overlay-strong", "--surface-tooltip", "--surface-badge-tint",
   "--surface-button-soft", "--surface-button-soft-hover", "--border-button-soft-hover",
+  "--surface-button-brand", "--foreground-accent-link",
   "--surface-selection", "--border-selection", "--surface-pagination-active", "--border-pagination-active",
   "--surface-danger-subtle", "--surface-account-team", "--surface-account-client", "--surface-account",
   "--surface-account-hover", "--account-presence", "--account-presence-size", "--row-hover-sweep",
@@ -66,6 +67,43 @@ test("theme CSS keeps hex literals in palette files", async () => {
   for (const file of files) {
     const css = await fs.readFile(path.join(sourceRoot, file), "utf8");
     assert.doesNotMatch(css, /#[0-9a-f]{3,8}\b/i, `${file} must derive colors from tokens`);
+  }
+});
+
+test("typography utilities do not poison consumer color utilities", async () => {
+  const typography = await read("src/typography.css");
+  const textUiUtilities = Array.from(typography.matchAll(/@utility\s+(text-ui-[a-z0-9-]+)\s*\{([^{}]*)\}/g));
+  assert.ok(textUiUtilities.length > 0, "expected text-ui utilities in typography.css");
+  for (const [, utility, body] of textUiUtilities) {
+    assert.doesNotMatch(body, /(?:^|[;\s])color\s*:/, `${utility} must not set color`);
+  }
+
+  const aliases = await read("themes/mq-aliases.css");
+  const paragraphBlock = aliases.match(/\.paragraph-large,\s*\.paragraph-small,\s*\.paragraph-mini\s*\{([^{}]*)\}/);
+  assert.ok(paragraphBlock, "expected shared paragraph aliases");
+  assert.doesNotMatch(paragraphBlock[1], /(?:^|[;\s])color\s*:/, "paragraph aliases must inherit color like MQ's originals");
+
+  const mqParityColors = new Map([
+    ["portal-micro", ["var(--muted-foreground)", 718]],
+    ["portal-label", ["var(--muted-foreground)", 663]],
+    ["portal-meta", ["var(--muted-foreground)", 711]],
+    ["portal-body", ["var(--foreground)", 705]],
+    ["portal-card-title", ["var(--foreground)", 654]],
+    ["portal-subhead", ["var(--foreground)", 646]],
+    ["portal-panel-title", ["var(--foreground)", 636]],
+    ["portal-heading", ["var(--foreground)", 626]],
+    ["portal-title-sm", ["var(--foreground)", 617]],
+    ["portal-title", ["var(--foreground)", 606]],
+    ["portal-metric", ["var(--foreground)", 673]],
+    ["portal-metric-xl", ["var(--foreground)", 697]],
+    ["portal-metric-display", ["var(--foreground)", 685]],
+  ] as const);
+  const portalUtilities = new Map(Array.from(aliases.matchAll(/@utility\s+(portal-[a-z0-9-]+)\s*\{([^{}]*)\}/g), ([, utility, body]) => [utility, body]));
+  for (const [utility, [color, sourceLine]] of mqParityColors) {
+    const body = portalUtilities.get(utility);
+    assert.ok(body, `expected ${utility} in MQ aliases`);
+    assert.match(body, new RegExp(`MQ parity: apps/portal/app/globals\\.css:${sourceLine}\\.`));
+    assert.match(body, new RegExp(`color:\\s*${color.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s*;`));
   }
 });
 

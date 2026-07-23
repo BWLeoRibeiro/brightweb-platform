@@ -58,3 +58,9 @@ test("Tier-2 pure helpers clamp pagination and derive neutral labels", () => {
   assert.equal(resolveRoleToken("admin", { admin: "--role-admin" }), "--role-admin");
   assert.equal(resolveRoleToken("custom", {}), "--semantic-neutral");
 });
+
+test("ActionButton shares the contrast-safe brand Button variant", async () => {
+  const source = await readFile(path.join(repoRoot, "packages/ui/src/components/action.tsx"), "utf8");
+  assert.match(source, /buttonVariants\(\{\s*variant:\s*"brand"/);
+  assert.doesNotMatch(source, /bg-\[color:var\(--brand-accent\)\]/);
+});

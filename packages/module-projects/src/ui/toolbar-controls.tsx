@@ -107,7 +107,7 @@ export function ProjectsToolbarControls() {
           <div className="absolute right-0 top-[calc(100%+0.5rem)] z-[60] w-[var(--toolbar-popover-width)] rounded-[var(--radius-toolbar-popover)] border border-[color:var(--border-strong)] bg-[color:var(--popover)] p-4 shadow-[var(--shadow-toolbar-popover)]" onClick={(event) => event.stopPropagation()}>
             <div className="mb-3 flex items-center justify-between">
               <span className="text-[length:var(--text-ui-action)] font-extrabold text-[color:var(--foreground)]">{dictionary.toolbar.filters}</span>
-              <button type="button" className="p-0 text-xs font-bold text-[color:var(--muted-foreground)] hover:text-[color:var(--accent)]" onClick={() => { setDraftStatus("all"); setDraftHealth("all"); }}>{dictionary.toolbar.clear}</button>
+              <button type="button" className="p-0 text-xs font-bold text-[color:var(--muted-foreground)] underline-offset-2 hover:text-[color:var(--foreground)] hover:underline" onClick={() => { setDraftStatus("all"); setDraftHealth("all"); }}>{dictionary.toolbar.clear}</button>
             </div>
 
             <div className="grid gap-3">

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Flag, Plus } from "lucide-react";
+import { Button } from "@brightweblabs/ui";
 import { useProjectsUiDictionary } from "./context";
 import { PROJECTS_EVENTS, dispatchProjectsCustomEvent, dispatchProjectsEvent, type ProjectsBoardMilestoneOption, type ProjectsBoardMilestoneStateDetail } from "./events";
 
@@ -40,7 +41,7 @@ export function ProjectBoardToolbarControls({ canCreateTask = true }: { canCreat
           {options.map((option) => <option key={option.id} value={option.id}>{option.title}</option>)}
         </select>
       </label>
-      {canCreateTask ? <button type="button" className="inline-flex h-9 items-center gap-2 whitespace-nowrap rounded-[var(--radius-control)] border border-transparent bg-[color:var(--accent)] px-3 text-[length:var(--text-ui-action)] font-extrabold text-[color:var(--accent-foreground)] shadow-[var(--shadow-toolbar-control)]" onClick={() => dispatchProjectsEvent(PROJECTS_EVENTS.openNewTask)}><Plus className="size-[var(--toolbar-icon-size)]" aria-hidden />{dictionary.forms.newTask}</button> : null}
+      {canCreateTask ? <Button type="button" variant="brand" className="h-9 px-3 text-[length:var(--text-ui-action)] shadow-[var(--shadow-toolbar-control)]" onClick={() => dispatchProjectsEvent(PROJECTS_EVENTS.openNewTask)}><Plus className="size-[var(--toolbar-icon-size)]" aria-hidden />{dictionary.forms.newTask}</Button> : null}
     </div>
   );
 }

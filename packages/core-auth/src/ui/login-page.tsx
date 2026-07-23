@@ -152,7 +152,7 @@ function LoginPageContent() {
             {showResend ? (
               <span className="mt-3 flex items-center justify-between gap-3 border-t border-current/20 pt-3">
                 <span>{d.resendPrompt}</span>
-                <button type="button" onClick={handleResend} disabled={resendLoading || isCoolingDown} className="font-semibold underline underline-offset-4">
+                <button type="button" onClick={handleResend} disabled={resendLoading || isCoolingDown} className="rounded px-1 font-semibold underline underline-offset-4 transition-colors hover:bg-current/10">
                   {resendLoading ? d.resending : isCoolingDown ? d.resendCooldown(remaining) : d.resend}
                 </button>
               </span>
@@ -171,14 +171,14 @@ function LoginPageContent() {
             <Field>
               <div className="mb-1.5 flex items-center justify-between">
                 <FieldLabel htmlFor="password" className="block paragraph-small font-semibold text-foreground/60">{dictionary.common.password}</FieldLabel>
-                <Button variant="link" size="link" asChild><Link href="/forgot-password" className="paragraph-mini text-primary hover:text-accent">{d.forgot}</Link></Button>
+                <Button variant="link" size="link" asChild><Link href="/forgot-password" className="paragraph-mini text-primary hover:text-primary/80">{d.forgot}</Link></Button>
               </div>
               <FieldContent>
                 <PasswordInput ref={passwordInputRef} id="password" placeholder={dictionary.common.passwordPlaceholder} value={password} onChange={(event) => setPassword(event.target.value)} required disabled={loading} autoComplete="current-password" aria-describedby={error ? "login-error" : undefined} aria-invalid={!!error} showPasswordLabel={dictionary.common.showPassword} hidePasswordLabel={dictionary.common.hidePassword} />
               </FieldContent>
             </Field>
           ) : null}
-          <Button type="submit" className="h-11 w-full rounded-full bg-primary font-semibold paragraph-small text-primary-foreground hover:bg-primary/80" disabled={loading}>
+          <Button type="submit" className="h-11 w-full rounded-full" disabled={loading}>
             {loading ? (mode === "magic" ? d.magicSubmitting : d.submitting) : (mode === "magic" ? d.magicSubmit : d.submit)}
           </Button>
         </form>

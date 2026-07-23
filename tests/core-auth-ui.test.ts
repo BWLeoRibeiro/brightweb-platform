@@ -72,3 +72,20 @@ test("preview auth routes are thin package mounts", async () => {
     assert.match(source, /@brightweblabs\/core-auth\/ui/);
   }
 });
+
+test("auth primary CTAs use the shared default Button color contract", async () => {
+  const files = [
+    "src/ui/login-page.tsx",
+    "src/ui/forgot-password-page.tsx",
+    "src/ui/reset-password-page.tsx",
+    "src/ui/invite-page.tsx",
+  ];
+  for (const file of files) {
+    const source = await read(file);
+    assert.doesNotMatch(
+      source,
+      /<Button[^>]*className="[^"]*(?:bg-primary|text-primary-foreground|hover:bg-primary)[^"]*"/,
+      `${file} must not restyle primary CTA colors outside the default Button variant`,
+    );
+  }
+});
