@@ -86,6 +86,8 @@ export function AdminUsersClient({
   const [revokingInviteId, setRevokingInviteId] = useState<string | null>(null);
   const didRunInitialFetchRef = useRef(false);
   const didLoadInvitationsRef = useRef(false);
+  const usersRequestGenerationRef = useRef(0);
+  const invitationsRequestGenerationRef = useRef(0);
 
   useEffect(() => {
     const timeout = window.setTimeout(() => { setDebouncedSearch(search.trim()); setPage(1); }, 180);
@@ -93,38 +95,50 @@ export function AdminUsersClient({
   }, [search]);
 
   const loadUsers = useCallback(async () => {
+    const generation = ++usersRequestGenerationRef.current;
     setLoading(true);
     try {
       const payload = await client.listUsers({
         page, pageSize, search: debouncedSearch || undefined, role: roleFilter === "all" ? null : roleFilter,
       });
-      setRows(payload.data);
-      setTotal(payload.pagination.total);
-      setSelectedIds((current) => current.filter((id) => payload.data.some((row) => row.profileId === id)));
+      if (generation === usersRequestGenerationRef.current) {
+        setRows(payload.data);
+        setTotal(payload.pagination.total);
+        setSelectedIds((current) => current.filter((id) => payload.data.some((row) => row.profileId === id)));
+      }
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : dictionary.users.loadError);
-      setRows([]);
-      setTotal(0);
-      setSelectedIds([]);
+      if (generation === usersRequestGenerationRef.current) {
+        toast.error(error instanceof Error ? error.message : dictionary.users.loadError);
+        setRows([]);
+        setTotal(0);
+        setSelectedIds([]);
+      }
     } finally {
-      setLoading(false);
-      dispatchAdminEvent(ADMIN_EVENTS.refreshComplete);
+      if (generation === usersRequestGenerationRef.current) {
+        setLoading(false);
+        dispatchAdminEvent(ADMIN_EVENTS.refreshComplete);
+      }
     }
   }, [client, debouncedSearch, dictionary.users.loadError, page, pageSize, roleFilter]);
 
   const loadInvitations = useCallback(async ({ force = false }: { force?: boolean } = {}) => {
     if (didLoadInvitationsRef.current && !force) return;
     didLoadInvitationsRef.current = true;
+    const generation = ++invitationsRequestGenerationRef.current;
     setInviteLoading(true);
     try {
       const invitations = await client.listInvitations();
-      setPendingInvites(invitations.filter((invite) => invite.status === "pending"));
+      if (generation === invitationsRequestGenerationRef.current) {
+        setPendingInvites(invitations.filter((invite) => invite.status === "pending"));
+      }
     } catch (error) {
-      didLoadInvitationsRef.current = false;
-      toast.error(error instanceof Error ? error.message : dictionary.invitations.loadError);
-      setPendingInvites([]);
+      if (generation === invitationsRequestGenerationRef.current) {
+        didLoadInvitationsRef.current = false;
+        toast.error(error instanceof Error ? error.message : dictionary.invitations.loadError);
+        setPendingInvites([]);
+      }
     } finally {
-      setInviteLoading(false);
+      if (generation === invitationsRequestGenerationRef.current) setInviteLoading(false);
     }
   }, [client, dictionary.invitations.loadError]);
 

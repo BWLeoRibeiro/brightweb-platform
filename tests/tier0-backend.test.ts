@@ -164,7 +164,9 @@ test("invitation registration rejects malformed JSON before privileged dependenc
       params: Promise.resolve({ invitationId: "invite-1" }),
     });
     assert.equal(response.status, 400);
-    assert.deepEqual(await response.json(), { error: "Payload inválido." });
+    assert.deepEqual(await response.json(), {
+      error: { code: "INVALID_PAYLOAD", message: "Payload inválido." },
+    });
   }
   assert.equal(serviceClientCalls, 0);
   assert.equal(registerCalls, 0);

@@ -13,6 +13,10 @@ import {
   listProjects,
 } from "../packages/module-projects/src/data.ts";
 import {
+  listOrgAdminProjectsByProfile,
+  listProjects as listProjectsFromServer,
+} from "../packages/module-projects/src/server.ts";
+import {
   createCrmContactsGetHandler,
   createCrmOrganizationsGetHandler,
   createCrmOwnersGetHandler,
@@ -556,6 +560,7 @@ function createCrmSupabase() {
 }
 
 type CreateProjectsSupabaseOptions = {
+  aggregateReadErrorTable?: "project_tasks" | "project_milestones";
   includePhoneData?: boolean;
   simulateMissingProfilesPhone?: boolean;
   projectSelectColumnsLog?: string[];
@@ -674,8 +679,14 @@ function createProjectsSupabase(options: CreateProjectsSupabaseOptions = {}) {
       { project_id: "project-1", status: "delayed" },
       { project_id: "project-3", status: "delayed" },
     ],
+    user_role_assignments: [
+      { profile_id: "profile-admin", role_code: "admin" },
+    ],
   }, {
     selectErrorFactory: ({ table, columns }) => {
+      if (table === options.aggregateReadErrorTable) {
+        return { message: `${table} provider unavailable` };
+      }
       if (!options.simulateMissingProfilesPhone) return null;
       if (table === "projects" && columns.includes("phone")) {
         return { message: "column profiles_2.phone does not exist" };
@@ -710,8 +721,8 @@ test("admin handler helpers parse requests and return JSON envelopes", async () 
   );
 
   assert.deepEqual(
-    parseAdminRoleChangePayload({ profileIds: ["one", "", 2], newRole: "admin", reason: " promote " }),
-    { profileIds: ["one"], newRole: "admin", reason: "promote" },
+    parseAdminRoleChangePayload({ profileIds: ["00000000-0000-4000-8000-000000000001", "", 2], newRole: "admin", reason: " promote " }),
+    { profileIds: ["00000000-0000-4000-8000-000000000001"], newRole: "admin", reason: "promote" },
   );
 
   const getHandler = createAdminUsersGetHandler({
@@ -735,7 +746,11 @@ test("admin handler helpers parse requests and return JSON envelopes", async () 
     new Request("https://example.com/api/admin/users/roles", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ profileIds: ["profile-1"], newRole: "staff", reason: "coverage" }),
+      body: JSON.stringify({
+        profileIds: ["00000000-0000-4000-8000-000000000001"],
+        newRole: "staff",
+        reason: "coverage",
+      }),
     }),
   );
   assert.equal(roleChangeResponse.status, 200);
@@ -799,6 +814,33 @@ test("listProjects retries without profile phone when schema does not include pr
     projectSelectColumnsLog.some((columns) => columns.includes("first_name, last_name, email)") && !columns.includes("phone")),
     true,
   );
+});
+
+test("project aggregate enrichment propagates task and milestone provider errors", async () => {
+  const aggregateReaders = [
+    {
+      name: "data listProjects",
+      run: (supabase: FakeSupabase) => listProjects(supabase as never, { page: 1, pageSize: 10 }),
+    },
+    {
+      name: "server listProjects",
+      run: (supabase: FakeSupabase) => listProjectsFromServer(supabase as never, { page: 1, pageSize: 10 }),
+    },
+    {
+      name: "server listOrgAdminProjectsByProfile",
+      run: (supabase: FakeSupabase) => listOrgAdminProjectsByProfile(supabase as never, "profile-admin"),
+    },
+  ];
+
+  for (const reader of aggregateReaders) {
+    for (const table of ["project_tasks", "project_milestones"] as const) {
+      await assert.rejects(
+        reader.run(createProjectsSupabase({ aggregateReadErrorTable: table })),
+        new RegExp(`${table} provider unavailable`),
+        `${reader.name} must propagate ${table} errors`,
+      );
+    }
+  }
 });
 
 test("CRM stable helpers return filtered, paginated, and summarized results", async () => {
@@ -1017,7 +1059,9 @@ test("CRM handler helpers parse params and return JSON envelopes", async () => {
   });
   const statsResponse = await statsHandler(new Request("https://example.com/api/crm/stats"));
   assert.equal(statsResponse.status, 401);
-  assert.deepEqual(await statsResponse.json(), { error: "Auth required" });
+  assert.deepEqual(await statsResponse.json(), {
+    error: { code: "ACCESS_DENIED", message: "Auth required" },
+  });
 
   const ownersHandler = createCrmOwnersGetHandler({
     getAccess: async () => ({ ok: true, supabase: {} }),
@@ -1030,5 +1074,10 @@ test("CRM handler helpers parse params and return JSON envelopes", async () => {
   });
   const ownersResponse = await ownersHandler(new Request("https://example.com/api/crm/owners"));
   assert.equal(ownersResponse.status, 500);
-  assert.deepEqual(await ownersResponse.json(), { error: "Broken owners" });
+  assert.deepEqual(await ownersResponse.json(), {
+    error: {
+      code: "INTERNAL_ERROR",
+      message: "CRM request could not be completed.",
+    },
+  });
 });

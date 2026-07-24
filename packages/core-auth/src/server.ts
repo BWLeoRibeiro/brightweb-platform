@@ -62,10 +62,20 @@ export async function requireServerUserAccess(): Promise<ServerUserAccess> {
 
   const { profileId, error: profileError } = await getProfileIdForUser(supabase, user.id);
   if (!profileId) {
-    return { ok: false, status: 409, error: profileError ?? "Perfil em falta." };
+    return profileError
+      ? { ok: false, status: 503, error: profileError }
+      : { ok: false, status: 409, error: "Perfil em falta." };
   }
 
-  const { data: roleRaw } = await supabase.rpc("current_global_role");
+  const { data: roleRaw, error: roleError } = await supabase.rpc("current_global_role");
+  if (roleError) {
+    console.error("[core-auth.requireServerUserAccess.role]", {
+      userId: user.id,
+      code: roleError.code,
+      message: roleError.message,
+    });
+    return { ok: false, status: 503, error: "Não foi possível validar o acesso." };
+  }
   const role = normalizeGlobalRole(typeof roleRaw === "string" ? roleRaw : null);
 
   return { ok: true, supabase, user, profileId, role };
@@ -157,10 +167,16 @@ export async function getProfileIdForUser(
     .eq("user_id", userId)
     .maybeSingle<{ id: string }>();
 
-  return {
-    profileId: profile?.id ?? null,
-    error: error?.message ?? null,
-  };
+  if (error) {
+    console.error("[core-auth.getProfileIdForUser]", {
+      userId,
+      code: error.code,
+      message: error.message,
+    });
+    return { profileId: null, error: "Não foi possível carregar o perfil." };
+  }
+
+  return { profileId: profile?.id ?? null, error: null };
 }
 
 export async function getServerAccess(): Promise<ServerAccess> {

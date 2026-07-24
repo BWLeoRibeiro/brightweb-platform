@@ -1,3 +1,4 @@
+import { publicError, sanitizePublicError, type PublicError } from "@brightweblabs/infra/robustness";
 import { validatePassword } from "./shared";
 
 type InvitationKind = "organization" | "admin";
@@ -52,15 +53,27 @@ async function readJsonObject(request: Request): Promise<Record<string, unknown>
 }
 
 function registerError(error: unknown): Response {
+  const knownErrors: Readonly<Record<string, PublicError & { status: number }>> = {
+    INVITATION_NOT_FOUND: { code: "INVITATION_NOT_FOUND", message: "Convite não encontrado.", status: 404 },
+    INVITATION_NOT_AVAILABLE: {
+      code: "INVITATION_NOT_AVAILABLE",
+      message: "Este convite já não está disponível.",
+      status: 409,
+    },
+    INVITATION_EXPIRED: { code: "INVITATION_EXPIRED", message: "Este convite expirou.", status: 410 },
+    ACCOUNT_ALREADY_EXISTS: {
+      code: "ACCOUNT_ALREADY_EXISTS",
+      message: "Já existe uma conta para este e-mail. Inicie sessão para continuar.",
+      status: 409,
+    },
+  };
   const message = error instanceof Error ? error.message : "";
-  if (message === "INVITATION_NOT_FOUND") return json({ error: "Convite não encontrado." }, { status: 404 });
-  if (message === "INVITATION_NOT_AVAILABLE") return json({ error: "Este convite já não está disponível." }, { status: 409 });
-  if (message === "INVITATION_EXPIRED") return json({ error: "Este convite expirou." }, { status: 410 });
-  if (message === "ACCOUNT_ALREADY_EXISTS") {
-    return json({ error: "Já existe uma conta para este e-mail. Inicie sessão para continuar." }, { status: 409 });
-  }
-  console.error("Error registering invited user:", error);
-  return json({ error: "Erro interno do servidor." }, { status: 500 });
+  const known = knownErrors[message];
+  if (known) return json(publicError(known.code, known.message), { status: known.status });
+  return json(
+    sanitizePublicError(error, {}, "Erro interno do servidor.", "core-auth.invitation.register"),
+    { status: 500 },
+  );
 }
 
 export function createInvitationDetailsHandler(dependencies: InvitationHttpDependencies) {
@@ -70,7 +83,7 @@ export function createInvitationDetailsHandler(dependencies: InvitationHttpDepen
   ): Promise<Response> {
     const { invitationId } = await context.params;
     const kind = readKind(new URL(request.url).searchParams.get("kind"));
-    if (!kind) return json({ error: "Tipo de convite inválido." }, { status: 400 });
+    if (!kind) return json(publicError("INVALID_INVITATION_KIND", "Tipo de convite inválido."), { status: 400 });
     try {
       const client = dependencies.getServiceClient() as never;
       const details = kind === "admin"
@@ -87,7 +100,10 @@ export function createInvitationDetailsHandler(dependencies: InvitationHttpDepen
         role: details.role,
       });
     } catch (error) {
-      return json({ error: error instanceof Error ? error.message : "Erro interno do servidor." }, { status: 500 });
+      return json(
+        sanitizePublicError(error, {}, "Erro interno do servidor.", "core-auth.invitation.details"),
+        { status: 500 },
+      );
     }
   };
 }
@@ -99,15 +115,19 @@ export function createInvitationRegisterHandler(dependencies: InvitationHttpDepe
   ): Promise<Response> {
     const { invitationId } = await context.params;
     const body = await readJsonObject(request);
-    if (!body) return json({ error: "Payload inválido." }, { status: 400 });
+    if (!body) return json(publicError("INVALID_PAYLOAD", "Payload inválido."), { status: 400 });
     const firstName = typeof body.firstName === "string" ? body.firstName.trim() : "";
     const lastName = typeof body.lastName === "string" ? body.lastName.trim() : "";
     const password = typeof body.password === "string" ? body.password.trim() : "";
     const kind = readKind(body.kind);
-    if (!firstName || !lastName) return json({ error: "Nome e apelido são obrigatórios." }, { status: 400 });
-    if (!kind) return json({ error: "Tipo de convite inválido." }, { status: 400 });
+    if (!firstName || !lastName) {
+      return json(publicError("NAME_REQUIRED", "Nome e apelido são obrigatórios."), { status: 400 });
+    }
+    if (!kind) return json(publicError("INVALID_INVITATION_KIND", "Tipo de convite inválido."), { status: 400 });
     const validation = validatePassword(password);
-    if (!validation.isValid) return json({ error: validation.errors.join(". ") }, { status: 400 });
+    if (!validation.isValid) {
+      return json(publicError("INVALID_PASSWORD", validation.errors.join(". ")), { status: 400 });
+    }
     try {
       const client = dependencies.getServiceClient() as never;
       const result = kind === "admin"
@@ -126,10 +146,21 @@ export function createInvitationAcceptHandler(dependencies: InvitationHttpDepend
     context: { params: Promise<{ invitationId: string }> },
   ): Promise<Response> {
     const { invitationId } = await context.params;
-    const access = await dependencies.getAccess();
-    if (!access.ok) return json({ error: access.error }, { status: access.status });
-    if (!access.user.email) return json({ error: "E-mail da conta em falta." }, { status: 409 });
     try {
+      const access = await dependencies.getAccess();
+      if (!access.ok) {
+        const code = access.status === 401
+          ? "UNAUTHORIZED"
+          : access.status === 403
+            ? "FORBIDDEN"
+            : access.status === 409
+              ? "PROFILE_MISSING"
+              : "ACCESS_UNAVAILABLE";
+        return json(publicError(code, access.error), { status: access.status });
+      }
+      if (!access.user.email) {
+        return json(publicError("ACCOUNT_EMAIL_MISSING", "E-mail da conta em falta."), { status: 409 });
+      }
       const result = await dependencies.acceptOrganizationInvitation(dependencies.getServiceClient() as never, {
         invitationId,
         profileId: access.profileId,
@@ -138,11 +169,34 @@ export function createInvitationAcceptHandler(dependencies: InvitationHttpDepend
       return json({ data: result });
     } catch (error) {
       const message = error instanceof Error ? error.message : "Erro interno do servidor.";
-      const status = message === "Convite não encontrado." ? 404
-        : message === "Este convite expirou." ? 410
-          : message === "Este convite pertence a outro email." || message === "Este convite já não está disponível." ? 409
-            : 500;
-      return json({ error: message }, { status });
+      const knownErrors: Readonly<Record<string, PublicError & { status: number }>> = {
+        "Convite não encontrado.": {
+          code: "INVITATION_NOT_FOUND",
+          message: "Convite não encontrado.",
+          status: 404,
+        },
+        "Este convite expirou.": {
+          code: "INVITATION_EXPIRED",
+          message: "Este convite expirou.",
+          status: 410,
+        },
+        "Este convite pertence a outro email.": {
+          code: "INVITATION_EMAIL_MISMATCH",
+          message: "Este convite pertence a outro email.",
+          status: 409,
+        },
+        "Este convite já não está disponível.": {
+          code: "INVITATION_NOT_AVAILABLE",
+          message: "Este convite já não está disponível.",
+          status: 409,
+        },
+      };
+      const known = knownErrors[message];
+      if (known) return json(publicError(known.code, known.message), { status: known.status });
+      return json(
+        sanitizePublicError(error, {}, "Erro interno do servidor.", "core-auth.invitation.accept"),
+        { status: 500 },
+      );
     }
   };
 }
