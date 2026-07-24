@@ -91,6 +91,21 @@ test("preview auth routes are thin package mounts", async () => {
   }
 });
 
+test("auth typography overrides stay scoped and preview defaults to split layout", async () => {
+  const tokens = await read("tokens.css");
+  for (const selector of ["heading-2", "paragraph-small", "paragraph-mini", "eyebrow"]) {
+    assert.match(tokens, new RegExp(`\\.auth-layout \\.${selector.replaceAll("-", "\\-")}`));
+  }
+  assert.doesNotMatch(tokens, /(?:^|\n)\.(?:heading-2|paragraph-small|paragraph-mini|eyebrow)\s*(?:,|\{)/);
+
+  const layout = await read("src/ui/auth-layout.tsx");
+  assert.match(layout, /value === "split" \|\| value === "centered"/);
+  assert.match(layout, /variant \?\? queryVariant \?\? layoutVariant \?\? "centered"/);
+
+  const provider = await readFile(path.join(repoRoot, "apps", "platform-preview", "app", "(auth)", "auth-provider.tsx"), "utf8");
+  assert.match(provider, /layoutVariant="split"/);
+});
+
 test("auth primary CTAs use the shared default Button color contract", async () => {
   const files = [
     "src/ui/login-page.tsx",

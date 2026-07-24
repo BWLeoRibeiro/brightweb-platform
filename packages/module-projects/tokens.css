@@ -122,6 +122,12 @@
   }
 }
 
+@media (max-width: 900px) {
+  .projects-portfolio-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (min-width: 1024px) {
   .projects-portfolio-grid {
     --projects-page-rows: 4;

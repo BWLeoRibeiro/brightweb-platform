@@ -55,6 +55,10 @@ function unlayeredCascadeSensitiveClassRules(source: string) {
   let boundary = 0;
 
   for (let index = 0; index < cleanSource.length; index += 1) {
+    if (cleanSource[index] === ";" && stack.length === 0) {
+      boundary = index + 1;
+      continue;
+    }
     if (cleanSource[index] === "{") {
       const prelude = cleanSource.slice(boundary, index).trim();
       stack.push({ prelude, openIndex: index, isLayer: /^@layer(?:\s|$)/.test(prelude) });
@@ -140,17 +144,21 @@ test("theme component styles keep color recipes in token definition files", asyn
   assertPatternAbsent(files, /#[0-9a-f]{3,8}\b|rgba?\(|color-mix\(/i, "theme component colors must be represented by tokens.css or theme palette overrides");
 });
 
-test("package CSS keeps cascade-sensitive class recipes in explicit layers", async () => {
-  const cssFiles = (await sourceFiles(packagesSourceRoot)).filter((filePath) => filePath.endsWith(".css") && !filePath.endsWith(".module.css"));
+test("package and preview CSS keep cascade-sensitive class recipes in explicit layers", async () => {
+  const cssFiles = [
+    ...(await sourceFiles(packagesSourceRoot)),
+    ...(await sourceFiles(previewSourceRoot)),
+  ].filter((filePath) => filePath.endsWith(".css") && !filePath.endsWith(".module.css"));
   const violations = (await Promise.all(cssFiles.map(async (filePath) => {
     const source = await readFile(filePath, "utf8");
     return unlayeredCascadeSensitiveClassRules(source).map(({ line, selector }) => `${path.relative(repoRoot, filePath)}:${line} ${selector}`);
   }))).flat();
-  assert.deepEqual(violations, [], `Package class recipes that affect box model, color, or typography must use @layer components (element resets use @layer base):\n${violations.join("\n")}`);
+  assert.deepEqual(violations, [], `Package and preview class recipes that affect box model, color, or typography must use @layer components (element resets use @layer base):\n${violations.join("\n")}`);
 });
 
 test("package CSS layer guard allows tokens and flags unsafe class recipes", () => {
   const violations = unlayeredCascadeSensitiveClassRules(`
+    @import "theme.css";
     :root, .dark { --surface: white; color-scheme: dark; }
     @layer components { .safe { padding: 1rem; } }
     @keyframes enter { to { opacity: 1; } }

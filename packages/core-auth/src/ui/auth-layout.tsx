@@ -16,7 +16,7 @@ export function AuthLayout({
   const [queryVariant, setQueryVariant] = useState<AuthLayoutVariant | undefined>();
   useEffect(() => {
     const value = new URLSearchParams(window.location.search).get("variant");
-    setQueryVariant(value === "split" ? "split" : undefined);
+    setQueryVariant(value === "split" || value === "centered" ? value : undefined);
   }, []);
   const resolvedVariant = variant ?? queryVariant ?? layoutVariant ?? "centered";
   const split = resolvedVariant === "split";

@@ -6,7 +6,7 @@ export default function HomePage() {
   const configuredEnvCount = config.envStatus.filter((item) => item.present).length;
 
   return (
-    <main className="shell starter-home">
+    <main className="preview-page shell starter-home">
       <div className="frame">
         <section className="starter-hero">
           <div className="starter-hero-copy">
