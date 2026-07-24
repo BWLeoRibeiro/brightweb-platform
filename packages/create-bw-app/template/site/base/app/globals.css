@@ -1,8 +1,8 @@
 @import "tailwindcss";
 
 @theme inline {
-  --font-sans: var(--font-sans);
-  --font-display: var(--font-display);
+  --font-sans: var(--font-body, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif);
+  --font-display: var(--font-heading, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-muted-foreground: var(--muted-foreground);
@@ -18,8 +18,9 @@
 
 :root {
   color-scheme: light;
-  --font-sans: "IBM Plex Sans", "Segoe UI", sans-serif;
-  --font-display: Georgia, "Times New Roman", serif;
+  --font-body: var(--font-geist-sans);
+  --font-sans: var(--font-body);
+  --font-display: var(--font-body);
   --background: #f3efe5;
   --foreground: #18241d;
   --muted-foreground: #5a665c;
@@ -39,7 +40,8 @@
   --line: var(--border);
 }
 
-* {
+@layer base {
+  * {
   box-sizing: border-box;
 }
 
@@ -55,7 +57,7 @@ body {
     radial-gradient(circle at 85% 12%, rgba(189, 140, 89, 0.12), transparent 18rem),
     linear-gradient(180deg, #faf8f1 0%, var(--background) 48%, #e8e0cf 100%);
   color: var(--foreground);
-  font-family: var(--font-sans), sans-serif;
+  font-family: var(--font-sans);
 }
 
 body::before {
@@ -76,6 +78,7 @@ a {
   text-decoration: none;
 }
 
-::selection {
-  background: rgba(38, 105, 70, 0.18);
+  ::selection {
+    background: rgba(38, 105, 70, 0.18);
+  }
 }

@@ -1,11 +1,75 @@
 /* ── L0: brand primitives ─────────────────────────────────────────────── */
 :root {
   color-scheme: light;
-  --font-body: "Mulish", "Mulish Fallback", "Segoe UI", Arial, sans-serif;
+  /* Font loaders expose these variables at the app root. Client themes only
+     override this family layer; component recipes never name a font. The system
+     fallback after the loaded-font var is REQUIRED: without it a missing
+     --font-geist-sans makes the whole var() chain "guaranteed-invalid" and
+     font-family silently reverts to the browser default (Times), instead of a
+     clean sans. */
+  --font-body: var(--font-geist-sans, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif);
   --font-heading: var(--font-body);
-  --font-sans: var(--font-body);
-  --font-display: var(--font-heading);
-  --font-mono: ui-monospace, "SF Mono", "JetBrains Mono", "Menlo", monospace;
+  --font-code: var(--font-geist-mono, ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace);
+
+  /* Typography primitives. These raw values live here—and only here—so a
+     maintainer can retune family, scale, weight, rhythm, or tracking globally. */
+  --type-weight-regular: 400;
+  --type-weight-medium: 600;
+  --type-weight-bold: 700;
+  --type-weight-heavy: 800;
+  --type-weight-black: 900;
+
+  --type-leading-090: 0.9;
+  --type-leading-092: 0.92;
+  --type-leading-095: 0.95;
+  --type-leading-096: 0.96;
+  --type-leading-none: 1;
+  --type-leading-102: 1.02;
+  --type-leading-104: 1.04;
+  --type-leading-105: 1.05;
+  --type-leading-110: 1.1;
+  --type-leading-115: 1.15;
+  --type-leading-120: 1.2;
+  --type-leading-124: 1.238;
+  --type-leading-tight: 1.25;
+  --type-leading-130: 1.3;
+  --type-leading-133: calc(1 / 0.75);
+  --type-leading-snug: 1.375;
+  --type-leading-140: 1.4;
+  --type-leading-143: calc(1.25 / 0.875);
+  --type-leading-145: 1.45;
+  --type-leading-normal: 1.5;
+  --type-leading-155: 1.55;
+  --type-leading-156: calc(1.75 / 1.125);
+  --type-leading-160: 1.6;
+  --type-leading-relaxed: 1.625;
+  --type-leading-165: 1.65;
+  --type-leading-166: 1.66;
+  --type-leading-172: 1.72;
+  --type-leading-loose: 2;
+
+  --type-tracking-n050: -0.05em;
+  --type-tracking-n045: -0.045em;
+  --type-tracking-n040: -0.04em;
+  --type-tracking-n035: -0.035em;
+  --type-tracking-n030: -0.03em;
+  --type-tracking-n025: -0.025em;
+  --type-tracking-n020: -0.02em;
+  --type-tracking-tight: -0.025em;
+  --type-tracking-n010: -0.01em;
+  --type-tracking-normal: 0;
+  --type-tracking-010: 0.01em;
+  --type-tracking-wide: 0.025em;
+  --type-tracking-040: 0.04em;
+  --type-tracking-wider: 0.05em;
+  --type-tracking-060: 0.06em;
+  --type-tracking-080: 0.08em;
+  --type-tracking-100: 0.1em;
+  --type-tracking-120: 0.12em;
+  --type-tracking-140: 0.14em;
+  --type-tracking-160: 0.16em;
+  --type-tracking-widest: 0.1em;
+  --type-tracking-180: 0.18em;
 
   --brand-accent: #4a7dbd;
   --brand-accent-soft: #7196c4;
@@ -34,6 +98,7 @@
   --secondary-foreground: var(--brand-ink);
   --muted: rgba(203, 213, 225, 0.25);
   --muted-foreground: var(--brand-neutral-500);
+  --foreground-muted-accessible: #5f6b7a;
   --foreground-inverse: var(--brand-white);
   --foreground-inverse-muted: rgba(255, 255, 255, 0.88);
   --foreground-inverse-subtle: rgba(255, 255, 255, 0.84);
@@ -59,6 +124,34 @@
   --semantic-danger-soft: #e55759;
   --semantic-neutral: #71717a;
   --semantic-neutral-strong: #52525b;
+
+  --project-state-planned: var(--semantic-info);
+  --project-state-planned-strong: var(--semantic-info-strong);
+  --project-state-active: var(--semantic-success);
+  --project-state-active-strong: var(--semantic-success-strong);
+  --project-state-blocked: var(--semantic-special);
+  --project-state-blocked-strong: var(--semantic-special-strong);
+  --project-state-completed: var(--semantic-success);
+  --project-state-completed-strong: var(--semantic-success-strong);
+  --project-state-canceled: var(--semantic-neutral);
+  --project-state-canceled-strong: var(--semantic-neutral-strong);
+  --project-risk-at-risk: var(--semantic-warning);
+  --project-risk-at-risk-strong: var(--semantic-warning-strong);
+  --project-risk-overdue: var(--semantic-danger);
+  --project-risk-overdue-strong: var(--semantic-danger-strong);
+  --project-risk-overdue-soft: var(--semantic-danger-soft);
+  /* Ink to use ON a solid health fill: light-mode fills are saturated so
+     ink flips per theme (see dark block). */
+  --project-risk-overdue-ink: #ffffff;
+  --project-risk-at-risk-ink: #3a2a05;
+  --project-state-completed-ink: #06281e;
+  --project-health-on-track: var(--project-state-active-strong);
+  --project-health-at-risk: var(--project-risk-at-risk);
+  --project-health-at-risk-strong: var(--project-risk-at-risk-strong);
+  --project-health-off-track: var(--project-risk-overdue);
+  --project-health-progress: var(--project-state-active);
+  --project-health-off-track-strong: var(--project-risk-overdue-strong);
+  --project-health-off-track-soft: var(--project-risk-overdue-soft);
 
   /* ── L3: experience tokens ─────────────────────────────────────────── */
   --space-2xs: 0.25rem;
@@ -89,8 +182,13 @@
   --radius-pill: 999px;
   --radius-scrollbar: 9999px;
 
+  /* MQ-derived size scale. Aliases below retain the current rendered sizes. */
+  --text-ui-nano: 0.4375rem;
+  --text-ui-nano-lg: 0.5rem;
+  --text-ui-fine: 0.5625rem;
   --text-ui-micro: 0.625rem;
   --text-ui-label: 0.6875rem;
+  --text-ui-label-relaxed: 0.7rem;
   --text-ui-meta: 0.75rem;
   --text-ui-chip: 0.78125rem;
   --text-ui-action: 0.8125rem;
@@ -108,22 +206,22 @@
   --text-ui-report-metric: 2.5rem;
   --text-ui-metric: 2.75rem;
   --text-ui-metric-xl: 3.5rem;
+  --text-ui-dashboard-card-title: 1.375rem;
+  --text-ui-dashboard-title: 2.125rem;
+  --text-ui-preview-card-title: 2.375rem;
+  --text-ui-dashboard-title-lg: 2.75rem;
+  --text-ui-dashboard-metric: 3.25rem;
+  --text-ui-preview-stat: clamp(2rem, 4vw, 3rem);
+  --text-ui-preview-title: clamp(2.4rem, 5.5vw, 4.8rem);
+  --text-ui-auth-title: clamp(2.4rem, 5vw, 4.75rem);
   --text-ui-metric-display: var(--text-ui-metric);
   --portal-text-micro: 0.625rem;
-  --portal-text-label: 0.6875rem;
-  --portal-text-meta: 0.75rem;
-  --portal-text-body: 0.875rem;
-  --portal-text-card-title: 0.9375rem;
-  --portal-text-subhead: 1.125rem;
-  --portal-text-panel: 1.25rem;
-  --portal-text-heading: 1.5rem;
-  --portal-text-title-sm: 1.875rem;
-  --portal-text-title: clamp(1.75rem, 1.6rem + 0.7vw, 2rem);
-  --portal-text-metric: 2.75rem;
-  --portal-text-metric-lg: 3.5rem;
   --type-paragraph-large: 1.09375rem;
+  --type-heading-2: clamp(2rem, 4vw, 2.8125rem);
+  --type-paragraph: 1rem;
   --type-paragraph-small: 0.875rem;
   --type-paragraph-mini: 0.75rem;
+  --type-label: 0.625rem;
 
   --elevate-1: color-mix(in srgb, var(--foreground) 3%, transparent);
   --elevate-2: color-mix(in srgb, var(--foreground) 5%, transparent);
@@ -141,6 +239,8 @@
   --surface-button-soft: color-mix(in srgb, var(--foreground) 3.5%, var(--card));
   --surface-button-soft-hover: color-mix(in srgb, var(--foreground) 7%, var(--card));
   --border-button-soft-hover: color-mix(in srgb, var(--foreground) 16%, transparent);
+  --surface-button-brand: color-mix(in srgb, var(--brand-accent) 84%, var(--foreground));
+  --foreground-accent-link: color-mix(in srgb, var(--brand-accent) 45%, var(--foreground));
   --surface-selection: color-mix(in srgb, var(--accent) 12%, var(--card));
   --border-selection: color-mix(in srgb, var(--accent) 40%, var(--hairline));
   --surface-pagination-active: color-mix(in srgb, var(--accent) 10%, var(--card));
@@ -275,6 +375,12 @@
 
   --badge-count-bg: var(--semantic-danger);
   --badge-count-fg: var(--brand-white);
+  --sheet-edit-border: color-mix(in srgb, var(--accent) 24%, var(--border));
+  --sheet-edit-surface: color-mix(in srgb, var(--accent) 4%, var(--card));
+  --sheet-edit-header: color-mix(in srgb, var(--accent) 20%, var(--card));
+  --sheet-edit-control-border: color-mix(in srgb, var(--accent) 22%, var(--border));
+  --sheet-edit-control-ring: color-mix(in srgb, var(--accent) 22%, transparent);
+  --sheet-edit-header-surface: linear-gradient(135deg, color-mix(in srgb, var(--accent) 16%, transparent), transparent 62%);
   --on-fill-danger: var(--brand-white);
   --on-fill-warning: #3a2a05;
   --on-fill-success: #06281e;
@@ -296,14 +402,43 @@
   --project-surface-primary: var(--card);
   --project-surface-secondary: color-mix(in srgb, var(--foreground) 2%, var(--card) 98%);
   --project-surface-item: color-mix(in srgb, var(--card) 96%, transparent);
-  --project-surface-hero: color-mix(in srgb, var(--accent) 8%, var(--card) 92%);
-  --project-surface-hero-border: color-mix(in srgb, var(--accent) 26%, var(--foreground) 8%);
   --project-hero-surface: var(--brand-panel-surface);
   --project-hero-surface-raised: var(--brand-panel-surface-raised);
   --project-hero-foreground: var(--brand-panel-foreground);
   --project-hero-muted: var(--brand-panel-muted);
   --project-hero-subtle: var(--brand-panel-subtle);
   --project-hero-border: var(--brand-panel-border);
+  --project-hero-base: var(--brand-surface-dark);
+  --project-hero-shadow: var(--brand-shadow-soft);
+  --dashboard-shadow-sm: 0 1px 2px color-mix(in srgb, var(--foreground) 4%, transparent);
+  --dashboard-shadow-md: 0 8px 24px color-mix(in srgb, var(--foreground) 8%, transparent);
+  --dashboard-shadow-lg: 0 10px 30px color-mix(in srgb, var(--foreground) 8%, transparent);
+  --dashboard-hero-glow: radial-gradient(circle, color-mix(in srgb, var(--accent) 38%, transparent), transparent 70%);
+  --dashboard-hero-highlight: linear-gradient(90deg, transparent, color-mix(in srgb, var(--accent) 60%, transparent), transparent);
+  --dashboard-tab-hover: color-mix(in srgb, var(--foreground) 7%, transparent);
+  --dashboard-tab-shadow: 0 4px 14px color-mix(in srgb, var(--accent) 45%, transparent);
+  --dashboard-breakdown-track: color-mix(in srgb, var(--foreground) 7%, transparent);
+  --dashboard-accent-soft: color-mix(in srgb, var(--accent) 16%, transparent);
+  --dashboard-neutral-rule: color-mix(in srgb, var(--foreground) 14%, transparent);
+  --dashboard-task-risk-bg: color-mix(in srgb, var(--project-risk-overdue) 11%, transparent);
+  --dashboard-task-risk-hover: color-mix(in srgb, var(--project-risk-overdue) 16%, transparent);
+  --dashboard-task-due-bg: color-mix(in srgb, var(--project-risk-at-risk) 13%, transparent);
+  --dashboard-task-due-hover: color-mix(in srgb, var(--project-risk-at-risk) 18%, transparent);
+  --dashboard-task-flight-bg: color-mix(in srgb, var(--foreground) 5%, transparent);
+  --dashboard-task-flight-hover: color-mix(in srgb, var(--foreground) 7%, transparent);
+  --dashboard-task-row-hover: color-mix(in srgb, var(--accent) 6%, transparent);
+  --dashboard-milestone-glow: radial-gradient(circle, color-mix(in srgb, var(--accent) 30%, transparent), transparent 70%);
+  --dashboard-milestone-icon: color-mix(in srgb, var(--accent) 18%, transparent);
+  --dashboard-milestone-skeleton: color-mix(in srgb, var(--project-hero-foreground) 12%, transparent);
+  --dashboard-milestone-empty: color-mix(in srgb, var(--project-hero-foreground) 10%, transparent);
+  --dashboard-milestone-date: color-mix(in srgb, var(--project-hero-foreground) 8%, transparent);
+  --dashboard-period-glow: color-mix(in srgb, var(--accent) 22%, transparent);
+  --dashboard-client-avatar: color-mix(in srgb, var(--role-client) 18%, var(--card));
+  --dashboard-local-muted-foreground: color-mix(in srgb, var(--foreground) 62%, transparent);
+  --dashboard-local-border: color-mix(in srgb, var(--foreground) 14%, transparent);
+  --dashboard-local-muted: color-mix(in srgb, var(--foreground) 6%, transparent);
+  --dashboard-danger-soft: color-mix(in srgb, var(--project-risk-overdue) 15%, transparent);
+  --dashboard-danger-border: color-mix(in srgb, var(--project-risk-overdue) 40%, transparent);
   --project-surface-padding: 1.25rem;
   --row-sweep-tint: var(--foreground);
   --surface-card: color-mix(in srgb, var(--foreground) 2%, var(--card) 98%);
@@ -363,6 +498,7 @@
   --secondary-foreground: #dce5f0;
   --muted: rgba(148, 163, 184, 0.16);
   --muted-foreground: #a6b4c6;
+  --foreground-muted-accessible: #a6b4c6;
   --foreground-inverse: #f8fafc;
   --foreground-inverse-muted: rgba(248, 250, 252, 0.9);
   --foreground-inverse-subtle: rgba(248, 250, 252, 0.84);
@@ -387,6 +523,19 @@
   --semantic-danger-soft: #fda4af;
   --semantic-neutral: #a1a1aa;
   --semantic-neutral-strong: #d4d4d8;
+
+  --project-risk-overdue-soft: var(--semantic-danger-soft);
+  /* Dark-mode health fills are light pastels, so on-fill ink stays dark. */
+  --project-risk-overdue-ink: #350a11;
+  --project-risk-at-risk-ink: #3a2a05;
+  --project-state-completed-ink: #06281e;
+  --project-health-on-track: var(--project-state-active-strong);
+  --project-health-at-risk: var(--project-risk-at-risk);
+  --project-health-at-risk-strong: var(--project-risk-at-risk-strong);
+  --project-health-off-track: var(--project-risk-overdue);
+  --project-health-progress: var(--project-state-active);
+  --project-health-off-track-strong: var(--project-risk-overdue);
+  --project-health-off-track-soft: var(--project-risk-overdue-soft);
 
   --skeleton: color-mix(in srgb, var(--foreground) 9%, transparent);
   --skeleton-strong: color-mix(in srgb, var(--foreground) 14%, transparent);
@@ -449,6 +598,7 @@
   --secondary-foreground: var(--brand-ink);
   --muted: rgba(203, 213, 225, 0.25);
   --muted-foreground: var(--brand-neutral-500);
+  --foreground-muted-accessible: #5f6b7a;
   --foreground-inverse: var(--brand-white);
   --foreground-inverse-muted: rgba(255, 255, 255, 0.88);
   --foreground-inverse-subtle: rgba(255, 255, 255, 0.84);

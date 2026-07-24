@@ -86,16 +86,18 @@ export const APP_DEPENDENCY_DEFAULTS = {
   "@brightweblabs/module-projects": "^0.4.4",
   "@brightweblabs/theme": "^0.3.0",
   "@brightweblabs/ui": "^1.0.2",
+  "geist": "1.7.2",
   "lucide-react": "^1.8.0",
   "next": "16.1.6",
-  "react": "19.2.3",
-  "react-dom": "19.2.3",
+  "react": "19.2.4",
+  "react-dom": "19.2.4",
 };
 
 export const SITE_DEPENDENCY_DEFAULTS = {
+  "geist": "1.7.2",
   "next": "16.1.6",
-  "react": "19.2.3",
-  "react-dom": "19.2.3",
+  "react": "19.2.4",
+  "react-dom": "19.2.4",
 };
 
 export const APP_DEV_DEPENDENCY_DEFAULTS = {

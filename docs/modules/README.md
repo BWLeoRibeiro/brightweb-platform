@@ -28,7 +28,7 @@ Use [Base Contract](./base-contract.md) for the canonical support-tier rules and
 | Area | What it owns | What scaffold selection changes | Full UI |
 | --- | --- | --- | --- |
 | Platform Base | Core auth/profile foundations plus the Admin-backed database baseline that platform apps depend on. | Every `platform` app gets this runtime and database baseline. | No. It is the base runtime, not a finished product surface. |
-| Admin | Governance helpers, RBAC package wiring, and a package-owned users surface. | Selecting `admin` adds `/admin/users` and direct package-owned API handler aliases. | Yes, for the default users surface. |
+| Admin | Governance helpers, RBAC package wiring, and package-owned users, roles, invitations, and toolbar UI. | Selecting `admin` adds `/admin/users`, direct package-owned API handler aliases, and the Admin UI token source. | Yes, for the default users and invitations surface. |
 | Organizations | Organizations, membership, invitations, and organization access helpers. | Auto-included when CRM or Projects is selected; hidden in navigation. | No. It is a shared domain foundation. |
 | CRM | CRM contacts and status logs, plus CRM-to-organizations integration. | Selecting CRM adds package wiring, shell registration, env flags, and `/crm`. | Yes, for the package-owned default dashboard. |
 | Projects | `projects`, `project_members`, `project_milestones`, `project_tasks`, `project_links`, `project_status_log`, plus follow-up access and activity behavior. | Selecting `projects` adds package wiring and env flags, but no route or generated nav. | No default UI yet. |

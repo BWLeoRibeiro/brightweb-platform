@@ -17,7 +17,7 @@ export const starterModuleConfig: StarterModuleConfig[] = [
     description: "Login, reset-password, callback URLs, and shared auth validation utilities.",
     enabled: true,
     packageName: "@brightweblabs/core-auth",
-    playgroundHref: "/playground/auth",
+    playgroundHref: "/login",
     placement: "core",
   },
   {
@@ -35,7 +35,7 @@ export const starterModuleConfig: StarterModuleConfig[] = [
     description: "Project portfolio, detail routes, and work-management server logic.",
     enabled: true,
     packageName: "@brightweblabs/module-projects",
-    playgroundHref: "/playground/projects",
+    playgroundHref: "/projects",
     placement: "primary",
   },
   {
@@ -44,7 +44,7 @@ export const starterModuleConfig: StarterModuleConfig[] = [
     description: "User role governance, admin tools, and access-control surfaces.",
     enabled: true,
     packageName: "@brightweblabs/module-admin",
-    playgroundHref: "/playground/admin",
+    playgroundHref: "/admin",
     placement: "admin",
   },
 ];

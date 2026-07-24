@@ -11,6 +11,7 @@ The `apps/dev-docs` navigation intentionally excludes `docs/internal/`. Treat th
 - [Project Structure Maintainer Notes](./project-structure-maintainer-notes.md)
 - [Internal agent index](./agent-index.md)
 - [Internal operations](./operations/README.md)
+- [MQ translation ledger](./mq-translation-ledger.md)
 
 ## Rules
 

@@ -15,15 +15,24 @@
   },
   "exports": {
     "./client": "./src/client.ts",
+    "./routes": "./src/routes.ts",
     "./server": "./src/server.ts",
-    "./shared": "./src/shared.ts"
+    "./shared": "./src/shared.ts",
+    "./tokens.css": "./tokens.css",
+    "./ui": "./src/ui/index.ts"
   },
   "dependencies": {
     "@brightweblabs/infra": "workspace:*",
-    "@supabase/supabase-js": "^2.105.3",
+    "@brightweblabs/ui": "workspace:*",
+    "@supabase/supabase-js": "^2.110.8",
     "next": "16.1.6"
   },
   "peerDependencies": {
-    "react": "^19.0.0"
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "react": "19.2.4",
+    "react-dom": "19.2.4"
   }
 }

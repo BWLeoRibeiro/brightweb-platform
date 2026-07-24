@@ -8,9 +8,9 @@ import {
 } from "@brightweblabs/app-shell";
 import { adminModuleRegistration } from "@brightweblabs/module-admin/registration";
 import { crmModuleRegistration } from "@brightweblabs/module-crm/registration";
-import { projectsModuleRegistration } from "@brightweblabs/module-projects/registration";
-import { starterBrandConfig } from "./brand";
+import { projectsPreviewModuleRegistration } from "@brightweblabs/module-projects/registration";
 import { getEnabledStarterModules } from "./modules";
+import { starterShellBrand } from "./shell-brand";
 
 const dashboardModuleRegistration: ShellModuleRegistration<ShellContextualAction> = {
   key: "dashboard",
@@ -23,7 +23,7 @@ function getStarterModuleRegistrations() {
   const enabled = new Set(getEnabledStarterModules().map((moduleConfig) => moduleConfig.key));
   const registrations: ShellModuleRegistration<ShellContextualAction>[] = [dashboardModuleRegistration];
 
-  if (enabled.has("projects")) registrations.push(projectsModuleRegistration);
+  if (enabled.has("projects")) registrations.push(projectsPreviewModuleRegistration);
   if (enabled.has("crm")) registrations.push(crmModuleRegistration);
   if (enabled.has("admin")) registrations.push(adminModuleRegistration);
 
@@ -33,26 +33,7 @@ function getStarterModuleRegistrations() {
 export function getStarterShellConfig() {
   const enabledModules = getEnabledStarterModules();
   const shellRegistration: ClientAppShellRegistration<ShellContextualAction> = {
-    brand: {
-      href: "/",
-      ariaLabel: `${starterBrandConfig.companyName} public site`,
-      alt: starterBrandConfig.companyName,
-      collapsedLogo: {
-        src: "/brand/logo-mark.svg",
-        width: 48,
-        height: 48,
-      },
-      lightLogo: {
-        src: "/brand/logo-light.svg",
-        width: 176,
-        height: 44,
-      },
-      darkLogo: {
-        src: "/brand/logo-dark.svg",
-        width: 176,
-        height: 44,
-      },
-    },
+    brand: starterShellBrand,
     toolsSection: {
       key: "tools",
       label: "Ferramentas",
@@ -74,5 +55,6 @@ export function getStarterShellConfig() {
     shellPreview,
     toolbarRoutes: builtRegistration.toolbarRoutes,
     toolbarActions: builtRegistration.toolbarActions,
+    dashboardContributions: builtRegistration.dashboardContributions,
   };
 }

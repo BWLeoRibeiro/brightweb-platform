@@ -6,7 +6,7 @@ export default function HomePage() {
   const configuredEnvCount = config.envStatus.filter((item) => item.present).length;
 
   return (
-    <main className="shell starter-home">
+    <main className="preview-page shell starter-home">
       <div className="frame">
         <section className="starter-hero">
           <div className="starter-hero-copy">
@@ -47,7 +47,7 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section className="grid starter-signal-grid">
+        <section className="preview-grid starter-signal-grid">
           <article className="panel preview-glass-card">
             <div className="panel-inner">
               <p className="eyebrow">Preview role</p>
@@ -71,9 +71,9 @@ export default function HomePage() {
         <section className="panel" style={{ marginTop: 18 }}>
           <div className="panel-inner">
             <h2>Active module previews</h2>
-            <div className="grid">
+            <div className="preview-grid">
               {config.enabledModules.map((moduleConfig) => (
-                <article key={moduleConfig.key} className="panel preview-glass-card" style={{ background: "rgba(255,255,255,0.72)" }}>
+                <article key={moduleConfig.key} className="panel preview-glass-card">
                   <div className="panel-inner">
                     <p className={`status ${moduleConfig.enabled ? "ok" : "warn"}`}>{moduleConfig.placement}</p>
                     <h3>{moduleConfig.label}</h3>
@@ -91,7 +91,7 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section className="grid" style={{ marginTop: 18 }}>
+        <section className="preview-grid" style={{ marginTop: 18 }}>
           <article className="panel preview-glass-card">
             <div className="panel-inner">
               <h2>App-shell surfaces</h2>
@@ -125,9 +125,9 @@ export default function HomePage() {
         <section className="panel" style={{ marginTop: 18 }}>
           <div className="panel-inner">
             <h2>Preview environment checklist</h2>
-            <div className="grid">
+            <div className="preview-grid">
               {config.envStatus.map((item) => (
-                <article key={item.key} className="panel preview-glass-card" style={{ background: "rgba(255,255,255,0.72)" }}>
+                <article key={item.key} className="panel preview-glass-card">
                   <div className="panel-inner">
                     <p className={`status ${item.present ? "ok" : "warn"}`}>{item.present ? "Configured" : "Missing"}</p>
                     <h3>{item.key}</h3>

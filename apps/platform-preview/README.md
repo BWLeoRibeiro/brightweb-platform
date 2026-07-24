@@ -28,10 +28,15 @@ Current preview routes:
 - `/`
 - `/bootstrap`
 - `/preview/app-shell`
-- `/playground/auth`
-- `/playground/admin`
+- `/login`
+- `/admin` (redirects to the packaged `/admin/users` surface)
+- `/dashboard`
 - `/crm`
-- `/playground/projects`
+- `/crm/report`
+- `/projects`
+- `/projects/[id]`
+- `/projects/[id]/board`
+- `/projects/[id]/tasks`
 
 Preview app config files:
 

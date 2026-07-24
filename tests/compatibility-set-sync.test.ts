@@ -37,7 +37,7 @@ test("syncs the compatibility set and app defaults after package versions change
     [
       "export const APP_DEPENDENCY_DEFAULTS = {",
       '  "@brightweblabs/app-shell": "^1.1.0",',
-      '  "react": "19.2.3",',
+      '  "react": "19.2.4",',
       "};",
       "",
     ].join("\n"),
@@ -59,7 +59,7 @@ test("syncs the compatibility set and app defaults after package versions change
     "create-bw-app": "2.1.0",
   });
   assert.match(constants, /"@brightweblabs\/app-shell": "\^1\.2\.0"/);
-  assert.match(constants, /"react": "19\.2\.3"/);
+  assert.match(constants, /"react": "19\.2\.4"/);
 
   const validation = await execFileAsync(process.execPath, [path.join(tempRoot, "scripts", "validate-compatibility-set.mjs"), "--repo-root", tempRoot]);
   assert.match(validation.stdout, /Validated 2 compatibility-set package versions and 1 app dependency defaults/);

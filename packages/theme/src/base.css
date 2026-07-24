@@ -14,7 +14,7 @@
     padding: 0;
     background: var(--page-background);
     color: var(--foreground);
-    font-family: var(--font-sans), sans-serif;
+    font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
@@ -30,5 +30,29 @@
   button,
   input {
     font: inherit;
+  }
+
+  /* Hand-rolled controls keep a visible keyboard state. Component utilities
+     can replace this fallback with their own focus-visible treatment. */
+  :where(button, a[href], [role="button"]):focus-visible {
+    outline: 2px solid currentColor;
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto !important;
+    }
+
+    *,
+    ::before,
+    ::after {
+      animation-delay: 0ms !important;
+      animation-duration: 0ms !important;
+      animation-iteration-count: 1 !important;
+      scroll-behavior: auto !important;
+      transition-delay: 0ms !important;
+      transition-duration: 0ms !important;
+    }
   }
 }

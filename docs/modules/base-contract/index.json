@@ -7,7 +7,7 @@
       "title": "Platform Base",
       "file": "platform-base.json",
       "doc": "../platform-base.md",
-      "entryCount": 57,
+      "entryCount": 65,
       "summary": "Core auth and admin-backed platform base surfaces."
     },
     {
@@ -15,15 +15,15 @@
       "title": "Admin",
       "file": "admin.json",
       "doc": "../platform-base.md",
-      "entryCount": 11,
-      "summary": "Admin server helpers, handlers, and a package-owned users surface."
+      "entryCount": 13,
+      "summary": "Admin server helpers, handlers, and packaged users, invitations, and toolbar UI."
     },
     {
       "moduleKey": "crm",
       "title": "CRM",
       "file": "crm.json",
       "doc": "../crm.md",
-      "entryCount": 54,
+      "entryCount": 55,
       "summary": "CRM shell registration, stable read/write helpers, package-owned request handlers, and starter dashboard glue."
     },
     {
@@ -39,8 +39,8 @@
       "title": "Projects",
       "file": "projects.json",
       "doc": "../projects.md",
-      "entryCount": 44,
-      "summary": "Projects shell registration, stable portfolio helpers, and starter portfolio helper."
+      "entryCount": 48,
+      "summary": "Projects shell registration, stable portfolio helpers, package-owned list and detail UI, and starter portfolio glue."
     }
   ]
 }

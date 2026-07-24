@@ -10,3 +10,14 @@ coverage/
 apps/__smoke-*/
 supabase/.generated/
 .vercel
+
+# Local environment files (never commit secrets)
+.env
+.env.local
+.env.*.local
+docs/internal/audit/
+
+# Agent skills (installed via `skills add`)
+.agents/
+.claude/
+skills-lock.json

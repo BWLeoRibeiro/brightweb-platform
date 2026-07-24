@@ -146,6 +146,13 @@ function cloneShellModuleRegistration<TAction>(registration: ShellModuleRegistra
       match: cloneShellPathMatcher(route.match) ?? route.match,
     })),
     toolbarActions,
+    dashboardContribution: registration.dashboardContribution ? {
+      ...registration.dashboardContribution,
+      sections: [...registration.dashboardContribution.sections],
+      projectComponents: registration.dashboardContribution.projectComponents
+        ? { ...registration.dashboardContribution.projectComponents }
+        : undefined,
+    } : undefined,
   };
 }
 
@@ -301,6 +308,7 @@ export function buildClientAppShellRegistration<TAction = never>(
 
     return acc;
   }, {});
+  const dashboardContributions = registration.modules.flatMap((module) => module.dashboardContribution ? [module.dashboardContribution] : []);
 
   return {
     shellConfig: {
@@ -315,6 +323,7 @@ export function buildClientAppShellRegistration<TAction = never>(
     },
     toolbarRoutes,
     toolbarActions,
+    dashboardContributions,
   };
 }
 

@@ -9,7 +9,7 @@ export type StatTileProps = HTMLAttributes<HTMLDivElement> & {
 export function StatTile({ label, children, className, ...props }: StatTileProps) {
   return (
     <div className={cn("stat-cell", className)} {...props}>
-      <p className="text-ui-label">{label}</p>
+      <p className="text-ui-label text-muted-foreground">{label}</p>
       <div className="mt-3">{children}</div>
     </div>
   );

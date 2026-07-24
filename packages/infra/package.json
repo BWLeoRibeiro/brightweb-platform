@@ -18,11 +18,13 @@
   "exports": {
     ".": "./src/server.ts",
     "./client": "./src/client.ts",
+    "./robustness": "./src/robustness.ts",
     "./server": "./src/server.ts"
   },
   "dependencies": {
-    "@supabase/ssr": "^0.10.2",
-    "@supabase/supabase-js": "^2.105.3",
-    "next": "16.1.6"
+    "@supabase/ssr": "^0.10.3",
+    "@supabase/supabase-js": "^2.110.8",
+    "next": "16.1.6",
+    "server-only": "^0.0.1"
   }
 }

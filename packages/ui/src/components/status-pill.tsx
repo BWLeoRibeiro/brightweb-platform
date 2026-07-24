@@ -1,3 +1,5 @@
+"use client";
+
 import { Slot } from "@radix-ui/react-slot";
 import { tintPill } from "@brightweblabs/theme/tint";
 import type { ComponentProps, CSSProperties, ReactNode } from "react";

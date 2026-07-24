@@ -44,7 +44,7 @@ export function CrmOrganizationsBrowser({ open, organizations, contactsByOrganiz
           <SheetTitle>{dictionary.organizations.title}</SheetTitle>
           <SheetDescription>{dictionary.organizations.subtitle}</SheetDescription>
         </SheetHeader>
-        <div className="min-h-0 flex-1 overflow-y-auto p-5">
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-5">
           <SearchField value={search} onChange={setSearch} onClear={() => setSearch("")} placeholder={dictionary.organizations.searchPlaceholder} aria-label={dictionary.organizations.searchPlaceholder} />
           <div className="mt-4 grid gap-3">
             {filtered.map((organization) => (

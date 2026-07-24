@@ -5,7 +5,7 @@ export default function BootstrapPage() {
   const checklist = getStarterBootstrapChecklist();
 
   return (
-    <main className="shell">
+    <main className="preview-page shell">
       <div className="frame">
         <section className="hero">
           <span className="eyebrow">Preview Bootstrap</span>
@@ -15,22 +15,22 @@ export default function BootstrapPage() {
           </p>
           <div className="actions">
             <Link href="/" className="action">Back to preview overview</Link>
-            <Link href="/playground/auth" className="action secondary">Open playgrounds</Link>
+            <Link href="/login" className="action secondary">Open auth preview</Link>
           </div>
         </section>
 
         <section className="panel">
           <div className="panel-inner">
             <h2>Client summary</h2>
-            <div className="grid">
-              <article className="panel" style={{ background: "rgba(255,255,255,0.72)" }}>
+            <div className="preview-grid">
+              <article className="panel preview-glass-card">
                 <div className="panel-inner">
                   <p className="status ok">{checklist.client.brand.slug}</p>
                   <h3>{checklist.client.brand.productName}</h3>
                   <p className="muted">{checklist.client.brand.tagline}</p>
                 </div>
               </article>
-              <article className="panel" style={{ background: "rgba(255,255,255,0.72)" }}>
+              <article className="panel preview-glass-card">
                 <div className="panel-inner">
                   <p className={`status ${checklist.client.envReadiness.allReady ? "ok" : "warn"}`}>
                     {checklist.client.envReadiness.allReady ? "Ready" : "Blocked"}
@@ -47,7 +47,7 @@ export default function BootstrapPage() {
           </div>
         </section>
 
-        <section className="grid" style={{ marginTop: 18 }}>
+        <section className="preview-grid" style={{ marginTop: 18 }}>
           {checklist.sections.map((section) => (
             <article key={section.key} className="panel">
               <div className="panel-inner">

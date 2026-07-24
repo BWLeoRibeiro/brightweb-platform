@@ -1,42 +1,47 @@
 /* ── Shared structural surfaces ───────────────────────────────────────── */
-.surface-card {
-  border-radius: var(--radius-card);
-  border: 1px solid var(--border-hairline);
-  background: var(--surface-card);
-  padding: var(--surface-card-padding);
-  animation: surface-fade-in 640ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
-}
+/* Layered so Tailwind utilities (p-0, bg-*, …) can override per-instance.
+   Unlayered, these beat @layer utilities and e.g. p-0 on the CRM table card
+   silently loses to the default card padding. */
+@layer components {
+  .surface-card {
+    border-radius: var(--radius-card);
+    border: 1px solid var(--border-hairline);
+    background: var(--surface-card);
+    padding: var(--surface-card-padding);
+    animation: surface-fade-in 640ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  }
 
-.surface-card.is-light {
-  background: var(--surface-card-light);
-}
+  .surface-card.is-light {
+    background: var(--surface-card-light);
+  }
 
-/* A near-black panel has strong figure/ground in light mode. In dark mode it
-   elevates above the page through a lighter accent mix, border, and shadow. */
-.brand-panel {
-  --row-sweep-tint: var(--brand-panel-foreground);
-  background: var(--brand-panel-surface);
-}
+  /* A near-black panel has strong figure/ground in light mode. In dark mode it
+     elevates above the page through a lighter accent mix, border, and shadow. */
+  .brand-panel {
+    --row-sweep-tint: var(--brand-panel-foreground);
+    background: var(--brand-panel-surface);
+  }
 
-.dark .brand-panel,
-.theme-dark .brand-panel {
-  border: 1px solid var(--brand-panel-border);
-  box-shadow: var(--brand-shadow-lift);
-}
+  .dark .brand-panel,
+  .theme-dark .brand-panel {
+    border: 1px solid var(--brand-panel-border);
+    box-shadow: var(--brand-shadow-lift);
+  }
 
-.row-hover-sweep {
-  pointer-events: none;
-  position: absolute;
-  inset: 0;
-  border-radius: var(--radius-card);
-  opacity: 0;
-  transition: opacity 300ms ease;
-  background: var(--row-hover-sweep);
-}
+  .row-hover-sweep {
+    pointer-events: none;
+    position: absolute;
+    inset: 0;
+    border-radius: var(--radius-card);
+    opacity: 0;
+    transition: opacity 300ms ease;
+    background: var(--row-hover-sweep);
+  }
 
-.group:hover > .row-hover-sweep,
-.group:focus-visible > .row-hover-sweep {
-  opacity: 1;
+  .group:hover > .row-hover-sweep,
+  .group:focus-visible > .row-hover-sweep {
+    opacity: 1;
+  }
 }
 
 /* ── Canonical tinted-pill recipes ────────────────────────────────────── */
@@ -62,7 +67,8 @@
   }
 }
 
-.section-icon {
+@layer components {
+  .section-icon {
   display: flex;
   width: var(--section-icon-size);
   height: var(--section-icon-size);
@@ -74,11 +80,12 @@
   color: var(--muted-foreground);
 }
 
-.stat-cell {
-  padding: var(--stat-cell-padding);
+  .stat-cell {
+    padding: var(--stat-cell-padding);
+  }
 }
 
-/* Skeleton shimmer respects reduced-motion with a quiet breathe fallback. */
+/* Skeleton shimmer becomes a static surface under reduced motion. */
 @keyframes surface-fade-in {
   from {
     opacity: 0;
@@ -96,17 +103,8 @@
   }
 }
 
-@keyframes skeleton-breathe {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.6;
-  }
-}
-
-.skeleton-ghost {
+@layer components {
+  .skeleton-ghost {
   position: relative;
   overflow: hidden;
   background: var(--skeleton);
@@ -127,7 +125,9 @@
   }
 
   .skeleton-ghost {
-    animation: skeleton-breathe 2.4s ease-in-out infinite;
+    animation: none;
+    opacity: 1;
+    transform: none;
   }
 }
 
@@ -140,7 +140,7 @@
   color: var(--brand-accent);
   font-size: var(--text-ui-label);
   font-weight: var(--font-weight-bold);
-  letter-spacing: 0.04em;
+  letter-spacing: var(--type-tracking-040);
   text-transform: uppercase;
 }
 
@@ -164,7 +164,8 @@
   color: var(--semantic-warning-strong);
 }
 
-.status.error {
-  background: var(--surface-status-danger);
-  color: var(--semantic-danger-strong);
+  .status.error {
+    background: var(--surface-status-danger);
+    color: var(--semantic-danger-strong);
+  }
 }

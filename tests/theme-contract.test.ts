@@ -19,11 +19,57 @@ function customProperties(css: string) {
   return new Set(Array.from(css.matchAll(/(--[a-z0-9-]+)\s*:/g), (match) => match[1]));
 }
 
+function scopedCustomProperties(css: string, selector: string) {
+  const start = css.indexOf(selector);
+  assert.notEqual(start, -1, `expected ${selector} scope`);
+  const bodyStart = css.indexOf("{", start) + 1;
+  const bodyEnd = css.indexOf("}", bodyStart);
+  return new Map(Array.from(css.slice(bodyStart, bodyEnd).matchAll(/(--[a-z0-9-]+)\s*:\s*([^;]+);/g), ([, property, value]) => [property, value.trim()]));
+}
+
+function resolveHex(properties: Map<string, string>, property: string): string {
+  const seen = new Set<string>();
+  let value = properties.get(property);
+  while (value?.startsWith("var(")) {
+    const reference = value.match(/^var\((--[a-z0-9-]+)\)$/)?.[1];
+    assert.ok(reference && !seen.has(reference), `expected resolvable ${property}`);
+    seen.add(reference);
+    value = properties.get(reference);
+  }
+  assert.match(value ?? "", /^#[0-9a-f]{6}$/i, `expected ${property} to resolve to a hex color`);
+  return value!;
+}
+
+function rgb(hex: string) {
+  return Array.from(hex.slice(1).matchAll(/../g), ([pair]) => Number.parseInt(pair, 16));
+}
+
+function composite(foreground: string, background: string, opacity: number) {
+  const foregroundRgb = rgb(foreground);
+  const backgroundRgb = rgb(background);
+  return `#${foregroundRgb.map((channel, index) => Math.round(channel * opacity + backgroundRgb[index]! * (1 - opacity)).toString(16).padStart(2, "0")).join("")}`;
+}
+
+function relativeLuminance(hex: string) {
+  const [red, green, blue] = rgb(hex).map((channel) => {
+    const normalized = channel / 255;
+    return normalized <= 0.04045 ? normalized / 12.92 : ((normalized + 0.055) / 1.055) ** 2.4;
+  });
+  return 0.2126 * red! + 0.7152 * green! + 0.0722 * blue!;
+}
+
+function contrastRatio(foreground: string, background: string) {
+  const foregroundLuminance = relativeLuminance(foreground);
+  const backgroundLuminance = relativeLuminance(background);
+  return (Math.max(foregroundLuminance, backgroundLuminance) + 0.05) / (Math.min(foregroundLuminance, backgroundLuminance) + 0.05);
+}
+
 const tokenizedVisualContract = [
   "--text-ui-chip", "--text-ui-action", "--text-ui-shell-title", "--text-ui-report-title",
   "--text-ui-report-title-lg", "--text-ui-calendar", "--text-ui-report-metric",
   "--radius-swatch", "--radius-pill", "--radius-scrollbar", "--surface-overlay", "--surface-overlay-strong", "--surface-tooltip", "--surface-badge-tint",
   "--surface-button-soft", "--surface-button-soft-hover", "--border-button-soft-hover",
+  "--surface-button-brand", "--foreground-accent-link",
   "--surface-selection", "--border-selection", "--surface-pagination-active", "--border-pagination-active",
   "--surface-danger-subtle", "--surface-account-team", "--surface-account-client", "--surface-account",
   "--surface-account-hover", "--account-presence", "--account-presence-size", "--row-hover-sweep",
@@ -69,6 +115,43 @@ test("theme CSS keeps hex literals in palette files", async () => {
   }
 });
 
+test("typography utilities do not poison consumer color utilities", async () => {
+  const typography = await read("src/typography.css");
+  const textUiUtilities = Array.from(typography.matchAll(/@utility\s+(text-ui-[a-z0-9-]+)\s*\{([^{}]*)\}/g));
+  assert.ok(textUiUtilities.length > 0, "expected text-ui utilities in typography.css");
+  for (const [, utility, body] of textUiUtilities) {
+    assert.doesNotMatch(body, /(?:^|[;\s])color\s*:/, `${utility} must not set color`);
+  }
+
+  const aliases = await read("themes/mq-aliases.css");
+  const paragraphBlock = aliases.match(/\.paragraph-large,\s*\.paragraph-small,\s*\.paragraph-mini\s*\{([^{}]*)\}/);
+  assert.ok(paragraphBlock, "expected shared paragraph aliases");
+  assert.doesNotMatch(paragraphBlock[1], /(?:^|[;\s])color\s*:/, "paragraph aliases must inherit color like MQ's originals");
+
+  const mqParityColors = new Map([
+    ["portal-micro", ["var(--muted-foreground)", 718]],
+    ["portal-label", ["var(--muted-foreground)", 663]],
+    ["portal-meta", ["var(--muted-foreground)", 711]],
+    ["portal-body", ["var(--foreground)", 705]],
+    ["portal-card-title", ["var(--foreground)", 654]],
+    ["portal-subhead", ["var(--foreground)", 646]],
+    ["portal-panel-title", ["var(--foreground)", 636]],
+    ["portal-heading", ["var(--foreground)", 626]],
+    ["portal-title-sm", ["var(--foreground)", 617]],
+    ["portal-title", ["var(--foreground)", 606]],
+    ["portal-metric", ["var(--foreground)", 673]],
+    ["portal-metric-xl", ["var(--foreground)", 697]],
+    ["portal-metric-display", ["var(--foreground)", 685]],
+  ] as const);
+  const portalUtilities = new Map(Array.from(aliases.matchAll(/@utility\s+(portal-[a-z0-9-]+)\s*\{([^{}]*)\}/g), ([, utility, body]) => [utility, body]));
+  for (const [utility, [color, sourceLine]] of mqParityColors) {
+    const body = portalUtilities.get(utility);
+    assert.ok(body, `expected ${utility} in MQ aliases`);
+    assert.match(body, new RegExp(`MQ parity: apps/portal/app/globals\\.css:${sourceLine}\\.`));
+    assert.match(body, new RegExp(`color:\\s*${color.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s*;`));
+  }
+});
+
 test("the base reset contains one complete base layer and no outside rules", async () => {
   const css = stripComments(await read("src/base.css"));
   assert.match(css, /^@layer\s+base\s*\{/);
@@ -96,6 +179,41 @@ test("every Tailwind color mapping references a defined token", async () => {
   for (const [, token] of mappings) {
     assert.ok(tokens.has(token), `${token} is referenced by theme.css but absent from tokens.css`);
   }
+});
+
+test("accessible muted foreground meets WCAG AA in default and MQ light/dark themes", async () => {
+  for (const file of ["src/tokens.css", "themes/mq.css"]) {
+    const css = await read(file);
+    const root = scopedCustomProperties(css, ":root");
+    const darkOverrides = scopedCustomProperties(css, ":root.dark");
+    for (const [mode, overrides] of [["light", new Map<string, string>()], ["dark", darkOverrides]] as const) {
+      const properties = new Map([...root, ...overrides]);
+      const foreground = resolveHex(properties, "--foreground-muted-accessible");
+      const card = resolveHex(properties, "--card");
+      const inputSurface = composite(resolveHex(properties, "--foreground"), card, 0.05);
+      assert.ok(contrastRatio(foreground, card) >= 4.5, `${file} ${mode} muted text must meet 4.5:1 on cards`);
+      assert.ok(contrastRatio(foreground, inputSurface) >= 4.5, `${file} ${mode} placeholders must meet 4.5:1 on input surfaces`);
+    }
+  }
+});
+
+test("project risk and health aliases match MQ in light and dark themes", async () => {
+  const tokens = await read("src/tokens.css");
+  const sharedAliases = new Map([
+    ["--project-risk-overdue-soft", "--semantic-danger-soft"],
+    ["--project-health-on-track", "--project-state-active-strong"],
+    ["--project-health-at-risk", "--project-risk-at-risk"],
+    ["--project-health-at-risk-strong", "--project-risk-at-risk-strong"],
+    ["--project-health-off-track", "--project-risk-overdue"],
+    ["--project-health-progress", "--project-state-active"],
+    ["--project-health-off-track-soft", "--project-risk-overdue-soft"],
+  ]);
+  for (const [alias, source] of sharedAliases) {
+    const declaration = new RegExp(`${alias}:\\s*var\\(${source}\\);`, "g");
+    assert.equal(Array.from(tokens.matchAll(declaration)).length, 2, `${alias} must have exact light and dark MQ aliases`);
+  }
+  assert.equal(Array.from(tokens.matchAll(/--project-health-off-track-strong:\s*var\(--project-risk-overdue-strong\);/g)).length, 1);
+  assert.equal(Array.from(tokens.matchAll(/--project-health-off-track-strong:\s*var\(--project-risk-overdue\);/g)).length, 1);
 });
 
 test("tokenized package visuals have defaults and live consumers", async () => {

@@ -1,0 +1,289 @@
+:root {
+  --sheet-header-surface: linear-gradient(135deg, var(--sheet-header-tint), transparent 60%);
+  --sheet-header-tint: color-mix(in srgb, var(--primary) 7%, transparent);
+  /* Literal MQ Projects recipes, centralized for package color hygiene. */
+  --project-ui-color-01: color-mix(in srgb,var(--accent) 22%,var(--border));
+  --project-ui-color-02: color-mix(in srgb, var(--project-dynamic-risk) 18%, transparent);
+  --project-ui-color-03: color-mix(in srgb, var(--project-dynamic-risk) 42%, transparent);
+  --project-ui-color-04: color-mix(in srgb,var(--project-risk-overdue) 34%,transparent);
+  --project-ui-color-05: color-mix(in srgb,var(--project-risk-overdue) 12%,transparent);
+  --project-ui-color-06: color-mix(in srgb,var(--project-risk-overdue) 18%,white);
+  --project-ui-color-07: color-mix(in srgb,var(--project-risk-overdue) 10%,white);
+  --project-ui-color-08: #061827;
+  --project-ui-color-09: color-mix(in srgb,var(--foreground) 3%,transparent);
+  --project-ui-color-10: color-mix(in srgb,var(--accent) 22%,transparent);
+  --project-ui-color-11: color-mix(in srgb,var(--accent) 12%,transparent);
+  --project-ui-color-12: color-mix(in srgb,var(--accent) 72%,var(--foreground));
+  --project-ui-color-13: color-mix(in srgb,var(--project-state-active) 12%,transparent);
+  --project-ui-color-14: color-mix(in srgb,var(--project-risk-at-risk) 13%,transparent);
+  --project-ui-color-15: color-mix(in srgb,var(--foreground) 6%,transparent);
+  --project-ui-color-16: color-mix(in srgb,var(--foreground) 4%,transparent);
+  --project-ui-color-17: color-mix(in srgb,var(--accent) 30%,transparent);
+  --project-ui-color-18: color-mix(in srgb,var(--accent) 12%,var(--card));
+  --project-ui-color-19: color-mix(in srgb,var(--accent) 70%,var(--foreground));
+  --project-ui-color-20: color-mix(in srgb,var(--project-risk-overdue) 11%,transparent);
+  --project-ui-color-21: color-mix(in srgb,var(--project-risk-overdue) 16%,transparent);
+  --project-ui-color-22: color-mix(in srgb,var(--project-risk-at-risk) 18%,transparent);
+  --project-ui-color-23: color-mix(in srgb,var(--foreground) 5%,transparent);
+  --project-ui-color-24: color-mix(in srgb,var(--foreground) 7%,transparent);
+  --project-ui-color-25: color-mix(in srgb,var(--foreground) 8.5%,transparent);
+  --project-ui-color-26: color-mix(in srgb,var(--foreground) 11%,transparent);
+  --project-ui-color-27: color-mix(in srgb,var(--foreground) 8%,transparent);
+  --project-ui-color-28: color-mix(in srgb,var(--foreground) 22%,transparent);
+  --project-ui-color-29: color-mix(in srgb,var(--foreground) 10%,transparent);
+  --project-ui-color-30: color-mix(in srgb,var(--project-state-planned) 34%,transparent);
+  --project-ui-color-31: color-mix(in srgb,var(--project-state-planned) 10%,var(--card));
+  --project-ui-color-32: color-mix(in srgb,var(--project-state-active) 34%,transparent);
+  --project-ui-color-33: color-mix(in srgb,var(--project-state-active) 10%,var(--card));
+  --project-ui-color-34: color-mix(in srgb,var(--project-state-blocked) 34%,transparent);
+  --project-ui-color-35: color-mix(in srgb,var(--project-state-blocked) 10%,var(--card));
+  --project-ui-color-36: color-mix(in srgb,var(--project-state-completed) 34%,transparent);
+  --project-ui-color-37: color-mix(in srgb,var(--project-state-completed) 10%,var(--card));
+  --project-ui-color-38: color-mix(in srgb,var(--project-state-canceled) 34%,transparent);
+  --project-ui-color-39: color-mix(in srgb,var(--project-state-canceled) 10%,var(--card));
+  --project-ui-color-40: color-mix(in srgb, var(--foreground) 62%, transparent);
+  --project-ui-color-41: color-mix(in srgb, var(--foreground) 14%, transparent);
+  --project-ui-color-42: color-mix(in srgb, var(--foreground) 6%, transparent);
+  --project-ui-color-43: color-mix(in srgb,var(--project-state-planned) 30%,transparent);
+  --project-ui-color-44: color-mix(in srgb,var(--project-state-planned) 7%,var(--card));
+  --project-ui-color-45: color-mix(in srgb,var(--project-state-planned) 12%,transparent);
+  --project-ui-color-46: color-mix(in srgb,var(--project-state-planned-strong) 76%,transparent);
+  --project-ui-color-47: color-mix(in srgb,var(--project-state-planned-strong) 50%,transparent);
+  --project-ui-color-48: color-mix(in srgb,var(--project-state-planned-strong) 70%,transparent);
+  --project-ui-color-49: color-mix(in srgb,var(--project-state-active) 30%,transparent);
+  --project-ui-color-50: color-mix(in srgb,var(--project-state-active) 7%,var(--card));
+  --project-ui-color-51: color-mix(in srgb,var(--project-state-active-strong) 76%,transparent);
+  --project-ui-color-52: color-mix(in srgb,var(--project-state-active-strong) 50%,transparent);
+  --project-ui-color-53: color-mix(in srgb,var(--project-state-active-strong) 70%,transparent);
+  --project-ui-color-54: color-mix(in srgb,var(--project-risk-at-risk) 30%,transparent);
+  --project-ui-color-55: color-mix(in srgb,var(--project-risk-at-risk) 7%,var(--card));
+  --project-ui-color-56: color-mix(in srgb,var(--project-risk-at-risk) 12%,transparent);
+  --project-ui-color-57: color-mix(in srgb,var(--project-risk-at-risk-strong) 76%,transparent);
+  --project-ui-color-58: color-mix(in srgb,var(--project-risk-at-risk-strong) 50%,transparent);
+  --project-ui-color-59: color-mix(in srgb,var(--project-risk-at-risk-strong) 70%,transparent);
+  --project-ui-color-60: color-mix(in srgb,var(--project-risk-overdue) 30%,transparent);
+  --project-ui-color-61: color-mix(in srgb,var(--project-risk-overdue) 7%,var(--card));
+  --project-ui-color-62: color-mix(in srgb,var(--project-risk-overdue-strong) 76%,transparent);
+  --project-ui-color-63: color-mix(in srgb,var(--project-risk-overdue-strong) 50%,transparent);
+  --project-ui-color-64: color-mix(in srgb,var(--project-risk-overdue-strong) 70%,transparent);
+  --project-ui-color-67: rgba(10,21,26,0.04);
+  --project-ui-color-68: color-mix(in srgb,var(--accent) 55%,var(--border));
+  --project-ui-color-69: color-mix(in srgb, var(--project-dynamic-risk) 12%, transparent);
+  --project-ui-color-70: color-mix(in srgb, var(--project-dynamic-risk) 28%, transparent);
+  --project-ui-color-71: color-mix(in srgb,var(--foreground) 9%,transparent);
+  --project-ui-color-72: rgba(10,21,26,0.12);
+  --project-ui-color-73: color-mix(in srgb,var(--role-team) 20%,var(--card));
+  --project-ui-color-74: color-mix(in srgb,var(--role-client) 20%,var(--card));
+  --project-ui-color-75: color-mix(in srgb,var(--role-manager) 22%,var(--card));
+  --project-ui-color-76: color-mix(in srgb,var(--role-admin) 20%,var(--card));
+  --project-ui-color-77: color-mix(in srgb,var(--accent) 20%,var(--card));
+  --project-ui-color-78: color-mix(in srgb,var(--accent) 88%,black);
+  --project-ui-color-79: #cdeeff;
+  --project-ui-color-80: color-mix(in srgb,var(--accent) 40%,transparent);
+  --project-ui-color-83: color-mix(in srgb, var(--accent) 72%, var(--foreground));
+  --project-board-todo-surface: color-mix(in srgb,var(--foreground) 3%,var(--card));
+  --project-board-progress-border: color-mix(in srgb,var(--semantic-info) 32%,transparent);
+  --project-board-progress-surface: color-mix(in srgb,var(--semantic-info) 12%,var(--card));
+  --project-board-blocked-border: color-mix(in srgb,var(--project-risk-overdue) 30%,transparent);
+  --project-board-blocked-surface: color-mix(in srgb,var(--project-risk-overdue) 11%,var(--card));
+  --project-board-done-border: color-mix(in srgb,var(--project-state-completed) 30%,transparent);
+  --project-board-done-surface: color-mix(in srgb,var(--project-state-completed) 11%,var(--card));
+  --project-board-drop-ring: color-mix(in srgb,var(--accent) 55%,transparent);
+  --project-board-card-shadow: 0 1px 2px rgba(10,21,26,0.04);
+  --project-board-card-hover-border: color-mix(in srgb,var(--accent) 40%,transparent);
+  --project-board-card-hover-shadow: 0 8px 22px rgba(10,21,26,0.08);
+  --project-board-reason-border: color-mix(in srgb,var(--project-risk-overdue) 24%,transparent);
+  --project-board-reason-surface: color-mix(in srgb,var(--project-risk-overdue) 8%,transparent);
+  --project-board-blocked-reason-border: color-mix(in srgb,var(--project-risk-at-risk) 30%,transparent);
+  --project-board-blocked-reason-surface: color-mix(in srgb,var(--project-risk-at-risk) 10%,var(--card));
+}
+
+.dark, [data-theme="dark"] {
+  --sheet-header-tint: color-mix(in srgb, var(--primary) 12%, transparent);
+}
+
+/* Portfolio grid — ported verbatim from MQ globals.css (.projects-portfolio-grid).
+   Responsive column template + reserved rows so pagination doesn't reflow. */
+@layer components {
+  .projects-portfolio-grid {
+  --projects-card-min-height: 158px;
+  --projects-page-rows: 12;
+  align-content: start;
+  align-items: start;
+  grid-template-columns: minmax(0, 1fr);
+  grid-auto-rows: auto;
+  min-height: calc((var(--projects-card-min-height) * var(--projects-page-rows)) + (1rem * (var(--projects-page-rows) - 1)));
+}
+
+@media (min-width: 768px) {
+  .projects-portfolio-grid {
+    --projects-page-rows: 6;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 900px) {
+  .projects-portfolio-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (min-width: 1024px) {
+  .projects-portfolio-grid {
+    --projects-page-rows: 4;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+  @media (min-width: 1280px) {
+    .projects-portfolio-grid {
+      --projects-page-rows: 3;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+  }
+}
+
+/* Project component surfaces — ported verbatim from MQ globals.css. */
+:root {
+  --project-item-padding: 0.75rem;
+  --project-cell-padding: 1rem;
+}
+
+@keyframes dashboard-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@layer components {
+  .project-surface-card {
+  border-radius: var(--radius-card);
+  border: 1px solid var(--border-hairline);
+  background: var(--project-surface-secondary);
+  padding: var(--project-surface-padding);
+  animation: dashboard-fade-in 640ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dashboard-reveal,
+  .project-surface-card {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.dark .project-surface-card {
+  border-color: var(--border-hairline);
+  background: var(--project-surface-secondary);
+}
+
+.project-surface-card.is-light {
+  background: var(--project-surface-primary);
+}
+
+.dark .project-surface-card.is-light,
+.theme-dark .project-surface-card.is-light {
+  background: color-mix(in srgb, var(--card) 92%, white 8%);
+}
+
+.project-item-card {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  border-radius: var(--radius-card);
+  border: 1px solid var(--border-hairline-soft);
+  padding: var(--project-item-padding);
+  text-align: left;
+  background: var(--project-surface-item);
+}
+
+.project-section-icon {
+  display: flex;
+  width: 1.875rem;
+  height: 1.875rem;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: var(--muted);
+  color: var(--muted-foreground);
+}
+
+.project-stat-cell {
+  padding: var(--project-cell-padding);
+}
+
+.project-contact-icon {
+  display: inline-flex;
+  width: 1.5rem;
+  height: 1.5rem;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border-hairline);
+  border-radius: 999px;
+  color: var(--muted-foreground);
+  transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease;
+}
+
+.project-contact-icon:hover {
+  border-color: var(--border-strong);
+  background: var(--muted);
+  color: var(--foreground);
+}
+
+.project-hero-contact-icon {
+  display: inline-flex;
+  width: 1.5rem;
+  height: 1.5rem;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--project-hero-border);
+  border-radius: 999px;
+  color: var(--project-hero-muted);
+  transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease;
+}
+
+.project-hero-contact-icon:hover {
+  border-color: rgba(246, 251, 255, 0.4);
+  background: rgba(246, 251, 255, 0.08);
+  color: var(--project-hero-foreground);
+}
+
+.project-item-card.is-interactive {
+  cursor: pointer;
+  transition: background-color 160ms ease, border-color 160ms ease;
+}
+
+.project-item-card.is-interactive:hover {
+  border-color: color-mix(in srgb, var(--accent) 46%, var(--foreground) 12%);
+  background: var(--card);
+}
+
+.dark .project-item-card.is-interactive:hover {
+  border-color: color-mix(in srgb, var(--accent) 46%, var(--foreground) 12%);
+}
+
+.project-group-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  border-top: 1px solid var(--border-hairline);
+  padding-top: 0.75rem;
+  padding-left: 0.25rem;
+  padding-right: 0.25rem;
+}
+
+  .project-group-header:first-child {
+    border-top: 0;
+    padding-top: 0;
+  }
+}

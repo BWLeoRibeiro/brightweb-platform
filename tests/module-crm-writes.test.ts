@@ -113,20 +113,25 @@ test("setCrmContactStatus calls the SQL history RPC with the exact contract", as
 });
 
 test("bulkSetCrmContactStatus applies the RPC once per distinct contact", async () => {
+  const firstId = "00000000-0000-4000-8000-000000000001";
+  const secondId = "00000000-0000-4000-8000-000000000002";
   const { supabase, rpcCalls } = createStatusSupabase([
-    contact("contact-1"),
-    contact("contact-2", "proposal"),
+    contact(firstId),
+    contact(secondId, "proposal"),
   ]);
 
   const result = await bulkSetCrmContactStatus(
     supabase as never,
-    ["contact-1", "contact-2", "contact-1"],
+    [firstId, secondId, firstId],
     "won",
   );
 
-  assert.deepEqual(result.map((row) => row.status), ["won", "won"]);
+  assert.deepEqual(result, [
+    { id: firstId, ok: true },
+    { id: secondId, ok: true },
+  ]);
   assert.deepEqual(rpcCalls.map((call) => call.name), ["set_crm_status", "set_crm_status"]);
-  assert.deepEqual(rpcCalls.map((call) => call.args.p_contact_id).sort(), ["contact-1", "contact-2"]);
+  assert.deepEqual(rpcCalls.map((call) => call.args.p_contact_id).sort(), [firstId, secondId]);
 });
 
 test("CRM POST and PATCH handlers reject non-staff access before writes", async () => {

@@ -31,11 +31,11 @@ export function CrmReportBanner({ summary, href, dictionary = defaultCrmUiDictio
         <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-px bg-[image:var(--report-hero-rule)]" />
         <div className="relative flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
           <div className="min-w-0 lg:flex-1">
-            <p className="inline-flex items-center gap-2 text-[length:var(--text-ui-label)] font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--project-hero-muted)" }}>
+            <p className="inline-flex items-center gap-2 text-[length:var(--text-ui-label)] font-semibold uppercase tracking-[var(--type-tracking-160)]" style={{ color: "var(--project-hero-muted)" }}>
               <BarChart3 className="h-3.5 w-3.5" style={{ color: "var(--accent)" }} aria-hidden />
               {dictionary.dashboard.reportEyebrow}
             </p>
-            <h2 className="font-display mt-4 text-[length:var(--text-ui-report-title)] font-extrabold leading-[1.04] tracking-[-0.035em] md:text-[length:var(--text-ui-report-title-lg)]" style={{ color: "var(--project-hero-foreground)" }}>{dictionary.dashboard.reportTitle}</h2>
+            <h2 className="font-display mt-4 text-[length:var(--text-ui-report-title)] font-extrabold leading-[var(--type-leading-104)] tracking-[var(--type-tracking-n035)] md:text-[length:var(--text-ui-report-title-lg)]" style={{ color: "var(--project-hero-foreground)" }}>{dictionary.dashboard.reportTitle}</h2>
             <p className="mt-3 max-w-[var(--crm-report-copy-max-width)] text-[length:var(--text-ui-card-title)]" style={{ color: "var(--project-hero-muted)" }}>
               <span className="font-semibold" style={{ color: "var(--accent)" }}>{summary.qualifiedLast30Days}</span>{" "}
               {summary.qualifiedLast30Days === 1 ? dictionary.dashboard.qualifiedSingular : dictionary.dashboard.qualifiedPlural}
@@ -51,8 +51,8 @@ export function CrmReportBanner({ summary, href, dictionary = defaultCrmUiDictio
           <div className="grid shrink-0 grid-cols-3 gap-3">
             {metrics.map((metric) => (
               <div key={metric.label} className="flex min-w-[var(--crm-report-metric-min-width)] flex-col justify-center rounded-[var(--radius-card)] border px-4 py-4" style={{ borderColor: "var(--project-hero-border)", background: "var(--project-hero-surface-raised)" }}>
-                <span className="font-display text-[length:var(--text-ui-report-metric)] font-black leading-[0.9] tracking-[-0.05em]" style={{ color: "var(--project-hero-foreground)" }}>{metric.value}</span>
-                <span className="mt-2 text-[length:var(--text-ui-label)] uppercase tracking-[0.1em]" style={{ color: "var(--project-hero-muted)" }}>{metric.label}</span>
+                <span className="font-display text-[length:var(--text-ui-report-metric)] font-black leading-[var(--type-leading-090)] tracking-[var(--type-tracking-n050)]" style={{ color: "var(--project-hero-foreground)" }}>{metric.value}</span>
+                <span className="mt-2 text-[length:var(--text-ui-label)] uppercase tracking-[var(--type-tracking-100)]" style={{ color: "var(--project-hero-muted)" }}>{metric.label}</span>
               </div>
             ))}
           </div>

@@ -50,6 +50,8 @@ export type CrmOrganization = {
   created_at?: string;
 };
 
+export type CrmOrganizationWriteInput = Omit<CrmOrganization, "id" | "created_at">;
+
 /** @deprecated Use CrmOrganization. */
 export type CrmOrganizationOption = CrmOrganization;
 
@@ -129,6 +131,15 @@ export type CrmUiDictionary = {
     saving: string;
     delete: string;
     timeline: string;
+    viewEyebrow: string;
+    editEyebrow: string;
+    createEyebrow: string;
+    createDescription: string;
+    createdOn: (date: string) => string;
+    noName: string;
+    information: string;
+    pipeline: string;
+    edit: string;
     fields: {
       firstName: string;
       lastName: string;
@@ -198,6 +209,25 @@ export type CrmUiDictionary = {
     address: string;
     taxIdentifier: string;
     unavailable: string;
+    newTitle: string;
+    viewEyebrow: string;
+    editEyebrow: string;
+    createEyebrow: string;
+    createDescription: string;
+    fallbackDescription: string;
+    identity: string;
+    profile: string;
+    name: string;
+    namePlaceholder: string;
+    selectIndustry: string;
+    websitePlaceholder: string;
+    taxIdentifierLong: string;
+    taxIdentifierPlaceholder: string;
+    addressPlaceholder: string;
+    edit: string;
+    save: string;
+    saving: string;
+    cancel: string;
   };
   toolbar: {
     filters: string;
@@ -270,6 +300,8 @@ export type CrmUiClient = {
   getStats: () => Promise<CrmContactStatusStats>;
   listOwners: () => Promise<CrmOwnerOption[]>;
   listOrganizations: () => Promise<CrmOrganization[]>;
+  createOrganization: (input: CrmOrganizationWriteInput) => Promise<CrmOrganization>;
+  updateOrganization: (organizationId: string, input: CrmOrganizationWriteInput) => Promise<CrmOrganization>;
   listTimeline: (contactId?: string) => Promise<CrmStatusLog[]>;
   getReport: () => Promise<CrmReportData>;
   createContact: (input: CrmContactFormInput) => Promise<CrmContact>;

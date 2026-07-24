@@ -99,7 +99,7 @@ export function getStarterBootstrapChecklist() {
       {
         label: "Preview Auth flows",
         done: true,
-        detail: "/playground/auth",
+        detail: "/login",
       },
       {
         label: "Preview CRM module",
@@ -109,12 +109,12 @@ export function getStarterBootstrapChecklist() {
       {
         label: "Preview Projects module",
         done: hasModule(moduleKeys, "projects"),
-        detail: hasModule(moduleKeys, "projects") ? "/playground/projects" : "Projects not enabled",
+        detail: hasModule(moduleKeys, "projects") ? "/projects" : "Projects not enabled",
       },
       {
         label: "Preview Admin module",
         done: hasModule(moduleKeys, "admin"),
-        detail: hasModule(moduleKeys, "admin") ? "/playground/admin" : "Admin not enabled",
+        detail: hasModule(moduleKeys, "admin") ? "/admin" : "Admin not enabled",
       },
       {
         label: "Deploy only after env readiness is green",

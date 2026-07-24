@@ -1,16 +1,19 @@
 "use client";
 
-import { ArrowLeft, BriefcaseBusiness, Eye, KanbanSquare, Plus, RotateCcw } from "lucide-react";
+import { ArrowLeft, BriefcaseBusiness, KanbanSquare, Plus, RotateCcw } from "lucide-react";
 import type { ShellContextualAction, ShellModuleRegistration } from "@brightweblabs/app-shell";
+import { ProjectSummaryCard } from "./ui/shared/project-summary-card";
+import { ProjectSummaryCardSkeleton } from "./ui/shared/project-summary-card-skeleton";
+import { TaskDueMeta, TaskPriorityTag, TaskStatusTag } from "./ui/shared/task-tags";
 
-export const projectsModuleRegistration: ShellModuleRegistration<ShellContextualAction> = {
+export function createProjectsModuleRegistration(baseHref = "/projetos"): ShellModuleRegistration<ShellContextualAction> { return {
   key: "projects",
   placement: "primary",
-  navItems: [{ href: "/projetos", label: "Projetos", icon: BriefcaseBusiness }],
+  navItems: [{ href: baseHref, label: "Projetos", icon: BriefcaseBusiness }],
   toolbarRoutes: [
     { surface: "project-board", match: { includes: ["/tarefas", "/quadro"] } },
-    { surface: "project-detail", match: { prefixes: ["/projetos/"] } },
-    { surface: "projects", match: { exact: ["/projetos"] } },
+    { surface: "project-detail", match: { prefixes: [`${baseHref}/`] } },
+    { surface: "projects", match: { exact: [baseHref] } },
   ],
   toolbarActions: {
     projects: [
@@ -18,12 +21,19 @@ export const projectsModuleRegistration: ShellModuleRegistration<ShellContextual
       { label: "Novo", icon: Plus, action: "projects-new-menu" },
     ],
     "project-detail": [
-      { label: "Portfólio", icon: ArrowLeft, action: "projects-back-to-portfolio" },
-      { label: "Tarefas", icon: KanbanSquare, action: "projects-open-board" },
+      { label: "Projetos", icon: ArrowLeft, action: "projects-back-to-portfolio", placement: "back" },
+      { label: "Ver tarefas", icon: KanbanSquare, action: "projects-open-board", placement: "contextual" },
     ],
     "project-board": [
-      { label: "Portfólio", icon: ArrowLeft, action: "projects-back-to-portfolio" },
-      { label: "Visão geral", icon: Eye, action: "projects-open-detail" },
+      { label: "Projetos", icon: ArrowLeft, action: "projects-back-to-portfolio", placement: "back" },
     ],
   },
-};
+  dashboardContribution: {
+    key: "projects",
+    sections: ["projects", "tasks"],
+    projectComponents: { ProjectSummaryCard, ProjectSummaryCardSkeleton, TaskDueMeta, TaskPriorityTag, TaskStatusTag },
+  },
+}; }
+
+export const projectsModuleRegistration = createProjectsModuleRegistration();
+export const projectsPreviewModuleRegistration = createProjectsModuleRegistration("/projects");

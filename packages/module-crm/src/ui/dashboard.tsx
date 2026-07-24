@@ -12,6 +12,7 @@ import { CrmDeleteDialog } from "./delete-dialog";
 import { defaultCrmUiDictionary, resolveCrmStages } from "./dictionary";
 import { CRM_UI_EVENTS } from "./hooks";
 import { CrmOrganizationsBrowser } from "./organizations-browser";
+import { CrmOrganizationSheet, type CrmOrganizationFormInput } from "./organization-sheet";
 import { CrmStatusDialog } from "./status-dialog";
 import { CrmTimelineBrowser } from "./timeline-browser";
 import { CrmReportBanner, type CrmReportBannerSummary } from "./report-banner";
@@ -44,7 +45,8 @@ export function CrmDashboard({ client: providedClient, initialData, dictionary =
   const [contactTimeline, setContactTimeline] = useState<CrmStatusLog[]>([]);
   const [loading, setLoading] = useState(!initialData?.contacts);
   const [timelineLoading, setTimelineLoading] = useState(false);
-  const [loadFailed, setLoadFailed] = useState(false);
+  const [contactsLoadFailed, setContactsLoadFailed] = useState(false);
+  const [summaryLoadFailed, setSummaryLoadFailed] = useState(false);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [editingContact, setEditingContact] = useState<CrmContact | null>(null);
   const [contactDialogOpen, setContactDialogOpen] = useState(false);
@@ -56,20 +58,50 @@ export function CrmDashboard({ client: providedClient, initialData, dictionary =
   const [timelineOpen, setTimelineOpen] = useState(false);
   const [contactTimelineOpen, setContactTimelineOpen] = useState(false);
   const [organizationsOpen, setOrganizationsOpen] = useState(false);
+  const [organizationSheetOpen, setOrganizationSheetOpen] = useState(false);
+  const [editingOrganization, setEditingOrganization] = useState<CrmOrganization | null>(null);
   const skippedInitialContacts = useRef(Boolean(initialData?.contacts));
+  const contactsRequestGeneration = useRef(0);
+  const summaryRequestGeneration = useRef(0);
+  const contactTimelineRequestGeneration = useRef(0);
+  const loadFailed = contactsLoadFailed || summaryLoadFailed;
 
   const loadContacts = async (nextParams: CrmContactsListParams) => {
+    const generation = ++contactsRequestGeneration.current;
     setLoading(true);
-    try { setContacts(await client.listContacts(nextParams)); setLoadFailed(false); }
-    catch { setLoadFailed(true); }
-    finally { setLoading(false); }
+    try {
+      const result = await client.listContacts(nextParams);
+      if (generation === contactsRequestGeneration.current) {
+        setContacts(result);
+        setContactsLoadFailed(false);
+      }
+    } catch {
+      if (generation === contactsRequestGeneration.current) setContactsLoadFailed(true);
+    } finally {
+      if (generation === contactsRequestGeneration.current) setLoading(false);
+    }
   };
   const loadSummary = async () => {
+    const generation = ++summaryRequestGeneration.current;
     const results = await Promise.allSettled([client.getStats(), client.listOwners(), client.listOrganizations(), client.listTimeline()]);
-    if (results[0].status === "fulfilled") setStats(results[0].value); else setLoadFailed(true);
-    if (results[1].status === "fulfilled") setOwners(results[1].value); else setLoadFailed(true);
-    if (results[2].status === "fulfilled") setOrganizations(results[2].value); else setLoadFailed(true);
-    if (results[3].status === "fulfilled") setTimeline(results[3].value); else setLoadFailed(true);
+    if (generation !== summaryRequestGeneration.current) return;
+    if (results[0].status === "fulfilled") setStats(results[0].value);
+    if (results[1].status === "fulfilled") setOwners(results[1].value);
+    if (results[2].status === "fulfilled") setOrganizations(results[2].value);
+    if (results[3].status === "fulfilled") setTimeline(results[3].value);
+    setSummaryLoadFailed(results.some((result) => result.status === "rejected"));
+  };
+  const loadContactTimeline = async (contactId: string) => {
+    const generation = ++contactTimelineRequestGeneration.current;
+    setTimelineLoading(true);
+    try {
+      const result = await client.listTimeline(contactId);
+      if (generation === contactTimelineRequestGeneration.current) setContactTimeline(result);
+    } catch {
+      if (generation === contactTimelineRequestGeneration.current) setContactTimeline([]);
+    } finally {
+      if (generation === contactTimelineRequestGeneration.current) setTimelineLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -86,8 +118,7 @@ export function CrmDashboard({ client: providedClient, initialData, dictionary =
   const openContact = (contact: CrmContact) => {
     setEditingContact(contact);
     setContactDialogOpen(true);
-    setTimelineLoading(true);
-    void client.listTimeline(contact.id).then(setContactTimeline).catch(() => setContactTimeline([])).finally(() => setTimelineLoading(false));
+    void loadContactTimeline(contact.id);
   };
   const saveContact = async (input: CrmContactFormInput) => {
     if (editingContact) await client.updateContact(editingContact.id, input); else await client.createContact(input);
@@ -96,10 +127,20 @@ export function CrmDashboard({ client: providedClient, initialData, dictionary =
   const openStatus = (ids: string[], initial: CrmContactStatus = "lead") => { setStatusTargets(ids); setStatusInitial(initial); setStatusDialogOpen(true); };
   const saveStatus = async (status: CrmContactStatus, reason?: string | null) => {
     await client.setStatus(statusTargets, status, reason); setSelectedIds([]); await refresh();
-    if (editingContact && statusTargets.includes(editingContact.id)) setContactTimeline(await client.listTimeline(editingContact.id));
+    if (editingContact && statusTargets.includes(editingContact.id)) await loadContactTimeline(editingContact.id);
   };
   const openDelete = (ids: string[]) => { setDeleteTargets(ids); setDeleteDialogOpen(true); };
   const deleteContacts = async (ids: string[]) => { await client.deleteContacts(ids); setSelectedIds([]); setContactDialogOpen(false); await refresh(); };
+  const openOrganization = (organization: CrmOrganization) => { setEditingOrganization(organization); setOrganizationsOpen(false); setOrganizationSheetOpen(true); };
+  const createOrganization = () => { setEditingOrganization(null); setOrganizationsOpen(false); setOrganizationSheetOpen(true); };
+  const saveOrganization = async (input: CrmOrganizationFormInput, current?: CrmOrganization | null) => {
+    const saved = current
+      ? await client.updateOrganization(current.id, input)
+      : await client.createOrganization(input);
+    setOrganizations((items) => current
+      ? items.map((item) => item.id === current.id ? saved : item)
+      : [...items, saved]);
+  };
   const contactsByOrganization = useMemo(() => {
     const counts = new Map<string, number>();
     contacts.items.forEach((contact) => { if (contact.organization_id) counts.set(contact.organization_id, (counts.get(contact.organization_id) ?? 0) + 1); });
@@ -120,7 +161,7 @@ export function CrmDashboard({ client: providedClient, initialData, dictionary =
 
   useEffect(() => {
     const createContact = () => { setEditingContact(null); setContactDialogOpen(true); };
-    const openOrganizationList = () => setOrganizationsOpen(true);
+    const openOrganizationList = () => createOrganization();
     const setSearch = (event: Event) => setParams((current) => ({ ...current, search: (event as CustomEvent<{ search?: string }>).detail?.search ?? "", page: 1 }));
     const setSegment = (event: Event) => setParams((current) => ({ ...current, status: (event as CustomEvent<{ status?: CrmContactStatus | null }>).detail?.status ?? null, page: 1 }));
     const setSort = (event: Event) => setParams((current) => ({ ...current, sort: (event as CustomEvent<{ sort?: CrmContactsListParams["sort"] }>).detail?.sort ?? "date_desc", page: 1 }));
@@ -152,7 +193,7 @@ export function CrmDashboard({ client: providedClient, initialData, dictionary =
         <div className="min-w-0 space-y-4 overflow-hidden md:col-span-2">
           <CrmContactsTable data={contacts} params={params} owners={owners} loading={loading} dictionary={dictionary} stages={resolvedStages} columns={columns} selectedIds={selectedIds} onSelectedIdsChange={setSelectedIds} onParamsChange={setParams} onRowClick={openContact} onBulkStatus={(ids) => openStatus(ids)} onBulkDelete={openDelete} onQuickStatus={(contact, status) => openStatus([contact.id], status)} renderRowActions={slots?.rowActions} showToolbar={false} />
         </div>
-        <div className="min-w-0 md:col-span-1">{slots?.sidebarTop}<CrmDashboardSidebar timelineEntries={timeline} organizations={organizations} contactsByOrganization={contactsByOrganization} isRefreshing={loading} isLoadingOrganizations={loading} dictionary={dictionary} onOpenTimeline={() => setTimelineOpen(true)} onOpenOrganizations={() => setOrganizationsOpen(true)} onOpenOrganization={() => setOrganizationsOpen(true)} />{slots?.sidebarBottom}</div>
+        <div className="min-w-0 md:col-span-1">{slots?.sidebarTop}<CrmDashboardSidebar timelineEntries={timeline} organizations={organizations} contactsByOrganization={contactsByOrganization} isRefreshing={loading} isLoadingOrganizations={loading} dictionary={dictionary} onOpenTimeline={() => setTimelineOpen(true)} onOpenOrganizations={() => setOrganizationsOpen(true)} onOpenOrganization={openOrganization} />{slots?.sidebarBottom}</div>
       </section>
       {slots?.reportBanner ?? (navigation.reportHref ? <CrmReportBanner summary={reportSummary} href={navigation.reportHref} dictionary={dictionary} /> : null)}
       <CrmContactDialog open={contactDialogOpen} contact={editingContact} organizations={organizations} owners={owners} dictionary={dictionary} stages={resolvedStages} onOpenChange={setContactDialogOpen} onSubmit={saveContact} onTimeline={(contact) => { setEditingContact(contact); setContactDialogOpen(false); setContactTimelineOpen(true); }} onDelete={(contact) => { setContactDialogOpen(false); openDelete([contact.id]); }} />
@@ -160,7 +201,8 @@ export function CrmDashboard({ client: providedClient, initialData, dictionary =
       <CrmDeleteDialog open={deleteDialogOpen} contactIds={deleteTargets} dictionary={dictionary} onOpenChange={setDeleteDialogOpen} onConfirm={deleteContacts} />
       <CrmTimelineBrowser open={timelineOpen} entries={timeline} loading={timelineLoading} dictionary={dictionary} onOpenChange={setTimelineOpen} />
       <CrmTimelineBrowser open={contactTimelineOpen} entries={contactTimeline} loading={timelineLoading} dictionary={dictionary} onOpenChange={setContactTimelineOpen} />
-      <CrmOrganizationsBrowser open={organizationsOpen} organizations={organizations} contactsByOrganization={contactsByOrganization} fields={organizationFields} dictionary={dictionary} onOpenChange={setOrganizationsOpen} />
+      <CrmOrganizationsBrowser open={organizationsOpen} organizations={organizations} contactsByOrganization={contactsByOrganization} fields={organizationFields} dictionary={dictionary} onOpenChange={setOrganizationsOpen} onSelect={openOrganization} />
+      <CrmOrganizationSheet open={organizationSheetOpen} organization={editingOrganization} dictionary={dictionary} onOpenChange={setOrganizationSheetOpen} onSubmit={saveOrganization} />
     </div>
   );
 }

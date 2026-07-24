@@ -56,6 +56,10 @@ export {
   handleCrmStatsGetRequest,
   handleCrmTimelineGetRequest,
 } from "./handlers";
+export {
+  ensureCrmContactForProfile,
+  type CrmContactProfileResult,
+} from "./server";
 import {
   getCrmContactStatusStats,
   listCrmContacts,

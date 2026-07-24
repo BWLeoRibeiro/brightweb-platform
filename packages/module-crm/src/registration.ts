@@ -5,6 +5,7 @@ import type { ShellContextualAction, ShellModuleRegistration } from "@brightwebl
 
 export const crmModuleRegistration: ShellModuleRegistration<ShellContextualAction> = {
   key: "crm",
+  dashboardContribution: { key: "crm", sections: ["crm"] },
   moduleGroups: [
     {
       key: "crm",

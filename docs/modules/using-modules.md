@@ -38,6 +38,8 @@ That means BrightWeb module usage is primarily a package and wiring model. The s
 | `@brightweblabs/module-admin` | `listAdminUsers()`, `handleAdminUsersGetRequest()`, `handleAdminUsersRoleChangeRequest()` | `stable` | Reusable admin listing plus package-owned admin HTTP handlers. |
 | `@brightweblabs/module-admin` | `getAdminUsersPageData()` | `starter` | Starter admin page payload for the scaffolded users screen. |
 | `@brightweblabs/module-admin/registration` | `adminModuleRegistration` | `stable` | Admin app-shell navigation and toolbar registration. |
+| `@brightweblabs/module-admin/ui` | `AdminUsersClient`, `AdminToolbarControls`, `createAdminUiClient()` | `stable` | Packaged users, roles, invitations, and shell toolbar UI with injectable data access. |
+| `@brightweblabs/module-admin/tokens.css` | Admin UI tokens and parity classes | `stable` | Required visual contract for the packaged Admin UI. |
 | `@brightweblabs/module-orgs` | `listOrganizations()`, `createOrganization()`, `updateOrganization()`, `listOrganizationMembers()`, `setOrganizationMemberRole()` | `stable` | Shared organization and membership data operations used by CRM and Projects. |
 | `@brightweblabs/module-orgs/registration` | `orgsModuleRegistration` | `stable` | Hidden foundation registration with no navigation. |
 | `@brightweblabs/module-crm` | `listCrmContacts()`, `listCrmOrganizations()`, `getCrmContactStatusStats()`, `listCrmOwnerOptions()`, `listCrmPrimaryContacts()`, `listCrmStatusTimeline()` | `stable` | Reusable CRM primitives for package-owned CRM surfaces and workflows. |
@@ -233,6 +235,7 @@ Auth email flows should stay on `supabase.auth.*` and Supabase Auth SMTP/project
 - Use `@brightweblabs/core-auth/server` to gate pages and get the current signed-in user context.
 - Use `@brightweblabs/core-auth/shared` for validation and callback URL helpers.
 - Use `@brightweblabs/module-admin` for admin user listing, role changes, handlers, and the mountable `AdminUsersPage`.
+- Use `@brightweblabs/module-admin/ui` when an app needs to inject its own users/invitations client or compose `AdminToolbarControls` into `AppHeader`.
 
 ### CRM
 

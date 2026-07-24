@@ -1,4 +1,5 @@
 import type { createServerSupabase } from "@brightweblabs/infra/server";
+import { validateBoundedUuidBatch } from "@brightweblabs/infra/robustness";
 import type { AdminManagedRole } from "./users";
 
 export type RoleChangeResult = {
@@ -38,7 +39,9 @@ export async function applyAdminRoleChanges({
   newRole,
   reason,
 }: ApplyAdminRoleChangesParams): Promise<AdminRoleChangeResult> {
-  const uniqueProfileIds = Array.from(new Set(profileIds));
+  const batch = validateBoundedUuidBatch(profileIds);
+  if (!batch.ok) throw new Error(batch.code);
+  const uniqueProfileIds = batch.ids;
   const changed: RoleChangeResult[] = [];
   const skipped: AdminRoleChangeSkipped[] = [];
 
@@ -50,11 +53,8 @@ export async function applyAdminRoleChanges({
     });
 
     if (error) {
-      const errorMessage =
-        typeof error === "object" && error !== null && "message" in error
-          ? String((error as { message?: unknown }).message ?? "falha_na_atualizacao_de_funcao")
-          : "falha_na_atualizacao_de_funcao";
-      skipped.push({ profileId, reason: errorMessage });
+      console.error("[admin.role-change]", { profileId, error });
+      skipped.push({ profileId, reason: "role_update_failed" });
       continue;
     }
 

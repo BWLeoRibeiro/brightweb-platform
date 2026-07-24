@@ -29,6 +29,8 @@ export * from "./components/card";
 export * from "./components/chart";
 export * from "./components/breadcrumb";
 export * from "./components/calendar";
+export { Checkbox } from "./components/checkbox";
+export type { CheckboxProps } from "./components/checkbox";
 export { Label } from "./components/label";
 export * from "./components/pagination";
 export * from "./components/popover";

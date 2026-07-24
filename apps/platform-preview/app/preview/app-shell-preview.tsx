@@ -122,7 +122,7 @@ export function AppShellPreview() {
 
         <section className="app-preview-content">
           <div className="app-preview-stage">
-            <div className="grid">
+            <div className="preview-grid">
               {mockSurfaceCards.map((card) => (
                 <article key={card.title} className="panel preview-glass-card">
                   <div className="panel-inner">

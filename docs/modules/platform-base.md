@@ -31,7 +31,7 @@ Use [Base Contract](./base-contract.md) for the support-tier rules and [base-con
 | Core helpers | The Core layer provides shared database helpers such as `current_profile_id()`, plus placeholder role helpers later replaced by Admin. |
 | Auth package | `@brightweblabs/core-auth` provides the shared auth package used by platform apps for callback flows, reset-password flows, shared auth validation utilities, and shared client/server auth helpers. |
 | Infra package | `@brightweblabs/infra` provides shared Supabase clients plus the canonical app-owned Resend transport and webhook signature verification helpers. It does not add a marketing-subscription or Resend Topics data model to the platform base. |
-| Admin package | `@brightweblabs/module-admin` provides the admin package for governance surfaces, admin handlers, and role-aware server helpers. |
+| Admin package | `@brightweblabs/module-admin` provides governance surfaces, admin handlers, role-aware server helpers, and injectable users/invitations UI. |
 | Shell runtime | The baseline platform shell wiring is composed around `@brightweblabs/app-shell`, with Core auth and optional Admin UI surfaces attached to that runtime. |
 
 ## Whether it adds starter routes and wiring
@@ -52,9 +52,11 @@ The current platform-base contract is intentionally split into reusable and star
 - `@brightweblabs/core-auth/shared`: shared validation, URL helpers, and auth constants
 - `@brightweblabs/core-auth/client`: `useCooldownTimer()`
 - `@brightweblabs/core-auth/server`: `requireServerPageAccess()`, `requireServerPageRoleAccess()`, `getServerAccess()`
-- `@brightweblabs/ui`: shared avatar, search, skeleton, phone-input, badge recipe, and theme-provider surfaces
+- `@brightweblabs/ui`: shared avatar, search, skeleton, phone-input, and badge recipe surfaces
+- `@brightweblabs/app-shell`: shell composition plus the platform theme controller and pre-hydration script
 - `@brightweblabs/module-admin`: `listAdminUsers()`, `handleAdminUsersGetRequest()`, `handleAdminUsersRoleChangeRequest()`
 - `@brightweblabs/module-admin/registration`: `adminModuleRegistration`
+- `@brightweblabs/module-admin/ui`: `AdminUsersClient`, `AdminToolbarControls`, `createAdminUiClient`
 
 ### Starter
 
@@ -89,7 +91,9 @@ const adminOnly = await requireServerPageRoleAccess("admin");
 
 ### Shared UI and theme
 
-`@brightweblabs/ui` 1.0 exposes the stable component system from its root and per-component subpaths. Wrap app content with `ThemeProvider` when the app needs persistent light, dark, and system modes; `useTheme()` exposes both the selected mode and its resolved light/dark value. The avatar, search, skeleton, table-skeleton, and phone-input exports build on `@brightweblabs/theme` tokens and typography utilities.
+`@brightweblabs/ui` 1.0 exposes the stable component system from its root and per-component subpaths. The avatar, search, skeleton, table-skeleton, and phone-input exports build on `@brightweblabs/theme` tokens and typography utilities.
+
+Theme runtime ownership lives in `@brightweblabs/app-shell`. Render `ThemeScript` in the root layout head before wrapping app content with `ThemeProvider`; this prevents a flash and makes the shell AccountMenu drive persistent light, dark, and system modes directly. `useTheme()` exposes both the selected mode and its resolved light/dark value.
 
 ### Admin routes and data helpers
 
@@ -108,6 +112,46 @@ Treat `getAdminUsersPageData()` as package page glue. Build reusable admin surfa
 ### Shell registration
 
 If your app uses `@brightweblabs/app-shell`, the Admin starter also wires `adminModuleRegistration` into the shell configuration so admin nav and toolbar surfaces appear in the platform runtime.
+
+### Aggregate dashboard
+
+`AppDashboard` is the shell-owned aggregate dashboard. Give it a `DashboardDataClient`, optional server-loaded `initialData`, and the `dashboardContributions` returned by `buildClientAppShellRegistration()`. CRM contributes the client section; Projects contributes the project, task, and milestone sections plus its package-native cards and tags. If a module is absent, its tab and bento cells are omitted.
+
+Import `@brightweblabs/app-shell/dashboard.css` once in the route layout. The dashboard dictionary defaults to MQ's Portuguese copy and can be replaced through the `dictionary` prop.
+
+```tsx
+const built = buildClientAppShellRegistration(registration);
+
+<AppDashboard
+  client={dashboardClient}
+  contributions={built.dashboardContributions}
+  initialData={initialDashboardData}
+  viewerFirstName={viewer.firstName}
+/>
+```
+
+### Not-found and error routes
+
+`NotFoundPage` and `ErrorPage` package the MQ Portuguese status surfaces for thin
+Next.js route mounts. `NotFoundPage` owns a neutral full-page frame and accepts an
+optional `brandLogo` plus `footerBackHref` and `footerBackLabel` overrides.
+`ErrorPage` is a client component with the standard Next.js `error` and `reset`
+contract.
+
+```tsx
+// app/not-found.tsx
+export { NotFoundPage as default } from "@brightweblabs/app-shell";
+```
+
+```tsx
+// app/error.tsx
+"use client";
+
+export { ErrorPage as default } from "@brightweblabs/app-shell";
+```
+
+Import `@brightweblabs/theme/themes/mq-aliases` after the base theme CSS to use
+the literal MQ `heading-2`, `paragraph`, and `label` typography aliases.
 
 ## How To Build On This
 

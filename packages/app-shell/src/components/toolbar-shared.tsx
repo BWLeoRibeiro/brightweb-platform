@@ -2,6 +2,7 @@
 
 import type { LucideIcon } from "lucide-react";
 import { ChevronDown, ListFilter, RotateCcw } from "lucide-react";
+import { Button } from "@brightweblabs/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@brightweblabs/ui/dropdown-menu";
 import { Input } from "@brightweblabs/ui/input";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@brightweblabs/ui/tooltip";
@@ -27,15 +28,16 @@ export function ToolbarNewMenu({ id, icon: Icon, label = "Novo", tooltip, items 
       <DropdownMenu>
         <TooltipTrigger asChild>
           <DropdownMenuTrigger asChild>
-            <button
+            <Button
               type="button"
+              variant="brand"
               id={id}
-              className="inline-flex h-9 items-center gap-2 whitespace-nowrap rounded-[var(--radius-control)] border border-transparent bg-[color:var(--accent)] px-3 text-[length:var(--text-ui-action)] font-extrabold text-[color:var(--accent-foreground)] shadow-[var(--shadow-toolbar-control)]"
+              className="h-9 px-3 text-[length:var(--text-ui-action)] shadow-[var(--shadow-toolbar-control)]"
             >
               <Icon className="size-3.5" />
               {label}
               <ChevronDown className="size-3.5 opacity-70" />
-            </button>
+            </Button>
           </DropdownMenuTrigger>
         </TooltipTrigger>
         <DropdownMenuContent align="end" className="w-52 border-[color:var(--hairline)] bg-[color:var(--popover)]">

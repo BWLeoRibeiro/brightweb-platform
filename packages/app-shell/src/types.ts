@@ -1,4 +1,6 @@
 import type { LucideIcon } from "lucide-react";
+import type { DashboardSurfaceContribution } from "./dashboard/types";
+import type { ThemeMode } from "./theme/theme-controller";
 
 export type AppNavItem = {
   href: string;
@@ -37,6 +39,10 @@ export type ShellBrand = {
   collapsedLogo: ShellBrandAsset;
   lightLogo: ShellBrandAsset;
   darkLogo: ShellBrandAsset;
+  statusPageLogo?: {
+    light: ShellBrandAsset;
+    dark: ShellBrandAsset;
+  };
 };
 
 export type ShellAccessLevel = "all" | "staff" | "admin";
@@ -76,6 +82,7 @@ export type ShellContextualAction = {
   label: string;
   icon: LucideIcon;
   action?: string;
+  placement?: "back" | "contextual";
 };
 
 export type ShellModulePlacement = "primary" | "tools" | "admin" | "hidden";
@@ -123,6 +130,7 @@ export type ShellModuleRegistration<TAction = never> = {
   moduleGroups?: ShellNavGroupConfig[];
   toolbarRoutes?: ShellToolbarRouteConfig[];
   toolbarActions?: Partial<Record<ShellToolbarSurface, TAction[]>>;
+  dashboardContribution?: DashboardSurfaceContribution;
 };
 
 export type ShellRegistrationOverride = (
@@ -141,6 +149,7 @@ export type BuiltClientAppShellRegistration<TAction = never> = {
   shellConfig: ClientAppShellConfig;
   toolbarRoutes: ShellToolbarRouteConfig[];
   toolbarActions: Partial<Record<ShellToolbarSurface, TAction[]>>;
+  dashboardContributions: DashboardSurfaceContribution[];
 };
 
 export type ResolvedShellNavGroupConfig = Omit<ShellNavGroupConfig, "children"> & {
@@ -186,7 +195,7 @@ export type MobileNavProps = {
 };
 
 export type ThemeMenuProps = {
-  onThemeChange: (theme: "light" | "dark" | "system") => void;
+  onThemeChange: (theme: ThemeMode) => void;
 };
 
 export type AccountMenuProps = {
@@ -195,7 +204,7 @@ export type AccountMenuProps = {
   onSignOut: () => Promise<void>;
   user: LayoutUser | null | undefined;
   userInitials: string;
-  onThemeChange?: (theme: "light" | "dark" | "system") => void;
+  onThemeChange?: (theme: ThemeMode) => void;
   variant?: "header" | "rail";
   collapsed?: boolean;
   links?: Partial<{
