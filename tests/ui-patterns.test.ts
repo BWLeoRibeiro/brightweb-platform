@@ -119,7 +119,7 @@ test("BreadcrumbLink uses the direct Slot dependency and preserves composition",
   assert.match(source, /import \{ Slot \} from "@radix-ui\/react-slot"/);
   assert.doesNotMatch(source, /Slot\.Root/);
   assert.equal(packageJson.dependencies["radix-ui"], undefined);
-  assert.equal(packageJson.dependencies["@radix-ui/react-slot"], "^1.2.4");
+  assert.equal(packageJson.dependencies["@radix-ui/react-slot"], "^1.3.1");
   assert.equal(slottedElement.props.ref, ref);
   assert.match(html, /^<a\b[^>]*>Projects<\/a>$/);
   assert.match(html, /href="\/projects"/);
