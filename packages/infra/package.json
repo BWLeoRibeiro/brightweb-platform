@@ -18,6 +18,7 @@
   "exports": {
     ".": "./src/server.ts",
     "./client": "./src/client.ts",
+    "./robustness": "./src/robustness.ts",
     "./server": "./src/server.ts"
   },
   "dependencies": {

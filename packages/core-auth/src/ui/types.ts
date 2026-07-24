@@ -17,7 +17,7 @@ export type AuthUiSession = {
 export type AuthInvitation = {
   id: string;
   email: string;
-  status: string;
+  status: "pending" | "accepted" | "revoked" | "expired";
   expiresAt: string;
   kind: "organization" | "admin";
   organizationName?: string;

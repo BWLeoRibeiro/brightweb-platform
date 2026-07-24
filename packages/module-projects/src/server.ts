@@ -419,7 +419,10 @@ export async function listProjects(
   if (items.length > 0) {
     const ids = items.map((item) => item.id);
 
-    const [{ data: taskRows }, { data: milestoneRows }] = await Promise.all([
+    const [
+      { data: taskRows, error: taskRowsError },
+      { data: milestoneRows, error: milestoneRowsError },
+    ] = await Promise.all([
       supabase
         .from("project_tasks")
         .select("project_id, status, due_date")
@@ -429,6 +432,9 @@ export async function listProjects(
         .select("project_id, status")
         .in("project_id", ids),
     ]);
+
+    const enrichmentError = taskRowsError ?? milestoneRowsError;
+    if (enrichmentError) throw new Error(enrichmentError.message);
 
     const today = new Date().toISOString().slice(0, 10);
     const statsByProject = new Map<string, ProjectListItem["taskStats"]>();
@@ -570,7 +576,10 @@ export async function listOrgAdminProjectsByProfile(
   if (items.length > 0) {
     const ids = items.map((item) => item.id);
 
-    const [{ data: taskRows }, { data: milestoneRows }] = await Promise.all([
+    const [
+      { data: taskRows, error: taskRowsError },
+      { data: milestoneRows, error: milestoneRowsError },
+    ] = await Promise.all([
       supabase
         .from("project_tasks")
         .select("project_id, status, due_date")
@@ -580,6 +589,9 @@ export async function listOrgAdminProjectsByProfile(
         .select("project_id, status")
         .in("project_id", ids),
     ]);
+
+    const enrichmentError = taskRowsError ?? milestoneRowsError;
+    if (enrichmentError) throw new Error(enrichmentError.message);
 
     const today = new Date().toISOString().slice(0, 10);
     const statsByProject = new Map<string, ProjectListItem["taskStats"]>();

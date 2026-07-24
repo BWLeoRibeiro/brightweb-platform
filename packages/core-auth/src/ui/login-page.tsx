@@ -69,13 +69,15 @@ function LoginPageContent() {
           setRedirecting(true);
           router.replace(buildPostLoginPath(invitationId, redirectTo));
         }
+      } catch {
+        if (!cancelled) setError(d.authSystemError);
       } finally {
         if (!cancelled) setChecking(false);
       }
     }
     void prepare();
     return () => { cancelled = true; };
-  }, [client, invitationId, redirectTo, router, shouldRecoverStaleSession]);
+  }, [client, d.authSystemError, invitationId, redirectTo, router, shouldRecoverStaleSession]);
 
   useEffect(() => {
     if (error && mode === "password") passwordInputRef.current?.focus();

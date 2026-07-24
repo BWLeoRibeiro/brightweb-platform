@@ -3,6 +3,8 @@ import {
   CRM_CONTACTS_MAX_PAGE_SIZE,
   CRM_ORGANIZATIONS_DEFAULT_PAGE_SIZE,
   CRM_ORGANIZATIONS_MAX_PAGE_SIZE,
+  CRM_STATUS_TIMELINE_DEFAULT_LIMIT,
+  CRM_STATUS_TIMELINE_MAX_LIMIT,
   getCrmContactStatusStats,
   getCrmReportData,
   listCrmContacts,
@@ -10,7 +12,12 @@ import {
   listCrmOwnerOptions,
   listCrmStatusTimeline,
 } from "./data";
-import { ptCrmActivityDictionary } from "./activity-messages";
+import {
+  MAX_BULK_OPERATION_IDS,
+  publicError,
+  sanitizePublicError,
+  validateBoundedUuidBatch,
+} from "@brightweblabs/infra/robustness";
 import {
   bulkSetCrmContactStatus,
   createCrmContact,
@@ -56,10 +63,15 @@ export function parseCrmContactsRequest(request: Request | URL | string) {
 
 export function parseCrmTimelineRequest(request: Request | URL | string) {
   const url = request instanceof URL ? request : new URL(typeof request === "string" ? request : request.url);
+  const sinceValue = url.searchParams.get("since")?.trim();
+  const sinceDate = sinceValue ? new Date(sinceValue) : null;
   return {
     contactId: url.searchParams.get("contactId")?.trim() || undefined,
-    limit: parsePositiveInteger(url.searchParams.get("limit"), 50),
-    since: url.searchParams.get("since")?.trim() || undefined,
+    limit: Math.min(
+      parsePositiveInteger(url.searchParams.get("limit"), CRM_STATUS_TIMELINE_DEFAULT_LIMIT),
+      CRM_STATUS_TIMELINE_MAX_LIMIT,
+    ),
+    since: sinceDate && Number.isFinite(sinceDate.getTime()) ? sinceDate.toISOString() : undefined,
   };
 }
 
@@ -120,16 +132,14 @@ function nullableString(payload: Record<string, unknown>, key: string): string |
   return optionalString(payload[key]);
 }
 
-function contactIdsFromPayload(payload: Record<string, unknown>): string[] {
-  if (Array.isArray(payload.contactIds)) {
-    return Array.from(new Set(payload.contactIds
-      .filter((value): value is string => typeof value === "string")
-      .map((value) => value.trim())
-      .filter(Boolean)));
-  }
-
-  const id = optionalString(payload.contactId) ?? optionalString(payload.id);
-  return id ? [id] : [];
+function contactIdsFromPayload(payload: Record<string, unknown>) {
+  const singleId = payload.contactId ?? payload.id;
+  const value = Array.isArray(payload.contactIds)
+    ? payload.contactIds
+    : singleId == null
+      ? []
+      : [singleId];
+  return validateBoundedUuidBatch(value);
 }
 
 async function parseJsonObject(request: Request): Promise<Record<string, unknown> | null> {
@@ -144,7 +154,62 @@ async function parseJsonObject(request: Request): Promise<Record<string, unknown
 function requireStaffAccess(access: Extract<ServerUserAccess, { ok: true }>): Response | null {
   return access.role === "staff" || access.role === "admin"
     ? null
-    : json({ error: "Forbidden." }, { status: 403 });
+    : json(publicError("FORBIDDEN", "Forbidden."), { status: 403 });
+}
+
+const CRM_DOMAIN_ERRORS = {
+  "A CRM contact with this email already exists.": {
+    code: "DUPLICATE_EMAIL",
+    message: "A CRM contact with this email already exists.",
+  },
+  "CRM contact not found.": { code: "CONTACT_NOT_FOUND", message: "CRM contact not found." },
+  CRM_REPORT_TOO_LARGE: {
+    code: "CRM_REPORT_TOO_LARGE",
+    message: "The CRM report is too large to generate safely.",
+  },
+} as const;
+
+function crmErrorResponse(error: unknown, context: string, status = 500) {
+  const message = error instanceof Error ? error.message : "";
+  if (
+    message === "A first name, last name, or email is required."
+    || message === "Invalid email address."
+    || message === "Invalid phone number. Include the country calling code."
+    || message === "At least one CRM contact field must be provided."
+    || message.startsWith("Invalid CRM status.")
+  ) {
+    return json(publicError("INVALID_INPUT", message), { status: 400 });
+  }
+  const envelope = sanitizePublicError(
+    error,
+    CRM_DOMAIN_ERRORS,
+    "CRM request could not be completed.",
+    context,
+  );
+  const code = envelope.error.code;
+  const resolvedStatus = code === "DUPLICATE_EMAIL"
+    ? 409
+    : code === "CONTACT_NOT_FOUND"
+      ? 404
+      : code === "CRM_REPORT_TOO_LARGE"
+        ? 503
+        : status;
+  return json(envelope, { status: resolvedStatus });
+}
+
+function invalidBatchResponse(
+  batch: Exclude<ReturnType<typeof validateBoundedUuidBatch>, { ok: true }>,
+) {
+  if (batch.code === "BATCH_TOO_LARGE") {
+    return json(
+      publicError("BATCH_TOO_LARGE", `A maximum of ${MAX_BULK_OPERATION_IDS} IDs is allowed per request.`),
+      { status: 400 },
+    );
+  }
+  if (batch.code === "INVALID_UUID") {
+    return json(publicError("INVALID_UUID", "Every ID must be a valid UUID."), { status: 400 });
+  }
+  return json(publicError("BATCH_REQUIRED", "At least one contact ID is required."), { status: 400 });
 }
 
 function withUserAccess(
@@ -154,16 +219,13 @@ function withUserAccess(
   return async (request: Request) => {
     const access = await dependencies.getAccess();
     if (!access.ok) {
-      return json({ error: access.error }, { status: access.status });
+      return json(publicError("ACCESS_DENIED", access.error), { status: access.status });
     }
 
     try {
       return await action(access.supabase, request);
     } catch (error) {
-      return json(
-        { error: error instanceof Error ? error.message : ptCrmActivityDictionary.summaries?.loadFailed ?? "crm_data_load_failed" },
-        { status: 500 },
-      );
+      return crmErrorResponse(error, "crm.read");
     }
   };
 }
@@ -214,12 +276,12 @@ export function createCrmReportGetHandler(dependencies: CrmHttpDependencies) {
 export function createCrmContactsPostHandler(dependencies: CrmHttpDependencies) {
   return async function handleCrmContactsPostRequest(request: Request): Promise<Response> {
     const access = await dependencies.getAccess();
-    if (!access.ok) return json({ error: access.error }, { status: access.status });
+    if (!access.ok) return json(publicError("ACCESS_DENIED", access.error), { status: access.status });
     const forbidden = requireStaffAccess(access);
     if (forbidden) return forbidden;
 
     const payload = await parseJsonObject(request);
-    if (!payload) return json({ error: "Invalid JSON object payload." }, { status: 400 });
+    if (!payload) return json(publicError("INVALID_PAYLOAD", "Invalid JSON object payload."), { status: 400 });
 
     const input: CreateCrmContactInput = {
       firstName: optionalString(payload.firstName),
@@ -238,7 +300,7 @@ export function createCrmContactsPostHandler(dependencies: CrmHttpDependencies) 
       });
       return json({ data: { contact } }, { status: 201 });
     } catch (error) {
-      return json({ error: error instanceof Error ? error.message : "CRM contact could not be created." }, { status: 400 });
+      return crmErrorResponse(error, "crm.create");
     }
   };
 }
@@ -246,15 +308,16 @@ export function createCrmContactsPostHandler(dependencies: CrmHttpDependencies) 
 export function createCrmContactsPatchHandler(dependencies: CrmHttpDependencies) {
   return async function handleCrmContactsPatchRequest(request: Request): Promise<Response> {
     const access = await dependencies.getAccess();
-    if (!access.ok) return json({ error: access.error }, { status: access.status });
+    if (!access.ok) return json(publicError("ACCESS_DENIED", access.error), { status: access.status });
     const forbidden = requireStaffAccess(access);
     if (forbidden) return forbidden;
 
     const payload = await parseJsonObject(request);
-    if (!payload) return json({ error: "Invalid JSON object payload." }, { status: 400 });
+    if (!payload) return json(publicError("INVALID_PAYLOAD", "Invalid JSON object payload."), { status: 400 });
 
-    const contactIds = contactIdsFromPayload(payload);
-    if (contactIds.length === 0) return json({ error: "A contact ID is required." }, { status: 400 });
+    const contactBatch = contactIdsFromPayload(payload);
+    if (!contactBatch.ok) return invalidBatchResponse(contactBatch);
+    const contactIds = contactBatch.ids;
 
     const status = optionalString(payload.status);
     const reason = optionalString(payload.statusReason) ?? optionalString(payload.reason);
@@ -269,10 +332,10 @@ export function createCrmContactsPatchHandler(dependencies: CrmHttpDependencies)
     const hasContactPatch = Object.keys(patch).length > 0;
 
     if (!hasContactPatch && !status) {
-      return json({ error: "At least one contact field or status is required." }, { status: 400 });
+      return json(publicError("EMPTY_UPDATE", "At least one contact field or status is required."), { status: 400 });
     }
     if (hasContactPatch && contactIds.length > 1) {
-      return json({ error: "Bulk updates only support CRM status changes." }, { status: 400 });
+      return json(publicError("UNSUPPORTED_BULK_UPDATE", "Bulk updates only support CRM status changes."), { status: 400 });
     }
 
     try {
@@ -283,21 +346,29 @@ export function createCrmContactsPatchHandler(dependencies: CrmHttpDependencies)
         : null;
 
       if (status) {
-        const contacts = await dependencies.setContactStatus(
+        const outcomes = await dependencies.setContactStatus(
           access.supabase as never,
           contactIds,
           status as CrmContactStatus,
           reason,
           { actorProfileId: access.profileId ?? null },
         );
-        if (contactIds.length === 1) contact = contacts[0] ?? contact;
+        return json({
+          data: {
+            ...(hasContactPatch ? { contact } : {}),
+            outcomes,
+            summary: {
+              requested: outcomes.length,
+              succeeded: outcomes.filter((outcome) => outcome.ok).length,
+              failed: outcomes.filter((outcome) => !outcome.ok).length,
+            },
+          },
+        });
       }
 
-      return contactIds.length === 1
-        ? json({ data: { contact } })
-        : json({ data: { updatedIds: contactIds } });
+      return json({ data: { contact } });
     } catch (error) {
-      return json({ error: error instanceof Error ? error.message : "CRM contacts could not be updated." }, { status: 400 });
+      return crmErrorResponse(error, "crm.update");
     }
   };
 }
@@ -305,22 +376,42 @@ export function createCrmContactsPatchHandler(dependencies: CrmHttpDependencies)
 export function createCrmContactsDeleteHandler(dependencies: CrmHttpDependencies) {
   return async function handleCrmContactsDeleteRequest(request: Request): Promise<Response> {
     const access = await dependencies.getAccess();
-    if (!access.ok) return json({ error: access.error }, { status: access.status });
+    if (!access.ok) return json(publicError("ACCESS_DENIED", access.error), { status: access.status });
     const forbidden = requireStaffAccess(access);
     if (forbidden) return forbidden;
     const payload = await parseJsonObject(request);
-    if (!payload) return json({ error: "Invalid JSON object payload." }, { status: 400 });
-    const contactIds = contactIdsFromPayload(payload);
-    if (contactIds.length === 0) return json({ error: "A contact ID is required." }, { status: 400 });
-    try {
-      await Promise.all(contactIds.map((contactId) => dependencies.deleteContact(
-        access.supabase as never,
-        contactId,
-        { actorProfileId: access.profileId ?? null },
-      )));
-      return json({ data: { deletedIds: contactIds } });
-    } catch (error) {
-      return json({ error: error instanceof Error ? error.message : "CRM contacts could not be deleted." }, { status: 400 });
+    if (!payload) return json(publicError("INVALID_PAYLOAD", "Invalid JSON object payload."), { status: 400 });
+    const contactBatch = contactIdsFromPayload(payload);
+    if (!contactBatch.ok) return invalidBatchResponse(contactBatch);
+    const outcomes: Array<{ id: string; ok: boolean; code?: "CONTACT_NOT_FOUND" | "WRITE_FAILED" }> = [];
+    for (const contactId of contactBatch.ids) {
+      try {
+        await dependencies.deleteContact(
+          access.supabase as never,
+          contactId,
+          { actorProfileId: access.profileId ?? null },
+        );
+        outcomes.push({ id: contactId, ok: true });
+      } catch (error) {
+        console.error("[crm.bulk-delete]", { contactId, error });
+        outcomes.push({
+          id: contactId,
+          ok: false,
+          code: error instanceof Error && error.message === "CRM contact not found."
+            ? "CONTACT_NOT_FOUND"
+            : "WRITE_FAILED",
+        });
+      }
     }
+    return json({
+      data: {
+        outcomes,
+        summary: {
+          requested: outcomes.length,
+          succeeded: outcomes.filter((outcome) => outcome.ok).length,
+          failed: outcomes.filter((outcome) => !outcome.ok).length,
+        },
+      },
+    });
   };
 }

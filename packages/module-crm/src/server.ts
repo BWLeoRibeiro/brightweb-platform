@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createServiceRoleClient } from "@brightweblabs/infra/server";
+import { validateBoundedUuidBatch } from "@brightweblabs/infra/robustness";
 import { ptCrmActivityDictionary } from "./activity-messages";
 import { CRM_CONTACT_STATUSES, type CrmContact } from "./data";
 
@@ -36,9 +37,18 @@ export type CrmContactProfileResult = {
   error?: string;
 };
 
+export type CrmBulkWriteOutcome =
+  | { id: string; ok: true }
+  | { id: string; ok: false; code: "CONTACT_NOT_FOUND" | "WRITE_FAILED" };
+
 const CRM_CONTACT_SELECT =
   "id, first_name, last_name, email, phone, status, source, owner_id, organization_id, created_at, updated_at, organizations(name)";
 const CRM_CONTACT_STATUS_SET = new Set<string>(CRM_CONTACT_STATUSES);
+
+function crmInfrastructureError(context: string, error: unknown): Error {
+  console.error(`[crm.${context}]`, error);
+  return new Error("CRM_WRITE_FAILED");
+}
 
 export async function ensureCrmContactForProfile(
   profileId: string,
@@ -52,7 +62,10 @@ export async function ensureCrmContactForProfile(
       .select("id, email, first_name, last_name")
       .eq("id", profileId)
       .maybeSingle();
-    if (profileError) return { success: false, error: profileError.message };
+    if (profileError) {
+      console.error("[crm.profile-sync.profile]", profileError);
+      return { success: false, error: "CRM_PROFILE_SYNC_FAILED" };
+    }
     if (!profile) return { success: false, error: "Perfil não encontrado." };
     const normalizedEmail = profile.email ? profile.email.toLowerCase().trim() : null;
     let query = serviceClient.from("crm_contacts").select("id, profile_id").limit(1);
@@ -60,7 +73,10 @@ export async function ensureCrmContactForProfile(
       ? query.or(`profile_id.eq.${profileId},email.ilike.${normalizedEmail}`)
       : query.eq("profile_id", profileId);
     const { data: existing, error } = await query.maybeSingle();
-    if (error) return { success: false, error: error.message };
+    if (error) {
+      console.error("[crm.profile-sync.lookup]", error);
+      return { success: false, error: "CRM_PROFILE_SYNC_FAILED" };
+    }
     if (!existing) {
       const { data: inserted, error: insertError } = await serviceClient.from("crm_contacts").insert({
         profile_id: profile.id,
@@ -72,19 +88,25 @@ export async function ensureCrmContactForProfile(
         source: options?.source ?? "profile_link",
         owner_id: null,
       }).select("id").single();
-      return insertError
-        ? { success: false, error: insertError.message }
-        : { success: true, contactId: inserted.id };
+      if (insertError) {
+        console.error("[crm.profile-sync.insert]", insertError);
+        return { success: false, error: "CRM_PROFILE_SYNC_FAILED" };
+      }
+      return { success: true, contactId: inserted.id };
     }
     if (!existing.profile_id || existing.profile_id === profile.id) {
       const { error: updateError } = await serviceClient.from("crm_contacts")
         .update({ profile_id: profile.id, updated_at: new Date().toISOString() })
         .eq("id", existing.id);
-      if (updateError) return { success: false, error: updateError.message };
+      if (updateError) {
+        console.error("[crm.profile-sync.update]", updateError);
+        return { success: false, error: "CRM_PROFILE_SYNC_FAILED" };
+      }
     }
     return { success: true, contactId: existing.id };
   } catch (error) {
-    return { success: false, error: error instanceof Error ? error.message : "Erro desconhecido." };
+    console.error("[crm.profile-sync]", error);
+    return { success: false, error: "CRM_PROFILE_SYNC_FAILED" };
   }
 }
 
@@ -136,7 +158,7 @@ function crmWriteError(error: { code?: string; message: string }): Error {
   if (error.code === "23505" || /crm_contacts_email_unique|duplicate key.*email/i.test(error.message)) {
     return new Error("A CRM contact with this email already exists.");
   }
-  return new Error(error.message);
+  return crmInfrastructureError("write", error);
 }
 
 async function logCrmActivity(input: {
@@ -171,7 +193,7 @@ async function getCrmContactById(supabase: SupabaseClient, contactId: string): P
     .eq("id", contactId)
     .maybeSingle();
 
-  if (error) throw new Error(error.message);
+  if (error) throw crmInfrastructureError("contact.read", error);
   if (!data) throw new Error("CRM contact not found.");
   return data as unknown as CrmContact;
 }
@@ -305,7 +327,7 @@ export async function setCrmContactStatus(
     p_new_status: status,
     p_reason: normalizedReason,
   });
-  if (error) throw new Error(error.message);
+  if (error) throw crmInfrastructureError("status", error);
 
   const contact = previous.status === status ? previous : await getCrmContactById(supabase, id);
   if (previous.status !== status) {
@@ -332,12 +354,28 @@ export async function bulkSetCrmContactStatus(
   status: CrmContactStatus,
   reason?: string | null,
   options: CrmWriteOptions = {},
-): Promise<CrmContact[]> {
-  const ids = Array.from(new Set(contactIds.map((id) => id.trim()).filter(Boolean)));
-  if (ids.length === 0) throw new Error("At least one contact ID is required.");
+): Promise<CrmBulkWriteOutcome[]> {
+  const batch = validateBoundedUuidBatch(contactIds);
+  if (!batch.ok) throw new Error(batch.code);
   assertContactStatus(status);
 
-  return Promise.all(ids.map((id) => setCrmContactStatus(supabase, id, status, reason, options)));
+  const outcomes: CrmBulkWriteOutcome[] = [];
+  for (const id of batch.ids) {
+    try {
+      await setCrmContactStatus(supabase, id, status, reason, options);
+      outcomes.push({ id, ok: true });
+    } catch (error) {
+      console.error("[crm.bulk-status]", { id, error });
+      outcomes.push({
+        id,
+        ok: false,
+        code: error instanceof Error && error.message === "CRM contact not found."
+          ? "CONTACT_NOT_FOUND"
+          : "WRITE_FAILED",
+      });
+    }
+  }
+  return outcomes;
 }
 
 export async function deleteCrmContact(
@@ -348,7 +386,7 @@ export async function deleteCrmContact(
   const id = assertContactId(contactId);
   const contact = await getCrmContactById(supabase, id);
   const { error } = await supabase.from("crm_contacts").delete().eq("id", id);
-  if (error) throw new Error(error.message);
+  if (error) throw crmInfrastructureError("delete", error);
 
   await logCrmActivity({
     actorProfileId: options.actorProfileId,

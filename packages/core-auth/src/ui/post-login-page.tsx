@@ -72,7 +72,7 @@ function PostLoginContent() {
         const target = resolveRequestedInternalPath(requestedTarget, access) ?? resolvePostLoginPath(access.role);
         router.replace(target);
       } catch {
-        router.replace("/auth/cleanup?next=/login?error=session_reset");
+        router.replace("/login?error=auth_system");
       }
     }
 

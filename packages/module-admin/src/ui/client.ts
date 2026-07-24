@@ -1,9 +1,17 @@
 import type { AdminUiClient } from "./types";
+import { readPublicError } from "@brightweblabs/infra/robustness";
+import {
+  parseAdminInvitationDeleteResponse,
+  parseAdminInvitationsResponse,
+  parseAdminInvitationWriteResponse,
+  parseAdminRoleChangeResponse,
+  parseAdminUsersResponse,
+} from "./response-parsers";
 
-async function readJson<T>(response: Response): Promise<T> {
-  const payload = await response.json().catch(() => null) as { error?: string } | null;
-  if (!response.ok) throw new Error(payload?.error ?? response.statusText);
-  return payload as T;
+async function readPayload(response: Response): Promise<unknown> {
+  const payload: unknown = await response.json().catch(() => null);
+  if (!response.ok) throw new Error(readPublicError(payload, response.statusText || "Admin request failed.").message);
+  return payload;
 }
 
 export function createAdminUiClient(basePath = "/api/admin/users", fetcher: typeof fetch = fetch): AdminUiClient {
@@ -17,39 +25,33 @@ export function createAdminUiClient(basePath = "/api/admin/users", fetcher: type
       });
       if (params.search) query.set("search", params.search);
       if (params.role) query.set("role", params.role);
-      return readJson(await fetcher(`${root}?${query.toString()}`));
+      return parseAdminUsersResponse(await readPayload(await fetcher(`${root}?${query.toString()}`)));
     },
     async listInvitations() {
-      const payload = await readJson<{ data?: Awaited<ReturnType<AdminUiClient["listInvitations"]>> }>(
-        await fetcher(`${root}/invitations`),
-      );
-      return payload.data ?? [];
+      return parseAdminInvitationsResponse(await readPayload(await fetcher(`${root}/invitations`)));
     },
     async inviteUser(input) {
-      const payload = await readJson<{ data: Awaited<ReturnType<AdminUiClient["inviteUser"]>> }>(
-        await fetcher(`${root}/invitations`, {
+      return parseAdminInvitationWriteResponse(
+        await readPayload(await fetcher(`${root}/invitations`, {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify(input),
-        }),
+        })),
       );
-      return payload.data;
     },
     async revokeInvitation(invitationId) {
-      await readJson(await fetcher(`${root}/invitations/${invitationId}`, { method: "DELETE" }));
+      parseAdminInvitationDeleteResponse(
+        await readPayload(await fetcher(`${root}/invitations/${invitationId}`, { method: "DELETE" })),
+      );
     },
     async changeRoles(input) {
-      const payload = await readJson<{ summary?: { changed?: number; skipped?: number } }>(
-        await fetcher(`${root}/roles`, {
+      return parseAdminRoleChangeResponse(
+        await readPayload(await fetcher(`${root}/roles`, {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify(input),
-        }),
+        })),
       );
-      return {
-        changed: Number(payload.summary?.changed ?? 0),
-        skipped: Number(payload.summary?.skipped ?? 0),
-      };
     },
   };
 }

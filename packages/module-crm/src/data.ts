@@ -161,7 +161,10 @@ export const CRM_CONTACTS_DEFAULT_PAGE_SIZE = 50;
 export const CRM_CONTACTS_MAX_PAGE_SIZE = 100;
 export const CRM_PRIMARY_CONTACTS_DEFAULT_LIMIT = 200;
 export const CRM_STATUS_TIMELINE_DEFAULT_LIMIT = 10;
+export const CRM_STATUS_TIMELINE_MAX_LIMIT = 100;
 export const CRM_STATUS_TIMELINE_DEFAULT_DAYS = 7;
+export const CRM_STATUS_TIMELINE_MAX_DAYS = 365;
+export const CRM_REPORT_MAX_RECORDS = 5_000;
 export const CRM_CONTACT_STATUSES = ["lead", "qualified", "proposal", "won", "lost"] as const;
 
 function normalizePage(page: number | undefined, fallback: number) {
@@ -191,22 +194,23 @@ function buildContactDisplayName(contact: {
   return [contact.first_name, contact.last_name].filter(Boolean).join(" ") || contact.email || "Contacto";
 }
 
-function normalizeLimit(limit: number | undefined, fallback: number) {
-  return Number.isFinite(limit) && (limit ?? 0) > 0 ? Math.floor(limit as number) : fallback;
+function normalizeLimit(limit: number | undefined, fallback: number, max = Number.POSITIVE_INFINITY) {
+  const normalized = Number.isFinite(limit) && (limit ?? 0) > 0 ? Math.floor(limit as number) : fallback;
+  return Math.min(normalized, max);
 }
 
 function normalizeSince(value: Date | string | undefined) {
-  if (value instanceof Date) {
-    return value.toISOString();
-  }
-
-  if (typeof value === "string" && value.trim()) {
-    return value;
-  }
-
-  const since = new Date();
-  since.setDate(since.getDate() - CRM_STATUS_TIMELINE_DEFAULT_DAYS);
-  return since.toISOString();
+  const now = Date.now();
+  const fallback = new Date(now - CRM_STATUS_TIMELINE_DEFAULT_DAYS * 86_400_000);
+  const earliest = now - CRM_STATUS_TIMELINE_MAX_DAYS * 86_400_000;
+  const parsed = value instanceof Date
+    ? value
+    : typeof value === "string" && value.trim()
+      ? new Date(value)
+      : fallback;
+  const timestamp = parsed.getTime();
+  if (!Number.isFinite(timestamp) || timestamp > now) return fallback.toISOString();
+  return new Date(Math.max(timestamp, earliest)).toISOString();
 }
 
 export function normalizeCrmContact(
@@ -371,7 +375,7 @@ export async function listCrmStatusTimeline(
   supabase: SupabaseClient,
   params: CrmStatusTimelineParams = {},
 ): Promise<CrmStatusTimelineData> {
-  const limit = normalizeLimit(params.limit, CRM_STATUS_TIMELINE_DEFAULT_LIMIT);
+  const limit = normalizeLimit(params.limit, CRM_STATUS_TIMELINE_DEFAULT_LIMIT, CRM_STATUS_TIMELINE_MAX_LIMIT);
   const since = normalizeSince(params.since);
   let query = supabase
     .from("crm_status_log")
@@ -448,16 +452,20 @@ export async function getCrmReportData(supabase: SupabaseClient): Promise<CrmRep
     supabase
       .from("crm_contacts")
       .select("id, first_name, last_name, email, status, source, owner_id, organization_id")
-      .order("updated_at", { ascending: false }),
+      .order("updated_at", { ascending: false })
+      .limit(CRM_REPORT_MAX_RECORDS + 1),
     supabase
       .from("organizations")
       .select("id, name, industry, website_url")
-      .order("created_at", { ascending: false }),
+      .order("created_at", { ascending: false })
+      .limit(CRM_REPORT_MAX_RECORDS + 1),
     listCrmStatusTimeline(supabase, { limit: 12, since: "1970-01-01T00:00:00.000Z" }),
   ]);
 
   if (contactsResult.error) throw new Error(contactsResult.error.message);
   if (organizationsResult.error) throw new Error(organizationsResult.error.message);
+  if ((contactsResult.data?.length ?? 0) > CRM_REPORT_MAX_RECORDS) throw new Error("CRM_REPORT_TOO_LARGE");
+  if ((organizationsResult.data?.length ?? 0) > CRM_REPORT_MAX_RECORDS) throw new Error("CRM_REPORT_TOO_LARGE");
 
   type ReportContact = Pick<CrmContact, "id" | "first_name" | "last_name" | "email" | "status" | "source" | "owner_id" | "organization_id">;
   type ReportOrganization = { id: string; name: string; industry: string | null; website_url: string | null };
