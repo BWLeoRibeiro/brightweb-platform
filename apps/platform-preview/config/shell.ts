@@ -9,8 +9,8 @@ import {
 import { adminModuleRegistration } from "@brightweblabs/module-admin/registration";
 import { crmModuleRegistration } from "@brightweblabs/module-crm/registration";
 import { projectsPreviewModuleRegistration } from "@brightweblabs/module-projects/registration";
-import { starterBrandConfig } from "./brand";
 import { getEnabledStarterModules } from "./modules";
+import { starterShellBrand } from "./shell-brand";
 
 const dashboardModuleRegistration: ShellModuleRegistration<ShellContextualAction> = {
   key: "dashboard",
@@ -33,26 +33,7 @@ function getStarterModuleRegistrations() {
 export function getStarterShellConfig() {
   const enabledModules = getEnabledStarterModules();
   const shellRegistration: ClientAppShellRegistration<ShellContextualAction> = {
-    brand: {
-      href: "/",
-      ariaLabel: `${starterBrandConfig.companyName} public site`,
-      alt: starterBrandConfig.companyName,
-      collapsedLogo: {
-        src: "/brand/logo-mark.svg",
-        width: 48,
-        height: 48,
-      },
-      lightLogo: {
-        src: "/brand/logo-light.svg",
-        width: 176,
-        height: 44,
-      },
-      darkLogo: {
-        src: "/brand/logo-dark.svg",
-        width: 176,
-        height: 44,
-      },
-    },
+    brand: starterShellBrand,
     toolsSection: {
       key: "tools",
       label: "Ferramentas",

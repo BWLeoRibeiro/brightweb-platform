@@ -80,11 +80,28 @@ test("ui source follows the BrightWeb typography and color hygiene rules", async
   assertPatternAbsent(files, /#[0-9a-f]{3,8}\b|rgba?\(|color-mix\(/i, "raw color recipes must be represented by theme tokens");
 });
 
+test("shared buttons transition explicit properties and respect reduced motion", async () => {
+  const source = await readFile(path.join(uiSourceRoot, "components/button-variants.ts"), "utf8");
+  assert.doesNotMatch(source, /\btransition-all\b/);
+  assert.match(source, /transition-\[color,background-color,border-color,box-shadow,transform,filter,text-decoration-color\]/);
+  assert.match(source, /motion-reduce:transition-none/);
+});
+
 test("app-shell source uses only tokenized color and typography utilities", async () => {
   const files = await sourcesAt(appShellSourceRoot);
   assertPatternAbsent(files, /\bfont-medium\b/, "font-medium is not part of the loaded weight ladder");
   assertPatternAbsent(files, /\b(?:bg|border)-(?:black|white)\//, "black/white alpha utilities lock the shell to a theme");
   assertPatternAbsent(files, /#[0-9a-f]{3,8}\b|rgba?\(|color-mix\(/i, "raw color recipes must be represented by theme tokens");
+});
+
+test("scrolling sheet and modal bodies contain overscroll", async () => {
+  const appSheet = await readFile(path.join(appShellSourceRoot, "components/app-sheet.tsx"), "utf8");
+  const organizationsBrowser = await readFile(path.join(crmUiSourceRoot, "organizations-browser.tsx"), "utf8");
+  const timelineBrowser = await readFile(path.join(crmUiSourceRoot, "timeline-browser.tsx"), "utf8");
+
+  assert.match(appSheet, /sheetBodyClassName = "[^"]*overflow-y-auto overscroll-contain/);
+  assert.match(organizationsBrowser, /overflow-y-auto overscroll-contain/);
+  assert.match(timelineBrowser, /overflow-y-auto overscroll-contain/);
 });
 
 test("module CRM UI follows the BrightWeb typography and color hygiene rules", async () => {

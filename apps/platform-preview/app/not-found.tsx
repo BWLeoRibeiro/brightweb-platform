@@ -1,1 +1,1 @@
-export { NotFoundPage as default } from "@brightweblabs/app-shell";
+export { StarterNotFoundPage as default } from "../config/status-pages";

@@ -1,8 +1,11 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
+import { createElement as h } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 import test from "node:test";
 
+import { BreadcrumbLink } from "../packages/ui/src/components/breadcrumb.tsx";
 import { getInitials, getPaginationWindow, getRoleLabel, resolveRoleToken } from "../packages/ui/src/lib/patterns.ts";
 
 const repoRoot = path.resolve(new URL("..", import.meta.url).pathname);
@@ -63,4 +66,29 @@ test("ActionButton shares the contrast-safe brand Button variant", async () => {
   const source = await readFile(path.join(repoRoot, "packages/ui/src/components/action.tsx"), "utf8");
   assert.match(source, /buttonVariants\(\{\s*variant:\s*"brand"/);
   assert.doesNotMatch(source, /bg-\[color:var\(--brand-accent\)\]/);
+});
+
+test("BreadcrumbLink uses the direct Slot dependency and preserves composition", async () => {
+  const packageJson = JSON.parse(await readFile(path.join(repoRoot, "packages/ui/package.json"), "utf8"));
+  const source = await readFile(path.join(repoRoot, "packages/ui/src/components/breadcrumb.tsx"), "utf8");
+  const ref = () => {};
+  const slottedElement = BreadcrumbLink({
+    asChild: true,
+    ref,
+    children: h("a", { href: "/projects" }, "Projects"),
+  });
+  const html = renderToStaticMarkup(
+    h(BreadcrumbLink, { asChild: true, className: "custom-link" }, h("a", { href: "/projects" }, "Projects")),
+  );
+
+  assert.match(source, /import \{ Slot \} from "@radix-ui\/react-slot"/);
+  assert.doesNotMatch(source, /Slot\.Root/);
+  assert.equal(packageJson.dependencies["radix-ui"], undefined);
+  assert.equal(packageJson.dependencies["@radix-ui/react-slot"], "^1.2.4");
+  assert.equal(slottedElement.props.ref, ref);
+  assert.match(html, /^<a\b[^>]*>Projects<\/a>$/);
+  assert.match(html, /href="\/projects"/);
+  assert.match(html, /data-slot="breadcrumb-link"/);
+  assert.match(html, /class="[^"]*custom-link[^"]*"/);
+  assert.doesNotMatch(html, /<a\b[^>]*><a\b/);
 });
