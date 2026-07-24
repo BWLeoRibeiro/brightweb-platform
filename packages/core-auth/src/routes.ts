@@ -3,6 +3,13 @@ import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { createServerSupabase } from "@brightweblabs/infra/server";
 
+export {
+  createInvitationAcceptHandler,
+  createInvitationDetailsHandler,
+  createInvitationRegisterHandler,
+  type InvitationHttpDependencies,
+} from "./invitations";
+
 const OTP_TYPES = new Set<EmailOtpType>(["signup", "recovery", "invite", "magiclink", "email_change", "email"]);
 
 function isEmailOtpType(value: string): value is EmailOtpType {

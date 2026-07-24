@@ -15,6 +15,7 @@
     "@brightweblabs/infra": "workspace:*",
     "@brightweblabs/module-admin": "workspace:*",
     "@brightweblabs/module-crm": "workspace:*",
+    "@brightweblabs/module-orgs": "workspace:*",
     "@brightweblabs/module-projects": "workspace:*",
     "@brightweblabs/theme": "workspace:*",
     "@brightweblabs/ui": "workspace:*",

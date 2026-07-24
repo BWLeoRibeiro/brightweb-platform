@@ -50,6 +50,8 @@ export type CrmOrganization = {
   created_at?: string;
 };
 
+export type CrmOrganizationWriteInput = Omit<CrmOrganization, "id" | "created_at">;
+
 /** @deprecated Use CrmOrganization. */
 export type CrmOrganizationOption = CrmOrganization;
 
@@ -298,6 +300,8 @@ export type CrmUiClient = {
   getStats: () => Promise<CrmContactStatusStats>;
   listOwners: () => Promise<CrmOwnerOption[]>;
   listOrganizations: () => Promise<CrmOrganization[]>;
+  createOrganization: (input: CrmOrganizationWriteInput) => Promise<CrmOrganization>;
+  updateOrganization: (organizationId: string, input: CrmOrganizationWriteInput) => Promise<CrmOrganization>;
   listTimeline: (contactId?: string) => Promise<CrmStatusLog[]>;
   getReport: () => Promise<CrmReportData>;
   createContact: (input: CrmContactFormInput) => Promise<CrmContact>;

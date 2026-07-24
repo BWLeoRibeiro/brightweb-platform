@@ -12,7 +12,8 @@
       { "name": "orgs.organizations.read", "since": "0.1.0" },
       { "name": "orgs.organizations.write", "since": "0.1.0" },
       { "name": "orgs.membership.read", "since": "0.1.0" },
-      { "name": "orgs.membership.admin", "since": "0.1.0" }
+      { "name": "orgs.membership.admin", "since": "0.1.0" },
+      { "name": "orgs.invitations.admin", "since": "0.3.0" }
     ],
     "consumes": []
   },
@@ -20,7 +21,8 @@
     "orgs.organizations.read": { "specifier": ".", "symbol": "listOrganizations" },
     "orgs.organizations.write": { "specifier": ".", "symbol": "createOrganization" },
     "orgs.membership.read": { "specifier": ".", "symbol": "listOrganizationMembers" },
-    "orgs.membership.admin": { "specifier": ".", "symbol": "setOrganizationMemberRole" }
+    "orgs.membership.admin": { "specifier": ".", "symbol": "setOrganizationMemberRole" },
+    "orgs.invitations.admin": { "specifier": ".", "symbol": "inviteOrganizationMembers" }
   },
   "events": { "emits": [], "consumes": [] },
   "permissions": {

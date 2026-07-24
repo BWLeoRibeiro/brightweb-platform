@@ -88,14 +88,14 @@ export const APP_DEPENDENCY_DEFAULTS = {
   "@brightweblabs/ui": "^1.0.1",
   "lucide-react": "^1.8.0",
   "next": "16.1.6",
-  "react": "19.2.3",
-  "react-dom": "19.2.3",
+  "react": "19.2.4",
+  "react-dom": "19.2.4",
 };
 
 export const SITE_DEPENDENCY_DEFAULTS = {
   "next": "16.1.6",
-  "react": "19.2.3",
-  "react-dom": "19.2.3",
+  "react": "19.2.4",
+  "react-dom": "19.2.4",
 };
 
 export const APP_DEV_DEPENDENCY_DEFAULTS = {

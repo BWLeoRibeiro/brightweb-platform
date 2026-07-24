@@ -106,9 +106,12 @@ export function CrmDashboard({ client: providedClient, initialData, dictionary =
   const openOrganization = (organization: CrmOrganization) => { setEditingOrganization(organization); setOrganizationsOpen(false); setOrganizationSheetOpen(true); };
   const createOrganization = () => { setEditingOrganization(null); setOrganizationsOpen(false); setOrganizationSheetOpen(true); };
   const saveOrganization = async (input: CrmOrganizationFormInput, current?: CrmOrganization | null) => {
+    const saved = current
+      ? await client.updateOrganization(current.id, input)
+      : await client.createOrganization(input);
     setOrganizations((items) => current
-      ? items.map((item) => item.id === current.id ? { ...item, ...input } : item)
-      : [...items, { id: `local-${Date.now()}`, ...input }]);
+      ? items.map((item) => item.id === current.id ? saved : item)
+      : [...items, saved]);
   };
   const contactsByOrganization = useMemo(() => {
     const counts = new Map<string, number>();

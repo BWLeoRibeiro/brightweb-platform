@@ -149,13 +149,17 @@ test("bw upgrade appends only unapplied migrations and preserves drifted scaffol
   await writeJson(manifestPath, manifest);
   const migrationsDir = path.join(targetDir, "supabase", "migrations");
   for (const name of await fs.readdir(migrationsDir)) {
-    if (name.includes("_crm__20260316092010_") || name.includes("_crm__20260421201523_")) await fs.rm(path.join(migrationsDir, name));
+    if (
+      name.includes("_crm__20260316092010_")
+      || name.includes("_crm__20260421201523_")
+      || name.includes("_crm__20260724120000_")
+    ) await fs.rm(path.join(migrationsDir, name));
   }
   const starterPath = path.join(targetDir, "app", "crm", "page.tsx");
   await fs.appendFile(starterPath, "\n// app-owned drift\n");
 
   const result = await upgradeBrightwebApp("crm", { targetDir, refreshStarters: true }, { workspaceRoot: REPO_ROOT, fetchImpl: mockNpmFetch });
-  assert.equal(result.migrationPlan.writes.length, 2);
+  assert.equal(result.migrationPlan.writes.length, 3);
   assert.ok(result.drifted.includes("app/crm/page.tsx"));
   assert.match(await fs.readFile(starterPath, "utf8"), /app-owned drift/);
   const appended = await fs.readFile(result.migrationPlan.writes[0].targetPath, "utf8");

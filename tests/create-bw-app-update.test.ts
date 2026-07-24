@@ -239,6 +239,9 @@ test("published platform scaffolds pin current brightweb package versions", asyn
       `expected ${packageName} to stay aligned with the current published workspace version`,
     );
   }
+
+  assert.equal(manifest.dependencies.react, "19.2.4");
+  assert.equal(manifest.dependencies["react-dom"], "19.2.4");
 });
 
 test("CRM scaffolds expose package-owned contact write handlers", async (t) => {
@@ -272,18 +275,37 @@ test("published platform scaffolds resolved supabase migrations for the selected
     [
       "0001_core__20260316090000_core_v1.sql",
       "0002_admin__20260316091000_admin_v1.sql",
-      "0003_orgs__20260316091500_orgs_v1.sql",
-      "0004_crm__20260316092000_crm_v1.sql",
-      "0005_crm__20260316092010_crm_org_integration.sql",
-      "0006_crm__20260421201523_portal_read_indexes.sql",
+      "0003_admin__20260724121000_admin_user_invitations.sql",
+      "0004_orgs__20260316091500_orgs_v1.sql",
+      "0005_crm__20260316092000_crm_v1.sql",
+      "0006_crm__20260316092010_crm_org_integration.sql",
+      "0007_crm__20260421201523_portal_read_indexes.sql",
+      "0008_crm__20260724120000_crm_status_authorization.sql",
     ],
   );
 
   await fs.access(path.join(targetDir, "supabase", "modules", "core", "migrations", "20260316090000_core_v1.sql"));
   await fs.access(path.join(targetDir, "supabase", "modules", "admin", "migrations", "20260316091000_admin_v1.sql"));
+  await fs.access(path.join(targetDir, "supabase", "modules", "admin", "migrations", "20260724121000_admin_user_invitations.sql"));
   await fs.access(path.join(targetDir, "supabase", "modules", "orgs", "migrations", "20260316091500_orgs_v1.sql"));
   await fs.access(path.join(targetDir, "supabase", "modules", "crm", "migrations", "20260316092000_crm_v1.sql"));
   await fs.access(path.join(targetDir, "supabase", "modules", "crm", "migrations", "20260421201523_portal_read_indexes.sql"));
+  const authorizationMigrationPath = path.join(
+    targetDir,
+    "supabase",
+    "modules",
+    "crm",
+    "migrations",
+    "20260724120000_crm_status_authorization.sql",
+  );
+  const authorizationMigration = await fs.readFile(authorizationMigrationPath, "utf8");
+  assert.match(authorizationMigration, /COALESCE\(auth\.role\(\), ''\) <> 'service_role'/);
+  assert.match(authorizationMigration, /NOT COALESCE\(public\.is_staff\(\), false\)/);
+  assert.match(authorizationMigration, /ERRCODE = '42501'/);
+  assert.match(authorizationMigration, /REVOKE EXECUTE ON FUNCTION public\.set_crm_status\(uuid, text, text\) FROM PUBLIC/);
+  assert.match(authorizationMigration, /REVOKE EXECUTE ON FUNCTION public\.set_crm_status\(uuid, text, text\) FROM anon/);
+  assert.match(authorizationMigration, /GRANT EXECUTE ON FUNCTION public\.set_crm_status\(uuid, text, text\) TO authenticated/);
+  assert.match(authorizationMigration, /GRANT EXECUTE ON FUNCTION public\.set_crm_status\(uuid, text, text\) TO service_role/);
   await assert.rejects(() =>
     fs.access(path.join(targetDir, "supabase", "modules", "projects", "migrations", "20260316093000_projects_v1.sql")));
 });
@@ -297,11 +319,12 @@ test("projects scaffolding resolves organizations without CRM", async (t) => {
 
   const migrations = (await fs.readdir(path.join(targetDir, "supabase", "migrations")))
     .filter((fileName) => fileName.endsWith(".sql"));
-  assert.deepEqual(migrations.slice(0, 4), [
+  assert.deepEqual(migrations.slice(0, 5), [
     "0001_core__20260316090000_core_v1.sql",
     "0002_admin__20260316091000_admin_v1.sql",
-    "0003_orgs__20260316091500_orgs_v1.sql",
-    "0004_projects__20260316093000_projects_v1.sql",
+    "0003_admin__20260724121000_admin_user_invitations.sql",
+    "0004_orgs__20260316091500_orgs_v1.sql",
+    "0005_projects__20260316093000_projects_v1.sql",
   ]);
   assert.equal(migrations.some((fileName) => fileName.includes("_crm__")), false);
 
@@ -410,10 +433,13 @@ test("detects a site app as a no-op update target", async (t) => {
   t.after(async () => fs.rm(tempRoot, { recursive: true, force: true }));
 
   const plan = await buildBrightwebAppUpdatePlan({ targetDir }, {});
+  const manifest = await readJson(path.join(targetDir, "package.json"));
 
   assert.equal(plan.template, "site");
   assert.equal(plan.packageUpdates.length, 0);
   assert.equal(plan.fileWrites.length, 0);
+  assert.equal(manifest.dependencies.react, "19.2.4");
+  assert.equal(manifest.dependencies["react-dom"], "19.2.4");
 });
 
 test("published updates resolve installed brightweb packages from npm and leave third-party deps alone", async (t) => {
