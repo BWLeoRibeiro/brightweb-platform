@@ -245,6 +245,16 @@ test("package and preview selection controls use the shared Checkbox primitive",
   );
 });
 
+test("ui components using client-only APIs declare the use client directive", async () => {
+  const files = await sourcesAt(uiSourceRoot);
+  const violations = files
+    .filter(({ filePath }) => filePath.endsWith(".tsx"))
+    .filter(({ source }) => /@radix-ui\/react-slot|createContext|\buse(?:State|Ref|Effect|Context|Reducer|Memo|Callback)\b/.test(source))
+    .filter(({ source }) => !/^\s*(?:\/\/[^\n]*\n|\/\*[\s\S]*?\*\/\s*)*["']use client["']/.test(source))
+    .map(({ filePath }) => path.relative(repoRoot, filePath));
+  assert.deepEqual(violations, [], `Components importing @radix-ui/react-slot or using client-only React APIs must start with "use client" (server-side module eval otherwise throws createContext errors):\n${violations.join("\n")}`);
+});
+
 test("package and preview source avoid named max-width utilities that resolve to space tokens", async () => {
   const packageFiles = (await sourcesAt(packagesSourceRoot)).filter(({ filePath }) => /\.(?:ts|tsx)$/.test(filePath));
   const previewFiles = (await sourcesAt(previewSourceRoot)).filter(({ filePath }) => /\.(?:ts|tsx)$/.test(filePath));
