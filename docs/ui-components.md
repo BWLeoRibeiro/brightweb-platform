@@ -1,6 +1,6 @@
 # BrightWeb UI component inventory
 
-This inventory records the reusable visual APIs included in the current release line through Brief 35. “Used by” names package consumers rather than individual files. A dash in the MQ origin column means the component is a platform primitive or predates the file-by-file MQ translation ledgers.
+This inventory records the reusable visual APIs included in the current release line through Brief 46. “Used by” names package consumers rather than individual files. A dash in the MQ origin column means the component is a platform primitive or predates the file-by-file MQ translation ledgers.
 
 Tier definitions:
 
@@ -16,7 +16,7 @@ Tier definitions:
 | `Checkbox` | `@brightweblabs/ui` | `packages/ui/src/components/checkbox.tsx` | primitive | module-admin, module-crm, module-projects | — | Native-input wrapper; deliberately emits the same input markup as the controls normalized in Brief 27. |
 | `Input` | `@brightweblabs/ui` | `packages/ui/src/components/input.tsx` | primitive | module-projects | — | Styled text input. Literal preview playground fields remain app-owned because their classes differ. |
 | `Label` | `@brightweblabs/ui` | `packages/ui/src/components/label.tsx` | primitive | module-projects | — | Radix-backed form label. |
-| `Field`, `FieldContent`, `FieldDescription`, `FieldError`, `FieldGroup`, `FieldLabel`, `FieldLegend`, `FieldSet` | `@brightweblabs/ui` | `packages/ui/src/components/field.tsx` | pattern | module-projects | — | Form layout family. |
+| `Field`, `FieldContent`, `FieldDescription`, `FieldError`, `FieldGroup`, `FieldLabel`, `FieldLegend`, `FieldSet` | `@brightweblabs/ui` | `packages/ui/src/components/field.tsx` | pattern | core-auth, module-projects | — | Form layout family. Associate `FieldLabel` with its control by pairing `htmlFor` and `id`; associate supporting or error copy with `aria-describedby`, and expose invalid state with `aria-invalid`. |
 | `PasswordInput` | `@brightweblabs/ui` | `packages/ui/src/components/password-input.tsx` | pattern | downstream apps | — | Input with visibility control. |
 | `PasswordStrength` | `@brightweblabs/ui` | `packages/ui/src/components/password-strength.tsx` | pattern | downstream apps | — | Password-policy feedback. |
 | `PhoneInput` | `@brightweblabs/ui` | `packages/ui/src/components/phone-input.tsx` | pattern | module-crm, module-projects | — | International phone control. |
@@ -70,7 +70,7 @@ Tier definitions:
 | `DashboardSectionHeading` | `@brightweblabs/app-shell` | `packages/app-shell/src/dashboard/primitives.tsx` | pattern | AppDashboard | `components/app/portal-section-heading.tsx` | Dashboard’s exact MQ heading composition. |
 | `AppDashboard`, `DashboardClient` | `@brightweblabs/app-shell` | `packages/app-shell/src/dashboard/dashboard-client.tsx` | surface | platform-preview; module contributions from module-crm and module-projects | `app/(app)/dashboard/dashboard-client.tsx` | Aliases for the aggregate dashboard surface. Local KPI bars, tags, contact avatars, empty states, and task grids remain literal for parity. |
 | `DashboardLoading` | `@brightweblabs/app-shell` | `packages/app-shell/src/dashboard/dashboard-loading.tsx` | surface | platform-preview | `app/(app)/dashboard/loading.tsx` | Dashboard route fallback. |
-| `NotFoundPage` | `@brightweblabs/app-shell` | `packages/app-shell/src/status-pages/not-found-page.tsx` | surface | platform-preview, downstream apps | `app/not-found.tsx` | Standalone tokenized 404 frame with dictionary copy, optional brand logo, and configurable back action. |
+| `NotFoundPage`, `createAppShellStatusPages` | `@brightweblabs/app-shell` | `packages/app-shell/src/status-pages/` | surface | platform-preview, downstream apps | `app/not-found.tsx` | Standalone tokenized 404 frame with dictionary copy and configurable back action. `createAppShellStatusPages({ brand })` binds shared shell branding; `ShellBrand.statusPageLogo` can supply separate light/dark assets and falls back to `collapsedLogo`. An explicit `brandLogo` prop still overrides configured branding. |
 | `ErrorPage` | `@brightweblabs/app-shell` | `packages/app-shell/src/status-pages/error-page.tsx` | surface | platform-preview, downstream apps | `app/(app)/error.tsx` | Client error-boundary surface retaining reset/retry behavior and a configurable home action. |
 
 ## `@brightweblabs/core-auth` surfaces
@@ -80,7 +80,7 @@ Tier definitions:
 | `AuthLayout`, `AuthCard`, `AuthHeading`, `AuthNotice` | `@brightweblabs/core-auth/ui` | `packages/core-auth/src/ui/auth-layout.tsx` | pattern | core-auth screens | MQ auth layout and global auth rules | Shared branded frame, vessel, heading, and feedback compositions. |
 | `AuthUiProvider`, `useAuthUi`, `createAuthUiClient` | `@brightweblabs/core-auth/ui` | `packages/core-auth/src/ui/context.tsx`, `packages/core-auth/src/ui/client.ts` | pattern | platform-preview, downstream auth routes | — | Injectable dictionary, route, and browser-client boundary; UI components do not import Supabase. |
 | `LoginPage`, `ForgotPasswordPage`, `ResetPasswordPage`, `SignupPage` | `@brightweblabs/core-auth/ui` | `packages/core-auth/src/ui/*-page.tsx` | surface | platform-preview, downstream apps | Matching MQ auth routes | Packaged credential and recovery surfaces with invite-only signup as the default policy. |
-| `InvitePage`, `ConfirmedPage`, `PostLoginPage` | `@brightweblabs/core-auth/ui` | `packages/core-auth/src/ui/invite-page.tsx`, `confirmed-page.tsx`, `post-login-page.tsx` | surface | platform-preview, downstream apps | Matching MQ auth routes | Organization/admin invitation, confirmation, and guarded post-login routing surfaces. |
+| `InvitePage`, `ConfirmedPage`, `PostLoginPage` | `@brightweblabs/core-auth/ui` | `packages/core-auth/src/ui/invite-page.tsx`, `confirmed-page.tsx`, `post-login-page.tsx` | surface | platform-preview, downstream apps | Matching MQ auth routes | Organization/admin invitation, confirmation, and guarded post-login routing surfaces. The injected client now covers invitation details, registration, signed-in acceptance, and the post-login invitation handoff. |
 
 ## Module UI surfaces and shared patterns
 
@@ -91,14 +91,14 @@ do not become public API.
 
 | Component | Package | Path | Tier (primitive / pattern / surface) | Used by (packages) | MQ origin (file) | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-| `AdminUsersClient`, `AdminUsersLoading`, `AdminToolbarControls`, `AdminRolePill` | `@brightweblabs/module-admin/ui` | `packages/module-admin/src/ui/` | surface | platform-preview | MQ admin users route and components | Injectable users/roles/invitations surface with packaged loading and shell toolbar controls. |
+| `AdminUsersClient`, `AdminUsersLoading`, `AdminToolbarControls`, `AdminRolePill` | `@brightweblabs/module-admin/ui` | `packages/module-admin/src/ui/` | surface | platform-preview | MQ admin users route and components | Injectable users/roles/invitations surface with packaged loading and shell toolbar controls. Invitation data is backed by the packaged list/create/revoke lifecycle and admin registration handlers. |
 | `CrmDashboard` | `@brightweblabs/module-crm/ui` | `packages/module-crm/src/ui/dashboard.tsx` | surface | platform-preview | — (pre-ledger CRM port) | CRM aggregate surface. |
 | `CrmContactsTable` | `@brightweblabs/module-crm/ui` | `packages/module-crm/src/ui/contacts-table.tsx` | surface | module-crm | — (pre-ledger CRM port) | Uses shared Table, Checkbox, StatusPill, and TablePagination. Its icon-led no-data table cell differs from general `EmptyState`. |
 | `CrmDashboardSidebar` | `@brightweblabs/module-crm/ui` | `packages/module-crm/src/ui/dashboard-sidebar.tsx` | surface | module-crm | — (pre-ledger CRM port) | CRM timeline/organization sidebar cards. |
 | `CrmActivityCard` | `@brightweblabs/module-crm/ui` | `packages/module-crm/src/ui/activity-card.tsx` | pattern | module-crm, app-shell dashboard contribution | — (pre-ledger CRM port) | CRM activity row/card. |
 | `CrmFunnelStats` | `@brightweblabs/module-crm/ui` | `packages/module-crm/src/ui/funnel-stats.tsx` | pattern | module-crm, app-shell dashboard contribution | — (pre-ledger CRM port) | Funnel metric pattern using shared KPI breakdown. |
 | `CrmTimeline`, `CrmTimelineBrowser` | `@brightweblabs/module-crm/ui` | `packages/module-crm/src/ui/timeline.tsx`, `packages/module-crm/src/ui/timeline-browser.tsx` | surface | module-crm | — (pre-ledger CRM port) | Embedded timeline plus searchable sheet browser. |
-| `CrmOrganizationsBrowser`, `CrmOrganizationSheet` | `@brightweblabs/module-crm/ui` | `packages/module-crm/src/ui/organizations-browser.tsx`, `packages/module-crm/src/ui/organization-sheet.tsx` | surface | module-crm | — (pre-ledger CRM port) | Organization browser and edit sheet. |
+| `CrmOrganizationsBrowser`, `CrmOrganizationSheet` | `@brightweblabs/module-crm/ui` | `packages/module-crm/src/ui/organizations-browser.tsx`, `packages/module-crm/src/ui/organization-sheet.tsx` | surface | module-crm | — (pre-ledger CRM port) | Organization browser and edit sheet. Create and edit submissions persist through the packaged `@brightweblabs/module-orgs` POST/PATCH handlers rather than preview-local state. |
 | `CrmContactDialog`, `CrmStatusDialog`, `CrmDeleteDialog` | `@brightweblabs/module-crm/ui` | `packages/module-crm/src/ui/contact-dialog.tsx`, `packages/module-crm/src/ui/status-dialog.tsx`, `packages/module-crm/src/ui/delete-dialog.tsx` | surface | module-crm | — (pre-ledger CRM port) | CRM mutation dialogs. Stage selectors retain literal interactive pill markup. |
 | `CrmReport`, `CrmReportPage`, `CrmReportBanner` | `@brightweblabs/module-crm/ui` | `packages/module-crm/src/ui/report.tsx`, `packages/module-crm/src/ui/report-banner.tsx` | surface | platform-preview, module-crm | — (pre-ledger CRM port) | Report page and dashboard banner. |
 | `CrmToolbarSearchChip`, `CrmToolbarFiltersPill`, `CrmToolbarCreateMenu`, `CrmToolbarControls` | `@brightweblabs/module-crm/ui` | `packages/module-crm/src/ui/toolbar-controls.tsx` | pattern | platform-preview, module-crm | — (pre-ledger CRM port) | Binds CRM state and dictionary to app-shell toolbar patterns. |
@@ -159,3 +159,25 @@ The stale `member-initials-avatar.tsx` entry in `docs/internal/brief-23-translat
 | Raw Projects member checkbox → UI `Checkbox` | `packages/module-projects/src/ui/create-project-sheet.tsx:813` | Same native `input`, id, props, classes, and event handler. |
 
 `tests/ui-hygiene.test.ts` enforces that package and preview source cannot introduce another raw `<input type="checkbox">` outside the UI primitive.
+
+## Accessibility contract
+
+- Every visible form label must have a stable accessible-name association. With the shared `Field` family, pair `FieldLabel htmlFor` with the control `id`; use `aria-describedby` for descriptions or errors and `aria-invalid` for validation state.
+- Motion-heavy transitions, skeleton shimmer, and package-specific entrance animations honor `prefers-reduced-motion: reduce`. The base theme collapses animation and transition timing, while package recipes provide static fallbacks where simply shortening timing would hide content.
+- Secondary copy that must meet text contrast requirements uses `text-foreground-muted-accessible`, backed by `--foreground-muted-accessible` in neutral, dark, and MQ themes. Decorative or nonessential muted treatments may continue to use `text-muted-foreground`.
+- Phone input country selection remains keyboard-operable through its native buttons and listbox semantics, including focus restoration after selection.
+
+## Non-visual module integration added in this release
+
+The invitation and organization-save work has a visual entry point in the surfaces above, but its persistence contract is package-owned:
+
+- `@brightweblabs/core-auth` exports invitation detail, registration, and acceptance handler factories.
+- `@brightweblabs/module-admin` exports the admin invitation list/create/revoke/register lifecycle and matching route handlers.
+- `@brightweblabs/module-orgs` exports organization create/update functions and POST/PATCH handlers, plus the organization invitation list/create/revoke/register/accept lifecycle.
+
+## Known implementation TODOs
+
+- `apps/platform-preview/app/(shell)/projects/page.tsx` — `TODO(projects-live)` tracks replacing the deterministic Projects preview data with live `/api/projects`, `/stats`, `/organizations`, `/clients`, and `/contacts` endpoints. It remains intentionally unresolved because wiring live data would change preview behavior.
+- `packages/core-auth/src/ui/signup-page.tsx` — `TODO(core-auth)` tracks open registration after its profile and role policy is defined. Invite-only signup remains the explicit current product policy, so cleanup does not remove or implement this marker.
+
+No other `TODO` or `FIXME` markers remain under `apps/platform-preview`, `packages`, or `docs`.

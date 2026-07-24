@@ -61,7 +61,7 @@ The map was fixed before implementation. MQ is read-only. Board/task-route files
 | `components/projects/contact-action-buttons.tsx` | `packages/module-projects/src/ui/shared/contact-action-buttons.tsx` | Translated |
 | `components/projects/member-initials-avatar.tsx` | `packages/module-projects/src/ui/shared/project-owner-avatar.tsx` | Normalized to the shared Projects avatar during the board/task parity pass |
 | `components/projects/member-role-badge.tsx` | `packages/module-projects/src/ui/shared/member-role-badge.tsx` | Translated |
-| `components/projects/project-overview-stat-card.tsx` | `packages/module-projects/src/ui/shared/project-overview-stat-card.tsx` | Translated |
+| `components/projects/project-overview-stat-card.tsx` | — | Retired in Brief 46 cleanup: the translated wrapper had no package, route, test, contract, or public-barrel consumer; no replacement was required |
 | `components/projects/project-owner-avatar.tsx` | `packages/module-projects/src/ui/shared/project-owner-avatar.tsx` | Translated |
 | `components/projects/project-pill.tsx` | `packages/module-projects/src/ui/shared/project-pill.tsx` | Translated |
 | `components/projects/project-progress.tsx` | `packages/module-projects/src/ui/shared/project-progress.tsx` | Translated |

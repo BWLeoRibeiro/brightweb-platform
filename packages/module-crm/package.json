@@ -32,8 +32,15 @@
     "@brightweblabs/infra": "workspace:*",
     "@brightweblabs/module-orgs": "workspace:*",
     "@brightweblabs/ui": "workspace:*",
-    "@supabase/supabase-js": "^2.105.3",
-    "lucide-react": "^1.8.0",
-    "react": "19.2.4"
+    "@supabase/supabase-js": "^2.110.8",
+    "lucide-react": "^1.26.0"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "react": "19.2.4",
+    "react-dom": "19.2.4"
   }
 }
