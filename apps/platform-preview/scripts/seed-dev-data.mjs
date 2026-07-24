@@ -120,15 +120,42 @@ async function requireCount(promise, operation) {
   return result.count ?? 0;
 }
 
-async function findUserByEmail(supabase, email) {
+// GoTrue auth-admin calls. New-format secret keys (sb_secret_*) are rejected by
+// GoTrue when sent as `Authorization: Bearer` (it parses them as a JWT and fails
+// with bad_jwt/ES256). supabase-js sends the key as both apikey AND bearer, so we
+// call the admin endpoints directly with the apikey header only. PostgREST/DB
+// calls keep using supabase-js, which works with the secret key.
+async function authAdmin(path, { method = "GET", body } = {}) {
+  const base = requiredEnv("NEXT_PUBLIC_SUPABASE_URL").replace(/\/$/, "");
+  const secret = requiredEnv("SUPABASE_SECRET_DEFAULT_KEY");
+  // Some GoTrue replicas intermittently reject the new-format secret key with a
+  // spurious bad_jwt/ES256 error (~20%). PostgREST and the login path are stable;
+  // this only hits auth-admin ops, so retry transient bad_jwt failures.
+  let lastError;
+  for (let attempt = 1; attempt <= 8; attempt += 1) {
+    const response = await fetch(`${base}/auth/v1${path}`, {
+      method,
+      headers: { apikey: secret, "Content-Type": "application/json" },
+      body: body ? JSON.stringify(body) : undefined,
+    });
+    const json = await response.json().catch(() => ({}));
+    if (response.ok) return json;
+    const message = json.msg ?? json.error ?? JSON.stringify(json);
+    lastError = new Error(`Auth admin ${method} ${path} failed (${response.status}): ${message}`);
+    const transient = json.error_code === "bad_jwt" || /bad_jwt|unrecognized JWT/i.test(message);
+    if (!transient) throw lastError;
+    await new Promise((resolve) => setTimeout(resolve, 250 * attempt));
+  }
+  throw lastError;
+}
+
+async function findUserByEmail(email) {
   const perPage = 1000;
   for (let page = 1; page <= 10; page += 1) {
-    const data = await requireResult(
-      supabase.auth.admin.listUsers({ page, perPage }),
-      "Could not list Auth users",
-    );
-    const user = data.users.find((candidate) => candidate.email?.toLowerCase() === email);
-    if (user || data.users.length < perPage) return user ?? null;
+    const data = await authAdmin(`/admin/users?page=${page}&per_page=${perPage}`);
+    const users = data.users ?? [];
+    const user = users.find((candidate) => candidate.email?.toLowerCase() === email);
+    if (user || users.length < perPage) return user ?? null;
   }
   throw new Error("Could not finish searching Auth users after 10 pages.");
 }
@@ -160,26 +187,26 @@ async function main() {
     },
   );
 
-  let user = await findUserByEmail(supabase, email);
+  let user = await findUserByEmail(email);
   if (user) {
-    user = await requireResult(
-      supabase.auth.admin.updateUserById(user.id, {
+    user = await authAdmin(`/admin/users/${user.id}`, {
+      method: "PUT",
+      body: {
         password,
         email_confirm: true,
         user_metadata: { first_name: "Dev", last_name: "Admin" },
-      }),
-      "Could not update seed Auth user",
-    ).user;
+      },
+    });
   } else {
-    user = await requireResult(
-      supabase.auth.admin.createUser({
+    user = await authAdmin("/admin/users", {
+      method: "POST",
+      body: {
         email,
         password,
         email_confirm: true,
         user_metadata: { first_name: "Dev", last_name: "Admin" },
-      }),
-      "Could not create seed Auth user",
-    ).user;
+      },
+    });
   }
 
   const profile = await requireResult(
