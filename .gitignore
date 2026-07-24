@@ -15,3 +15,8 @@ supabase/.generated/
 .env
 .env.local
 .env.*.local
+docs/internal/audit/
+
+# Agent skills (installed via `skills add`)
+.agents/
+skills-lock.json
