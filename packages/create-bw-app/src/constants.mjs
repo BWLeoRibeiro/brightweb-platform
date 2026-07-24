@@ -86,6 +86,7 @@ export const APP_DEPENDENCY_DEFAULTS = {
   "@brightweblabs/module-projects": "^0.4.3",
   "@brightweblabs/theme": "^0.2.1",
   "@brightweblabs/ui": "^1.0.1",
+  "geist": "^1.7.0",
   "lucide-react": "^1.8.0",
   "next": "16.1.6",
   "react": "19.2.4",
@@ -93,6 +94,7 @@ export const APP_DEPENDENCY_DEFAULTS = {
 };
 
 export const SITE_DEPENDENCY_DEFAULTS = {
+  "geist": "^1.7.0",
   "next": "16.1.6",
   "react": "19.2.4",
   "react-dom": "19.2.4",

@@ -67,7 +67,7 @@ export function CrmToolbarFiltersPill({ status, sort, stages, dictionary = defau
         </div>
         <div className="grid gap-3">
           <div>
-            <span className="mb-2 block text-[length:var(--text-ui-micro)] font-extrabold uppercase tracking-[0.1em] text-[color:var(--muted-foreground)]">{dictionary.toolbar.status}</span>
+            <span className="mb-2 block text-[length:var(--text-ui-micro)] font-extrabold uppercase tracking-[var(--type-tracking-100)] text-[color:var(--muted-foreground)]">{dictionary.toolbar.status}</span>
             <div className="flex flex-wrap gap-2">
               {[{ value: null, label: dictionary.table.allSegments }, ...resolvedStages.map((stage) => ({ value: stage.value, label: stage.label }))].map((option) => (
                 <button key={option.value ?? "all"} type="button" className={`inline-flex h-[var(--toolbar-chip-height)] items-center rounded-full border px-3 text-[length:var(--text-ui-chip)] font-semibold ${draftStatus === option.value ? "border-[color:var(--border-selection)] bg-[color:var(--surface-selection)] text-[color:var(--foreground)]" : "border-[color:var(--hairline)] bg-[color:var(--elevate-1)] text-[color:var(--foreground)]"}`} onClick={() => setDraftStatus(option.value)}>{option.label}</button>
@@ -75,7 +75,7 @@ export function CrmToolbarFiltersPill({ status, sort, stages, dictionary = defau
             </div>
           </div>
           <div>
-            <span className="mb-2 block text-[length:var(--text-ui-micro)] font-extrabold uppercase tracking-[0.1em] text-[color:var(--muted-foreground)]">{dictionary.toolbar.organize}</span>
+            <span className="mb-2 block text-[length:var(--text-ui-micro)] font-extrabold uppercase tracking-[var(--type-tracking-100)] text-[color:var(--muted-foreground)]">{dictionary.toolbar.organize}</span>
             <div className="flex flex-wrap gap-2">
               {([
                 ["date_desc", dictionary.table.sortNewest],

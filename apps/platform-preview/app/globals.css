@@ -86,9 +86,9 @@
 .preview-page .stat-number {
   display: block;
   font-family: var(--font-display);
-  font-size: clamp(2rem, 4vw, 3rem);
-  line-height: 1;
-  letter-spacing: -0.04em;
+  font-size: var(--text-ui-preview-stat);
+  line-height: var(--type-leading-none);
+  letter-spacing: var(--type-tracking-n040);
 }
 
 .preview-page .starter-hero-note {
@@ -104,26 +104,26 @@
   border-radius: 999px;
   background: color-mix(in srgb, var(--brand-accent) 12%, transparent);
   color: var(--brand-accent);
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
+  font-size: var(--text-ui-meta);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: var(--type-tracking-040);
   text-transform: uppercase;
 }
 
 .preview-page .title {
   margin: 0;
   font-family: var(--font-display);
-  font-size: clamp(2.4rem, 5.5vw, 4.8rem);
-  line-height: 0.92;
-  letter-spacing: -0.04em;
+  font-size: var(--text-ui-preview-title);
+  line-height: var(--type-leading-092);
+  letter-spacing: var(--type-tracking-n040);
 }
 
 .preview-page .lead {
   max-width: 760px;
   margin: 0;
   color: var(--muted-foreground);
-  font-size: 18px;
-  line-height: 1.6;
+  font-size: var(--text-ui-subhead);
+  line-height: var(--type-leading-160);
 }
 
 /* Renamed from .grid — the bare name collided with Tailwind's `grid` utility
@@ -200,7 +200,7 @@
   border-radius: 14px;
   background: var(--primary);
   color: var(--primary-foreground);
-  font-weight: 600;
+  font-weight: var(--font-weight-medium);
 }
 
 .preview-page .action.secondary {
@@ -213,13 +213,13 @@
   display: inline-flex;
   margin-top: 12px;
   color: var(--accent);
-  font-weight: 700;
+  font-weight: var(--font-weight-bold);
 }
 
 .preview-page .package-name {
   margin-top: 12px;
   color: var(--muted-foreground);
-  font-size: 13px;
+  font-size: var(--text-ui-action);
   font-family: var(--font-mono);
 }
 
@@ -296,9 +296,9 @@
 .preview-page .app-preview-header-copy h1 {
   margin-bottom: 8px;
   font-family: var(--font-display);
-  font-size: clamp(2rem, 4vw, 3rem);
-  line-height: 0.96;
-  letter-spacing: -0.04em;
+  font-size: var(--text-ui-preview-stat);
+  line-height: var(--type-leading-096);
+  letter-spacing: var(--type-tracking-n040);
 }
 
 .preview-page .app-preview-header-actions {
@@ -352,7 +352,7 @@
 
 .preview-page .preview-stage-head h2 {
   margin-bottom: 0;
-  font-size: 1.75rem;
+  font-size: var(--text-ui-report-title);
 }
 
 .preview-page .nav-chip {
@@ -361,8 +361,8 @@
   color: var(--brand-panel-foreground);
   border-radius: 999px;
   padding: 10px 14px;
-  font-size: 12px;
-  font-weight: 700;
+  font-size: var(--text-ui-meta);
+  font-weight: var(--font-weight-bold);
   transition: 160ms ease;
 }
 
@@ -390,9 +390,9 @@
 .preview-page .preview-label {
   margin: 0;
   color: var(--brand-panel-subtle);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
+  font-size: var(--text-ui-label);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: var(--type-tracking-080);
   text-transform: uppercase;
 }
 
@@ -402,8 +402,8 @@
   gap: 8px;
   padding: 8px 12px;
   border-radius: 999px;
-  font-size: 13px;
-  font-weight: 700;
+  font-size: var(--text-ui-action);
+  font-weight: var(--font-weight-bold);
 }
 
 .preview-page .status.ok {

@@ -84,7 +84,7 @@ const taskGroupHeaderTone: Record<TaskGroupKey, { header: string; label: string 
 
 // Explicit label styling (11px/600/uppercase) so the per-group tone color wins
 // deterministically over the shared portal-label utility's muted color.
-const TASK_GROUP_LABEL_BASE = "text-[0.6875rem] font-semibold uppercase tracking-[0.06em]";
+const TASK_GROUP_LABEL_BASE = "text-[length:var(--text-ui-label)] font-semibold uppercase tracking-[var(--type-tracking-060)]";
 
 // How many tasks the detail-page bento previews before deferring to the board.
 const PREVIEW_TASK_LIMIT = 7;
@@ -428,17 +428,17 @@ export function ProjectMilestonesAndTasksLists({
                   >
                     {hasDate ? (
                       <>
-                        <span className="block text-[7px] font-bold leading-none tracking-[0.04em] opacity-70">
+                        <span className="block text-[length:var(--text-ui-nano)] font-bold leading-none tracking-[var(--type-tracking-040)] opacity-70">
                           {formatWeekday(milestone.targetDate)}
                         </span>
-                        <span className={`${MONO} block text-[16px] font-extrabold leading-none`}>
+                        <span className={`${MONO} block text-[length:var(--type-paragraph)] font-extrabold leading-none`}>
                           {formatDayOfMonth(milestone.targetDate)}
                         </span>
                       </>
                     ) : (
                       <>
                         <CalendarOff className="size-4 opacity-60" />
-                        <span className="block text-[7px] font-semibold uppercase tracking-[0.04em] opacity-70">{dictionary.detail.noDateShort}</span>
+                        <span className="block text-[length:var(--text-ui-nano)] font-semibold uppercase tracking-[var(--type-tracking-040)] opacity-70">{dictionary.detail.noDateShort}</span>
                       </>
                     )}
                   </div>

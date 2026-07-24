@@ -33,7 +33,7 @@ type ProjectOverviewStatValueProps = {
 };
 
 export function ProjectOverviewStatValue({ children, className }: ProjectOverviewStatValueProps) {
-  return <p className={cn("text-[15px] font-semibold leading-snug tracking-tight text-[color:var(--foreground)] tabular-nums", className)}>{children}</p>;
+  return <p className={cn("text-[length:var(--text-ui-card-title)] font-semibold leading-snug tracking-tight text-[color:var(--foreground)] tabular-nums", className)}>{children}</p>;
 }
 
 type ProjectOverviewStatIconValueProps = {
@@ -46,7 +46,7 @@ export function ProjectOverviewStatIconValue({ icon, children, className }: Proj
   return (
     <div className={cn("flex items-center gap-2", className)}>
       {icon}
-      <span className="text-[15px] font-semibold leading-snug tracking-tight text-[color:var(--foreground)]">{children}</span>
+      <span className="text-[length:var(--text-ui-card-title)] font-semibold leading-snug tracking-tight text-[color:var(--foreground)]">{children}</span>
     </div>
   );
 }
@@ -57,5 +57,5 @@ type ProjectOverviewStatMetaProps = {
 };
 
 export function ProjectOverviewStatMeta({ children, className }: ProjectOverviewStatMetaProps) {
-  return <p className={cn("mt-1 text-[11px] text-[color:var(--muted-foreground)]", className)}>{children}</p>;
+  return <p className={cn("mt-1 text-[length:var(--text-ui-label)] text-[color:var(--muted-foreground)]", className)}>{children}</p>;
 }

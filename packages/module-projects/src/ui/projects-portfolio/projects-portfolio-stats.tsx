@@ -140,9 +140,9 @@ export function ProjectsPortfolioStats({
                   </p>
                   <div className="mt-1 flex items-baseline justify-between gap-1">
                     <p className={cn("text-xs font-semibold", stat.labelCn)}>{stat.label}</p>
-                    <span className={cn("text-[10px] font-semibold tabular-nums", stat.pctCn)}>{stat.pct}%</span>
+                    <span className={cn("text-[length:var(--text-ui-micro)] font-semibold tabular-nums", stat.pctCn)}>{stat.pct}%</span>
                   </div>
-                  <p className={cn("mt-0.5 text-[10px]", stat.descCn)}>{stat.description}</p>
+                  <p className={cn("mt-0.5 text-[length:var(--text-ui-micro)]", stat.descCn)}>{stat.description}</p>
                   <div className="mt-3 h-0.5 overflow-hidden rounded-full bg-black/8 dark:bg-white/8">
                     <div
                       className={cn("h-full rounded-full transition-all duration-1000 ease-out", stat.barCn)}

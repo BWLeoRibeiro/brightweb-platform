@@ -12,8 +12,8 @@ type ProjectOwnerAvatarProps = {
 };
 
 const SIZE_CLASSES: Record<ProjectOwnerAvatarSize, string> = {
-  sm: "h-5 w-5 text-[9px]",
-  md: "h-8 w-8 text-[11px]",
+  sm: "h-5 w-5 text-[length:var(--text-ui-fine)]",
+  md: "h-8 w-8 text-[length:var(--text-ui-label)]",
 };
 
 export function ownerInitials(label: string | null | undefined) {

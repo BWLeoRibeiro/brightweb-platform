@@ -1,6 +1,6 @@
 // Portal type scale. These map to the `@utility portal-*` classes and the
 // `--portal-text-*` tokens defined in app/globals.css. Prefer importing these
-// names over hand-typing `text-[11px]`/`font-semibold`/`uppercase` etc.
+// names over hand-typing `text-[length:var(--text-ui-label)]`/`font-semibold`/`uppercase` etc.
 
 export const portalPageTitleClassName = "portal-title";
 

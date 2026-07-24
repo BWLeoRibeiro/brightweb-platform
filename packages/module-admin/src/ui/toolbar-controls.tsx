@@ -85,7 +85,7 @@ export function AdminToolbarControls({ dictionary = defaultAdminUiDictionary }: 
               {dictionary.toolbar.clear}
             </button>
           </div>
-          <span className="mb-2 block text-[length:var(--text-ui-micro)] font-extrabold uppercase tracking-[0.1em] text-[color:var(--muted-foreground)]">
+          <span className="mb-2 block text-[length:var(--text-ui-micro)] font-extrabold uppercase tracking-[var(--type-tracking-100)] text-[color:var(--muted-foreground)]">
             {dictionary.toolbar.role}
           </span>
           <div className="flex flex-wrap gap-2">

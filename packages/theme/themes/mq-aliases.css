@@ -16,90 +16,90 @@
 }
 
 @utility portal-micro {
-  font-family: var(--font-body), sans-serif;
+  font-family: var(--font-body);
   font-size: var(--text-ui-micro);
   font-weight: var(--font-weight-medium);
-  line-height: 1.3;
+  line-height: var(--type-leading-130);
   /* MQ parity: apps/portal/app/globals.css:718. */
   color: var(--muted-foreground);
 }
 @utility portal-label {
-  font-family: var(--font-body), sans-serif;
+  font-family: var(--font-body);
   font-size: var(--text-ui-label);
   font-weight: var(--font-weight-medium);
-  line-height: 1;
+  line-height: var(--type-leading-none);
   text-transform: uppercase;
-  letter-spacing: 0.14em;
+  letter-spacing: var(--type-tracking-140);
   /* MQ parity: apps/portal/app/globals.css:663. */
   color: var(--muted-foreground);
 }
 @utility portal-meta {
-  font-family: var(--font-body), sans-serif;
+  font-family: var(--font-body);
   font-size: var(--text-ui-meta);
   font-weight: var(--font-weight-regular);
-  line-height: 1.4;
+  line-height: var(--type-leading-140);
   /* MQ parity: apps/portal/app/globals.css:711. */
   color: var(--muted-foreground);
 }
 @utility portal-body {
-  font-family: var(--font-body), sans-serif;
+  font-family: var(--font-body);
   font-size: var(--text-ui-body);
   font-weight: var(--font-weight-regular);
-  line-height: 1.5;
+  line-height: var(--type-leading-normal);
   /* MQ parity: apps/portal/app/globals.css:705. */
   color: var(--foreground);
 }
 @utility portal-card-title {
-  font-family: var(--font-body), sans-serif;
+  font-family: var(--font-body);
   font-size: var(--text-ui-card-title);
   font-weight: var(--font-weight-medium);
-  line-height: 1.3;
-  letter-spacing: -0.025em;
+  line-height: var(--type-leading-130);
+  letter-spacing: var(--type-tracking-n025);
   /* MQ parity: apps/portal/app/globals.css:654. */
   color: var(--foreground);
 }
 @utility portal-subhead {
-  font-family: var(--font-display), sans-serif;
+  font-family: var(--font-display);
   font-size: var(--text-ui-subhead);
   font-weight: var(--font-weight-bold);
-  line-height: 1.25;
-  letter-spacing: -0.02em;
+  line-height: var(--type-leading-tight);
+  letter-spacing: var(--type-tracking-n020);
   /* MQ parity: apps/portal/app/globals.css:646. */
   color: var(--foreground);
 }
 @utility portal-panel-title {
-  font-family: var(--font-display), sans-serif;
+  font-family: var(--font-display);
   font-size: var(--text-ui-panel-title);
   font-weight: var(--font-weight-bold);
-  line-height: 1.2;
-  letter-spacing: -0.02em;
+  line-height: var(--type-leading-120);
+  letter-spacing: var(--type-tracking-n020);
   /* MQ parity: apps/portal/app/globals.css:636. */
   color: var(--foreground);
 }
 @utility portal-heading {
-  font-family: var(--font-display), sans-serif;
+  font-family: var(--font-display);
   font-size: var(--text-ui-heading);
   font-weight: var(--font-weight-bold);
-  line-height: 1.15;
-  letter-spacing: -0.02em;
+  line-height: var(--type-leading-115);
+  letter-spacing: var(--type-tracking-n020);
   /* MQ parity: apps/portal/app/globals.css:626. */
   color: var(--foreground);
 }
 @utility portal-title-sm {
-  font-family: var(--font-display), sans-serif;
+  font-family: var(--font-display);
   font-size: var(--text-ui-title-sm);
   font-weight: var(--font-weight-heavy);
-  line-height: 1.1;
-  letter-spacing: -0.03em;
+  line-height: var(--type-leading-110);
+  letter-spacing: var(--type-tracking-n030);
   /* MQ parity: apps/portal/app/globals.css:617. */
   color: var(--foreground);
 }
 @utility portal-title {
-  font-family: var(--font-display), sans-serif;
+  font-family: var(--font-display);
   font-size: var(--text-ui-title);
   font-weight: var(--font-weight-heavy);
-  line-height: 1.05;
-  letter-spacing: -0.03em;
+  line-height: var(--type-leading-105);
+  letter-spacing: var(--type-tracking-n030);
   /* MQ parity: apps/portal/app/globals.css:606. */
   color: var(--foreground);
 }
@@ -108,28 +108,28 @@
   font-variant-numeric: tabular-nums;
   font-size: var(--text-ui-metric);
   font-weight: var(--font-weight-heavy);
-  line-height: 1;
-  letter-spacing: -0.04em;
+  line-height: var(--type-leading-none);
+  letter-spacing: var(--type-tracking-n040);
   /* MQ parity: apps/portal/app/globals.css:673. */
   color: var(--foreground);
 }
 @utility portal-metric-xl {
-  font-family: var(--font-display), sans-serif;
+  font-family: var(--font-display);
   font-variant-numeric: tabular-nums;
   font-size: var(--text-ui-metric-xl);
   font-weight: var(--font-weight-heavy);
-  line-height: 0.95;
-  letter-spacing: -0.04em;
+  line-height: var(--type-leading-095);
+  letter-spacing: var(--type-tracking-n040);
   /* MQ parity: apps/portal/app/globals.css:697. */
   color: var(--foreground);
 }
 @utility portal-metric-display {
-  font-family: var(--font-display), sans-serif;
+  font-family: var(--font-display);
   font-variant-numeric: tabular-nums;
   font-size: var(--text-ui-metric-display);
   font-weight: var(--font-weight-heavy);
-  line-height: 1;
-  letter-spacing: -0.04em;
+  line-height: var(--type-leading-none);
+  letter-spacing: var(--type-tracking-n040);
   /* MQ parity: apps/portal/app/globals.css:685. */
   color: var(--foreground);
 }
@@ -154,11 +154,11 @@
 @layer components {
   .heading-2 {
     margin: 0;
-    font-family: var(--font-display), sans-serif;
+    font-family: var(--font-display);
     font-size: var(--type-heading-2);
-    font-weight: 900;
-    line-height: 1.1;
-    letter-spacing: -0.025em;
+    font-weight: var(--font-weight-black);
+    line-height: var(--type-leading-110);
+    letter-spacing: var(--type-tracking-n025);
     text-wrap: balance;
   }
 
@@ -167,38 +167,38 @@
   .paragraph-small,
   .paragraph-mini {
     margin: 0;
-    font-family: var(--font-body), sans-serif;
+    font-family: var(--font-body);
     font-weight: var(--font-weight-regular);
-    letter-spacing: 0.01em;
+    letter-spacing: var(--type-tracking-010);
   }
 
   .paragraph {
     font-size: var(--type-paragraph);
-    line-height: 1.72;
+    line-height: var(--type-leading-172);
   }
 
   .paragraph-large {
     font-size: var(--type-paragraph-large);
-    line-height: 1.55;
+    line-height: var(--type-leading-155);
   }
 
   .paragraph-small {
     font-size: var(--type-paragraph-small);
-    line-height: 1.5;
+    line-height: var(--type-leading-normal);
   }
 
   .paragraph-mini {
     font-size: var(--type-paragraph-mini);
-    line-height: 1.45;
+    line-height: var(--type-leading-145);
   }
 
   .label {
     margin: 0;
-    font-family: var(--font-display), sans-serif;
+    font-family: var(--font-display);
     font-size: var(--type-label);
-    font-weight: 800;
-    line-height: 1.2;
-    letter-spacing: 0.12em;
+    font-weight: var(--font-weight-heavy);
+    line-height: var(--type-leading-120);
+    letter-spacing: var(--type-tracking-120);
     text-transform: uppercase;
   }
 }

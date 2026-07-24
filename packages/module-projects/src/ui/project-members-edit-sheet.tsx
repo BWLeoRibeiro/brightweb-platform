@@ -120,7 +120,7 @@ function SectionHeading({ title, count }: { title: string; count?: number }) {
   return (
     <div className="flex items-baseline gap-2 px-0.5">
       <span className="text-xs font-semibold uppercase tracking-wide text-foreground/70">{title}</span>
-      {typeof count === "number" ? <span className="text-[0.7rem] text-foreground/45">{count}</span> : null}
+      {typeof count === "number" ? <span className="text-[length:var(--text-ui-label-relaxed)] text-foreground/45">{count}</span> : null}
     </div>
   );
 }

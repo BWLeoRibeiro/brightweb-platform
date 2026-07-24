@@ -284,8 +284,8 @@ export function ProjectBoardKanban({ canEditItems }: ProjectBoardKanbanProps) {
                 onDrop={(event) => { event.preventDefault(); setDropTarget(null); void moveTaskToStatus(column.key); }}
               >
                 <div className="mb-3 flex items-center justify-between px-1">
-                  <div className="flex items-center gap-2"><span className={cn("size-2 shrink-0 rounded-full", column.dotClassName)} /><h2 className={cn("text-[0.6875rem] font-semibold uppercase tracking-[0.08em]", column.headingClassName)}>{column.label}</h2></div>
-                  <span className="inline-flex min-w-[1.5rem] items-center justify-center rounded-full border border-[color:var(--border)] bg-[color:var(--card)] px-1.5 text-[11px] font-semibold tabular-nums text-[color:var(--muted-foreground)]">{columnTasks.length}</span>
+                  <div className="flex items-center gap-2"><span className={cn("size-2 shrink-0 rounded-full", column.dotClassName)} /><h2 className={cn("text-[length:var(--text-ui-label)] font-semibold uppercase tracking-[var(--type-tracking-080)]", column.headingClassName)}>{column.label}</h2></div>
+                  <span className="inline-flex min-w-[1.5rem] items-center justify-center rounded-full border border-[color:var(--border)] bg-[color:var(--card)] px-1.5 text-[length:var(--text-ui-label)] font-semibold tabular-nums text-[color:var(--muted-foreground)]">{columnTasks.length}</span>
                 </div>
                 <div className="flex flex-col gap-2">
                   {columnTasks.length === 0 ? <p className="portal-micro px-1 py-6 text-center text-foreground/35">{dictionary.board.noTasks}</p> : null}
