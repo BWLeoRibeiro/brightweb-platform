@@ -1,5 +1,16 @@
 # @brightweblabs/app-shell
 
+## 0.5.0
+
+### Minor Changes
+
+- 1a86493: Add the MQ-parity shell frame, sidebar rail, account menu, fully tokenized shell and CRM visual contract, typography aliases, systemic border color, and table pagination styling used by the CRM dashboard. Guard package components against raw color recipes.
+
+### Patch Changes
+
+- Updated dependencies [1a86493]
+  - @brightweblabs/ui@1.0.2
+
 ## 0.4.1
 
 ### Patch Changes
