@@ -33,7 +33,7 @@ export function CrmTimelineBrowser({ open, entries, loading = false, dictionary 
           <SheetTitle>{dictionary.timeline.title}</SheetTitle>
           <SheetDescription>{dictionary.timeline.subtitle}</SheetDescription>
         </SheetHeader>
-        <div className="min-h-0 flex-1 overflow-y-auto p-5">
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-5">
           <SearchField value={search} onChange={setSearch} onClear={() => setSearch("")} placeholder={dictionary.timeline.searchPlaceholder} aria-label={dictionary.timeline.searchPlaceholder} />
           <div className="mt-4">
             {search && filtered.length === 0 && !loading ? <EmptyState icon={Clock3} title={dictionary.timeline.noResultsTitle} hint={dictionary.timeline.noResultsHint} /> : <CrmTimeline entries={filtered} loading={loading} dictionary={dictionary} />}

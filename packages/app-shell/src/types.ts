@@ -39,6 +39,10 @@ export type ShellBrand = {
   collapsedLogo: ShellBrandAsset;
   lightLogo: ShellBrandAsset;
   darkLogo: ShellBrandAsset;
+  statusPageLogo?: {
+    light: ShellBrandAsset;
+    dark: ShellBrandAsset;
+  };
 };
 
 export type ShellAccessLevel = "all" | "staff" | "admin";

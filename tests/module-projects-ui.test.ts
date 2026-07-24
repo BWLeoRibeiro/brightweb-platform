@@ -52,6 +52,46 @@ test("Projects package UI contains the literal list/detail translation and no ra
   for (const symbol of ["ProjectsPage", "ProjectDetailPage", "ProjectsToolbarControls", "ProjectDetailDataProvider", "ProjectBoardKanban", "ProjectTasksPage", "ProjectBoardLoading"]) assert.match(readFileSync(join(root, "index.ts"), "utf8"), new RegExp(symbol.replace("ProjectsToolbarControls", "toolbar-controls").replace("ProjectDetailDataProvider", "project-detail-data-provider").replace("ProjectsPage", "projects-page").replace("ProjectDetailPage", "project-detail-page").replace("ProjectBoardKanban", "project-board-kanban").replace("ProjectTasksPage", "project-tasks-page").replace("ProjectBoardLoading", "project-board-loading")));
 });
 
+test("Projects UI barrel exposes only the supported documented component families", () => {
+  const barrel = readFileSync(join(process.cwd(), "packages/module-projects/src/ui/index.ts"), "utf8");
+  const ledger = readFileSync(join(process.cwd(), "docs/ui-components.md"), "utf8");
+  const supportedExports = [
+    "./project-activity-card",
+    "./project-detail-data-provider",
+    "./project-detail-page",
+    "./project-board-kanban",
+    "./project-board-loading",
+    "./project-board-toolbar-controls",
+    "./project-tasks-page",
+    "./project-state-badge",
+    "./projects-page",
+    "./projects-portfolio/index",
+    "./toolbar-controls",
+    "./shared/project-summary-card",
+    "./shared/project-summary-card-skeleton",
+  ];
+
+  for (const exportPath of supportedExports) {
+    assert.match(barrel, new RegExp(`from "${exportPath.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}"`));
+  }
+  assert.match(barrel, /export \{ TaskDueMeta, TaskPriorityTag, TaskStatusTag \} from "\.\/shared\/task-tags"/);
+  assert.doesNotMatch(barrel, /project-overview-stat-card|project-detail-hero|project-pill|shared-fields/);
+  assert.match(ledger, /\| `TaskPriorityTag`, `TaskStatusTag`, `TaskDueMeta` \| `@brightweblabs\/module-projects\/ui` \|/);
+  assert.match(ledger, /\| `ProjectDetailHero`, `ProjectDetailMetadataStrip`, `ProjectDetailTeamCard` \| internal to `@brightweblabs\/module-projects` \|/);
+  assert.doesNotMatch(ledger, /ProjectOverviewStatCard/);
+});
+
+test("Projects keeps the public list payload type without its dead parser", () => {
+  const parser = readFileSync(join(process.cwd(), "packages/module-projects/src/ui/projects-list-response-parser.ts"), "utf8");
+  const barrel = readFileSync(join(process.cwd(), "packages/module-projects/src/ui/index.ts"), "utf8");
+  const dashboardParser = readFileSync(join(process.cwd(), "packages/app-shell/src/dashboard/dashboard-response-parser.ts"), "utf8");
+
+  assert.match(parser, /export type ListProjectsPayload/);
+  assert.doesNotMatch(parser, /parseListProjectsPayload|isListProjectsPayload|isProjectItem|parseErrorFromPayload/);
+  assert.match(barrel, /export type \{ ListProjectsPayload \}/);
+  assert.match(dashboardParser, /export function parseDashboardBootstrapResponse/);
+});
+
 test("Projects Portuguese UI copy is owned by the dictionary", () => {
   const root = join(process.cwd(), "packages/module-projects/src/ui");
   const files = (directory: string): string[] => readdirSync(directory, { withFileTypes: true }).flatMap((entry) => entry.isDirectory() ? files(join(directory, entry.name)) : [join(directory, entry.name)]);

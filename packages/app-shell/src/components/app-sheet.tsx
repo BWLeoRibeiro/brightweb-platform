@@ -5,7 +5,7 @@ import { cn } from "../lib/utils";
 
 export const sheetShellClassName = "gap-0 h-screen w-full border-l border-[color:var(--border)] bg-[color:var(--background)] sm:max-w-[28rem]";
 export const sheetHeaderClassName = "relative overflow-hidden border-b border-[color:var(--border)] bg-[image:var(--sheet-header-surface)] px-5 pb-5 pt-5";
-export const sheetBodyClassName = "min-h-0 flex-1 overflow-y-auto px-5 pb-6 pt-4";
+export const sheetBodyClassName = "min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pb-6 pt-4";
 export const sheetFooterClassName = "border-t border-[color:var(--border)] px-5 py-4";
 export const sheetHeaderEditingClassName = "border-b-[color:var(--sheet-edit-border)] bg-[image:var(--sheet-edit-header-surface)]";
 export const sheetSectionClassName = "overflow-hidden rounded-[var(--radius-card)] border border-[color:var(--border)] bg-[color:var(--project-surface-secondary)]";
