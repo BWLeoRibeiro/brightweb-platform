@@ -4,10 +4,10 @@ import { useEffect, useState, type FormEvent } from "react";
 import { Building2, Pencil, Save } from "lucide-react";
 import { AppSheetBody, AppSheetFooter, AppSheetHeader, SheetSection, sheetEditControlClassName, sheetShellClassName, sheetViewControlClassName } from "@brightweblabs/app-shell";
 import { Button, Field, FieldContent, FieldGroup, FieldLabel, Input, Sheet, SheetContent } from "@brightweblabs/ui";
-import type { CrmOrganization, CrmUiDictionary } from "./types";
+import type { CrmOrganization, CrmOrganizationWriteInput, CrmUiDictionary } from "./types";
 import { defaultCrmUiDictionary } from "./dictionary";
 
-export type CrmOrganizationFormInput = Omit<CrmOrganization, "id" | "created_at">;
+export type CrmOrganizationFormInput = CrmOrganizationWriteInput;
 type OrganizationMode = "create" | "view" | "edit";
 
 const industries = ["Agricultura", "Alimentação e Bebidas", "Construção", "Educação", "Energia", "Financeiro", "Imobiliário", "Indústria Transformadora", "Logística e Transportes", "Retalho", "Saúde", "Tecnologia", "Turismo e Hotelaria"];

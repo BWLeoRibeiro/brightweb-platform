@@ -56,11 +56,12 @@ export function createAuthUiClient(options: {
       return readJson<AuthInvitation | null>(await fetcher(`${invitationBasePath}/${encodeURIComponent(invitationId)}?kind=${kind}`));
     },
     async registerInvite(input) {
-      return readJson<{ email: string }>(await fetcher(`${invitationBasePath}/${encodeURIComponent(input.invitationId)}/register`, {
+      const payload = await readJson<{ data: { email: string } }>(await fetcher(`${invitationBasePath}/${encodeURIComponent(input.invitationId)}/register`, {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify(input),
       }));
+      return payload.data;
     },
     async getPostLoginAccess() {
       const client = supabase();

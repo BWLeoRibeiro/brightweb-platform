@@ -1,6 +1,6 @@
 import type { CrmContact, CrmContactsListParams } from "../data";
 import type { CrmContactStatus } from "../server";
-import type { CrmContactFormInput, CrmUiClient } from "./types";
+import type { CrmContactFormInput, CrmOrganizationWriteInput, CrmUiClient } from "./types";
 
 async function readJson<T>(response: Response): Promise<T> {
   const payload = await response.json().catch(() => null) as { error?: string } | null;
@@ -21,8 +21,26 @@ function contactPayload(input: CrmContactFormInput) {
   };
 }
 
-export function createCrmUiClient(basePath = "/api/crm", fetcher: typeof fetch = fetch): CrmUiClient {
+function organizationPayload(input: CrmOrganizationWriteInput) {
+  return {
+    name: input.name,
+    industry: input.industry,
+    companySize: input.company_size,
+    budgetRange: input.budget_range,
+    websiteUrl: input.website_url,
+    addressLine1: input.address,
+    taxIdentifierValue: input.taxIdentifierValue,
+    primaryContactId: input.primary_contact_id,
+  };
+}
+
+export function createCrmUiClient(
+  basePath = "/api/crm",
+  fetcher: typeof fetch = fetch,
+  organizationsBasePath = "/api/organizations",
+): CrmUiClient {
   const endpoint = (path: string) => `${basePath.replace(/\/$/, "")}/${path}`;
+  const organizationsRoot = organizationsBasePath.replace(/\/$/, "");
 
   return {
     async listContacts(params: CrmContactsListParams = {}) {
@@ -47,6 +65,26 @@ export function createCrmUiClient(basePath = "/api/crm", fetcher: typeof fetch =
         await fetcher(`${endpoint("organizations")}?pageSize=100`),
       );
       return result.items;
+    },
+    async createOrganization(input) {
+      const result = await readJson<{ data: { organization: Awaited<ReturnType<CrmUiClient["createOrganization"]>> } }>(
+        await fetcher(organizationsRoot, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify(organizationPayload(input)),
+        }),
+      );
+      return result.data.organization;
+    },
+    async updateOrganization(organizationId, input) {
+      const result = await readJson<{ data: { organization: Awaited<ReturnType<CrmUiClient["updateOrganization"]>> } }>(
+        await fetcher(`${organizationsRoot}/${encodeURIComponent(organizationId)}`, {
+          method: "PATCH",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify(organizationPayload(input)),
+        }),
+      );
+      return result.data.organization;
     },
     async listTimeline(contactId?: string) {
       const query = new URLSearchParams();

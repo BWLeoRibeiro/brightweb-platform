@@ -16,6 +16,8 @@ export type Organization = {
   website_url: string | null;
   address: string | null;
   taxIdentifierValue: string | null;
+  taxIdentifierKind: string | null;
+  taxIdentifierCountryCode: string | null;
   primary_contact_id: string | null;
   primary_contact?: OrganizationPrimaryContact | null;
   created_at: string;
@@ -42,6 +44,10 @@ export type CreateOrganizationInput = {
   budgetRange?: string | null;
   websiteUrl?: string | null;
   address?: string | null;
+  addressLine1?: string | null;
+  addressLine2?: string | null;
+  zipCode?: string | null;
+  country?: string | null;
   taxIdentifierValue?: string | null;
   primaryContactId?: string | null;
 };
@@ -67,6 +73,8 @@ type RawOrganization = {
   website_url: string | null;
   address: string | null;
   tax_identifier_value?: string | null;
+  tax_identifier_kind?: string | null;
+  tax_identifier_country_code?: string | null;
   primary_contact_id: string | null;
   primary_contact?: OrganizationPrimaryContact | OrganizationPrimaryContact[] | null;
   created_at: string;
@@ -74,6 +82,7 @@ type RawOrganization = {
 
 export const ORGANIZATIONS_DEFAULT_PAGE_SIZE = 20;
 export const ORGANIZATIONS_MAX_PAGE_SIZE = 100;
+const ORGANIZATION_ADDRESS_SEPARATOR = " · ";
 
 function normalizePage(page: number | undefined, fallback: number) {
   return Number.isFinite(page) && (page ?? 0) > 0 ? Math.floor(page as number) : fallback;
@@ -95,11 +104,40 @@ function normalizeOrganization(raw: RawOrganization): Organization {
     website_url: raw.website_url,
     address: raw.address,
     taxIdentifierValue: typeof raw.tax_identifier_value === "string" ? raw.tax_identifier_value : null,
+    taxIdentifierKind: typeof raw.tax_identifier_kind === "string" ? raw.tax_identifier_kind : null,
+    taxIdentifierCountryCode: typeof raw.tax_identifier_country_code === "string" ? raw.tax_identifier_country_code : null,
     primary_contact_id: raw.primary_contact_id,
     primary_contact: Array.isArray(primaryContact) ? primaryContact[0] ?? null : primaryContact ?? null,
     created_at: raw.created_at,
   };
 }
+
+function buildAddress(input: CreateOrganizationInput): string | null {
+  const addressLine1 = input.addressLine1 === undefined ? input.address : input.addressLine1;
+  const composed = [addressLine1, input.addressLine2, input.zipCode, input.country]
+    .map((part) => part?.trim() ?? "")
+    .filter(Boolean)
+    .join(ORGANIZATION_ADDRESS_SEPARATOR);
+  return composed || null;
+}
+
+function organizationWritePayload(input: CreateOrganizationInput) {
+  const taxIdentifierValue = input.taxIdentifierValue?.replace(/\D/g, "") || null;
+  return {
+    name: input.name.trim(),
+    industry: input.industry?.trim() || null,
+    company_size: input.companySize?.trim() || null,
+    budget_range: input.budgetRange?.trim() || null,
+    website_url: input.websiteUrl?.trim() || null,
+    address: buildAddress(input),
+    tax_identifier_value: taxIdentifierValue,
+    tax_identifier_kind: taxIdentifierValue ? "vat" : null,
+    tax_identifier_country_code: taxIdentifierValue ? "PT" : null,
+  };
+}
+
+const ORGANIZATION_SELECT =
+  "id, name, industry, company_size, budget_range, website_url, address, tax_identifier_value, tax_identifier_kind, tax_identifier_country_code, primary_contact_id, created_at, primary_contact:profiles!organizations_primary_contact_id_fkey(id, first_name, last_name, email)";
 
 export async function listOrganizations(
   supabase: SupabaseClient,
@@ -114,7 +152,7 @@ export async function listOrganizations(
   let query = supabase
     .from("organizations")
     .select(
-      "id, name, industry, company_size, budget_range, website_url, address, tax_identifier_value, primary_contact_id, created_at, primary_contact:profiles!organizations_primary_contact_id_fkey(id, first_name, last_name, email)",
+      ORGANIZATION_SELECT,
       { count: "exact" },
     )
     .order("created_at", { ascending: false })
@@ -147,18 +185,10 @@ export async function createOrganization(
   const { data, error } = await supabase
     .from("organizations")
     .insert({
-      name,
-      industry: input.industry?.trim() || null,
-      company_size: input.companySize?.trim() || null,
-      budget_range: input.budgetRange?.trim() || null,
-      website_url: input.websiteUrl?.trim() || null,
-      address: input.address?.trim() || null,
-      tax_identifier_value: input.taxIdentifierValue?.trim() || null,
+      ...organizationWritePayload(input),
       primary_contact_id: input.primaryContactId || null,
     })
-    .select(
-      "id, name, industry, company_size, budget_range, website_url, address, tax_identifier_value, primary_contact_id, created_at, primary_contact:profiles!organizations_primary_contact_id_fkey(id, first_name, last_name, email)",
-    )
+    .select(ORGANIZATION_SELECT)
     .single();
 
   if (error) throw new Error(error.message);
@@ -173,22 +203,17 @@ export async function updateOrganization(
   const name = input.name.trim();
   if (!name) throw new Error("Organization name is required.");
 
+  const payload: ReturnType<typeof organizationWritePayload> & { primary_contact_id?: string | null } =
+    organizationWritePayload(input);
+  if (input.primaryContactId !== undefined) {
+    payload.primary_contact_id = input.primaryContactId || null;
+  }
+
   const { data, error } = await supabase
     .from("organizations")
-    .update({
-      name,
-      industry: input.industry?.trim() || null,
-      company_size: input.companySize?.trim() || null,
-      budget_range: input.budgetRange?.trim() || null,
-      website_url: input.websiteUrl?.trim() || null,
-      address: input.address?.trim() || null,
-      tax_identifier_value: input.taxIdentifierValue?.trim() || null,
-      primary_contact_id: input.primaryContactId || null,
-    })
+    .update(payload)
     .eq("id", organizationId)
-    .select(
-      "id, name, industry, company_size, budget_range, website_url, address, tax_identifier_value, primary_contact_id, created_at, primary_contact:profiles!organizations_primary_contact_id_fkey(id, first_name, last_name, email)",
-    )
+    .select(ORGANIZATION_SELECT)
     .single();
 
   if (error) throw new Error(error.message);

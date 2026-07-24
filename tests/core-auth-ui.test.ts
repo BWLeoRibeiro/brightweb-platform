@@ -82,12 +82,26 @@ test("preview auth routes are thin package mounts", async () => {
     "forgot-password/page.tsx",
     "reset-password/page.tsx",
     "invite/[invitationId]/page.tsx",
+    "admin-invite/[invitationId]/page.tsx",
     "auth/confirmed/page.tsx",
     "auth/post-login/page.tsx",
   ];
   for (const route of routes) {
     const source = await readFile(path.join(repoRoot, "apps", "platform-preview", "app", "(auth)", route), "utf8");
     assert.match(source, /@brightweblabs\/core-auth\/ui/);
+  }
+});
+
+test("preview mounts invitation detail, registration, and post-login acceptance APIs", async () => {
+  const routeFiles = [
+    "apps/platform-preview/app/api/invitations/[invitationId]/route.ts",
+    "apps/platform-preview/app/api/invitations/[invitationId]/register/route.ts",
+    "apps/platform-preview/app/api/invitations/[invitationId]/accept/route.ts",
+  ];
+  for (const file of routeFiles) {
+    const source = await readFile(path.join(repoRoot, file), "utf8");
+    assert.match(source, /@brightweblabs\/core-auth\/routes/);
+    assert.match(source, /invitationHttpDependencies/);
   }
 });
 

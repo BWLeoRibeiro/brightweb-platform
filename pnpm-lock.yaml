@@ -20,6 +20,9 @@ importers:
       react:
         specifier: 19.2.4
         version: 19.2.4
+      react-dom:
+        specifier: 19.2.4
+        version: 19.2.4(react@19.2.4)
       typescript:
         specifier: 5.9.3
         version: 5.9.3
@@ -102,6 +105,9 @@ importers:
       '@brightweblabs/module-crm':
         specifier: workspace:*
         version: link:../../packages/module-crm
+      '@brightweblabs/module-orgs':
+        specifier: workspace:*
+        version: link:../../packages/module-orgs
       '@brightweblabs/module-projects':
         specifier: workspace:*
         version: link:../../packages/module-projects
@@ -226,6 +232,9 @@ importers:
       '@brightweblabs/ui':
         specifier: workspace:*
         version: link:../ui
+      '@supabase/supabase-js':
+        specifier: ^2.105.3
+        version: 2.110.7
       lucide-react:
         specifier: ^1.8.0
         version: 1.25.0(react@19.2.4)
@@ -274,6 +283,12 @@ importers:
       '@brightweblabs/app-shell':
         specifier: workspace:*
         version: link:../app-shell
+      '@brightweblabs/core-auth':
+        specifier: workspace:*
+        version: link:../core-auth
+      '@brightweblabs/infra':
+        specifier: workspace:*
+        version: link:../infra
       '@supabase/supabase-js':
         specifier: ^2.105.3
         version: 2.110.7

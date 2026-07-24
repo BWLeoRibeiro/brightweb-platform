@@ -22,6 +22,8 @@
   },
   "dependencies": {
     "@brightweblabs/app-shell": "workspace:*",
+    "@brightweblabs/core-auth": "workspace:*",
+    "@brightweblabs/infra": "workspace:*",
     "@supabase/supabase-js": "^2.105.3"
   }
 }

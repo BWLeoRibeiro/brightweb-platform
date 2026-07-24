@@ -30,9 +30,63 @@ export type CrmWriteOptions = {
   actorProfileId?: string | null;
 };
 
+export type CrmContactProfileResult = {
+  success: boolean;
+  contactId?: string;
+  error?: string;
+};
+
 const CRM_CONTACT_SELECT =
   "id, first_name, last_name, email, phone, status, source, owner_id, organization_id, created_at, updated_at, organizations(name)";
 const CRM_CONTACT_STATUS_SET = new Set<string>(CRM_CONTACT_STATUSES);
+
+export async function ensureCrmContactForProfile(
+  profileId: string,
+  options?: { source?: string; serviceClient?: SupabaseClient },
+): Promise<CrmContactProfileResult> {
+  try {
+    const serviceClient = options?.serviceClient ?? createServiceRoleClient();
+    if (!serviceClient) return { success: false, error: "Cliente de service role indisponível." };
+    const { data: profile, error: profileError } = await serviceClient
+      .from("profiles")
+      .select("id, email, first_name, last_name")
+      .eq("id", profileId)
+      .maybeSingle();
+    if (profileError) return { success: false, error: profileError.message };
+    if (!profile) return { success: false, error: "Perfil não encontrado." };
+    const normalizedEmail = profile.email ? profile.email.toLowerCase().trim() : null;
+    let query = serviceClient.from("crm_contacts").select("id, profile_id").limit(1);
+    query = normalizedEmail
+      ? query.or(`profile_id.eq.${profileId},email.ilike.${normalizedEmail}`)
+      : query.eq("profile_id", profileId);
+    const { data: existing, error } = await query.maybeSingle();
+    if (error) return { success: false, error: error.message };
+    if (!existing) {
+      const { data: inserted, error: insertError } = await serviceClient.from("crm_contacts").insert({
+        profile_id: profile.id,
+        first_name: profile.first_name,
+        last_name: profile.last_name,
+        email: normalizedEmail,
+        phone: null,
+        status: "lead",
+        source: options?.source ?? "profile_link",
+        owner_id: null,
+      }).select("id").single();
+      return insertError
+        ? { success: false, error: insertError.message }
+        : { success: true, contactId: inserted.id };
+    }
+    if (!existing.profile_id || existing.profile_id === profile.id) {
+      const { error: updateError } = await serviceClient.from("crm_contacts")
+        .update({ profile_id: profile.id, updated_at: new Date().toISOString() })
+        .eq("id", existing.id);
+      if (updateError) return { success: false, error: updateError.message };
+    }
+    return { success: true, contactId: existing.id };
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : "Erro desconhecido." };
+  }
+}
 
 function normalizeOptionalString(value: string | null | undefined): string | null {
   return typeof value === "string" ? value.trim() || null : null;

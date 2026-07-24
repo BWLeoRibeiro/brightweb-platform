@@ -26,6 +26,7 @@ type ServerRoleAccess =
     ok: true;
     supabase: Awaited<ReturnType<typeof createServerSupabase>>;
     user: User;
+    profileId: string;
     role: GlobalRole;
   }
   | {
@@ -132,7 +133,7 @@ export async function requireServerRoleAccess(allowedRoles: GlobalRole | GlobalR
     return access;
   }
 
-  const { supabase, user, role } = access;
+  const { supabase, user, profileId, role } = access;
 
   if (!role) {
     return { ok: false, status: 403, error: "Acesso proibido." };
@@ -143,7 +144,7 @@ export async function requireServerRoleAccess(allowedRoles: GlobalRole | GlobalR
     return { ok: false, status: 403, error: "Acesso proibido." };
   }
 
-  return { ok: true, supabase, user, role };
+  return { ok: true, supabase, user, profileId, role };
 }
 
 export async function getProfileIdForUser(

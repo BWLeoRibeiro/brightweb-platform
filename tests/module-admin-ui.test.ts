@@ -44,10 +44,15 @@ test("preview mounts the live packaged admin page and routes", async () => {
   const users = await read("apps/platform-preview/app/(shell)/admin/users/page.tsx");
   const layout = await read("apps/platform-preview/app/(shell)/shell-layout-client.tsx");
   const usersRoute = await read("apps/platform-preview/app/api/admin/users/route.ts");
+  const invitationsRoute = await read("apps/platform-preview/app/api/admin/users/invitations/route.ts");
+  const revokeRoute = await read("apps/platform-preview/app/api/admin/users/invitations/[invitationId]/route.ts");
 
   assert.match(overview, /redirect\("\/admin\/users"\)/);
   assert.match(users, /AdminUsersPage as default/);
   assert.match(usersRoute, /handleAdminUsersGetRequest/);
+  assert.match(invitationsRoute, /handleAdminUserInvitationsGetRequest/);
+  assert.match(invitationsRoute, /handleAdminUserInvitationsPostRequest/);
+  assert.match(revokeRoute, /handleAdminUserInvitationDeleteRequest/);
   assert.match(layout, /AppShellFrame/);
   assert.match(layout, /AdminToolbarControls/);
 });
