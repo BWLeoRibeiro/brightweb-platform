@@ -76,6 +76,9 @@ test("scaffold writes a valid app manifest", async (t) => {
   assert.match(manifest.scaffoldFiles["app/api/crm/timeline/route.ts"].hash, /^sha256:/);
   const packageJson = await readJson(path.join(targetDir, "package.json"));
   assert.equal(packageJson.dependencies["@brightweblabs/theme"], `^${release.packages["@brightweblabs/theme"]}`);
+  assert.equal(packageJson.dependencies.next, "16.1.6");
+  assert.match(await fs.readFile(path.join(targetDir, "app", "fonts.ts"), "utf8"), /weight: \["400", "600", "700", "800", "900"\]/);
+  assert.match(await fs.readFile(path.join(targetDir, "app", "layout.tsx"), "utf8"), /var\(--font-mulish\)/);
 });
 
 test("database module order implementations stay in sync for the current registry", async () => {

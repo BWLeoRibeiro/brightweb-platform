@@ -5,7 +5,7 @@ export default function BootstrapPage() {
   const checklist = getStarterBootstrapChecklist();
 
   return (
-    <main className="shell">
+    <main className="preview-page shell">
       <div className="frame">
         <section className="hero">
           <span className="eyebrow">Preview Bootstrap</span>

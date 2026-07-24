@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { starterBrandConfig } from "../config/brand";
 import { ThemeProvider, ThemeScript } from "@brightweblabs/app-shell";
+import { mulish } from "./fonts";
 import "./globals.css";
 
 export const metadata = {
@@ -10,15 +11,14 @@ export const metadata = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html
-      lang="en"
-      style={{ ["--font-body" as string]: '"Mulish", "Mulish Fallback", "Segoe UI", Arial, sans-serif' }}
-      suppressHydrationWarning
-    >
+    <html lang="en" suppressHydrationWarning>
       <head>
         <ThemeScript defaultTheme="light" />
       </head>
-      <body>
+      <body
+        className={`${mulish.className} ${mulish.variable}`}
+        style={{ ["--font-body" as string]: "var(--font-mulish)" }}
+      >
         <ThemeProvider defaultTheme="light" disableTransitionOnChange>
           {children}
         </ThemeProvider>

@@ -136,6 +136,25 @@ test("every Tailwind color mapping references a defined token", async () => {
   }
 });
 
+test("project risk and health aliases match MQ in light and dark themes", async () => {
+  const tokens = await read("src/tokens.css");
+  const sharedAliases = new Map([
+    ["--project-risk-overdue-soft", "--semantic-danger-soft"],
+    ["--project-health-on-track", "--project-state-active-strong"],
+    ["--project-health-at-risk", "--project-risk-at-risk"],
+    ["--project-health-at-risk-strong", "--project-risk-at-risk-strong"],
+    ["--project-health-off-track", "--project-risk-overdue"],
+    ["--project-health-progress", "--project-state-active"],
+    ["--project-health-off-track-soft", "--project-risk-overdue-soft"],
+  ]);
+  for (const [alias, source] of sharedAliases) {
+    const declaration = new RegExp(`${alias}:\\s*var\\(${source}\\);`, "g");
+    assert.equal(Array.from(tokens.matchAll(declaration)).length, 2, `${alias} must have exact light and dark MQ aliases`);
+  }
+  assert.equal(Array.from(tokens.matchAll(/--project-health-off-track-strong:\s*var\(--project-risk-overdue-strong\);/g)).length, 1);
+  assert.equal(Array.from(tokens.matchAll(/--project-health-off-track-strong:\s*var\(--project-risk-overdue\);/g)).length, 1);
+});
+
 test("tokenized package visuals have defaults and live consumers", async () => {
   const tokensCss = await read("src/tokens.css");
   const defaults = customProperties(tokensCss.slice(0, tokensCss.indexOf("/* Dark mode")));

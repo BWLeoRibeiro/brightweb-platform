@@ -74,11 +74,19 @@
   --project-risk-at-risk-strong: var(--semantic-warning-strong);
   --project-risk-overdue: var(--semantic-danger);
   --project-risk-overdue-strong: var(--semantic-danger-strong);
+  --project-risk-overdue-soft: var(--semantic-danger-soft);
   /* Ink to use ON a solid health fill: light-mode fills are saturated so
      ink flips per theme (see dark block). */
   --project-risk-overdue-ink: #ffffff;
   --project-risk-at-risk-ink: #3a2a05;
   --project-state-completed-ink: #06281e;
+  --project-health-on-track: var(--project-state-active-strong);
+  --project-health-at-risk: var(--project-risk-at-risk);
+  --project-health-at-risk-strong: var(--project-risk-at-risk-strong);
+  --project-health-off-track: var(--project-risk-overdue);
+  --project-health-progress: var(--project-state-active);
+  --project-health-off-track-strong: var(--project-risk-overdue-strong);
+  --project-health-off-track-soft: var(--project-risk-overdue-soft);
 
   /* ── L3: experience tokens ─────────────────────────────────────────── */
   --space-2xs: 0.25rem;
@@ -437,10 +445,18 @@
   --semantic-neutral: #a1a1aa;
   --semantic-neutral-strong: #d4d4d8;
 
+  --project-risk-overdue-soft: var(--semantic-danger-soft);
   /* Dark-mode health fills are light pastels, so on-fill ink stays dark. */
   --project-risk-overdue-ink: #350a11;
   --project-risk-at-risk-ink: #3a2a05;
   --project-state-completed-ink: #06281e;
+  --project-health-on-track: var(--project-state-active-strong);
+  --project-health-at-risk: var(--project-risk-at-risk);
+  --project-health-at-risk-strong: var(--project-risk-at-risk-strong);
+  --project-health-off-track: var(--project-risk-overdue);
+  --project-health-progress: var(--project-state-active);
+  --project-health-off-track-strong: var(--project-risk-overdue);
+  --project-health-off-track-soft: var(--project-risk-overdue-soft);
 
   --skeleton: color-mix(in srgb, var(--foreground) 9%, transparent);
   --skeleton-strong: color-mix(in srgb, var(--foreground) 14%, transparent);

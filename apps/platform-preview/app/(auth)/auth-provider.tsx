@@ -10,6 +10,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     <AuthUiProvider
       client={authClient}
       signupMode="invite-only"
+      layoutVariant="split"
       brand={{
         companyName: starterBrandConfig.companyName,
         helpHref: "mailto:support@example.com",

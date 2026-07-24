@@ -65,3 +65,15 @@ test("Projects preview exposes list, detail, board, and tasks routes", () => {
     assert.match(readFileSync(join(previewRoot, route), "utf8"), /ProjectsPage|ProjectDetailPage|ProjectBoardPage|ProjectTasksPage/);
   }
 });
+
+test("Projects portfolio grid keeps MQ columns at responsive boundaries", () => {
+  const tokens = readFileSync(join(process.cwd(), "packages/module-projects/tokens.css"), "utf8");
+  const tablet = tokens.indexOf("@media (min-width: 768px)");
+  const mqNarrow = tokens.indexOf("@media (max-width: 900px)");
+  const desktop = tokens.indexOf("@media (min-width: 1024px)");
+
+  assert.ok(tablet >= 0 && mqNarrow > tablet && desktop > mqNarrow);
+  assert.match(tokens.slice(tablet, mqNarrow), /grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/);
+  assert.match(tokens.slice(mqNarrow, desktop), /grid-template-columns:\s*1fr/);
+  assert.match(tokens.slice(desktop), /grid-template-columns:\s*repeat\(3,\s*minmax\(0,\s*1fr\)\)/);
+});
