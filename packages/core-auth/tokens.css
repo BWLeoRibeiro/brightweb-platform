@@ -122,10 +122,10 @@
 .auth-layout__brand-copy h2 {
   margin: 0;
   font-family: var(--font-display);
-  font-size: clamp(2.4rem, 5vw, 4.75rem);
-  font-weight: 800;
-  line-height: 0.95;
-  letter-spacing: -0.045em;
+  font-size: var(--text-ui-auth-title);
+  font-weight: var(--font-weight-heavy);
+  line-height: var(--type-leading-095);
+  letter-spacing: var(--type-tracking-n045);
 }
 
 .auth-layout__brand-copy p {
@@ -133,7 +133,7 @@
   margin: 1.5rem 0 0;
   color: var(--auth-panel-muted);
   font-size: var(--type-paragraph-large);
-  line-height: 1.65;
+  line-height: var(--type-leading-165);
 }
 
 .auth-vessel {
@@ -156,27 +156,27 @@
 .auth-layout .heading-2 {
   margin: 0;
   font-family: var(--font-display);
-  font-size: clamp(2rem, 4vw, 2.8125rem);
-  font-weight: 800;
-  line-height: 1.1;
-  letter-spacing: -0.025em;
+  font-size: var(--type-heading-2);
+  font-weight: var(--font-weight-heavy);
+  line-height: var(--type-leading-110);
+  letter-spacing: var(--type-tracking-n025);
 }
 
 .auth-layout .paragraph-small,
 .auth-layout .paragraph-mini {
   margin: 0;
   font-family: var(--font-body);
-  letter-spacing: 0.01em;
+  letter-spacing: var(--type-tracking-010);
 }
 
 .auth-layout .paragraph-small {
   font-size: var(--type-paragraph-small);
-  line-height: 1.6;
+  line-height: var(--type-leading-160);
 }
 
 .auth-layout .paragraph-mini {
   font-size: var(--type-paragraph-mini);
-  line-height: 1.5;
+  line-height: var(--type-leading-normal);
 }
 
 .auth-layout .eyebrow {
@@ -187,8 +187,8 @@
   background: color-mix(in srgb, var(--accent) 12%, transparent);
   color: var(--accent);
   font-size: var(--text-ui-label);
-  font-weight: 700;
-  letter-spacing: 0.04em;
+  font-weight: var(--font-weight-bold);
+  letter-spacing: var(--type-tracking-040);
   text-transform: uppercase;
 }
 

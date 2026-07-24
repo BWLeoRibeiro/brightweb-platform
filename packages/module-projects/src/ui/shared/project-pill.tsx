@@ -14,8 +14,8 @@ export const PROJECT_PILL_BASE_CLASS =
   "inline-flex shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-full border font-semibold leading-none";
 
 export const PROJECT_PILL_SIZE_CLASSES: Record<ProjectPillSize, string> = {
-  small: "h-5 px-2 text-[10px]",
-  normal: "h-7 px-3 text-[12px]",
+  small: "h-5 px-2 text-[length:var(--text-ui-micro)]",
+  normal: "h-7 px-3 text-[length:var(--text-ui-meta)]",
 };
 
 export function ProjectPill({

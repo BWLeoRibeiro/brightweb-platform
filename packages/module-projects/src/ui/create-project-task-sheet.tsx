@@ -160,7 +160,7 @@ export function CreateProjectTaskSheet({ projects, initialOpen = false }: Create
                         </option>
                       ))}
                     </select>
-                    {projects.length === 0 ? <p className="mt-1 text-[10px] text-foreground/55">{dictionary.create.noProjects}</p> : null}
+                    {projects.length === 0 ? <p className="mt-1 text-[length:var(--text-ui-micro)] text-foreground/55">{dictionary.create.noProjects}</p> : null}
                   </FieldContent>
                 </Field>
                 <Field className="gap-1.5 px-4 py-2">

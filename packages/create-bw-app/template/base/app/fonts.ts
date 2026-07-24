@@ -1,8 +1,2 @@
-import { Mulish } from "next/font/google";
-
-export const mulish = Mulish({
-  subsets: ["latin"],
-  weight: ["400", "600", "700", "800", "900"],
-  display: "swap",
-  variable: "--font-mulish",
-});
+export { GeistMono as geistMono } from "geist/font/mono";
+export { GeistSans as geistSans } from "geist/font/sans";

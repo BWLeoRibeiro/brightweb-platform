@@ -49,11 +49,11 @@ function ProjectHeroFact({ icon: Icon, label, children, meta, avatarLabel, avata
         </span>
       )}
       <div className="min-w-0 flex-1">
-        <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[color:var(--project-hero-subtle)]">{label}</p>
-        <div className="mt-1 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-[14px] font-semibold leading-snug text-[color:var(--project-hero-foreground)]">
+        <p className="text-[length:var(--text-ui-micro)] font-semibold uppercase tracking-[var(--type-tracking-160)] text-[color:var(--project-hero-subtle)]">{label}</p>
+        <div className="mt-1 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-[length:var(--text-ui-body)] font-semibold leading-snug text-[color:var(--project-hero-foreground)]">
           {children}
         </div>
-        {meta ? <div className="mt-0.5 text-[12px] leading-snug text-[color:var(--project-hero-muted)]">{meta}</div> : null}
+        {meta ? <div className="mt-0.5 text-[length:var(--text-ui-meta)] leading-snug text-[color:var(--project-hero-muted)]">{meta}</div> : null}
       </div>
     </div>
   );
@@ -112,7 +112,7 @@ function ViewOrganizationButton({ project }: { project: ProjectListItem }) {
         const href = navigation.organizationHref?.(project.organizationId);
         if (href) router.push(href);
       }}
-      className="inline-flex items-center gap-1 text-[12px] font-semibold text-[color:var(--project-hero-muted)] underline-offset-2 transition-colors hover:text-[color:var(--project-hero-foreground)] hover:underline"
+      className="inline-flex items-center gap-1 text-[length:var(--text-ui-meta)] font-semibold text-[color:var(--project-hero-muted)] underline-offset-2 transition-colors hover:text-[color:var(--project-hero-foreground)] hover:underline"
     >
       {dictionary.detail.viewOrganization}
       <ArrowUpRight className="size-3" />
@@ -205,18 +205,18 @@ export function ProjectDetailHero({ canOpenEditProject, canViewOrganization }: P
         <div className="flex flex-wrap items-start justify-between gap-5">
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-              <span className="rounded-[var(--radius)] border border-[color:var(--project-hero-border)] bg-white/[0.06] px-1.5 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-[0.1em] text-[color:var(--project-hero-muted)]">
+              <span className="rounded-[var(--radius)] border border-[color:var(--project-hero-border)] bg-white/[0.06] px-1.5 py-0.5 font-mono text-[length:var(--text-ui-micro)] font-semibold uppercase tracking-[var(--type-tracking-100)] text-[color:var(--project-hero-muted)]">
                 {projectReference}
               </span>
-              <p className="truncate text-[11px] font-semibold uppercase tracking-[0.16em] text-[color:var(--project-hero-muted)]">{project.organizationName}</p>
+              <p className="truncate text-[length:var(--text-ui-label)] font-semibold uppercase tracking-[var(--type-tracking-160)] text-[color:var(--project-hero-muted)]">{project.organizationName}</p>
             </div>
             <h1
-              className="portal-title-sm mt-2 [text-wrap:pretty] md:text-[38px]"
+              className="portal-title-sm mt-2 [text-wrap:pretty] md:text-[length:var(--text-ui-preview-card-title)]"
               style={{ color: "var(--project-hero-foreground)" }}
             >
               {project.name}
             </h1>
-            <p className="mt-2 max-w-[82ch] text-[15px] leading-relaxed text-[color:var(--project-hero-muted)] [text-wrap:pretty]" title={project.summary ?? undefined}>
+            <p className="mt-2 max-w-[82ch] text-[length:var(--text-ui-card-title)] leading-relaxed text-[color:var(--project-hero-muted)] [text-wrap:pretty]" title={project.summary ?? undefined}>
               {summaryPreview}
             </p>
           </div>
@@ -225,7 +225,7 @@ export function ProjectDetailHero({ canOpenEditProject, canViewOrganization }: P
 
         {isCanceledProject ? (
           <div className="mt-5 rounded-[var(--radius-card)] border border-[color:var(--project-ui-color-04)] bg-[color:var(--project-ui-color-05)] px-4 py-3">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[color:var(--project-ui-color-06)]">{dictionary.detail.cancellationReason}</p>
+            <p className="text-[length:var(--text-ui-micro)] font-semibold uppercase tracking-[var(--type-tracking-180)] text-[color:var(--project-ui-color-06)]">{dictionary.detail.cancellationReason}</p>
             <p className="mt-1 text-sm text-[color:var(--project-ui-color-07)]">{project.cancellationReason ?? dictionary.detail.noCancellationReason}</p>
           </div>
         ) : null}

@@ -96,7 +96,7 @@ export function ProjectSummaryCard({ project }: { project: ProjectSummaryCardIte
         <p className="portal-label truncate pr-6">
           {project.organizationName ?? "-"}
         </p>
-        <h3 className="portal-card-title mt-1 line-clamp-2 min-h-[2.6em] font-bold leading-[1.3]">
+        <h3 className="portal-card-title mt-1 line-clamp-2 min-h-[2.6em] font-bold leading-[var(--type-leading-130)]">
           {project.name}
         </h3>
 
@@ -104,7 +104,7 @@ export function ProjectSummaryCard({ project }: { project: ProjectSummaryCardIte
         <div className="mt-3 flex min-h-[24px] items-center gap-x-2">
           <Tooltip>
             <TooltipTrigger asChild>
-              <span className="pointer-events-auto inline-flex items-center gap-1.5 text-[12px] font-semibold text-[color:var(--foreground)]">
+              <span className="pointer-events-auto inline-flex items-center gap-1.5 text-[length:var(--text-ui-meta)] font-semibold text-[color:var(--foreground)]">
                 <span className={`h-[7px] w-[7px] shrink-0 rounded-full ${statusMeta.dot}`} />
                 {statusMeta.label}
               </span>
@@ -113,7 +113,7 @@ export function ProjectSummaryCard({ project }: { project: ProjectSummaryCardIte
           </Tooltip>
           {riskMeta ? (
             <span
-              className="inline-flex items-center rounded-full border px-2 py-[3px] text-[11px] font-bold"
+              className="inline-flex items-center rounded-full border px-2 py-[3px] text-[length:var(--text-ui-label)] font-bold"
               style={{
                 color: riskMeta.var,
                 ["--project-dynamic-risk" as string]: riskMeta.var,
@@ -135,7 +135,7 @@ export function ProjectSummaryCard({ project }: { project: ProjectSummaryCardIte
             </span>
             <Tooltip>
               <TooltipTrigger asChild>
-                <span className={`${MONO} pointer-events-auto text-[13px] font-extrabold text-[color:var(--foreground)]`}>
+                <span className={`${MONO} pointer-events-auto text-[length:var(--text-ui-action)] font-extrabold text-[color:var(--foreground)]`}>
                   {progress}%
                 </span>
               </TooltipTrigger>
@@ -159,7 +159,7 @@ export function ProjectSummaryCard({ project }: { project: ProjectSummaryCardIte
             <TooltipTrigger asChild>
               <button
                 type="button"
-                className={`${MONO} portal-micro pointer-events-auto min-w-0 max-w-[44%] truncate text-left tracking-[0.06em] transition hover:text-[color:var(--foreground)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--ring)]`}
+                className={`${MONO} portal-micro pointer-events-auto min-w-0 max-w-[44%] truncate text-left tracking-[var(--type-tracking-060)] transition hover:text-[color:var(--foreground)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--ring)]`}
                 onClick={copyProjectId}
               >
                 {projectCode}

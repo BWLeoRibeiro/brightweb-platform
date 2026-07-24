@@ -446,7 +446,7 @@ export function ProjectEditSheet({
           {canDeleteProject ? (
             <div className="overflow-hidden rounded-2xl border border-rose-300/60 bg-rose-50/45 dark:border-rose-500/30 dark:bg-rose-500/10">
               <div className="bg-rose-500 px-4 py-2.5">
-                <p className="text-[11px] font-semibold uppercase tracking-widest text-white/90">{dictionary.projectEdit.dangerZone}</p>
+                <p className="text-[length:var(--text-ui-label)] font-semibold uppercase tracking-widest text-white/90">{dictionary.projectEdit.dangerZone}</p>
               </div>
               <div className="space-y-3 px-4 py-3">
                 <p className="text-xs text-rose-700/90 dark:text-rose-200/90">

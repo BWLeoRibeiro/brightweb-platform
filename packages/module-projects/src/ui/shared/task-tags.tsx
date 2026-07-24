@@ -41,7 +41,7 @@ export function TaskTag({ className, children, title, style }: { className?: str
       title={title}
       style={style}
       className={cn(
-        "inline-flex shrink-0 items-center gap-1 rounded-full border px-1.5 py-[1px] text-[10px] font-semibold",
+        "inline-flex shrink-0 items-center gap-1 rounded-full border px-1.5 py-[1px] text-[length:var(--text-ui-micro)] font-semibold",
         className,
       )}
     >

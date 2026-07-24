@@ -89,6 +89,36 @@ test("preview TSX keeps raw color recipes in theme-aware CSS", async () => {
   assertPatternAbsent(files, /#[0-9a-f]{3,8}\b|rgba?\(|color-mix\(/i, "preview TSX colors must be represented by theme-aware CSS");
 });
 
+test("package and preview typography resolves through theme tokens", async () => {
+  const files = [
+    ...(await sourcesAt(packagesSourceRoot)),
+    ...(await sourcesAt(previewSourceRoot)),
+  ];
+  const cssFiles = files.filter(({ filePath }) => filePath.endsWith(".css"));
+  const componentFiles = files.filter(({ filePath }) => /\.(?:ts|tsx)$/.test(filePath));
+
+  assertPatternAbsent(
+    cssFiles,
+    /font-family\s*:(?!\s*(?:var\(|inherit\b))[^;}\n]+/i,
+    "font-family declarations must resolve through a family token",
+  );
+  assertPatternAbsent(
+    cssFiles,
+    /(?<!-)(?:font-size|font-weight|line-height|letter-spacing)\s*:\s*(?:-?\d|clamp\()/i,
+    "typography declarations must resolve through scale, weight, and rhythm tokens",
+  );
+  assertPatternAbsent(
+    componentFiles,
+    /\b(?:text|leading|tracking|font)-\[(?:length:)?[+-]?(?:\d|\.\d)/,
+    "arbitrary typography utilities must reference a theme token",
+  );
+  assertPatternAbsent(
+    componentFiles,
+    /\bfont(?:Family|Size|Weight)\s*:\s*(?!["'`]var\()[^,}\n]+/,
+    "inline font family, size, and weight must reference theme tokens",
+  );
+});
+
 test("meaningful low-emphasis copy uses the accessible muted foreground token", async () => {
   const relativePaths = [
     "packages/core-auth/src/ui/forgot-password-page.tsx",
@@ -257,7 +287,7 @@ test("every text-ui utility used by ui exists in theme typography", async () => 
   const files = [...await sourcesAt(uiSourceRoot), ...await sourcesAt(adminUiSourceRoot), ...await sourcesAt(crmUiSourceRoot), ...await sourcesAt(projectsUiSourceRoot)];
   const typography = await readFile(typographyPath, "utf8");
   const providedUtilities = new Set(Array.from(typography.matchAll(/@utility\s+(text-ui-[a-z0-9-]+)/g), (match) => match[1]));
-  const usedUtilities = new Set(files.flatMap(({ source }) => Array.from(source.matchAll(/\btext-ui-[a-z0-9-]+\b/g), (match) => match[0])));
+  const usedUtilities = new Set(files.flatMap(({ source }) => Array.from(source.matchAll(/(?<!--)\btext-ui-[a-z0-9-]+\b/g), (match) => match[0])));
   const missing = Array.from(usedUtilities).filter((utility) => !providedUtilities.has(utility)).sort();
   assert.deepEqual(missing, [], `Missing @utility definitions: ${missing.join(", ")}`);
 });

@@ -107,14 +107,14 @@
 .navItem:hover .navIcon { color: var(--foreground); }
 .navIcon { position: relative; display: inline-flex; height: var(--shell-nav-icon-well-size); width: var(--shell-nav-icon-well-size); flex-shrink: 0; align-items: center; justify-content: center; border-radius: var(--shell-nav-icon-radius); background: var(--shell-icon-bg); color: var(--shell-control-muted); transition: background-color 150ms ease, color 150ms ease; }
 .navIcon svg { height: 1rem; width: 1rem; }
-.navLabel { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--text-ui-action); font-weight: 600; line-height: 1.2; letter-spacing: -0.01em; }
+.navLabel { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--text-ui-action); font-weight: var(--font-weight-medium); line-height: var(--type-leading-120); letter-spacing: var(--type-tracking-n010); }
 .navCaret { margin-left: auto; flex-shrink: 0; height: var(--shell-nav-icon-size); width: var(--shell-nav-icon-size); opacity: 0.42; transition: transform 240ms ease, opacity 150ms ease; }
 .desktopSidebarCollapsed .navLabel, .desktopSidebarCollapsed .navCaret { display: none; }
 .navItemActive { background: var(--shell-surface-active); border-color: var(--shell-nav-active-border); color: var(--foreground); }
 .navItemActive::before { content: ""; position: absolute; left: var(--shell-nav-active-indicator-offset); top: var(--shell-nav-active-indicator-inset); bottom: var(--shell-nav-active-indicator-inset); width: var(--shell-nav-active-indicator-width); border-radius: 0 var(--shell-nav-active-indicator-width) var(--shell-nav-active-indicator-width) 0; background: var(--accent); }
 .desktopSidebarCollapsed .navItemActive::before { left: calc(var(--shell-nav-active-indicator-inset) * -1); top: var(--shell-nav-active-indicator-collapsed-inset); bottom: var(--shell-nav-active-indicator-collapsed-inset); }
 .navItemActive .navIcon { background: var(--shell-nav-active-icon-bg); color: var(--shell-nav-active-icon-fg); }
-.navItemActive .navLabel { font-weight: 700; }
+.navItemActive .navLabel { font-weight: var(--font-weight-bold); }
 
 .navGroup { width: 100%; border-radius: var(--radius-card); transition: background-color 200ms ease; }
 .desktopSidebarCollapsed .navGroup { width: auto; }
@@ -134,7 +134,7 @@
 .navChild svg { height: 1rem; width: 1rem; flex-shrink: 0; color: var(--shell-nav-child-icon-fg); }
 .navChildActive { background: var(--shell-nav-child-active-bg); border-color: var(--shell-nav-child-active-border); color: var(--foreground); }
 .navChildActive svg { color: var(--shell-nav-active-icon-fg); }
-.navChildActive .navLabel { font-weight: 700; }
+.navChildActive .navLabel { font-weight: var(--font-weight-bold); }
 .sidebarAccount { margin: var(--space-xs) var(--space-sm) var(--space-sm); padding-top: var(--space-sm); }
 .desktopSidebarCollapsed .sidebarAccount { display: flex; justify-content: center; margin-inline: 0; }
 
@@ -153,24 +153,24 @@
   font-family: inherit;
 }
 .navbarTitle { display: flex; align-items: flex-end; gap: var(--space-xs); }
-.navbarKicker { display: block; font-size: var(--text-ui-micro); font-weight: 800; line-height: 1.3; text-transform: uppercase; letter-spacing: 0.16em; color: var(--accent); }
-.navbarTitle h1 { margin: 0; font-size: var(--text-ui-shell-title); font-weight: 800; line-height: 1.238; letter-spacing: -0.025em; white-space: nowrap; color: var(--shell-navbar-fg); }
-.navbarCount { font-size: var(--text-ui-meta); font-weight: 700; color: var(--shell-navbar-muted); font-variant-numeric: tabular-nums; }
+.navbarKicker { display: block; font-size: var(--text-ui-micro); font-weight: var(--font-weight-heavy); line-height: var(--type-leading-130); text-transform: uppercase; letter-spacing: var(--type-tracking-160); color: var(--accent); }
+.navbarTitle h1 { margin: 0; font-size: var(--text-ui-shell-title); font-weight: var(--font-weight-heavy); line-height: var(--type-leading-124); letter-spacing: var(--type-tracking-n025); white-space: nowrap; color: var(--shell-navbar-fg); }
+.navbarCount { font-size: var(--text-ui-meta); font-weight: var(--font-weight-bold); color: var(--shell-navbar-muted); font-variant-numeric: tabular-nums; }
 .navbarSpacer { flex: 1; }
 .navbarDivider { width: 1px; height: var(--shell-header-divider-height); background: var(--shell-navbar-hairline); flex-shrink: 0; }
 .navbarUtility { display: inline-flex; align-items: center; gap: var(--space-xs); }
 .navbarCrumbs { display: inline-flex; align-items: center; gap: var(--space-xs); }
 .navbarCrumb { display: inline-flex; align-items: center; gap: var(--space-xs); }
 .navbarCrumbSeparator { color: var(--shell-navbar-muted); }
-.navbarCrumbLink { display: inline-flex; height: var(--toolbar-chip-height); align-items: center; gap: var(--space-2xs); border: 1px solid var(--shell-surface-border); border-radius: 999px; background: var(--card); padding: 0 var(--space-sm); color: var(--shell-navbar-muted); font-size: var(--text-ui-action); font-weight: 700; cursor: pointer; }
+.navbarCrumbLink { display: inline-flex; height: var(--toolbar-chip-height); align-items: center; gap: var(--space-2xs); border: 1px solid var(--shell-surface-border); border-radius: 999px; background: var(--card); padding: 0 var(--space-sm); color: var(--shell-navbar-muted); font-size: var(--text-ui-action); font-weight: var(--font-weight-bold); cursor: pointer; }
 .navbarCrumbLink:hover { border-color: var(--accent); color: var(--foreground); }
-.navbarContextAction { display: inline-flex; height: var(--toolbar-chip-height); align-items: center; gap: var(--space-xs); border: 1px solid var(--shell-surface-border); border-radius: var(--radius-control); background: var(--surface-button-soft); padding: 0 var(--space-sm); color: var(--foreground); font-size: var(--text-ui-action); font-weight: 700; cursor: pointer; }
+.navbarContextAction { display: inline-flex; height: var(--toolbar-chip-height); align-items: center; gap: var(--space-xs); border: 1px solid var(--shell-surface-border); border-radius: var(--radius-control); background: var(--surface-button-soft); padding: 0 var(--space-sm); color: var(--foreground); font-size: var(--text-ui-action); font-weight: var(--font-weight-bold); cursor: pointer; }
 .navbarContextAction:hover { border-color: var(--border-button-soft-hover); background: var(--surface-button-soft-hover); }
 .navbarContextAction svg { width: var(--toolbar-icon-size); height: var(--toolbar-icon-size); }
 .navbarIconButton { position: relative; display: inline-flex; width: var(--toolbar-chip-height); height: var(--toolbar-chip-height); align-items: center; justify-content: center; border: 1px solid transparent; border-radius: 999px; background: transparent; color: var(--shell-control-muted); cursor: pointer; }
 .navbarIconButton:hover { border-color: var(--shell-surface-border); background: var(--shell-surface-hover); color: var(--foreground); }
 .navbarIconButton svg { width: var(--toolbar-icon-size); height: var(--toolbar-icon-size); }
-.navbarBellBadge { position: absolute; right: -0.25rem; top: -0.25rem; display: inline-flex; min-width: 1.125rem; height: 1.125rem; align-items: center; justify-content: center; border: 2px solid var(--card); border-radius: 999px; background: var(--badge-count-bg); padding-inline: var(--space-2xs); color: var(--badge-count-fg); font-size: 0.6875rem; font-weight: 800; line-height: 1; }
+.navbarBellBadge { position: absolute; right: -0.25rem; top: -0.25rem; display: inline-flex; min-width: 1.125rem; height: 1.125rem; align-items: center; justify-content: center; border: 2px solid var(--card); border-radius: 999px; background: var(--badge-count-bg); padding-inline: var(--space-2xs); color: var(--badge-count-fg); font-size: var(--text-ui-label); font-weight: var(--font-weight-heavy); line-height: var(--type-leading-none); }
 
 @media (min-width: 1024px) {
   .shellDesktopFrame { display: grid; grid-template-columns: var(--shell-sidebar-width) minmax(0, 1fr); column-gap: var(--space-md); align-items: start; padding-left: var(--shell-frame-offset); }

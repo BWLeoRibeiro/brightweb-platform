@@ -59,9 +59,9 @@
   background: color-mix(in srgb, var(--admin-role-tint) 10%, var(--card));
   padding-inline: 0.5rem;
   color: var(--admin-role-tint-strong);
-  font-size: 0.625rem;
-  font-weight: 600;
-  line-height: 1;
+  font-size: var(--text-ui-micro);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--type-leading-none);
   white-space: nowrap;
 }
 

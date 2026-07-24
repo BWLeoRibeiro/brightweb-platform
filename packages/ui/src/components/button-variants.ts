@@ -7,9 +7,9 @@ const buttonVariants = cva(
       variant: {
         default: "bg-primary text-primary-foreground hover:bg-primary/90",
         accent:
-          "relative isolate h-auto overflow-hidden !rounded-none px-0 py-0 font-display !font-bold text-[length:var(--text-ui-body)] leading-[1.6] text-foreground [padding:var(--space-button-y)_var(--space-button-x)] hover:text-foreground focus-visible:border-transparent focus-visible:ring-2 focus-visible:ring-current focus-visible:ring-offset-2",
+          "relative isolate h-auto overflow-hidden !rounded-none px-0 py-0 font-display !font-bold text-[length:var(--text-ui-body)] leading-[var(--type-leading-160)] text-foreground [padding:var(--space-button-y)_var(--space-button-x)] hover:text-foreground focus-visible:border-transparent focus-visible:ring-2 focus-visible:ring-current focus-visible:ring-offset-2",
         accentLink:
-          "h-auto min-h-0 gap-[var(--space-sm)] !rounded-none px-0 py-0 font-display !font-bold text-[length:var(--text-ui-subhead)] leading-[1.66] text-[color:var(--foreground-accent-link)] no-underline hover:underline",
+          "h-auto min-h-0 gap-[var(--space-sm)] !rounded-none px-0 py-0 font-display !font-bold text-[length:var(--text-ui-subhead)] leading-[var(--type-leading-166)] text-[color:var(--foreground-accent-link)] no-underline hover:underline",
         destructive:
           "bg-destructive text-destructive-foreground hover:brightness-[1.05]",
         brand:

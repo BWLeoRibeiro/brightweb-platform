@@ -1,5 +1,7 @@
 /* MQ compatibility palette. Import after @brightweblabs/theme/css. */
 :root {
+  /* MQ deployments load their client font at the app root and restore it with
+     one theme override: --font-body: var(--font-client-body); */
   --brand-accent: #5bc5f2;
   --brand-accent-soft: #6fc4e7;
   --brand-ink: #0a151a;

@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { starterBrandConfig } from "../config/brand";
 import { ThemeProvider, ThemeScript } from "@brightweblabs/app-shell";
-import { mulish } from "./fonts";
+import { geistMono, geistSans } from "./fonts";
 import "./globals.css";
 
 export const metadata = {
@@ -15,10 +15,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       <head>
         <ThemeScript defaultTheme="light" />
       </head>
-      <body
-        className={`${mulish.className} ${mulish.variable}`}
-        style={{ ["--font-body" as string]: "var(--font-mulish)" }}
-      >
+      <body className={`${geistSans.variable} ${geistMono.variable}`}>
         <ThemeProvider defaultTheme="light" disableTransitionOnChange>
           {children}
         </ThemeProvider>

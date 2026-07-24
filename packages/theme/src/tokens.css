@@ -1,11 +1,71 @@
 /* ── L0: brand primitives ─────────────────────────────────────────────── */
 :root {
   color-scheme: light;
-  --font-body: "Mulish", "Mulish Fallback", "Segoe UI", Arial, sans-serif;
+  /* Font loaders expose these variables at the app root. Client themes only
+     override this family layer; component recipes never name a font. */
+  --font-body: var(--font-geist-sans);
   --font-heading: var(--font-body);
-  --font-sans: var(--font-body);
-  --font-display: var(--font-heading);
-  --font-mono: ui-monospace, "SF Mono", "JetBrains Mono", "Menlo", monospace;
+  --font-code: var(--font-geist-mono);
+
+  /* Typography primitives. These raw values live here—and only here—so a
+     maintainer can retune family, scale, weight, rhythm, or tracking globally. */
+  --type-weight-regular: 400;
+  --type-weight-medium: 600;
+  --type-weight-bold: 700;
+  --type-weight-heavy: 800;
+  --type-weight-black: 900;
+
+  --type-leading-090: 0.9;
+  --type-leading-092: 0.92;
+  --type-leading-095: 0.95;
+  --type-leading-096: 0.96;
+  --type-leading-none: 1;
+  --type-leading-102: 1.02;
+  --type-leading-104: 1.04;
+  --type-leading-105: 1.05;
+  --type-leading-110: 1.1;
+  --type-leading-115: 1.15;
+  --type-leading-120: 1.2;
+  --type-leading-124: 1.238;
+  --type-leading-tight: 1.25;
+  --type-leading-130: 1.3;
+  --type-leading-133: calc(1 / 0.75);
+  --type-leading-snug: 1.375;
+  --type-leading-140: 1.4;
+  --type-leading-143: calc(1.25 / 0.875);
+  --type-leading-145: 1.45;
+  --type-leading-normal: 1.5;
+  --type-leading-155: 1.55;
+  --type-leading-156: calc(1.75 / 1.125);
+  --type-leading-160: 1.6;
+  --type-leading-relaxed: 1.625;
+  --type-leading-165: 1.65;
+  --type-leading-166: 1.66;
+  --type-leading-172: 1.72;
+  --type-leading-loose: 2;
+
+  --type-tracking-n050: -0.05em;
+  --type-tracking-n045: -0.045em;
+  --type-tracking-n040: -0.04em;
+  --type-tracking-n035: -0.035em;
+  --type-tracking-n030: -0.03em;
+  --type-tracking-n025: -0.025em;
+  --type-tracking-n020: -0.02em;
+  --type-tracking-tight: -0.025em;
+  --type-tracking-n010: -0.01em;
+  --type-tracking-normal: 0;
+  --type-tracking-010: 0.01em;
+  --type-tracking-wide: 0.025em;
+  --type-tracking-040: 0.04em;
+  --type-tracking-wider: 0.05em;
+  --type-tracking-060: 0.06em;
+  --type-tracking-080: 0.08em;
+  --type-tracking-100: 0.1em;
+  --type-tracking-120: 0.12em;
+  --type-tracking-140: 0.14em;
+  --type-tracking-160: 0.16em;
+  --type-tracking-widest: 0.1em;
+  --type-tracking-180: 0.18em;
 
   --brand-accent: #4a7dbd;
   --brand-accent-soft: #7196c4;
@@ -118,8 +178,13 @@
   --radius-pill: 999px;
   --radius-scrollbar: 9999px;
 
+  /* MQ-derived size scale. Aliases below retain the current rendered sizes. */
+  --text-ui-nano: 0.4375rem;
+  --text-ui-nano-lg: 0.5rem;
+  --text-ui-fine: 0.5625rem;
   --text-ui-micro: 0.625rem;
   --text-ui-label: 0.6875rem;
+  --text-ui-label-relaxed: 0.7rem;
   --text-ui-meta: 0.75rem;
   --text-ui-chip: 0.78125rem;
   --text-ui-action: 0.8125rem;
@@ -137,6 +202,14 @@
   --text-ui-report-metric: 2.5rem;
   --text-ui-metric: 2.75rem;
   --text-ui-metric-xl: 3.5rem;
+  --text-ui-dashboard-card-title: 1.375rem;
+  --text-ui-dashboard-title: 2.125rem;
+  --text-ui-preview-card-title: 2.375rem;
+  --text-ui-dashboard-title-lg: 2.75rem;
+  --text-ui-dashboard-metric: 3.25rem;
+  --text-ui-preview-stat: clamp(2rem, 4vw, 3rem);
+  --text-ui-preview-title: clamp(2.4rem, 5.5vw, 4.8rem);
+  --text-ui-auth-title: clamp(2.4rem, 5vw, 4.75rem);
   --text-ui-metric-display: var(--text-ui-metric);
   --portal-text-micro: 0.625rem;
   --type-paragraph-large: 1.09375rem;

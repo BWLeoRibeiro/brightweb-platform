@@ -140,7 +140,7 @@
   color: var(--brand-accent);
   font-size: var(--text-ui-label);
   font-weight: var(--font-weight-bold);
-  letter-spacing: 0.04em;
+  letter-spacing: var(--type-tracking-040);
   text-transform: uppercase;
 }
 

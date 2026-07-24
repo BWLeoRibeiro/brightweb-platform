@@ -711,6 +711,7 @@ export function createPackageJson({
         lint: "tsc --noEmit",
       },
       dependencies: sortObjectKeys({
+        "geist": versionMap.geist,
         "next": versionMap.next,
         "react": versionMap.react,
         "react-dom": versionMap["react-dom"],
@@ -735,6 +736,7 @@ export function createPackageJson({
     "@brightweblabs/infra": internalDependencyVersion("@brightweblabs/infra"),
     "@brightweblabs/theme": internalDependencyVersion("@brightweblabs/theme"),
     "@brightweblabs/ui": internalDependencyVersion("@brightweblabs/ui"),
+    "geist": versionMap.geist,
     "lucide-react": versionMap["lucide-react"],
     "next": versionMap.next,
     "react": versionMap.react,
