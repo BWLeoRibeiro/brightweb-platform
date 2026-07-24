@@ -200,7 +200,7 @@ function ProjectSectionEmptyState({ icon: Icon, title, hint }: { icon: typeof Fl
       </div>
       <div>
         <p className="text-sm font-semibold text-foreground/60">{title}</p>
-        <p className="mt-1 text-xs text-foreground/40">{hint}</p>
+        <p className="mt-1 text-xs text-foreground-muted-accessible">{hint}</p>
       </div>
     </div>
   );
@@ -456,7 +456,7 @@ export function ProjectMilestonesAndTasksLists({
                           <span className={`${MONO} portal-meta tabular-nums text-foreground/70`}>{progress.done}/{progress.total}</span>
                         </span>
                       ) : (
-                        <span className="portal-micro shrink-0 text-foreground/35">{dictionary.detail.noTasksLowercase}</span>
+                        <span className="portal-micro shrink-0 text-foreground-muted-accessible">{dictionary.detail.noTasksLowercase}</span>
                       )}
                     </div>
                     <div className="portal-meta mt-1 flex min-w-0 items-center gap-x-2 whitespace-nowrap">

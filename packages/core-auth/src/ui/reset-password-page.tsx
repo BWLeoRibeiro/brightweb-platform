@@ -87,7 +87,7 @@ export function ResetPasswordPage() {
             <FieldContent>
               <PasswordInput id="password" placeholder={dictionary.common.passwordPlaceholder} value={password} onChange={(event) => setPassword(event.target.value)} required minLength={8} autoComplete="new-password" aria-describedby={error ? "reset-password-error" : "password-description"} aria-invalid={!!error} showPasswordLabel={dictionary.common.showPassword} hidePasswordLabel={dictionary.common.hidePassword} />
               {password ? <PasswordStrength password={password} className="mt-2" /> : null}
-              <FieldDescription id="password-description" className="mt-1.5 paragraph-mini text-foreground/35">{d.passwordHint}</FieldDescription>
+              <FieldDescription id="password-description" className="mt-1.5 paragraph-mini text-foreground-muted-accessible">{d.passwordHint}</FieldDescription>
             </FieldContent>
           </Field>
           <Field>

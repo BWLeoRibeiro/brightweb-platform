@@ -146,7 +146,7 @@ export function InvitePage({ invitationId, kind = "organization" }: { invitation
                   <>
                     <Field>
                       <FieldLabel htmlFor="password" className="mb-1.5 paragraph-small font-semibold text-foreground/60">{dictionary.common.password}</FieldLabel>
-                      <FieldContent><PasswordInput ref={passwordRef} id="password" value={password} onChange={(event) => setPassword(event.target.value)} required minLength={8} autoComplete="new-password" aria-describedby={error ? "invite-error" : "invite-password-description"} aria-invalid={!!error} showPasswordLabel={dictionary.common.showPassword} hidePasswordLabel={dictionary.common.hidePassword} />{password ? <PasswordStrength password={password} className="mt-2" /> : null}<FieldDescription id="invite-password-description" className="mt-1.5 paragraph-mini text-foreground/35">{dictionary.reset.passwordHint}</FieldDescription></FieldContent>
+                      <FieldContent><PasswordInput ref={passwordRef} id="password" value={password} onChange={(event) => setPassword(event.target.value)} required minLength={8} autoComplete="new-password" aria-describedby={error ? "invite-error" : "invite-password-description"} aria-invalid={!!error} showPasswordLabel={dictionary.common.showPassword} hidePasswordLabel={dictionary.common.hidePassword} />{password ? <PasswordStrength password={password} className="mt-2" /> : null}<FieldDescription id="invite-password-description" className="mt-1.5 paragraph-mini text-foreground-muted-accessible">{dictionary.reset.passwordHint}</FieldDescription></FieldContent>
                     </Field>
                     <Field><FieldLabel htmlFor="confirmPassword" className="mb-1.5 paragraph-small font-semibold text-foreground/60">{dictionary.common.confirmPassword}</FieldLabel><FieldContent><PasswordInput id="confirmPassword" value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} required minLength={8} autoComplete="new-password" showPasswordLabel={dictionary.common.showPassword} hidePasswordLabel={dictionary.common.hidePassword} /></FieldContent></Field>
                   </>
@@ -155,7 +155,7 @@ export function InvitePage({ invitationId, kind = "organization" }: { invitation
                 {step === "password" ? <Button type="button" variant="ghost" className="h-10 w-full rounded-full" disabled={submitting} onClick={() => { setError(null); setStep("identity"); }}>{dictionary.common.back}</Button> : null}
               </form>
             )}
-            <div className="flex items-center justify-center gap-1.5 pt-1"><span className="paragraph-mini text-foreground/40">{d.alreadyAccount}</span><Button variant="link" size="link" asChild><Link href={loginHref} className="paragraph-mini font-semibold text-primary hover:text-primary/80">{dictionary.common.login}</Link></Button></div>
+            <div className="flex items-center justify-center gap-1.5 pt-1"><span className="paragraph-mini text-foreground-muted-accessible">{d.alreadyAccount}</span><Button variant="link" size="link" asChild><Link href={loginHref} className="paragraph-mini font-semibold text-primary hover:text-primary/80">{dictionary.common.login}</Link></Button></div>
           </>
         )}
       </AuthCard>

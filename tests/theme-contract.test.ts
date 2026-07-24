@@ -19,6 +19,51 @@ function customProperties(css: string) {
   return new Set(Array.from(css.matchAll(/(--[a-z0-9-]+)\s*:/g), (match) => match[1]));
 }
 
+function scopedCustomProperties(css: string, selector: string) {
+  const start = css.indexOf(selector);
+  assert.notEqual(start, -1, `expected ${selector} scope`);
+  const bodyStart = css.indexOf("{", start) + 1;
+  const bodyEnd = css.indexOf("}", bodyStart);
+  return new Map(Array.from(css.slice(bodyStart, bodyEnd).matchAll(/(--[a-z0-9-]+)\s*:\s*([^;]+);/g), ([, property, value]) => [property, value.trim()]));
+}
+
+function resolveHex(properties: Map<string, string>, property: string): string {
+  const seen = new Set<string>();
+  let value = properties.get(property);
+  while (value?.startsWith("var(")) {
+    const reference = value.match(/^var\((--[a-z0-9-]+)\)$/)?.[1];
+    assert.ok(reference && !seen.has(reference), `expected resolvable ${property}`);
+    seen.add(reference);
+    value = properties.get(reference);
+  }
+  assert.match(value ?? "", /^#[0-9a-f]{6}$/i, `expected ${property} to resolve to a hex color`);
+  return value!;
+}
+
+function rgb(hex: string) {
+  return Array.from(hex.slice(1).matchAll(/../g), ([pair]) => Number.parseInt(pair, 16));
+}
+
+function composite(foreground: string, background: string, opacity: number) {
+  const foregroundRgb = rgb(foreground);
+  const backgroundRgb = rgb(background);
+  return `#${foregroundRgb.map((channel, index) => Math.round(channel * opacity + backgroundRgb[index]! * (1 - opacity)).toString(16).padStart(2, "0")).join("")}`;
+}
+
+function relativeLuminance(hex: string) {
+  const [red, green, blue] = rgb(hex).map((channel) => {
+    const normalized = channel / 255;
+    return normalized <= 0.04045 ? normalized / 12.92 : ((normalized + 0.055) / 1.055) ** 2.4;
+  });
+  return 0.2126 * red! + 0.7152 * green! + 0.0722 * blue!;
+}
+
+function contrastRatio(foreground: string, background: string) {
+  const foregroundLuminance = relativeLuminance(foreground);
+  const backgroundLuminance = relativeLuminance(background);
+  return (Math.max(foregroundLuminance, backgroundLuminance) + 0.05) / (Math.min(foregroundLuminance, backgroundLuminance) + 0.05);
+}
+
 const tokenizedVisualContract = [
   "--text-ui-chip", "--text-ui-action", "--text-ui-shell-title", "--text-ui-report-title",
   "--text-ui-report-title-lg", "--text-ui-calendar", "--text-ui-report-metric",
@@ -133,6 +178,22 @@ test("every Tailwind color mapping references a defined token", async () => {
   assert.ok(mappings.length > 0, "expected color mappings in theme.css");
   for (const [, token] of mappings) {
     assert.ok(tokens.has(token), `${token} is referenced by theme.css but absent from tokens.css`);
+  }
+});
+
+test("accessible muted foreground meets WCAG AA in default and MQ light/dark themes", async () => {
+  for (const file of ["src/tokens.css", "themes/mq.css"]) {
+    const css = await read(file);
+    const root = scopedCustomProperties(css, ":root");
+    const darkOverrides = scopedCustomProperties(css, ":root.dark");
+    for (const [mode, overrides] of [["light", new Map<string, string>()], ["dark", darkOverrides]] as const) {
+      const properties = new Map([...root, ...overrides]);
+      const foreground = resolveHex(properties, "--foreground-muted-accessible");
+      const card = resolveHex(properties, "--card");
+      const inputSurface = composite(resolveHex(properties, "--foreground"), card, 0.05);
+      assert.ok(contrastRatio(foreground, card) >= 4.5, `${file} ${mode} muted text must meet 4.5:1 on cards`);
+      assert.ok(contrastRatio(foreground, inputSurface) >= 4.5, `${file} ${mode} placeholders must meet 4.5:1 on input surfaces`);
+    }
   }
 });
 

@@ -53,7 +53,7 @@ export function ForgotPasswordPage() {
           </form>
         )}
         <div className="flex items-center justify-center gap-1.5 pt-1">
-          <span className="paragraph-mini text-foreground/40">{d.remember}</span>
+          <span className="paragraph-mini text-foreground-muted-accessible">{d.remember}</span>
           <Button variant="link" size="link" asChild><Link href="/login" className="paragraph-mini font-semibold text-primary hover:text-primary/80">{dictionary.common.login}</Link></Button>
         </div>
       </AuthCard>

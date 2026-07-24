@@ -116,7 +116,7 @@ function LinksEmptyState() {
       </div>
       <div>
         <p className="text-sm font-semibold text-foreground/60">{dictionary.links.noLinks}</p>
-        <p className="mt-1 text-xs text-foreground/40">{dictionary.links.noLinksHint}</p>
+        <p className="mt-1 text-xs text-foreground-muted-accessible">{dictionary.links.noLinksHint}</p>
       </div>
     </div>
   );

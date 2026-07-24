@@ -23,14 +23,14 @@ export default function BootstrapPage() {
           <div className="panel-inner">
             <h2>Client summary</h2>
             <div className="preview-grid">
-              <article className="panel" style={{ background: "rgba(255,255,255,0.72)" }}>
+              <article className="panel preview-glass-card">
                 <div className="panel-inner">
                   <p className="status ok">{checklist.client.brand.slug}</p>
                   <h3>{checklist.client.brand.productName}</h3>
                   <p className="muted">{checklist.client.brand.tagline}</p>
                 </div>
               </article>
-              <article className="panel" style={{ background: "rgba(255,255,255,0.72)" }}>
+              <article className="panel preview-glass-card">
                 <div className="panel-inner">
                   <p className={`status ${checklist.client.envReadiness.allReady ? "ok" : "warn"}`}>
                     {checklist.client.envReadiness.allReady ? "Ready" : "Blocked"}

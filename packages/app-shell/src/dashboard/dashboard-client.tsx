@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { createContext, useContext, useEffect, useMemo, useState, type CSSProperties } from "react";
-import { motion } from "motion/react";
+import { motion, useReducedMotion } from "motion/react";
 import {
   AlertTriangle,
   ArrowUpRight,
@@ -255,6 +255,7 @@ function WelcomeHeader({
 
 function TabsRow({ value, onChange, sections }: { value: TabKey; onChange: (v: TabKey) => void; sections: DashboardSection[] }) {
   const dictionary = useDashboardDictionary();
+  const prefersReducedMotion = useReducedMotion();
   const [hovered, setHovered] = useState<TabKey | null>(null);
   const tabs: { key: TabKey; label: string }[] = [
     { key: "overview", label: dictionary.tabs.overview },
@@ -278,9 +279,10 @@ function TabsRow({ value, onChange, sections }: { value: TabKey; onChange: (v: T
             onClick={() => onChange(t.key)}
             onMouseEnter={() => setHovered(t.key)}
             onFocus={() => setHovered(t.key)}
-            whileTap={{ scale: 0.95 }}
-            transition={{ type: "spring", stiffness: 500, damping: 32 }}
-            className="relative rounded-full px-4 py-1.5 text-[13px] font-semibold transition-colors duration-200 outline-none"
+            whileTap={prefersReducedMotion ? undefined : { scale: 0.95 }}
+            transition={prefersReducedMotion ? { duration: 0 } : { type: "spring", stiffness: 500, damping: 32 }}
+            aria-pressed={active}
+            className="relative rounded-full px-4 py-1.5 text-[13px] font-semibold outline-none transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-[color:var(--ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--background)] motion-reduce:transition-none"
             style={{
               color: active
                 ? "var(--accent-foreground)"
@@ -291,20 +293,20 @@ function TabsRow({ value, onChange, sections }: { value: TabKey; onChange: (v: T
           >
             {isHovered && (
               <motion.span
-                layoutId="dashboard-tab-hover"
+                layoutId={prefersReducedMotion ? undefined : "dashboard-tab-hover"}
                 aria-hidden
                 className="absolute inset-0 rounded-full"
                 style={{ background: "var(--dashboard-tab-hover)" }}
-                transition={{ type: "spring", stiffness: 520, damping: 38 }}
+                transition={prefersReducedMotion ? { duration: 0 } : { type: "spring", stiffness: 520, damping: 38 }}
               />
             )}
             {active && (
               <motion.span
-                layoutId="dashboard-tab-active"
+                layoutId={prefersReducedMotion ? undefined : "dashboard-tab-active"}
                 aria-hidden
                 className="absolute inset-0 rounded-full shadow-[var(--dashboard-tab-shadow)]"
                 style={{ background: "var(--accent)" }}
-                transition={{ type: "spring", stiffness: 420, damping: 34 }}
+                transition={prefersReducedMotion ? { duration: 0 } : { type: "spring", stiffness: 420, damping: 34 }}
               />
             )}
             <span className="relative z-10">{t.label}</span>

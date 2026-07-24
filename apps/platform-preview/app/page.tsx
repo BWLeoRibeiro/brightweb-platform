@@ -73,7 +73,7 @@ export default function HomePage() {
             <h2>Active module previews</h2>
             <div className="preview-grid">
               {config.enabledModules.map((moduleConfig) => (
-                <article key={moduleConfig.key} className="panel preview-glass-card" style={{ background: "rgba(255,255,255,0.72)" }}>
+                <article key={moduleConfig.key} className="panel preview-glass-card">
                   <div className="panel-inner">
                     <p className={`status ${moduleConfig.enabled ? "ok" : "warn"}`}>{moduleConfig.placement}</p>
                     <h3>{moduleConfig.label}</h3>
@@ -127,7 +127,7 @@ export default function HomePage() {
             <h2>Preview environment checklist</h2>
             <div className="preview-grid">
               {config.envStatus.map((item) => (
-                <article key={item.key} className="panel preview-glass-card" style={{ background: "rgba(255,255,255,0.72)" }}>
+                <article key={item.key} className="panel preview-glass-card">
                   <div className="panel-inner">
                     <p className={`status ${item.present ? "ok" : "warn"}`}>{item.present ? "Configured" : "Missing"}</p>
                     <h3>{item.key}</h3>

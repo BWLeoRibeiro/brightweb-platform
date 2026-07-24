@@ -91,6 +91,22 @@ test("CRM contact and organization details use right-side sheets instead of cent
   assert.match(organizationSource, /SheetSection/);
 });
 
+test("CRM contact and organization fields have stable accessible-name associations", () => {
+  const contactSource = readFileSync(join(process.cwd(), "packages/module-crm/src/ui/contact-dialog.tsx"), "utf8");
+  const organizationSource = readFileSync(join(process.cwd(), "packages/module-crm/src/ui/organization-sheet.tsx"), "utf8");
+  const assertAssociated = (source: string, suffixes: string[]) => {
+    assert.match(source, /const fieldId = useId\(\)/);
+    for (const suffix of suffixes) {
+      assert.ok(source.includes('htmlFor={`${fieldId}-' + suffix + '`}'), `missing label association for ${suffix}`);
+      assert.ok(source.includes('id={`${fieldId}-' + suffix + '`}'), `missing control id for ${suffix}`);
+    }
+  };
+
+  assertAssociated(contactSource, ["first-name", "last-name", "email", "phone", "organization", "owner"]);
+  assertAssociated(organizationSource, ["name", "industry", "website", "tax-identifier", "address", "company-size", "budget-range"]);
+  assert.match(contactSource, /<PhoneInput id=\{`\$\{fieldId\}-phone`\} name="phone" autoComplete="tel"/);
+});
+
 test("CRM shell toolbar controls are exported as independent surfaces", () => {
   assert.match(renderToStaticMarkup(h(CrmToolbarSearchChip, { value: "", onChange: () => {} })), /Pesquisar contactos/);
   assert.match(renderToStaticMarkup(h(CrmToolbarFiltersPill, { status: null, sort: "date_desc", onApply: () => {} })), /Filtros/);

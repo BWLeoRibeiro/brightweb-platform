@@ -80,4 +80,12 @@
   .admin-row-selected {
     background: var(--surface-selection);
   }
+
+  @media (prefers-reduced-motion: reduce) {
+    .admin-dashboard-reveal {
+      animation: none;
+      opacity: 1;
+      transform: none;
+    }
+  }
 }

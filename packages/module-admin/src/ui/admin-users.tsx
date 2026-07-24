@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useEffectEvent, useRef, useState } from "react";
-import { motion } from "motion/react";
+import { motion, useReducedMotion } from "motion/react";
 import { Send, Trash2, Users } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -62,6 +62,7 @@ export function AdminUsersClient({
   client = defaultAdminUiClient,
   dictionary = defaultAdminUiDictionary,
 }: AdminUsersClientProps) {
+  const prefersReducedMotion = useReducedMotion();
   const [rows, setRows] = useState<AdminUserRow[]>(initialUsers.data);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
@@ -267,9 +268,9 @@ export function AdminUsersClient({
             const isActive = activeView === view.id;
             const isHovered = hoveredView === view.id && !isActive;
             return (
-              <motion.button key={view.id} type="button" onClick={() => setActiveView(view.id)} onMouseEnter={() => setHoveredView(view.id)} onFocus={() => setHoveredView(view.id)} whileTap={{ scale: 0.95 }} transition={{ type: "spring", stiffness: 500, damping: 32 }} className={`relative inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-[13px] font-semibold outline-none transition-colors duration-200 ${isActive ? "text-[color:var(--accent-foreground)]" : isHovered ? "text-[color:var(--foreground)]" : "text-[color:var(--muted-foreground)]"}`}>
-                {isHovered ? <motion.span layoutId="admin-users-tab-hover" aria-hidden className="admin-tab-hover absolute inset-0 rounded-full" transition={{ type: "spring", stiffness: 520, damping: 38 }} /> : null}
-                {isActive ? <motion.span layoutId="admin-users-tab-active" aria-hidden className="admin-tab-active absolute inset-0 rounded-full" transition={{ type: "spring", stiffness: 420, damping: 34 }} /> : null}
+              <motion.button key={view.id} type="button" onClick={() => setActiveView(view.id)} onMouseEnter={() => setHoveredView(view.id)} onFocus={() => setHoveredView(view.id)} whileTap={prefersReducedMotion ? undefined : { scale: 0.95 }} transition={prefersReducedMotion ? { duration: 0 } : { type: "spring", stiffness: 500, damping: 32 }} aria-pressed={isActive} className={`relative inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-[13px] font-semibold outline-none transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-[color:var(--ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--background)] motion-reduce:transition-none ${isActive ? "text-[color:var(--accent-foreground)]" : isHovered ? "text-[color:var(--foreground)]" : "text-[color:var(--muted-foreground)]"}`}>
+                {isHovered ? <motion.span layoutId={prefersReducedMotion ? undefined : "admin-users-tab-hover"} aria-hidden className="admin-tab-hover absolute inset-0 rounded-full" transition={prefersReducedMotion ? { duration: 0 } : { type: "spring", stiffness: 520, damping: 38 }} /> : null}
+                {isActive ? <motion.span layoutId={prefersReducedMotion ? undefined : "admin-users-tab-active"} aria-hidden className="admin-tab-active absolute inset-0 rounded-full" transition={prefersReducedMotion ? { duration: 0 } : { type: "spring", stiffness: 420, damping: 34 }} /> : null}
                 <span className="relative z-10">{view.label}</span>
                 <span className="relative z-10 font-mono text-[11px] opacity-75">{view.count}</span>
               </motion.button>

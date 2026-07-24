@@ -185,7 +185,7 @@ function LoginPageContent() {
         <Button type="button" variant="link" size="link" onClick={() => { setMode(mode === "password" ? "magic" : "password"); setError(null); setInfo(null); }} className="mx-auto paragraph-mini text-foreground/60">
           {mode === "password" ? d.magicLink : d.passwordMode}
         </Button>
-        <p className="pt-1 text-center paragraph-mini text-foreground/40">{d.inviteOnly}</p>
+        <p className="pt-1 text-center paragraph-mini text-foreground-muted-accessible">{d.inviteOnly}</p>
       </AuthCard>
     </AuthLayout>
   );

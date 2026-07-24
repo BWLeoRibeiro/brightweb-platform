@@ -282,9 +282,13 @@
 }
 
   @media (prefers-reduced-motion: reduce) {
-  .auth-spinner,
+  .auth-spinner {
+    animation: none;
+    transform: none;
+  }
+
   .auth-skeleton-line::after {
-    animation-duration: 1.8s;
+    display: none;
   }
 }
 }

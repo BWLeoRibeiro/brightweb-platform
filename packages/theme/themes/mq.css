@@ -26,6 +26,7 @@
   --secondary-foreground: var(--brand-ink);
   --muted: rgba(191, 192, 207, 0.18);
   --muted-foreground: var(--brand-neutral-500);
+  --foreground-muted-accessible: #606570;
   --foreground-inverse: var(--brand-white);
   --foreground-inverse-muted: rgba(255, 255, 255, 0.88);
   --foreground-inverse-subtle: rgba(255, 255, 255, 0.84);
@@ -119,6 +120,7 @@
   --secondary-foreground: #dceaf7;
   --muted: rgba(132, 170, 198, 0.16);
   --muted-foreground: #9eb6cd;
+  --foreground-muted-accessible: #9eb6cd;
   --foreground-inverse: #f7fbff;
   --foreground-inverse-muted: rgba(247, 251, 255, 0.9);
   --foreground-inverse-subtle: rgba(247, 251, 255, 0.84);
@@ -207,6 +209,7 @@
   --secondary-foreground: var(--brand-ink);
   --muted: rgba(191, 192, 207, 0.18);
   --muted-foreground: var(--brand-neutral-500);
+  --foreground-muted-accessible: #606570;
   --accent: var(--brand-accent);
   --accent-foreground: var(--brand-ink);
   --destructive: #b43f3f;

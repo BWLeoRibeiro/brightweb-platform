@@ -84,11 +84,80 @@ test("ui source follows the BrightWeb typography and color hygiene rules", async
   assertPatternAbsent(files, /#[0-9a-f]{3,8}\b|rgba?\(|color-mix\(/i, "raw color recipes must be represented by theme tokens");
 });
 
+test("preview TSX keeps raw color recipes in theme-aware CSS", async () => {
+  const files = (await sourcesAt(previewSourceRoot)).filter(({ filePath }) => filePath.endsWith(".tsx"));
+  assertPatternAbsent(files, /#[0-9a-f]{3,8}\b|rgba?\(|color-mix\(/i, "preview TSX colors must be represented by theme-aware CSS");
+});
+
+test("meaningful low-emphasis copy uses the accessible muted foreground token", async () => {
+  const relativePaths = [
+    "packages/core-auth/src/ui/forgot-password-page.tsx",
+    "packages/core-auth/src/ui/invite-page.tsx",
+    "packages/core-auth/src/ui/login-page.tsx",
+    "packages/core-auth/src/ui/reset-password-page.tsx",
+    "packages/module-projects/src/ui/project-links-card.tsx",
+    "packages/module-projects/src/ui/project-milestone-task-lists.tsx",
+    "packages/ui/src/components/input.tsx",
+  ];
+  const files = await Promise.all(relativePaths.map(async (relativePath) => ({
+    filePath: path.join(repoRoot, relativePath),
+    source: await readFile(path.join(repoRoot, relativePath), "utf8"),
+  })));
+  assert.ok(files.every(({ source }) => source.includes("foreground-muted-accessible")));
+  assertPatternAbsent(
+    files,
+    /text-foreground\/(?:35|40)\b/,
+    "meaningful helper copy must not use failing foreground opacity",
+  );
+  assert.doesNotMatch(files.at(-1)!.source, /placeholder:text-foreground\/30\b/);
+});
+
 test("shared buttons transition explicit properties and respect reduced motion", async () => {
   const source = await readFile(path.join(uiSourceRoot, "components/button-variants.ts"), "utf8");
   assert.doesNotMatch(source, /\btransition-all\b/);
   assert.match(source, /transition-\[color,background-color,border-color,box-shadow,transform,filter,text-decoration-color\]/);
   assert.match(source, /motion-reduce:transition-none/);
+});
+
+test("segmented controls expose selection, visible focus, and reduced Framer motion", async () => {
+  const dashboard = await readFile(path.join(appShellSourceRoot, "dashboard/dashboard-client.tsx"), "utf8");
+  const admin = await readFile(path.join(adminUiSourceRoot, "admin-users.tsx"), "utf8");
+
+  for (const source of [dashboard, admin]) {
+    assert.match(source, /useReducedMotion\(\)/);
+    assert.match(source, /aria-pressed=\{(?:active|isActive)\}/);
+    assert.match(source, /focus-visible:ring-2/);
+    assert.match(source, /focus-visible:ring-\[color:var\(--ring\)\]/);
+    assert.match(source, /whileTap=\{prefersReducedMotion \? undefined : \{ scale: 0\.95 \}\}/);
+    assert.match(source, /layoutId=\{prefersReducedMotion \? undefined :/);
+  }
+});
+
+test("reduced motion is static across theme entrances, sheets, modules, and auth", async () => {
+  const base = await readFile(path.join(repoRoot, "packages/theme/src/base.css"), "utf8");
+  const surfaces = await readFile(path.join(repoRoot, "packages/theme/src/surfaces.css"), "utf8");
+  const sheet = await readFile(path.join(uiSourceRoot, "components/sheet.tsx"), "utf8");
+  const adminTokens = await readFile(path.join(repoRoot, "packages/module-admin/tokens.css"), "utf8");
+  const projectTokens = await readFile(path.join(repoRoot, "packages/module-projects/tokens.css"), "utf8");
+  const authTokens = await readFile(path.join(repoRoot, "packages/core-auth/tokens.css"), "utf8");
+
+  assert.match(base, /@media \(prefers-reduced-motion: reduce\)[\s\S]*animation-duration:\s*0ms !important/);
+  assert.match(base, /@media \(prefers-reduced-motion: reduce\)[\s\S]*animation-iteration-count:\s*1 !important/);
+  assert.match(surfaces, /@media \(prefers-reduced-motion: reduce\)[\s\S]*\.skeleton-ghost::after\s*\{\s*display:\s*none/);
+  assert.doesNotMatch(surfaces, /skeleton-breathe/);
+  assert.match(sheet, /motion-reduce:animate-none/);
+  assert.match(sheet, /motion-reduce:transform-none/);
+
+  for (const [source, selector] of [
+    [adminTokens, String.raw`\.admin-dashboard-reveal`],
+    [projectTokens, String.raw`\.dashboard-reveal`],
+    [projectTokens, String.raw`\.project-surface-card`],
+  ]) {
+    assert.match(source, new RegExp(`@media \\(prefers-reduced-motion: reduce\\)[\\s\\S]*${selector}[\\s\\S]*animation:\\s*none[\\s\\S]*opacity:\\s*1[\\s\\S]*transform:\\s*none`));
+  }
+
+  assert.match(authTokens, /@media \(prefers-reduced-motion: reduce\)[\s\S]*\.auth-spinner\s*\{[\s\S]*animation:\s*none[\s\S]*transform:\s*none/);
+  assert.match(authTokens, /@media \(prefers-reduced-motion: reduce\)[\s\S]*\.auth-skeleton-line::after\s*\{\s*display:\s*none/);
 });
 
 test("app-shell source uses only tokenized color and typography utilities", async () => {

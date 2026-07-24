@@ -6,6 +6,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import test from "node:test";
 
 import { BreadcrumbLink } from "../packages/ui/src/components/breadcrumb.tsx";
+import { PhoneInput } from "../packages/ui/src/components/phone-input.tsx";
 import { getInitials, getPaginationWindow, getRoleLabel, resolveRoleToken } from "../packages/ui/src/lib/patterns.ts";
 
 const repoRoot = path.resolve(new URL("..", import.meta.url).pathname);
@@ -41,6 +42,40 @@ test("Checkbox exposes the native selection-control contract", async () => {
   assert.equal(packageJson.exports["./checkbox"], "./src/components/checkbox.tsx");
   assert.match(rootSource, /components\/checkbox/);
   assert.match(checkboxSource, /<input type="checkbox" \{\.\.\.props\} \/>/);
+});
+
+test("PhoneInput forwards the native telephone accessible-name contract", () => {
+  const html = renderToStaticMarkup(
+    h("label", { htmlFor: "customer-phone" },
+      "Phone",
+      h(PhoneInput, {
+        id: "customer-phone",
+        name: "phone",
+        autoComplete: "tel",
+        "aria-describedby": "phone-help",
+        value: "",
+        onChange: () => {},
+      }),
+    ),
+  );
+
+  assert.match(html, /<label for="customer-phone">Phone/);
+  assert.match(html, /<input id="customer-phone" autoComplete="tel" aria-describedby="phone-help"[^>]*type="tel"[^>]*name="phone"/);
+});
+
+test("PhoneInput country picker exposes a listbox and complete keyboard contract", async () => {
+  const source = await readFile(path.join(repoRoot, "packages/ui/src/components/phone-input.tsx"), "utf8");
+
+  assert.match(source, /aria-haspopup="listbox"/);
+  assert.match(source, /role="combobox"/);
+  assert.match(source, /role="listbox"/);
+  assert.match(source, /role="option"/);
+  assert.match(source, /aria-selected=/);
+  for (const key of ["Escape", "ArrowDown", "ArrowUp", "Enter"]) {
+    assert.match(source, new RegExp(`event\\.key === "${key}"`));
+  }
+  assert.match(source, /aria-activedescendant=/);
+  assert.match(source, /triggerRef\.current\?\.focus\(\)/);
 });
 
 for (const [subpath, symbols] of Object.entries(patternExports)) {
