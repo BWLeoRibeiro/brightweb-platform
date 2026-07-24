@@ -1,5 +1,13 @@
 # create-bw-app
 
+## 0.13.2
+
+### Patch Changes
+
+- b0362c3: Fix static public Supabase environment inlining and align generated application
+  templates with the platform CSS, font, React, Geist, migration, and runtime
+  dependency contracts.
+
 ## 0.13.1
 
 ### Patch Changes

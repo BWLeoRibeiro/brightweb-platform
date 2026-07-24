@@ -1,5 +1,15 @@
 # @brightweblabs/theme
 
+## 0.4.0
+
+### Minor Changes
+
+- b0362c3: Ship the consolidated platform surface release: shell navigation, dashboard,
+  theme switching, branded status pages, packaged authentication and invitation
+  flows, Admin, CRM, Projects, and organization persistence. Add tokenized Geist
+  typography, shared UI primitives, MQ parity, and accessibility and robustness
+  hardening across those surfaces.
+
 ## 0.3.0
 
 ### Minor Changes
