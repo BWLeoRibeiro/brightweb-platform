@@ -3,8 +3,18 @@ type SupabasePublicEnv = {
   supabasePublishableKey: string;
 };
 
+// Statically referenced so Next.js/Turbopack inlines these NEXT_PUBLIC_* values
+// into the client bundle. A dynamic process.env[name] access is not statically
+// analyzable and resolves to undefined in the browser, which is why client-side
+// consumers (e.g. the auth login page) otherwise see "missing env".
+const STATIC_PUBLIC_ENV: Record<string, string | undefined> = {
+  NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
+  NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY: process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY,
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+};
+
 function readEnv(name: string): string | null {
-  const value = process.env[name]?.trim();
+  const value = (STATIC_PUBLIC_ENV[name] ?? process.env[name])?.trim();
   return value ? value : null;
 }
 
