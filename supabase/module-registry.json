@@ -24,6 +24,12 @@
       "dependsOn": ["core", "admin", "orgs"],
       "description": "CRM contacts, status tracking, and organization integration."
     },
+    "marketing": {
+      "label": "Marketing",
+      "path": "supabase/modules/marketing/migrations",
+      "dependsOn": ["core", "admin", "orgs", "crm"],
+      "description": "Consent-first marketing topics, subscriptions, contact preferences, and suppressions."
+    },
     "projects": {
       "label": "Projects",
       "path": "supabase/modules/projects/migrations",

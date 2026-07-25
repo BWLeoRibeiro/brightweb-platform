@@ -1,0 +1,30 @@
+{
+  "contractVersion": 1,
+  "key": "marketing",
+  "title": "Marketing",
+  "description": "Consent-first marketing topics, subscriptions, and email suppressions.",
+  "requires": {
+    "core": ">=0.3",
+    "crm": ">=0.6"
+  },
+  "capabilities": {
+    "provides": [],
+    "consumes": []
+  },
+  "permissions": {
+    "surfaces": "public-tokened",
+    "notes": "The unsubscribe endpoint is public and access is granted only by a contact's unguessable unsubscribe token.",
+    "grants": []
+  },
+  "tokens": "./tokens.css",
+  "database": {
+    "namespace": ["marketing_"],
+    "ownedObjects": [
+      "marketing_topics",
+      "marketing_subscriptions",
+      "marketing_contact_settings",
+      "marketing_suppressions",
+      "set_marketing_updated_at"
+    ]
+  }
+}
