@@ -31,6 +31,8 @@ export type ProjectMemberInput = {
   role: ProjectMemberRole;
 };
 
+export type ProjectMemberColor = "manager" | "team" | "client";
+
 export type ProjectAssignableProfile = {
   profileId: string;
   label: string;

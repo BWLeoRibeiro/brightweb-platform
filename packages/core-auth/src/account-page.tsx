@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { KeyRound, ShieldCheck, UserCircle2 } from "lucide-react";
+import type { ReactNode } from "react";
 import { getCurrentAccountProfile, type AccountProfile } from "./account/profile";
 import { requireServerPageAccess } from "./server";
 import { AccountClient } from "./ui/account/account-client";
@@ -30,7 +31,7 @@ function getDisplayName(firstName: string, lastName: string, email: string | nul
   return full || email || defaultAccountUiDictionary.identity.fallbackName;
 }
 
-export async function AccountPage() {
+export async function AccountPage({ projectsSlot }: { projectsSlot?: ReactNode } = {}) {
   const { profileId, supabase, user, role } = await requireServerPageAccess();
   const accountProfile = await getCurrentAccountProfile(supabase, user.id, user.email ?? null);
   const profileData: AccountProfile = accountProfile.ok
@@ -90,7 +91,7 @@ export async function AccountPage() {
 
       <div className="grid gap-5 lg:grid-cols-[1fr_340px]">
         <div>
-          {/* TODO(projects-live): client project previews mount here */}
+          {projectsSlot}
         </div>
 
         <div className="space-y-4">

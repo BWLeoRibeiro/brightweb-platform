@@ -145,13 +145,15 @@ test("account handlers validate updates and preserve the injectable client bound
   }), profile);
 });
 
-test("preview account mounts are thin and the projects insertion point remains explicit", async () => {
+test("preview account composes the projects slot without coupling core-auth", async () => {
   const repoRoot = path.resolve(new URL("..", import.meta.url).pathname);
   const page = await readFile(path.join(repoRoot, "apps/platform-preview/app/(shell)/account/page.tsx"), "utf8");
   const route = await readFile(path.join(repoRoot, "apps/platform-preview/app/api/account/route.ts"), "utf8");
   const surface = await readFile(path.join(repoRoot, "packages/core-auth/src/account-page.tsx"), "utf8");
-  assert.match(page, /AccountPage as default/);
+  assert.match(page, /<AccountPage projectsSlot=\{<ClientProjectsPreview \/>}/);
   assert.match(route, /handleAccountGetRequest/);
   assert.match(route, /handleAccountUpdateRequest/);
-  assert.match(surface, /TODO\(projects-live\)/);
+  assert.match(surface, /projectsSlot\?: ReactNode/);
+  assert.match(surface, /\{projectsSlot\}/);
+  assert.doesNotMatch(surface, /module-projects/);
 });

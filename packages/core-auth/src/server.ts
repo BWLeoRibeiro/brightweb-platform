@@ -1,6 +1,9 @@
 import type { User } from "@supabase/supabase-js";
 import { redirect } from "next/navigation";
-import { createServerSupabase } from "@brightweblabs/infra/server";
+import {
+  createServerSupabase,
+  requireServiceRoleClient,
+} from "@brightweblabs/infra/server";
 import {
   canAccessInsightsCms,
   normalizeGlobalRole,
@@ -42,6 +45,20 @@ type ServerUserAccess =
     user: User;
     profileId: string;
     role: GlobalRole | null;
+  }
+  | {
+    ok: false;
+    status: number;
+    error: string;
+  };
+
+export type ProjectReadAccess =
+  | {
+    ok: true;
+    supabase: Awaited<ReturnType<typeof createServerSupabase>>;
+    user: User;
+    profileId: string;
+    role: GlobalRole;
   }
   | {
     ok: false;
@@ -155,6 +172,70 @@ export async function requireServerRoleAccess(allowedRoles: GlobalRole | GlobalR
   }
 
   return { ok: true, supabase, user, profileId, role };
+}
+
+export async function requireProjectReadAccess(projectId: string): Promise<ProjectReadAccess> {
+  const access = await requireServerUserAccess();
+  if (!access.ok) {
+    return access.status === 409
+      ? { ok: false, status: 403, error: "Perfil não encontrado." }
+      : access;
+  }
+  if (!access.role) {
+    return { ok: false, status: 403, error: "Acesso proibido." };
+  }
+  if (access.role === "admin") {
+    return { ...access, role: access.role };
+  }
+
+  const serviceSupabase = requireServiceRoleClient();
+  const { data: project } = await serviceSupabase
+    .from("projects")
+    .select("id, organization_id, owner_profile_id")
+    .eq("id", projectId)
+    .maybeSingle<{
+      id: string;
+      organization_id: string | null;
+      owner_profile_id: string | null;
+    }>();
+
+  if (!project?.id) {
+    return { ok: false, status: 404, error: "Projeto não encontrado." };
+  }
+
+  const { data: membership } = await serviceSupabase
+    .from("project_members")
+    .select("role")
+    .eq("project_id", projectId)
+    .eq("profile_id", access.profileId)
+    .maybeSingle<{ role: string }>();
+
+  if (
+    membership?.role === "owner"
+    || membership?.role === "contributor"
+    || membership?.role === "observer"
+  ) {
+    return { ...access, role: access.role };
+  }
+
+  if (project.owner_profile_id === access.profileId) {
+    return { ...access, role: access.role };
+  }
+
+  if (project.organization_id) {
+    const { data: organizationMembership } = await serviceSupabase
+      .from("organization_members")
+      .select("role")
+      .eq("organization_id", project.organization_id)
+      .eq("profile_id", access.profileId)
+      .maybeSingle<{ role: string }>();
+
+    if (organizationMembership?.role) {
+      return { ...access, role: access.role };
+    }
+  }
+
+  return { ok: false, status: 403, error: "Acesso proibido." };
 }
 
 export async function getProfileIdForUser(

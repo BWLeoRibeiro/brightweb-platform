@@ -1,5 +1,18 @@
 import { requireServerPageAccess } from "@brightweblabs/core-auth/server";
 export {
+  ClientProjectDetailLoading,
+  ClientProjectDetailPage,
+  ClientProjectsListLoading,
+  ClientProjectsListPage,
+  ClientProjectsPreview,
+  ProjectListCard,
+  ProjectRow,
+} from "./ui/client/index";
+export {
+  listAccountProjects,
+  type AccountProjectsResult,
+} from "./account-projects";
+export {
   activityActorName,
   composeProjectMessage,
   ptProjectActivityDictionary,
@@ -63,6 +76,7 @@ export {
   listProjectLinks,
   listProjectMilestones,
   listProjectTasks,
+  resolveProjectMemberColors,
   syncProjectMembers,
   updateProject,
   updateProjectLink,
@@ -102,6 +116,7 @@ export type {
   ProjectDashboardData,
   ProjectLink,
   ProjectMember,
+  ProjectMemberColor,
   ProjectMemberInput,
   ProjectMilestone,
   ProjectTask,

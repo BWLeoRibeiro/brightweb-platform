@@ -13,6 +13,8 @@ import {
   type ProjectListItem,
   type ProjectActivityItem,
   type ProjectMilestone,
+  type ProjectMember,
+  type ProjectMemberColor,
   type ProjectMemberInput,
   type ProjectTask,
   type UpdateProjectInput,
@@ -1369,6 +1371,42 @@ export async function getClientProjectHealth(supabase: SupabaseClient, projectId
         .filter((milestone) => milestone.status !== "achieved")
         .toSorted((a, b) => (a.targetDate ?? "9999-12-31").localeCompare(b.targetDate ?? "9999-12-31"))[0] ?? null,
   };
+}
+
+// Project membership alone cannot distinguish an internal observer from a
+// client, so global roles provide the internal/team bucket.
+export async function resolveProjectMemberColors(
+  supabase: SupabaseClient,
+  members: readonly Pick<ProjectMember, "profileId" | "role">[],
+  ownerProfileId: string | null,
+): Promise<Record<string, ProjectMemberColor>> {
+  const profileIds = Array.from(new Set(members.map((member) => member.profileId)));
+  const internal = new Set<string>();
+
+  if (profileIds.length > 0) {
+    const { data, error } = await supabase
+      .from("user_role_assignments")
+      .select("profile_id, role_code")
+      .in("profile_id", profileIds)
+      .in("role_code", ["staff", "admin"]);
+    if (error) throw new Error(error.message);
+    for (const row of (data ?? []) as { profile_id: string }[]) {
+      internal.add(row.profile_id);
+    }
+  }
+
+  const colors: Record<string, ProjectMemberColor> = {};
+  for (const member of members) {
+    if (member.profileId === ownerProfileId || member.role === "owner") {
+      colors[member.profileId] = "manager";
+    } else if (internal.has(member.profileId)) {
+      colors[member.profileId] = "team";
+    } else {
+      colors[member.profileId] = "client";
+    }
+  }
+
+  return colors;
 }
 
 export async function listProjectAssignableProfiles(
