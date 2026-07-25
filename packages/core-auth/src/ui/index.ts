@@ -1,4 +1,5 @@
 export * from "./auth-layout";
+export * from "./account";
 export * from "./client";
 export * from "./confirmed-page";
 export * from "./context";

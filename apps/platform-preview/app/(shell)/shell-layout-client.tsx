@@ -73,6 +73,7 @@ export function PreviewShellLayoutClient({
   } satisfies NavGroupConfig);
   const crmGroupKey = registeredCrmNavGroup?.key ?? "crm";
   const isAdminSurface = pathname === "/admin" || pathname.startsWith("/admin/");
+  const usesToasts = isAdminSurface || pathname === "/account";
   const isActive = (href: string) => pathname === href
     || (isAdminSurface && pathname.startsWith(`${href}/`));
   const displayName = [viewer.firstName, viewer.lastName].filter(Boolean).join(" ")
@@ -186,7 +187,7 @@ export function PreviewShellLayoutClient({
       }
     >
       {children}
-      {isAdminSurface ? <Toaster /> : null}
+      {usesToasts ? <Toaster /> : null}
     </AppShellFrame>
   );
 }

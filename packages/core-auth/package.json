@@ -3,7 +3,8 @@
   "private": false,
   "version": "0.4.0",
   "files": [
-    "src"
+    "src",
+    "tokens.css"
   ],
   "license": "MIT",
   "repository": {
@@ -14,18 +15,24 @@
     "access": "public"
   },
   "exports": {
+    ".": "./src/index.ts",
+    "./account": "./src/account/index.ts",
+    "./account-page": "./src/account-page.tsx",
     "./client": "./src/client.ts",
     "./routes": "./src/routes.ts",
     "./server": "./src/server.ts",
     "./shared": "./src/shared.ts",
     "./tokens.css": "./tokens.css",
-    "./ui": "./src/ui/index.ts"
+    "./ui": "./src/ui/index.ts",
+    "./ui/account": "./src/ui/account/index.ts"
   },
   "dependencies": {
     "@brightweblabs/infra": "workspace:*",
     "@brightweblabs/ui": "workspace:*",
     "@supabase/supabase-js": "^2.110.8",
-    "next": "16.1.6"
+    "lucide-react": "^1.26.0",
+    "next": "16.1.6",
+    "sonner": "^2.0.7"
   },
   "peerDependencies": {
     "react": "^19.0.0",
