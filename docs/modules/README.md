@@ -40,6 +40,7 @@ Use [Base Contract](./base-contract.md) for the canonical support-tier rules and
 - [Platform Base](./platform-base.md)
 - [Organizations](./orgs.md): shared organization schema, membership, and package helpers.
 - [CRM](./crm.md): CRM-owned schema, runtime wiring, and CRM package behavior.
+- [Marketing — Delivery & Scheduler](./marketing-delivery.md): design reference for how the forthcoming Marketing module sends email (queue + worker + webhooks), delivery ownership, scheduler options (GitHub cron vs pg_cron), costs, resources, and per-client setup.
 - [Projects](./projects.md): Projects-owned schema, runtime wiring, and project package behavior.
 
 ## What module selection affects in the scaffold
