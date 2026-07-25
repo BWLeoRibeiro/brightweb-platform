@@ -1,10 +1,24 @@
-"use client";
+import { requireServerPageAccess } from "@brightweblabs/core-auth/server";
+import { getProjectDashboard } from "@brightweblabs/module-projects";
+import { ProjectBoardPageLiveMount } from "../../projects-live-mounts";
 
-import { useParams } from "next/navigation";
-import { ProjectBoardPage } from "@brightweblabs/module-projects/ui";
-import { dashboard, mockProjectsClient } from "../../mock-data";
+export default async function ProjectBoardPreviewPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
+  const { supabase } = await requireServerPageAccess();
+  const initialData = await getProjectDashboard(supabase, id);
 
-export default function ProjectBoardPreviewPage() {
-  const { id } = useParams<{ id: string }>();
-  return <ProjectBoardPage client={mockProjectsClient} initialData={{ ...dashboard, project: { ...dashboard.project, id } }} navigation={{ listHref: "/projects", detailHref: (projectId) => `/projects/${projectId}`, boardHref: (projectId) => `/projects/${projectId}/board` }} />;
+  return (
+    <ProjectBoardPageLiveMount
+      initialData={initialData}
+      navigation={{
+        listHref: "/projects",
+        detailHref: (projectId) => `/projects/${projectId}`,
+        boardHref: (projectId) => `/projects/${projectId}/tasks`,
+      }}
+    />
+  );
 }

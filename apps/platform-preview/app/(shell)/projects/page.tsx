@@ -1,9 +1,25 @@
-"use client";
-import { ProjectsPage } from "@brightweblabs/module-projects/ui";
-import { listProjects, mockProjectsClient } from "./mock-data";
+import { getProjectsPortfolioPageData } from "@brightweblabs/module-projects";
+import { ProjectsPageLiveMount } from "./projects-live-mounts";
 
-// TODO(projects-live): implement /api/projects, /stats, /organizations,
-// /[id], /[id]/access, /[id]/activity, /[id]/members,
-// /[id]/milestones[/[itemId]], /[id]/tasks[/[itemId]], and
-// /[id]/links[/[itemId]] before replacing this mock client.
-export default function ProjectsPreviewPage() { return <ProjectsPage client={mockProjectsClient} initialData={listProjects()} initialUpdatedAt="2026-07-22T10:30:00.000Z" portfolioStats={{ total: 3, planned: 1, active: 1, atRisk: 1, overdue: 1 }} organizations={[{ id: "org-atlas", name: "Atlas Studio" }, { id: "org-north", name: "Northstar Foods" }]} navigation={{ listHref: "/projects", detailHref: (id) => `/projects/${id}`, boardHref: (id) => `/projects/${id}/tasks` }} />; }
+export default async function ProjectsPreviewPage() {
+  const { organizationOptions, portfolioStats, result } = await getProjectsPortfolioPageData();
+  const attentionSummary = {
+    total: result.total,
+    overdue: result.items.filter((project) => project.taskStats.overdue > 0).length,
+    atRisk: result.items.filter((project) => project.health === "at_risk").length,
+  };
+
+  return (
+    <ProjectsPageLiveMount
+      initialData={{ ...result, attentionSummary }}
+      initialUpdatedAt={new Date().toISOString()}
+      portfolioStats={portfolioStats}
+      organizations={organizationOptions}
+      navigation={{
+        listHref: "/projects",
+        detailHref: (id) => `/projects/${id}`,
+        boardHref: (id) => `/projects/${id}/tasks`,
+      }}
+    />
+  );
+}

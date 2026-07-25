@@ -69,6 +69,28 @@ export {
   updateProjectMilestone,
   updateProjectTask,
 } from "./server";
+export {
+  handleProjectsActivityGetRequest,
+  handleProjectsAssignableProfilesGetRequest,
+  handleProjectsDashboardGetRequest,
+  handleProjectsDeleteRequest,
+  handleProjectsGetRequest,
+  handleProjectsLinksDeleteRequest,
+  handleProjectsLinksPatchRequest,
+  handleProjectsLinksPostRequest,
+  handleProjectsMembersPutRequest,
+  handleProjectsMilestonesDeleteRequest,
+  handleProjectsMilestonesPatchRequest,
+  handleProjectsMilestonesPostRequest,
+  handleProjectsOrganizationsGetRequest,
+  handleProjectsOrganizationsPostRequest,
+  handleProjectsPatchRequest,
+  handleProjectsPostRequest,
+  handleProjectsStatsGetRequest,
+  handleProjectsTasksDeleteRequest,
+  handleProjectsTasksPatchRequest,
+  handleProjectsTasksPostRequest,
+} from "./handlers";
 export type {
   CreateProjectInput,
   CreateProjectLinkInput,

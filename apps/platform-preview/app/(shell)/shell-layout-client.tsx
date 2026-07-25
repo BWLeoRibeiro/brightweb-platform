@@ -30,7 +30,6 @@ import { Toaster } from "@brightweblabs/ui";
 
 import { getStarterShellConfig } from "../../config/shell";
 import { previewNotifications } from "../../config/notifications";
-import { projects } from "./projects/mock-data";
 
 export type ShellViewer = {
   email: string | null;
@@ -102,7 +101,6 @@ export function PreviewShellLayoutClient({
       : projectId
         ? projectHeader.detailTitle
         : projectHeader.portfolioTitle;
-    count = pathname === "/projects" ? projects.length : undefined;
     toolbarControls = pathname === "/projects" ? <ProjectsToolbarControls /> : null;
   } else if (isAdminSurface) {
     kicker = defaultAdminUiDictionary.navigation.kicker;

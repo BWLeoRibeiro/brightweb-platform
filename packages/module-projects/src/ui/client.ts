@@ -1,10 +1,15 @@
 import type { ListProjectsParams } from "../data";
+import { readPublicError } from "@brightweblabs/infra/robustness";
 import type { ProjectsUiClient } from "./types";
 
 async function json<T>(response: Response): Promise<T> {
-  const payload = await response.json().catch(() => null) as { data?: T; error?: string } | T | null;
-  if (!response.ok) throw new Error(payload && typeof payload === "object" && "error" in payload ? payload.error : response.statusText);
-  return payload && typeof payload === "object" && "data" in payload ? payload.data as T : payload as T;
+  const payload: unknown = await response.json().catch(() => null);
+  if (!response.ok) {
+    throw new Error(readPublicError(payload, response.statusText || "Projects request failed.").message);
+  }
+  return payload && typeof payload === "object" && "data" in payload
+    ? (payload as { data: T }).data
+    : payload as T;
 }
 
 export function createProjectsUiClient(basePath = "/api/projects", fetcher: typeof fetch = fetch): ProjectsUiClient {
