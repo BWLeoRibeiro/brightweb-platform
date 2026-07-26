@@ -1,5 +1,11 @@
 # create-bw-app
 
+## 0.14.0
+
+### Minor Changes
+
+- 0dd5212: Bring platform scaffolds to full package parity with an authenticated shell, auth/account/dashboard mounts, complete Projects routes, selectable Marketing, module-resolved database stacks, caret runtime ranges, and duplicate-runtime doctor checks.
+
 ## 0.13.3
 
 ### Patch Changes
