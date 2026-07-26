@@ -1,3 +1,4 @@
+import { timingSafeEqual } from "node:crypto";
 import {
   publicError,
   sanitizePublicError,
@@ -63,6 +64,13 @@ type MarketingHttpDependencies = {
 
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+function secretsMatch(expected: string, provided: string) {
+  const expectedBuffer = Buffer.from(expected);
+  const providedBuffer = Buffer.from(provided);
+  return expectedBuffer.length === providedBuffer.length
+    && timingSafeEqual(expectedBuffer, providedBuffer);
+}
 
 function json(body: unknown, init?: ResponseInit) {
   return new Response(JSON.stringify(body), {
@@ -761,9 +769,10 @@ export function createMarketingCampaignHttpHandlers(
 
   const workerPost = async (request: Request) => {
     const authorization = request.headers.get("authorization") ?? "";
+    const expectedAuthorization = `Bearer ${dependencies.workerSecret}`;
     if (
       !dependencies.workerSecret
-      || authorization !== `Bearer ${dependencies.workerSecret}`
+      || !secretsMatch(expectedAuthorization, authorization)
     ) {
       return json(publicError("UNAUTHORIZED", "Unauthorized."), { status: 401 });
     }

@@ -77,6 +77,14 @@ function throwIfError(error: { message?: string } | null | undefined) {
   if (error) throw new Error(error.message || "Marketing segment request failed.");
 }
 
+function warnIfResolutionMayBeTruncated(source: string, rowCount: number) {
+  if (rowCount >= MAX_RESOLVE_LIMIT) {
+    console.warn(
+      `[marketing] Segment ${source} reached the ${MAX_RESOLVE_LIMIT}-row resolution cap; results may be truncated.`,
+    );
+  }
+}
+
 function fromRow(row: SegmentRow): MarketingSegment {
   return {
     id: row.id,
@@ -235,6 +243,7 @@ async function matchingTopicContactIds(
     .in("topic_id", topicIds)
     .limit(MAX_RESOLVE_LIMIT);
   throwIfError(error);
+  warnIfResolutionMayBeTruncated("topic subscriptions", (data ?? []).length);
   return new Set(
     ((data ?? []) as Array<{ contact_id: string }>).map((row) => row.contact_id),
   );
@@ -256,6 +265,7 @@ async function engagedContactIds(
   if (type) query = query.eq("event_type", type);
   const { data, error } = await query;
   throwIfError(error);
+  warnIfResolutionMayBeTruncated("engagement events", (data ?? []).length);
   return new Set(
     ((data ?? []) as Array<{ contact_id: string }>).map((row) => row.contact_id),
   );
@@ -272,6 +282,7 @@ async function preferredLanguageContactIds(
     .eq("preferred_language", preferredLanguage)
     .limit(MAX_RESOLVE_LIMIT);
   throwIfError(error);
+  warnIfResolutionMayBeTruncated("language settings", (data ?? []).length);
   return new Set(
     ((data ?? []) as Array<{ contact_id: string }>).map((row) => row.contact_id),
   );
@@ -284,6 +295,7 @@ async function suppressedEmails(supabase: unknown, exclude: boolean) {
     .select("email")
     .limit(MAX_RESOLVE_LIMIT);
   throwIfError(error);
+  warnIfResolutionMayBeTruncated("suppressions", (data ?? []).length);
   return new Set(
     ((data ?? []) as Array<{ email: string }>).map((row) =>
       row.email.trim().toLowerCase()
@@ -327,6 +339,10 @@ export async function resolveSegmentContacts(
     suppressedEmails(supabase, rule.excludeSuppressed !== false),
   ]);
   throwIfError(contactsResult.error);
+  warnIfResolutionMayBeTruncated(
+    "contacts",
+    (contactsResult.data ?? []).length,
+  );
 
   const matches: SegmentContact[] = [];
   for (const contact of (contactsResult.data ?? []) as ContactRow[]) {

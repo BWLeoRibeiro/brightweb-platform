@@ -364,6 +364,8 @@ export async function enqueueWorkflowRunsForTrigger(
     input.matchData ?? {},
   ));
   if (!matching.length) return 0;
+  // Workflow re-entry is deliberately one-shot per contact unless a future
+  // workflow version introduces an explicit repeat policy.
   const result = await db(supabase)
     .from("marketing_workflow_runs")
     .upsert(
@@ -409,7 +411,6 @@ type ActivityRow = {
   id: string;
   domain: string;
   event_type?: string | null;
-  action?: string | null;
   entity_table?: string | null;
   entity_id?: string | null;
   payload?: Record<string, unknown> | null;
@@ -423,13 +424,43 @@ function stringValue(record: Record<string, unknown>, ...keys: string[]) {
   return null;
 }
 
+function nestedStatusValue(data: Record<string, unknown>) {
+  const changes = data.changes;
+  if (!changes || typeof changes !== "object" || Array.isArray(changes)) return null;
+  const status = (changes as Record<string, unknown>).status;
+  if (!status || typeof status !== "object" || Array.isArray(status)) return null;
+  return stringValue(status as Record<string, unknown>, "to");
+}
+
 function statusChange(row: ActivityRow) {
   const data = row.payload ?? {};
-  const eventName = `${row.event_type ?? ""} ${row.action ?? ""}`.toLowerCase();
-  const toStatus = stringValue(data, "toStatus", "to_status", "newStatus", "new_status", "status");
-  return eventName.includes("status") && toStatus
+  const expectedEvent = row.domain === "crm"
+    ? "crm_contact_status_changed"
+    : row.domain === "projects"
+      ? "project_status_changed"
+      : null;
+  const toStatus = stringValue(
+    data,
+    "toStatus",
+    "to_status",
+    "newStatus",
+    "new_status",
+  ) ?? nestedStatusValue(data);
+  return row.event_type === expectedEvent && toStatus
     ? { data, toStatus }
     : null;
+}
+
+async function contactIdForOrganization(supabase: unknown, organizationId: string) {
+  const contact = await db(supabase)
+    .from("crm_contacts")
+    .select("id")
+    .eq("organization_id", organizationId)
+    .order("created_at", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+  throwIfError(contact.error);
+  return typeof contact.data?.id === "string" ? contact.data.id : null;
 }
 
 async function contactIdForActivity(supabase: unknown, row: ActivityRow) {
@@ -456,17 +487,65 @@ async function contactIdForActivity(supabase: unknown, row: ActivityRow) {
   }
   const organizationId = stringValue(data, "organizationId", "organization_id");
   if (organizationId) {
-    const contact = await db(supabase)
-      .from("crm_contacts")
-      .select("id")
-      .eq("organization_id", organizationId)
-      .order("created_at", { ascending: true })
-      .limit(1)
-      .maybeSingle();
-    throwIfError(contact.error);
-    if (contact.data?.id) return contact.data.id as string;
+    return contactIdForOrganization(supabase, organizationId);
+  }
+  if (row.domain === "projects") {
+    const projectId = stringValue(data, "projectId", "project_id")
+      ?? (
+        row.entity_table === "projects" && row.entity_id
+          ? row.entity_id
+          : null
+      );
+    if (projectId) {
+      const project = await db(supabase)
+        .from("projects")
+        .select("organization_id")
+        .eq("id", projectId)
+        .maybeSingle();
+      throwIfError(project.error);
+      if (typeof project.data?.organization_id === "string") {
+        return contactIdForOrganization(supabase, project.data.organization_id);
+      }
+    }
   }
   return null;
+}
+
+async function activityEventsAfterCursor(
+  supabase: unknown,
+  cursor: string | null,
+  cursorId: string | null,
+  limit: number,
+) {
+  const baseQuery = () => db(supabase)
+    .from("app_activity_events")
+    .select("*")
+    .in("domain", ["crm", "projects"]);
+  if (!cursor || !cursorId) {
+    const result = await baseQuery()
+      .order("created_at", { ascending: true })
+      .order("id", { ascending: true })
+      .limit(limit);
+    throwIfError(result.error);
+    return (result.data ?? []) as ActivityRow[];
+  }
+
+  const sameTimestamp = await baseQuery()
+    .eq("created_at", cursor)
+    .gt("id", cursorId)
+    .order("id", { ascending: true })
+    .limit(limit);
+  throwIfError(sameTimestamp.error);
+  const events = (sameTimestamp.data ?? []) as ActivityRow[];
+  if (events.length >= limit) return events;
+
+  const later = await baseQuery()
+    .gt("created_at", cursor)
+    .order("created_at", { ascending: true })
+    .order("id", { ascending: true })
+    .limit(limit - events.length);
+  throwIfError(later.error);
+  return events.concat((later.data ?? []) as ActivityRow[]);
 }
 
 export async function scanActivityTriggers(
@@ -475,22 +554,21 @@ export async function scanActivityTriggers(
 ) {
   const cursorResult = await db(supabase)
     .from("marketing_worker_cursors")
-    .select("cursor")
+    .select("cursor,cursor_id")
     .eq("key", "activity_triggers")
     .maybeSingle();
   throwIfError(cursorResult.error);
-  let query = db(supabase)
-    .from("app_activity_events")
-    .select("*")
-    .in("domain", ["crm", "projects"])
-    .order("created_at", { ascending: true })
-    .limit(Math.max(1, Math.min(options.limit ?? 100, 500)));
-  if (cursorResult.data?.cursor) {
-    query = query.gt("created_at", cursorResult.data.cursor);
-  }
-  const eventsResult = await query;
-  throwIfError(eventsResult.error);
-  const events = (eventsResult.data ?? []) as ActivityRow[];
+  const limit = Math.max(1, Math.min(options.limit ?? 100, 500));
+  const events = await activityEventsAfterCursor(
+    supabase,
+    typeof cursorResult.data?.cursor === "string"
+      ? cursorResult.data.cursor
+      : null,
+    typeof cursorResult.data?.cursor_id === "string"
+      ? cursorResult.data.cursor_id
+      : null,
+    limit,
+  );
   let enqueued = 0;
   for (const event of events) {
     const change = statusChange(event);
@@ -510,11 +588,15 @@ export async function scanActivityTriggers(
     });
   }
   if (events.length) {
-    const cursor = events[events.length - 1]!.created_at;
+    const lastEvent = events[events.length - 1]!;
     const update = await db(supabase)
       .from("marketing_worker_cursors")
       .upsert(
-        { key: "activity_triggers", cursor },
+        {
+          key: "activity_triggers",
+          cursor: lastEvent.created_at,
+          cursor_id: lastEvent.id,
+        },
         { onConflict: "key" },
       );
     throwIfError(update.error);
@@ -527,6 +609,13 @@ async function contactForSend(
   contactId: string,
   topicId: string | null,
 ) {
+  if (!topicId || !(await (await import("./server")).isEmailable(
+    supabase,
+    contactId,
+    topicId,
+  ))) {
+    return null;
+  }
   const contactResult = await db(supabase)
     .from("crm_contacts")
     .select("id,email")
@@ -535,24 +624,23 @@ async function contactForSend(
   throwIfError(contactResult.error);
   const email = contactResult.data?.email;
   if (typeof email !== "string" || !email.trim()) return null;
-  const suppressionResult = await db(supabase)
-    .from("marketing_suppressions")
-    .select("id")
-    .eq("contact_id", contactId)
-    .limit(1);
-  throwIfError(suppressionResult.error);
-  if ((suppressionResult.data ?? []).length) return null;
-  if (topicId) {
-    const subscriptionResult = await db(supabase)
-      .from("marketing_subscriptions")
-      .select("status")
-      .eq("contact_id", contactId)
-      .eq("topic_id", topicId)
-      .maybeSingle();
-    throwIfError(subscriptionResult.error);
-    if (subscriptionResult.data?.status !== "subscribed") return null;
-  }
   return { email: email.trim() };
+}
+
+async function completedStep(
+  supabase: unknown,
+  runId: string,
+  nodeId: string,
+) {
+  const result = await db(supabase)
+    .from("marketing_workflow_step_runs")
+    .select("status")
+    .eq("run_id", runId)
+    .eq("node_id", nodeId)
+    .in("status", ["done", "skipped"])
+    .maybeSingle();
+  throwIfError(result.error);
+  return Boolean(result.data);
 }
 
 function requiredString(config: Record<string, unknown>, key: string) {
@@ -635,6 +723,21 @@ async function executeRun(
       completed_at: now.toISOString(),
     });
     return "completed" as const;
+  }
+
+  if (
+    node.node_type === "send_email"
+    && await completedStep(supabase, run.id, node.id)
+  ) {
+    const nextPosition = run.current_position + 1;
+    const completed = nextPosition >= nodes.length;
+    await updateRun(supabase, run.id, {
+      current_position: nextPosition,
+      status: completed ? "completed" : "active",
+      next_run_at: completed ? null : now.toISOString(),
+      completed_at: completed ? now.toISOString() : null,
+    });
+    return completed ? "completed" as const : "advanced" as const;
   }
 
   try {

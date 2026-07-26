@@ -1,6 +1,8 @@
 import type { AccountProfile, AccountProfileInput } from "../../account/profile";
 
 export type AccountUiClient = {
+  // AccountPage loads this server-side; the method remains part of the public
+  // client contract for other consumers and explicit refreshes.
   getProfile(): Promise<AccountProfile>;
   updateProfile(input: AccountProfileInput): Promise<AccountProfile>;
 };

@@ -433,7 +433,7 @@ export function createProjectsOrganizationsGetHandler(dependencies: ProjectsHttp
 }
 
 export function createProjectsAssignableProfilesGetHandler(dependencies: ProjectsHttpDependencies) {
-  return withUserAccess(dependencies, "projects.members.list", async (access, _request, context) => {
+  return withStaffAccess(dependencies, "projects.members.list", async (access, _request, context) => {
     const { id } = await getRouteParams(context);
     return json(await dependencies.listAssignableProfiles(access.supabase as never, id));
   });

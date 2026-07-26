@@ -11,6 +11,8 @@ const appShellSourceRoot = path.join(repoRoot, "packages", "app-shell", "src");
 const crmUiSourceRoot = path.join(repoRoot, "packages", "module-crm", "src", "ui");
 const adminUiSourceRoot = path.join(repoRoot, "packages", "module-admin", "src", "ui");
 const projectsUiSourceRoot = path.join(repoRoot, "packages", "module-projects", "src", "ui");
+const marketingUiSourceRoot = path.join(repoRoot, "packages", "module-marketing", "src", "ui");
+const marketingCssPath = path.join(repoRoot, "packages", "module-marketing", "marketing.css");
 const typographyPath = path.join(repoRoot, "packages", "theme", "src", "typography.css");
 const tokensPath = path.join(repoRoot, "packages", "theme", "src", "tokens.css");
 const mqAliasesPath = path.join(repoRoot, "packages", "theme", "themes", "mq-aliases.css");
@@ -235,6 +237,15 @@ test("module Projects UI follows the BrightWeb typography and color hygiene rule
   assertPatternAbsent(files, /#[0-9a-f]{3,8}\b|rgba?\(|color-mix\(/i, "raw color recipes must be represented by theme tokens");
 });
 
+test("module Marketing UI and stylesheet follow the BrightWeb typography and color hygiene rules", async () => {
+  const files = [
+    ...await sourcesAt(marketingUiSourceRoot),
+    { filePath: marketingCssPath, source: await readFile(marketingCssPath, "utf8") },
+  ];
+  assertPatternAbsent(files, /\bfont-medium\b/, "font-medium is not part of the loaded weight ladder");
+  assertPatternAbsent(files, /#[0-9a-f]{3,8}\b|rgba?\(|color-mix\(/i, "raw color recipes must be represented by theme or marketing tokens");
+});
+
 test("package and preview selection controls use the shared Checkbox primitive", async () => {
   const packageFiles = (await sourcesAt(packagesSourceRoot)).filter(({ filePath }) => !filePath.startsWith(uiSourceRoot));
   const previewFiles = await sourcesAt(previewSourceRoot);
@@ -294,7 +305,7 @@ test("package CSS layer guard allows tokens and flags unsafe class recipes", () 
 });
 
 test("every text-ui utility used by ui exists in theme typography", async () => {
-  const files = [...await sourcesAt(uiSourceRoot), ...await sourcesAt(adminUiSourceRoot), ...await sourcesAt(crmUiSourceRoot), ...await sourcesAt(projectsUiSourceRoot)];
+  const files = [...await sourcesAt(uiSourceRoot), ...await sourcesAt(adminUiSourceRoot), ...await sourcesAt(crmUiSourceRoot), ...await sourcesAt(projectsUiSourceRoot), ...await sourcesAt(marketingUiSourceRoot)];
   const typography = await readFile(typographyPath, "utf8");
   const providedUtilities = new Set(Array.from(typography.matchAll(/@utility\s+(text-ui-[a-z0-9-]+)/g), (match) => match[1]));
   const usedUtilities = new Set(files.flatMap(({ source }) => Array.from(source.matchAll(/(?<!--)\btext-ui-[a-z0-9-]+\b/g), (match) => match[0])));
@@ -303,7 +314,7 @@ test("every text-ui utility used by ui exists in theme typography", async () => 
 });
 
 test("every MQ-compatible typography class used by packages exists in the theme aliases", async () => {
-  const files = [...await sourcesAt(uiSourceRoot), ...await sourcesAt(appShellSourceRoot), ...await sourcesAt(adminUiSourceRoot), ...await sourcesAt(crmUiSourceRoot), ...await sourcesAt(projectsUiSourceRoot)];
+  const files = [...await sourcesAt(uiSourceRoot), ...await sourcesAt(appShellSourceRoot), ...await sourcesAt(adminUiSourceRoot), ...await sourcesAt(crmUiSourceRoot), ...await sourcesAt(projectsUiSourceRoot), ...await sourcesAt(marketingUiSourceRoot)];
   const aliases = `${await readFile(mqAliasesPath, "utf8")}\n${await readFile(tokensPath, "utf8")}`;
   const used = new Set(files.flatMap(({ source }) => Array.from(source.matchAll(/\b(?:paragraph|portal)-[a-z0-9-]+\b/g), (match) => match[0])));
   const missing = Array.from(used).filter((utility) => !aliases.includes(utility)).sort();

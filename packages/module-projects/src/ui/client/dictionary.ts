@@ -75,7 +75,7 @@ export const clientProjectsDictionary = {
     active: "Ativos",
     onTime: "No prazo",
     schemaMissing: "O módulo de projetos ainda não está provisionado nesta base de dados.",
-    loadError: "Não foi possível carregar os projetos:",
+    loadError: "Não foi possível carregar os projetos.",
     empty: "Não existem projetos visíveis para o teu perfil neste momento.",
     milestones: (achieved: number, total: number) => `${achieved}/${total} marcos`,
     noMilestones: "Sem marcos",

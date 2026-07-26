@@ -1,7 +1,10 @@
 import assert from "node:assert/strict";
 import { createHmac } from "node:crypto";
 import test from "node:test";
-import { expandCampaignRecipients } from "../packages/module-marketing/src/campaigns";
+import {
+  expandCampaignRecipients,
+  sendTestEmail,
+} from "../packages/module-marketing/src/campaigns";
 import { previewSegment } from "../packages/module-marketing/src/segments";
 import type {
   MarketingEmailMessage,
@@ -9,9 +12,11 @@ import type {
 } from "../packages/module-marketing/src/email/types";
 import { runMarketingWorker } from "../packages/module-marketing/src/worker";
 import { processResendWebhook } from "../packages/module-marketing/src/webhooks";
+import { unsubscribeTopic } from "../packages/module-marketing/src/server";
 import {
   enqueueWorkflowRunsForTrigger,
   processDueWorkflowRuns,
+  scanActivityTriggers,
 } from "../packages/module-marketing/src/workflows";
 
 type Row = Record<string, any>;
@@ -40,6 +45,7 @@ class FakeQuery implements PromiseLike<any> {
   private head = false;
   private limitValue: number | null = null;
   private ignoreDuplicates = false;
+  private orders: Array<{ key: string; ascending: boolean }> = [];
 
   constructor(tables: Tables, table: string) {
     this.tables = tables;
@@ -109,7 +115,8 @@ class FakeQuery implements PromiseLike<any> {
     return this;
   }
 
-  order() {
+  order(key: string, options?: { ascending?: boolean }) {
+    this.orders.push({ key, ascending: options?.ascending !== false });
     return this;
   }
 
@@ -136,9 +143,17 @@ class FakeQuery implements PromiseLike<any> {
   }
 
   private matchingRows() {
-    return (this.tables[this.table] ?? []).filter((row) =>
+    const rows = (this.tables[this.table] ?? []).filter((row) =>
       this.filters.every((filter) => valueMatches(row, filter))
     );
+    return rows.toSorted((left, right) => {
+      for (const order of this.orders) {
+        const comparison = String(left[order.key] ?? "")
+          .localeCompare(String(right[order.key] ?? ""));
+        if (comparison) return order.ascending ? comparison : -comparison;
+      }
+      return 0;
+    });
   }
 
   private execute() {
@@ -249,16 +264,36 @@ function fakeSupabase(tables: Tables) {
       const campaignId = args.target_campaign_id;
       const limit = Number(args.claim_limit);
       const claimTime = String(args.claim_time);
+      const staleBefore = new Date(
+        new Date(claimTime).getTime() - 15 * 60_000,
+      ).toISOString();
       const claimed = tables.marketing_campaign_recipients
         .filter((row) =>
           row.campaign_id === campaignId
-          && row.status === "queued"
-          && (!row.next_attempt_at || row.next_attempt_at <= claimTime)
+          && (
+            (
+              row.status === "queued"
+              && (!row.next_attempt_at || row.next_attempt_at <= claimTime)
+            )
+            || (
+              row.status === "failed"
+              && row.attempt_count < 3
+              && row.next_attempt_at
+              && row.next_attempt_at <= claimTime
+            )
+            || (
+              row.status === "sending"
+              && row.attempt_count < 3
+              && row.updated_at <= staleBefore
+            )
+          )
         )
         .slice(0, limit);
       for (const row of claimed) {
         row.status = "sending";
         row.attempt_count += 1;
+        row.next_attempt_at = null;
+        row.updated_at = claimTime;
       }
       return { data: claimed.map((row) => ({ ...row })), error: null };
     },
@@ -367,7 +402,11 @@ test("workflow processor sends, waits, tags, skips suppressed sends, and complet
         workflow_id: "suppressed",
         position: 0,
         node_type: "send_email",
-        config: { subject: "Nope", bodyText: "Nope" },
+        config: {
+          subject: "Nope",
+          bodyText: "Nope",
+          topicId: "topic-1",
+        },
       },
     ],
     marketing_workflow_runs: [
@@ -386,8 +425,12 @@ test("workflow processor sends, waits, tags, skips suppressed sends, and complet
     ],
     marketing_subscriptions: [
       { contact_id: "contact-1", topic_id: "topic-1", status: "subscribed" },
+      { contact_id: "contact-2", topic_id: "topic-1", status: "subscribed" },
     ],
-    marketing_suppressions: [{ id: "suppression", contact_id: "contact-2" }],
+    marketing_suppressions: [{
+      id: "suppression",
+      email: "blocked@example.com",
+    }],
     marketing_contact_tags: [],
     marketing_workflow_step_runs: [],
     marketing_message_events: [],
@@ -434,6 +477,141 @@ test("workflow processor sends, waits, tags, skips suppressed sends, and complet
     )?.status,
     "skipped",
   );
+});
+
+test("workflow activity scan matches real CRM and project status rows with a keyset cursor", async () => {
+  const sharedTimestamp = "2026-07-25T12:00:00.000Z";
+  const laterTimestamp = "2026-07-25T12:01:00.000Z";
+  const tables: Tables = {
+    marketing_worker_cursors: [{
+      key: "activity_triggers",
+      cursor: sharedTimestamp,
+      cursor_id: "00000000-0000-4000-8000-000000000001",
+    }],
+    app_activity_events: [
+      {
+        id: "00000000-0000-4000-8000-000000000002",
+        created_at: sharedTimestamp,
+        domain: "crm",
+        event_type: "crm_contact_status_changed",
+        entity_table: "crm_contacts",
+        entity_id: "contact-crm",
+        payload: {
+          contact_id: "contact-crm",
+          changes: { status: { from: "lead", to: "customer" } },
+        },
+      },
+      {
+        id: "00000000-0000-4000-8000-000000000003",
+        created_at: laterTimestamp,
+        domain: "projects",
+        event_type: "project_status_changed",
+        entity_table: "projects",
+        entity_id: "project-1",
+        payload: {
+          project_id: "project-1",
+          previous_status: "planned",
+          new_status: "active",
+        },
+      },
+    ],
+    marketing_workflows: [
+      {
+        id: "crm-workflow",
+        status: "active",
+        trigger_type: "crm_status_changed",
+        trigger_config: { toStatus: "customer" },
+      },
+      {
+        id: "project-workflow",
+        status: "active",
+        trigger_type: "project_status_changed",
+        trigger_config: { toStatus: "active" },
+      },
+    ],
+    marketing_workflow_runs: [],
+    projects: [{ id: "project-1", organization_id: "organization-1" }],
+    crm_contacts: [
+      { id: "contact-crm", organization_id: null },
+      {
+        id: "contact-project",
+        organization_id: "organization-1",
+        created_at: "2026-01-01T00:00:00.000Z",
+      },
+    ],
+  };
+  const supabase = fakeSupabase(tables);
+
+  assert.deepEqual(
+    await scanActivityTriggers(supabase, { limit: 1 }),
+    { scanned: 1, enqueued: 1 },
+  );
+  assert.equal(
+    tables.marketing_worker_cursors[0]?.cursor_id,
+    "00000000-0000-4000-8000-000000000002",
+  );
+  assert.deepEqual(
+    await scanActivityTriggers(supabase, { limit: 1 }),
+    { scanned: 1, enqueued: 1 },
+  );
+  assert.deepEqual(
+    tables.marketing_workflow_runs.map((row) => ({
+      workflow_id: row.workflow_id,
+      contact_id: row.contact_id,
+    })),
+    [
+      { workflow_id: "crm-workflow", contact_id: "contact-crm" },
+      { workflow_id: "project-workflow", contact_id: "contact-project" },
+    ],
+  );
+});
+
+test("workflow send does not repeat after a crash left the run position stale", async () => {
+  const tables: Tables = {
+    marketing_workflows: [{ id: "workflow-1", status: "active" }],
+    marketing_workflow_nodes: [{
+      id: "send-node",
+      workflow_id: "workflow-1",
+      position: 0,
+      node_type: "send_email",
+      config: {
+        subject: "Already sent",
+        bodyText: "Do not repeat",
+        topicId: "topic-1",
+      },
+    }],
+    marketing_workflow_runs: [workflowRun({ id: "crashed-run" })],
+    marketing_workflow_step_runs: [{
+      id: "completed-step",
+      run_id: "crashed-run",
+      node_id: "send-node",
+      status: "done",
+    }],
+  };
+  let sends = 0;
+  const sender: MarketingEmailSender = {
+    async sendOne() {
+      sends += 1;
+      return { ok: true, providerMessageId: "unexpected" };
+    },
+    async sendBatch(messages) {
+      sends += messages.length;
+      return messages.map(() => ({
+        ok: true as const,
+        providerMessageId: "unexpected",
+      }));
+    },
+  };
+
+  const result = await processDueWorkflowRuns(
+    fakeSupabase(tables),
+    { sender, now: () => new Date("2026-07-25T12:00:00.000Z") },
+  );
+
+  assert.deepEqual(result, { claimed: 1, completed: 1, failed: 0 });
+  assert.equal(sends, 0);
+  assert.equal(tables.marketing_workflow_runs[0]?.status, "completed");
+  assert.equal(tables.marketing_workflow_runs[0]?.current_position, 1);
 });
 
 function campaign(overrides: Row = {}) {
@@ -494,6 +672,120 @@ test("campaign expansion queues only topic opt-ins and records suppressions", as
     ],
   );
   assert.equal(tables.marketing_campaigns[0]?.total_recipients, 2);
+});
+
+test("test send blocks a suppressed address before calling the sender", async () => {
+  const tables: Tables = {
+    marketing_campaigns: [campaign()],
+    marketing_suppressions: [{ id: "suppression-1", email: "blocked@example.com" }],
+  };
+  let sends = 0;
+  const sender: MarketingEmailSender = {
+    async sendOne() {
+      sends += 1;
+      return { ok: true, providerMessageId: "unexpected" };
+    },
+    async sendBatch() {
+      throw new Error("not used");
+    },
+  };
+
+  await assert.rejects(
+    sendTestEmail(
+      fakeSupabase(tables),
+      "campaign-1",
+      " BLOCKED@example.com ",
+      sender,
+    ),
+    /suppressed/,
+  );
+  assert.equal(sends, 0);
+});
+
+test("topic unsubscribe suppresses queued and sending recipients only for that topic", async () => {
+  const tables: Tables = {
+    marketing_contact_settings: [{
+      contact_id: "contact-1",
+      unsubscribe_token: "token-1",
+    }],
+    crm_contacts: [{
+      id: "contact-1",
+      first_name: "Ada",
+      last_name: "Lovelace",
+      email: "ada@example.com",
+    }],
+    marketing_topics: [
+      {
+        id: "topic-1",
+        slug: "news",
+        label: "News",
+        description: null,
+        is_active: true,
+        position: 0,
+        created_at: "2026-01-01T00:00:00.000Z",
+        updated_at: "2026-01-01T00:00:00.000Z",
+      },
+      {
+        id: "topic-2",
+        slug: "events",
+        label: "Events",
+        description: null,
+        is_active: true,
+        position: 1,
+        created_at: "2026-01-01T00:00:00.000Z",
+        updated_at: "2026-01-01T00:00:00.000Z",
+      },
+    ],
+    marketing_subscriptions: [
+      {
+        id: "subscription-1",
+        contact_id: "contact-1",
+        topic_id: "topic-1",
+        status: "subscribed",
+        consent_source: "form",
+        consent_at: "2026-01-01T00:00:00.000Z",
+        unsubscribed_at: null,
+        created_at: "2026-01-01T00:00:00.000Z",
+        updated_at: "2026-01-01T00:00:00.000Z",
+      },
+      {
+        id: "subscription-2",
+        contact_id: "contact-1",
+        topic_id: "topic-2",
+        status: "subscribed",
+        consent_source: "form",
+        consent_at: "2026-01-01T00:00:00.000Z",
+        unsubscribed_at: null,
+        created_at: "2026-01-01T00:00:00.000Z",
+        updated_at: "2026-01-01T00:00:00.000Z",
+      },
+    ],
+    marketing_campaigns: [
+      campaign({ id: "campaign-topic-1", topic_id: "topic-1", status: "sending" }),
+      campaign({ id: "campaign-topic-2", topic_id: "topic-2", status: "sending" }),
+    ],
+    marketing_campaign_recipients: [
+      {
+        id: "recipient-topic-1",
+        campaign_id: "campaign-topic-1",
+        contact_id: "contact-1",
+        email: "ada@example.com",
+        status: "queued",
+      },
+      {
+        id: "recipient-topic-2",
+        campaign_id: "campaign-topic-2",
+        contact_id: "contact-1",
+        email: "ada@example.com",
+        status: "queued",
+      },
+    ],
+  };
+
+  await unsubscribeTopic(fakeSupabase(tables), "token-1", "topic-1");
+
+  assert.equal(tables.marketing_campaign_recipients[0]?.status, "suppressed");
+  assert.equal(tables.marketing_campaign_recipients[1]?.status, "queued");
 });
 
 test("segment preview combines topic, engagement, and suppression filters", async () => {
@@ -639,6 +931,15 @@ test("worker claims once and records fake sender sent/failed outcomes", async ()
       { contact_id: "contact-1", unsubscribe_token: "token-1" },
       { contact_id: "contact-2", unsubscribe_token: "token-2" },
     ],
+    crm_contacts: [
+      { id: "contact-1", email: "one@example.com" },
+      { id: "contact-2", email: "two@example.com" },
+    ],
+    marketing_subscriptions: [
+      { contact_id: "contact-1", topic_id: "topic-1", status: "subscribed" },
+      { contact_id: "contact-2", topic_id: "topic-1", status: "subscribed" },
+    ],
+    marketing_suppressions: [],
   };
   const sentMessages: MarketingEmailMessage[] = [];
   const sender: MarketingEmailSender = {
@@ -681,9 +982,177 @@ test("worker claims once and records fake sender sent/failed outcomes", async ()
   );
   assert.equal(tables.marketing_campaign_recipients[1]?.status, "failed");
   assert.equal(tables.marketing_campaign_recipients[1]?.attempt_count, 1);
-  assert.equal(tables.marketing_campaigns[0]?.status, "sent");
+  assert.equal(tables.marketing_campaigns[0]?.status, "sending");
   assert.equal(tables.marketing_campaigns[0]?.sent_count, 1);
   assert.equal(tables.marketing_campaigns[0]?.failed_count, 1);
+});
+
+test("worker re-checks consent and suppression after recipients were queued", async () => {
+  const tables: Tables = {
+    marketing_campaigns: [campaign({ status: "sending", total_recipients: 2 })],
+    marketing_campaign_recipients: [
+      {
+        id: "unsubscribed-recipient",
+        campaign_id: "campaign-1",
+        contact_id: "contact-1",
+        email: "unsubscribed@example.com",
+        status: "queued",
+        attempt_count: 0,
+        next_attempt_at: null,
+      },
+      {
+        id: "suppressed-recipient",
+        campaign_id: "campaign-1",
+        contact_id: "contact-2",
+        email: "suppressed@example.com",
+        status: "queued",
+        attempt_count: 0,
+        next_attempt_at: null,
+      },
+    ],
+    crm_contacts: [
+      { id: "contact-1", email: "unsubscribed@example.com" },
+      { id: "contact-2", email: "suppressed@example.com" },
+    ],
+    marketing_subscriptions: [
+      { contact_id: "contact-1", topic_id: "topic-1", status: "unsubscribed" },
+      { contact_id: "contact-2", topic_id: "topic-1", status: "subscribed" },
+    ],
+    marketing_suppressions: [{ email: "suppressed@example.com" }],
+    marketing_contact_settings: [],
+  };
+  let sends = 0;
+  const sender: MarketingEmailSender = {
+    async sendOne() {
+      throw new Error("not used");
+    },
+    async sendBatch(messages) {
+      sends += messages.length;
+      return messages.map(() => ({
+        ok: true as const,
+        providerMessageId: "unexpected",
+      }));
+    },
+  };
+
+  const result = await runMarketingWorker({
+    supabase: fakeSupabase(tables),
+    sender,
+    now: () => new Date("2026-07-25T13:00:00.000Z"),
+  });
+
+  assert.equal(result.claimed, 2);
+  assert.equal(sends, 0);
+  assert.deepEqual(
+    tables.marketing_campaign_recipients.map((row) => row.status),
+    ["suppressed", "suppressed"],
+  );
+});
+
+test("worker automatically retries a due failed recipient up to the attempt limit", async () => {
+  const tables: Tables = {
+    marketing_campaigns: [campaign({ status: "sending", total_recipients: 1 })],
+    marketing_campaign_recipients: [{
+      id: "failed-recipient",
+      campaign_id: "campaign-1",
+      contact_id: "contact-1",
+      email: "retry@example.com",
+      status: "failed",
+      attempt_count: 1,
+      next_attempt_at: "2026-07-25T12:59:00.000Z",
+      updated_at: "2026-07-25T12:58:00.000Z",
+    }],
+    crm_contacts: [{ id: "contact-1", email: "retry@example.com" }],
+    marketing_subscriptions: [
+      { contact_id: "contact-1", topic_id: "topic-1", status: "subscribed" },
+    ],
+    marketing_suppressions: [],
+    marketing_contact_settings: [],
+  };
+  const sender: MarketingEmailSender = {
+    async sendOne() {
+      throw new Error("not used");
+    },
+    async sendBatch(messages) {
+      return messages.map(() => ({
+        ok: true as const,
+        providerMessageId: "retry-success",
+      }));
+    },
+  };
+
+  const result = await runMarketingWorker({
+    supabase: fakeSupabase(tables),
+    sender,
+    now: () => new Date("2026-07-25T13:00:00.000Z"),
+  });
+
+  assert.equal(result.claimed, 1);
+  assert.equal(result.sent, 1);
+  assert.equal(tables.marketing_campaign_recipients[0]?.attempt_count, 2);
+  assert.equal(tables.marketing_campaign_recipients[0]?.status, "sent");
+});
+
+test("worker reclaims only stale sending recipients", async () => {
+  const tables: Tables = {
+    marketing_campaigns: [campaign({ status: "sending", total_recipients: 2 })],
+    marketing_campaign_recipients: [
+      {
+        id: "stale-recipient",
+        campaign_id: "campaign-1",
+        contact_id: "contact-1",
+        email: "stale@example.com",
+        status: "sending",
+        attempt_count: 1,
+        next_attempt_at: null,
+        updated_at: "2026-07-25T12:30:00.000Z",
+      },
+      {
+        id: "fresh-recipient",
+        campaign_id: "campaign-1",
+        contact_id: "contact-2",
+        email: "fresh@example.com",
+        status: "sending",
+        attempt_count: 1,
+        next_attempt_at: null,
+        updated_at: "2026-07-25T12:55:00.000Z",
+      },
+    ],
+    crm_contacts: [
+      { id: "contact-1", email: "stale@example.com" },
+      { id: "contact-2", email: "fresh@example.com" },
+    ],
+    marketing_subscriptions: [
+      { contact_id: "contact-1", topic_id: "topic-1", status: "subscribed" },
+      { contact_id: "contact-2", topic_id: "topic-1", status: "subscribed" },
+    ],
+    marketing_suppressions: [],
+    marketing_contact_settings: [],
+  };
+  const sent: string[] = [];
+  const sender: MarketingEmailSender = {
+    async sendOne() {
+      throw new Error("not used");
+    },
+    async sendBatch(messages) {
+      sent.push(...messages.map((message) => message.to));
+      return messages.map(() => ({
+        ok: true as const,
+        providerMessageId: "reclaimed",
+      }));
+    },
+  };
+
+  const result = await runMarketingWorker({
+    supabase: fakeSupabase(tables),
+    sender,
+    now: () => new Date("2026-07-25T13:00:00.000Z"),
+  });
+
+  assert.equal(result.claimed, 1);
+  assert.deepEqual(sent, ["stale@example.com"]);
+  assert.equal(tables.marketing_campaign_recipients[0]?.status, "sent");
+  assert.equal(tables.marketing_campaign_recipients[1]?.status, "sending");
 });
 
 function signedWebhook(body: string, secret: string) {
@@ -702,14 +1171,24 @@ function signedWebhook(body: string, secret: string) {
 
 test("verified bounce webhook deduplicates and suppresses the contact", async () => {
   const tables: Tables = {
-    marketing_campaign_recipients: [{
-      id: "recipient-1",
-      campaign_id: "campaign-1",
-      contact_id: "contact-1",
-      email: "bounce@example.com",
-      provider_message_id: "provider-1",
-      status: "sent",
-    }],
+    marketing_campaign_recipients: [
+      {
+        id: "recipient-1",
+        campaign_id: "campaign-1",
+        contact_id: "contact-1",
+        email: "bounce@example.com",
+        provider_message_id: "provider-1",
+        status: "sent",
+      },
+      {
+        id: "recipient-queued",
+        campaign_id: "campaign-2",
+        contact_id: "contact-1",
+        email: "bounce@example.com",
+        provider_message_id: null,
+        status: "queued",
+      },
+    ],
     marketing_message_events: [],
     marketing_suppressions: [],
     marketing_subscriptions: [{
@@ -734,6 +1213,7 @@ test("verified bounce webhook deduplicates and suppresses the contact", async ()
   assert.equal(second.duplicate, true);
   assert.equal(tables.marketing_message_events.length, 1);
   assert.equal(tables.marketing_campaign_recipients[0]?.status, "suppressed");
+  assert.equal(tables.marketing_campaign_recipients[1]?.status, "suppressed");
   assert.equal(tables.marketing_suppressions[0]?.email, "bounce@example.com");
   assert.equal(tables.marketing_suppressions[0]?.reason, "bounced");
   assert.equal(tables.marketing_subscriptions[0]?.status, "unsubscribed");

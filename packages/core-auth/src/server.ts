@@ -66,6 +66,26 @@ export type ProjectReadAccess =
     error: string;
   };
 
+type ProjectReadAccessDependencies = {
+  getAccess(): Promise<ServerUserAccess>;
+  getServiceClient(): ReturnType<typeof requireServiceRoleClient>;
+};
+
+function projectReadQueryError(
+  context: string,
+  error: { code?: string; message?: string },
+): Extract<ProjectReadAccess, { ok: false }> {
+  console.error(`[core-auth.requireProjectReadAccess.${context}]`, {
+    code: error.code,
+    message: error.message,
+  });
+  return {
+    ok: false,
+    status: 503,
+    error: "Não foi possível validar o acesso ao projeto.",
+  };
+}
+
 export async function requireServerUserAccess(): Promise<ServerUserAccess> {
   const supabase = await createServerSupabase();
   const {
@@ -174,68 +194,86 @@ export async function requireServerRoleAccess(allowedRoles: GlobalRole | GlobalR
   return { ok: true, supabase, user, profileId, role };
 }
 
-export async function requireProjectReadAccess(projectId: string): Promise<ProjectReadAccess> {
-  const access = await requireServerUserAccess();
-  if (!access.ok) {
-    return access.status === 409
-      ? { ok: false, status: 403, error: "Perfil não encontrado." }
-      : access;
-  }
-  if (!access.role) {
-    return { ok: false, status: 403, error: "Acesso proibido." };
-  }
-  if (access.role === "admin") {
-    return { ...access, role: access.role };
-  }
+export function createProjectReadAccessGuard(
+  dependencies: ProjectReadAccessDependencies,
+): (projectId: string) => Promise<ProjectReadAccess> {
+  return async function projectReadAccess(projectId: string): Promise<ProjectReadAccess> {
+    const access = await dependencies.getAccess();
+    if (!access.ok) {
+      return access.status === 409
+        ? { ok: false, status: 403, error: "Perfil não encontrado." }
+        : access;
+    }
+    if (!access.role) {
+      return { ok: false, status: 404, error: "Projeto não encontrado." };
+    }
+    if (access.role === "admin") {
+      return { ...access, role: access.role };
+    }
 
-  const serviceSupabase = requireServiceRoleClient();
-  const { data: project } = await serviceSupabase
-    .from("projects")
-    .select("id, organization_id, owner_profile_id")
-    .eq("id", projectId)
-    .maybeSingle<{
-      id: string;
-      organization_id: string | null;
-      owner_profile_id: string | null;
-    }>();
+    const serviceSupabase = dependencies.getServiceClient();
+    const { data: project, error: projectError } = await serviceSupabase
+      .from("projects")
+      .select("id, organization_id, owner_profile_id")
+      .eq("id", projectId)
+      .maybeSingle<{
+        id: string;
+        organization_id: string | null;
+        owner_profile_id: string | null;
+      }>();
 
-  if (!project?.id) {
-    return { ok: false, status: 404, error: "Projeto não encontrado." };
-  }
+    if (projectError) return projectReadQueryError("project", projectError);
+    if (!project?.id) {
+      return { ok: false, status: 404, error: "Projeto não encontrado." };
+    }
 
-  const { data: membership } = await serviceSupabase
-    .from("project_members")
-    .select("role")
-    .eq("project_id", projectId)
-    .eq("profile_id", access.profileId)
-    .maybeSingle<{ role: string }>();
-
-  if (
-    membership?.role === "owner"
-    || membership?.role === "contributor"
-    || membership?.role === "observer"
-  ) {
-    return { ...access, role: access.role };
-  }
-
-  if (project.owner_profile_id === access.profileId) {
-    return { ...access, role: access.role };
-  }
-
-  if (project.organization_id) {
-    const { data: organizationMembership } = await serviceSupabase
-      .from("organization_members")
+    const { data: membership, error: membershipError } = await serviceSupabase
+      .from("project_members")
       .select("role")
-      .eq("organization_id", project.organization_id)
+      .eq("project_id", projectId)
       .eq("profile_id", access.profileId)
       .maybeSingle<{ role: string }>();
 
-    if (organizationMembership?.role) {
+    if (membershipError) return projectReadQueryError("membership", membershipError);
+    if (
+      membership?.role === "owner"
+      || membership?.role === "contributor"
+      || membership?.role === "observer"
+    ) {
       return { ...access, role: access.role };
     }
-  }
 
-  return { ok: false, status: 403, error: "Acesso proibido." };
+    if (project.owner_profile_id === access.profileId) {
+      return { ...access, role: access.role };
+    }
+
+    if (project.organization_id) {
+      const { data: organizationMembership, error: organizationMembershipError } = await serviceSupabase
+        .from("organization_members")
+        .select("role")
+        .eq("organization_id", project.organization_id)
+        .eq("profile_id", access.profileId)
+        .maybeSingle<{ role: string }>();
+
+      if (organizationMembershipError) {
+        return projectReadQueryError("organizationMembership", organizationMembershipError);
+      }
+      // By design, every organization member can read every project in that organization.
+      if (organizationMembership?.role) {
+        return { ...access, role: access.role };
+      }
+    }
+
+    // Missing and forbidden projects intentionally share one response to prevent enumeration.
+    return { ok: false, status: 404, error: "Projeto não encontrado." };
+  };
+}
+
+export async function requireProjectReadAccess(projectId: string): Promise<ProjectReadAccess> {
+  return createProjectReadAccessGuard({
+    getAccess: requireServerUserAccess,
+    getServiceClient: requireServiceRoleClient,
+  })(projectId);
 }
 
 export async function getProfileIdForUser(

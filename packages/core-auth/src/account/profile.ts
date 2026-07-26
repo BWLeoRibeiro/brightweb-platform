@@ -2,6 +2,7 @@ import type { User } from "@supabase/supabase-js";
 import type { createServerSupabase } from "@brightweblabs/infra/server";
 
 export const ACCOUNT_LANGUAGES = ["pt-PT", "en"] as const;
+export const ACCOUNT_NAME_MAX_LENGTH = 80;
 
 export type AccountLanguage = (typeof ACCOUNT_LANGUAGES)[number];
 
@@ -46,6 +47,10 @@ function normalizeLanguage(value: unknown): AccountLanguage {
 
 function normalizeName(value: string): string {
   return value.trim().replace(/\s+/g, " ");
+}
+
+function isAccountLanguage(value: unknown): value is AccountLanguage {
+  return ACCOUNT_LANGUAGES.includes(value as AccountLanguage);
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -165,9 +170,22 @@ export async function updateCurrentAccountProfile(
   user: User,
   input: AccountProfileInput,
 ): Promise<AccountProfileResult> {
+  if (typeof input.firstName !== "string" || typeof input.lastName !== "string") {
+    return { ok: false, error: "Nome inválido." };
+  }
+
   const firstName = normalizeName(input.firstName);
   const lastName = normalizeName(input.lastName);
-  const preferredLanguage = normalizeLanguage(input.preferredLanguage);
+  if (firstName.length > ACCOUNT_NAME_MAX_LENGTH || lastName.length > ACCOUNT_NAME_MAX_LENGTH) {
+    return {
+      ok: false,
+      error: `Nome inválido. Limite máximo de ${ACCOUNT_NAME_MAX_LENGTH} caracteres por campo.`,
+    };
+  }
+  if (!isAccountLanguage(input.preferredLanguage)) {
+    return { ok: false, error: "Idioma inválido." };
+  }
+  const preferredLanguage = input.preferredLanguage;
 
   const accountProfile = await getCurrentAccountProfile(supabase, user.id, user.email ?? null);
   if (!accountProfile.ok) return accountProfile;
@@ -194,6 +212,9 @@ export async function updateCurrentAccountProfile(
   const profileId = upsertedProfile?.id;
   if (!profileId) return { ok: false, error: "Não foi possível resolver o perfil da conta." };
 
+  // These caller-scoped upserts are not atomic: the profile must exist before its
+  // preference FK can be written. Both failures are checked and retries are safe
+  // because both writes are upserts; a preference failure is returned explicitly.
   const { error: preferencesError } = await supabase
     .from("user_preferences")
     .upsert(
@@ -206,12 +227,21 @@ export async function updateCurrentAccountProfile(
 
   if (preferencesError) return { ok: false, error: preferencesError.message };
 
-  await supabase.auth.updateUser({
+  const { error: authMetadataError } = await supabase.auth.updateUser({
     data: {
       first_name: firstName || null,
       last_name: lastName || null,
     },
   });
+  if (authMetadataError) {
+    // The database-backed account fields are authoritative and already persisted.
+    // Metadata is best-effort compatibility data, so report the provider failure
+    // server-side without turning a completed database write into a false failure.
+    console.error("[core-auth.updateCurrentAccountProfile.authMetadata]", {
+      userId: user.id,
+      message: authMetadataError.message,
+    });
+  }
 
   return getCurrentAccountProfile(supabase, user.id, email);
 }

@@ -160,7 +160,7 @@ function RecipientPanel({ recipients, dictionary }: {
           {recipients.map((recipient) => (
             <div className="marketing-recipient-row" key={recipient.id}>
               <div className="min-w-0">
-                <p className="truncate text-sm font-medium">{recipient.email}</p>
+                <p className="truncate text-sm font-semibold">{recipient.email}</p>
                 {recipient.error ? <p className="truncate text-xs text-destructive">{recipient.error}</p> : null}
               </div>
               <Badge className={recipientTone[recipient.status]}>
@@ -321,7 +321,7 @@ export function MarketingClient({
   const sendTest = async () => {
     const email = testEmail.trim();
     if (!email) {
-      toast.error(dictionary.editor.fields.testEmail);
+      toast.error(dictionary.feedback.required);
       return;
     }
     const campaign = activeCampaign ?? await persist();
@@ -410,7 +410,7 @@ export function MarketingClient({
             <div>
               <p className="marketing-kicker">{dictionary.list.title}</p>
               <p className="text-sm text-muted-foreground">
-                {campaigns.length} campanha{campaigns.length === 1 ? "" : "s"}
+                {dictionary.list.campaignCount(campaigns.length)}
               </p>
             </div>
             <Mail className="text-muted-foreground" aria-hidden="true" />
@@ -621,7 +621,7 @@ export function MarketingClient({
           <footer className="marketing-editor-footer">
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
               <Clock3 className={busy ? "size-3.5 animate-pulse" : "size-3.5"} />
-              {busy ? dictionary.editor.saving : "HTML simples e tokens seguros"}
+              {busy ? dictionary.editor.saving : dictionary.editor.safeHtml}
             </div>
             <Button disabled={busy !== null} onClick={() => void persist()} variant="outline">
               {busy === "save" ? dictionary.editor.saving : dictionary.editor.save}

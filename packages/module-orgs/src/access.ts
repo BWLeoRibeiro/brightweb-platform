@@ -16,8 +16,20 @@ type OrganizationAccessError = {
   error: string;
 };
 
-async function resolveBaseOrganizationAccess(): Promise<OrganizationBaseAccess | OrganizationAccessError> {
-  const access = await requireServerUserAccess();
+export type OrganizationAccessDependencies = {
+  getAccess: typeof requireServerUserAccess;
+  getServiceClient: typeof requireServiceRoleClient;
+};
+
+const defaultOrganizationAccessDependencies: OrganizationAccessDependencies = {
+  getAccess: requireServerUserAccess,
+  getServiceClient: requireServiceRoleClient,
+};
+
+async function resolveBaseOrganizationAccess(
+  dependencies: OrganizationAccessDependencies,
+): Promise<OrganizationBaseAccess | OrganizationAccessError> {
+  const access = await dependencies.getAccess();
   if (!access.ok) {
     return access.status === 409
       ? { ok: false, status: 403, error: "Perfil não encontrado." }
@@ -26,7 +38,7 @@ async function resolveBaseOrganizationAccess(): Promise<OrganizationBaseAccess |
   if (!access.role) return { ok: false, status: 403, error: "Acesso proibido." };
 
   return {
-    serviceSupabase: requireServiceRoleClient(),
+    serviceSupabase: dependencies.getServiceClient(),
     user: access.user,
     role: access.role,
     profileId: access.profileId,
@@ -39,29 +51,45 @@ function isAccessError(
   return "ok" in access && access.ok === false;
 }
 
+export function createOrganizationsStaffAccessGuard(
+  dependencies: OrganizationAccessDependencies,
+) {
+  return async function organizationsStaffAccess() {
+    const base = await resolveBaseOrganizationAccess(dependencies);
+    if (isAccessError(base)) return base;
+    if (base.role !== "admin" && base.role !== "staff") {
+      return { ok: false, status: 403, error: "Acesso proibido." } as const;
+    }
+    return { ok: true, ...base } as const;
+  };
+}
+
+export function createOrganizationManageAccessGuard(
+  dependencies: OrganizationAccessDependencies,
+) {
+  return async function organizationManageAccess(organizationId: string) {
+    const base = await resolveBaseOrganizationAccess(dependencies);
+    if (isAccessError(base)) return base;
+    if (base.role === "admin" || base.role === "staff") {
+      return { ok: true, ...base, isOrgMember: true, isOrgAdmin: true } as const;
+    }
+
+    const { data, error } = await base.serviceSupabase
+      .from("organization_members")
+      .select("role")
+      .eq("organization_id", organizationId)
+      .eq("profile_id", base.profileId)
+      .maybeSingle<{ role: string }>();
+    if (error) return { ok: false, status: 500, error: error.message } as const;
+    if (data?.role !== "admin") return { ok: false, status: 403, error: "Acesso proibido." } as const;
+    return { ok: true, ...base, isOrgMember: true, isOrgAdmin: true } as const;
+  };
+}
+
 export async function requireOrganizationsStaffAccess() {
-  const base = await resolveBaseOrganizationAccess();
-  if (isAccessError(base)) return base;
-  if (base.role !== "admin" && base.role !== "staff") {
-    return { ok: false, status: 403, error: "Acesso proibido." } as const;
-  }
-  return { ok: true, ...base } as const;
+  return createOrganizationsStaffAccessGuard(defaultOrganizationAccessDependencies)();
 }
 
 export async function requireOrganizationManageAccess(organizationId: string) {
-  const base = await resolveBaseOrganizationAccess();
-  if (isAccessError(base)) return base;
-  if (base.role === "admin" || base.role === "staff") {
-    return { ok: true, ...base, isOrgMember: true, isOrgAdmin: true } as const;
-  }
-
-  const { data, error } = await base.serviceSupabase
-    .from("organization_members")
-    .select("role")
-    .eq("organization_id", organizationId)
-    .eq("profile_id", base.profileId)
-    .maybeSingle<{ role: string }>();
-  if (error) return { ok: false, status: 500, error: error.message } as const;
-  if (data?.role !== "admin") return { ok: false, status: 403, error: "Acesso proibido." } as const;
-  return { ok: true, ...base, isOrgMember: true, isOrgAdmin: true } as const;
+  return createOrganizationManageAccessGuard(defaultOrganizationAccessDependencies)(organizationId);
 }

@@ -107,9 +107,8 @@ export async function ClientProjectDetailPage({
     if (isProjectsSchemaMissingError(error)) {
       schemaMissing = true;
     } else {
-      loadError = error instanceof Error
-        ? error.message
-        : dictionary.unexpectedLoadError;
+      console.error("Failed to load client project detail.", error);
+      loadError = dictionary.unexpectedLoadError;
     }
   }
 

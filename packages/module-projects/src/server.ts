@@ -480,17 +480,21 @@ export async function listProjects(
 export async function listOrgAdminProjectsByProfile(
   supabase: SupabaseClient,
   profileId: string,
-  options?: { limit?: number },
+  options?: { limit?: number; skipAdminRoleCheck?: boolean },
 ): Promise<ProjectListItem[]> {
   const limit = typeof options?.limit === "number" && options.limit > 0 ? options.limit : 20;
-  const { data: internalAssignments, error: internalAssignmentsError } = await supabase
-    .from("user_role_assignments")
-    .select("role_code")
-    .eq("profile_id", profileId)
-    .eq("role_code", "admin");
+  let isBegreenAdmin = false;
 
-  if (internalAssignmentsError) throw new Error(internalAssignmentsError.message);
-  const isBegreenAdmin = (internalAssignments ?? []).some((row) => row.role_code === "admin");
+  if (!options?.skipAdminRoleCheck) {
+    const { data: internalAssignments, error: internalAssignmentsError } = await supabase
+      .from("user_role_assignments")
+      .select("role_code")
+      .eq("profile_id", profileId)
+      .eq("role_code", "admin");
+
+    if (internalAssignmentsError) throw new Error(internalAssignmentsError.message);
+    isBegreenAdmin = (internalAssignments ?? []).some((row) => row.role_code === "admin");
+  }
 
   let data: unknown[] | null = null;
   let error: { message: string } | null = null;
@@ -793,12 +797,18 @@ async function getProjectDashboardProjectRow(supabase: SupabaseClient, projectId
   return data;
 }
 
-export async function getProjectDashboard(supabase: SupabaseClient, projectId: string): Promise<ProjectDashboardData> {
+export async function getProjectDashboard(
+  supabase: SupabaseClient,
+  projectId: string,
+  options?: { clientVisibleOnly?: boolean },
+): Promise<ProjectDashboardData> {
   const [data, tasks, milestones, links, members] = await Promise.all([
     getProjectDashboardProjectRow(supabase, projectId),
     listProjectTasks(supabase, projectId),
     listProjectMilestones(supabase, projectId),
-    listProjectLinks(supabase, projectId),
+    listProjectLinks(supabase, projectId, {
+      clientVisibleOnly: options?.clientVisibleOnly,
+    }),
     listProjectMembers(supabase, projectId),
   ]);
 
@@ -1359,7 +1369,9 @@ export async function deleteProjectLink(supabase: SupabaseClient, projectId: str
 }
 
 export async function getClientProjectHealth(supabase: SupabaseClient, projectId: string) {
-  const data = await getProjectDashboard(supabase, projectId);
+  const data = await getProjectDashboard(supabase, projectId, {
+    clientVisibleOnly: true,
+  });
   return {
     project: data.project,
     members: data.members,

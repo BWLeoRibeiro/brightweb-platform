@@ -247,7 +247,7 @@ export function createMarketingUiClient(
       await readPayload(
         await fetcher(
           endpoint(`campaigns/${encodeURIComponent(campaignId)}/test`),
-          json("POST", { email }),
+          json("POST", { toEmail: email }),
         ),
       );
     },

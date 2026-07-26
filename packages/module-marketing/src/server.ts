@@ -258,6 +258,16 @@ export async function suppress(
     .select("id,email,reason,source,created_at")
     .single();
   throwIfError(error);
+  const recipients = await client(supabase)
+    .from("marketing_campaign_recipients")
+    .update({
+      status: "suppressed",
+      error: `Email suppressed: ${input.reason}.`,
+      next_attempt_at: null,
+    })
+    .eq("email", email)
+    .in("status", ["queued", "sending"]);
+  throwIfError(recipients.error);
   return data;
 }
 
@@ -299,6 +309,38 @@ export async function isEmailable(
     : false;
 }
 
+async function suppressPendingRecipientsForContact(
+  supabase: unknown,
+  contactId: string,
+  topicId?: string,
+) {
+  let campaignIds: string[] | null = null;
+  if (topicId) {
+    const campaigns = await client(supabase)
+      .from("marketing_campaigns")
+      .select("id")
+      .eq("topic_id", topicId)
+      .in("status", ["scheduled", "sending"]);
+    throwIfError(campaigns.error);
+    campaignIds = ((campaigns.data ?? []) as Array<{ id: string }>)
+      .map((campaign) => campaign.id);
+    if (!campaignIds.length) return;
+  }
+
+  let recipients = client(supabase)
+    .from("marketing_campaign_recipients")
+    .update({
+      status: "suppressed",
+      error: "Contact unsubscribed before delivery.",
+      next_attempt_at: null,
+    })
+    .eq("contact_id", contactId)
+    .in("status", ["queued", "sending"]);
+  if (campaignIds) recipients = recipients.in("campaign_id", campaignIds);
+  const result = await recipients;
+  throwIfError(result.error);
+}
+
 export async function unsubscribeTopic(
   supabase: unknown,
   token: string,
@@ -312,6 +354,7 @@ export async function unsubscribeTopic(
     status: "unsubscribed",
     consentSource: "unsubscribe",
   });
+  await suppressPendingRecipientsForContact(supabase, resolved.contact.id, topicId);
   return resolveByUnsubscribeToken(supabase, token);
 }
 
@@ -331,6 +374,7 @@ export async function unsubscribeAll(
     })
     .eq("contact_id", resolved.contact.id);
   throwIfError(updateResult.error);
+  await suppressPendingRecipientsForContact(supabase, resolved.contact.id);
 
   if (resolved.email) {
     await suppress(supabase, {
