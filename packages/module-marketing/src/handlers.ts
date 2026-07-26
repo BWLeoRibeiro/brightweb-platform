@@ -1,16 +1,34 @@
-import { createServiceRoleClient } from "@brightweblabs/infra/server";
 import {
+  createMarketingCampaignHttpHandlers,
   createMarketingUnsubscribeGetHandler,
   createMarketingUnsubscribePostHandler,
 } from "./http";
+import { requireServerUserAccess } from "@brightweblabs/core-auth/server";
 import {
+  cancelCampaign,
+  createCampaign,
+  deleteCampaign,
+  getCampaign,
+  listCampaignRecipients,
+  listCampaigns,
+  retryCampaignFailures,
+  scheduleCampaign,
+  sendCampaignNow,
+  sendTestEmail,
+  updateCampaign,
+} from "./campaigns";
+import type { MarketingEmailSender } from "./email/types";
+import { runMarketingWorker } from "./worker";
+import { processResendWebhook } from "./webhooks";
+import {
+  createMarketingServiceClient,
   resolveByUnsubscribeToken,
   unsubscribeAll,
   unsubscribeTopic,
 } from "./server";
 
 const marketingDependencies = {
-  createServiceClient: createServiceRoleClient,
+  createServiceClient: createMarketingServiceClient,
   resolveToken: resolveByUnsubscribeToken,
   unsubscribeAll,
   unsubscribeTopic,
@@ -21,3 +39,38 @@ export const handleMarketingUnsubscribeGetRequest =
 
 export const handleMarketingUnsubscribePostRequest =
   createMarketingUnsubscribePostHandler(marketingDependencies);
+
+export type MarketingCampaignHandlerConfig = {
+  sender: MarketingEmailSender;
+  workerSecret: string;
+  webhookSecret: string;
+  publicAppUrl?: string | null;
+  logger?: Pick<Console, "error">;
+};
+
+export function createMarketingCampaignHandlers(
+  config: MarketingCampaignHandlerConfig,
+) {
+  return createMarketingCampaignHttpHandlers({
+    getAccess: requireServerUserAccess,
+    createServiceClient: createMarketingServiceClient,
+    sender: config.sender,
+    workerSecret: config.workerSecret,
+    webhookSecret: config.webhookSecret,
+    publicAppUrl: config.publicAppUrl,
+    logger: config.logger,
+    listCampaigns,
+    getCampaign,
+    createCampaign,
+    updateCampaign,
+    deleteCampaign,
+    listRecipients: listCampaignRecipients,
+    scheduleCampaign,
+    cancelCampaign,
+    sendCampaignNow,
+    retryCampaignFailures,
+    sendTestEmail,
+    runWorker: runMarketingWorker,
+    processWebhook: processResendWebhook,
+  });
+}

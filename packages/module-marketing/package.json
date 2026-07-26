@@ -20,10 +20,15 @@
   "exports": {
     ".": "./src/index.ts",
     "./server": "./src/server.ts",
+    "./campaigns": "./src/campaigns.ts",
+    "./worker": "./src/worker.ts",
+    "./email": "./src/email/index.ts",
     "./tokens.css": "./tokens.css"
   },
   "dependencies": {
     "@brightweblabs/core-auth": "workspace:*",
-    "@brightweblabs/infra": "workspace:*"
+    "@brightweblabs/infra": "workspace:*",
+    "resend": "^6.9.2",
+    "svix": "^1.81.0"
   }
 }
