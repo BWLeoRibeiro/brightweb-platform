@@ -4,6 +4,7 @@ import { join } from "node:path";
 import test from "node:test";
 
 import type { ProjectDashboardData, ProjectLink } from "../packages/module-projects/src/types.ts";
+import { listAccountProjects } from "../packages/module-projects/src/account-projects.ts";
 import { defaultProjectsUiDictionary } from "../packages/module-projects/src/ui/dictionary.ts";
 import { parseProjectBoardApiError, parseTaskListPayload } from "../packages/module-projects/src/ui/project-board-response-parser.ts";
 import { parseProjectDashboardPayload, parseProjectLinksPayload, projectDetailDataReducer } from "../packages/module-projects/src/ui/project-detail-data-provider.tsx";
@@ -12,6 +13,55 @@ import { createProjectsModuleRegistration } from "../packages/module-projects/sr
 const project = { id: "project-1", organizationId: "org-1", organizationName: "MQ", organizationOwnerLabel: null, organizationOwnerEmail: null, organizationOwnerPhone: null, name: "Projeto", code: "MQ-1", status: "active", health: "on_track", ownerProfileId: null, ownerLabel: null, ownerEmail: null, ownerPhone: null, activatedAt: null, targetDate: null, completedAt: null, cancellationReason: null, summary: null, createdAt: "2026-01-01T00:00:00.000Z", updatedAt: "2026-01-01T00:00:00.000Z", taskStats: { total: 0, done: 0, overdue: 0, blocked: 0 }, milestoneStats: { total: 0, achieved: 0, delayed: 0 } } satisfies ProjectDashboardData["project"];
 const link = { id: "link-1", projectId: "project-1", label: "Drive", url: "https://example.com", visibility: "staff", kind: "drive", createdAt: project.createdAt, updatedAt: project.updatedAt } satisfies ProjectLink;
 const dashboard = { project, members: [], milestones: [], tasks: [], links: [link], activity: [] } satisfies ProjectDashboardData;
+
+test("account projects adapter preserves schema and legacy-role fallbacks", async () => {
+  const supabase = {} as never;
+  const schemaError = new Error('relation "public.projects" does not exist');
+  const dependencies = {
+    isProjectsSchemaMissingError: (error: unknown) => error === schemaError,
+    listOrgAdminProjectsByProfile: async () => {
+      throw schemaError;
+    },
+    listProjects: async () => {
+      throw new Error("fallback must not run for a missing projects schema");
+    },
+  };
+
+  assert.deepEqual(
+    await listAccountProjects(supabase, "profile-1", { limit: 3 }, dependencies as never),
+    { items: [], schemaMissing: true, error: null },
+  );
+
+  let fallbackParams: unknown = null;
+  const fallbackDependencies = {
+    isProjectsSchemaMissingError: () => false,
+    listOrgAdminProjectsByProfile: async () => {
+      throw new Error('relation "user_role_assignments" does not exist');
+    },
+    listProjects: async (_client: unknown, params: unknown) => {
+      fallbackParams = params;
+      return { items: [project], total: 1, page: 1, pageSize: 3 };
+    },
+  };
+
+  assert.deepEqual(
+    await listAccountProjects(supabase, "profile-1", { limit: 3 }, fallbackDependencies as never),
+    { items: [project], schemaMissing: false, error: null },
+  );
+  assert.deepEqual(fallbackParams, { page: 1, pageSize: 3, dueWindow: "all" });
+
+  const fallbackSchemaDependencies = {
+    ...fallbackDependencies,
+    isProjectsSchemaMissingError: (error: unknown) => error === schemaError,
+    listProjects: async () => {
+      throw schemaError;
+    },
+  };
+  assert.deepEqual(
+    await listAccountProjects(supabase, "profile-1", undefined, fallbackSchemaDependencies as never),
+    { items: [], schemaMissing: true, error: null },
+  );
+});
 
 test("Projects detail provider accepts package dashboard payloads", () => {
   assert.deepEqual(parseProjectDashboardPayload({ data: dashboard }), dashboard);

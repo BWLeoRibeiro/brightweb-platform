@@ -30,7 +30,6 @@ import { Toaster } from "@brightweblabs/ui";
 
 import { getStarterShellConfig } from "../../config/shell";
 import { previewNotifications } from "../../config/notifications";
-import { projects } from "./projects/mock-data";
 
 export type ShellViewer = {
   email: string | null;
@@ -73,6 +72,7 @@ export function PreviewShellLayoutClient({
   } satisfies NavGroupConfig);
   const crmGroupKey = registeredCrmNavGroup?.key ?? "crm";
   const isAdminSurface = pathname === "/admin" || pathname.startsWith("/admin/");
+  const usesToasts = isAdminSurface || pathname === "/account";
   const isActive = (href: string) => pathname === href
     || (isAdminSurface && pathname.startsWith(`${href}/`));
   const displayName = [viewer.firstName, viewer.lastName].filter(Boolean).join(" ")
@@ -101,7 +101,6 @@ export function PreviewShellLayoutClient({
       : projectId
         ? projectHeader.detailTitle
         : projectHeader.portfolioTitle;
-    count = pathname === "/projects" ? projects.length : undefined;
     toolbarControls = pathname === "/projects" ? <ProjectsToolbarControls /> : null;
   } else if (isAdminSurface) {
     kicker = defaultAdminUiDictionary.navigation.kicker;
@@ -186,7 +185,7 @@ export function PreviewShellLayoutClient({
       }
     >
       {children}
-      {isAdminSurface ? <Toaster /> : null}
+      {usesToasts ? <Toaster /> : null}
     </AppShellFrame>
   );
 }

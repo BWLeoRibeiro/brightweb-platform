@@ -1,0 +1,5 @@
+@layer tokens {
+  :root {
+    --marketing-accent: var(--semantic-info);
+  }
+}

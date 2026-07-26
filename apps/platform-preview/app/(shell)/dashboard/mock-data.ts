@@ -1,5 +1,4 @@
 import type { DashboardCrmData, DashboardDataClient, DashboardInitialData, DashboardProjectsData, DashboardTasksData } from "@brightweblabs/app-shell";
-import { projects as previewProjects } from "../projects/mock-data";
 
 const generatedAt = "2026-07-22T10:30:00.000Z";
 
@@ -14,10 +13,11 @@ export const dashboardProjects: DashboardProjectsData = {
     projectBlockedTasks: 2,
   },
   projects: {
-    overdue: previewProjects.map(({ id, organizationName, name, code, status, health, ownerLabel, targetDate, taskStats }) => ({
-      id, organizationName, name, code, status, health, ownerLabel, targetDate,
-      taskStats: { total: taskStats.total, done: taskStats.done, overdue: taskStats.overdue, blocked: taskStats.blocked },
-    })),
+    overdue: [
+      { id: "aurora", organizationName: "Atlas Studio", name: "Portal Aurora", code: "AUR-26", status: "active", health: "on_track", ownerLabel: "Leonel Ribeiro", targetDate: "2026-08-30", taskStats: { total: 18, done: 11, overdue: 1, blocked: 0 } },
+      { id: "northstar", organizationName: "Northstar Foods", name: "E-commerce B2B", code: "NST-14", status: "blocked", health: "at_risk", ownerLabel: "Maya Costa", targetDate: "2026-07-31", taskStats: { total: 24, done: 13, overdue: 3, blocked: 2 } },
+      { id: "fieldnotes", organizationName: "Field Notes", name: "Identidade e website", code: "FLD-09", status: "planned", health: "on_track", ownerLabel: "Leonel Ribeiro", targetDate: "2026-10-15", taskStats: { total: 8, done: 1, overdue: 0, blocked: 0 } },
+    ],
   },
 };
 

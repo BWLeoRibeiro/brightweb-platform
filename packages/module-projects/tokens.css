@@ -1,6 +1,7 @@
 :root {
   --sheet-header-surface: linear-gradient(135deg, var(--sheet-header-tint), transparent 60%);
   --sheet-header-tint: color-mix(in srgb, var(--primary) 7%, transparent);
+  --project-client-accent: var(--brand-accent);
   /* Literal MQ Projects recipes, centralized for package color hygiene. */
   --project-ui-color-01: color-mix(in srgb,var(--accent) 22%,var(--border));
   --project-ui-color-02: color-mix(in srgb, var(--project-dynamic-risk) 18%, transparent);
@@ -105,6 +106,17 @@
 /* Portfolio grid — ported verbatim from MQ globals.css (.projects-portfolio-grid).
    Responsive column template + reserved rows so pagination doesn't reflow. */
 @layer components {
+  .client-projects-panel {
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    background: var(--card);
+    box-shadow: var(--brand-shadow-soft);
+  }
+
+  .client-projects-panel .panel-inner {
+    padding: 22px;
+  }
+
   .projects-portfolio-grid {
   --projects-card-min-height: 158px;
   --projects-page-rows: 12;

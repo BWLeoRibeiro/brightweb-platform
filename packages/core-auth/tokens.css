@@ -17,6 +17,19 @@
   --auth-error-foreground: var(--destructive);
   --auth-skeleton-surface: var(--elevate-2);
   --auth-skeleton-highlight: color-mix(in srgb, var(--card) 72%, transparent);
+  /* Account surface tokens preserve the MQ identity-card treatment without
+     leaking brand-specific color recipes into package components. */
+  --account-identity-surface: var(--brand-surface-dark);
+  --account-identity-shadow: var(--brand-shadow-lift);
+  --account-identity-accent: var(--brand-accent);
+  --account-identity-foreground: var(--foreground-inverse);
+  --account-identity-muted: color-mix(in srgb, var(--foreground-inverse) 40%, transparent);
+  --account-identity-glow-strong: radial-gradient(circle, color-mix(in srgb, var(--brand-accent) 14%, transparent) 0%, transparent 70%);
+  --account-identity-glow-soft: radial-gradient(circle, color-mix(in srgb, var(--brand-accent) 7%, transparent) 0%, transparent 70%);
+  --account-avatar-ring-client: 0 0 0 3px color-mix(in srgb, var(--role-client) 24%, transparent);
+  --account-avatar-ring-team: 0 0 0 3px color-mix(in srgb, var(--role-team) 24%, transparent);
+  --account-role-surface: color-mix(in srgb, var(--brand-accent) 15%, transparent);
+  --account-role-border: color-mix(in srgb, var(--brand-accent) 25%, transparent);
 }
 
 @layer components {

@@ -1,0 +1,52 @@
+{
+  "contractVersion": 1,
+  "key": "marketing",
+  "title": "Marketing",
+  "description": "Consent-first marketing topics, subscriptions, and email suppressions.",
+  "requires": {
+    "core": ">=0.3",
+    "admin": ">=0.3",
+    "orgs": ">=0.1",
+    "crm": ">=0.6"
+  },
+  "capabilities": {
+    "provides": [],
+    "consumes": []
+  },
+  "permissions": {
+    "surfaces": "staff",
+    "grants": [
+      {
+        "name": "marketing.manage",
+        "defaultRoles": ["staff", "admin"]
+      }
+    ]
+  },
+  "tokens": "./tokens.css",
+  "events": {
+    "emits": [],
+    "consumes": []
+  },
+  "registration": "./registration",
+  "database": {
+    "namespace": ["marketing_"],
+    "ownedObjects": [
+      "marketing_topics",
+      "marketing_subscriptions",
+      "marketing_contact_settings",
+      "marketing_suppressions",
+      "marketing_campaigns",
+      "marketing_segments",
+      "marketing_campaign_recipients",
+      "marketing_message_events",
+      "marketing_workflows",
+      "marketing_workflow_nodes",
+      "marketing_workflow_runs",
+      "marketing_workflow_step_runs",
+      "marketing_contact_tags",
+      "marketing_worker_cursors",
+      "claim_marketing_workflow_runs",
+      "set_marketing_updated_at"
+    ]
+  }
+}

@@ -1,0 +1,347 @@
+import "server-only";
+
+import { createServiceRoleClient } from "@brightweblabs/infra/server";
+import type {
+  ConsentSource,
+  ContactSubscriptionState,
+  MarketingContactSettings,
+  MarketingSubscription,
+  MarketingTopic,
+  ResolvedUnsubscribeContact,
+  SubscriptionStatus,
+  SuppressionReason,
+} from "./types";
+import { enqueueWorkflowRunsForTrigger } from "./workflows";
+
+type QueryClient = {
+  from: (table: string) => any;
+};
+
+type TopicRow = {
+  id: string;
+  slug: string;
+  label: string;
+  description: string | null;
+  is_active: boolean;
+  position: number;
+  created_at: string;
+  updated_at: string;
+};
+
+type SubscriptionRow = {
+  id: string;
+  contact_id: string;
+  topic_id: string;
+  status: SubscriptionStatus;
+  consent_source: string | null;
+  consent_at: string | null;
+  unsubscribed_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+type SettingsRow = {
+  contact_id: string;
+  unsubscribe_token: string;
+  preferred_language: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+function client(supabase: unknown) {
+  return supabase as QueryClient;
+}
+
+function throwIfError(error: { message?: string } | null | undefined) {
+  if (error) throw new Error(error.message || "Marketing database request failed.");
+}
+
+function topicFromRow(row: TopicRow): MarketingTopic {
+  return {
+    id: row.id,
+    slug: row.slug,
+    label: row.label,
+    description: row.description,
+    isActive: row.is_active,
+    position: row.position,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+function subscriptionFromRow(row: SubscriptionRow): MarketingSubscription {
+  return {
+    id: row.id,
+    contactId: row.contact_id,
+    topicId: row.topic_id,
+    status: row.status,
+    consentSource: row.consent_source,
+    consentAt: row.consent_at,
+    unsubscribedAt: row.unsubscribed_at,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+function settingsFromRow(row: SettingsRow): MarketingContactSettings {
+  return {
+    contactId: row.contact_id,
+    unsubscribeToken: row.unsubscribe_token,
+    preferredLanguage: row.preferred_language,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+export async function listTopics(
+  supabase: unknown,
+  options: { activeOnly?: boolean } = {},
+): Promise<MarketingTopic[]> {
+  let query = client(supabase)
+    .from("marketing_topics")
+    .select("id,slug,label,description,is_active,position,created_at,updated_at")
+    .order("position", { ascending: true })
+    .order("label", { ascending: true });
+
+  if (options.activeOnly) query = query.eq("is_active", true);
+  const { data, error } = await query;
+  throwIfError(error);
+  return ((data ?? []) as TopicRow[]).map(topicFromRow);
+}
+
+export async function getContactSubscriptions(
+  supabase: unknown,
+  contactId: string,
+): Promise<ContactSubscriptionState[]> {
+  const topics = await listTopics(supabase);
+  const { data, error } = await client(supabase)
+    .from("marketing_subscriptions")
+    .select("id,contact_id,topic_id,status,consent_source,consent_at,unsubscribed_at,created_at,updated_at")
+    .eq("contact_id", contactId);
+  throwIfError(error);
+  const subscriptions = new Map(
+    ((data ?? []) as SubscriptionRow[]).map((row) => [row.topic_id, row]),
+  );
+
+  return topics.map((topic) => {
+    const subscription = subscriptions.get(topic.id);
+    return {
+      topic,
+      status: subscription?.status ?? null,
+      consentAt: subscription?.consent_at ?? null,
+      unsubscribedAt: subscription?.unsubscribed_at ?? null,
+    };
+  });
+}
+
+export async function setSubscription(
+  supabase: unknown,
+  input: {
+    contactId: string;
+    topicId: string;
+    status: SubscriptionStatus;
+    consentSource: ConsentSource;
+  },
+): Promise<MarketingSubscription> {
+  const previousResult = await client(supabase)
+    .from("marketing_subscriptions")
+    .select("status")
+    .eq("contact_id", input.contactId)
+    .eq("topic_id", input.topicId)
+    .maybeSingle();
+  throwIfError(previousResult.error);
+  const timestamp = new Date().toISOString();
+  const payload: Record<string, string | null> = {
+    contact_id: input.contactId,
+    topic_id: input.topicId,
+    status: input.status,
+    consent_source: input.consentSource,
+    unsubscribed_at: input.status === "unsubscribed" ? timestamp : null,
+  };
+  if (input.status === "subscribed") {
+    payload.consent_at = timestamp;
+  }
+  const { data, error } = await client(supabase)
+    .from("marketing_subscriptions")
+    .upsert(payload, { onConflict: "contact_id,topic_id" })
+    .select("id,contact_id,topic_id,status,consent_source,consent_at,unsubscribed_at,created_at,updated_at")
+    .single();
+  throwIfError(error);
+  const subscription = subscriptionFromRow(data as SubscriptionRow);
+  if (
+    input.status === "subscribed"
+    && previousResult.data?.status !== "subscribed"
+  ) {
+    await enqueueWorkflowRunsForTrigger(supabase, {
+      triggerType: "contact_subscribed",
+      contactId: input.contactId,
+      matchData: { topicId: input.topicId },
+    });
+  }
+  return subscription;
+}
+
+export async function ensureContactSettings(
+  supabase: unknown,
+  contactId: string,
+): Promise<MarketingContactSettings> {
+  const table = client(supabase).from("marketing_contact_settings");
+  const existing = await table
+    .select("contact_id,unsubscribe_token,preferred_language,created_at,updated_at")
+    .eq("contact_id", contactId)
+    .maybeSingle();
+  throwIfError(existing.error);
+  if (existing.data) return settingsFromRow(existing.data as SettingsRow);
+
+  const inserted = await client(supabase)
+    .from("marketing_contact_settings")
+    .insert({ contact_id: contactId })
+    .select("contact_id,unsubscribe_token,preferred_language,created_at,updated_at")
+    .single();
+  if (inserted.error?.code === "23505") {
+    return ensureContactSettings(supabase, contactId);
+  }
+  throwIfError(inserted.error);
+  return settingsFromRow(inserted.data as SettingsRow);
+}
+
+export async function resolveByUnsubscribeToken(
+  supabase: unknown,
+  token: string,
+): Promise<ResolvedUnsubscribeContact | null> {
+  const settingsResult = await client(supabase)
+    .from("marketing_contact_settings")
+    .select("contact_id")
+    .eq("unsubscribe_token", token)
+    .maybeSingle();
+  throwIfError(settingsResult.error);
+  if (!settingsResult.data) return null;
+
+  const contactId = (settingsResult.data as { contact_id: string }).contact_id;
+  const contactResult = await client(supabase)
+    .from("crm_contacts")
+    .select("id,first_name,last_name,email")
+    .eq("id", contactId)
+    .maybeSingle();
+  throwIfError(contactResult.error);
+  if (!contactResult.data) return null;
+  const contact = contactResult.data as {
+    id: string;
+    first_name: string | null;
+    last_name: string | null;
+    email: string | null;
+  };
+
+  return {
+    contact: {
+      id: contact.id,
+      firstName: contact.first_name,
+      lastName: contact.last_name,
+    },
+    email: contact.email,
+    subscriptions: await getContactSubscriptions(supabase, contactId),
+  };
+}
+
+export async function suppress(
+  supabase: unknown,
+  input: { email: string; reason: SuppressionReason; source?: string | null },
+) {
+  const email = input.email.trim().toLowerCase();
+  if (!email) throw new Error("A valid email is required.");
+  const { data, error } = await client(supabase)
+    .from("marketing_suppressions")
+    .upsert(
+      { email, reason: input.reason, source: input.source ?? null },
+      { onConflict: "email" },
+    )
+    .select("id,email,reason,source,created_at")
+    .single();
+  throwIfError(error);
+  return data;
+}
+
+export async function isSuppressed(supabase: unknown, email: string): Promise<boolean> {
+  const normalizedEmail = email.trim().toLowerCase();
+  if (!normalizedEmail) return true;
+  const { data, error } = await client(supabase)
+    .from("marketing_suppressions")
+    .select("id")
+    .eq("email", normalizedEmail)
+    .maybeSingle();
+  throwIfError(error);
+  return Boolean(data);
+}
+
+export async function isEmailable(
+  supabase: unknown,
+  contactId: string,
+  topicId: string,
+): Promise<boolean> {
+  const subscriptionResult = await client(supabase)
+    .from("marketing_subscriptions")
+    .select("status")
+    .eq("contact_id", contactId)
+    .eq("topic_id", topicId)
+    .maybeSingle();
+  throwIfError(subscriptionResult.error);
+  if (subscriptionResult.data?.status !== "subscribed") return false;
+
+  const contactResult = await client(supabase)
+    .from("crm_contacts")
+    .select("email")
+    .eq("id", contactId)
+    .maybeSingle();
+  throwIfError(contactResult.error);
+  const email = contactResult.data?.email;
+  return typeof email === "string" && email.trim() !== ""
+    ? !(await isSuppressed(supabase, email))
+    : false;
+}
+
+export async function unsubscribeTopic(
+  supabase: unknown,
+  token: string,
+  topicId: string,
+): Promise<ResolvedUnsubscribeContact | null> {
+  const resolved = await resolveByUnsubscribeToken(supabase, token);
+  if (!resolved) return null;
+  await setSubscription(supabase, {
+    contactId: resolved.contact.id,
+    topicId,
+    status: "unsubscribed",
+    consentSource: "unsubscribe",
+  });
+  return resolveByUnsubscribeToken(supabase, token);
+}
+
+export async function unsubscribeAll(
+  supabase: unknown,
+  token: string,
+): Promise<ResolvedUnsubscribeContact | null> {
+  const resolved = await resolveByUnsubscribeToken(supabase, token);
+  if (!resolved) return null;
+  const timestamp = new Date().toISOString();
+  const updateResult = await client(supabase)
+    .from("marketing_subscriptions")
+    .update({
+      status: "unsubscribed",
+      consent_source: "unsubscribe",
+      unsubscribed_at: timestamp,
+    })
+    .eq("contact_id", resolved.contact.id);
+  throwIfError(updateResult.error);
+
+  if (resolved.email) {
+    await suppress(supabase, {
+      email: resolved.email,
+      reason: "unsubscribed_all",
+      source: "unsubscribe-token",
+    });
+  }
+  return resolveByUnsubscribeToken(supabase, token);
+}
+
+export function createMarketingServiceClient() {
+  return createServiceRoleClient();
+}

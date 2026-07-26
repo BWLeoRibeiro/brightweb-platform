@@ -8,6 +8,7 @@ import {
 } from "@brightweblabs/app-shell";
 import { adminModuleRegistration } from "@brightweblabs/module-admin/registration";
 import { crmModuleRegistration } from "@brightweblabs/module-crm/registration";
+import { marketingModuleRegistration } from "@brightweblabs/module-marketing/registration";
 import { projectsPreviewModuleRegistration } from "@brightweblabs/module-projects/registration";
 import { getEnabledStarterModules } from "./modules";
 import { starterShellBrand } from "./shell-brand";
@@ -26,6 +27,7 @@ function getStarterModuleRegistrations() {
   if (enabled.has("projects")) registrations.push(projectsPreviewModuleRegistration);
   if (enabled.has("crm")) registrations.push(crmModuleRegistration);
   if (enabled.has("admin")) registrations.push(adminModuleRegistration);
+  registrations.push(marketingModuleRegistration);
 
   return registrations;
 }
