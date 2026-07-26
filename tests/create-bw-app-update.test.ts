@@ -18,6 +18,7 @@ const BRIGHTWEB_PACKAGES = [
   "@brightweblabs/infra",
   "@brightweblabs/module-admin",
   "@brightweblabs/module-crm",
+  "@brightweblabs/module-marketing",
   "@brightweblabs/module-orgs",
   "@brightweblabs/module-projects",
   "@brightweblabs/theme",

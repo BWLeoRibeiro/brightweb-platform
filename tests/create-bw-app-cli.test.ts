@@ -7,6 +7,7 @@ import { addBrightwebModule } from "../packages/create-bw-app/src/add.mjs";
 import { adoptBrightwebApp } from "../packages/create-bw-app/src/adopt.mjs";
 import { loadModuleCatalog, validateAppManifest } from "../packages/create-bw-app/src/app-manifest.mjs";
 import { runBwCli } from "../packages/create-bw-app/src/bw.mjs";
+import { MODULE_STARTER_FILES } from "../packages/create-bw-app/src/constants.mjs";
 import { diffBrightwebScaffold } from "../packages/create-bw-app/src/diff.mjs";
 import { doctorBrightwebApp } from "../packages/create-bw-app/src/doctor.mjs";
 import { createBrightwebClientApp, resolveModuleOrder as resolveGeneratorModuleOrder } from "../packages/create-bw-app/src/generator.mjs";
@@ -89,6 +90,7 @@ test("database module order implementations stay in sync for the current registr
     ["admin"],
     ["orgs"],
     ["crm"],
+    ["marketing"],
     ["projects"],
     ["crm", "projects"],
     ["projects", "crm"],
@@ -101,6 +103,79 @@ test("database module order implementations stay in sync for the current registr
       `module order drifted for ${selection.join(",")}`,
     );
   }
+});
+
+test("marketing scaffolds its full thin surface and auto-enables CRM plus Organizations", async (t) => {
+  const { root, targetDir } = await scaffold(["marketing"]);
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+
+  const release = await readJson(path.join(REPO_ROOT, "brightweb-release.json"));
+  const packageJson = await readJson(path.join(targetDir, "package.json"));
+  assert.equal(
+    packageJson.dependencies["@brightweblabs/module-marketing"],
+    `^${release.packages["@brightweblabs/module-marketing"]}`,
+  );
+  assert.equal(
+    packageJson.dependencies["@brightweblabs/module-crm"],
+    `^${release.packages["@brightweblabs/module-crm"]}`,
+  );
+  assert.equal(
+    packageJson.dependencies["@brightweblabs/module-orgs"],
+    `^${release.packages["@brightweblabs/module-orgs"]}`,
+  );
+
+  const appManifest = await readJson(
+    path.join(targetDir, ".brightweb", "app-manifest.json"),
+  );
+  assert.deepEqual(Object.keys(appManifest.modules).sort(), ["crm", "marketing", "orgs"]);
+  for (const relativePath of MODULE_STARTER_FILES.marketing) {
+    await fs.access(path.join(targetDir, relativePath));
+    assert.equal(appManifest.scaffoldFiles[relativePath]?.module, "marketing");
+  }
+
+  const stack = await readJson(
+    path.join(targetDir, "supabase", "clients", "cli-test", "stack.json"),
+  );
+  assert.deepEqual(stack.enabledModules, ["core", "admin", "orgs", "crm", "marketing"]);
+  assert.equal(
+    (await fs.readdir(path.join(targetDir, "supabase", "migrations")))
+      .some((name) => name.includes("_marketing__20260726170000_marketing_engine_safety.sql")),
+    true,
+  );
+
+  const modulesConfig = await fs.readFile(path.join(targetDir, "config", "modules.ts"), "utf8");
+  assert.match(modulesConfig, /key: "orgs"[\s\S]*?enabled: true/);
+  assert.match(modulesConfig, /key: "crm"[\s\S]*?enabled: true/);
+  assert.match(modulesConfig, /key: "marketing"[\s\S]*?enabled: true/);
+
+  const shellConfig = await fs.readFile(path.join(targetDir, "config", "shell.ts"), "utf8");
+  assert.match(shellConfig, /orgsModuleRegistration/);
+  assert.match(shellConfig, /crmModuleRegistration/);
+  assert.match(shellConfig, /marketingModuleRegistration/);
+
+  const envFile = await fs.readFile(path.join(targetDir, ".env.local"), "utf8");
+  for (const variableName of [
+    "PUBLIC_APP_URL",
+    "RESEND_API_KEY",
+    "RESEND_WEBHOOK_SECRET",
+    "MARKETING_WORKER_SECRET",
+    "MARKETING_FROM_EMAIL",
+    "MARKETING_FROM_NAME",
+  ]) {
+    assert.match(envFile, new RegExp(`^${variableName}=`, "m"));
+  }
+  const envConfig = await fs.readFile(path.join(targetDir, "config", "env.ts"), "utf8");
+  assert.match(envConfig, /key: "RESEND_API_KEY"[\s\S]*?requiredFor: \["marketing"\]/);
+  assert.match(envConfig, /key: "MARKETING_WORKER_SECRET"[\s\S]*?requiredFor: \["marketing"\]/);
+
+  assert.match(
+    await fs.readFile(path.join(targetDir, "app", "marketing", "page.tsx"), "utf8"),
+    /MarketingPage as default.*@brightweblabs\/module-marketing/,
+  );
+  assert.match(
+    await fs.readFile(path.join(targetDir, "app", "api", "marketing", "_handlers.ts"), "utf8"),
+    /createResendEmailSender[\s\S]*?createNoopEmailSender[\s\S]*?MARKETING_WORKER_SECRET/,
+  );
 });
 
 test("module catalog resolves core from the workspace compatibility set", async () => {

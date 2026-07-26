@@ -66,11 +66,11 @@ Current updater behavior:
 
 - prompts for app type: `platform` or `site`
 - prompts for project name
-- prompts for optional platform modules: `admin`, `crm`, and `projects`
+- prompts for optional platform modules: `admin`, `crm`, `marketing`, and `projects`
 - prompts to install dependencies immediately
 - copies a clean Next.js App Router starter template
 - platform apps include BrightWeb auth, shell wiring, and optional direct package mounts
-- generated route files contain direct `@brightweblabs/*` re-exports only
+- generated route files are direct `@brightweblabs/*` re-exports or one-line exports from an app-owned dependency adapter such as Marketing's delivery handler composition
 - platform apps in published mode also write `supabase/config.toml`, a CLI-ready flat `supabase/migrations/` folder, `supabase/module-registry.json`, `supabase/clients/<slug>/stack.json`, and the resolved shared SQL migrations under `supabase/modules/<module>/migrations`
 - site apps include a thin Next.js and Tailwind CSS shell with no default feature page or local component library
 - writes `package.json`, `next.config.ts`, `.gitignore`, and `README.md` for both templates

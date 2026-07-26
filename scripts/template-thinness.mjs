@@ -3,6 +3,7 @@ import path from "node:path";
 
 const ROUTE_FILE_NAMES = new Set(["page.tsx", "route.ts"]);
 const DIRECT_PACKAGE_EXPORT = /^export\s*\{[^}]+\}\s*from\s*["']@brightweblabs\/[a-z0-9-/]+["'];?$/;
+const DIRECT_APP_HANDLER_EXPORT = /^export\s*\{[^}]+\}\s*from\s*["'](?:\.\.\/)+_handlers["'];?$/;
 const STATIC_ROUTE_CONFIG = /^export\s+const\s+dynamic\s*=\s*["']force-dynamic["'];?$/;
 const SINGLE_COMPONENT_MOUNT = /^import\s*\{\s*([A-Za-z0-9_]+)\s*\}\s*from\s*["']@brightweblabs\/[a-z0-9-/]+["'];\s*export\s+default\s+function\s+[A-Za-z0-9_]+\(\)\s*\{\s*return\s+<\1\s*\/>;\s*\}\s*$/s;
 
@@ -38,8 +39,14 @@ export async function findTemplateThinnessViolations(templateRoot) {
       continue;
     }
 
-    const isDirectExportRoute = executableLines.some((line) => DIRECT_PACKAGE_EXPORT.test(line))
-      && executableLines.every((line) => DIRECT_PACKAGE_EXPORT.test(line) || STATIC_ROUTE_CONFIG.test(line));
+    const isDirectExportRoute = executableLines.some(
+      (line) => DIRECT_PACKAGE_EXPORT.test(line) || DIRECT_APP_HANDLER_EXPORT.test(line),
+    ) && executableLines.every(
+      (line) =>
+        DIRECT_PACKAGE_EXPORT.test(line)
+        || DIRECT_APP_HANDLER_EXPORT.test(line)
+        || STATIC_ROUTE_CONFIG.test(line),
+    );
     const isSingleComponentPage = path.basename(filePath) === "page.tsx" && SINGLE_COMPONENT_MOUNT.test(content);
     if (!isDirectExportRoute && !isSingleComponentPage) {
       violations.push(`${filePath}: must directly re-export package handlers/pages or return one imported package component`);

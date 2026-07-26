@@ -22,6 +22,12 @@ export const SELECTABLE_MODULES = [
     templateFolder: "crm",
   },
   {
+    key: "marketing",
+    label: "Marketing",
+    packageName: "@brightweblabs/module-marketing",
+    templateFolder: "marketing",
+  },
+  {
     key: "projects",
     label: "Projects",
     packageName: "@brightweblabs/module-projects",
@@ -68,11 +74,42 @@ export const MODULE_STARTER_FILES = {
     "app/api/crm/stats/route.ts",
     "app/api/crm/timeline/route.ts",
   ],
+  marketing: [
+    "app/marketing/page.tsx",
+    "app/api/marketing/_handlers.ts",
+    "app/api/marketing/analytics/campaigns/[id]/route.ts",
+    "app/api/marketing/analytics/overview/route.ts",
+    "app/api/marketing/analytics/segments/[id]/route.ts",
+    "app/api/marketing/campaigns/[id]/cancel/route.ts",
+    "app/api/marketing/campaigns/[id]/recipients/route.ts",
+    "app/api/marketing/campaigns/[id]/retry/route.ts",
+    "app/api/marketing/campaigns/[id]/route.ts",
+    "app/api/marketing/campaigns/[id]/schedule/route.ts",
+    "app/api/marketing/campaigns/[id]/send/route.ts",
+    "app/api/marketing/campaigns/[id]/test/route.ts",
+    "app/api/marketing/campaigns/route.ts",
+    "app/api/marketing/segments/[id]/preview/route.ts",
+    "app/api/marketing/segments/[id]/route.ts",
+    "app/api/marketing/segments/preview/route.ts",
+    "app/api/marketing/segments/route.ts",
+    "app/api/marketing/topics/route.ts",
+    "app/api/marketing/unsubscribe/[token]/route.ts",
+    "app/api/marketing/webhooks/resend/route.ts",
+    "app/api/marketing/worker/route.ts",
+    "app/api/marketing/workflows/[id]/activate/route.ts",
+    "app/api/marketing/workflows/[id]/nodes/[nodeId]/route.ts",
+    "app/api/marketing/workflows/[id]/nodes/route.ts",
+    "app/api/marketing/workflows/[id]/pause/route.ts",
+    "app/api/marketing/workflows/[id]/route.ts",
+    "app/api/marketing/workflows/[id]/runs/route.ts",
+    "app/api/marketing/workflows/route.ts",
+  ],
   projects: [
   ],
 };
 
 export const PLATFORM_STARTER_FILES = [
+  "config/env.ts",
   "config/shell.overrides.ts",
 ];
 
@@ -82,6 +119,7 @@ export const APP_DEPENDENCY_DEFAULTS = {
   "@brightweblabs/infra": "^0.3.3",
   "@brightweblabs/module-admin": "^0.5.2",
   "@brightweblabs/module-crm": "^0.8.2",
+  "@brightweblabs/module-marketing": "^0.2.1",
   "@brightweblabs/module-orgs": "^0.3.2",
   "@brightweblabs/module-projects": "^0.6.1",
   "@brightweblabs/theme": "^0.4.0",
@@ -131,7 +169,7 @@ Usage:
 Scaffold options:
   --template <platform|site>    Scaffold a platform app or a standalone site
   --name, --slug <name>          Project name and default directory name
-  --modules <list>               Comma-separated modules: crm,projects,admin
+  --modules <list>               Comma-separated modules: crm,marketing,projects,admin
   --output-dir <path>            Parent folder for the generated app
   --target-dir <path>            Exact output directory, bypassing slug folder creation
   --workspace-root <path>        BrightWeb workspace root for local mode
