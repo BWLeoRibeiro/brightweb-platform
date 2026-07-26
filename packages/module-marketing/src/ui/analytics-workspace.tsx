@@ -33,14 +33,21 @@ function deliveryRate(analytics: MarketingCampaignAnalytics) {
     : 0;
 }
 
-function queueLabel(analytics: MarketingCampaignAnalytics) {
+function queueLabel(
+  analytics: MarketingCampaignAnalytics,
+  dictionary: MarketingUiDictionary,
+) {
   const outstanding = analytics.queue.queued + analytics.queue.sending;
-  if (outstanding > 0) return `${outstanding} em curso`;
-  if (analytics.queue.failed > 0) return `${analytics.queue.failed} falharam`;
-  if (analytics.queue.suppressed + analytics.queue.skipped > 0) {
-    return `${analytics.queue.suppressed + analytics.queue.skipped} excluídos`;
+  if (outstanding > 0) return dictionary.analytics.queueInProgress(outstanding);
+  if (analytics.queue.failed > 0) {
+    return dictionary.analytics.queueFailed(analytics.queue.failed);
   }
-  return `${analytics.queue.sent} concluídos`;
+  if (analytics.queue.suppressed + analytics.queue.skipped > 0) {
+    return dictionary.analytics.queueExcluded(
+      analytics.queue.suppressed + analytics.queue.skipped,
+    );
+  }
+  return dictionary.analytics.queueCompleted(analytics.queue.sent);
 }
 
 export function CampaignAnalyticsPanel({
@@ -76,7 +83,7 @@ export function CampaignAnalyticsPanel({
         ))}
       </div>
       <div className="flex flex-wrap gap-2">
-        <Badge variant="outline">{queueLabel(analytics)}</Badge>
+        <Badge variant="outline">{queueLabel(analytics, dictionary)}</Badge>
         {analytics.bounced > 0 ? (
           <Badge variant="outline" className="border-destructive/25 text-destructive">
             {analytics.bounced} {dictionary.analytics.bounced.toLocaleLowerCase(dictionary.locale)}
@@ -181,7 +188,7 @@ export function AnalyticsWorkspace({
             <div>
               <p className="marketing-kicker">{dictionary.analytics.campaignsTitle}</p>
               <p className="mt-1 text-sm text-muted-foreground">
-                {rows.length} campanha{rows.length === 1 ? "" : "s"}
+                {dictionary.analytics.campaignCount(rows.length)}
               </p>
             </div>
             <Activity className="size-5 text-muted-foreground" aria-hidden="true" />
@@ -196,19 +203,19 @@ export function AnalyticsWorkspace({
               <table className="w-full min-w-[760px] text-left text-sm">
                 <thead className="border-b bg-muted/50 text-xs text-muted-foreground">
                   <tr>
-                    <th className="px-6 py-3 font-medium">{dictionary.analytics.campaign}</th>
-                    <th className="px-4 py-3 font-medium">{dictionary.analytics.delivery}</th>
-                    <th className="px-4 py-3 font-medium">{dictionary.analytics.opens}</th>
-                    <th className="px-4 py-3 font-medium">{dictionary.analytics.clicks}</th>
-                    <th className="px-4 py-3 font-medium">{dictionary.analytics.queue}</th>
-                    <th className="px-6 py-3"><span className="sr-only">Abrir</span></th>
+                    <th className="px-6 py-3 font-semibold">{dictionary.analytics.campaign}</th>
+                    <th className="px-4 py-3 font-semibold">{dictionary.analytics.delivery}</th>
+                    <th className="px-4 py-3 font-semibold">{dictionary.analytics.opens}</th>
+                    <th className="px-4 py-3 font-semibold">{dictionary.analytics.clicks}</th>
+                    <th className="px-4 py-3 font-semibold">{dictionary.analytics.queue}</th>
+                    <th className="px-6 py-3"><span className="sr-only">{dictionary.analytics.open}</span></th>
                   </tr>
                 </thead>
                 <tbody className="divide-y">
                   {rows.map(({ campaign, analytics }) => (
                     <tr className="transition-colors hover:bg-muted/40" key={campaign.id}>
                       <td className="px-6 py-4">
-                        <p className="font-medium">{campaign.name}</p>
+                        <p className="font-semibold">{campaign.name}</p>
                         <p className="mt-0.5 max-w-64 truncate text-xs text-muted-foreground">
                           {campaign.subject}
                         </p>
@@ -223,11 +230,11 @@ export function AnalyticsWorkspace({
                         {formatRate(analytics.clickRate, dictionary.locale)}
                       </td>
                       <td className="px-4 py-4">
-                        <Badge variant="outline">{queueLabel(analytics)}</Badge>
+                        <Badge variant="outline">{queueLabel(analytics, dictionary)}</Badge>
                       </td>
                       <td className="px-6 py-4 text-right">
                         <Button
-                          aria-label={`Abrir ${campaign.name}`}
+                          aria-label={dictionary.analytics.openCampaign(campaign.name)}
                           onClick={() => onOpenCampaign(campaign)}
                           size="icon"
                           variant="ghost"

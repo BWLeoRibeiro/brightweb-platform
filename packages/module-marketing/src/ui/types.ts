@@ -296,6 +296,13 @@ export type MarketingUiDictionary = {
     noData: string;
     detailsTitle: string;
     detailsSubtitle: string;
+    campaignCount: (count: number) => string;
+    queueInProgress: (count: number) => string;
+    queueFailed: (count: number) => string;
+    queueExcluded: (count: number) => string;
+    queueCompleted: (count: number) => string;
+    open: string;
+    openCampaign: (name: string) => string;
   };
   list: {
     title: string;
@@ -304,6 +311,7 @@ export type MarketingUiDictionary = {
     recipients: string;
     created: string;
     noSubject: string;
+    campaignCount: (count: number) => string;
   };
   editor: {
     createEyebrow: string;
@@ -344,6 +352,7 @@ export type MarketingUiDictionary = {
     sendTest: string;
     close: string;
     effectiveAudience: string;
+    safeHtml: string;
   };
   segments: {
     eyebrow: string;
@@ -377,6 +386,7 @@ export type MarketingUiDictionary = {
     previewCount: string;
     previewEmpty: string;
     previewLoading: string;
+    topicCount: (count: number) => string;
     save: string;
     delete: string;
     close: string;

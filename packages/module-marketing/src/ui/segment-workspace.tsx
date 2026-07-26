@@ -222,7 +222,7 @@ export function SegmentWorkspace({
                   </span>
                   <span className="marketing-row-topic">
                     {segment.rule.topicIds?.length
-                      ? `${segment.rule.topicIds.length} tópico(s)`
+                      ? dictionary.segments.topicCount(segment.rule.topicIds.length)
                       : dictionary.segments.engagementTypes.any}
                   </span>
                   <span className="marketing-row-date">
@@ -281,7 +281,7 @@ export function SegmentWorkspace({
               </div>
 
               <fieldset className="marketing-field marketing-field-wide">
-                <legend className="text-sm font-medium">
+                <legend className="text-sm font-semibold">
                   {dictionary.segments.fields.topics}
                 </legend>
                 <p className="mb-3 text-xs text-muted-foreground">
@@ -418,7 +418,7 @@ export function SegmentWorkspace({
                   {preview.sample.map((contact) => (
                     <div className="marketing-recipient-row" key={contact.id}>
                       <div className="min-w-0">
-                        <p className="truncate text-sm font-medium">
+                        <p className="truncate text-sm font-semibold">
                           {contact.name || contact.email}
                         </p>
                         <p className="truncate text-xs text-muted-foreground">

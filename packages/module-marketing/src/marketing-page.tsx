@@ -14,6 +14,7 @@ import {
 import { MarketingUiProvider } from "./ui/context";
 import { MarketingClient } from "./ui/marketing-client";
 import "../tokens.css";
+import "../marketing.css";
 
 export async function MarketingPage() {
   const { supabase } = await requireServerPageRoleAccess(["staff", "admin"]);

@@ -133,6 +133,13 @@ export const defaultMarketingUiDictionary: MarketingUiDictionary = {
     noData: "Ainda não existem envios com dados de desempenho.",
     detailsTitle: "Desempenho desta campanha",
     detailsSubtitle: "Eventos únicos por destinatário e estado atual da fila.",
+    campaignCount: (count) => `${count} ${count === 1 ? "campanha" : "campanhas"}`,
+    queueInProgress: (count) => `${count} em curso`,
+    queueFailed: (count) => `${count} ${count === 1 ? "falhou" : "falharam"}`,
+    queueExcluded: (count) => `${count} ${count === 1 ? "excluído" : "excluídos"}`,
+    queueCompleted: (count) => `${count} ${count === 1 ? "concluído" : "concluídos"}`,
+    open: "Abrir",
+    openCampaign: (name) => `Abrir ${name}`,
   },
   list: {
     title: "Arquivo de campanhas",
@@ -141,6 +148,7 @@ export const defaultMarketingUiDictionary: MarketingUiDictionary = {
     recipients: "Destinatários",
     created: "Criada",
     noSubject: "Sem assunto",
+    campaignCount: (count) => `${count} ${count === 1 ? "campanha" : "campanhas"}`,
   },
   editor: {
     createEyebrow: "Novo rascunho",
@@ -186,6 +194,7 @@ export const defaultMarketingUiDictionary: MarketingUiDictionary = {
     sendTest: "Enviar teste",
     close: "Fechar editor",
     effectiveAudience: "A audiência efetiva inclui apenas contactos com consentimento para o tópico que também correspondem ao segmento. O segmento nunca alarga a audiência.",
+    safeHtml: "HTML simples e tokens seguros",
   },
   segments: {
     eyebrow: "Audiências guardadas",
@@ -223,6 +232,7 @@ export const defaultMarketingUiDictionary: MarketingUiDictionary = {
     previewCount: "contactos correspondentes",
     previewEmpty: "Nenhum contacto corresponde a estas regras.",
     previewLoading: "A calcular audiência…",
+    topicCount: (count) => `${count} ${count === 1 ? "tópico" : "tópicos"}`,
     save: "Guardar segmento",
     delete: "Eliminar",
     close: "Fechar",

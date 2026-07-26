@@ -514,10 +514,10 @@ export function WorkflowWorkspace({
                                 : <Tag className="size-4" />}
                           </div>
                           <div className="min-w-0 flex-1">
-                            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                               {dictionary.workflows.steps.step(index + 1)}
                             </p>
-                            <p className="font-medium">{dictionary.workflows.steps.types[node.type]}</p>
+                            <p className="font-semibold">{dictionary.workflows.steps.types[node.type]}</p>
                           </div>
                           <Button
                             type="button"
@@ -656,17 +656,17 @@ export function WorkflowWorkspace({
                       <table className="w-full text-left text-sm">
                         <thead className="border-b bg-muted/40 text-xs text-muted-foreground">
                           <tr>
-                            <th className="px-4 py-3 font-medium">{dictionary.workflows.runs.contact}</th>
-                            <th className="px-4 py-3 font-medium">{dictionary.workflows.runs.status}</th>
-                            <th className="px-4 py-3 font-medium">{dictionary.workflows.runs.currentStep}</th>
-                            <th className="px-4 py-3 font-medium">{dictionary.workflows.runs.nextRun}</th>
+                            <th className="px-4 py-3 font-semibold">{dictionary.workflows.runs.contact}</th>
+                            <th className="px-4 py-3 font-semibold">{dictionary.workflows.runs.status}</th>
+                            <th className="px-4 py-3 font-semibold">{dictionary.workflows.runs.currentStep}</th>
+                            <th className="px-4 py-3 font-semibold">{dictionary.workflows.runs.nextRun}</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y">
                           {runs.map((run) => (
                             <tr key={run.id}>
                               <td className="px-4 py-3">
-                                <p className="font-medium">{run.contactName || run.contactEmail || "—"}</p>
+                                <p className="font-semibold">{run.contactName || run.contactEmail || "—"}</p>
                                 {run.contactName && run.contactEmail ? (
                                   <p className="text-xs text-muted-foreground">{run.contactEmail}</p>
                                 ) : null}
