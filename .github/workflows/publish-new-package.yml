@@ -1,0 +1,46 @@
+name: Publish New Package (manual)
+
+# One-off, manually-triggered publish for a NEW package that OIDC trusted
+# publishing cannot create on its own. Requires a repo secret `NPM_TOKEN` whose
+# npm token has permission to publish AND create packages in the @brightweblabs
+# scope. Automation / granular write tokens bypass 2FA, so no OTP is needed.
+# Once the package exists, configure trusted publishing for it and delete this
+# workflow — normal releases go through release.yml.
+
+on:
+  workflow_dispatch:
+    inputs:
+      package:
+        description: "Workspace package to publish"
+        required: true
+        default: "@brightweblabs/module-marketing"
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.28.1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          registry-url: "https://registry.npmjs.org"
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Authenticate to npm
+        run: echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" >> "$HOME/.npmrc"
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Publish package
+        run: pnpm --filter "${{ inputs.package }}" publish --access public --no-git-checks
