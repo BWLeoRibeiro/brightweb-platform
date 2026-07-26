@@ -34,6 +34,18 @@ import {
   getSegmentAnalytics,
 } from "./analytics";
 import {
+  activateWorkflow,
+  createWorkflow,
+  deleteWorkflow,
+  deleteWorkflowNode,
+  getWorkflow,
+  listWorkflowRuns,
+  listWorkflows,
+  pauseWorkflow,
+  updateWorkflow,
+  upsertWorkflowNodes,
+} from "./workflows";
+import {
   createMarketingServiceClient,
   listTopics,
   resolveByUnsubscribeToken,
@@ -96,5 +108,15 @@ export function createMarketingCampaignHandlers(
     getMarketingOverview,
     getCampaignAnalytics,
     getSegmentAnalytics,
+    listWorkflows,
+    getWorkflow,
+    createWorkflow,
+    updateWorkflow,
+    deleteWorkflow,
+    activateWorkflow,
+    pauseWorkflow,
+    upsertWorkflowNodes,
+    deleteWorkflowNode,
+    listWorkflowRuns,
   });
 }

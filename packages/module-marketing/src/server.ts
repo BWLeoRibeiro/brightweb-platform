@@ -11,6 +11,7 @@ import type {
   SubscriptionStatus,
   SuppressionReason,
 } from "./types";
+import { enqueueWorkflowRunsForTrigger } from "./workflows";
 
 type QueryClient = {
   from: (table: string) => any;
@@ -142,6 +143,13 @@ export async function setSubscription(
     consentSource: ConsentSource;
   },
 ): Promise<MarketingSubscription> {
+  const previousResult = await client(supabase)
+    .from("marketing_subscriptions")
+    .select("status")
+    .eq("contact_id", input.contactId)
+    .eq("topic_id", input.topicId)
+    .maybeSingle();
+  throwIfError(previousResult.error);
   const timestamp = new Date().toISOString();
   const payload: Record<string, string | null> = {
     contact_id: input.contactId,
@@ -159,7 +167,18 @@ export async function setSubscription(
     .select("id,contact_id,topic_id,status,consent_source,consent_at,unsubscribed_at,created_at,updated_at")
     .single();
   throwIfError(error);
-  return subscriptionFromRow(data as SubscriptionRow);
+  const subscription = subscriptionFromRow(data as SubscriptionRow);
+  if (
+    input.status === "subscribed"
+    && previousResult.data?.status !== "subscribed"
+  ) {
+    await enqueueWorkflowRunsForTrigger(supabase, {
+      triggerType: "contact_subscribed",
+      contactId: input.contactId,
+      matchData: { topicId: input.topicId },
+    });
+  }
+  return subscription;
 }
 
 export async function ensureContactSettings(

@@ -9,6 +9,10 @@ import type {
 } from "../packages/module-marketing/src/email/types";
 import { runMarketingWorker } from "../packages/module-marketing/src/worker";
 import { processResendWebhook } from "../packages/module-marketing/src/webhooks";
+import {
+  enqueueWorkflowRunsForTrigger,
+  processDueWorkflowRuns,
+} from "../packages/module-marketing/src/workflows";
 
 type Row = Record<string, any>;
 type Tables = Record<string, Row[]>;
@@ -19,6 +23,7 @@ function valueMatches(row: Row, filter: [string, string, unknown]) {
   if (operator === "in") return (expected as unknown[]).includes(row[key]);
   if (operator === "lte") return row[key] != null && row[key] <= expected;
   if (operator === "gte") return row[key] != null && row[key] >= expected;
+  if (operator === "gt") return row[key] != null && row[key] > expected;
   if (operator === "not-null") return row[key] != null;
   return true;
 }
@@ -89,6 +94,11 @@ class FakeQuery implements PromiseLike<any> {
 
   gte(key: string, value: unknown) {
     this.filters.push(["gte", key, value]);
+    return this;
+  }
+
+  gt(key: string, value: unknown) {
+    this.filters.push(["gt", key, value]);
     return this;
   }
 
@@ -164,7 +174,18 @@ class FakeQuery implements PromiseLike<any> {
               && row.provider_event_id
               && row.provider_event_id === payload.provider_event_id
             )
-            : this.table === "marketing_suppressions"
+            : this.table === "marketing_workflow_runs"
+              ? table.find((row) =>
+                row.workflow_id === payload.workflow_id
+                && row.contact_id === payload.contact_id
+              )
+              : this.table === "marketing_contact_tags"
+                ? table.find((row) =>
+                  row.contact_id === payload.contact_id && row.tag === payload.tag
+                )
+                : this.table === "marketing_worker_cursors"
+                  ? table.find((row) => row.key === payload.key)
+                  : this.table === "marketing_suppressions"
               ? table.find((row) => row.email === payload.email)
               : null;
         if (duplicate && this.table === "marketing_message_events") {
@@ -210,6 +231,20 @@ function fakeSupabase(tables: Tables) {
       return new FakeQuery(tables, table);
     },
     async rpc(name: string, args: Record<string, unknown>) {
+      if (name === "claim_marketing_workflow_runs") {
+        const claimTime = String(args.claim_time);
+        const claimed = (tables.marketing_workflow_runs ?? [])
+          .filter((row) =>
+            row.status === "active"
+            && row.next_run_at
+            && row.next_run_at <= claimTime
+          )
+          .slice(0, Number(args.claim_limit));
+        for (const row of claimed) {
+          row.next_run_at = "2026-07-25T12:05:00.000Z";
+        }
+        return { data: claimed.map((row) => ({ ...row })), error: null };
+      }
       assert.equal(name, "claim_marketing_campaign_recipients");
       const campaignId = args.target_campaign_id;
       const limit = Number(args.claim_limit);
@@ -229,6 +264,177 @@ function fakeSupabase(tables: Tables) {
     },
   };
 }
+
+function workflowRun(overrides: Row = {}) {
+  return {
+    id: `run-${Math.random()}`,
+    workflow_id: "workflow-1",
+    contact_id: "contact-1",
+    status: "active",
+    current_position: 0,
+    next_run_at: "2026-07-25T11:59:00.000Z",
+    context: {},
+    started_at: "2026-07-25T11:59:00.000Z",
+    completed_at: null,
+    created_at: "2026-07-25T11:59:00.000Z",
+    updated_at: "2026-07-25T11:59:00.000Z",
+    ...overrides,
+  };
+}
+
+test("workflow enqueue matches trigger config and deduplicates a contact", async () => {
+  const tables: Tables = {
+    marketing_workflows: [
+      {
+        id: "matching",
+        status: "active",
+        trigger_type: "contact_subscribed",
+        trigger_config: { topicId: "topic-1" },
+      },
+      {
+        id: "other-topic",
+        status: "active",
+        trigger_type: "contact_subscribed",
+        trigger_config: { topicId: "topic-2" },
+      },
+      {
+        id: "paused",
+        status: "paused",
+        trigger_type: "contact_subscribed",
+        trigger_config: { topicId: "topic-1" },
+      },
+    ],
+    marketing_workflow_runs: [],
+  };
+  const supabase = fakeSupabase(tables);
+  const input = {
+    triggerType: "contact_subscribed" as const,
+    contactId: "contact-1",
+    matchData: { topicId: "topic-1" },
+  };
+
+  assert.equal(await enqueueWorkflowRunsForTrigger(supabase, input), 1);
+  assert.equal(await enqueueWorkflowRunsForTrigger(supabase, input), 0);
+  assert.deepEqual(
+    tables.marketing_workflow_runs.map((row) => row.workflow_id),
+    ["matching"],
+  );
+});
+
+test("workflow processor sends, waits, tags, skips suppressed sends, and completes", async () => {
+  const tables: Tables = {
+    marketing_workflows: [
+      { id: "send", status: "active" },
+      { id: "wait", status: "active" },
+      { id: "tag", status: "active" },
+      { id: "suppressed", status: "active" },
+    ],
+    marketing_workflow_nodes: [
+      {
+        id: "send-node",
+        workflow_id: "send",
+        position: 0,
+        node_type: "send_email",
+        config: {
+          subject: "Welcome",
+          bodyText: "Hello",
+          topicId: "topic-1",
+        },
+      },
+      {
+        id: "wait-node",
+        workflow_id: "wait",
+        position: 0,
+        node_type: "wait",
+        config: { durationMinutes: 10 },
+      },
+      {
+        id: "wait-tag-node",
+        workflow_id: "wait",
+        position: 1,
+        node_type: "add_tag",
+        config: { tag: "after-wait" },
+      },
+      {
+        id: "tag-node",
+        workflow_id: "tag",
+        position: 0,
+        node_type: "add_tag",
+        config: { tag: "customer" },
+      },
+      {
+        id: "suppressed-node",
+        workflow_id: "suppressed",
+        position: 0,
+        node_type: "send_email",
+        config: { subject: "Nope", bodyText: "Nope" },
+      },
+    ],
+    marketing_workflow_runs: [
+      workflowRun({ id: "send-run", workflow_id: "send", contact_id: "contact-1" }),
+      workflowRun({ id: "wait-run", workflow_id: "wait", contact_id: "contact-1" }),
+      workflowRun({ id: "tag-run", workflow_id: "tag", contact_id: "contact-1" }),
+      workflowRun({
+        id: "suppressed-run",
+        workflow_id: "suppressed",
+        contact_id: "contact-2",
+      }),
+    ],
+    crm_contacts: [
+      { id: "contact-1", email: "person@example.com" },
+      { id: "contact-2", email: "blocked@example.com" },
+    ],
+    marketing_subscriptions: [
+      { contact_id: "contact-1", topic_id: "topic-1", status: "subscribed" },
+    ],
+    marketing_suppressions: [{ id: "suppression", contact_id: "contact-2" }],
+    marketing_contact_tags: [],
+    marketing_workflow_step_runs: [],
+    marketing_message_events: [],
+  };
+  const sent: MarketingEmailMessage[] = [];
+  const sender: MarketingEmailSender = {
+    async sendOne(message) {
+      sent.push(message);
+      return { ok: true, providerMessageId: "message-1" };
+    },
+    async sendBatch(messages) {
+      sent.push(...messages);
+      return messages.map(() => ({
+        ok: true as const,
+        providerMessageId: "message-1",
+      }));
+    },
+  };
+
+  const result = await processDueWorkflowRuns(
+    fakeSupabase(tables),
+    { sender, now: () => new Date("2026-07-25T12:00:00.000Z") },
+    { limit: 10 },
+  );
+
+  assert.deepEqual(result, { claimed: 4, completed: 3, failed: 0 });
+  assert.equal(sent.length, 1);
+  assert.equal(
+    tables.marketing_workflow_runs.find((row) => row.id === "wait-run")
+      ?.next_run_at,
+    "2026-07-25T12:10:00.000Z",
+  );
+  assert.equal(
+    tables.marketing_workflow_runs.find((row) => row.id === "wait-run")?.status,
+    "active",
+  );
+  assert.deepEqual(
+    tables.marketing_contact_tags.map((row) => row.tag),
+    ["customer"],
+  );
+  assert.equal(
+    tables.marketing_workflow_step_runs.find(
+      (row) => row.node_id === "suppressed-node",
+    )?.status,
+    "skipped",
+  );
+});
 
 function campaign(overrides: Row = {}) {
   return {

@@ -37,6 +37,18 @@ import type {
   getMarketingOverview,
   getSegmentAnalytics,
 } from "./analytics";
+import type {
+  activateWorkflow,
+  createWorkflow,
+  deleteWorkflow,
+  deleteWorkflowNode,
+  getWorkflow,
+  listWorkflowRuns,
+  listWorkflows,
+  pauseWorkflow,
+  updateWorkflow,
+  upsertWorkflowNodes,
+} from "./workflows";
 
 type RouteContext = {
   params: Promise<{ token: string }> | { token: string };
@@ -84,6 +96,9 @@ function marketingErrorResponse(error: unknown, context: string) {
     message.includes("required")
     || message.includes("must be")
     || message.startsWith("Only ")
+    || message.startsWith("Pause ")
+    || message.startsWith("A workflow ")
+    || message.startsWith("Workflow node ")
     || message.startsWith("This campaign")
     || message.startsWith("A valid email")
   ) {
@@ -91,6 +106,9 @@ function marketingErrorResponse(error: unknown, context: string) {
   }
   if (message === "Campaign not found.") {
     return json(publicError("CAMPAIGN_NOT_FOUND", message), { status: 404 });
+  }
+  if (message === "Workflow not found.") {
+    return json(publicError("WORKFLOW_NOT_FOUND", message), { status: 404 });
   }
   return json(
     sanitizePublicError(
@@ -172,6 +190,16 @@ export type MarketingCampaignHttpDependencies = {
   getMarketingOverview: typeof getMarketingOverview;
   getCampaignAnalytics: typeof getCampaignAnalytics;
   getSegmentAnalytics: typeof getSegmentAnalytics;
+  listWorkflows: typeof listWorkflows;
+  getWorkflow: typeof getWorkflow;
+  createWorkflow: typeof createWorkflow;
+  updateWorkflow: typeof updateWorkflow;
+  deleteWorkflow: typeof deleteWorkflow;
+  activateWorkflow: typeof activateWorkflow;
+  pauseWorkflow: typeof pauseWorkflow;
+  upsertWorkflowNodes: typeof upsertWorkflowNodes;
+  deleteWorkflowNode: typeof deleteWorkflowNode;
+  listWorkflowRuns: typeof listWorkflowRuns;
   logger?: Pick<Console, "error">;
 };
 
@@ -577,6 +605,159 @@ export function createMarketingCampaignHttpHandlers(
       ),
     ),
   );
+  const workflowsGet = withStaff(
+    dependencies,
+    "marketing.workflows.list",
+    async (supabase) => json(await dependencies.listWorkflows(supabase)),
+  );
+  const workflowsPost = withStaff(
+    dependencies,
+    "marketing.workflows.create",
+    async (supabase, access, request) => {
+      const payload = await parseJsonObject(request);
+      if (
+        !payload
+        || typeof payload.name !== "string"
+        || typeof payload.triggerType !== "string"
+      ) {
+        return json(
+          publicError("INVALID_INPUT", "Workflow name and triggerType are required."),
+          { status: 400 },
+        );
+      }
+      return json(await dependencies.createWorkflow(supabase, {
+        name: payload.name,
+        description: typeof payload.description === "string"
+          ? payload.description
+          : null,
+        triggerType: payload.triggerType as never,
+        triggerConfig: isRecord(payload.triggerConfig) ? payload.triggerConfig : {},
+        createdByProfileId: access.profileId ?? null,
+      }), { status: 201 });
+    },
+  );
+  const workflowGet = withStaff(
+    dependencies,
+    "marketing.workflows.get",
+    async (supabase, _access, _request, context) => {
+      const workflow = await dependencies.getWorkflow(
+        supabase,
+        await campaignId(context),
+      );
+      return workflow
+        ? json(workflow)
+        : json(publicError("WORKFLOW_NOT_FOUND", "Workflow not found."), {
+          status: 404,
+        });
+    },
+  );
+  const workflowPatch = withStaff(
+    dependencies,
+    "marketing.workflows.update",
+    async (supabase, _access, request, context) => {
+      const payload = await parseJsonObject(request);
+      if (!payload) {
+        return json(publicError("INVALID_INPUT", "A JSON object is required."), {
+          status: 400,
+        });
+      }
+      return json(await dependencies.updateWorkflow(
+        supabase,
+        await campaignId(context),
+        {
+          ...(typeof payload.name === "string" ? { name: payload.name } : {}),
+          ...("description" in payload ? {
+            description: typeof payload.description === "string"
+              ? payload.description
+              : null,
+          } : {}),
+          ...(typeof payload.triggerType === "string"
+            ? { triggerType: payload.triggerType as never }
+            : {}),
+          ...(isRecord(payload.triggerConfig)
+            ? { triggerConfig: payload.triggerConfig }
+            : {}),
+        },
+      ));
+    },
+  );
+  const workflowDelete = withStaff(
+    dependencies,
+    "marketing.workflows.delete",
+    async (supabase, _access, _request, context) => {
+      await dependencies.deleteWorkflow(supabase, await campaignId(context));
+      return new Response(null, { status: 204 });
+    },
+  );
+  const workflowActivatePost = withStaff(
+    dependencies,
+    "marketing.workflows.activate",
+    async (supabase, _access, _request, context) => json(
+      await dependencies.activateWorkflow(supabase, await campaignId(context)),
+    ),
+  );
+  const workflowPausePost = withStaff(
+    dependencies,
+    "marketing.workflows.pause",
+    async (supabase, _access, _request, context) => json(
+      await dependencies.pauseWorkflow(supabase, await campaignId(context)),
+    ),
+  );
+  const workflowNodesPut = withStaff(
+    dependencies,
+    "marketing.workflows.nodes.upsert",
+    async (supabase, _access, request, context) => {
+      const payload = await parseJsonObject(request);
+      if (!payload || !Array.isArray(payload.nodes)) {
+        return json(publicError("INVALID_INPUT", "nodes must be an array."), {
+          status: 400,
+        });
+      }
+      const nodes = payload.nodes.map((value, position) => {
+        if (!isRecord(value) || typeof value.nodeType !== "string") {
+          throw new Error("Workflow node nodeType is required.");
+        }
+        return {
+          ...(typeof value.id === "string" ? { id: value.id } : {}),
+          position: typeof value.position === "number" ? value.position : position,
+          nodeType: value.nodeType as never,
+          config: isRecord(value.config) ? value.config : {},
+        };
+      });
+      return json(await dependencies.upsertWorkflowNodes(
+        supabase,
+        await campaignId(context),
+        nodes,
+      ));
+    },
+  );
+  const workflowNodeDelete = withStaff(
+    dependencies,
+    "marketing.workflows.nodes.delete",
+    async (supabase, _access, _request, context) => {
+      const params = context ? await context.params : { id: "" };
+      const nodeId = "nodeId" in params && typeof params.nodeId === "string"
+        ? params.nodeId
+        : "";
+      if (!nodeId) {
+        return json(publicError("INVALID_INPUT", "Node ID is required."), {
+          status: 400,
+        });
+      }
+      return json(await dependencies.deleteWorkflowNode(
+        supabase,
+        params.id,
+        nodeId,
+      ));
+    },
+  );
+  const workflowRunsGet = withStaff(
+    dependencies,
+    "marketing.workflows.runs.list",
+    async (supabase, _access, _request, context) => json(
+      await dependencies.listWorkflowRuns(supabase, await campaignId(context)),
+    ),
+  );
 
   const workerPost = async (request: Request) => {
     const authorization = request.headers.get("authorization") ?? "";
@@ -642,6 +823,16 @@ export function createMarketingCampaignHttpHandlers(
     analyticsOverviewGet,
     analyticsCampaignGet,
     analyticsSegmentGet,
+    workflowsGet,
+    workflowsPost,
+    workflowGet,
+    workflowPatch,
+    workflowDelete,
+    workflowActivatePost,
+    workflowPausePost,
+    workflowNodesPut,
+    workflowNodeDelete,
+    workflowRunsGet,
     workerPost,
     webhookPost,
   };

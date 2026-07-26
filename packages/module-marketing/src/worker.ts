@@ -4,6 +4,10 @@ import type {
   MarketingEmailResult,
   MarketingEmailSender,
 } from "./email/types";
+import {
+  processDueWorkflowRuns,
+  scanActivityTriggers,
+} from "./workflows";
 
 type WorkerClient = {
   from: (table: string) => any;
@@ -35,6 +39,11 @@ export type MarketingWorkerResult = {
   claimed: number;
   sent: number;
   failed: number;
+  activityEventsScanned: number;
+  workflowRunsEnqueued: number;
+  workflowRunsClaimed: number;
+  workflowRunsCompleted: number;
+  workflowRunsFailed: number;
 };
 
 function db(supabase: unknown) {
@@ -197,6 +206,11 @@ export async function runMarketingWorker(
     claimed: 0,
     sent: 0,
     failed: 0,
+    activityEventsScanned: 0,
+    workflowRunsEnqueued: 0,
+    workflowRunsClaimed: 0,
+    workflowRunsCompleted: 0,
+    workflowRunsFailed: 0,
   };
 
   for (const row of (campaignResult.data ?? []) as Array<{
@@ -260,5 +274,19 @@ export async function runMarketingWorker(
     await refreshCampaignState(dependencies.supabase, row.id, now);
   }
 
+  const activity = await scanActivityTriggers(dependencies.supabase, { limit: 100 });
+  const workflows = await processDueWorkflowRuns(
+    dependencies.supabase,
+    {
+      sender: dependencies.sender,
+      now: dependencies.now,
+    },
+    { limit: 25 },
+  );
+  totals.activityEventsScanned = activity.scanned;
+  totals.workflowRunsEnqueued = activity.enqueued;
+  totals.workflowRunsClaimed = workflows.claimed;
+  totals.workflowRunsCompleted = workflows.completed;
+  totals.workflowRunsFailed = workflows.failed;
   return totals;
 }

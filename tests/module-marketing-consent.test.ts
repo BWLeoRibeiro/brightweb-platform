@@ -22,8 +22,30 @@ test("setSubscription captures consent and clears unsubscribe time when subscrib
   let upserted: Record<string, unknown> | null = null;
   const supabase = {
     from(table: string) {
+      if (table === "marketing_workflows") {
+        return {
+          select() {
+            return {
+              eq() {
+                return this;
+              },
+              then(resolve: (value: QueryResult) => unknown) {
+                return Promise.resolve(resolve({ data: [], error: null }));
+              },
+            };
+          },
+        };
+      }
       assert.equal(table, "marketing_subscriptions");
       return {
+        select() {
+          return {
+            eq() {
+              return this;
+            },
+            maybeSingle: async () => ({ data: null, error: null }),
+          };
+        },
         upsert(payload: Record<string, unknown>, options: unknown) {
           upserted = payload;
           assert.deepEqual(options, { onConflict: "contact_id,topic_id" });

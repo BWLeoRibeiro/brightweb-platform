@@ -28,6 +28,13 @@
       "marketing_segments",
       "marketing_campaign_recipients",
       "marketing_message_events",
+      "marketing_workflows",
+      "marketing_workflow_nodes",
+      "marketing_workflow_runs",
+      "marketing_workflow_step_runs",
+      "marketing_contact_tags",
+      "marketing_worker_cursors",
+      "claim_marketing_workflow_runs",
       "set_marketing_updated_at"
     ]
   }

@@ -76,6 +76,33 @@ export type {
   MarketingWorkerDependencies,
   MarketingWorkerResult,
 } from "./worker";
+export {
+  activateWorkflow,
+  createWorkflow,
+  deleteWorkflow,
+  deleteWorkflowNode,
+  enqueueFormSubmission,
+  enqueueWorkflowRunsForTrigger,
+  getWorkflow,
+  listWorkflowRuns,
+  listWorkflows,
+  pauseWorkflow,
+  processDueWorkflowRuns,
+  scanActivityTriggers,
+  updateWorkflow,
+  upsertWorkflowNodes,
+} from "./workflows";
+export type {
+  CreateWorkflowInput,
+  MarketingWorkflow,
+  MarketingWorkflowNode,
+  MarketingWorkflowWithNodes,
+  UpdateWorkflowInput,
+  UpsertWorkflowNodeInput,
+  WorkflowNodeType,
+  WorkflowStatus,
+  WorkflowTriggerType,
+} from "./workflows";
 export { processResendWebhook } from "./webhooks";
 export type { ResendWebhookResult } from "./webhooks";
 export {
