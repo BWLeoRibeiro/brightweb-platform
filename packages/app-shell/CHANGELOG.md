@@ -1,5 +1,11 @@
 # @brightweblabs/app-shell
 
+## 0.6.1
+
+### Patch Changes
+
+- ba77169: Normalize Next.js as a library peer dependency, add the marketing scaffold manifest, and keep the core scaffold migration set aligned.
+
 ## 0.6.0
 
 ### Minor Changes

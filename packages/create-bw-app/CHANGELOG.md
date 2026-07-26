@@ -1,5 +1,11 @@
 # create-bw-app
 
+## 0.13.3
+
+### Patch Changes
+
+- ba77169: Normalize Next.js as a library peer dependency, add the marketing scaffold manifest, and keep the core scaffold migration set aligned.
+
 ## 0.13.2
 
 ### Patch Changes
