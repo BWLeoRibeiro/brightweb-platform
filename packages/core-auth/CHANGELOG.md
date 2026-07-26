@@ -1,5 +1,12 @@
 # @brightweblabs/core-auth
 
+## 0.5.0
+
+### Minor Changes
+
+- 22e50aa: Add the account/profile surface, API handlers, injectable UI client, and profile persistence layer.
+- 41714ca: Add project read access validation and an injectable projects slot on the account page.
+
 ## 0.4.0
 
 ### Minor Changes

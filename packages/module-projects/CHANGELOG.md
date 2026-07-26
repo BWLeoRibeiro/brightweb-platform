@@ -1,5 +1,18 @@
 # @brightweblabs/module-projects
 
+## 0.6.0
+
+### Minor Changes
+
+- 41714ca: Add the read-only client projects list, detail, and account preview lens with account project data fallbacks.
+- 1c7c288: Add authenticated Projects HTTP handlers and live preview API wiring.
+
+### Patch Changes
+
+- Updated dependencies [22e50aa]
+- Updated dependencies [41714ca]
+  - @brightweblabs/core-auth@0.5.0
+
 ## 0.5.0
 
 ### Minor Changes
