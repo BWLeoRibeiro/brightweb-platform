@@ -40,6 +40,8 @@ function TaskStatusTag({ task }: { task: Pick<DashboardAssignedTask, "status" | 
    tabs render from live endpoints. Hours stays mocked.
    ────────────────────────────────────────────────────────────────── */
 
+// TODO(dashboard-hours): wire real data source
+
 type TabKey = "overview" | "projects" | "clients" | "tasks";
 
 /* ─── Shared tokens ──────────────────────────────────────────────── */

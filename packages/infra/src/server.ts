@@ -43,11 +43,25 @@ function compareSecret(expected: string, provided: string): boolean {
   return timingSafeEqual(a, b);
 }
 
-export async function createServerSupabase() {
-  const { supabaseUrl, supabasePublishableKey } = resolveSupabasePublicEnv();
-  const cookieStore = await cookies();
+export type ServerSupabaseDependencies = {
+  resolvePublicEnv: typeof resolveSupabasePublicEnv;
+  getCookies: typeof cookies;
+  createServerClient: typeof createServerClient;
+};
 
-  return createServerClient(supabaseUrl, supabasePublishableKey, {
+const defaultServerSupabaseDependencies: ServerSupabaseDependencies = {
+  resolvePublicEnv: resolveSupabasePublicEnv,
+  getCookies: cookies,
+  createServerClient,
+};
+
+export async function createServerSupabase(
+  dependencies: ServerSupabaseDependencies = defaultServerSupabaseDependencies,
+) {
+  const { supabaseUrl, supabasePublishableKey } = dependencies.resolvePublicEnv();
+  const cookieStore = await dependencies.getCookies();
+
+  return dependencies.createServerClient(supabaseUrl, supabasePublishableKey, {
     cookies: {
       getAll() {
         return cookieStore.getAll();
@@ -63,15 +77,29 @@ export async function createServerSupabase() {
   });
 }
 
-export function createServiceRoleClient() {
-  const supabaseUrl = resolveSupabaseUrl();
-  const serviceRoleKey = resolveSupabaseServiceRoleKey();
+export type ServiceRoleClientDependencies = {
+  resolveUrl: typeof resolveSupabaseUrl;
+  resolveServiceRoleKey: typeof resolveSupabaseServiceRoleKey;
+  createClient: typeof createClient;
+};
+
+const defaultServiceRoleClientDependencies: ServiceRoleClientDependencies = {
+  resolveUrl: resolveSupabaseUrl,
+  resolveServiceRoleKey: resolveSupabaseServiceRoleKey,
+  createClient,
+};
+
+export function createServiceRoleClient(
+  dependencies: ServiceRoleClientDependencies = defaultServiceRoleClientDependencies,
+) {
+  const supabaseUrl = dependencies.resolveUrl();
+  const serviceRoleKey = dependencies.resolveServiceRoleKey();
 
   if (!supabaseUrl || !serviceRoleKey) {
     return null;
   }
 
-  return createClient(supabaseUrl, serviceRoleKey, {
+  return dependencies.createClient(supabaseUrl, serviceRoleKey, {
     auth: {
       autoRefreshToken: false,
       persistSession: false,
