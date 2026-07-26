@@ -34,6 +34,12 @@ function getDisplayName(firstName: string, lastName: string, email: string | nul
 export async function AccountPage({ projectsSlot }: { projectsSlot?: ReactNode } = {}) {
   const { profileId, supabase, user, role } = await requireServerPageAccess();
   const accountProfile = await getCurrentAccountProfile(supabase, user.id, user.email ?? null);
+  if (!accountProfile.ok) {
+    console.error("[core-auth.AccountPage.profile]", {
+      userId: user.id,
+      error: accountProfile.error,
+    });
+  }
   const profileData: AccountProfile = accountProfile.ok
     ? accountProfile.data
     : {
@@ -104,7 +110,7 @@ export async function AccountPage({ projectsSlot }: { projectsSlot?: ReactNode }
             </div>
             {!accountProfile.ok ? (
               <p className="mb-4 rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-                {defaultAccountUiDictionary.profile.loadError}: {accountProfile.error}
+                {defaultAccountUiDictionary.profile.loadError}
               </p>
             ) : null}
             <AccountClient profile={profileData} />

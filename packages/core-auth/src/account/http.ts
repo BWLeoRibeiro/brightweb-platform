@@ -2,13 +2,14 @@ import type { User } from "@supabase/supabase-js";
 import { publicError, sanitizePublicError } from "@brightweblabs/infra/robustness";
 import {
   ACCOUNT_LANGUAGES,
+  ACCOUNT_NAME_MAX_LENGTH,
   type AccountLanguage,
   type getCurrentAccountProfile,
   type updateCurrentAccountProfile,
 } from "./profile";
 
 type AccountAccess =
-  | { ok: true; supabase: unknown; user: User; profileId: string; role: string | null }
+  | { ok: true; supabase: unknown; user: User }
   | { ok: false; status: number; error: string };
 
 type AccountHttpDependencies = {
@@ -84,9 +85,12 @@ export function createAccountUpdateHandler(dependencies: AccountHttpDependencies
     const lastName = normalizeInputText(body.lastName);
     const preferredLanguage = parseLanguage(body.preferredLanguage);
 
-    if (firstName.length > 80 || lastName.length > 80) {
+    if (firstName.length > ACCOUNT_NAME_MAX_LENGTH || lastName.length > ACCOUNT_NAME_MAX_LENGTH) {
       return json(
-        publicError("INVALID_NAME", "Nome inválido. Limite máximo de 80 caracteres por campo."),
+        publicError(
+          "INVALID_NAME",
+          `Nome inválido. Limite máximo de ${ACCOUNT_NAME_MAX_LENGTH} caracteres por campo.`,
+        ),
         { status: 400 },
       );
     }

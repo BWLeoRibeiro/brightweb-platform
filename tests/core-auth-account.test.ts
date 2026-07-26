@@ -5,6 +5,7 @@ import test from "node:test";
 
 import { createAccountGetHandler, createAccountUpdateHandler } from "../packages/core-auth/src/account/http.ts";
 import { getCurrentAccountProfile } from "../packages/core-auth/src/account/profile.ts";
+import { createProjectReadAccessGuard } from "../packages/core-auth/src/server.ts";
 import { createAccountUiClient } from "../packages/core-auth/src/ui/account/client.ts";
 
 type QueryResult = {
@@ -132,6 +133,21 @@ test("account handlers validate updates and preserve the injectable client bound
     body: JSON.stringify({ firstName: "A".repeat(81), lastName: "", preferredLanguage: "pt-PT" }),
   }));
   assert.equal(invalid.status, 400);
+  assert.deepEqual(await invalid.json(), {
+    error: {
+      code: "INVALID_NAME",
+      message: "Nome inválido. Limite máximo de 80 caracteres por campo.",
+    },
+  });
+
+  const invalidLanguage = await updateHandler(new Request("https://portal.test/api/account", {
+    method: "PATCH",
+    body: JSON.stringify({ firstName: "Ana", lastName: "Silva", preferredLanguage: "es" }),
+  }));
+  assert.equal(invalidLanguage.status, 400);
+  assert.deepEqual(await invalidLanguage.json(), {
+    error: { code: "INVALID_LANGUAGE", message: "Idioma inválido." },
+  });
 
   const client = createAccountUiClient("/api/account/", async (input, init) => {
     assert.equal(input, "/api/account");
@@ -145,6 +161,197 @@ test("account handlers validate updates and preserve the injectable client bound
   }), profile);
 });
 
+test("account GET handler sanitizes profile read failures", async () => {
+  const originalConsoleError = console.error;
+  console.error = () => {};
+  try {
+    const handler = createAccountGetHandler({
+      getAccess: async () => ({
+        ok: true,
+        supabase: {},
+        user: { id: "user-1", email: "ana@example.com" } as never,
+      }),
+      getProfile: async () => ({ ok: false, error: "raw database detail" }),
+      updateProfile: async () => {
+        throw new Error("must not run");
+      },
+    });
+
+    const response = await handler(new Request("https://portal.test/api/account"));
+    assert.equal(response.status, 500);
+    const payload = await response.json();
+    assert.deepEqual(payload, {
+      error: {
+        code: "INTERNAL_ERROR",
+        message: "Não foi possível concluir o pedido da conta.",
+      },
+    });
+    assert.doesNotMatch(JSON.stringify(payload), /raw database detail/);
+  } finally {
+    console.error = originalConsoleError;
+  }
+});
+
+type ProjectQueryResult = {
+  data: unknown;
+  error: null | { code?: string; message: string };
+};
+
+function createProjectServiceClient(results: Record<string, ProjectQueryResult[]>) {
+  const calls: Array<{ table: string; equals: Array<[string, unknown]> }> = [];
+  return {
+    calls,
+    client: {
+      from(table: string) {
+        const call = { table, equals: [] as Array<[string, unknown]> };
+        calls.push(call);
+        const query = {
+          select() {
+            return query;
+          },
+          eq(column: string, value: unknown) {
+            call.equals.push([column, value]);
+            return query;
+          },
+          async maybeSingle() {
+            return results[table]?.shift() ?? { data: null, error: null };
+          },
+        };
+        return query;
+      },
+    },
+  };
+}
+
+function projectAccess() {
+  return {
+    ok: true as const,
+    supabase: {} as never,
+    user: { id: "user-1", email: "ana@example.com" } as never,
+    profileId: "profile-1",
+    role: "client" as const,
+  };
+}
+
+test("project read access passes admins without querying projects", async () => {
+  let serviceClientCalls = 0;
+  const guard = createProjectReadAccessGuard({
+    getAccess: async () => ({ ...projectAccess(), role: "admin" }),
+    getServiceClient: () => {
+      serviceClientCalls += 1;
+      throw new Error("must not run");
+    },
+  });
+
+  assert.equal((await guard("project-1")).ok, true);
+  assert.equal(serviceClientCalls, 0);
+});
+
+test("project read access accepts project members, direct owners, and organization members", async () => {
+  const cases = [
+    {
+      label: "project member",
+      project: { id: "project-1", organization_id: null, owner_profile_id: "other" },
+      membership: { role: "observer" },
+      organizationMembership: undefined,
+    },
+    {
+      label: "direct owner",
+      project: { id: "project-1", organization_id: null, owner_profile_id: "profile-1" },
+      membership: null,
+      organizationMembership: undefined,
+    },
+    {
+      label: "organization member",
+      project: { id: "project-1", organization_id: "org-1", owner_profile_id: "other" },
+      membership: null,
+      organizationMembership: { role: "member" },
+    },
+  ];
+
+  for (const item of cases) {
+    const service = createProjectServiceClient({
+      projects: [{ data: item.project, error: null }],
+      project_members: [{ data: item.membership, error: null }],
+      organization_members: item.organizationMembership
+        ? [{ data: item.organizationMembership, error: null }]
+        : [],
+    });
+    const guard = createProjectReadAccessGuard({
+      getAccess: async () => projectAccess(),
+      getServiceClient: () => service.client as never,
+    });
+    assert.equal((await guard("project-1")).ok, true, item.label);
+  }
+});
+
+test("project read access returns the same 404 for missing and forbidden projects", async () => {
+  const run = async (project: unknown) => {
+    const service = createProjectServiceClient({
+      projects: [{ data: project, error: null }],
+      project_members: project ? [{ data: null, error: null }] : [],
+    });
+    return createProjectReadAccessGuard({
+      getAccess: async () => projectAccess(),
+      getServiceClient: () => service.client as never,
+    })("project-1");
+  };
+
+  const missing = await run(null);
+  const forbidden = await run({
+    id: "project-1",
+    organization_id: null,
+    owner_profile_id: "other",
+  });
+  assert.deepEqual(missing, forbidden);
+  assert.deepEqual(forbidden, {
+    ok: false,
+    status: 404,
+    error: "Projeto não encontrado.",
+  });
+});
+
+test("project read access reports project, membership, and organization query failures as 503", async () => {
+  const failures = [
+    {
+      projects: [{ data: null, error: { code: "XX000", message: "projects unavailable" } }],
+    },
+    {
+      projects: [{
+        data: { id: "project-1", organization_id: null, owner_profile_id: "other" },
+        error: null,
+      }],
+      project_members: [{ data: null, error: { message: "members unavailable" } }],
+    },
+    {
+      projects: [{
+        data: { id: "project-1", organization_id: "org-1", owner_profile_id: "other" },
+        error: null,
+      }],
+      project_members: [{ data: null, error: null }],
+      organization_members: [{ data: null, error: { message: "organizations unavailable" } }],
+    },
+  ];
+  const originalConsoleError = console.error;
+  console.error = () => {};
+  try {
+    for (const failure of failures) {
+      const service = createProjectServiceClient(failure);
+      const result = await createProjectReadAccessGuard({
+        getAccess: async () => projectAccess(),
+        getServiceClient: () => service.client as never,
+      })("project-1");
+      assert.deepEqual(result, {
+        ok: false,
+        status: 503,
+        error: "Não foi possível validar o acesso ao projeto.",
+      });
+    }
+  } finally {
+    console.error = originalConsoleError;
+  }
+});
+
 test("preview account composes the projects slot without coupling core-auth", async () => {
   const repoRoot = path.resolve(new URL("..", import.meta.url).pathname);
   const page = await readFile(path.join(repoRoot, "apps/platform-preview/app/(shell)/account/page.tsx"), "utf8");
@@ -156,4 +363,6 @@ test("preview account composes the projects slot without coupling core-auth", as
   assert.match(surface, /projectsSlot\?: ReactNode/);
   assert.match(surface, /\{projectsSlot\}/);
   assert.doesNotMatch(surface, /module-projects/);
+  assert.match(surface, /console\.error\("\[core-auth\.AccountPage\.profile\]"/);
+  assert.doesNotMatch(surface, /loadError\}: \{accountProfile\.error\}/);
 });
