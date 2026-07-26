@@ -48,13 +48,7 @@
     }
   },
   "events": {
-    "emits": [
-      {
-        "name": "crm.contact.status_changed",
-        "since": "0.5.0",
-        "payloadSchema": "./schemas/events/contact-status-changed.v1.json"
-      }
-    ],
+    "emits": [],
     "consumes": []
   },
   "permissions": {

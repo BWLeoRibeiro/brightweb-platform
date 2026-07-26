@@ -8,6 +8,7 @@ import {
   processDueWorkflowRuns,
   scanActivityTriggers,
 } from "./workflows";
+import { isEmailable, isSuppressed } from "./server";
 
 type WorkerClient = {
   from: (table: string) => any;
@@ -23,7 +24,11 @@ type RecipientRow = {
   contact_id: string | null;
   email: string;
   attempt_count: number;
+  next_attempt_at?: string | null;
+  updated_at?: string;
 };
+
+const MAX_DELIVERY_ATTEMPTS = 3;
 
 export type MarketingWorkerDependencies = {
   supabase: unknown;
@@ -162,18 +167,59 @@ async function applyDeliveryResult(
   throwIfError(update.error);
 }
 
+async function suppressRecipient(supabase: unknown, recipientId: string) {
+  const update = await db(supabase)
+    .from("marketing_campaign_recipients")
+    .update({
+      status: "suppressed",
+      error: "Consent or suppression changed before delivery.",
+      next_attempt_at: null,
+    })
+    .eq("id", recipientId)
+    .eq("status", "sending");
+  throwIfError(update.error);
+}
+
+async function emailableRecipients(
+  supabase: unknown,
+  topicId: string,
+  recipients: RecipientRow[],
+) {
+  const checks = await Promise.all(recipients.map(async (recipient) => {
+    const emailable = recipient.contact_id
+      ? await isEmailable(supabase, recipient.contact_id, topicId)
+      : !(await isSuppressed(supabase, recipient.email));
+    return { recipient, emailable };
+  }));
+  const allowed: RecipientRow[] = [];
+  for (const check of checks) {
+    if (check.emailable) {
+      allowed.push(check.recipient);
+    } else {
+      await suppressRecipient(supabase, check.recipient.id);
+    }
+  }
+  return allowed;
+}
+
 async function refreshCampaignState(supabase: unknown, campaignId: string, now: Date) {
   const rowsResult = await db(supabase)
     .from("marketing_campaign_recipients")
-    .select("status")
+    .select("status,attempt_count")
     .eq("campaign_id", campaignId);
   throwIfError(rowsResult.error);
-  const statuses = ((rowsResult.data ?? []) as Array<{ status: string }>)
-    .map((row) => row.status);
+  const rows = (rowsResult.data ?? []) as Array<{
+    status: string;
+    attempt_count: number;
+  }>;
+  const statuses = rows.map((row) => row.status);
   const sentCount = statuses.filter((status) => status === "sent").length;
   const failedCount = statuses.filter((status) => status === "failed").length;
-  const queueDrained = !statuses.some(
-    (status) => status === "queued" || status === "sending",
+  const queueDrained = !rows.some(
+    (row) =>
+      row.status === "queued"
+      || row.status === "sending"
+      || (row.status === "failed" && row.attempt_count < MAX_DELIVERY_ATTEMPTS),
   );
   const update = await db(supabase)
     .from("marketing_campaigns")
@@ -233,14 +279,23 @@ export async function runMarketingWorker(
       },
     );
     throwIfError(claim.error);
-    const recipients = (claim.data ?? []) as RecipientRow[];
+    const claimedRecipients = (claim.data ?? []) as RecipientRow[];
     totals.processedCampaigns += 1;
-    totals.claimed += recipients.length;
-    if (!recipients.length) {
+    totals.claimed += claimedRecipients.length;
+    if (!claimedRecipients.length) {
       await refreshCampaignState(dependencies.supabase, row.id, now);
       continue;
     }
 
+    const recipients = await emailableRecipients(
+      dependencies.supabase,
+      campaign.topicId,
+      claimedRecipients,
+    );
+    if (!recipients.length) {
+      await refreshCampaignState(dependencies.supabase, row.id, now);
+      continue;
+    }
     const tokens = await unsubscribeTokens(dependencies.supabase, recipients);
     let results: MarketingEmailResult[];
     try {

@@ -29,6 +29,9 @@ export function createResendEmailSender(
   const sendOne = async (
     message: MarketingEmailMessage,
   ): Promise<MarketingEmailResult> => {
+    if (!message.html?.trim() && !message.text?.trim()) {
+      return { ok: false, error: "Email content requires non-empty HTML or text." };
+    }
     try {
       const response = await resend.emails.send({
         from: fromAddress(message, config),

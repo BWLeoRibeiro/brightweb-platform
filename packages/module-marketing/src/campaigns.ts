@@ -1,5 +1,6 @@
 import type { MarketingEmailSender } from "./email/types";
 import { resolveSegmentContacts } from "./segments";
+import { isSuppressed } from "./server";
 
 type QueryClient = {
   from: (table: string) => any;
@@ -427,8 +428,12 @@ export async function sendTestEmail(
   const campaign = await getCampaign(supabase, id);
   if (!campaign) throw new Error("Campaign not found.");
   if (!toEmail.trim() || !toEmail.includes("@")) throw new Error("A valid email is required.");
+  const normalizedEmail = toEmail.trim().toLowerCase();
+  if (await isSuppressed(supabase, normalizedEmail)) {
+    throw new Error("Test email recipient is suppressed.");
+  }
   return sender.sendOne({
-    to: toEmail.trim().toLowerCase(),
+    to: normalizedEmail,
     subject: `[Test] ${campaign.subject}`,
     html: campaign.bodyHtml,
     text: campaign.bodyText,

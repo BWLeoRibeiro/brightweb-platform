@@ -117,6 +117,26 @@ test("isEmailable requires a subscription, an email, and no suppression", async 
 test("unsubscribeAll resolves the token, flips subscriptions, and suppresses the email", async () => {
   const updates: Record<string, unknown>[] = [];
   const suppressions: Record<string, unknown>[] = [];
+  const recipients = [
+    {
+      id: "queued-recipient",
+      contact_id: "contact-1",
+      email: "ada@example.com",
+      status: "queued",
+    },
+    {
+      id: "sending-recipient",
+      contact_id: "contact-1",
+      email: "ada@example.com",
+      status: "sending",
+    },
+    {
+      id: "sent-recipient",
+      contact_id: "contact-1",
+      email: "ada@example.com",
+      status: "sent",
+    },
+  ];
   const topics = [{
     id: "topic-1",
     slug: "newsletter",
@@ -208,6 +228,29 @@ test("unsubscribeAll resolves the token, flips subscriptions, and suppresses the
           },
         };
       }
+      if (table === "marketing_campaign_recipients") {
+        return {
+          update(payload: Record<string, unknown>) {
+            const filters: Array<(row: typeof recipients[number]) => boolean> = [];
+            const query = {
+              eq(column: "contact_id" | "email", value: string) {
+                filters.push((row) => row[column] === value);
+                return query;
+              },
+              in(column: "status", values: string[]) {
+                filters.push((row) => values.includes(row[column]));
+                for (const row of recipients.filter((candidate) =>
+                  filters.every((filter) => filter(candidate))
+                )) {
+                  Object.assign(row, payload);
+                }
+                return Promise.resolve({ data: null, error: null });
+              },
+            };
+            return query;
+          },
+        };
+      }
       assert.equal(table, "marketing_suppressions");
       return {
         upsert(payload: Record<string, unknown>) {
@@ -236,4 +279,8 @@ test("unsubscribeAll resolves the token, flips subscriptions, and suppresses the
     reason: "unsubscribed_all",
     source: "unsubscribe-token",
   });
+  assert.deepEqual(
+    recipients.map((recipient) => recipient.status),
+    ["suppressed", "suppressed", "sent"],
+  );
 });
