@@ -18,6 +18,7 @@ const BRIGHTWEB_PACKAGES = [
   "@brightweblabs/infra",
   "@brightweblabs/module-admin",
   "@brightweblabs/module-crm",
+  "@brightweblabs/module-marketing",
   "@brightweblabs/module-orgs",
   "@brightweblabs/module-projects",
   "@brightweblabs/theme",
@@ -240,8 +241,9 @@ test("published platform scaffolds pin current brightweb package versions", asyn
     );
   }
 
-  assert.equal(manifest.dependencies.react, "19.2.4");
-  assert.equal(manifest.dependencies["react-dom"], "19.2.4");
+  assert.equal(manifest.dependencies.next, "^16.0.0");
+  assert.equal(manifest.dependencies.react, "^19.0.0");
+  assert.equal(manifest.dependencies["react-dom"], "^19.0.0");
 });
 
 test("CRM scaffolds expose package-owned contact write handlers", async (t) => {
@@ -337,7 +339,7 @@ test("projects scaffolding resolves organizations without CRM", async (t) => {
   assert.match(await fs.readFile(path.join(targetDir, "config", "modules.ts"), "utf8"), /key: "orgs"[\s\S]*?enabled: true[\s\S]*?placement: "hidden"/);
   const shellConfig = await fs.readFile(path.join(targetDir, "config", "shell.ts"), "utf8");
   assert.match(shellConfig, /orgsModuleRegistration/);
-  assert.doesNotMatch(shellConfig, /projectsModuleRegistration/);
+  assert.match(shellConfig, /projectsPreviewModuleRegistration/);
 });
 
 test("scaffolds platform AI handoff files with platform-specific context", async (t) => {
@@ -355,11 +357,20 @@ test("scaffolds platform AI handoff files with platform-specific context", async
   assert.deepEqual(context.modules.enabled, ["crm", "projects"]);
   assert.equal(context.paths.componentsRoot, undefined);
   assert.ok(context.paths.readFirst.includes("config/shell.overrides.ts"));
-  assert.deepEqual(context.starterRoutes, ["/crm"]);
+  assert.deepEqual(context.starterRoutes, [
+    "/login",
+    "/signup",
+    "/forgot-password",
+    "/reset-password",
+    "/account",
+    "/dashboard",
+    "/crm",
+    "/projects",
+  ]);
   assert.match(examples, /First local setup/);
   assert.match(agents, /docs\/ai\/app-context\.json/);
   assert.match(
-    await fs.readFile(path.join(targetDir, "app", "crm", "layout.tsx"), "utf8"),
+    await fs.readFile(path.join(targetDir, "app", "(shell)", "crm", "layout.tsx"), "utf8"),
     /@brightweblabs\/module-crm\/tokens\.css/,
   );
 });
@@ -373,7 +384,7 @@ test("scaffolds only direct package mounts and no local component library", asyn
   await assert.rejects(fs.access(path.join(targetDir, "components")));
   await assert.rejects(fs.access(path.join(targetDir, "app", "page.tsx")));
   assert.match(
-    await fs.readFile(path.join(targetDir, "app", "crm", "page.tsx"), "utf8"),
+    await fs.readFile(path.join(targetDir, "app", "(shell)", "crm", "page.tsx"), "utf8"),
     /return <CrmDashboard \/>/,
   );
 });
@@ -441,8 +452,8 @@ test("detects a site app as a no-op update target", async (t) => {
   assert.equal(plan.template, "site");
   assert.equal(plan.packageUpdates.length, 0);
   assert.equal(plan.fileWrites.length, 0);
-  assert.equal(manifest.dependencies.react, "19.2.4");
-  assert.equal(manifest.dependencies["react-dom"], "19.2.4");
+  assert.equal(manifest.dependencies.react, "^19.0.0");
+  assert.equal(manifest.dependencies["react-dom"], "^19.0.0");
 });
 
 test("published updates resolve installed brightweb packages from npm and leave third-party deps alone", async (t) => {
@@ -654,7 +665,7 @@ test("reports missing and drifted starter files and only refreshes them with the
   });
   t.after(async () => fs.rm(tempRoot, { recursive: true, force: true }));
 
-  await fs.rm(path.join(targetDir, "app", "crm", "page.tsx"));
+  await fs.rm(path.join(targetDir, "app", "(shell)", "crm", "page.tsx"));
   await fs.rm(path.join(targetDir, "config", "shell.overrides.ts"));
   await fs.writeFile(path.join(targetDir, "app", "api", "crm", "stats", "route.ts"), "export {};\n", "utf8");
 
@@ -675,12 +686,12 @@ test("reports missing and drifted starter files and only refreshes them with the
 
   assert.deepEqual(dryPlan.starterFilesMissing, [
     "config/shell.overrides.ts",
-    "app/crm/page.tsx",
+    "app/(shell)/crm/page.tsx",
   ]);
   assert.deepEqual(dryPlan.starterFilesDrifted, ["app/api/crm/stats/route.ts"]);
   assert.deepEqual(refreshPlan.starterFilesToRefresh.sort(), [
+    "app/(shell)/crm/page.tsx",
     "app/api/crm/stats/route.ts",
-    "app/crm/page.tsx",
     "config/shell.overrides.ts",
   ]);
 });

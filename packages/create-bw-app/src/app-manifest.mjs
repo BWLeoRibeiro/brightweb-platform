@@ -27,6 +27,7 @@ export const MANAGED_APP_FILES = [
 export const MODULE_PACKAGES = {
   admin: "@brightweblabs/module-admin",
   crm: "@brightweblabs/module-crm",
+  marketing: "@brightweblabs/module-marketing",
   orgs: "@brightweblabs/module-orgs",
   projects: "@brightweblabs/module-projects",
 };
@@ -36,6 +37,7 @@ const FALLBACK_REQUIRES = {
   admin: { core: ">=0.3" },
   orgs: { core: ">=0.3", admin: ">=0.3" },
   crm: { core: ">=0.3", admin: ">=0.3", orgs: ">=0.1" },
+  marketing: { core: ">=0.3", admin: ">=0.3", orgs: ">=0.1", crm: ">=0.6" },
   projects: { core: ">=0.3", admin: ">=0.3", orgs: ">=0.1" },
 };
 
@@ -159,7 +161,7 @@ export async function createInitialAppManifest({ targetDir, slug, template, sele
   const modules = {};
   if (template === "platform") {
     for (const moduleKey of selectedModules) modules[moduleKey] = { version: moduleVersion(moduleKey, versionMap), installedAt: now, exposed: true };
-    if ((selectedModules.includes("crm") || selectedModules.includes("projects")) && !modules.orgs) {
+    if ((selectedModules.includes("crm") || selectedModules.includes("marketing") || selectedModules.includes("projects")) && !modules.orgs) {
       modules.orgs = { version: moduleVersion("orgs", versionMap), installedAt: now, exposed: true };
     }
   }
@@ -250,7 +252,7 @@ export async function readConfiguredModuleFlags(targetDir) {
   if (!(await pathExists(filePath))) return {};
   const content = await fs.readFile(filePath, "utf8");
   const flags = {};
-  for (const key of ["core-auth", "orgs", "crm", "projects", "admin"]) {
+  for (const key of ["core-auth", "orgs", "crm", "marketing", "projects", "admin"]) {
     const match = content.match(new RegExp(`key:\\s*"${key}"[\\s\\S]*?enabled:\\s*(true|false)`));
     if (match) flags[key === "core-auth" ? "core" : key] = match[1] === "true";
   }

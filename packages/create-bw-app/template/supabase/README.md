@@ -10,6 +10,7 @@ This directory is the scaffold-owned home for the Brightweb shared database modu
 - `modules/core`: always-on platform foundations
 - `modules/admin`: RBAC and privileged governance behavior
 - `modules/crm`: organizations, CRM contacts, and invitation flows
+- `modules/marketing`: consent, campaigns, segments, analytics, and workflows
 - `modules/projects`: project and work-management data
 - `clients/<client-slug>`: true client-only schema deltas plus the client stack plan
 - `clients/<client-slug>`: client stack metadata and client-only migrations for this project
@@ -40,6 +41,7 @@ Create a new shared module migration:
 pnpm db:new core profile_notification_cursor
 pnpm db:new admin role_change_guard
 pnpm db:new crm organization_invite_expiry
+pnpm db:new marketing campaign_delivery_guard
 pnpm db:new projects task_due_date_index
 ```
 
@@ -58,5 +60,6 @@ Projects created from the published scaffold should use the Supabase files in th
 - `supabase/modules/core/README.md`
 - `supabase/modules/admin/README.md`
 - `supabase/modules/crm/README.md`
+- `supabase/modules/marketing/README.md`
 - `supabase/modules/projects/README.md`
 - `supabase/clients/README.md`

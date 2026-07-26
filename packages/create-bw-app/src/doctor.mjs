@@ -7,6 +7,34 @@ import { pathExists, readJsonIfPresent } from "./generator.mjs";
 import { scaffoldDrift } from "./scaffold.mjs";
 
 const HELP = `Usage: bw doctor [options]\n\nOptions:\n  --target-dir <path>       App directory (defaults to cwd)\n  --workspace-root <path>   BrightWeb workspace root\n  --strict                  Treat warnings as failures\n  --report                  Stamp lastDoctor in the app manifest\n  --help                    Show this help`;
+const RUNTIME_PACKAGE_NAMES = ["react", "react-dom", "next"];
+
+export async function findInstalledRuntimeVersions(targetDir) {
+  const storeDir = path.join(targetDir, "node_modules", ".pnpm");
+  if (!(await pathExists(storeDir))) {
+    return Object.fromEntries(RUNTIME_PACKAGE_NAMES.map((packageName) => [packageName, []]));
+  }
+
+  const entries = await fs.readdir(storeDir, { withFileTypes: true });
+  const resolved = {};
+  for (const packageName of RUNTIME_PACKAGE_NAMES) {
+    const versions = new Set();
+    for (const entry of entries) {
+      if (!entry.isDirectory() || !entry.name.startsWith(`${packageName}@`)) continue;
+      const manifest = await readJsonIfPresent(
+        path.join(storeDir, entry.name, "node_modules", packageName, "package.json"),
+      );
+      const fallbackVersion = entry.name
+        .slice(packageName.length + 1)
+        .split("_", 1)[0]
+        .split("(", 1)[0];
+      const version = manifest?.version || fallbackVersion;
+      if (version) versions.add(version);
+    }
+    resolved[packageName] = Array.from(versions).sort();
+  }
+  return resolved;
+}
 
 export async function doctorBrightwebApp(argvOptions = {}, runtimeOptions = {}) {
   if (argvOptions.help) { output.write(`${HELP}\n`); return { help: true, ok: true }; }
@@ -34,6 +62,16 @@ export async function doctorBrightwebApp(argvOptions = {}, runtimeOptions = {}) 
     if (dependencyMap[packageName] && !appManifest.modules[key]) packageProblems.push(`${packageName} is installed but absent from manifest.modules`);
   }
   add(packageProblems.length ? "FAIL" : "PASS", "packages", packageProblems.join("; ") || "Installed module packages agree with the manifest.");
+
+  const runtimeVersions = await findInstalledRuntimeVersions(targetDir);
+  const duplicateRuntimes = Object.entries(runtimeVersions)
+    .filter(([, versions]) => versions.length > 1)
+    .map(([packageName, versions]) => `${packageName}: ${versions.join(", ")}`);
+  add(
+    duplicateRuntimes.length ? "FAIL" : "PASS",
+    "runtime-singletons",
+    duplicateRuntimes.join("; ") || "React, React DOM, and Next resolve to at most one version each.",
+  );
 
   const flags = await readConfiguredModuleFlags(targetDir);
   const exposureProblems = Object.entries(appManifest.modules || {}).filter(([key, entry]) => typeof flags[key] === "boolean" && flags[key] !== entry.exposed).map(([key, entry]) => `${key}: manifest exposed=${entry.exposed}, config enabled=${String(flags[key])}`);

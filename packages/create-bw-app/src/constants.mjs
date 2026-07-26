@@ -22,6 +22,12 @@ export const SELECTABLE_MODULES = [
     templateFolder: "crm",
   },
   {
+    key: "marketing",
+    label: "Marketing",
+    packageName: "@brightweblabs/module-marketing",
+    templateFolder: "marketing",
+  },
+  {
     key: "projects",
     label: "Projects",
     packageName: "@brightweblabs/module-projects",
@@ -55,12 +61,12 @@ export const MODULE_STARTER_FILES = {
   admin: [
     "app/api/admin/users/route.ts",
     "app/api/admin/users/roles/route.ts",
-    "app/admin/users/page.tsx",
+    "app/(shell)/admin/users/page.tsx",
   ],
   crm: [
-    "app/crm/layout.tsx",
-    "app/crm/page.tsx",
-    "app/crm/report/page.tsx",
+    "app/(shell)/crm/layout.tsx",
+    "app/(shell)/crm/page.tsx",
+    "app/(shell)/crm/report/page.tsx",
     "app/api/crm/contacts/route.ts",
     "app/api/crm/organizations/route.ts",
     "app/api/crm/owners/route.ts",
@@ -68,11 +74,81 @@ export const MODULE_STARTER_FILES = {
     "app/api/crm/stats/route.ts",
     "app/api/crm/timeline/route.ts",
   ],
+  marketing: [
+    "app/(shell)/marketing/page.tsx",
+    "app/api/marketing/_handlers.ts",
+    "app/api/marketing/analytics/campaigns/[id]/route.ts",
+    "app/api/marketing/analytics/overview/route.ts",
+    "app/api/marketing/analytics/segments/[id]/route.ts",
+    "app/api/marketing/campaigns/[id]/cancel/route.ts",
+    "app/api/marketing/campaigns/[id]/recipients/route.ts",
+    "app/api/marketing/campaigns/[id]/retry/route.ts",
+    "app/api/marketing/campaigns/[id]/route.ts",
+    "app/api/marketing/campaigns/[id]/schedule/route.ts",
+    "app/api/marketing/campaigns/[id]/send/route.ts",
+    "app/api/marketing/campaigns/[id]/test/route.ts",
+    "app/api/marketing/campaigns/route.ts",
+    "app/api/marketing/segments/[id]/preview/route.ts",
+    "app/api/marketing/segments/[id]/route.ts",
+    "app/api/marketing/segments/preview/route.ts",
+    "app/api/marketing/segments/route.ts",
+    "app/api/marketing/topics/route.ts",
+    "app/api/marketing/unsubscribe/[token]/route.ts",
+    "app/api/marketing/webhooks/resend/route.ts",
+    "app/api/marketing/worker/route.ts",
+    "app/api/marketing/workflows/[id]/activate/route.ts",
+    "app/api/marketing/workflows/[id]/nodes/[nodeId]/route.ts",
+    "app/api/marketing/workflows/[id]/nodes/route.ts",
+    "app/api/marketing/workflows/[id]/pause/route.ts",
+    "app/api/marketing/workflows/[id]/route.ts",
+    "app/api/marketing/workflows/[id]/runs/route.ts",
+    "app/api/marketing/workflows/route.ts",
+  ],
   projects: [
+    "app/(shell)/projects/layout.tsx",
+    "app/(shell)/projects/page.tsx",
+    "app/(shell)/projects/projects-live-mounts.tsx",
+    "app/(shell)/projects/projects-server-mounts.tsx",
+    "app/(shell)/projects/[id]/page.tsx",
+    "app/(shell)/projects/[id]/board/page.tsx",
+    "app/(shell)/projects/[id]/tasks/page.tsx",
+    "app/api/projects/_handlers.ts",
+    "app/api/projects/route.ts",
+    "app/api/projects/stats/route.ts",
+    "app/api/projects/organizations/route.ts",
+    "app/api/projects/[id]/route.ts",
+    "app/api/projects/[id]/activity/route.ts",
+    "app/api/projects/[id]/members/route.ts",
+    "app/api/projects/[id]/links/route.ts",
+    "app/api/projects/[id]/links/[itemId]/route.ts",
+    "app/api/projects/[id]/milestones/route.ts",
+    "app/api/projects/[id]/milestones/[itemId]/route.ts",
+    "app/api/projects/[id]/tasks/route.ts",
+    "app/api/projects/[id]/tasks/[itemId]/route.ts",
   ],
 };
 
 export const PLATFORM_STARTER_FILES = [
+  "app/(auth)/auth-provider.tsx",
+  "app/(auth)/layout.tsx",
+  "app/(auth)/login/page.tsx",
+  "app/(auth)/signup/page.tsx",
+  "app/(auth)/forgot-password/page.tsx",
+  "app/(auth)/reset-password/page.tsx",
+  "app/(auth)/auth/post-login/page.tsx",
+  "app/(auth)/auth/confirmed/page.tsx",
+  "app/(auth)/invite/[invitationId]/page.tsx",
+  "app/(auth)/invite/[invitationId]/invite-route-mount.tsx",
+  "app/(shell)/layout.tsx",
+  "app/(shell)/shell-layout-client.tsx",
+  "app/(shell)/account/page.tsx",
+  "app/(shell)/dashboard/dashboard-live-mount.tsx",
+  "app/(shell)/dashboard/page.tsx",
+  "app/api/account/route.ts",
+  "app/auth/callback/route.ts",
+  "app/auth/cleanup/route.ts",
+  "app/layout.tsx",
+  "config/env.ts",
   "config/shell.overrides.ts",
 ];
 
@@ -82,22 +158,23 @@ export const APP_DEPENDENCY_DEFAULTS = {
   "@brightweblabs/infra": "^0.3.3",
   "@brightweblabs/module-admin": "^0.5.2",
   "@brightweblabs/module-crm": "^0.8.2",
+  "@brightweblabs/module-marketing": "^0.2.1",
   "@brightweblabs/module-orgs": "^0.3.2",
   "@brightweblabs/module-projects": "^0.6.1",
   "@brightweblabs/theme": "^0.4.0",
   "@brightweblabs/ui": "^1.1.0",
   "geist": "1.7.2",
   "lucide-react": "^1.8.0",
-  "next": "16.1.6",
-  "react": "19.2.4",
-  "react-dom": "19.2.4",
+  "next": "^16.0.0",
+  "react": "^19.0.0",
+  "react-dom": "^19.0.0",
 };
 
 export const SITE_DEPENDENCY_DEFAULTS = {
   "geist": "1.7.2",
-  "next": "16.1.6",
-  "react": "19.2.4",
-  "react-dom": "19.2.4",
+  "next": "^16.0.0",
+  "react": "^19.0.0",
+  "react-dom": "^19.0.0",
 };
 
 export const APP_DEV_DEPENDENCY_DEFAULTS = {
@@ -131,7 +208,7 @@ Usage:
 Scaffold options:
   --template <platform|site>    Scaffold a platform app or a standalone site
   --name, --slug <name>          Project name and default directory name
-  --modules <list>               Comma-separated modules: crm,projects,admin
+  --modules <list>               Comma-separated modules: crm,marketing,projects,admin
   --output-dir <path>            Parent folder for the generated app
   --target-dir <path>            Exact output directory, bypassing slug folder creation
   --workspace-root <path>        BrightWeb workspace root for local mode
