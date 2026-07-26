@@ -5,6 +5,8 @@
   "description": "Consent-first marketing topics, subscriptions, and email suppressions.",
   "requires": {
     "core": ">=0.3",
+    "admin": ">=0.3",
+    "orgs": ">=0.1",
     "crm": ">=0.6"
   },
   "capabilities": {
@@ -12,11 +14,20 @@
     "consumes": []
   },
   "permissions": {
-    "surfaces": "public-tokened",
-    "notes": "The unsubscribe endpoint is public and access is granted only by a contact's unguessable unsubscribe token.",
-    "grants": []
+    "surfaces": "staff",
+    "grants": [
+      {
+        "name": "marketing.manage",
+        "defaultRoles": ["staff", "admin"]
+      }
+    ]
   },
   "tokens": "./tokens.css",
+  "events": {
+    "emits": [],
+    "consumes": []
+  },
+  "registration": "./registration",
   "database": {
     "namespace": ["marketing_"],
     "ownedObjects": [
