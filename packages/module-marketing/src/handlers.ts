@@ -22,6 +22,7 @@ import { runMarketingWorker } from "./worker";
 import { processResendWebhook } from "./webhooks";
 import {
   createMarketingServiceClient,
+  listTopics,
   resolveByUnsubscribeToken,
   unsubscribeAll,
   unsubscribeTopic,
@@ -59,6 +60,7 @@ export function createMarketingCampaignHandlers(
     webhookSecret: config.webhookSecret,
     publicAppUrl: config.publicAppUrl,
     logger: config.logger,
+    listTopics,
     listCampaigns,
     getCampaign,
     createCampaign,

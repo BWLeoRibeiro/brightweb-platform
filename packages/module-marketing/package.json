@@ -18,6 +18,9 @@
     "access": "public"
   },
   "exports": {
+    "./ui": "./src/ui/index.ts",
+    "./marketing-page": "./src/marketing-page.tsx",
+    "./registration": "./src/registration.ts",
     ".": "./src/index.ts",
     "./server": "./src/server.ts",
     "./campaigns": "./src/campaigns.ts",
@@ -26,9 +29,17 @@
     "./tokens.css": "./tokens.css"
   },
   "dependencies": {
+    "@brightweblabs/app-shell": "workspace:*",
     "@brightweblabs/core-auth": "workspace:*",
     "@brightweblabs/infra": "workspace:*",
+    "@brightweblabs/ui": "workspace:*",
+    "lucide-react": "^1.26.0",
     "resend": "^6.9.2",
+    "sonner": "^2.0.7",
     "svix": "^1.81.0"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
   }
 }

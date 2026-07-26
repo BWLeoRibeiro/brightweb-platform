@@ -3,6 +3,7 @@ import {
   sanitizePublicError,
 } from "@brightweblabs/infra/robustness";
 import type {
+  listTopics,
   resolveByUnsubscribeToken,
   unsubscribeAll,
   unsubscribeTopic,
@@ -135,6 +136,7 @@ export type MarketingCampaignHttpDependencies = {
   workerSecret: string;
   webhookSecret: string;
   publicAppUrl?: string | null;
+  listTopics: typeof listTopics;
   listCampaigns: typeof listCampaigns;
   getCampaign: typeof getCampaign;
   createCampaign: typeof createCampaign;
@@ -244,6 +246,11 @@ function campaignInput(payload: Record<string, unknown>) {
 export function createMarketingCampaignHttpHandlers(
   dependencies: MarketingCampaignHttpDependencies,
 ) {
+  const topicsGet = withStaff(
+    dependencies,
+    "marketing.topics.list",
+    async (supabase) => json(await dependencies.listTopics(supabase as never, { activeOnly: true })),
+  );
   const campaignsGet = withStaff(
     dependencies,
     "marketing.campaigns.list",
@@ -449,6 +456,7 @@ export function createMarketingCampaignHttpHandlers(
   };
 
   return {
+    topicsGet,
     campaignsGet,
     campaignsPost,
     campaignGet,

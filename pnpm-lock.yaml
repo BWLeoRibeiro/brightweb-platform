@@ -310,15 +310,33 @@ importers:
 
   packages/module-marketing:
     dependencies:
+      '@brightweblabs/app-shell':
+        specifier: workspace:*
+        version: link:../app-shell
       '@brightweblabs/core-auth':
         specifier: workspace:*
         version: link:../core-auth
       '@brightweblabs/infra':
         specifier: workspace:*
         version: link:../infra
+      '@brightweblabs/ui':
+        specifier: workspace:*
+        version: link:../ui
+      lucide-react:
+        specifier: ^1.26.0
+        version: 1.26.0(react@19.2.4)
+      react:
+        specifier: 19.2.4
+        version: 19.2.4
+      react-dom:
+        specifier: 19.2.4
+        version: 19.2.4(react@19.2.4)
       resend:
         specifier: ^6.9.2
         version: 6.18.0
+      sonner:
+        specifier: ^2.0.7
+        version: 2.0.7(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       svix:
         specifier: ^1.81.0
         version: 1.99.1

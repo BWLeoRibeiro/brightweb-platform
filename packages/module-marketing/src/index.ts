@@ -70,3 +70,18 @@ export type {
   SubscriptionStatus,
   SuppressionReason,
 } from "./types";
+export { MarketingPage } from './marketing-page';
+export {
+  MarketingClient,
+  MarketingUiProvider,
+  createMarketingUiClient,
+  defaultMarketingUiDictionary,
+  useMarketingUiClient,
+} from './ui';
+export type {
+  MarketingClientProps,
+  MarketingUiClient,
+  MarketingUiDictionary,
+  MarketingUiProviderProps,
+} from './ui';
+export { marketingModuleRegistration } from './registration';
