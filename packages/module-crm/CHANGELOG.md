@@ -1,5 +1,17 @@
 # @brightweblabs/module-crm
 
+## 0.8.2
+
+### Patch Changes
+
+- b9575c3: Fix campaign and workflow consent enforcement, delivery recovery, activity triggers, and the CRM event manifest declaration.
+- Updated dependencies [ba77169]
+- Updated dependencies [7eafa76]
+  - @brightweblabs/app-shell@0.6.1
+  - @brightweblabs/core-auth@0.5.1
+  - @brightweblabs/infra@0.3.3
+  - @brightweblabs/module-orgs@0.3.2
+
 ## 0.8.1
 
 ### Patch Changes

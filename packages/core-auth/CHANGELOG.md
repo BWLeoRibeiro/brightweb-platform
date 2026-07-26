@@ -1,5 +1,14 @@
 # @brightweblabs/core-auth
 
+## 0.5.1
+
+### Patch Changes
+
+- ba77169: Normalize Next.js as a library peer dependency, add the marketing scaffold manifest, and keep the core scaffold migration set aligned.
+- 7eafa76: Harden account profile errors, validation, persistence checks, and project read authorization.
+- Updated dependencies [ba77169]
+  - @brightweblabs/infra@0.3.3
+
 ## 0.5.0
 
 ### Minor Changes

@@ -1,5 +1,17 @@
 # @brightweblabs/module-projects
 
+## 0.6.1
+
+### Patch Changes
+
+- ba77169: Normalize Next.js as a library peer dependency, add the marketing scaffold manifest, and keep the core scaffold migration set aligned.
+- 3655e23: Harden staff-only project surfaces, client project scoping, and client-visible project links.
+- Updated dependencies [ba77169]
+- Updated dependencies [7eafa76]
+  - @brightweblabs/app-shell@0.6.1
+  - @brightweblabs/core-auth@0.5.1
+  - @brightweblabs/infra@0.3.3
+
 ## 0.6.0
 
 ### Minor Changes
