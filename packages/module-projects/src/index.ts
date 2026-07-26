@@ -1,4 +1,4 @@
-import { requireServerPageAccess } from "@brightweblabs/core-auth/server";
+import { requireServerPageRoleAccess } from "@brightweblabs/core-auth/server";
 export {
   ClientProjectDetailLoading,
   ClientProjectDetailPage,
@@ -137,7 +137,7 @@ import {
 } from "./data";
 
 export async function getProjectsPortfolioPageData(): Promise<ProjectsPortfolioPageData> {
-  const { supabase } = await requireServerPageAccess();
+  const { supabase } = await requireServerPageRoleAccess(["staff", "admin"]);
   const { data: organizations } = await supabase
     .from("organizations")
     .select("id, name")

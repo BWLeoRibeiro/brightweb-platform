@@ -12,6 +12,9 @@ export async function ClientProjectsListPage() {
   const isStaff = role === "staff" || role === "admin";
   const projects = await listAccountProjects(supabase, profileId, { limit: 40 });
   const dictionary = clientProjectsDictionary.list;
+  if (projects.error) {
+    console.error("Failed to load client projects.", projects.error);
+  }
   const { activeCount, onTrackCount } = projects.items.reduce(
     (counts, project) => {
       if (project.status === "active") counts.activeCount += 1;
@@ -100,7 +103,7 @@ export async function ClientProjectsListPage() {
 
         {projects.error ? (
           <p className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-            {dictionary.loadError} {projects.error}
+            {dictionary.loadError}
           </p>
         ) : null}
 

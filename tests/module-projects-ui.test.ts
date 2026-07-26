@@ -5,6 +5,24 @@ import test from "node:test";
 
 import type { ProjectDashboardData, ProjectLink } from "../packages/module-projects/src/types.ts";
 import { listAccountProjects } from "../packages/module-projects/src/account-projects.ts";
+import {
+  createProjectsAssignableProfilesGetHandler,
+  createProjectsDeleteHandler,
+  createProjectsLinksDeleteHandler,
+  createProjectsLinksPatchHandler,
+  createProjectsLinksPostHandler,
+  createProjectsMembersPutHandler,
+  createProjectsMilestonesDeleteHandler,
+  createProjectsMilestonesPatchHandler,
+  createProjectsMilestonesPostHandler,
+  createProjectsOrganizationsPostHandler,
+  createProjectsPatchHandler,
+  createProjectsPostHandler,
+  createProjectsTasksDeleteHandler,
+  createProjectsTasksPatchHandler,
+  createProjectsTasksPostHandler,
+} from "../packages/module-projects/src/http.ts";
+import { getClientProjectHealth } from "../packages/module-projects/src/server.ts";
 import { defaultProjectsUiDictionary } from "../packages/module-projects/src/ui/dictionary.ts";
 import { parseProjectBoardApiError, parseTaskListPayload } from "../packages/module-projects/src/ui/project-board-response-parser.ts";
 import { parseProjectDashboardPayload, parseProjectLinksPayload, projectDetailDataReducer } from "../packages/module-projects/src/ui/project-detail-data-provider.tsx";
@@ -17,13 +35,12 @@ const dashboard = { project, members: [], milestones: [], tasks: [], links: [lin
 test("account projects adapter preserves schema and legacy-role fallbacks", async () => {
   const supabase = {} as never;
   const schemaError = new Error('relation "public.projects" does not exist');
+  let schemaCalls = 0;
   const dependencies = {
     isProjectsSchemaMissingError: (error: unknown) => error === schemaError,
     listOrgAdminProjectsByProfile: async () => {
+      schemaCalls += 1;
       throw schemaError;
-    },
-    listProjects: async () => {
-      throw new Error("fallback must not run for a missing projects schema");
     },
   };
 
@@ -31,16 +48,21 @@ test("account projects adapter preserves schema and legacy-role fallbacks", asyn
     await listAccountProjects(supabase, "profile-1", { limit: 3 }, dependencies as never),
     { items: [], schemaMissing: true, error: null },
   );
+  assert.equal(schemaCalls, 1);
 
-  let fallbackParams: unknown = null;
+  const scopedCalls: Array<{ profileId: string; options: unknown }> = [];
   const fallbackDependencies = {
     isProjectsSchemaMissingError: () => false,
-    listOrgAdminProjectsByProfile: async () => {
-      throw new Error('relation "user_role_assignments" does not exist');
-    },
-    listProjects: async (_client: unknown, params: unknown) => {
-      fallbackParams = params;
-      return { items: [project], total: 1, page: 1, pageSize: 3 };
+    listOrgAdminProjectsByProfile: async (
+      _client: unknown,
+      profileId: string,
+      options: unknown,
+    ) => {
+      scopedCalls.push({ profileId, options });
+      if (scopedCalls.length === 1) {
+        throw new Error('relation "user_role_assignments" does not exist');
+      }
+      return [project];
     },
   };
 
@@ -48,12 +70,22 @@ test("account projects adapter preserves schema and legacy-role fallbacks", asyn
     await listAccountProjects(supabase, "profile-1", { limit: 3 }, fallbackDependencies as never),
     { items: [project], schemaMissing: false, error: null },
   );
-  assert.deepEqual(fallbackParams, { page: 1, pageSize: 3, dueWindow: "all" });
+  assert.deepEqual(scopedCalls, [
+    { profileId: "profile-1", options: { limit: 3 } },
+    {
+      profileId: "profile-1",
+      options: { limit: 3, skipAdminRoleCheck: true },
+    },
+  ]);
 
+  let fallbackSchemaCalls = 0;
   const fallbackSchemaDependencies = {
-    ...fallbackDependencies,
     isProjectsSchemaMissingError: (error: unknown) => error === schemaError,
-    listProjects: async () => {
+    listOrgAdminProjectsByProfile: async () => {
+      fallbackSchemaCalls += 1;
+      if (fallbackSchemaCalls === 1) {
+        throw new Error('relation "user_role_assignments" does not exist');
+      }
       throw schemaError;
     },
   };
@@ -61,6 +93,208 @@ test("account projects adapter preserves schema and legacy-role fallbacks", asyn
     await listAccountProjects(supabase, "profile-1", undefined, fallbackSchemaDependencies as never),
     { items: [], schemaMissing: true, error: null },
   );
+  assert.equal(fallbackSchemaCalls, 2);
+});
+
+test("client project health enforces client link visibility in the query and result", async () => {
+  const linkFilters: Array<[string, unknown]> = [];
+  const databaseProject = {
+    id: project.id,
+    organization_id: project.organizationId,
+    organizations: { name: project.organizationName, primary_contact: null },
+    name: project.name,
+    code: project.code,
+    status: project.status,
+    health: project.health,
+    owner_profile_id: null,
+    owner: null,
+    activated_at: null,
+    target_date: null,
+    completed_at: null,
+    cancellation_reason: null,
+    summary: null,
+    created_at: project.createdAt,
+    updated_at: project.updatedAt,
+  };
+  const clientLink = { ...link, id: "link-client", visibility: "client" };
+  const rowsByTable: Record<string, unknown[]> = {
+    projects: [databaseProject],
+    project_tasks: [],
+    project_milestones: [],
+    project_links: [
+      {
+        id: link.id,
+        project_id: link.projectId,
+        label: link.label,
+        url: link.url,
+        visibility: link.visibility,
+        kind: link.kind,
+        created_at: link.createdAt,
+        updated_at: link.updatedAt,
+      },
+      {
+        id: clientLink.id,
+        project_id: clientLink.projectId,
+        label: clientLink.label,
+        url: clientLink.url,
+        visibility: clientLink.visibility,
+        kind: clientLink.kind,
+        created_at: clientLink.createdAt,
+        updated_at: clientLink.updatedAt,
+      },
+    ],
+    project_members: [],
+  };
+  const supabase = {
+    from(table: string) {
+      let rows = rowsByTable[table] ?? [];
+      const query = {
+        select() {
+          return query;
+        },
+        eq(column: string, value: unknown) {
+          if (table === "project_links") {
+            linkFilters.push([column, value]);
+            if (column === "visibility") {
+              rows = rows.filter((row) => (
+                typeof row === "object"
+                && row !== null
+                && (row as Record<string, unknown>)[column] === value
+              ));
+            }
+          }
+          return query;
+        },
+        order() {
+          return query;
+        },
+        maybeSingle() {
+          return Promise.resolve({ data: rows[0] ?? null, error: null });
+        },
+        then(resolve: (value: unknown) => unknown, reject: (reason: unknown) => unknown) {
+          return Promise.resolve({ data: rows, error: null }).then(resolve, reject);
+        },
+      };
+      return query;
+    },
+  };
+
+  const result = await getClientProjectHealth(supabase as never, project.id);
+
+  assert.deepEqual(linkFilters, [
+    ["project_id", project.id],
+    ["visibility", "client"],
+  ]);
+  assert.deepEqual(result.links.map((item) => item.id), [clientLink.id]);
+});
+
+test("every Projects write handler rejects non-staff access before invoking data dependencies", async () => {
+  let dependencyCalls = 0;
+  const forbiddenDependency = async () => {
+    dependencyCalls += 1;
+    throw new Error("write dependency must not run");
+  };
+  const dependencies = {
+    getAccess: async () => ({
+      ok: true,
+      supabase: {},
+      profileId: "profile-client",
+      role: "client",
+    }),
+    createOrganization: forbiddenDependency,
+    createProject: forbiddenDependency,
+    updateProject: forbiddenDependency,
+    deleteProject: forbiddenDependency,
+    syncMembers: forbiddenDependency,
+    createMilestone: forbiddenDependency,
+    updateMilestone: forbiddenDependency,
+    deleteMilestone: forbiddenDependency,
+    createTask: forbiddenDependency,
+    updateTask: forbiddenDependency,
+    deleteTask: forbiddenDependency,
+    createLink: forbiddenDependency,
+    updateLink: forbiddenDependency,
+    deleteLink: forbiddenDependency,
+  };
+  const writeHandlerFactories = [
+    createProjectsOrganizationsPostHandler,
+    createProjectsPostHandler,
+    createProjectsPatchHandler,
+    createProjectsDeleteHandler,
+    createProjectsMembersPutHandler,
+    createProjectsMilestonesPostHandler,
+    createProjectsMilestonesPatchHandler,
+    createProjectsMilestonesDeleteHandler,
+    createProjectsTasksPostHandler,
+    createProjectsTasksPatchHandler,
+    createProjectsTasksDeleteHandler,
+    createProjectsLinksPostHandler,
+    createProjectsLinksPatchHandler,
+    createProjectsLinksDeleteHandler,
+  ];
+  const context = {
+    params: Promise.resolve({ id: project.id, itemId: "item-1" }),
+  };
+
+  for (const createHandler of writeHandlerFactories) {
+    const response = await createHandler(dependencies as never)(
+      new Request(`https://example.test/api/projects/${project.id}`, {
+        method: "POST",
+        body: JSON.stringify({}),
+      }),
+      context,
+    );
+    assert.equal(response.status, 403, createHandler.name);
+  }
+  assert.equal(dependencyCalls, 0);
+});
+
+test("assignable profiles GET rejects clients and allows staff", async () => {
+  let clientListCalls = 0;
+  const context = { params: Promise.resolve({ id: project.id }) };
+  const clientHandler = createProjectsAssignableProfilesGetHandler({
+    getAccess: async () => ({
+      ok: true,
+      supabase: {},
+      profileId: "profile-client",
+      role: "client",
+    }),
+    listAssignableProfiles: async () => {
+      clientListCalls += 1;
+      return [];
+    },
+  } as never);
+
+  const forbidden = await clientHandler(
+    new Request(`https://example.test/api/projects/${project.id}/members`),
+    context,
+  );
+  assert.equal(forbidden.status, 403);
+  assert.equal(clientListCalls, 0);
+
+  const staffOptions = [{
+    profileId: "profile-staff",
+    label: "Staff Member",
+    email: "staff@example.test",
+    organizationRole: "staff",
+    projectRole: null,
+  }];
+  const staffHandler = createProjectsAssignableProfilesGetHandler({
+    getAccess: async () => ({
+      ok: true,
+      supabase: {},
+      profileId: "profile-staff",
+      role: "staff",
+    }),
+    listAssignableProfiles: async () => staffOptions,
+  } as never);
+
+  const allowed = await staffHandler(
+    new Request(`https://example.test/api/projects/${project.id}/members`),
+    context,
+  );
+  assert.equal(allowed.status, 200);
+  assert.deepEqual(await allowed.json(), staffOptions);
 });
 
 test("Projects detail provider accepts package dashboard payloads", () => {

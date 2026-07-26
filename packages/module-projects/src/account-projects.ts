@@ -3,7 +3,6 @@ import type { ProjectListItem } from "./data";
 import {
   isProjectsSchemaMissingError,
   listOrgAdminProjectsByProfile,
-  listProjects,
 } from "./server";
 
 export type AccountProjectsResult = {
@@ -15,13 +14,11 @@ export type AccountProjectsResult = {
 type AccountProjectsDependencies = {
   isProjectsSchemaMissingError: typeof isProjectsSchemaMissingError;
   listOrgAdminProjectsByProfile: typeof listOrgAdminProjectsByProfile;
-  listProjects: typeof listProjects;
 };
 
 const defaultDependencies: AccountProjectsDependencies = {
   isProjectsSchemaMissingError,
   listOrgAdminProjectsByProfile,
-  listProjects,
 };
 
 function getErrorMessage(error: unknown): string {
@@ -61,12 +58,11 @@ export async function listAccountProjects(
 
     if (isMissingRoleAssignmentsTable(error)) {
       try {
-        const fallback = await dependencies.listProjects(supabase, {
-          page: 1,
-          pageSize: limit,
-          dueWindow: "all",
+        const items = await dependencies.listOrgAdminProjectsByProfile(supabase, profileId, {
+          limit,
+          skipAdminRoleCheck: true,
         });
-        return { items: fallback.items, schemaMissing: false, error: null };
+        return { items, schemaMissing: false, error: null };
       } catch (fallbackError) {
         if (dependencies.isProjectsSchemaMissingError(fallbackError)) {
           return { items: [], schemaMissing: true, error: null };
