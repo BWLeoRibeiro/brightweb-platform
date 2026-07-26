@@ -25,6 +25,7 @@
       "marketing_contact_settings",
       "marketing_suppressions",
       "marketing_campaigns",
+      "marketing_segments",
       "marketing_campaign_recipients",
       "marketing_message_events",
       "set_marketing_updated_at"

@@ -24,6 +24,14 @@ import type {
 import type { MarketingEmailSender } from "./email/types";
 import type { runMarketingWorker } from "./worker";
 import type { processResendWebhook } from "./webhooks";
+import type {
+  createSegment,
+  deleteSegment,
+  getSegment,
+  listSegments,
+  previewSegment,
+  updateSegment,
+} from "./segments";
 
 type RouteContext = {
   params: Promise<{ token: string }> | { token: string };
@@ -150,6 +158,12 @@ export type MarketingCampaignHttpDependencies = {
   sendTestEmail: typeof sendTestEmail;
   runWorker: typeof runMarketingWorker;
   processWebhook: typeof processResendWebhook;
+  listSegments: typeof listSegments;
+  getSegment: typeof getSegment;
+  createSegment: typeof createSegment;
+  updateSegment: typeof updateSegment;
+  deleteSegment: typeof deleteSegment;
+  previewSegment: typeof previewSegment;
   logger?: Pick<Console, "error">;
 };
 
@@ -218,6 +232,9 @@ function campaignInput(payload: Record<string, unknown>) {
     ...(typeof payload.name === "string" ? { name: payload.name } : {}),
     ...(typeof payload.subject === "string" ? { subject: payload.subject } : {}),
     ...(typeof payload.topicId === "string" ? { topicId: payload.topicId } : {}),
+    ...("segmentId" in payload ? {
+      segmentId: typeof payload.segmentId === "string" ? payload.segmentId : null,
+    } : {}),
     ...("preheader" in payload ? {
       preheader: typeof payload.preheader === "string" ? payload.preheader : null,
     } : {}),
@@ -250,6 +267,105 @@ export function createMarketingCampaignHttpHandlers(
     dependencies,
     "marketing.topics.list",
     async (supabase) => json(await dependencies.listTopics(supabase as never, { activeOnly: true })),
+  );
+  const segmentsGet = withStaff(
+    dependencies,
+    "marketing.segments.list",
+    async (supabase) => json(await dependencies.listSegments(supabase as never)),
+  );
+  const segmentsPost = withStaff(
+    dependencies,
+    "marketing.segments.create",
+    async (supabase, access, request) => {
+      const payload = await parseJsonObject(request);
+      if (!payload || typeof payload.name !== "string") {
+        return json(publicError("INVALID_INPUT", "Segment name is required."), {
+          status: 400,
+        });
+      }
+      return json(await dependencies.createSegment(supabase as never, {
+        name: payload.name,
+        description: typeof payload.description === "string"
+          ? payload.description
+          : null,
+        rule: isRecord(payload.rule) ? payload.rule : {},
+        createdByProfileId: access.profileId ?? null,
+      } as never), { status: 201 });
+    },
+  );
+  const segmentGet = withStaff(
+    dependencies,
+    "marketing.segments.get",
+    async (supabase, _access, _request, context) => {
+      const result = await dependencies.getSegment(
+        supabase as never,
+        await campaignId(context),
+      );
+      return result
+        ? json(result)
+        : json(publicError("SEGMENT_NOT_FOUND", "Segment not found."), { status: 404 });
+    },
+  );
+  const segmentPatch = withStaff(
+    dependencies,
+    "marketing.segments.update",
+    async (supabase, _access, request, context) => {
+      const payload = await parseJsonObject(request);
+      if (!payload) {
+        return json(publicError("INVALID_INPUT", "A JSON object is required."), {
+          status: 400,
+        });
+      }
+      return json(await dependencies.updateSegment(
+        supabase as never,
+        await campaignId(context),
+        {
+          ...(typeof payload.name === "string" ? { name: payload.name } : {}),
+          ...("description" in payload ? {
+            description: typeof payload.description === "string"
+              ? payload.description
+              : null,
+          } : {}),
+          ...(isRecord(payload.rule) ? { rule: payload.rule } : {}),
+        } as never,
+      ));
+    },
+  );
+  const segmentDelete = withStaff(
+    dependencies,
+    "marketing.segments.delete",
+    async (supabase, _access, _request, context) => {
+      await dependencies.deleteSegment(supabase as never, await campaignId(context));
+      return new Response(null, { status: 204 });
+    },
+  );
+  const segmentPreviewPost = withStaff(
+    dependencies,
+    "marketing.segments.preview",
+    async (supabase, _access, request, context) => {
+      const payload = await parseJsonObject(request);
+      if (!payload) {
+        return json(publicError("INVALID_INPUT", "A JSON object is required."), {
+          status: 400,
+        });
+      }
+      const segmentId = await campaignId(context);
+      const segment = segmentId
+        ? await dependencies.getSegment(supabase as never, segmentId)
+        : null;
+      const rule = isRecord(payload.rule) ? payload.rule : segment?.rule;
+      if (!rule) {
+        return json(publicError("INVALID_INPUT", "A segment rule is required."), {
+          status: 400,
+        });
+      }
+      const limit = typeof payload.limit === "number" ? payload.limit : 8;
+      return json(await dependencies.previewSegment(
+        supabase as never,
+        rule,
+        { limit },
+      ));
+    },
   );
   const campaignsGet = withStaff(
     dependencies,
@@ -457,6 +573,12 @@ export function createMarketingCampaignHttpHandlers(
 
   return {
     topicsGet,
+    segmentsGet,
+    segmentsPost,
+    segmentGet,
+    segmentPatch,
+    segmentDelete,
+    segmentPreviewPost,
     campaignsGet,
     campaignsPost,
     campaignGet,

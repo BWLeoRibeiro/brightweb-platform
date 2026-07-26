@@ -1,4 +1,5 @@
 import type { MarketingEmailSender } from "./email/types";
+import { resolveSegmentContacts } from "./segments";
 
 type QueryClient = {
   from: (table: string) => any;
@@ -20,6 +21,7 @@ export type MarketingCampaign = {
   fromName: string | null;
   fromEmail: string | null;
   topicId: string;
+  segmentId: string | null;
   bodyHtml: string | null;
   bodyText: string | null;
   bodyJson: unknown;
@@ -40,6 +42,7 @@ export type CreateCampaignInput = {
   name: string;
   subject: string;
   topicId: string;
+  segmentId?: string | null;
   preheader?: string | null;
   fromName?: string | null;
   fromEmail?: string | null;
@@ -63,6 +66,7 @@ type CampaignRow = {
   from_name: string | null;
   from_email: string | null;
   topic_id: string;
+  segment_id: string | null;
   body_html: string | null;
   body_text: string | null;
   body_json: unknown;
@@ -80,7 +84,7 @@ type CampaignRow = {
 };
 
 const CAMPAIGN_COLUMNS =
-  "id,name,subject,preheader,from_name,from_email,topic_id,body_html,body_text,body_json,status,scheduled_at,sent_at,batch_size,rate_per_minute,total_recipients,sent_count,failed_count,created_by_profile_id,created_at,updated_at";
+  "id,name,subject,preheader,from_name,from_email,topic_id,segment_id,body_html,body_text,body_json,status,scheduled_at,sent_at,batch_size,rate_per_minute,total_recipients,sent_count,failed_count,created_by_profile_id,created_at,updated_at";
 
 function db(supabase: unknown) {
   return supabase as QueryClient;
@@ -99,6 +103,7 @@ function fromRow(row: CampaignRow): MarketingCampaign {
     fromName: row.from_name,
     fromEmail: row.from_email,
     topicId: row.topic_id,
+    segmentId: row.segment_id,
     bodyHtml: row.body_html,
     bodyText: row.body_text,
     bodyJson: row.body_json,
@@ -143,6 +148,7 @@ function payloadFromInput(input: CreateCampaignInput | UpdateCampaignInput) {
   if (input.fromName !== undefined) payload.from_name = input.fromName;
   if (input.fromEmail !== undefined) payload.from_email = input.fromEmail;
   if (input.topicId !== undefined) payload.topic_id = input.topicId;
+  if (input.segmentId !== undefined) payload.segment_id = input.segmentId;
   if (input.bodyHtml !== undefined) payload.body_html = input.bodyHtml;
   if (input.bodyText !== undefined) payload.body_text = input.bodyText;
   if (input.bodyJson !== undefined) payload.body_json = input.bodyJson;
@@ -307,7 +313,16 @@ export async function expandCampaignRecipients(
     .in("id", contactIds)
     .not("email", "is", null);
   throwIfError(contacts.error);
-  const contactRows = (contacts.data ?? []) as Array<{ id: string; email: string }>;
+  let contactRows = (contacts.data ?? []) as Array<{ id: string; email: string }>;
+  if (campaign.segmentId) {
+    const segmentContacts = await resolveSegmentContacts(
+      supabase,
+      campaign.segmentId,
+      { limit: 5_000 },
+    );
+    const segmentContactIds = new Set(segmentContacts.map((contact) => contact.id));
+    contactRows = contactRows.filter((contact) => segmentContactIds.has(contact.id));
+  }
   const normalizedEmails = Array.from(new Set(
     contactRows.map((row) => row.email.trim().toLowerCase()).filter(Boolean),
   ));

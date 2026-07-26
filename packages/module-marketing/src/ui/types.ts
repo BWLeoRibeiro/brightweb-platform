@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import type { MarketingSegmentRule } from "../segments";
 
 export type MarketingCampaignStatus =
   | "draft"
@@ -26,6 +27,7 @@ export type MarketingCampaign = {
   fromName: string | null;
   fromEmail: string | null;
   topicId: string;
+  segmentId: string | null;
   topic?: MarketingTopic | null;
   status: MarketingCampaignStatus;
   scheduledAt: string | null;
@@ -54,6 +56,28 @@ export type MarketingCampaignInput = {
   fromName?: string | null;
   fromEmail?: string | null;
   topicId: string;
+  segmentId?: string | null;
+};
+
+export type MarketingSegment = {
+  id: string;
+  name: string;
+  description: string | null;
+  rule: MarketingSegmentRule;
+  createdByProfileId: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type MarketingSegmentInput = {
+  name: string;
+  description?: string | null;
+  rule: MarketingSegmentRule;
+};
+
+export type MarketingSegmentPreview = {
+  count: number;
+  sample: Array<{ id: string; email: string; name: string }>;
 };
 
 export type MarketingUiClient = {
@@ -69,6 +93,12 @@ export type MarketingUiClient = {
   sendTest(campaignId: string, email: string): Promise<void>;
   listRecipients(campaignId: string): Promise<MarketingCampaignRecipient[]>;
   listTopics(): Promise<MarketingTopic[]>;
+  listSegments(): Promise<MarketingSegment[]>;
+  getSegment(segmentId: string): Promise<MarketingSegment>;
+  createSegment(input: MarketingSegmentInput): Promise<MarketingSegment>;
+  updateSegment(segmentId: string, input: Partial<MarketingSegmentInput>): Promise<MarketingSegment>;
+  deleteSegment(segmentId: string): Promise<void>;
+  previewSegment(rule: MarketingSegmentRule, limit?: number, segmentId?: string): Promise<MarketingSegmentPreview>;
 };
 
 export type MarketingUiDictionary = {
@@ -81,6 +111,8 @@ export type MarketingUiDictionary = {
     emptyTitle: string;
     emptyDescription: string;
     loadError: string;
+    campaignsTab: string;
+    segmentsTab: string;
   };
   list: {
     title: string;
@@ -101,6 +133,7 @@ export type MarketingUiDictionary = {
       fromName: string;
       fromEmail: string;
       topic: string;
+      segment: string;
       body: string;
       scheduleAt: string;
       testEmail: string;
@@ -112,6 +145,7 @@ export type MarketingUiDictionary = {
       fromName: string;
       fromEmail: string;
       topic: string;
+      segment: string;
       body: string;
       testEmail: string;
     };
@@ -126,6 +160,46 @@ export type MarketingUiDictionary = {
     retry: string;
     sendTest: string;
     close: string;
+    effectiveAudience: string;
+  };
+  segments: {
+    eyebrow: string;
+    title: string;
+    subtitle: string;
+    newSegment: string;
+    emptyTitle: string;
+    emptyDescription: string;
+    editorCreate: string;
+    editorEdit: string;
+    fields: {
+      name: string;
+      description: string;
+      topics: string;
+      preferredLanguage: string;
+      createdAfter: string;
+      createdBefore: string;
+      engagedWithinDays: string;
+      engagementType: string;
+      excludeSuppressed: string;
+    };
+    placeholders: {
+      name: string;
+      description: string;
+      preferredLanguage: string;
+      engagedWithinDays: string;
+    };
+    anyTopicHint: string;
+    engagementTypes: { any: string; opened: string; clicked: string };
+    previewTitle: string;
+    previewCount: string;
+    previewEmpty: string;
+    previewLoading: string;
+    save: string;
+    delete: string;
+    close: string;
+    created: string;
+    saved: string;
+    deleted: string;
   };
   recipients: {
     title: string;

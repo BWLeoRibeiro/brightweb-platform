@@ -4,6 +4,9 @@ import type {
   MarketingCampaignInput,
   MarketingCampaignRecipient,
   MarketingTopic,
+  MarketingSegment,
+  MarketingSegmentInput,
+  MarketingSegmentPreview,
   MarketingUiClient,
 } from "./types";
 
@@ -58,6 +61,15 @@ function parseRecipients(payload: unknown): MarketingCampaignRecipient[] {
 function parseTopics(payload: unknown): MarketingTopic[] {
   const topics = unwrap<MarketingTopic[]>(payload, "topics");
   return Array.isArray(topics) ? topics : [];
+}
+
+function parseSegment(payload: unknown): MarketingSegment {
+  return unwrap<MarketingSegment>(payload, "segment");
+}
+
+function parseSegments(payload: unknown): MarketingSegment[] {
+  const segments = unwrap<unknown[]>(payload, "segments");
+  return Array.isArray(segments) ? segments.map(parseSegment) : [];
 }
 
 export function createMarketingUiClient(
@@ -142,6 +154,46 @@ export function createMarketingUiClient(
     },
     async listTopics() {
       return parseTopics(await readPayload(await fetcher(endpoint("topics"))));
+    },
+    async listSegments() {
+      return parseSegments(await readPayload(await fetcher(endpoint("segments"))));
+    },
+    async getSegment(segmentId) {
+      return parseSegment(
+        await readPayload(await fetcher(endpoint(`segments/${encodeURIComponent(segmentId)}`))),
+      );
+    },
+    async createSegment(input: MarketingSegmentInput) {
+      return parseSegment(
+        await readPayload(await fetcher(endpoint("segments"), json("POST", input))),
+      );
+    },
+    async updateSegment(segmentId, input) {
+      return parseSegment(
+        await readPayload(
+          await fetcher(
+            endpoint(`segments/${encodeURIComponent(segmentId)}`),
+            json("PATCH", input),
+          ),
+        ),
+      );
+    },
+    async deleteSegment(segmentId) {
+      const response = await fetcher(
+        endpoint(`segments/${encodeURIComponent(segmentId)}`),
+        json("DELETE"),
+      );
+      if (!response.ok) await readPayload(response);
+    },
+    async previewSegment(rule, limit = 8, segmentId) {
+      return await readPayload(
+        await fetcher(
+          endpoint(segmentId
+            ? `segments/${encodeURIComponent(segmentId)}/preview`
+            : "segments/preview"),
+          json("POST", { rule, limit }),
+        ),
+      ) as MarketingSegmentPreview;
     },
   };
 }

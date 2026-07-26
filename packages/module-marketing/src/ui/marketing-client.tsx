@@ -1,6 +1,6 @@
 "use client";
 
-import { CalendarClock, Check, Clock3, Mail, Plus, RotateCcw, Send, Users, X } from "lucide-react";
+import { CalendarClock, Check, Clock3, Filter, Mail, Plus, RotateCcw, Send, Users, X } from "lucide-react";
 import {
   Badge,
   Button,
@@ -19,11 +19,13 @@ import { toast } from "sonner";
 import { useMemo, useRef, useState } from "react";
 import { useMarketingUiClient } from "./context";
 import { defaultMarketingUiDictionary } from "./dictionary";
+import { SegmentWorkspace } from "./segment-workspace";
 import type {
   MarketingCampaign,
   MarketingCampaignInput,
   MarketingCampaignRecipient,
   MarketingCampaignStatus,
+  MarketingSegment,
   MarketingTopic,
   MarketingUiDictionary,
 } from "./types";
@@ -35,6 +37,7 @@ type CampaignForm = {
   fromName: string;
   fromEmail: string;
   topicId: string;
+  segmentId: string;
   bodyHtml: string;
 };
 
@@ -45,6 +48,7 @@ const emptyForm: CampaignForm = {
   fromName: "",
   fromEmail: "",
   topicId: "",
+  segmentId: "",
   bodyHtml: "",
 };
 
@@ -73,6 +77,7 @@ function toForm(campaign: MarketingCampaign): CampaignForm {
     fromName: campaign.fromName ?? "",
     fromEmail: campaign.fromEmail ?? "",
     topicId: campaign.topicId,
+    segmentId: campaign.segmentId ?? "",
     bodyHtml: campaign.bodyHtml ?? "",
   };
 }
@@ -85,6 +90,7 @@ function toInput(form: CampaignForm): MarketingCampaignInput {
     fromName: form.fromName.trim() || null,
     fromEmail: form.fromEmail.trim() || null,
     topicId: form.topicId,
+    segmentId: form.segmentId || null,
     bodyHtml: form.bodyHtml,
   };
 }
@@ -160,17 +166,21 @@ function RecipientPanel({ recipients, dictionary }: {
 export type MarketingClientProps = {
   initialCampaigns: MarketingCampaign[];
   initialTopics: MarketingTopic[];
+  initialSegments: MarketingSegment[];
   dictionary?: MarketingUiDictionary;
 };
 
 export function MarketingClient({
   initialCampaigns,
   initialTopics,
+  initialSegments,
   dictionary = defaultMarketingUiDictionary,
 }: MarketingClientProps) {
   const client = useMarketingUiClient();
   const bodyRef = useRef<HTMLTextAreaElement>(null);
   const [campaigns, setCampaigns] = useState(initialCampaigns);
+  const [segments, setSegments] = useState(initialSegments);
+  const [activeView, setActiveView] = useState<"campaigns" | "segments">("campaigns");
   const [activeCampaign, setActiveCampaign] = useState<MarketingCampaign | null>(null);
   const [form, setForm] = useState<CampaignForm>(emptyForm);
   const [recipients, setRecipients] = useState<MarketingCampaignRecipient[]>([]);
@@ -304,12 +314,44 @@ export function MarketingClient({
       <header className="marketing-hero">
         <div>
           <p className="marketing-kicker">{dictionary.page.eyebrow}</p>
-          <h1>{dictionary.page.title}</h1>
-          <p>{dictionary.page.subtitle}</p>
+          <h1>
+            {activeView === "campaigns"
+              ? dictionary.page.title
+              : dictionary.segments.title}
+          </h1>
+          <p>
+            {activeView === "campaigns"
+              ? dictionary.page.subtitle
+              : dictionary.segments.subtitle}
+          </p>
         </div>
-        <Button onClick={beginCreate} size="lg"><Plus aria-hidden="true" />{dictionary.page.newCampaign}</Button>
+        {activeView === "campaigns" ? (
+          <Button onClick={beginCreate} size="lg">
+            <Plus aria-hidden="true" />{dictionary.page.newCampaign}
+          </Button>
+        ) : null}
       </header>
 
+      <nav className="flex w-fit gap-1 rounded-xl border bg-muted p-1" aria-label="Marketing">
+        <Button
+          onClick={() => setActiveView("campaigns")}
+          size="sm"
+          variant={activeView === "campaigns" ? "default" : "ghost"}
+        >
+          <Mail aria-hidden="true" />
+          {dictionary.page.campaignsTab}
+        </Button>
+        <Button
+          onClick={() => setActiveView("segments")}
+          size="sm"
+          variant={activeView === "segments" ? "default" : "ghost"}
+        >
+          <Filter aria-hidden="true" />
+          {dictionary.page.segmentsTab}
+        </Button>
+      </nav>
+
+      {activeView === "campaigns" ? (
       <Card className="marketing-ledger">
         <CardContent className="p-0">
           <div className="marketing-ledger-heading">
@@ -361,6 +403,14 @@ export function MarketingClient({
           )}
         </CardContent>
       </Card>
+      ) : (
+        <SegmentWorkspace
+          dictionary={dictionary}
+          onSegmentsChange={setSegments}
+          segments={segments}
+          topics={initialTopics}
+        />
+      )}
 
       <Sheet open={editorOpen} onOpenChange={setEditorOpen}>
         <SheetContent className="marketing-editor" side="right">
@@ -405,6 +455,30 @@ export function MarketingClient({
                   <option value="">{dictionary.editor.placeholders.topic}</option>
                   {initialTopics.map((topic) => <option key={topic.id} value={topic.id}>{topic.label}</option>)}
                 </select>
+              </div>
+              <div className="marketing-field marketing-field-wide">
+                <Label htmlFor="campaign-segment">
+                  {dictionary.editor.fields.segment}
+                </Label>
+                <select
+                  className="marketing-select"
+                  id="campaign-segment"
+                  value={form.segmentId}
+                  onChange={(event) => setForm((current) => ({
+                    ...current,
+                    segmentId: event.target.value,
+                  }))}
+                >
+                  <option value="">{dictionary.editor.placeholders.segment}</option>
+                  {segments.map((segment) => (
+                    <option key={segment.id} value={segment.id}>
+                      {segment.name}
+                    </option>
+                  ))}
+                </select>
+                <p className="mt-2 text-xs text-muted-foreground">
+                  {dictionary.editor.effectiveAudience}
+                </p>
               </div>
             </section>
 

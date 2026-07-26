@@ -24,6 +24,7 @@
     ".": "./src/index.ts",
     "./server": "./src/server.ts",
     "./campaigns": "./src/campaigns.ts",
+    "./segments": "./src/segments.ts",
     "./worker": "./src/worker.ts",
     "./email": "./src/email/index.ts",
     "./tokens.css": "./tokens.css"

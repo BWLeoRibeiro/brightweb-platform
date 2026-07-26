@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { createHmac } from "node:crypto";
 import test from "node:test";
 import { expandCampaignRecipients } from "../packages/module-marketing/src/campaigns";
+import { previewSegment } from "../packages/module-marketing/src/segments";
 import type {
   MarketingEmailMessage,
   MarketingEmailSender,
@@ -17,6 +18,7 @@ function valueMatches(row: Row, filter: [string, string, unknown]) {
   if (operator === "eq") return row[key] === expected;
   if (operator === "in") return (expected as unknown[]).includes(row[key]);
   if (operator === "lte") return row[key] != null && row[key] <= expected;
+  if (operator === "gte") return row[key] != null && row[key] >= expected;
   if (operator === "not-null") return row[key] != null;
   return true;
 }
@@ -82,6 +84,11 @@ class FakeQuery implements PromiseLike<any> {
 
   lte(key: string, value: unknown) {
     this.filters.push(["lte", key, value]);
+    return this;
+  }
+
+  gte(key: string, value: unknown) {
+    this.filters.push(["gte", key, value]);
     return this;
   }
 
@@ -232,6 +239,7 @@ function campaign(overrides: Row = {}) {
     from_name: "BrightWeb",
     from_email: "hello@example.com",
     topic_id: "topic-1",
+    segment_id: null,
     body_html: "<p>Hello</p>",
     body_text: "Hello",
     body_json: null,
@@ -280,6 +288,122 @@ test("campaign expansion queues only topic opt-ins and records suppressions", as
     ],
   );
   assert.equal(tables.marketing_campaigns[0]?.total_recipients, 2);
+});
+
+test("segment preview combines topic, engagement, and suppression filters", async () => {
+  const now = new Date().toISOString();
+  const tables: Tables = {
+    crm_contacts: [
+      {
+        id: "contact-1",
+        email: "one@example.com",
+        first_name: "Ana",
+        last_name: "Silva",
+        preferred_language: "pt-PT",
+        created_at: "2026-07-01T00:00:00.000Z",
+      },
+      {
+        id: "contact-2",
+        email: "two@example.com",
+        first_name: "Bruno",
+        last_name: "Costa",
+        preferred_language: "pt-PT",
+        created_at: "2026-07-02T00:00:00.000Z",
+      },
+      {
+        id: "contact-3",
+        email: "three@example.com",
+        first_name: "Carla",
+        last_name: "Luz",
+        preferred_language: "pt-PT",
+        created_at: "2026-07-03T00:00:00.000Z",
+      },
+    ],
+    marketing_subscriptions: [
+      { contact_id: "contact-1", topic_id: "topic-1", status: "subscribed" },
+      { contact_id: "contact-2", topic_id: "topic-1", status: "subscribed" },
+      { contact_id: "contact-3", topic_id: "topic-2", status: "subscribed" },
+    ],
+    marketing_message_events: [
+      { contact_id: "contact-1", event_type: "clicked", occurred_at: now },
+      { contact_id: "contact-2", event_type: "clicked", occurred_at: now },
+      { contact_id: "contact-3", event_type: "opened", occurred_at: now },
+    ],
+    marketing_suppressions: [{ email: "two@example.com" }],
+    marketing_contact_settings: [],
+  };
+
+  const result = await previewSegment(
+    fakeSupabase(tables),
+    {
+      topicIds: ["topic-1"],
+      engagedWithinDays: 30,
+      engagementType: "clicked",
+      excludeSuppressed: true,
+    },
+    { limit: 5 },
+  );
+
+  assert.equal(result.count, 1);
+  assert.deepEqual(result.sample, [{
+    id: "contact-1",
+    email: "one@example.com",
+    name: "Ana Silva",
+  }]);
+});
+
+test("campaign segment intersects topic consent and never widens recipients", async () => {
+  const tables: Tables = {
+    marketing_campaigns: [campaign({ segment_id: "segment-1" })],
+    marketing_segments: [{
+      id: "segment-1",
+      name: "Português",
+      description: null,
+      rule_json: { preferredLanguage: "pt-PT" },
+      created_by_profile_id: null,
+      created_at: "2026-07-25T12:00:00.000Z",
+      updated_at: "2026-07-25T12:00:00.000Z",
+    }],
+    marketing_subscriptions: [
+      { contact_id: "contact-1", topic_id: "topic-1", status: "subscribed" },
+      { contact_id: "contact-2", topic_id: "topic-1", status: "subscribed" },
+    ],
+    crm_contacts: [
+      {
+        id: "contact-1",
+        email: "consented@example.com",
+        preferred_language: "pt-PT",
+        created_at: "2026-07-01T00:00:00.000Z",
+      },
+      {
+        id: "contact-2",
+        email: "english@example.com",
+        preferred_language: "en",
+        created_at: "2026-07-02T00:00:00.000Z",
+      },
+      {
+        id: "contact-3",
+        email: "no-consent@example.com",
+        preferred_language: "pt-PT",
+        created_at: "2026-07-03T00:00:00.000Z",
+      },
+    ],
+    marketing_suppressions: [],
+    marketing_contact_settings: [
+      { contact_id: "contact-1", preferred_language: "pt-PT" },
+      { contact_id: "contact-2", preferred_language: "en" },
+      { contact_id: "contact-3", preferred_language: "pt-PT" },
+    ],
+    marketing_campaign_recipients: [],
+  };
+
+  const result = await expandCampaignRecipients(fakeSupabase(tables), "campaign-1");
+
+  assert.deepEqual(result, { total: 1, queued: 1, suppressed: 0 });
+  assert.deepEqual(
+    tables.marketing_campaign_recipients.map((row) => row.contact_id),
+    ["contact-1"],
+  );
 });
 
 test("worker claims once and records fake sender sent/failed outcomes", async () => {

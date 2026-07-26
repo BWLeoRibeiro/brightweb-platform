@@ -8,8 +8,12 @@ export type {
   MarketingCampaignInput,
   MarketingCampaignRecipient,
   MarketingCampaignStatus,
+  MarketingSegment,
+  MarketingSegmentInput,
+  MarketingSegmentPreview,
   MarketingTopic,
   MarketingUiClient,
   MarketingUiDictionary,
   MarketingUiProviderProps,
 } from "./types";
+export type { MarketingSegmentRule } from "../segments";

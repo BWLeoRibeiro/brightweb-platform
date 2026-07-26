@@ -17,6 +17,14 @@ import {
   sendTestEmail,
   updateCampaign,
 } from "./campaigns";
+import {
+  createSegment,
+  deleteSegment,
+  getSegment,
+  listSegments,
+  previewSegment,
+  updateSegment,
+} from "./segments";
 import type { MarketingEmailSender } from "./email/types";
 import { runMarketingWorker } from "./worker";
 import { processResendWebhook } from "./webhooks";
@@ -74,5 +82,11 @@ export function createMarketingCampaignHandlers(
     sendTestEmail,
     runWorker: runMarketingWorker,
     processWebhook: processResendWebhook,
+    listSegments,
+    getSegment,
+    createSegment,
+    updateSegment,
+    deleteSegment,
+    previewSegment,
   });
 }

@@ -31,6 +31,22 @@ export type {
   UpdateCampaignInput,
 } from "./campaigns";
 export {
+  createSegment,
+  deleteSegment,
+  getSegment,
+  listSegments,
+  previewSegment,
+  resolveSegmentContacts,
+  updateSegment,
+} from "./segments";
+export type {
+  CreateSegmentInput,
+  MarketingSegment,
+  MarketingSegmentRule,
+  SegmentContact,
+  UpdateSegmentInput,
+} from "./segments";
+export {
   createNoopEmailSender,
   createResendEmailSender,
 } from "./email";
