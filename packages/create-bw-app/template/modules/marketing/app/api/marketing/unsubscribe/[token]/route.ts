@@ -1,2 +1,2 @@
-export { handleMarketingUnsubscribeGetRequest as GET, handleMarketingUnsubscribePostRequest as POST } from "@brightweblabs/module-marketing";
+export { marketingUnsubscribeGet as GET, marketingUnsubscribePost as POST } from "../../_handlers";
 export const dynamic = "force-dynamic";

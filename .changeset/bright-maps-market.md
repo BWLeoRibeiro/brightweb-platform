@@ -2,4 +2,4 @@
 "create-bw-app": minor
 ---
 
-Add Marketing as an opt-in scaffold module with CRM and Organizations dependency resolution, package mounts, delivery environment configuration, shell registration, and bundled database migrations.
+Bring platform scaffolds to full package parity with an authenticated shell, auth/account/dashboard mounts, complete Projects routes, selectable Marketing, module-resolved database stacks, caret runtime ranges, and duplicate-runtime doctor checks.

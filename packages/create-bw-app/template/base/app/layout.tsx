@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { starterBrandConfig } from "../config/brand";
+import { ThemeProvider, ThemeScript } from "@brightweblabs/app-shell";
 import { geistMono, geistSans } from "./fonts";
 import "./globals.css";
 
@@ -10,9 +11,14 @@ export const metadata = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`}>
+    <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`} suppressHydrationWarning>
+      <head>
+        <ThemeScript defaultTheme="light" />
+      </head>
       <body>
-        {children}
+        <ThemeProvider defaultTheme="light" disableTransitionOnChange>
+          {children}
+        </ThemeProvider>
       </body>
     </html>
   );
