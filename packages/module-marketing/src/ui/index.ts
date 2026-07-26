@@ -17,3 +17,8 @@ export type {
   MarketingUiProviderProps,
 } from "./types";
 export type { MarketingSegmentRule } from "../segments";
+export type {
+  MarketingCampaignAnalytics,
+  MarketingOverviewMetrics,
+  MarketingSegmentAnalytics,
+} from "../analytics";

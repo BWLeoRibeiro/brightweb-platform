@@ -31,6 +31,21 @@ export type {
   UpdateCampaignInput,
 } from "./campaigns";
 export {
+  aggregateMarketingMetrics,
+  emptyMarketingMetrics,
+  getCampaignAnalytics,
+  getMarketingOverview,
+  getSegmentAnalytics,
+  MARKETING_ANALYTICS_EVENT_TYPES,
+  MARKETING_RECIPIENT_STATUSES,
+} from "./analytics";
+export type {
+  MarketingCampaignAnalytics,
+  MarketingOverviewMetrics,
+  MarketingQueueBreakdown,
+  MarketingSegmentAnalytics,
+} from "./analytics";
+export {
   createSegment,
   deleteSegment,
   getSegment,

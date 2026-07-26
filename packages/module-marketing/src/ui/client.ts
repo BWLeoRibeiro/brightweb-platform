@@ -9,6 +9,11 @@ import type {
   MarketingSegmentPreview,
   MarketingUiClient,
 } from "./types";
+import type {
+  MarketingCampaignAnalytics,
+  MarketingOverviewMetrics,
+  MarketingSegmentAnalytics,
+} from "../analytics";
 
 async function readPayload(response: Response): Promise<unknown> {
   const payload: unknown = await response.json().catch(() => null);
@@ -194,6 +199,22 @@ export function createMarketingUiClient(
           json("POST", { rule, limit }),
         ),
       ) as MarketingSegmentPreview;
+    },
+    async getOverview(sinceDays) {
+      const query = typeof sinceDays === "number" ? `?sinceDays=${sinceDays}` : "";
+      return await readPayload(
+        await fetcher(endpoint(`analytics/overview${query}`)),
+      ) as MarketingOverviewMetrics;
+    },
+    async getCampaignAnalytics(campaignId) {
+      return await readPayload(
+        await fetcher(endpoint(`analytics/campaigns/${encodeURIComponent(campaignId)}`)),
+      ) as MarketingCampaignAnalytics;
+    },
+    async getSegmentAnalytics(segmentId) {
+      return await readPayload(
+        await fetcher(endpoint(`analytics/segments/${encodeURIComponent(segmentId)}`)),
+      ) as MarketingSegmentAnalytics;
     },
   };
 }

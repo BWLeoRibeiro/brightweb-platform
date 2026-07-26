@@ -1,6 +1,6 @@
 "use client";
 
-import { CalendarClock, Check, Clock3, Filter, Mail, Plus, RotateCcw, Send, Users, X } from "lucide-react";
+import { BarChart3, CalendarClock, Check, Clock3, Filter, Mail, Plus, RotateCcw, Send, Users, X } from "lucide-react";
 import {
   Badge,
   Button,
@@ -20,6 +20,14 @@ import { useMemo, useRef, useState } from "react";
 import { useMarketingUiClient } from "./context";
 import { defaultMarketingUiDictionary } from "./dictionary";
 import { SegmentWorkspace } from "./segment-workspace";
+import {
+  AnalyticsWorkspace,
+  CampaignAnalyticsPanel,
+} from "./analytics-workspace";
+import type {
+  MarketingCampaignAnalytics,
+  MarketingOverviewMetrics,
+} from "../analytics";
 import type {
   MarketingCampaign,
   MarketingCampaignInput,
@@ -67,6 +75,7 @@ const recipientTone: Record<MarketingCampaignRecipient["status"], string> = {
   sent: "bg-success/10 text-success",
   failed: "bg-destructive/10 text-destructive",
   suppressed: "bg-muted text-muted-foreground",
+  skipped: "bg-muted text-muted-foreground",
 };
 
 function toForm(campaign: MarketingCampaign): CampaignForm {
@@ -121,7 +130,7 @@ function RecipientPanel({ recipients, dictionary }: {
   dictionary: MarketingUiDictionary;
 }) {
   const counts = useMemo(() => {
-    const next = { queued: 0, sending: 0, sent: 0, failed: 0, suppressed: 0 };
+    const next = { queued: 0, sending: 0, sent: 0, failed: 0, suppressed: 0, skipped: 0 };
     for (const recipient of recipients) next[recipient.status] += 1;
     return next;
   }, [recipients]);
@@ -167,6 +176,8 @@ export type MarketingClientProps = {
   initialCampaigns: MarketingCampaign[];
   initialTopics: MarketingTopic[];
   initialSegments: MarketingSegment[];
+  initialOverview: MarketingOverviewMetrics;
+  initialCampaignAnalytics: Record<string, MarketingCampaignAnalytics>;
   dictionary?: MarketingUiDictionary;
 };
 
@@ -174,13 +185,17 @@ export function MarketingClient({
   initialCampaigns,
   initialTopics,
   initialSegments,
+  initialOverview,
+  initialCampaignAnalytics,
   dictionary = defaultMarketingUiDictionary,
 }: MarketingClientProps) {
   const client = useMarketingUiClient();
   const bodyRef = useRef<HTMLTextAreaElement>(null);
   const [campaigns, setCampaigns] = useState(initialCampaigns);
   const [segments, setSegments] = useState(initialSegments);
-  const [activeView, setActiveView] = useState<"campaigns" | "segments">("campaigns");
+  const [overview, setOverview] = useState(initialOverview);
+  const [campaignAnalytics, setCampaignAnalytics] = useState(initialCampaignAnalytics);
+  const [activeView, setActiveView] = useState<"campaigns" | "segments" | "analytics">("campaigns");
   const [activeCampaign, setActiveCampaign] = useState<MarketingCampaign | null>(null);
   const [form, setForm] = useState<CampaignForm>(emptyForm);
   const [recipients, setRecipients] = useState<MarketingCampaignRecipient[]>([]);
@@ -222,12 +237,14 @@ export function MarketingClient({
     setEditorOpen(true);
     setBusy("load");
     try {
-      const [detail, nextRecipients] = await Promise.all([
+      const [detail, nextRecipients, analytics] = await Promise.all([
         client.getCampaign(campaign.id),
         client.listRecipients(campaign.id),
+        client.getCampaignAnalytics(campaign.id),
       ]);
       replaceCampaign(detail);
       setRecipients(nextRecipients);
+      setCampaignAnalytics((current) => ({ ...current, [campaign.id]: analytics }));
     } catch (error) {
       toast.error(error instanceof Error ? error.message : dictionary.feedback.genericError);
     } finally {
@@ -267,7 +284,14 @@ export function MarketingClient({
     try {
       const updated = await operation(campaign);
       replaceCampaign(updated);
-      setRecipients(await client.listRecipients(updated.id));
+      const [nextRecipients, analytics, nextOverview] = await Promise.all([
+        client.listRecipients(updated.id),
+        client.getCampaignAnalytics(updated.id),
+        client.getOverview(),
+      ]);
+      setRecipients(nextRecipients);
+      setCampaignAnalytics((current) => ({ ...current, [updated.id]: analytics }));
+      setOverview(nextOverview);
       toast.success(message);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : dictionary.feedback.genericError);
@@ -317,12 +341,16 @@ export function MarketingClient({
           <h1>
             {activeView === "campaigns"
               ? dictionary.page.title
-              : dictionary.segments.title}
+              : activeView === "segments"
+                ? dictionary.segments.title
+                : dictionary.analytics.title}
           </h1>
           <p>
             {activeView === "campaigns"
               ? dictionary.page.subtitle
-              : dictionary.segments.subtitle}
+              : activeView === "segments"
+                ? dictionary.segments.subtitle
+                : dictionary.analytics.subtitle}
           </p>
         </div>
         {activeView === "campaigns" ? (
@@ -348,6 +376,14 @@ export function MarketingClient({
         >
           <Filter aria-hidden="true" />
           {dictionary.page.segmentsTab}
+        </Button>
+        <Button
+          onClick={() => setActiveView("analytics")}
+          size="sm"
+          variant={activeView === "analytics" ? "default" : "ghost"}
+        >
+          <BarChart3 aria-hidden="true" />
+          {dictionary.page.analyticsTab}
         </Button>
       </nav>
 
@@ -403,12 +439,20 @@ export function MarketingClient({
           )}
         </CardContent>
       </Card>
-      ) : (
+      ) : activeView === "segments" ? (
         <SegmentWorkspace
           dictionary={dictionary}
           onSegmentsChange={setSegments}
           segments={segments}
           topics={initialTopics}
+        />
+      ) : (
+        <AnalyticsWorkspace
+          campaignAnalytics={campaignAnalytics}
+          campaigns={campaigns}
+          dictionary={dictionary}
+          onOpenCampaign={(campaign) => void openCampaign(campaign)}
+          overview={overview}
         />
       )}
 
@@ -544,6 +588,10 @@ export function MarketingClient({
                     </Button>
                   ) : null}
                 </div>
+                <CampaignAnalyticsPanel
+                  analytics={campaignAnalytics[activeCampaign.id] ?? null}
+                  dictionary={dictionary}
+                />
                 <RecipientPanel recipients={recipients} dictionary={dictionary} />
               </>
             ) : null}

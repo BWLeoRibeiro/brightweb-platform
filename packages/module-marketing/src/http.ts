@@ -32,6 +32,11 @@ import type {
   previewSegment,
   updateSegment,
 } from "./segments";
+import type {
+  getCampaignAnalytics,
+  getMarketingOverview,
+  getSegmentAnalytics,
+} from "./analytics";
 
 type RouteContext = {
   params: Promise<{ token: string }> | { token: string };
@@ -164,6 +169,9 @@ export type MarketingCampaignHttpDependencies = {
   updateSegment: typeof updateSegment;
   deleteSegment: typeof deleteSegment;
   previewSegment: typeof previewSegment;
+  getMarketingOverview: typeof getMarketingOverview;
+  getCampaignAnalytics: typeof getCampaignAnalytics;
+  getSegmentAnalytics: typeof getSegmentAnalytics;
   logger?: Pick<Console, "error">;
 };
 
@@ -528,6 +536,47 @@ export function createMarketingCampaignHttpHandlers(
       return json(result, { status: result.ok ? 200 : 502 });
     },
   );
+  const analyticsOverviewGet = withStaff(
+    dependencies,
+    "marketing.analytics.overview",
+    async (supabase, _access, request) => {
+      const rawSinceDays = new URL(request.url).searchParams.get("sinceDays");
+      const sinceDays = rawSinceDays === null ? undefined : Number(rawSinceDays);
+      if (
+        sinceDays !== undefined
+        && (!Number.isInteger(sinceDays) || sinceDays < 1 || sinceDays > 3_650)
+      ) {
+        return json(
+          publicError("INVALID_INPUT", "sinceDays must be an integer between 1 and 3650."),
+          { status: 400 },
+        );
+      }
+      return json(await dependencies.getMarketingOverview(
+        supabase as never,
+        { sinceDays },
+      ));
+    },
+  );
+  const analyticsCampaignGet = withStaff(
+    dependencies,
+    "marketing.analytics.campaign",
+    async (supabase, _access, _request, context) => json(
+      await dependencies.getCampaignAnalytics(
+        supabase as never,
+        await campaignId(context),
+      ),
+    ),
+  );
+  const analyticsSegmentGet = withStaff(
+    dependencies,
+    "marketing.analytics.segment",
+    async (supabase, _access, _request, context) => json(
+      await dependencies.getSegmentAnalytics(
+        supabase as never,
+        await campaignId(context),
+      ),
+    ),
+  );
 
   const workerPost = async (request: Request) => {
     const authorization = request.headers.get("authorization") ?? "";
@@ -590,6 +639,9 @@ export function createMarketingCampaignHttpHandlers(
     sendPost,
     retryPost,
     testPost,
+    analyticsOverviewGet,
+    analyticsCampaignGet,
+    analyticsSegmentGet,
     workerPost,
     webhookPost,
   };

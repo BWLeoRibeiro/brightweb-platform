@@ -1,5 +1,10 @@
 import type { ReactNode } from "react";
 import type { MarketingSegmentRule } from "../segments";
+import type {
+  MarketingCampaignAnalytics,
+  MarketingOverviewMetrics,
+  MarketingSegmentAnalytics,
+} from "../analytics";
 
 export type MarketingCampaignStatus =
   | "draft"
@@ -43,7 +48,7 @@ export type MarketingCampaignRecipient = {
   id: string;
   contactId: string | null;
   email: string;
-  status: "queued" | "sending" | "sent" | "failed" | "suppressed";
+  status: "queued" | "sending" | "sent" | "failed" | "suppressed" | "skipped";
   error: string | null;
   sentAt: string | null;
 };
@@ -99,6 +104,9 @@ export type MarketingUiClient = {
   updateSegment(segmentId: string, input: Partial<MarketingSegmentInput>): Promise<MarketingSegment>;
   deleteSegment(segmentId: string): Promise<void>;
   previewSegment(rule: MarketingSegmentRule, limit?: number, segmentId?: string): Promise<MarketingSegmentPreview>;
+  getOverview(sinceDays?: number): Promise<MarketingOverviewMetrics>;
+  getCampaignAnalytics(campaignId: string): Promise<MarketingCampaignAnalytics>;
+  getSegmentAnalytics(segmentId: string): Promise<MarketingSegmentAnalytics>;
 };
 
 export type MarketingUiDictionary = {
@@ -113,6 +121,27 @@ export type MarketingUiDictionary = {
     loadError: string;
     campaignsTab: string;
     segmentsTab: string;
+    analyticsTab: string;
+  };
+  analytics: {
+    eyebrow: string;
+    title: string;
+    subtitle: string;
+    sent: string;
+    delivered: string;
+    openRate: string;
+    clickRate: string;
+    bounced: string;
+    unsubscribed: string;
+    campaignsTitle: string;
+    campaign: string;
+    delivery: string;
+    opens: string;
+    clicks: string;
+    queue: string;
+    noData: string;
+    detailsTitle: string;
+    detailsSubtitle: string;
   };
   list: {
     title: string;

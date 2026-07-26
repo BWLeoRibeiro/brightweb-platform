@@ -29,6 +29,11 @@ import type { MarketingEmailSender } from "./email/types";
 import { runMarketingWorker } from "./worker";
 import { processResendWebhook } from "./webhooks";
 import {
+  getCampaignAnalytics,
+  getMarketingOverview,
+  getSegmentAnalytics,
+} from "./analytics";
+import {
   createMarketingServiceClient,
   listTopics,
   resolveByUnsubscribeToken,
@@ -88,5 +93,8 @@ export function createMarketingCampaignHandlers(
     updateSegment,
     deleteSegment,
     previewSegment,
+    getMarketingOverview,
+    getCampaignAnalytics,
+    getSegmentAnalytics,
   });
 }
