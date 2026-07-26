@@ -3,6 +3,8 @@ export { MarketingUiProvider, useMarketingUiClient } from "./context";
 export { defaultMarketingUiDictionary } from "./dictionary";
 export { MarketingClient } from "./marketing-client";
 export type { MarketingClientProps } from "./marketing-client";
+export { WorkflowWorkspace } from "./workflow-workspace";
+export type { WorkflowWorkspaceProps } from "./workflow-workspace";
 export type {
   MarketingCampaign,
   MarketingCampaignInput,
@@ -15,6 +17,13 @@ export type {
   MarketingUiClient,
   MarketingUiDictionary,
   MarketingUiProviderProps,
+  MarketingWorkflowInput,
+  MarketingWorkflowNodeInput,
+  MarketingWorkflowNodeType,
+  MarketingWorkflowRun,
+  MarketingWorkflowStatus,
+  MarketingWorkflowTriggerConfig,
+  MarketingWorkflowTriggerType,
 } from "./types";
 export type { MarketingSegmentRule } from "../segments";
 export type {

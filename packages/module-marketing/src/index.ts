@@ -132,6 +132,7 @@ export { MarketingPage } from './marketing-page';
 export {
   MarketingClient,
   MarketingUiProvider,
+  WorkflowWorkspace,
   createMarketingUiClient,
   defaultMarketingUiDictionary,
   useMarketingUiClient,
@@ -141,5 +142,6 @@ export type {
   MarketingUiClient,
   MarketingUiDictionary,
   MarketingUiProviderProps,
+  WorkflowWorkspaceProps,
 } from './ui';
 export { marketingModuleRegistration } from './registration';

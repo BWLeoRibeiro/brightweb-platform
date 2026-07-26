@@ -1,6 +1,6 @@
 "use client";
 
-import { BarChart3, CalendarClock, Check, Clock3, Filter, Mail, Plus, RotateCcw, Send, Users, X } from "lucide-react";
+import { BarChart3, CalendarClock, Check, Clock3, Filter, Mail, Plus, RotateCcw, Send, Users, Workflow, X } from "lucide-react";
 import {
   Badge,
   Button,
@@ -24,6 +24,7 @@ import {
   AnalyticsWorkspace,
   CampaignAnalyticsPanel,
 } from "./analytics-workspace";
+import { WorkflowWorkspace } from "./workflow-workspace";
 import type {
   MarketingCampaignAnalytics,
   MarketingOverviewMetrics,
@@ -36,6 +37,7 @@ import type {
   MarketingSegment,
   MarketingTopic,
   MarketingUiDictionary,
+  MarketingWorkflow,
 } from "./types";
 
 type CampaignForm = {
@@ -176,6 +178,7 @@ export type MarketingClientProps = {
   initialCampaigns: MarketingCampaign[];
   initialTopics: MarketingTopic[];
   initialSegments: MarketingSegment[];
+  initialWorkflows: MarketingWorkflow[];
   initialOverview: MarketingOverviewMetrics;
   initialCampaignAnalytics: Record<string, MarketingCampaignAnalytics>;
   dictionary?: MarketingUiDictionary;
@@ -185,6 +188,7 @@ export function MarketingClient({
   initialCampaigns,
   initialTopics,
   initialSegments,
+  initialWorkflows,
   initialOverview,
   initialCampaignAnalytics,
   dictionary = defaultMarketingUiDictionary,
@@ -195,7 +199,7 @@ export function MarketingClient({
   const [segments, setSegments] = useState(initialSegments);
   const [overview, setOverview] = useState(initialOverview);
   const [campaignAnalytics, setCampaignAnalytics] = useState(initialCampaignAnalytics);
-  const [activeView, setActiveView] = useState<"campaigns" | "segments" | "analytics">("campaigns");
+  const [activeView, setActiveView] = useState<"campaigns" | "segments" | "analytics" | "workflows">("campaigns");
   const [activeCampaign, setActiveCampaign] = useState<MarketingCampaign | null>(null);
   const [form, setForm] = useState<CampaignForm>(emptyForm);
   const [recipients, setRecipients] = useState<MarketingCampaignRecipient[]>([]);
@@ -343,14 +347,18 @@ export function MarketingClient({
               ? dictionary.page.title
               : activeView === "segments"
                 ? dictionary.segments.title
-                : dictionary.analytics.title}
+                : activeView === "analytics"
+                  ? dictionary.analytics.title
+                  : dictionary.workflows.title}
           </h1>
           <p>
             {activeView === "campaigns"
               ? dictionary.page.subtitle
               : activeView === "segments"
                 ? dictionary.segments.subtitle
-                : dictionary.analytics.subtitle}
+                : activeView === "analytics"
+                  ? dictionary.analytics.subtitle
+                  : dictionary.workflows.subtitle}
           </p>
         </div>
         {activeView === "campaigns" ? (
@@ -384,6 +392,14 @@ export function MarketingClient({
         >
           <BarChart3 aria-hidden="true" />
           {dictionary.page.analyticsTab}
+        </Button>
+        <Button
+          onClick={() => setActiveView("workflows")}
+          size="sm"
+          variant={activeView === "workflows" ? "default" : "ghost"}
+        >
+          <Workflow aria-hidden="true" />
+          {dictionary.workflows.tab}
         </Button>
       </nav>
 
@@ -446,13 +462,18 @@ export function MarketingClient({
           segments={segments}
           topics={initialTopics}
         />
-      ) : (
+      ) : activeView === "analytics" ? (
         <AnalyticsWorkspace
           campaignAnalytics={campaignAnalytics}
           campaigns={campaigns}
           dictionary={dictionary}
           onOpenCampaign={(campaign) => void openCampaign(campaign)}
           overview={overview}
+        />
+      ) : (
+        <WorkflowWorkspace
+          dictionary={dictionary}
+          initialWorkflows={initialWorkflows}
         />
       )}
 

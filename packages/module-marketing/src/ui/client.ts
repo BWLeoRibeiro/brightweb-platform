@@ -8,6 +8,11 @@ import type {
   MarketingSegmentInput,
   MarketingSegmentPreview,
   MarketingUiClient,
+  MarketingWorkflow,
+  MarketingWorkflowInput,
+  MarketingWorkflowNode,
+  MarketingWorkflowNodeInput,
+  MarketingWorkflowRun,
 } from "./types";
 import type {
   MarketingCampaignAnalytics,
@@ -77,6 +82,93 @@ function parseSegments(payload: unknown): MarketingSegment[] {
   return Array.isArray(segments) ? segments.map(parseSegment) : [];
 }
 
+function parseWorkflowNode(value: unknown): MarketingWorkflowNode {
+  const row = asRecord(value);
+  return {
+    id: String(row.id ?? ""),
+    workflowId: String(row.workflowId ?? row.workflow_id ?? ""),
+    type: String(row.nodeType ?? row.node_type ?? row.type ?? "wait") as MarketingWorkflowNode["type"],
+    position: Number(row.position ?? 0),
+    config: asRecord(row.config),
+    createdAt: typeof row.createdAt === "string"
+      ? row.createdAt
+      : typeof row.created_at === "string" ? row.created_at : undefined,
+    updatedAt: typeof row.updatedAt === "string"
+      ? row.updatedAt
+      : typeof row.updated_at === "string" ? row.updated_at : undefined,
+  };
+}
+
+function parseWorkflow(payload: unknown): MarketingWorkflow {
+  const row = asRecord(unwrap<unknown>(payload, "workflow"));
+  const rawNodes = Array.isArray(row.nodes) ? row.nodes : [];
+  const nodes = rawNodes.map(parseWorkflowNode).sort((a, b) => a.position - b.position);
+  return {
+    id: String(row.id ?? ""),
+    name: String(row.name ?? ""),
+    description: typeof row.description === "string" ? row.description : null,
+    triggerType: String(row.triggerType ?? row.trigger_type ?? "contact_subscribed") as MarketingWorkflow["triggerType"],
+    triggerConfig: asRecord(row.triggerConfig ?? row.trigger_config) as MarketingWorkflow["triggerConfig"],
+    status: String(row.status ?? "draft") as MarketingWorkflow["status"],
+    nodes,
+    nodeCount: Number(row.nodeCount ?? row.node_count ?? nodes.length),
+    runCount: Number(row.runCount ?? row.run_count ?? 0),
+    createdAt: String(row.createdAt ?? row.created_at ?? ""),
+    updatedAt: String(row.updatedAt ?? row.updated_at ?? ""),
+  };
+}
+
+function parseWorkflows(payload: unknown): MarketingWorkflow[] {
+  const workflows = unwrap<unknown[]>(payload, "workflows");
+  return Array.isArray(workflows) ? workflows.map(parseWorkflow) : [];
+}
+
+function parseWorkflowNodes(payload: unknown): MarketingWorkflowNode[] {
+  const nodes = unwrap<unknown[]>(payload, "nodes");
+  return Array.isArray(nodes)
+    ? nodes.map(parseWorkflowNode).sort((a, b) => a.position - b.position)
+    : [];
+}
+
+function parseWorkflowRuns(payload: unknown): MarketingWorkflowRun[] {
+  const runs = unwrap<unknown[]>(payload, "runs");
+  if (!Array.isArray(runs)) return [];
+  return runs.map((value) => {
+    const row = asRecord(value);
+    const contact = asRecord(row.contact);
+    const context = asRecord(row.context);
+    const currentStep = row.currentStep ?? row.current_step ?? row.currentNodePosition ?? row.current_node_position;
+    return {
+      id: String(row.id ?? ""),
+      workflowId: String(row.workflowId ?? row.workflow_id ?? ""),
+      contactId: typeof row.contactId === "string"
+        ? row.contactId
+        : typeof row.contact_id === "string" ? row.contact_id : null,
+      contactName: typeof row.contactName === "string"
+        ? row.contactName
+        : typeof contact.name === "string"
+          ? contact.name
+          : typeof context.contactName === "string" ? context.contactName : null,
+      contactEmail: typeof row.contactEmail === "string"
+        ? row.contactEmail
+        : typeof row.contact_email === "string"
+          ? row.contact_email
+          : typeof contact.email === "string"
+            ? contact.email
+            : typeof context.contactEmail === "string" ? context.contactEmail : null,
+      status: String(row.status ?? "active") as MarketingWorkflowRun["status"],
+      currentStep: typeof (currentStep ?? row.currentPosition ?? row.current_position) === "number"
+        ? Number(currentStep ?? row.currentPosition ?? row.current_position)
+        : null,
+      nextRunAt: typeof row.nextRunAt === "string"
+        ? row.nextRunAt
+        : typeof row.next_run_at === "string" ? row.next_run_at : null,
+      createdAt: String(row.createdAt ?? row.created_at ?? ""),
+      updatedAt: String(row.updatedAt ?? row.updated_at ?? ""),
+    };
+  });
+}
+
 export function createMarketingUiClient(
   basePath = "/api/marketing",
   fetcher: typeof fetch = fetch,
@@ -94,6 +186,15 @@ export function createMarketingUiClient(
         await fetcher(
           endpoint(`campaigns/${encodeURIComponent(campaignId)}/${action}`),
           json("POST", body),
+        ),
+      ),
+    );
+  const workflowAction = async (workflowId: string, action: "activate" | "pause") =>
+    parseWorkflow(
+      await readPayload(
+        await fetcher(
+          endpoint(`workflows/${encodeURIComponent(workflowId)}/${action}`),
+          json("POST"),
         ),
       ),
     );
@@ -215,6 +316,59 @@ export function createMarketingUiClient(
       return await readPayload(
         await fetcher(endpoint(`analytics/segments/${encodeURIComponent(segmentId)}`)),
       ) as MarketingSegmentAnalytics;
+    },
+    async listWorkflows() {
+      return parseWorkflows(await readPayload(await fetcher(endpoint("workflows"))));
+    },
+    async getWorkflow(workflowId) {
+      return parseWorkflow(
+        await readPayload(await fetcher(endpoint(`workflows/${encodeURIComponent(workflowId)}`))),
+      );
+    },
+    async createWorkflow(input: MarketingWorkflowInput) {
+      return parseWorkflow(
+        await readPayload(await fetcher(endpoint("workflows"), json("POST", input))),
+      );
+    },
+    async updateWorkflow(workflowId, input) {
+      return parseWorkflow(
+        await readPayload(
+          await fetcher(
+            endpoint(`workflows/${encodeURIComponent(workflowId)}`),
+            json("PATCH", input),
+          ),
+        ),
+      );
+    },
+    async deleteWorkflow(workflowId) {
+      const response = await fetcher(
+        endpoint(`workflows/${encodeURIComponent(workflowId)}`),
+        json("DELETE"),
+      );
+      if (!response.ok) await readPayload(response);
+    },
+    activateWorkflow(workflowId) {
+      return workflowAction(workflowId, "activate");
+    },
+    pauseWorkflow(workflowId) {
+      return workflowAction(workflowId, "pause");
+    },
+    async saveWorkflowNodes(workflowId, nodes: MarketingWorkflowNodeInput[]) {
+      return parseWorkflowNodes(
+        await readPayload(
+          await fetcher(
+            endpoint(`workflows/${encodeURIComponent(workflowId)}/nodes`),
+            json("PUT", { nodes }),
+          ),
+        ),
+      );
+    },
+    async listWorkflowRuns(workflowId) {
+      return parseWorkflowRuns(
+        await readPayload(
+          await fetcher(endpoint(`workflows/${encodeURIComponent(workflowId)}/runs`)),
+        ),
+      );
     },
   };
 }

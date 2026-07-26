@@ -85,6 +85,69 @@ export type MarketingSegmentPreview = {
   sample: Array<{ id: string; email: string; name: string }>;
 };
 
+export type MarketingWorkflowStatus = "draft" | "active" | "paused";
+
+export type MarketingWorkflowTriggerType =
+  | "contact_subscribed"
+  | "crm_status_changed"
+  | "project_status_changed"
+  | "form_submitted";
+
+export type MarketingWorkflowNodeType = "send_email" | "wait" | "add_tag";
+
+export type MarketingWorkflowTriggerConfig = Record<string, unknown>;
+
+export type MarketingWorkflowNode = {
+  id: string;
+  workflowId: string;
+  type: MarketingWorkflowNodeType;
+  position: number;
+  config: Record<string, unknown>;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+export type MarketingWorkflowNodeInput = {
+  id?: string;
+  nodeType: MarketingWorkflowNodeType;
+  position: number;
+  config: Record<string, unknown>;
+};
+
+export type MarketingWorkflow = {
+  id: string;
+  name: string;
+  description: string | null;
+  triggerType: MarketingWorkflowTriggerType;
+  triggerConfig: MarketingWorkflowTriggerConfig;
+  status: MarketingWorkflowStatus;
+  nodes: MarketingWorkflowNode[];
+  nodeCount: number;
+  runCount: number;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type MarketingWorkflowInput = {
+  name: string;
+  description?: string | null;
+  triggerType: MarketingWorkflowTriggerType;
+  triggerConfig?: MarketingWorkflowTriggerConfig;
+};
+
+export type MarketingWorkflowRun = {
+  id: string;
+  workflowId: string;
+  contactId: string | null;
+  contactName: string | null;
+  contactEmail: string | null;
+  status: "active" | "completed" | "failed" | "canceled";
+  currentStep: number | null;
+  nextRunAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type MarketingUiClient = {
   listCampaigns(): Promise<MarketingCampaign[]>;
   getCampaign(campaignId: string): Promise<MarketingCampaign>;
@@ -107,10 +170,101 @@ export type MarketingUiClient = {
   getOverview(sinceDays?: number): Promise<MarketingOverviewMetrics>;
   getCampaignAnalytics(campaignId: string): Promise<MarketingCampaignAnalytics>;
   getSegmentAnalytics(segmentId: string): Promise<MarketingSegmentAnalytics>;
+  listWorkflows(): Promise<MarketingWorkflow[]>;
+  getWorkflow(workflowId: string): Promise<MarketingWorkflow>;
+  createWorkflow(input: MarketingWorkflowInput): Promise<MarketingWorkflow>;
+  updateWorkflow(workflowId: string, input: Partial<MarketingWorkflowInput>): Promise<MarketingWorkflow>;
+  deleteWorkflow(workflowId: string): Promise<void>;
+  activateWorkflow(workflowId: string): Promise<MarketingWorkflow>;
+  pauseWorkflow(workflowId: string): Promise<MarketingWorkflow>;
+  saveWorkflowNodes(workflowId: string, nodes: MarketingWorkflowNodeInput[]): Promise<MarketingWorkflowNode[]>;
+  listWorkflowRuns(workflowId: string): Promise<MarketingWorkflowRun[]>;
 };
 
 export type MarketingUiDictionary = {
   locale: "pt-PT";
+  workflows: {
+    tab: string;
+    eyebrow: string;
+    title: string;
+    subtitle: string;
+    newWorkflow: string;
+    emptyTitle: string;
+    emptyDescription: string;
+    nodeCount: (count: number) => string;
+    runCount: (count: number) => string;
+    statuses: Record<MarketingWorkflowStatus, string>;
+    triggers: Record<MarketingWorkflowTriggerType, string>;
+    triggerConfig: {
+      topic: string;
+      targetStatus: string;
+      form: string;
+      topicPlaceholder: string;
+      statusPlaceholder: string;
+      formPlaceholder: string;
+    };
+    editorCreate: string;
+    editorEdit: string;
+    fields: {
+      name: string;
+      description: string;
+      triggerType: string;
+    };
+    placeholders: {
+      name: string;
+      description: string;
+    };
+    steps: {
+      title: string;
+      subtitle: string;
+      add: string;
+      empty: string;
+      step: (position: number) => string;
+      types: Record<MarketingWorkflowNodeType, string>;
+      moveUp: string;
+      moveDown: string;
+      remove: string;
+      subject: string;
+      body: string;
+      topic: string;
+      tag: string;
+      duration: string;
+      unit: string;
+      units: {
+        minutes: string;
+        hours: string;
+        days: string;
+      };
+      placeholders: {
+        subject: string;
+        body: string;
+        topic: string;
+        tag: string;
+      };
+    };
+    runs: {
+      title: string;
+      subtitle: string;
+      empty: string;
+      contact: string;
+      status: string;
+      currentStep: string;
+      nextRun: string;
+      statuses: Record<MarketingWorkflowRun["status"], string>;
+    };
+    save: string;
+    saving: string;
+    activate: string;
+    pause: string;
+    delete: string;
+    close: string;
+    created: string;
+    saved: string;
+    deleted: string;
+    activated: string;
+    paused: string;
+    nodesSaved: string;
+  };
   page: {
     eyebrow: string;
     title: string;
