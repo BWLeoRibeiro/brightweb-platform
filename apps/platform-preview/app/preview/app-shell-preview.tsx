@@ -1,14 +1,12 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import {
   AccountMenu,
   AppHeader,
   DesktopSidebar,
   MobileNav,
   computeInitials,
-  getShellNavGroup,
-  type NavGroupConfig,
   type ResolvedClientAppShellConfig,
 } from "@brightweblabs/app-shell";
 import { SectionHeading, StatTile, StatValue, StatusPill, SurfaceCard } from "@brightweblabs/ui";
@@ -46,24 +44,16 @@ export function AppShellPreview() {
   const { shellPreview: config } = getStarterShellConfig() as { shellPreview: ResolvedClientAppShellConfig };
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [toolsExpanded, setToolsExpanded] = useState(true);
-  const [crmExpanded, setCrmExpanded] = useState(true);
+  const [expandedNavGroups, setExpandedNavGroups] = useState<Record<string, boolean>>(
+    () => Object.fromEntries(config.moduleGroups.map((group) => [group.key, true])),
+  );
   const [activeHref, setActiveHref] = useState(config.primaryNav[0]?.href ?? "/dashboard");
 
-  const crmNavGroup = useMemo(
-    () =>
-      getShellNavGroup(config, "crm")
-      ?? ({
-        label: "CRM",
-        icon: Users,
-        children: [{ href: "/crm", label: "CRM", icon: Users }],
-      } satisfies NavGroupConfig),
-    [config],
-  );
+  const moduleNavItems = config.moduleGroups.flatMap((group) => group.children);
   const collapsedToolsHref = config.toolsSection.items[0]?.href ?? "/";
   const displayName = "Starter Admin";
   const userInitials = computeInitials(displayName);
   const isActiveLink = (href: string) => activeHref === href;
-  const isCrmGroupActive = crmNavGroup.children.some((item) => isActiveLink(item.href));
   const isToolActive = config.toolsSection.items.some((item) => isActiveLink(item.href));
 
   return (
@@ -78,15 +68,19 @@ export function AppShellPreview() {
         visiblePrimaryNav={config.primaryNav}
         adminNavItem={config.adminNavItem}
         visibleToolNav={config.toolsSection.items}
-        crmNavGroup={crmNavGroup}
-        crmGroupExpanded={crmExpanded}
-        isCrmGroupActive={isCrmGroupActive}
+        navGroups={config.moduleGroups}
+        isNavGroupExpanded={(groupKey) => expandedNavGroups[groupKey] ?? false}
+        isNavGroupActive={(group) => group.children.some((item) => isActiveLink(item.href))}
         isNavItemActive={isActiveLink}
         isToolLinkActive={isActiveLink}
-        isCrmChildActive={isActiveLink}
         onToggleSidebar={() => setIsSidebarCollapsed((current) => !current)}
         onToggleTools={() => setToolsExpanded((current) => !current)}
-        onToggleCrmGroup={() => setCrmExpanded((current) => !current)}
+        onToggleNavGroup={(groupKey) => {
+          setExpandedNavGroups((current) => ({
+            ...current,
+            [groupKey]: isSidebarCollapsed ? true : !(current[groupKey] ?? false),
+          }));
+        }}
       />
 
       <div className="app-preview-main">
@@ -144,7 +138,7 @@ export function AppShellPreview() {
                     <h2>{activeHref}</h2>
                   </div>
                   <div className="actions">
-                    {[...config.primaryNav, ...crmNavGroup.children, ...(config.adminNavItem ? [config.adminNavItem] : []), ...config.toolsSection.items].map((item) => (
+                    {[...config.primaryNav, ...moduleNavItems, ...(config.adminNavItem ? [config.adminNavItem] : []), ...config.toolsSection.items].map((item) => (
                       <button
                         key={item.href}
                         type="button"
@@ -164,9 +158,9 @@ export function AppShellPreview() {
                     <span>{config.primaryNav.map((item) => item.label).join(" · ")}</span>
                   </div>
                   <div className="preview-surface-card">
-                    <p className="preview-label">CRM group</p>
-                    <strong>{crmNavGroup.children.length} item(s)</strong>
-                    <span>{crmNavGroup.children.map((item) => item.label).join(" · ")}</span>
+                    <p className="preview-label">Module groups</p>
+                    <strong>{moduleNavItems.length} item(s)</strong>
+                    <span>{config.moduleGroups.map((group) => group.label).join(" · ") || "No module groups enabled"}</span>
                   </div>
                   <div className="preview-surface-card">
                     <p className="preview-label">Tools section</p>
@@ -186,7 +180,7 @@ export function AppShellPreview() {
               />
               <div className="mt-5 grid grid-cols-1 divide-y divide-hairline sm:grid-cols-3 sm:divide-x sm:divide-y-0">
                 <StatTile label="Navigation items">
-                  <StatValue>{config.primaryNav.length + crmNavGroup.children.length}</StatValue>
+                  <StatValue>{config.primaryNav.length + moduleNavItems.length}</StatValue>
                 </StatTile>
                 <StatTile label="Tool entries">
                   <StatValue>{config.toolsSection.items.length}</StatValue>
