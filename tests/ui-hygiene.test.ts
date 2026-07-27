@@ -320,3 +320,54 @@ test("every MQ-compatible typography class used by packages exists in the theme 
   const missing = Array.from(used).filter((utility) => !aliases.includes(utility)).sort();
   assert.deepEqual(missing, [], `Missing MQ-compatible typography definitions: ${missing.join(", ")}`);
 });
+
+test("every core-auth component using auth-* classes reaches tokens.css through its imports", async () => {
+  // Regression guard. tokens.css defines every .auth-* rule, but was imported
+  // only by account-page.tsx — so the auth screens shipped unstyled unless a
+  // session happened to load /account first. A class is useless if the
+  // stylesheet defining it never enters the importing module's graph.
+  const coreAuthRoot = path.join(repoRoot, "packages", "core-auth", "src");
+  const coreAuthTokens = path.join(repoRoot, "packages", "core-auth", "tokens.css");
+  const authClasses = new Set(
+    Array.from((await readFile(coreAuthTokens, "utf8")).matchAll(/^\.(auth-[a-z0-9_-]+)/gm), (match) => match[1]),
+  );
+
+  const resolveLocalImport = async (fromFile: string, specifier: string) => {
+    const base = path.resolve(path.dirname(fromFile), specifier);
+    for (const candidate of [base, `${base}.tsx`, `${base}.ts`, path.join(base, "index.ts")]) {
+      try {
+        if ((await readFile(candidate, "utf8")) !== undefined) return candidate;
+      } catch {
+        // keep trying the remaining candidate extensions
+      }
+    }
+    return null;
+  };
+
+  const importsTokens = async (filePath: string, seen = new Set<string>()): Promise<boolean> => {
+    if (seen.has(filePath)) return false;
+    seen.add(filePath);
+    const source = await readFile(filePath, "utf8");
+    if (/import\s+"[^"]*tokens\.css"/.test(source)) return true;
+    const specifiers = Array.from(source.matchAll(/from\s+"(\.[^"]+)"/g), (match) => match[1]);
+    for (const specifier of specifiers) {
+      const resolved = await resolveLocalImport(filePath, specifier);
+      if (resolved && !resolved.endsWith(".css") && await importsTokens(resolved, seen)) return true;
+    }
+    return false;
+  };
+
+  const files = await sourcesAt(coreAuthRoot);
+  const offenders: string[] = [];
+  for (const { filePath, source } of files) {
+    if (!filePath.endsWith(".tsx")) continue;
+    const used = Array.from(source.matchAll(/className=(?:"([^"]*)"|\{`([^`]*)`\})/g))
+      .flatMap((match) => (match[1] ?? match[2] ?? "").split(/\s+/))
+      .filter((token) => authClasses.has(token));
+    if (used.length === 0) continue;
+    if (!(await importsTokens(filePath))) {
+      offenders.push(`${path.relative(repoRoot, filePath)} uses ${[...new Set(used)].slice(0, 3).join(", ")}`);
+    }
+  }
+  assert.deepEqual(offenders, [], `core-auth components must import tokens.css (directly or transitively):\n${offenders.join("\n")}`);
+});

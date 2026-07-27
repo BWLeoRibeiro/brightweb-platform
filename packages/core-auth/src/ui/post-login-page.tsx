@@ -4,6 +4,9 @@ import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { resolvePostLoginPath } from "../shared";
 import { useAuthUi } from "./context";
+// This page renders .auth-layout__brand-logo / .auth-post-login / .auth-spinner
+// without going through AuthLayout, so it needs the stylesheet in its own graph.
+import "../../tokens.css";
 
 function isPathWithin(pathname: string, prefix: string) {
   return pathname === prefix || pathname.startsWith(`${prefix}/`);
