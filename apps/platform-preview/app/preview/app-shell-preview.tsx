@@ -108,6 +108,7 @@ export function AppShellPreview() {
             toolsExpanded={toolsExpanded}
             visiblePrimaryNav={config.primaryNav}
             visibleToolNav={config.toolsSection.items}
+            navGroups={config.moduleGroups}
             isNavItemActive={isActiveLink}
             isToolLinkActive={isActiveLink}
             onToggleTools={() => setToolsExpanded((current) => !current)}

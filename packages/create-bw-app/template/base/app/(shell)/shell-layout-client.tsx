@@ -110,6 +110,7 @@ export function ShellLayoutClient({
           toolsExpanded={isGroupOpen(config.toolsSection.key)}
           visiblePrimaryNav={config.primaryNav}
           visibleToolNav={config.toolsSection.items}
+          navGroups={config.moduleGroups}
           isNavItemActive={isActive}
           isToolLinkActive={isActive}
           onToggleTools={() => toggleGroup(config.toolsSection.key)}

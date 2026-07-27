@@ -10,7 +10,8 @@ import {
   resolveShellToolbarSurface,
 } from "../packages/app-shell/src/config.ts";
 import { DesktopSidebar } from "../packages/app-shell/src/components/desktop-sidebar.tsx";
-import { SidebarSectionToggle } from "../packages/app-shell/src/components/nav-primitives.tsx";
+import { MobileNav } from "../packages/app-shell/src/components/mobile-nav.tsx";
+import { MobileNavPill, SidebarSectionToggle } from "../packages/app-shell/src/components/nav-primitives.tsx";
 import { mergeDashboardRefreshEventDetails, normalizeDashboardRefreshSections } from "../packages/app-shell/src/dashboard/events.ts";
 import type {
   NavGroupConfig,
@@ -231,6 +232,52 @@ test("renders every resolved module nav group in registration order", () => {
     groupToggles.map((props) => props.controlsId),
     ["crm-nav-desktop", "marketing-nav-desktop"],
   );
+});
+
+test("renders every resolved module nav group in the mobile nav in registration order", () => {
+  const built = buildClientAppShellRegistration({
+    brand: testShellBrand,
+    toolsSection: { key: "tools", label: "Tools", icon: TestNavIcon },
+    modules: [
+      {
+        key: "crm",
+        moduleGroups: [{
+          key: "crm",
+          label: "CRM",
+          icon: TestNavIcon,
+          children: [{ href: "/crm", label: "Contacts", icon: TestNavIcon }],
+        }],
+      },
+      {
+        key: "marketing",
+        moduleGroups: [{
+          key: "marketing",
+          label: "Marketing",
+          icon: TestNavIcon,
+          children: [{ href: "/marketing", label: "Campaigns", icon: TestNavIcon }],
+        }],
+      },
+    ],
+  });
+  const config = resolveClientAppShellConfig(built.shellConfig, {
+    isAdmin: false,
+    isStaff: true,
+  });
+
+  const mobileNav = MobileNav({
+    toolsExpanded: false,
+    visiblePrimaryNav: config.primaryNav,
+    visibleToolNav: config.toolsSection.items,
+    navGroups: config.moduleGroups,
+    isNavItemActive: () => false,
+    isToolLinkActive: () => false,
+    onToggleTools: () => {},
+  });
+  const groupHeadings = collectElementProps(mobileNav, "p");
+  const groupPills = collectElementProps(mobileNav, MobileNavPill);
+
+  assert.deepEqual(groupHeadings.map((props) => props.children), ["CRM", "Marketing"]);
+  assert.deepEqual(groupPills.map((props) => props.href), ["/crm", "/marketing"]);
 });
 
 test("drops a module nav group when viewer visibility filters out every child", () => {

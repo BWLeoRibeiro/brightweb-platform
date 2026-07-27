@@ -189,6 +189,7 @@ export type MobileNavProps = {
   toolsExpanded: boolean;
   visiblePrimaryNav: PrimaryNavItem[];
   visibleToolNav: ToolNavItem[];
+  navGroups: NavGroupConfig[];
   isNavItemActive: (href: string) => boolean;
   isToolLinkActive: (href: string) => boolean;
   onToggleTools: () => void;

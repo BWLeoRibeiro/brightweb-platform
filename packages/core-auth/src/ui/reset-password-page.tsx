@@ -10,6 +10,60 @@ import { PasswordStrength } from "@brightweblabs/ui/password-strength";
 import { validatePassword } from "../shared";
 import { AuthCard, AuthDivider, AuthHeading, AuthLayout, AuthNotice } from "./auth-layout";
 import { useAuthUi } from "./context";
+import type { AuthUiClient } from "./types";
+
+type RecoveryPreparation = {
+  error: string | null;
+  replacementPath: string | null;
+};
+
+function cleanRecoveryUrl(currentUrl: URL) {
+  for (const key of ["code", "type", "error", "error_code", "error_description"]) {
+    currentUrl.searchParams.delete(key);
+  }
+  currentUrl.hash = "";
+  return `${currentUrl.pathname}${currentUrl.search}`;
+}
+
+export async function prepareRecoveryUrl(
+  currentUrl: URL,
+  client: Pick<AuthUiClient, "establishRecoverySession" | "exchangeRecoveryCode">,
+  invalidLink: string,
+): Promise<RecoveryPreparation> {
+  const fragment = new URLSearchParams(currentUrl.hash.replace(/^#/, ""));
+  const authError = currentUrl.searchParams.get("error")
+    ?? currentUrl.searchParams.get("error_description")
+    ?? fragment.get("error")
+    ?? fragment.get("error_description");
+
+  if (authError) {
+    return {
+      error: invalidLink,
+      replacementPath: cleanRecoveryUrl(currentUrl),
+    };
+  }
+
+  const code = currentUrl.searchParams.get("code");
+  if (code) {
+    await client.exchangeRecoveryCode(code);
+    return {
+      error: null,
+      replacementPath: cleanRecoveryUrl(currentUrl),
+    };
+  }
+
+  const accessToken = fragment.get("access_token");
+  const refreshToken = fragment.get("refresh_token");
+  if (fragment.get("type") === "recovery" && accessToken && refreshToken) {
+    await client.establishRecoverySession({ accessToken, refreshToken });
+    return {
+      error: null,
+      replacementPath: cleanRecoveryUrl(currentUrl),
+    };
+  }
+
+  return { error: null, replacementPath: null };
+}
 
 export function ResetPasswordPage() {
   const router = useRouter();
@@ -25,21 +79,11 @@ export function ResetPasswordPage() {
     let mounted = true;
     async function prepareRecovery() {
       const currentUrl = new URL(window.location.href);
-      const code = currentUrl.searchParams.get("code");
-      const authError = currentUrl.searchParams.get("error") ?? currentUrl.searchParams.get("error_description");
-      if (authError) {
-        setError(d.invalidLink);
-        setPreparing(false);
-        return;
-      }
-      if (!code) {
-        setPreparing(false);
-        return;
-      }
       try {
-        await client.exchangeRecoveryCode(code);
-        for (const key of ["code", "type", "error", "error_description"]) currentUrl.searchParams.delete(key);
-        router.replace(`${currentUrl.pathname}${currentUrl.search}`);
+        const result = await prepareRecoveryUrl(currentUrl, client, d.invalidLink);
+        if (!mounted) return;
+        if (result.error) setError(result.error);
+        if (result.replacementPath) router.replace(result.replacementPath);
       } catch {
         if (mounted) setError(d.invalidLink);
       } finally {

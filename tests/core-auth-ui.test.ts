@@ -13,6 +13,7 @@ import {
 } from "../packages/core-auth/src/invitations.ts";
 import { createAuthUiClient } from "../packages/core-auth/src/ui/client.ts";
 import { defaultAuthUiDictionary } from "../packages/core-auth/src/ui/dictionary.ts";
+import { prepareRecoveryUrl } from "../packages/core-auth/src/ui/reset-password-page.tsx";
 import {
   parseInvitationAcceptResponse,
   parseInvitationDetailsResponse,
@@ -336,6 +337,91 @@ test("auth client distinguishes a successful null session from provider failure"
   });
   await assert.rejects(authMutationClient.signOutLocal(), providerError);
   await assert.rejects(authMutationClient.resetPassword("Password-123"), providerError);
+});
+
+test("reset recovery fragment errors surface the invalid-link message and clear the fragment", async () => {
+  const result = await prepareRecoveryUrl(
+    new URL("https://portal.test/reset-password#error=access_denied&error_code=otp_expired&error_description=Email+link+is+invalid+or+has+expired"),
+    {
+      exchangeRecoveryCode: async () => {
+        throw new Error("must not exchange a code");
+      },
+      establishRecoverySession: async () => {
+        throw new Error("must not establish a session");
+      },
+    },
+    defaultAuthUiDictionary.reset.invalidLink,
+  );
+
+  assert.deepEqual(result, {
+    error: defaultAuthUiDictionary.reset.invalidLink,
+    replacementPath: "/reset-password",
+  });
+});
+
+test("reset recovery fragment tokens establish a session and allow the password update", async () => {
+  let session: { user: { id: string; email: string } } | null = null;
+  let sessionInput: { access_token: string; refresh_token: string } | null = null;
+  let updatedPassword: string | null = null;
+  const client = createAuthUiClient({
+    createClient: (() => ({
+      auth: {
+        setSession: async (input: { access_token: string; refresh_token: string }) => {
+          sessionInput = input;
+          session = { user: { id: "user-1", email: "person@example.com" } };
+          return { data: { session }, error: null };
+        },
+        getSession: async () => ({ data: { session }, error: null }),
+        updateUser: async ({ password }: { password: string }) => {
+          updatedPassword = password;
+          return { data: {}, error: null };
+        },
+      },
+    })) as never,
+  });
+
+  const result = await prepareRecoveryUrl(
+    new URL("https://portal.test/reset-password#access_token=access-123&refresh_token=refresh-456&type=recovery"),
+    client,
+    defaultAuthUiDictionary.reset.invalidLink,
+  );
+  await client.resetPassword("Updated-password-123");
+
+  assert.deepEqual(sessionInput, {
+    access_token: "access-123",
+    refresh_token: "refresh-456",
+  });
+  assert.equal(updatedPassword, "Updated-password-123");
+  assert.deepEqual(result, {
+    error: null,
+    replacementPath: "/reset-password",
+  });
+});
+
+test("reset recovery query codes still use the PKCE exchange path", async () => {
+  let exchangedCode: string | null = null;
+  const client = createAuthUiClient({
+    createClient: (() => ({
+      auth: {
+        exchangeCodeForSession: async (code: string) => {
+          exchangedCode = code;
+          return { data: { session: {} }, error: null };
+        },
+      },
+    })) as never,
+  });
+
+  const result = await prepareRecoveryUrl(
+    new URL("https://portal.test/reset-password?code=pkce-123&next=%2Faccount"),
+    client,
+    defaultAuthUiDictionary.reset.invalidLink,
+  );
+
+  assert.equal(exchangedCode, "pkce-123");
+  assert.deepEqual(result, {
+    error: null,
+    replacementPath: "/reset-password?next=%2Faccount",
+  });
 });
 
 function invitationDependencies(

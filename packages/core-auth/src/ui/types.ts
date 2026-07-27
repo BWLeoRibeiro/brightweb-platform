@@ -48,6 +48,7 @@ export interface AuthUiClient {
   resendConfirmation(input: { email: string; redirectTo?: string }): Promise<void>;
   requestReset(input: { email: string; redirectTo?: string }): Promise<void>;
   exchangeRecoveryCode(code: string): Promise<void>;
+  establishRecoverySession(input: { accessToken: string; refreshToken: string }): Promise<void>;
   resetPassword(password: string): Promise<void>;
   getInvitation(invitationId: string, kind: AuthInvitation["kind"]): Promise<AuthInvitation | null>;
   registerInvite(input: RegisterInviteInput): Promise<{ email: string }>;
