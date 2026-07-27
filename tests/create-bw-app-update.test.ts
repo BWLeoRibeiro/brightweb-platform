@@ -339,7 +339,7 @@ test("projects scaffolding resolves organizations without CRM", async (t) => {
   assert.match(await fs.readFile(path.join(targetDir, "config", "modules.ts"), "utf8"), /key: "orgs"[\s\S]*?enabled: true[\s\S]*?placement: "hidden"/);
   const shellConfig = await fs.readFile(path.join(targetDir, "config", "shell.ts"), "utf8");
   assert.match(shellConfig, /orgsModuleRegistration/);
-  assert.match(shellConfig, /projectsPreviewModuleRegistration/);
+  assert.match(shellConfig, /projectsModuleRegistration/);
 });
 
 test("scaffolds platform AI handoff files with platform-specific context", async (t) => {
@@ -365,7 +365,8 @@ test("scaffolds platform AI handoff files with platform-specific context", async
     "/account",
     "/dashboard",
     "/crm",
-    "/projects",
+    "/projetos",
+    "/account/projetos",
   ]);
   assert.match(examples, /First local setup/);
   assert.match(agents, /docs\/ai\/app-context\.json/);

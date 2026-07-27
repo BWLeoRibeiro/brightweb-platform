@@ -8,12 +8,12 @@ import {
   ProjectDetailPageLiveMount,
   ProjectsPageLiveMount,
   ProjectTasksPageLiveMount,
-} from "./projects-live-mounts";
+} from "./projetos-live-mounts";
 
 const navigation = {
-  listHref: "/projects",
-  detailHref: (id: string) => `/projects/${id}`,
-  boardHref: (id: string) => `/projects/${id}/tasks`,
+  listHref: "/projetos",
+  detailHref: (id: string) => `/projetos/${id}`,
+  boardHref: (id: string) => `/projetos/${id}/tarefas`,
 };
 
 export async function ProjectsServerMount() {
@@ -35,20 +35,20 @@ export async function ProjectsServerMount() {
   );
 }
 
-async function getInitialProject(params: Promise<{ id: string }>) {
-  const { id } = await params;
+async function getInitialProject(params: Promise<{ projectId: string }>) {
+  const { projectId } = await params;
   const { supabase } = await requireServerPageAccess();
-  return getProjectDashboard(supabase, id);
+  return getProjectDashboard(supabase, projectId);
 }
 
-export async function ProjectDetailServerMount({ params }: { params: Promise<{ id: string }> }) {
+export async function ProjectDetailServerMount({ params }: { params: Promise<{ projectId: string }> }) {
   return <ProjectDetailPageLiveMount initialData={await getInitialProject(params)} navigation={navigation} />;
 }
 
-export async function ProjectBoardServerMount({ params }: { params: Promise<{ id: string }> }) {
+export async function ProjectBoardServerMount({ params }: { params: Promise<{ projectId: string }> }) {
   return <ProjectBoardPageLiveMount initialData={await getInitialProject(params)} navigation={navigation} />;
 }
 
-export async function ProjectTasksServerMount({ params }: { params: Promise<{ id: string }> }) {
+export async function ProjectTasksServerMount({ params }: { params: Promise<{ projectId: string }> }) {
   return <ProjectTasksPageLiveMount initialData={await getInitialProject(params)} navigation={navigation} />;
 }

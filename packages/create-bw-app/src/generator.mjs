@@ -395,7 +395,7 @@ export function createPlatformModulesConfigFile(selectedModules) {
     '    description: "Project portfolio, detail routes, and work-management server logic.",',
     `    enabled: ${String(selected.has("projects"))},`,
     '    packageName: "@brightweblabs/module-projects",',
-    '    routeHref: "/projects",',
+    '    routeHref: "/projetos",',
     '    placement: "primary",',
     "  },",
     "  {",
@@ -496,7 +496,7 @@ function getPlatformStarterRoutes(selectedModules) {
     ...selectedModules.flatMap((moduleKey) => {
       if (moduleKey === "crm") return ["/crm"];
       if (moduleKey === "marketing") return ["/marketing"];
-      if (moduleKey === "projects") return ["/projects"];
+      if (moduleKey === "projects") return ["/projetos", "/account/projetos"];
       if (moduleKey === "admin") return ["/admin/users"];
       return [];
     }),
@@ -917,8 +917,8 @@ export function createShellConfig(selectedModules) {
   }
 
   if (selectedModules.includes("projects")) {
-    importLines.push('import { projectsPreviewModuleRegistration } from "@brightweblabs/module-projects/registration";');
-    registrationLines.push('  if (enabled.has("projects")) registrations.push(projectsPreviewModuleRegistration);');
+    importLines.push('import { projectsModuleRegistration } from "@brightweblabs/module-projects/registration";');
+    registrationLines.push('  if (enabled.has("projects")) registrations.push(projectsModuleRegistration);');
   }
 
   return [
