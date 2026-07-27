@@ -1,5 +1,11 @@
 # create-bw-app
 
+## 0.14.1
+
+### Patch Changes
+
+- 41fa7ee: Add organization and invitation mounts to generated platform apps and make magic-link login an explicit opt-in.
+
 ## 0.14.0
 
 ### Minor Changes

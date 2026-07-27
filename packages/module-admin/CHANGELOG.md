@@ -1,5 +1,12 @@
 # @brightweblabs/module-admin
 
+## 0.5.3
+
+### Patch Changes
+
+- Updated dependencies [41fa7ee]
+  - @brightweblabs/core-auth@0.6.0
+
 ## 0.5.2
 
 ### Patch Changes
