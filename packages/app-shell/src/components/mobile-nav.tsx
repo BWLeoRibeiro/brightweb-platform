@@ -7,6 +7,7 @@ export function MobileNav({
   toolsExpanded,
   visiblePrimaryNav,
   visibleToolNav,
+  navGroups,
   isNavItemActive,
   isToolLinkActive,
   onToggleTools,
@@ -22,6 +23,25 @@ export function MobileNav({
             label={label}
             active={isNavItemActive(href)}
           />
+        ))}
+
+        {navGroups.map((navGroup) => (
+          <div key={navGroup.key} className="basis-full">
+            <p className="mb-2 mt-3 px-1 text-xs font-semibold text-foreground/60">
+              {navGroup.label}
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {navGroup.children.map(({ href, label, icon: Icon }) => (
+                <MobileNavPill
+                  key={href}
+                  href={href}
+                  icon={Icon}
+                  label={label}
+                  active={isNavItemActive(href)}
+                />
+              ))}
+            </div>
+          </div>
         ))}
 
         <MobileTogglePill controlsId="tools-nav-mobile" expanded={toolsExpanded} onToggle={onToggleTools} />

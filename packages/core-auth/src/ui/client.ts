@@ -48,6 +48,13 @@ export function createAuthUiClient(options: {
       const { error } = await supabase().auth.exchangeCodeForSession(code);
       if (error) throw error;
     },
+    async establishRecoverySession({ accessToken, refreshToken }) {
+      const { error } = await supabase().auth.setSession({
+        access_token: accessToken,
+        refresh_token: refreshToken,
+      });
+      if (error) throw error;
+    },
     async resetPassword(password) {
       const { data, error: sessionError } = await supabase().auth.getSession();
       if (sessionError) throw sessionError;
