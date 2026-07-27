@@ -43,6 +43,13 @@ export const starterEnvRequirements: StarterEnvRequirement[] = [
     requiredFor: ["crm", "marketing", "projects", "admin"],
   },
   {
+    key: "SUPABASE_KEEPALIVE_SECRET",
+    scope: "server",
+    description:
+      "Bearer secret for /api/cron/keepalive, which a scheduler calls so free-tier Supabase projects do not idle-pause.",
+    requiredFor: ["core-auth"],
+  },
+  {
     key: "RESEND_API_KEY",
     scope: "server",
     description: "Resend API key injected into Marketing email delivery.",

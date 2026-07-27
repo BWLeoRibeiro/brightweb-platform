@@ -315,7 +315,10 @@ test("every text-ui utility used by ui exists in theme typography", async () => 
 
 test("every MQ-compatible typography class used by packages exists in the theme aliases", async () => {
   const files = [...await sourcesAt(uiSourceRoot), ...await sourcesAt(appShellSourceRoot), ...await sourcesAt(adminUiSourceRoot), ...await sourcesAt(crmUiSourceRoot), ...await sourcesAt(projectsUiSourceRoot), ...await sourcesAt(marketingUiSourceRoot)];
-  const aliases = `${await readFile(mqAliasesPath, "utf8")}\n${await readFile(tokensPath, "utf8")}`;
+  // Includes the base typography sheet: portal-* moved there because packaged
+  // components consume those classes, so an app on any theme must receive them.
+  // A client theme file must never be load-bearing for package components.
+  const aliases = `${await readFile(mqAliasesPath, "utf8")}\n${await readFile(tokensPath, "utf8")}\n${await readFile(typographyPath, "utf8")}`;
   const used = new Set(files.flatMap(({ source }) => Array.from(source.matchAll(/\b(?:paragraph|portal)-[a-z0-9-]+\b/g), (match) => match[0])));
   const missing = Array.from(used).filter((utility) => !aliases.includes(utility)).sort();
   assert.deepEqual(missing, [], `Missing MQ-compatible typography definitions: ${missing.join(", ")}`);

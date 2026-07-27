@@ -1,7 +1,9 @@
 import { requireServerPageRoleAccess } from "@brightweblabs/core-auth/server";
 export {
+  ClientAccountPage,
   ClientProjectDetailLoading,
   ClientProjectDetailPage,
+  ClientProjectDetailRoute,
   ClientProjectsListLoading,
   ClientProjectsListPage,
   ClientProjectsPreview,
