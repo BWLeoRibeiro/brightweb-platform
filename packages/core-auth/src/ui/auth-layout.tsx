@@ -4,6 +4,10 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useAuthUi } from "./context";
 import type { AuthLayoutVariant } from "./types";
+// Owns the .auth-layout* rules used below. Until this import existed, tokens.css
+// reached the browser only via account-page.tsx, so every auth screen rendered
+// unstyled unless a session happened to load /account first.
+import "../../tokens.css";
 
 export function AuthLayout({
   children,
