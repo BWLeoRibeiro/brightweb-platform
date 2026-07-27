@@ -1,6 +1,6 @@
 "use client";
 
-import { BarChart2, Filter, Mail, Plus, Search, UserRound, Users } from "lucide-react";
+import { BarChart2, Filter, Plus, Search, UserRound, Users } from "lucide-react";
 import type { ShellContextualAction, ShellModuleRegistration } from "@brightweblabs/app-shell";
 
 export const crmModuleRegistration: ShellModuleRegistration<ShellContextualAction> = {
@@ -13,12 +13,11 @@ export const crmModuleRegistration: ShellModuleRegistration<ShellContextualActio
       icon: Users,
       children: [
         { href: "/crm", label: "Contactos", icon: UserRound },
-        {
-          href: "/admin/marketing",
-          label: "Email Marketing",
-          icon: Mail,
-          visibility: "admin",
-        },
+        // No Marketing entry here. module-marketing registers its own nav group
+        // at /marketing, and it depends on crm — not the reverse. Advertising a
+        // marketing route from crm inverted that dependency and 404'd in both
+        // configurations: duplicated (and wrong) when marketing was enabled,
+        // and pointing at a module the app did not have when it was not.
         { href: "/crm/report", label: "Relatórios", icon: BarChart2 },
       ],
     },

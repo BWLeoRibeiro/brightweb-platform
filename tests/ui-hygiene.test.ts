@@ -374,3 +374,38 @@ test("every core-auth component using auth-* classes reaches tokens.css through 
   }
   assert.deepEqual(offenders, [], `core-auth components must import tokens.css (directly or transitively):\n${offenders.join("\n")}`);
 });
+
+test("no module registration advertises a route owned by another module", async () => {
+  // module-crm used to put an "Email Marketing" item at /admin/marketing in its
+  // own nav. marketing depends on crm, never the reverse, so that inverted the
+  // dependency and 404'd twice over: duplicated and wrong when marketing was
+  // enabled, and pointing at an absent module when it was not.
+  const owners: Record<string, RegExp> = {
+    "module-crm": /^\/crm(\/|$)/,
+    "module-marketing": /^\/marketing(\/|$)/,
+    "module-admin": /^\/admin(\/|$)/,
+    "module-projects": /^\/(projects|projetos|account)(\/|$)/,
+    "module-orgs": /^\/(organizations|organizacoes)(\/|$)/,
+  };
+  const violations: string[] = [];
+  for (const [pkg, ownPattern] of Object.entries(owners)) {
+    const registrationPath = path.join(repoRoot, "packages", pkg, "src", "registration.ts");
+    let source: string;
+    try {
+      source = await readFile(registrationPath, "utf8");
+    } catch {
+      continue;
+    }
+    // Only nav-bearing hrefs matter; toolbarRoutes match paths they do not link to.
+    const navHrefs = Array.from(source.matchAll(/href:\s*"(\/[^"]*)"/g), (match) => match[1]);
+    for (const href of navHrefs) {
+      const ownedByAnother = Object.entries(owners).some(
+        ([otherPkg, pattern]) => otherPkg !== pkg && pattern.test(href),
+      );
+      if (ownedByAnother && !ownPattern.test(href)) {
+        violations.push(`${pkg} links ${href}, owned by another module`);
+      }
+    }
+  }
+  assert.deepEqual(violations, [], `Modules must only link their own routes:\n${violations.join("\n")}`);
+});
