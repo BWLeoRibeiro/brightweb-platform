@@ -261,7 +261,7 @@ test("full-modules scaffold mounts shell, auth, account, dashboard, projects, ad
     "adminModuleRegistration",
     "crmModuleRegistration",
     "marketingModuleRegistration",
-    "projectsPreviewModuleRegistration",
+    "projectsModuleRegistration",
   ]) {
     assert.match(shellConfig, new RegExp(registration));
   }
@@ -269,7 +269,7 @@ test("full-modules scaffold mounts shell, auth, account, dashboard, projects, ad
   assert.match(shellConfig, /dashboardContributions/);
 
   const projectsBoundary = await fs.readFile(
-    path.join(targetDir, "app", "(shell)", "projects", "projects-live-mounts.tsx"),
+    path.join(targetDir, "app", "(shell)", "projetos", "projetos-live-mounts.tsx"),
     "utf8",
   );
   assert.match(projectsBoundary, /^"use client";/);
