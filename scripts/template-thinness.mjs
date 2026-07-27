@@ -6,7 +6,27 @@ const DIRECT_PACKAGE_EXPORT = /^export\s*\{[^}]+\}\s*from\s*["']@brightweblabs\/
 const DIRECT_APP_HANDLER_EXPORT = /^export\s*\{[^}]+\}\s*from\s*["'](?:\.\.\/)+_handlers["'];?$/;
 const DIRECT_APP_MOUNT_EXPORT = /^export\s*\{[^}]+\}\s*from\s*["']\.{1,2}\/[a-z0-9_./-]+["'];?$/i;
 const STATIC_ROUTE_CONFIG = /^export\s+const\s+dynamic\s*=\s*["']force-dynamic["'];?$/;
+const PACKAGE_IMPORT = /^import\s*\{[^}]+\}\s*from\s*["']@brightweblabs\/[a-z0-9-/]+["'];?$/;
+const RELATIVE_IMPORT = /^import\s*\{[^}]+\}\s*from\s*["']\.{1,2}\/[a-z0-9_./-]+["'];?$/i;
+const PACKAGE_HANDLER_FACTORY = /^export\s+const\s+(?:GET|POST|PATCH|DELETE)\s*=\s*[A-Za-z0-9_]+\([A-Za-z0-9_]+\);?$/;
 const SINGLE_COMPONENT_MOUNT = /^import\s*\{\s*([A-Za-z0-9_]+)\s*\}\s*from\s*["']@brightweblabs\/[a-z0-9-/]+["'];\s*export\s+default\s+function\s+[A-Za-z0-9_]+\(\)\s*\{\s*return\s+<\1\s*\/>;\s*\}\s*$/s;
+const PARAMETERIZED_COMPONENT_MOUNT = /^import\s*\{\s*InvitePage\s*\}\s*from\s*["']@brightweblabs\/core-auth\/ui["'];\s*export\s+default\s+async\s+function\s+Page\(\{\s*params\s*\}:\s*\{\s*params:\s*Promise<\{\s*invitationId:\s*string\s*\}>\s*\}\)\s*\{\s*const\s*\{\s*invitationId\s*\}\s*=\s*await\s+params;\s*return\s+<InvitePage\s+invitationId=\{invitationId\}\s+kind=["']admin["']\s*\/>;\s*\}\s*$/s;
+
+function isDynamicPackageHandlerRoute(content) {
+  if (!content.includes('export const dynamic = "force-dynamic";')) return false;
+  const handlerBlocks = content.match(/export async function[\s\S]*?\n}/g) || [];
+  if (handlerBlocks.length === 0) return false;
+  for (const block of handlerBlocks) {
+    const importedHandler = block.match(
+      /const\s*\{\s*([A-Za-z0-9_]+)\s*\}\s*=\s*await\s+import\(["']@brightweblabs\/[a-z0-9-/]+["']\);/,
+    )?.[1];
+    if (!importedHandler || !new RegExp(`return\\s+${importedHandler}\\(`).test(block)) return false;
+  }
+  return content
+    .replace('export const dynamic = "force-dynamic";', "")
+    .replace(/export async function[\s\S]*?\n}/g, "")
+    .trim() === "";
+}
 
 async function collectRouteFiles(directoryPath) {
   const entries = await fs.readdir(directoryPath, { withFileTypes: true });
@@ -35,7 +55,21 @@ export async function findTemplateThinnessViolations(templateRoot) {
       .map((line) => line.trim())
       .filter((line) => line && !line.startsWith("//"));
 
-    if (executableLines.length > 5) {
+    const isDynamicPackageHandler = isDynamicPackageHandlerRoute(content);
+    const isPackageHandlerFactory = executableLines.some((line) => PACKAGE_HANDLER_FACTORY.test(line))
+      && executableLines.every(
+        (line) =>
+          PACKAGE_IMPORT.test(line)
+          || RELATIVE_IMPORT.test(line)
+          || STATIC_ROUTE_CONFIG.test(line)
+          || PACKAGE_HANDLER_FACTORY.test(line),
+      );
+    const isSingleComponentPage = path.basename(filePath) === "page.tsx" && (
+      SINGLE_COMPONENT_MOUNT.test(content)
+      || PARAMETERIZED_COMPONENT_MOUNT.test(content)
+    );
+
+    if (executableLines.length > 5 && !isDynamicPackageHandler && !isSingleComponentPage) {
       violations.push(`${filePath}: has ${executableLines.length} executable lines (maximum 5)`);
       continue;
     }
@@ -52,8 +86,7 @@ export async function findTemplateThinnessViolations(templateRoot) {
         || DIRECT_APP_MOUNT_EXPORT.test(line)
         || STATIC_ROUTE_CONFIG.test(line),
     );
-    const isSingleComponentPage = path.basename(filePath) === "page.tsx" && SINGLE_COMPONENT_MOUNT.test(content);
-    if (!isDirectExportRoute && !isSingleComponentPage) {
+    if (!isDirectExportRoute && !isDynamicPackageHandler && !isPackageHandlerFactory && !isSingleComponentPage) {
       violations.push(`${filePath}: must directly re-export package handlers/pages or return one imported package component`);
     }
   }

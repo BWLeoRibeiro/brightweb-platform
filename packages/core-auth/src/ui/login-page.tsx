@@ -24,7 +24,11 @@ function buildBrowserCallbackUrl() {
   return `${window.location.origin}/auth/callback`;
 }
 
-function LoginPageContent() {
+export interface LoginPageProps {
+  allowMagicLink?: boolean;
+}
+
+function LoginPageContent({ allowMagicLink }: Required<LoginPageProps>) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { client, dictionary } = useAuthUi();
@@ -35,6 +39,7 @@ function LoginPageContent() {
   const redirectTo = searchParams.get("redirectTo");
   const shouldRecoverStaleSession = searchParams.get("error") === "session_reset";
   const [mode, setMode] = useState<"password" | "magic">("password");
+  const activeMode = allowMagicLink ? mode : "password";
   const [email, setEmail] = useState(searchParams.get("email")?.trim().toLowerCase() ?? "");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -80,8 +85,8 @@ function LoginPageContent() {
   }, [client, d.authSystemError, invitationId, redirectTo, router, shouldRecoverStaleSession]);
 
   useEffect(() => {
-    if (error && mode === "password") passwordInputRef.current?.focus();
-  }, [error, mode]);
+    if (error && activeMode === "password") passwordInputRef.current?.focus();
+  }, [activeMode, error]);
 
   async function handleLogin(event: React.FormEvent) {
     event.preventDefault();
@@ -91,7 +96,7 @@ function LoginPageContent() {
     const normalizedEmail = email.trim().toLowerCase();
     try {
       if (!validateEmail(normalizedEmail)) throw new Error("invalid-email");
-      if (mode === "magic") {
+      if (activeMode === "magic") {
         await client.sendMagicLink({ email: normalizedEmail, redirectTo: buildBrowserCallbackUrl() });
         setInfo(d.magicSent);
         return;
@@ -107,7 +112,7 @@ function LoginPageContent() {
         setError(d.unconfirmed);
         setShowResend(true);
       } else {
-        setError(mode === "magic" ? d.resendError : d.invalid);
+        setError(activeMode === "magic" ? d.resendError : d.invalid);
         setShowResend(false);
       }
     } finally {
@@ -146,7 +151,7 @@ function LoginPageContent() {
   return (
     <AuthLayout>
       <AuthCard>
-        <AuthHeading title={d.title} description={mode === "magic" ? d.magicDescription : d.description} />
+        <AuthHeading title={d.title} description={activeMode === "magic" ? d.magicDescription : d.description} />
         <AuthDivider />
         {error ? (
           <AuthNotice id="login-error">
@@ -169,7 +174,7 @@ function LoginPageContent() {
               <Input id="email" type="email" placeholder={dictionary.common.emailPlaceholder} value={email} onChange={(event) => setEmail(event.target.value)} required disabled={loading} autoComplete="email" />
             </FieldContent>
           </Field>
-          {mode === "password" ? (
+          {activeMode === "password" ? (
             <Field>
               <div className="mb-1.5 flex items-center justify-between">
                 <FieldLabel htmlFor="password" className="block paragraph-small font-semibold text-foreground/60">{dictionary.common.password}</FieldLabel>
@@ -181,23 +186,25 @@ function LoginPageContent() {
             </Field>
           ) : null}
           <Button type="submit" className="h-11 w-full rounded-full" disabled={loading}>
-            {loading ? (mode === "magic" ? d.magicSubmitting : d.submitting) : (mode === "magic" ? d.magicSubmit : d.submit)}
+            {loading ? (activeMode === "magic" ? d.magicSubmitting : d.submitting) : (activeMode === "magic" ? d.magicSubmit : d.submit)}
           </Button>
         </form>
-        <Button type="button" variant="link" size="link" onClick={() => { setMode(mode === "password" ? "magic" : "password"); setError(null); setInfo(null); }} className="mx-auto paragraph-mini text-foreground/60">
-          {mode === "password" ? d.magicLink : d.passwordMode}
-        </Button>
+        {allowMagicLink ? (
+          <Button type="button" variant="link" size="link" onClick={() => { setMode(mode === "password" ? "magic" : "password"); setError(null); setInfo(null); }} className="mx-auto paragraph-mini text-foreground/60">
+            {mode === "password" ? d.magicLink : d.passwordMode}
+          </Button>
+        ) : null}
         <p className="pt-1 text-center paragraph-mini text-foreground-muted-accessible">{d.inviteOnly}</p>
       </AuthCard>
     </AuthLayout>
   );
 }
 
-export function LoginPage() {
+export function LoginPage({ allowMagicLink = false }: LoginPageProps = {}) {
   const { dictionary } = useAuthUi();
   return (
     <Suspense fallback={<AuthLayout><AuthCard><p className="paragraph-mini text-center text-muted-foreground">{dictionary.common.loading}</p></AuthCard></AuthLayout>}>
-      <LoginPageContent />
+      <LoginPageContent allowMagicLink={allowMagicLink} />
     </Suspense>
   );
 }
