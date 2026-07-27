@@ -1,4 +1,5 @@
 import { requireServerPageRoleAccess } from "@brightweblabs/core-auth/server";
+import { createServiceRoleClient } from "@brightweblabs/infra/server";
 import { listCampaigns } from "./campaigns";
 import { listTopics } from "./server";
 import { listSegments } from "./segments";
@@ -17,7 +18,20 @@ import "../tokens.css";
 import "../marketing.css";
 
 export async function MarketingPage() {
-  const { supabase } = await requireServerPageRoleAccess(["staff", "admin"]);
+  // Gate on the caller's session, then read with the service role. Every
+  // marketing table is service-role-only: RLS grants no policy to
+  // `authenticated`, and marketing_segments additionally revokes the table
+  // grant. Reading these with the request-scoped client returned empty lists
+  // for campaigns, topics and workflows, and threw
+  // "permission denied for table marketing_segments" on segments — so the
+  // page 500'd, and would have rendered blank even if it had not.
+  await requireServerPageRoleAccess(["staff", "admin"]);
+  const supabase = createServiceRoleClient();
+  if (!supabase) {
+    throw new Error(
+      "Marketing requires a Supabase service-role key. Set SUPABASE_SECRET_DEFAULT_KEY for this app.",
+    );
+  }
   const [campaigns, topics, segments, overview, workflowRows] = await Promise.all([
     listCampaigns(supabase),
     listTopics(supabase),
