@@ -1,6 +1,6 @@
 ---
 "@brightweblabs/core-auth": patch
-"@brightweblabs/app-shell": minor
+"@brightweblabs/app-shell": patch
 "create-bw-app": patch
 ---
 
