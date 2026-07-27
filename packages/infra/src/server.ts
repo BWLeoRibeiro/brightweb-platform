@@ -190,3 +190,45 @@ export async function resendApiRequest<TResponse>(
 
   return data as TResponse;
 }
+
+/**
+ * Keepalive endpoint for scheduler-driven database pings.
+ *
+ * Free-tier Supabase projects pause after roughly seven days without activity,
+ * which takes the whole app down until someone resumes them by hand. Mount this
+ * as a GET route and have a scheduler call it a couple of times a day with
+ * `Authorization: Bearer $SUPABASE_KEEPALIVE_SECRET`. The count query is
+ * deliberate — an HTTP request that never reaches Postgres does not reset the
+ * inactivity timer.
+ */
+export async function handleKeepaliveGetRequest(request: Request): Promise<Response> {
+  const expectedSecret = process.env.SUPABASE_KEEPALIVE_SECRET?.trim();
+  const authorization = request.headers.get("authorization")?.trim() ?? "";
+  if (!expectedSecret || !compareSecret(`Bearer ${expectedSecret}`, authorization)) {
+    return Response.json({ ok: false, error: "Unauthorized" }, { status: 401 });
+  }
+
+  const supabase = createServiceRoleClient();
+  if (!supabase) {
+    return Response.json(
+      { ok: false, error: "Supabase environment is not configured" },
+      { status: 500 },
+    );
+  }
+
+  const startedAt = Date.now();
+  const { count, error } = await supabase
+    .from("profiles")
+    .select("id", { count: "exact", head: true });
+
+  if (error) {
+    return Response.json({ ok: false, error: error.message }, { status: 500 });
+  }
+
+  return Response.json({
+    ok: true,
+    checkedAt: new Date().toISOString(),
+    metrics: { profiles: count },
+    durationMs: Date.now() - startedAt,
+  });
+}

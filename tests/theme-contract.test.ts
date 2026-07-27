@@ -143,10 +143,17 @@ test("typography utilities do not poison consumer color utilities", async () => 
     ["portal-metric-xl", ["var(--foreground)", 697]],
     ["portal-metric-display", ["var(--foreground)", 685]],
   ] as const);
-  const portalUtilities = new Map(Array.from(aliases.matchAll(/@utility\s+(portal-[a-z0-9-]+)\s*\{([^{}]*)\}/g), ([, utility, body]) => [utility, body]));
+  // portal-* utilities belong to the base theme, not the MQ alias file: packaged
+  // components consume them, so apps on any theme must receive them.
+  const portalUtilities = new Map(Array.from(typography.matchAll(/@utility\s+(portal-[a-z0-9-]+)\s*\{([^{}]*)\}/g), ([, utility, body]) => [utility, body]));
+  assert.equal(
+    aliases.match(/@utility\s+portal-/g),
+    null,
+    "portal-* utilities must not be redefined in themes/mq-aliases.css",
+  );
   for (const [utility, [color, sourceLine]] of mqParityColors) {
     const body = portalUtilities.get(utility);
-    assert.ok(body, `expected ${utility} in MQ aliases`);
+    assert.ok(body, `expected ${utility} in src/typography.css`);
     assert.match(body, new RegExp(`MQ parity: apps/portal/app/globals\\.css:${sourceLine}\\.`));
     assert.match(body, new RegExp(`color:\\s*${color.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s*;`));
   }

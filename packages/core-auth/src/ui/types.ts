@@ -59,8 +59,10 @@ export type AuthBrandConfig = {
   companyName: string;
   logo: ReactNode;
   helpHref?: string;
-  splitHeadline?: string;
-  splitDescription?: string;
+  // ReactNode rather than string: brands emphasise a word inside the headline
+  // (MQ accents "Execução"), which a plain string cannot express.
+  splitHeadline?: ReactNode;
+  splitDescription?: ReactNode;
 };
 
 export type AuthUiConfig = {
