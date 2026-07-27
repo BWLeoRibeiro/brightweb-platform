@@ -1,5 +1,12 @@
 # @brightweblabs/module-orgs
 
+## 0.3.6
+
+### Patch Changes
+
+- Updated dependencies [44a415e]
+  - @brightweblabs/app-shell@0.7.0
+
 ## 0.3.5
 
 ### Patch Changes
