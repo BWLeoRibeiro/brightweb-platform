@@ -180,6 +180,43 @@ test("marketing scaffolds its full thin surface and auto-enables CRM plus Organi
   );
 });
 
+test("CRM, Projects, and Admin scaffold organization and invitation mounts", async (t) => {
+  const { root, targetDir } = await scaffold(["crm", "projects", "admin"]);
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+
+  const mountFiles = [
+    "app/api/organizations/route.ts",
+    "app/api/organizations/[id]/route.ts",
+    "app/api/organizations/[id]/invitations/route.ts",
+    "app/api/organizations/[id]/invitations/[invitationId]/route.ts",
+    "app/api/invitations/[invitationId]/route.ts",
+    "app/api/invitations/[invitationId]/accept/route.ts",
+    "app/api/invitations/[invitationId]/register/route.ts",
+    "app/(auth)/admin-invite/[invitationId]/page.tsx",
+  ];
+
+  for (const relativePath of mountFiles) {
+    const [generated, template, preview] = await Promise.all([
+      fs.readFile(path.join(targetDir, relativePath), "utf8"),
+      fs.readFile(path.join(REPO_ROOT, "packages", "create-bw-app", "template", "base", relativePath), "utf8"),
+      fs.readFile(path.join(REPO_ROOT, "apps", "platform-preview", relativePath), "utf8"),
+    ]);
+    assert.equal(generated, template);
+    assert.equal(template, preview);
+  }
+
+  const dependenciesPath = "app/api/invitations/_dependencies.ts";
+  assert.equal(
+    await fs.readFile(path.join(targetDir, dependenciesPath), "utf8"),
+    await fs.readFile(path.join(REPO_ROOT, "apps", "platform-preview", dependenciesPath), "utf8"),
+  );
+
+  const appManifest = await readJson(path.join(targetDir, ".brightweb", "app-manifest.json"));
+  for (const relativePath of [...mountFiles, dependenciesPath]) {
+    assert.equal(appManifest.scaffoldFiles[relativePath]?.module, "platform-base");
+  }
+});
+
 test("full-modules scaffold mounts shell, auth, account, dashboard, projects, admin, CRM, and marketing", async (t) => {
   const enabledModules = ["crm", "projects", "admin", "marketing"];
   const { root, targetDir } = await scaffold(enabledModules);

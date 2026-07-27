@@ -70,6 +70,27 @@ test("login preparation surfaces session and local sign-out provider failures", 
   assert.match(source, /if \(!cancelled\) setError\(d\.authSystemError\)/);
 });
 
+test("magic-link login is hidden by default and remains an explicit preview opt-in", async () => {
+  const source = await read("src/ui/login-page.tsx");
+  assert.match(source, /allowMagicLink\?: boolean/);
+  assert.match(source, /allowMagicLink = false/);
+  assert.match(source, /const activeMode = allowMagicLink \? mode : "password"/);
+  assert.match(source, /\{allowMagicLink \? \(\s*<Button[\s\S]*?d\.magicLink[\s\S]*?\) : null\}/);
+  assert.match(source, /if \(activeMode === "magic"\) \{\s*await client\.sendMagicLink/);
+
+  const previewMount = await readFile(
+    path.join(repoRoot, "apps", "platform-preview", "app", "(auth)", "login", "page.tsx"),
+    "utf8",
+  );
+  assert.match(previewMount, /<LoginPage allowMagicLink \/>/);
+
+  const scaffoldMount = await readFile(
+    path.join(repoRoot, "packages", "create-bw-app", "template", "base", "app", "(auth)", "login", "page.tsx"),
+    "utf8",
+  );
+  assert.doesNotMatch(scaffoldMount, /allowMagicLink/);
+});
+
 test("auth tokens have neutral defaults and MQ overrides", async () => {
   const defaults = await read("tokens.css");
   const mq = await readFile(path.join(repoRoot, "packages", "theme", "themes", "mq.css"), "utf8");
