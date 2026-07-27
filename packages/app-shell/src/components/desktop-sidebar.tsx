@@ -1,3 +1,4 @@
+import { Fragment } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { ChevronLeft, Wrench } from "lucide-react";
@@ -17,15 +18,14 @@ export function DesktopSidebar({
   visiblePrimaryNav,
   adminNavItem,
   visibleToolNav,
-  crmNavGroup,
-  crmGroupExpanded,
-  isCrmGroupActive,
+  navGroups,
+  isNavGroupExpanded,
+  isNavGroupActive,
   isNavItemActive,
   isToolLinkActive,
-  isCrmChildActive,
   onToggleSidebar,
   onToggleTools,
-  onToggleCrmGroup,
+  onToggleNavGroup,
 }: DesktopSidebarProps) {
   return (
     <aside className={cn(styles.sidebarRoot, styles.desktopSidebarFrame, isSidebarCollapsed && styles.desktopSidebarCollapsed, className)}>
@@ -90,41 +90,50 @@ export function DesktopSidebar({
           />
         ))}
 
-        {crmNavGroup.children.length > 0 ? <span className={styles.navDivider} aria-hidden /> : null}
+        {navGroups.map((navGroup) => {
+          if (navGroup.children.length === 0) return null;
 
-        {crmNavGroup.children.length > 0 ? (
-          <div className={cn(styles.navGroup, !isSidebarCollapsed && crmGroupExpanded && styles.navGroupOpen, isCrmGroupActive && styles.navGroupHasActive)}>
-            <SidebarSectionToggle
-              controlsId="crm-nav-desktop"
-              expanded={crmGroupExpanded}
-              icon={crmNavGroup.icon}
-              label={crmNavGroup.label}
-              onToggle={() => {
-                if (isSidebarCollapsed) onToggleSidebar();
-                onToggleCrmGroup();
-              }}
-            />
+          const controlsId = `${navGroup.key}-nav-desktop`;
+          const expanded = isNavGroupExpanded(navGroup.key);
 
-            <div
-              id="crm-nav-desktop"
-              className={styles.navChildren}
-            >
-              <div className={styles.navChildrenInner}>
-                <div className={styles.navChildList}>
-                {crmNavGroup.children.map(({ href, label, icon: Icon }) => (
-                  <SidebarSubNavLink
-                    key={href}
-                    href={href}
-                    icon={Icon}
-                    label={label}
-                    active={isCrmChildActive(href)}
-                  />
-                ))}
+          return (
+            <Fragment key={navGroup.key}>
+              <span className={styles.navDivider} aria-hidden />
+
+              <div className={cn(styles.navGroup, !isSidebarCollapsed && expanded && styles.navGroupOpen, isNavGroupActive(navGroup) && styles.navGroupHasActive)}>
+                <SidebarSectionToggle
+                  controlsId={controlsId}
+                  expanded={expanded}
+                  icon={navGroup.icon}
+                  label={navGroup.label}
+                  onToggle={() => {
+                    if (isSidebarCollapsed) onToggleSidebar();
+                    onToggleNavGroup(navGroup.key);
+                  }}
+                />
+
+                <div
+                  id={controlsId}
+                  className={styles.navChildren}
+                >
+                  <div className={styles.navChildrenInner}>
+                    <div className={styles.navChildList}>
+                      {navGroup.children.map(({ href, label, icon: Icon }) => (
+                        <SidebarSubNavLink
+                          key={href}
+                          href={href}
+                          icon={Icon}
+                          label={label}
+                          active={isNavItemActive(href)}
+                        />
+                      ))}
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
-          </div>
-        ) : null}
+            </Fragment>
+          );
+        })}
 
         {visibleToolNav.length > 0 ? (
           <div className={cn(styles.navGroup, !isSidebarCollapsed && toolsExpanded && styles.navGroupOpen, isToolActive && styles.navGroupHasActive)}>

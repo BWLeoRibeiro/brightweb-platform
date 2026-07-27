@@ -2,16 +2,13 @@
 
 import { useMemo, type ReactNode } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { Users } from "lucide-react";
 import {
   AppHeader,
   AppShellFrame,
   DesktopSidebar,
   MobileNav,
   computeInitials,
-  getShellNavGroup,
   useShellNavState,
-  type NavGroupConfig,
   type ShellNavStateGroup,
 } from "@brightweblabs/app-shell";
 import { createAuthUiClient } from "@brightweblabs/core-auth/ui";
@@ -48,13 +45,6 @@ export function ShellLayoutClient({
   );
   const { isSidebarCollapsed, isGroupOpen, toggleGroup, toggleSidebar } =
     useShellNavState({ pathname, groups: shellGroups });
-  const registeredCrmNavGroup = getShellNavGroup(config, "crm");
-  const crmNavGroup = registeredCrmNavGroup ?? ({
-    label: "CRM",
-    icon: Users,
-    children: [],
-  } satisfies NavGroupConfig);
-  const crmGroupKey = registeredCrmNavGroup?.key ?? "crm";
   const isAdminSurface = pathname === "/admin" || pathname.startsWith("/admin/");
   const isActive = (href: string) =>
     pathname === href || (isAdminSurface && pathname.startsWith(`${href}/`));
@@ -75,17 +65,16 @@ export function ShellLayoutClient({
           visiblePrimaryNav={config.primaryNav}
           adminNavItem={viewer.isAdmin ? config.adminNavItem : null}
           visibleToolNav={config.toolsSection.items}
-          crmNavGroup={crmNavGroup}
-          crmGroupExpanded={isGroupOpen(crmGroupKey)}
-          isCrmGroupActive={crmNavGroup.children.some(
+          navGroups={config.moduleGroups}
+          isNavGroupExpanded={isGroupOpen}
+          isNavGroupActive={(group) => group.children.some(
             (item) => pathname === item.href || pathname.startsWith(`${item.href}/`),
           )}
           isNavItemActive={isActive}
           isToolLinkActive={isActive}
-          isCrmChildActive={isActive}
           onToggleSidebar={toggleSidebar}
           onToggleTools={() => toggleGroup(config.toolsSection.key)}
-          onToggleCrmGroup={() => toggleGroup(crmGroupKey)}
+          onToggleNavGroup={toggleGroup}
           account={{
             displayName,
             isStaff: viewer.isStaff,

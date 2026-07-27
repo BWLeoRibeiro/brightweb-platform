@@ -1,14 +1,53 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { isValidElement, type ReactNode } from "react";
 import {
   applyShellRegistrationOverrides,
   buildClientAppShellRegistration,
   matchesShellPath,
   overrideNavHref,
+  resolveClientAppShellConfig,
   resolveShellToolbarSurface,
 } from "../packages/app-shell/src/config.ts";
+import { DesktopSidebar } from "../packages/app-shell/src/components/desktop-sidebar.tsx";
+import { SidebarSectionToggle } from "../packages/app-shell/src/components/nav-primitives.tsx";
 import { mergeDashboardRefreshEventDetails, normalizeDashboardRefreshSections } from "../packages/app-shell/src/dashboard/events.ts";
-import type { ShellModuleRegistration, ShellToolbarRouteConfig } from "../packages/app-shell/src/types.ts";
+import type {
+  NavGroupConfig,
+  ShellBrand,
+  ShellModuleRegistration,
+  ShellToolbarRouteConfig,
+} from "../packages/app-shell/src/types.ts";
+
+function collectElementProps(node: ReactNode, elementType: unknown): Record<string, unknown>[] {
+  const matches: Record<string, unknown>[] = [];
+
+  function visit(value: ReactNode) {
+    if (Array.isArray(value)) {
+      value.forEach(visit);
+      return;
+    }
+
+    if (!isValidElement(value)) return;
+
+    const props = value.props as Record<string, unknown> & { children?: ReactNode };
+    if (value.type === elementType) matches.push(props);
+    visit(props.children);
+  }
+
+  visit(node);
+  return matches;
+}
+
+const TestNavIcon = (() => null) as NavGroupConfig["icon"];
+const testShellBrand = {
+  href: "/",
+  ariaLabel: "Test home",
+  alt: "Test",
+  collapsedLogo: { src: "/collapsed.svg", width: 32, height: 32 },
+  lightLogo: { src: "/light.svg", width: 120, height: 32 },
+  darkLogo: { src: "/dark.svg", width: 120, height: 32 },
+} satisfies ShellBrand;
 
 test("matches exact and dynamic shell paths", () => {
   assert.equal(matchesShellPath("/projetos", { exact: ["/projetos"] }), true);
@@ -126,4 +165,102 @@ test("builds dashboard contributions from enabled module registrations", () => {
     ],
   });
   assert.deepEqual(built.dashboardContributions.map((item) => item.sections), [["projects", "tasks"], ["crm"]]);
+});
+
+test("renders every resolved module nav group in registration order", () => {
+  const built = buildClientAppShellRegistration({
+    brand: testShellBrand,
+    toolsSection: { key: "tools", label: "Tools", icon: TestNavIcon },
+    modules: [
+      {
+        key: "crm",
+        moduleGroups: [{
+          key: "crm",
+          label: "CRM",
+          icon: TestNavIcon,
+          children: [{ href: "/crm", label: "Contacts", icon: TestNavIcon }],
+        }],
+      },
+      {
+        key: "marketing",
+        moduleGroups: [{
+          key: "marketing",
+          label: "Marketing",
+          icon: TestNavIcon,
+          children: [{
+            href: "/marketing",
+            label: "Campaigns",
+            icon: TestNavIcon,
+            visibility: "staff",
+          }],
+        }],
+      },
+    ],
+  });
+  const config = resolveClientAppShellConfig(built.shellConfig, {
+    isAdmin: false,
+    isStaff: true,
+  });
+
+  assert.deepEqual(config.moduleGroups.map((group) => group.key), ["crm", "marketing"]);
+
+  const sidebar = DesktopSidebar({
+    brand: config.brand,
+    isSidebarCollapsed: false,
+    isToolActive: false,
+    toolsExpanded: false,
+    visiblePrimaryNav: config.primaryNav,
+    adminNavItem: config.adminNavItem,
+    visibleToolNav: config.toolsSection.items,
+    navGroups: config.moduleGroups,
+    isNavGroupExpanded: () => true,
+    isNavGroupActive: () => false,
+    isNavItemActive: () => false,
+    isToolLinkActive: () => false,
+    onToggleSidebar: () => {},
+    onToggleTools: () => {},
+    onToggleNavGroup: () => {},
+  });
+  const groupToggles = collectElementProps(sidebar, SidebarSectionToggle);
+
+  assert.deepEqual(
+    groupToggles.map((props) => props.label),
+    ["CRM", "Marketing"],
+  );
+  assert.deepEqual(
+    groupToggles.map((props) => props.controlsId),
+    ["crm-nav-desktop", "marketing-nav-desktop"],
+  );
+});
+
+test("drops a module nav group when viewer visibility filters out every child", () => {
+  const config = resolveClientAppShellConfig({
+    brand: testShellBrand,
+    primaryNav: [],
+    toolsSection: { key: "tools", label: "Tools", icon: TestNavIcon, items: [] },
+    moduleGroups: [
+      {
+        key: "crm",
+        label: "CRM",
+        icon: TestNavIcon,
+        children: [{ href: "/crm", label: "Contacts", icon: TestNavIcon }],
+      },
+      {
+        key: "marketing",
+        label: "Marketing",
+        icon: TestNavIcon,
+        children: [{
+          href: "/marketing",
+          label: "Campaigns",
+          icon: TestNavIcon,
+          visibility: "staff",
+        }],
+      },
+    ],
+  }, {
+    isAdmin: false,
+    isStaff: false,
+  });
+
+  assert.deepEqual(config.moduleGroups.map((group) => group.key), ["crm"]);
 });

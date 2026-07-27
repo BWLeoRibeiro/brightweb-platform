@@ -13,6 +13,7 @@ export type PrimaryNavItem = AppNavItem;
 export type ToolNavItem = AppNavItem;
 
 export type NavGroupConfig = {
+  key: string;
   label: string;
   icon: LucideIcon;
   children: AppNavItem[];
@@ -173,15 +174,14 @@ export type DesktopSidebarProps = {
   visiblePrimaryNav: PrimaryNavItem[];
   adminNavItem?: PrimaryNavItem | null;
   visibleToolNav: ToolNavItem[];
-  crmNavGroup: NavGroupConfig;
-  crmGroupExpanded: boolean;
-  isCrmGroupActive: boolean;
+  navGroups: NavGroupConfig[];
+  isNavGroupExpanded: (groupKey: string) => boolean;
+  isNavGroupActive: (group: NavGroupConfig) => boolean;
   isNavItemActive: (href: string) => boolean;
   isToolLinkActive: (href: string) => boolean;
-  isCrmChildActive: (href: string) => boolean;
   onToggleSidebar: () => void;
   onToggleTools: () => void;
-  onToggleCrmGroup: () => void;
+  onToggleNavGroup: (groupKey: string) => void;
 };
 
 export type MobileNavProps = {
