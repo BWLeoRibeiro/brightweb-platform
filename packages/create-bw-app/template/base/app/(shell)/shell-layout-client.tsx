@@ -8,7 +8,9 @@ import {
   DesktopSidebar,
   MobileNav,
   computeInitials,
+  isShellNavItemActive,
   useShellNavState,
+  type ShellContextualAction,
   type ShellNavStateGroup,
 } from "@brightweblabs/app-shell";
 import { createAuthUiClient } from "@brightweblabs/core-auth/ui";
@@ -25,6 +27,11 @@ export type ShellViewer = {
 };
 
 const authClient = createAuthUiClient();
+const toolbarWindowEventByAction: Record<string, string> = {
+  "projects-refresh": "projects:refresh",
+  "projects-new-menu": "projects:open-new-project",
+  "crm-create-menu": "brightweb:crm:create-contact",
+};
 
 export function ShellLayoutClient({
   children,
@@ -46,12 +53,43 @@ export function ShellLayoutClient({
   const { isSidebarCollapsed, isGroupOpen, toggleGroup, toggleSidebar } =
     useShellNavState({ pathname, groups: shellGroups });
   const isAdminSurface = pathname === "/admin" || pathname.startsWith("/admin/");
-  const isActive = (href: string) =>
-    pathname === href || (isAdminSurface && pathname.startsWith(`${href}/`));
+  const shellNavItems = [
+    ...config.primaryNav,
+    ...(config.adminNavItem ? [config.adminNavItem] : []),
+    ...config.toolsSection.items,
+    ...config.moduleGroups.flatMap((group) => group.children),
+  ];
+  const activeNavItem = shellNavItems.reduce<(typeof shellNavItems)[number] | undefined>(
+    (active, item) => isShellNavItemActive(pathname, item)
+      && (!active || item.href.length > active.href.length)
+      ? item
+      : active,
+    undefined,
+  );
+  const isActive = (href: string) => activeNavItem?.href === href;
   const displayName =
     [viewer.firstName, viewer.lastName].filter(Boolean).join(" ") ||
     viewer.email ||
     "Conta";
+  const projectsBaseHref = pathname.startsWith("/projects") ? "/projects" : "/projetos";
+
+  const handleToolbarAction = (item: ShellContextualAction) => {
+    if (item.action === "projects-back-to-portfolio") {
+      router.push(projectsBaseHref);
+      return;
+    }
+    if (item.action === "projects-open-board") {
+      const projectId = pathname.split("/")[2];
+      if (projectId) {
+        router.push(`${projectsBaseHref}/${projectId}/${projectsBaseHref === "/projects" ? "tasks" : "tarefas"}`);
+      }
+      return;
+    }
+
+    if (item.action) {
+      window.dispatchEvent(new Event(toolbarWindowEventByAction[item.action] ?? item.action));
+    }
+  };
 
   return (
     <AppShellFrame
@@ -100,10 +138,14 @@ export function ShellLayoutClient({
       }
       header={
         <AppHeader
+          title={activeNavItem?.label}
           pathname={pathname}
           toolbarRoutes={toolbarRoutes}
           toolbarActions={toolbarActions}
-        />
+          onToolbarAction={handleToolbarAction}
+        >
+          {null}
+        </AppHeader>
       }
       mobileNav={
         <MobileNav

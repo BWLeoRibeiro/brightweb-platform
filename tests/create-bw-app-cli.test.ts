@@ -102,6 +102,47 @@ test("invite-only scaffolds do not emit a signup route", async (t) => {
   );
 });
 
+test("scaffolded shell derives its title from active registration nav and dispatches create actions", async (t) => {
+  const { root, targetDir } = await scaffold(["crm", "projects"]);
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+  const shellLayout = await fs.readFile(
+    path.join(targetDir, "app", "(shell)", "shell-layout-client.tsx"),
+    "utf8",
+  );
+
+  assert.match(shellLayout, /const activeNavItem = shellNavItems\.reduce/);
+  assert.match(shellLayout, /title=\{activeNavItem\?\.label\}/);
+  assert.match(shellLayout, /onToolbarAction=\{handleToolbarAction\}/);
+  assert.match(shellLayout, /"projects-new-menu": "projects:open-new-project"/);
+  assert.match(shellLayout, /"crm-create-menu": "brightweb:crm:create-contact"/);
+});
+
+test("admin scaffold mounts invitation list, create, and revoke handlers", async (t) => {
+  const { root, targetDir } = await scaffold(["admin"]);
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+  const invitationsRoute = await fs.readFile(
+    path.join(targetDir, "app", "api", "admin", "users", "invitations", "route.ts"),
+    "utf8",
+  );
+  const revokeRoute = await fs.readFile(
+    path.join(
+      targetDir,
+      "app",
+      "api",
+      "admin",
+      "users",
+      "invitations",
+      "[invitationId]",
+      "route.ts",
+    ),
+    "utf8",
+  );
+
+  assert.match(invitationsRoute, /handleAdminUserInvitationsGetRequest/);
+  assert.match(invitationsRoute, /handleAdminUserInvitationsPostRequest/);
+  assert.match(revokeRoute, /handleAdminUserInvitationDeleteRequest/);
+});
+
 test("database module order implementations stay in sync for the current registry", async () => {
   const registry = await readJson(path.join(REPO_ROOT, "supabase", "module-registry.json"));
   const selections = [
