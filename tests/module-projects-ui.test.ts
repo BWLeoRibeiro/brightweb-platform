@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
+import ts from "typescript";
 
 import type { ProjectDashboardData, ProjectLink } from "../packages/module-projects/src/types.ts";
 import { listAccountProjects } from "../packages/module-projects/src/account-projects.ts";
@@ -24,6 +25,7 @@ import {
 } from "../packages/module-projects/src/http.ts";
 import { getClientProjectHealth } from "../packages/module-projects/src/server.ts";
 import { defaultProjectsUiDictionary } from "../packages/module-projects/src/ui/dictionary.ts";
+import { resolveProjectsNavigation } from "../packages/module-projects/src/ui/navigation.ts";
 import { parseProjectBoardApiError, parseTaskListPayload } from "../packages/module-projects/src/ui/project-board-response-parser.ts";
 import { parseProjectDashboardPayload, parseProjectLinksPayload, projectDetailDataReducer } from "../packages/module-projects/src/ui/project-detail-data-provider.tsx";
 import { createProjectsModuleRegistration } from "../packages/module-projects/src/registration.ts";
@@ -325,6 +327,77 @@ test("Projects UI ships Portuguese defaults and configurable shell registration"
   assert.deepEqual(registration.toolbarActions?.projects?.map((item) => item.action), ["projects-refresh", "projects-new-menu"]);
   assert.deepEqual(registration.toolbarActions?.["project-detail"]?.map((item) => [item.label, item.placement]), [["Projetos", "back"], ["Ver tarefas", "contextual"]]);
   assert.deepEqual(registration.toolbarActions?.["project-board"]?.map((item) => item.action), ["projects-back-to-portfolio"]);
+});
+
+test("Projects navigation patterns resolve URL-encoded identifiers", () => {
+  const navigation = resolveProjectsNavigation({
+    listHref: "/projetos",
+    detailHrefPattern: "/projetos/:projectId",
+    boardHrefPattern: "/projetos/:projectId/tarefas/:projectId",
+    organizationHrefPattern: "/crm/:organizationId",
+  });
+
+  assert.equal(navigation.listHref, "/projetos");
+  assert.equal(navigation.detailHref("project /?"), "/projetos/project%20%2F%3F");
+  assert.equal(
+    navigation.boardHref("project /?"),
+    "/projetos/project%20%2F%3F/tarefas/project%20%2F%3F",
+  );
+  assert.equal(navigation.organizationHref("org/#1"), "/crm/org%2F%231");
+});
+
+test("Projects navigation applies defaults when configuration is omitted or partial", () => {
+  const defaults = resolveProjectsNavigation();
+  assert.equal(defaults.listHref, "/projects");
+  assert.equal(defaults.detailHref("project-1"), "/projects/project-1");
+  assert.equal(defaults.boardHref("project-1"), "/projects/project-1/tasks");
+  assert.equal(defaults.organizationHref("org-1"), "/crm");
+
+  const partial = resolveProjectsNavigation({ listHref: "/projetos" });
+  assert.equal(partial.listHref, "/projetos");
+  assert.equal(partial.detailHref("project-1"), "/projects/project-1");
+  assert.equal(partial.boardHref("project-1"), "/projects/project-1/tasks");
+  assert.equal(partial.organizationHref("org-1"), "/crm");
+});
+
+test("ProjectsNavigationConfig contains no function-typed members", () => {
+  const configPath = join(process.cwd(), "packages/module-projects/src/ui/types.ts");
+  const program = ts.createProgram([configPath], {
+    jsx: ts.JsxEmit.ReactJSX,
+    module: ts.ModuleKind.NodeNext,
+    moduleResolution: ts.ModuleResolutionKind.NodeNext,
+    noEmit: true,
+    skipLibCheck: true,
+    strict: true,
+    target: ts.ScriptTarget.ESNext,
+  });
+  const sourceFile = program.getSourceFile(configPath);
+  assert.ok(sourceFile, "Projects UI type source must be part of the TypeScript program");
+  const declaration = sourceFile.statements.find(
+    (statement): statement is ts.TypeAliasDeclaration => (
+      ts.isTypeAliasDeclaration(statement) && statement.name.text === "ProjectsNavigationConfig"
+    ),
+  );
+  assert.ok(declaration, "ProjectsNavigationConfig must remain a public type alias");
+
+  const checker = program.getTypeChecker();
+  const configType = checker.getTypeAtLocation(declaration.name);
+  function containsFunction(type: ts.Type): boolean {
+    return type.getCallSignatures().length > 0
+      || (type.isUnion() && type.types.some(containsFunction));
+  }
+  const functionMembers = checker.getPropertiesOfType(configType).flatMap((property) => {
+    const propertyDeclaration = property.valueDeclaration ?? property.declarations?.[0];
+    if (!propertyDeclaration) return [];
+    const propertyType = checker.getTypeOfSymbolAtLocation(property, propertyDeclaration);
+    return containsFunction(propertyType) ? [property.name] : [];
+  });
+
+  assert.deepEqual(
+    functionMembers,
+    [],
+    `ProjectsNavigationConfig crosses the Server/Client boundary and must contain only serializable values; function members: ${functionMembers.join(", ")}`,
+  );
 });
 
 test("Projects package UI contains the literal list/detail translation and no raw component colors", () => {

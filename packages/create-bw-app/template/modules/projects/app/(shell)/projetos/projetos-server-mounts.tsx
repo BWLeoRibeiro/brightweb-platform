@@ -12,8 +12,8 @@ import {
 
 const navigation = {
   listHref: "/projetos",
-  detailHref: (id: string) => `/projetos/${id}`,
-  boardHref: (id: string) => `/projetos/${id}/tarefas`,
+  detailHrefPattern: "/projetos/:projectId",
+  boardHrefPattern: "/projetos/:projectId/tarefas",
 };
 
 export async function ProjectsServerMount() {
