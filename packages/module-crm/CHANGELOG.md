@@ -1,5 +1,17 @@
 # @brightweblabs/module-crm
 
+## 0.10.0
+
+### Minor Changes
+
+- 5c4cd96: Wire scaffolded dashboards to authenticated module-owned Projects, CRM, and Tasks data producers, preserve independent section failures, and enforce registration-to-endpoint parity in tests.
+
+### Patch Changes
+
+- Updated dependencies [5c4cd96]
+  - @brightweblabs/app-shell@0.7.4
+  - @brightweblabs/module-orgs@0.3.10
+
 ## 0.9.4
 
 ### Patch Changes

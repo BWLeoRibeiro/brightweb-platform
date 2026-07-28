@@ -1,5 +1,11 @@
 # create-bw-app
 
+## 0.18.5
+
+### Patch Changes
+
+- 5c4cd96: Wire scaffolded dashboards to authenticated module-owned Projects, CRM, and Tasks data producers, preserve independent section failures, and enforce registration-to-endpoint parity in tests.
+
 ## 0.18.4
 
 ### Patch Changes
