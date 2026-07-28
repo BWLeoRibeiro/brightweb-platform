@@ -177,7 +177,7 @@ export const APP_DEPENDENCY_DEFAULTS = {
   "@brightweblabs/module-crm": "^0.10.0",
   "@brightweblabs/module-marketing": "^0.2.9",
   "@brightweblabs/module-orgs": "^0.3.10",
-  "@brightweblabs/module-projects": "^0.9.0",
+  "@brightweblabs/module-projects": "^0.9.1",
   "@brightweblabs/theme": "^0.5.0",
   "@brightweblabs/ui": "^1.1.1",
   "geist": "1.7.2",

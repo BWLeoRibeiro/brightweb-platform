@@ -1,5 +1,11 @@
 # @brightweblabs/module-projects
 
+## 0.9.1
+
+### Patch Changes
+
+- 3364b17: Give aggregate Projects and Tasks dashboard handlers context-free route signatures, and typecheck an all-modules generated Platform fixture in the scaffold contract gate.
+
 ## 0.9.0
 
 ### Minor Changes
