@@ -488,7 +488,6 @@ function createGitignore() {
 function getPlatformStarterRoutes(selectedModules) {
   return [
     "/login",
-    "/signup",
     "/forgot-password",
     "/reset-password",
     "/account",

@@ -188,6 +188,7 @@ export type MobileNavProps = {
   className?: string;
   toolsExpanded: boolean;
   visiblePrimaryNav: PrimaryNavItem[];
+  adminNavItem?: PrimaryNavItem | null;
   visibleToolNav: ToolNavItem[];
   navGroups: NavGroupConfig[];
   isNavItemActive: (href: string) => boolean;

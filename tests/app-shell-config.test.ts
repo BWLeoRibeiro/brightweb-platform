@@ -280,6 +280,47 @@ test("renders every resolved module nav group in the mobile nav in registration 
   assert.deepEqual(groupPills.map((props) => props.href), ["/crm", "/marketing"]);
 });
 
+test("renders the resolved admin item in the mobile nav", () => {
+  const built = buildClientAppShellRegistration({
+    brand: testShellBrand,
+    toolsSection: { key: "tools", label: "Tools", icon: TestNavIcon },
+    modules: [{
+      key: "admin",
+      placement: "admin",
+      navItems: [{
+        href: "/admin/users",
+        label: "Painel de Administração",
+        icon: TestNavIcon,
+      }],
+    }],
+  });
+  const config = resolveClientAppShellConfig(built.shellConfig, {
+    isAdmin: true,
+    isStaff: true,
+  });
+
+  const mobileNav = MobileNav({
+    toolsExpanded: false,
+    visiblePrimaryNav: config.primaryNav,
+    adminNavItem: config.adminNavItem,
+    visibleToolNav: config.toolsSection.items,
+    navGroups: config.moduleGroups,
+    isNavItemActive: (href) => href === "/admin/users",
+    isToolLinkActive: () => false,
+    onToggleTools: () => {},
+  });
+  const pills = collectElementProps(mobileNav, MobileNavPill);
+
+  assert.deepEqual(
+    pills.map(({ href, label, active }) => ({ href, label, active })),
+    [{
+      href: "/admin/users",
+      label: "Painel de Administração",
+      active: true,
+    }],
+  );
+});
+
 test("drops a module nav group when viewer visibility filters out every child", () => {
   const config = resolveClientAppShellConfig({
     brand: testShellBrand,

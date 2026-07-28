@@ -19,6 +19,7 @@ import {
   parseInvitationDetailsResponse,
   parseInvitationRegisterResponse,
 } from "../packages/core-auth/src/ui/response-parsers.ts";
+import { SignupPage } from "../packages/core-auth/src/ui/signup-page.tsx";
 
 const repoRoot = path.resolve(new URL("..", import.meta.url).pathname);
 const authRoot = path.join(repoRoot, "packages", "core-auth");
@@ -90,6 +91,16 @@ test("magic-link login is hidden by default and remains an explicit preview opt-
     "utf8",
   );
   assert.doesNotMatch(scaffoldMount, /allowMagicLink/);
+});
+
+test("invite-only signup mounts terminate the route with a 404", () => {
+  assert.throws(
+    () => SignupPage(),
+    (error: unknown) => (
+      error instanceof Error
+      && (error as Error & { digest?: string }).digest === "NEXT_HTTP_ERROR_FALLBACK;404"
+    ),
+  );
 });
 
 test("auth tokens have neutral defaults and MQ overrides", async () => {

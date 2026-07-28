@@ -85,6 +85,23 @@ test("scaffold writes a valid app manifest", async (t) => {
   assert.match(await fs.readFile(path.join(targetDir, "app", "layout.tsx"), "utf8"), /geistSans\.variable/);
 });
 
+test("invite-only scaffolds do not emit a signup route", async (t) => {
+  const { root, targetDir } = await scaffold([]);
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+
+  await assert.rejects(
+    fs.access(path.join(targetDir, "app", "(auth)", "signup", "page.tsx")),
+    { code: "ENOENT" },
+  );
+
+  const manifest = await readJson(path.join(targetDir, ".brightweb", "app-manifest.json"));
+  assert.equal(manifest.scaffoldFiles["app/(auth)/signup/page.tsx"], undefined);
+  assert.doesNotMatch(
+    await fs.readFile(path.join(targetDir, "README.md"), "utf8"),
+    /`\/signup`/,
+  );
+});
+
 test("database module order implementations stay in sync for the current registry", async () => {
   const registry = await readJson(path.join(REPO_ROOT, "supabase", "module-registry.json"));
   const selections = [

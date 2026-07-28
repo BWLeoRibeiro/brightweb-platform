@@ -136,7 +136,6 @@ export const PLATFORM_STARTER_FILES = [
   "app/(auth)/auth-provider.tsx",
   "app/(auth)/layout.tsx",
   "app/(auth)/login/page.tsx",
-  "app/(auth)/signup/page.tsx",
   "app/(auth)/forgot-password/page.tsx",
   "app/(auth)/reset-password/page.tsx",
   "app/(auth)/auth/post-login/page.tsx",

@@ -359,7 +359,6 @@ test("scaffolds platform AI handoff files with platform-specific context", async
   assert.ok(context.paths.readFirst.includes("config/shell.overrides.ts"));
   assert.deepEqual(context.starterRoutes, [
     "/login",
-    "/signup",
     "/forgot-password",
     "/reset-password",
     "/account",
