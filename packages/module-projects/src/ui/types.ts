@@ -10,9 +10,9 @@ import type { ListProjectsPayload } from "./projects-list-response-parser";
 
 export type ProjectsNavigationConfig = {
   listHref: string;
-  detailHref: (projectId: string) => string;
-  boardHref: (projectId: string) => string;
-  organizationHref?: (organizationId: string) => string;
+  detailHrefPattern: string;
+  boardHrefPattern: string;
+  organizationHrefPattern?: string;
 };
 
 export type ProjectDetailPermissions = {

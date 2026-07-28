@@ -17,8 +17,8 @@ export default async function ProjectsPreviewPage() {
       organizations={organizationOptions}
       navigation={{
         listHref: "/projects",
-        detailHref: (id) => `/projects/${id}`,
-        boardHref: (id) => `/projects/${id}/tasks`,
+        detailHrefPattern: "/projects/:projectId",
+        boardHrefPattern: "/projects/:projectId/tasks",
       }}
     />
   );

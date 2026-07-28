@@ -16,8 +16,8 @@ export default async function ProjectBoardPreviewPage({
       initialData={initialData}
       navigation={{
         listHref: "/projects",
-        detailHref: (projectId) => `/projects/${projectId}`,
-        boardHref: (projectId) => `/projects/${projectId}/tasks`,
+        detailHrefPattern: "/projects/:projectId",
+        boardHrefPattern: "/projects/:projectId/tasks",
       }}
     />
   );

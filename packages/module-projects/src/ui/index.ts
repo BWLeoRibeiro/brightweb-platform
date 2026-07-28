@@ -2,6 +2,7 @@ export * from "./client";
 export * from "./context";
 export { defaultProjectsUiDictionary } from "./dictionary";
 export * from "./events";
+export * from "./navigation";
 export * from "./project-activity-card";
 export * from "./project-detail-data-provider";
 export * from "./project-detail-loading";
