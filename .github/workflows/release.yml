@@ -20,6 +20,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          # Full history so the development sync below can test ancestry.
+          fetch-depth: 0
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
@@ -48,3 +51,27 @@ jobs:
           title: "Version packages"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # The release train only ever runs on `main`, so the "Version packages"
+      # commit — version bumps, CHANGELOGs, consumed changesets — lands on
+      # `main` and never reaches `development`. Left alone that gap compounds
+      # every release (it had reached six commits before being noticed), and a
+      # feature branch cut from a stale `development` conflicts on package.json
+      # and CHANGELOG.md.
+      #
+      # Fast-forward only. If `development` carries commits `main` does not,
+      # that is real in-flight work rather than drift, so warn and leave it —
+      # never force-push a branch someone may be building on.
+      - name: Sync development with main
+        run: |
+          git fetch --quiet origin development
+          if git merge-base --is-ancestor origin/development HEAD; then
+            if [ "$(git rev-parse origin/development)" = "$(git rev-parse HEAD)" ]; then
+              echo "development already matches main; nothing to sync."
+            else
+              git push origin HEAD:development
+              echo "Fast-forwarded development to $(git rev-parse --short HEAD)."
+            fi
+          else
+            echo "::warning title=development not synced::development has commits that are not in main, so it was left untouched. Fast-forward it by hand once that work has merged."
+          fi
