@@ -21,6 +21,7 @@ import {
   buildTasksDashboardData,
 } from "../packages/module-projects/src/dashboard.ts";
 import {
+  createProjectsDashboardGetHandler,
   createProjectsDashboardOverviewGetHandler,
   createTasksDashboardGetHandler,
 } from "../packages/module-projects/src/http.ts";
@@ -80,6 +81,15 @@ const statusChange: CrmStatusLog = {
   changed_by_label: null,
   contact_label: "Grace Hopper",
 };
+
+test("aggregate dashboard handlers do not expose dynamic-route context", () => {
+  const dependencies = {} as never;
+
+  assert.equal(createProjectsDashboardOverviewGetHandler(dependencies).length, 1);
+  assert.equal(createTasksDashboardGetHandler(dependencies).length, 1);
+  assert.equal(createCrmDashboardOverviewGetHandler(dependencies).length, 1);
+  assert.equal(createProjectsDashboardGetHandler(dependencies).length, 2);
+});
 
 test("Projects dashboard handler returns a full payload accepted by the real parser", async () => {
   const oldStatsPayload = { total: 1, planned: 0, active: 1, atRisk: 1, overdue: 1 };

@@ -1,11 +1,15 @@
+import { spawn } from "node:child_process";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
+import { performance } from "node:perf_hooks";
 import { createBrightwebClientApp } from "../packages/create-bw-app/src/generator.mjs";
+import { SELECTABLE_MODULES } from "../packages/create-bw-app/src/constants.mjs";
 import { findTemplateThinnessViolations } from "./template-thinness.mjs";
 
 const repoRoot = path.resolve(new URL("..", import.meta.url).pathname);
 const templateRoot = path.join(repoRoot, "packages", "create-bw-app", "template");
+const previewNodeModules = path.join(repoRoot, "apps", "platform-preview", "node_modules");
 const blockedTokenPattern = /\bprimaryHex\b/;
 
 const textFileExtensions = new Set([
@@ -56,7 +60,7 @@ async function main() {
     ].join("\n"));
   }
 
-  console.log("Template thinness and color ownership checks passed.");
+  console.log("Template thinness, color ownership, and generated Platform typecheck passed.");
 }
 
 async function scanDirectoryForBlockedToken(rootPath, relativeToPath, labelPrefix = "") {
@@ -84,6 +88,7 @@ async function scanGeneratedAppsForBlockedToken() {
       {
         name: "generated-platform",
         template: "platform",
+        modules: SELECTABLE_MODULES.map(({ key }) => key).join(","),
         install: false,
         yes: true,
       },
@@ -91,6 +96,7 @@ async function scanGeneratedAppsForBlockedToken() {
         banner: "Template contract check",
         dependencyMode: "published",
         targetDir: platformTarget,
+        workspaceRoot: repoRoot,
       },
     );
 
@@ -110,10 +116,75 @@ async function scanGeneratedAppsForBlockedToken() {
 
     const platformMatches = await scanDirectoryForBlockedToken(platformTarget, platformTarget, "generated-platform");
     const siteMatches = await scanDirectoryForBlockedToken(siteTarget, siteTarget, "generated-site");
+    await typecheckGeneratedPlatformFixture(platformTarget);
     return [...platformMatches, ...siteMatches];
   } finally {
     await fs.rm(tempRoot, { recursive: true, force: true });
   }
+}
+
+async function typecheckGeneratedPlatformFixture(platformTarget) {
+  const nextCli = path.join(previewNodeModules, "next", "dist", "bin", "next");
+  const tscCli = path.join(previewNodeModules, "typescript", "bin", "tsc");
+
+  try {
+    await Promise.all([fs.access(nextCli), fs.access(tscCli)]);
+  } catch {
+    throw new Error(
+      "Generated Platform typecheck requires the workspace install. Run `pnpm install` first.",
+    );
+  }
+
+  await fs.symlink(
+    previewNodeModules,
+    path.join(platformTarget, "node_modules"),
+    process.platform === "win32" ? "junction" : "dir",
+  );
+
+  const startedAt = performance.now();
+  await runFixtureCommand("next typegen", [nextCli, "typegen"], platformTarget);
+  await runFixtureCommand("tsc --noEmit", [tscCli, "--noEmit"], platformTarget);
+  const durationSeconds = (performance.now() - startedAt) / 1_000;
+  console.log(
+    `Generated all-modules Platform fixture typechecked in ${durationSeconds.toFixed(2)}s (next typegen + tsc --noEmit).`,
+  );
+}
+
+async function runFixtureCommand(label, cliArgs, cwd) {
+  await new Promise((resolve, reject) => {
+    const child = spawn(process.execPath, cliArgs, {
+      cwd,
+      env: {
+        ...process.env,
+        NEXT_TELEMETRY_DISABLED: "1",
+      },
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+    let stdout = "";
+    let stderr = "";
+
+    child.stdout.setEncoding("utf8");
+    child.stderr.setEncoding("utf8");
+    child.stdout.on("data", (chunk) => {
+      stdout += chunk;
+    });
+    child.stderr.on("data", (chunk) => {
+      stderr += chunk;
+    });
+    child.on("error", reject);
+    child.on("close", (exitCode) => {
+      if (exitCode === 0) {
+        resolve();
+        return;
+      }
+
+      reject(new Error([
+        `Generated Platform fixture failed \`${label}\` (exit ${exitCode}).`,
+        stdout.trim(),
+        stderr.trim(),
+      ].filter(Boolean).join("\n")));
+    });
+  });
 }
 
 await main();
