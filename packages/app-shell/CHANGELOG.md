@@ -1,5 +1,11 @@
 # @brightweblabs/app-shell
 
+## 0.7.4
+
+### Patch Changes
+
+- 5c4cd96: Wire scaffolded dashboards to authenticated module-owned Projects, CRM, and Tasks data producers, preserve independent section failures, and enforce registration-to-endpoint parity in tests.
+
 ## 0.7.3
 
 ### Patch Changes
