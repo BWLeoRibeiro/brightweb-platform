@@ -1,5 +1,11 @@
 # @brightweblabs/app-shell
 
+## 0.7.3
+
+### Patch Changes
+
+- a3cc06d: Render registered primary toolbar actions even when no title is supplied, wire scaffolded shell action dispatch and active navigation titles, add the missing admin invitation routes, and guard template/preview shell prop parity.
+
 ## 0.7.2
 
 ### Patch Changes
