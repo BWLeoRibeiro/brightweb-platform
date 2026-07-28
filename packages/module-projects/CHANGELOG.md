@@ -1,5 +1,13 @@
 # @brightweblabs/module-projects
 
+## 0.8.0
+
+### Minor Changes
+
+- 965edd4: Make Projects page navigation serializable across React Server/Client boundaries and update generated Projects routes to pass URL patterns.
+
+  Direct `ProjectsPage`, `ProjectDetailPage`, and `ProjectTasksPage` consumers must rename the `detailHref`, `boardHref`, and optional `organizationHref` navigation callbacks to `detailHrefPattern`, `boardHrefPattern`, and optional `organizationHrefPattern` strings.
+
 ## 0.7.2
 
 ### Patch Changes
