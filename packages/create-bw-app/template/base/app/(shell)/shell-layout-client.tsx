@@ -109,6 +109,7 @@ export function ShellLayoutClient({
         <MobileNav
           toolsExpanded={isGroupOpen(config.toolsSection.key)}
           visiblePrimaryNav={config.primaryNav}
+          adminNavItem={viewer.isAdmin ? config.adminNavItem : null}
           visibleToolNav={config.toolsSection.items}
           navGroups={config.moduleGroups}
           isNavItemActive={isActive}

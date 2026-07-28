@@ -6,6 +6,7 @@ export function MobileNav({
   className,
   toolsExpanded,
   visiblePrimaryNav,
+  adminNavItem,
   visibleToolNav,
   navGroups,
   isNavItemActive,
@@ -65,6 +66,15 @@ export function MobileNav({
             ))}
           </div>
         </div>
+
+        {adminNavItem ? (
+          <MobileNavPill
+            href={adminNavItem.href}
+            icon={adminNavItem.icon}
+            label={adminNavItem.label}
+            active={isNavItemActive(adminNavItem.href)}
+          />
+        ) : null}
       </div>
     </nav>
   );

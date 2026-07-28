@@ -107,6 +107,7 @@ export function AppShellPreview() {
             className="panel"
             toolsExpanded={toolsExpanded}
             visiblePrimaryNav={config.primaryNav}
+            adminNavItem={config.adminNavItem}
             visibleToolNav={config.toolsSection.items}
             navGroups={config.moduleGroups}
             isNavItemActive={isActiveLink}
