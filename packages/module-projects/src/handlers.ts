@@ -3,6 +3,7 @@ import {
   createProjectsActivityGetHandler,
   createProjectsAssignableProfilesGetHandler,
   createProjectsDashboardGetHandler,
+  createProjectsDashboardOverviewGetHandler,
   createProjectsDeleteHandler,
   createProjectsGetHandler,
   createProjectsLinksDeleteHandler,
@@ -20,11 +21,16 @@ import {
   createProjectsTasksDeleteHandler,
   createProjectsTasksPatchHandler,
   createProjectsTasksPostHandler,
+  createTasksDashboardGetHandler,
 } from "./http";
 import {
   getProjectPortfolioStats,
   listProjects,
 } from "./data";
+import {
+  getProjectsDashboardData,
+  getTasksDashboardData,
+} from "./dashboard";
 import {
   createProject,
   createProjectLink,
@@ -49,6 +55,8 @@ const projectsDependencies = {
   getAccess: requireServerUserAccess,
   listProjects,
   getPortfolioStats: getProjectPortfolioStats,
+  getProjectsDashboardData,
+  getTasksDashboardData,
   getDashboard: getProjectDashboard,
   listActivity: listProjectActivity,
   listAssignableProfiles: listProjectAssignableProfiles,
@@ -70,6 +78,9 @@ const projectsDependencies = {
 
 export const handleProjectsGetRequest = createProjectsGetHandler(projectsDependencies);
 export const handleProjectsStatsGetRequest = createProjectsStatsGetHandler(projectsDependencies);
+export const handleProjectsDashboardOverviewGetRequest =
+  createProjectsDashboardOverviewGetHandler(projectsDependencies);
+export const handleTasksDashboardGetRequest = createTasksDashboardGetHandler(projectsDependencies);
 export const handleProjectsDashboardGetRequest = createProjectsDashboardGetHandler(projectsDependencies);
 export const handleProjectsActivityGetRequest = createProjectsActivityGetHandler(projectsDependencies);
 export const handleProjectsOrganizationsGetRequest = createProjectsOrganizationsGetHandler(projectsDependencies);

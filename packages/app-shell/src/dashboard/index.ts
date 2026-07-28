@@ -3,6 +3,7 @@ export type { AppDashboardProps } from "./dashboard-client";
 export { DashboardLoading } from "./dashboard-loading";
 export { defaultDashboardDictionary } from "./dictionary";
 export type { DashboardDictionary } from "./dictionary";
+export * from "./dashboard-section-errors";
 export * from "./dashboard-response-parser";
 export * from "./events";
 export { type DashboardDataClient } from "./types";

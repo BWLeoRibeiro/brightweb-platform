@@ -1,7 +1,12 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import test from "node:test";
 
 import { createDashboardRequestGenerations } from "../src/dashboard/dashboard-request-generations.ts";
+import {
+  clearDashboardSectionErrors,
+  setDashboardSectionError,
+} from "../src/dashboard/dashboard-section-errors.ts";
 import {
   parseDashboardBootstrapResponse,
   parseDashboardCrmResponse,
@@ -119,6 +124,31 @@ test("dashboard request generations gate stale success, error, and loading write
   assert.equal(generations.isCurrent(older, "crm"), false);
   assert.equal(generations.isCurrent(newerProjects, "projects"), true);
   assert.equal(generations.isCurrent(newerCrm, "crm"), true);
+});
+
+test("dashboard section errors accumulate independently and clear only refreshed sections", () => {
+  const projectsFailed = setDashboardSectionError({}, "projects", "Projetos indisponíveis.");
+  const crmAndProjectsFailed = setDashboardSectionError(projectsFailed, "crm", "CRM indisponível.");
+  const allFailed = setDashboardSectionError(crmAndProjectsFailed, "tasks", "Tarefas indisponíveis.");
+
+  assert.deepEqual(allFailed, {
+    projects: "Projetos indisponíveis.",
+    crm: "CRM indisponível.",
+    tasks: "Tarefas indisponíveis.",
+  });
+  assert.deepEqual(clearDashboardSectionErrors(allFailed, ["crm"]), {
+    projects: "Projetos indisponíveis.",
+    tasks: "Tarefas indisponíveis.",
+  });
+
+  const hookSource = readFileSync(new URL("../src/dashboard/use-dashboard-data.ts", import.meta.url), "utf8");
+  const clientSource = readFileSync(new URL("../src/dashboard/dashboard-client.tsx", import.meta.url), "utf8");
+  assert.match(hookSource, /errors: DashboardSectionErrors/);
+  assert.match(hookSource, /setDashboardSectionError\(current, "projects", messages\.projectsUnavailable\)/);
+  assert.match(hookSource, /setDashboardSectionError\(current, "crm", messages\.crmUnavailable\)/);
+  assert.match(hookSource, /setDashboardSectionError\(current, "tasks", messages\.tasksUnavailable\)/);
+  assert.doesNotMatch(hookSource, /setError\(\(current\) => current \?\?/);
+  assert.match(clientSource, /errors\.map\(\(error\) =>/);
 });
 
 test("dashboard parsers accept fully valid nested contracts", () => {

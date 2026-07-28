@@ -164,14 +164,14 @@ function HeroMetrics({ activeProjects, overdueProjects, newLeads }: { activeProj
 function WelcomeHeader({
   name,
   urgentCount,
-  error,
+  errors,
   activeProjects,
   overdueProjects,
   newLeads,
 }: {
   name: string;
   urgentCount: number;
-  error: string | null;
+  errors: string[];
   activeProjects: number;
   overdueProjects: number;
   newLeads: number;
@@ -240,12 +240,19 @@ function WelcomeHeader({
             )}
           </p>
 
-          {error && (
-            <span className="dashboard-error mt-5 inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[length:var(--text-ui-label)] font-semibold">
-              <AlertTriangle className="h-3 w-3" />
-              {error}
-            </span>
-          )}
+          {errors.length > 0 ? (
+            <div className="mt-5 flex flex-wrap gap-2" role="status">
+              {errors.map((error) => (
+                <span
+                  key={error}
+                  className="dashboard-error inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[length:var(--text-ui-label)] font-semibold"
+                >
+                  <AlertTriangle className="h-3 w-3" />
+                  {error}
+                </span>
+              ))}
+            </div>
+          ) : null}
         </div>
 
         {/* Hero stat strip */}
@@ -1109,7 +1116,7 @@ export function AppDashboard({ client, contributions, initialData, viewerFirstNa
         <WelcomeHeader
           name={viewerFirstName ?? ""}
           urgentCount={urgentCount}
-          error={data.error}
+          errors={sections.flatMap((section) => data.errors[section] ? [data.errors[section]] : [])}
           activeProjects={data.projects?.kpis.projectsActive ?? 0}
           overdueProjects={data.projects?.kpis.projectsOverdue ?? 0}
           newLeads={data.crm?.kpis.crmNewLast7Days ?? 0}

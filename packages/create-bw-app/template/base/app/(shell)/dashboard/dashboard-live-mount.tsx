@@ -9,10 +9,9 @@ async function getJson(path: string) {
 }
 
 const dashboardClient: DashboardDataClient = {
-  getOverview: () => Promise.reject(new Error("No aggregate dashboard endpoint configured.")),
-  getProjects: () => getJson("/api/projects/stats"),
-  getCrm: () => getJson("/api/crm/stats"),
-  getTasks: () => Promise.reject(new Error("No task dashboard endpoint configured.")),
+  getProjects: () => getJson("/api/dashboard/projects"),
+  getCrm: () => getJson("/api/dashboard/crm"),
+  getTasks: () => getJson("/api/dashboard/tasks"),
 };
 
 export function DashboardLiveMount() {

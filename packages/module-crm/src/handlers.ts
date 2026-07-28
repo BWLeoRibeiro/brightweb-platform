@@ -4,12 +4,14 @@ import {
   createCrmContactsGetHandler,
   createCrmContactsPatchHandler,
   createCrmContactsPostHandler,
+  createCrmDashboardOverviewGetHandler,
   createCrmOrganizationsGetHandler,
   createCrmOwnersGetHandler,
   createCrmReportGetHandler,
   createCrmStatsGetHandler,
   createCrmTimelineGetHandler,
 } from "./http";
+import { getCrmDashboardOverviewData } from "./dashboard";
 import {
   getCrmContactStatusStats,
   getCrmReportData,
@@ -27,6 +29,7 @@ import {
 
 const crmDependencies = {
   getAccess: requireServerUserAccess,
+  getDashboardOverview: getCrmDashboardOverviewData,
   listContacts: listCrmContacts,
   listOrganizations: listCrmOrganizations,
   getStats: getCrmContactStatusStats,
@@ -50,6 +53,9 @@ export const handleCrmContactsDeleteRequest = createCrmContactsDeleteHandler(crm
 export const handleCrmOrganizationsGetRequest = createCrmOrganizationsGetHandler(crmDependencies);
 
 export const handleCrmStatsGetRequest = createCrmStatsGetHandler(crmDependencies);
+
+export const handleCrmDashboardOverviewGetRequest =
+  createCrmDashboardOverviewGetHandler(crmDependencies);
 
 export const handleCrmOwnersGetRequest = createCrmOwnersGetHandler(crmDependencies);
 

@@ -98,7 +98,10 @@ export type DashboardInitialData = {
 };
 
 export type DashboardDataClient = {
-  getOverview: () => Promise<unknown>;
+  /**
+   * Optional aggregate optimization. Section clients remain the source of truth.
+   */
+  getOverview?: () => Promise<unknown>;
   getProjects: () => Promise<unknown>;
   getCrm: () => Promise<unknown>;
   getTasks: () => Promise<unknown>;

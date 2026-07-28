@@ -8,6 +8,11 @@ import {
   parseDashboardTasksResponse,
 } from "./dashboard-response-parser";
 import { createDashboardRequestGenerations, type DashboardRequestGeneration } from "./dashboard-request-generations";
+import {
+  clearDashboardSectionErrors,
+  setDashboardSectionError,
+  type DashboardSectionErrors,
+} from "./dashboard-section-errors";
 import { normalizeDashboardRefreshSections, type DashboardRefreshEventDetail } from "./events";
 import { useDashboardRefreshEvents } from "./hooks/use-dashboard-refresh-events";
 import type { DashboardCrmData, DashboardDataClient, DashboardInitialData, DashboardProjectsData, DashboardSection, DashboardTasksData } from "./types";
@@ -19,7 +24,7 @@ export type DashboardState = {
   isProjectsLoading: boolean;
   isCrmLoading: boolean;
   isTasksLoading: boolean;
-  error: string | null;
+  errors: DashboardSectionErrors;
   ensureTasks: () => void;
   refresh: () => void;
 };
@@ -54,7 +59,7 @@ export function useDashboardData({
   const [isProjectsLoading, setIsProjectsLoading] = useState(hasProjects && !initialData?.projects);
   const [isCrmLoading, setIsCrmLoading] = useState(hasCrm && !initialData?.crm);
   const [isTasksLoading, setIsTasksLoading] = useState(hasTasks && !initialData?.tasks);
-  const [error, setError] = useState<string | null>(null);
+  const [errors, setErrors] = useState<DashboardSectionErrors>({});
   const generationsRef = useRef(createDashboardRequestGenerations());
   const tasksRequestRef = useRef<Promise<boolean> | null>(null);
 
@@ -68,6 +73,7 @@ export function useDashboardData({
     if (!hasTasks) return false;
     if (!force && tasksRequestRef.current) return tasksRequestRef.current;
     const requestGeneration = generation ?? generationsRef.current.begin(["tasks"]);
+    setErrors((current) => clearDashboardSectionErrors(current, ["tasks"]));
     setIsTasksLoading(true);
     let request: Promise<boolean>;
     request = client.getTasks().then((payload) => {
@@ -78,7 +84,7 @@ export function useDashboardData({
       return true;
     }).catch(() => {
       if (generationsRef.current.isCurrent(requestGeneration, "tasks")) {
-        setError((current) => current ?? messages.tasksUnavailable);
+        setErrors((current) => setDashboardSectionError(current, "tasks", messages.tasksUnavailable));
       }
       return false;
     }).finally(() => {
@@ -95,13 +101,13 @@ export function useDashboardData({
     const shouldCrm = requested.includes("crm");
     const shouldTasks = requested.includes("tasks");
     const generation = generationsRef.current.begin(requested);
-    setError(null);
+    setErrors((current) => clearDashboardSectionErrors(current, requested));
     if (shouldProjects) setIsProjectsLoading(true);
     if (shouldCrm) setIsCrmLoading(true);
     const tasksResult = shouldTasks ? loadTasks({ force: true, generation }) : null;
 
     const results: boolean[] = [];
-    if (shouldProjects && shouldCrm) {
+    if (shouldProjects && shouldCrm && client.getOverview) {
       try {
         const parsed = parseDashboardOverviewShellResponse(await client.getOverview());
         if (!parsed.data) throw new Error(parsed.error ?? messages.dashboardError);
@@ -120,7 +126,7 @@ export function useDashboardData({
             return true;
           }).catch(() => {
             if (generationsRef.current.isCurrent(generation, "projects")) {
-              setError((current) => current ?? messages.projectsUnavailable);
+              setErrors((current) => setDashboardSectionError(current, "projects", messages.projectsUnavailable));
             }
             return false;
           }));
@@ -133,7 +139,7 @@ export function useDashboardData({
             return true;
           }).catch(() => {
             if (generationsRef.current.isCurrent(generation, "crm")) {
-              setError((current) => current ?? messages.crmUnavailable);
+              setErrors((current) => setDashboardSectionError(current, "crm", messages.crmUnavailable));
             }
             return false;
           }));
@@ -145,14 +151,15 @@ export function useDashboardData({
         if (generationsRef.current.isCurrent(generation, "crm")) setIsCrmLoading(false);
       }
     } else {
+      const sectionResults: Promise<boolean>[] = [];
       if (shouldProjects) {
-        results.push(await client.getProjects().then(parseDashboardProjectsResponse).then((parsed) => {
+        sectionResults.push(client.getProjects().then(parseDashboardProjectsResponse).then((parsed) => {
           if (!parsed.data) throw new Error();
           if (!generationsRef.current.isCurrent(generation, "projects")) return false;
           setProjects(parsed.data); return true;
         }).catch(() => {
           if (generationsRef.current.isCurrent(generation, "projects")) {
-            setError((current) => current ?? messages.projectsUnavailable);
+            setErrors((current) => setDashboardSectionError(current, "projects", messages.projectsUnavailable));
           }
           return false;
         }).finally(() => {
@@ -160,19 +167,20 @@ export function useDashboardData({
         }));
       }
       if (shouldCrm) {
-        results.push(await client.getCrm().then(parseDashboardCrmResponse).then((parsed) => {
+        sectionResults.push(client.getCrm().then(parseDashboardCrmResponse).then((parsed) => {
           if (!parsed.data) throw new Error();
           if (!generationsRef.current.isCurrent(generation, "crm")) return false;
           setCrm(parsed.data); return true;
         }).catch(() => {
           if (generationsRef.current.isCurrent(generation, "crm")) {
-            setError((current) => current ?? messages.crmUnavailable);
+            setErrors((current) => setDashboardSectionError(current, "crm", messages.crmUnavailable));
           }
           return false;
         }).finally(() => {
           if (generationsRef.current.isCurrent(generation, "crm")) setIsCrmLoading(false);
         }));
       }
+      results.push(...await Promise.all(sectionResults));
     }
     if (tasksResult) results.push(await tasksResult);
     if (options.notify && results.length && results.every(Boolean)) onNotify?.(messages.updated);
@@ -189,5 +197,5 @@ export function useDashboardData({
     onRefresh: useCallback((detail?: DashboardRefreshEventDetail) => { void load({ sections: detail?.sections }); }, [load]),
   });
 
-  return { projects, crm, tasks, isProjectsLoading, isCrmLoading, isTasksLoading, error, ensureTasks: () => { void loadTasks(); }, refresh };
+  return { projects, crm, tasks, isProjectsLoading, isCrmLoading, isTasksLoading, errors, ensureTasks: () => { void loadTasks(); }, refresh };
 }
