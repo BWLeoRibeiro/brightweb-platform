@@ -20,6 +20,11 @@ export {
   type CrmActivityMessageItem,
 } from "./activity-messages";
 export {
+  buildCrmDashboardOverviewData,
+  getCrmDashboardOverviewData,
+  type CrmDashboardSnapshot,
+} from "./dashboard";
+export {
   CRM_CONTACTS_DEFAULT_PAGE_SIZE,
   CRM_CONTACTS_MAX_PAGE_SIZE,
   CRM_PRIMARY_CONTACTS_DEFAULT_LIMIT,
@@ -50,6 +55,7 @@ export {
   handleCrmContactsGetRequest,
   handleCrmContactsPatchRequest,
   handleCrmContactsPostRequest,
+  handleCrmDashboardOverviewGetRequest,
   handleCrmOrganizationsGetRequest,
   handleCrmOwnersGetRequest,
   handleCrmReportGetRequest,

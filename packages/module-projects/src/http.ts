@@ -21,6 +21,10 @@ import {
   type ProjectsDueWindow,
 } from "./data";
 import {
+  getProjectsDashboardData,
+  getTasksDashboardData,
+} from "./dashboard";
+import {
   createProject,
   createProjectLink,
   createProjectMilestone,
@@ -83,6 +87,8 @@ export type ProjectsHttpDependencies = {
   getAccess: () => Promise<ServerUserAccess>;
   listProjects: typeof listProjects;
   getPortfolioStats: typeof getProjectPortfolioStats;
+  getProjectsDashboardData: typeof getProjectsDashboardData;
+  getTasksDashboardData: typeof getTasksDashboardData;
   getDashboard: typeof getProjectDashboard;
   listActivity: typeof listProjectActivity;
   listAssignableProfiles: typeof listProjectAssignableProfiles;
@@ -401,6 +407,23 @@ export function createProjectsGetHandler(dependencies: ProjectsHttpDependencies)
 export function createProjectsStatsGetHandler(dependencies: ProjectsHttpDependencies) {
   return withUserAccess(dependencies, "projects.stats", async (access) => {
     return json(await dependencies.getPortfolioStats(access.supabase as never));
+  });
+}
+
+export function createProjectsDashboardOverviewGetHandler(dependencies: ProjectsHttpDependencies) {
+  return withUserAccess(dependencies, "projects.dashboard-overview", async (access) => {
+    return json({ data: await dependencies.getProjectsDashboardData(access.supabase as never) });
+  });
+}
+
+export function createTasksDashboardGetHandler(dependencies: ProjectsHttpDependencies) {
+  return withUserAccess(dependencies, "projects.tasks-dashboard", async (access) => {
+    return json({
+      data: await dependencies.getTasksDashboardData(
+        access.supabase as never,
+        access.profileId,
+      ),
+    });
   });
 }
 

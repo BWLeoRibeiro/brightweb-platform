@@ -12,6 +12,7 @@ import {
   listCrmOwnerOptions,
   listCrmStatusTimeline,
 } from "./data";
+import { getCrmDashboardOverviewData } from "./dashboard";
 import {
   MAX_BULK_OPERATION_IDS,
   publicError,
@@ -103,6 +104,7 @@ type ServerUserAccess =
 
 type CrmHttpDependencies = {
   getAccess: () => Promise<ServerUserAccess>;
+  getDashboardOverview: typeof getCrmDashboardOverviewData;
   listContacts: typeof listCrmContacts;
   listOrganizations: typeof listCrmOrganizations;
   getStats: typeof getCrmContactStatusStats;
@@ -250,6 +252,12 @@ export function createCrmStatsGetHandler(dependencies: CrmHttpDependencies) {
   return withUserAccess(dependencies, async (supabase) => {
     const result = await dependencies.getStats(supabase as never);
     return json(result);
+  });
+}
+
+export function createCrmDashboardOverviewGetHandler(dependencies: CrmHttpDependencies) {
+  return withUserAccess(dependencies, async (supabase) => {
+    return json({ data: await dependencies.getDashboardOverview(supabase as never) });
   });
 }
 
