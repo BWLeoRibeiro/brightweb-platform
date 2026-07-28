@@ -1,5 +1,13 @@
 # create-bw-app
 
+## 0.18.3
+
+### Patch Changes
+
+- c8070f6: Expose the configured admin destination in the mobile shell, return a real 404
+  from legacy invite-only signup mounts, and stop scaffolding the unavailable
+  signup route in new invite-only apps.
+
 ## 0.18.2
 
 ### Patch Changes
