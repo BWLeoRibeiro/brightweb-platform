@@ -200,6 +200,11 @@ type ProjectsAction = (
   context?: ProjectsRequestContext,
 ) => Promise<Response>;
 
+type ProjectsActionWithoutContext = (
+  access: Extract<ServerUserAccess, { ok: true }>,
+  request: Request,
+) => Promise<Response>;
+
 function withUserAccess(
   dependencies: ProjectsHttpDependencies,
   errorContext: string,
@@ -217,6 +222,19 @@ function withUserAccess(
       return projectsErrorResponse(error, errorContext);
     }
   };
+}
+
+function withUserAccessWithoutContext(
+  dependencies: ProjectsHttpDependencies,
+  errorContext: string,
+  action: ProjectsActionWithoutContext,
+) {
+  const handler = withUserAccess(
+    dependencies,
+    errorContext,
+    (access, request) => action(access, request),
+  );
+  return (request: Request) => handler(request);
 }
 
 function withStaffAccess(
@@ -411,13 +429,13 @@ export function createProjectsStatsGetHandler(dependencies: ProjectsHttpDependen
 }
 
 export function createProjectsDashboardOverviewGetHandler(dependencies: ProjectsHttpDependencies) {
-  return withUserAccess(dependencies, "projects.dashboard-overview", async (access) => {
+  return withUserAccessWithoutContext(dependencies, "projects.dashboard-overview", async (access) => {
     return json({ data: await dependencies.getProjectsDashboardData(access.supabase as never) });
   });
 }
 
 export function createTasksDashboardGetHandler(dependencies: ProjectsHttpDependencies) {
-  return withUserAccess(dependencies, "projects.tasks-dashboard", async (access) => {
+  return withUserAccessWithoutContext(dependencies, "projects.tasks-dashboard", async (access) => {
     return json({
       data: await dependencies.getTasksDashboardData(
         access.supabase as never,
