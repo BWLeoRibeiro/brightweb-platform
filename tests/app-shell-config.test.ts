@@ -9,6 +9,7 @@ import {
   resolveClientAppShellConfig,
   resolveShellToolbarSurface,
 } from "../packages/app-shell/src/config.ts";
+import { AppHeader } from "../packages/app-shell/src/components/app-header.tsx";
 import { DesktopSidebar } from "../packages/app-shell/src/components/desktop-sidebar.tsx";
 import { MobileNav } from "../packages/app-shell/src/components/mobile-nav.tsx";
 import { MobileNavPill, SidebarSectionToggle } from "../packages/app-shell/src/components/nav-primitives.tsx";
@@ -16,6 +17,7 @@ import { mergeDashboardRefreshEventDetails, normalizeDashboardRefreshSections } 
 import type {
   NavGroupConfig,
   ShellBrand,
+  ShellContextualAction,
   ShellModuleRegistration,
   ShellToolbarRouteConfig,
 } from "../packages/app-shell/src/types.ts";
@@ -84,6 +86,27 @@ test("resolves the MQ portfolio, project detail, and task-board overlap", () => 
   assert.equal(resolveShellToolbarSurface("/projetos", routes), "projects");
   assert.equal(resolveShellToolbarSurface("/projetos/42", routes), "project-detail");
   assert.equal(resolveShellToolbarSurface("/projetos/42/tarefas", routes), "project-board");
+});
+
+test("AppHeader renders and dispatches unplaced toolbar actions without a title", () => {
+  const dispatched: string[] = [];
+  const actions: ShellContextualAction[] = [
+    { label: "Atualizar", icon: TestNavIcon, action: "projects-refresh" },
+    { label: "Novo", icon: TestNavIcon, action: "projects-new-menu" },
+  ];
+  const header = AppHeader({
+    pathname: "/projetos",
+    toolbarRoutes: [{ surface: "projects", match: { exact: ["/projetos"] } }],
+    toolbarActions: { projects: actions },
+    onToolbarAction: (action) => dispatched.push(action.action ?? ""),
+  });
+  const buttons = collectElementProps(header, "button");
+
+  assert.equal(header.type, "div");
+  assert.deepEqual(buttons.map((props) => props.children?.[1]), ["Atualizar", "Novo"]);
+  (buttons[0]?.onClick as (() => void) | undefined)?.();
+  (buttons[1]?.onClick as (() => void) | undefined)?.();
+  assert.deepEqual(dispatched, ["projects-refresh", "projects-new-menu"]);
 });
 
 test("applies registration overrides without mutating input registrations", () => {

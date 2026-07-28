@@ -61,6 +61,8 @@ export const MODULE_STARTER_FILES = {
   admin: [
     "app/api/admin/users/route.ts",
     "app/api/admin/users/roles/route.ts",
+    "app/api/admin/users/invitations/route.ts",
+    "app/api/admin/users/invitations/[invitationId]/route.ts",
     "app/(shell)/admin/users/page.tsx",
   ],
   crm: [

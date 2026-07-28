@@ -8,25 +8,21 @@ import {
   DesktopSidebar,
   MobileNav,
   computeInitials,
-  defaultDashboardDictionary,
+  isShellNavItemActive,
   useShellNavState,
   type ShellContextualAction,
   type ShellNavStateGroup,
 } from "@brightweblabs/app-shell";
 import { createAuthUiClient } from "@brightweblabs/core-auth/ui";
 import "@brightweblabs/app-shell/dashboard.css";
-import { AdminToolbarControls, defaultAdminUiDictionary } from "@brightweblabs/module-admin/ui";
+import { AdminToolbarControls } from "@brightweblabs/module-admin/ui";
 import { CrmToolbarControls } from "@brightweblabs/module-crm/ui";
 import "@brightweblabs/module-crm/tokens.css";
-import {
-  defaultProjectsUiDictionary,
-  ProjectsToolbarControls,
-} from "@brightweblabs/module-projects/ui";
+import { ProjectsToolbarControls } from "@brightweblabs/module-projects/ui";
 import "@brightweblabs/module-projects/tokens.css";
 import { Toaster } from "@brightweblabs/ui";
 
 import { getStarterShellConfig } from "../../config/shell";
-import { previewNotifications } from "../../config/notifications";
 
 export type ShellViewer = {
   email: string | null;
@@ -37,6 +33,11 @@ export type ShellViewer = {
 };
 
 const authClient = createAuthUiClient();
+const toolbarWindowEventByAction: Record<string, string> = {
+  "projects-refresh": "projects:refresh",
+  "projects-new-menu": "projects:open-new-project",
+  "crm-create-menu": "brightweb:crm:create-contact",
+};
 
 export function PreviewShellLayoutClient({
   children,
@@ -63,45 +64,47 @@ export function PreviewShellLayoutClient({
   } = useShellNavState({ pathname, groups: shellGroups });
   const isAdminSurface = pathname === "/admin" || pathname.startsWith("/admin/");
   const usesToasts = isAdminSurface || pathname === "/account";
-  const isActive = (href: string) => pathname === href
-    || (isAdminSurface && pathname.startsWith(`${href}/`));
+  const shellNavItems = [
+    ...config.primaryNav,
+    ...(config.adminNavItem ? [config.adminNavItem] : []),
+    ...config.toolsSection.items,
+    ...config.moduleGroups.flatMap((group) => group.children),
+  ];
+  const activeNavItem = shellNavItems.reduce<(typeof shellNavItems)[number] | undefined>(
+    (active, item) => isShellNavItemActive(pathname, item)
+      && (!active || item.href.length > active.href.length)
+      ? item
+      : active,
+    undefined,
+  );
+  const isActive = (href: string) => activeNavItem?.href === href;
   const displayName = [viewer.firstName, viewer.lastName].filter(Boolean).join(" ")
     || viewer.email
     || "Conta";
-  const projectId = pathname.startsWith("/projects/") ? pathname.split("/")[2] : undefined;
-  const isProjectBoard = pathname.endsWith("/board") || pathname.endsWith("/tasks");
-  const projectHeader = defaultProjectsUiDictionary.header;
-
-  let kicker = "";
-  let title = "";
-  let count: number | undefined;
-  let toolbarControls: ReactNode = null;
-
-  if (pathname === "/dashboard") {
-    kicker = defaultDashboardDictionary.header.kicker;
-    title = defaultDashboardDictionary.header.title;
-  } else if (pathname === "/crm" || pathname.startsWith("/crm/")) {
-    kicker = "Relações";
-    title = pathname === "/crm/report" ? "Relatórios" : "CRM";
-    toolbarControls = pathname === "/crm" ? <CrmToolbarControls /> : null;
-  } else if (pathname === "/projects" || pathname.startsWith("/projects/")) {
-    kicker = projectId ? projectHeader.projectKicker : projectHeader.portfolioKicker;
-    title = isProjectBoard
-      ? projectHeader.tasksTitle
-      : projectId
-        ? projectHeader.detailTitle
-        : projectHeader.portfolioTitle;
-    toolbarControls = pathname === "/projects" ? <ProjectsToolbarControls /> : null;
-  } else if (isAdminSurface) {
-    kicker = defaultAdminUiDictionary.navigation.kicker;
-    title = defaultAdminUiDictionary.navigation.title;
-    toolbarControls = pathname === "/admin/users" ? <AdminToolbarControls /> : null;
-  }
+  const projectsBaseHref = pathname.startsWith("/projects") ? "/projects" : "/projetos";
+  const toolbarControls = pathname === "/crm"
+    ? <CrmToolbarControls />
+    : pathname === "/projects"
+      ? <ProjectsToolbarControls />
+      : pathname === "/admin/users"
+        ? <AdminToolbarControls />
+        : null;
 
   const handleToolbarAction = (item: ShellContextualAction) => {
-    if (item.action === "projects-back-to-portfolio") router.push("/projects");
-    if (item.action === "projects-open-board" && projectId) {
-      router.push(`/projects/${projectId}/tasks`);
+    if (item.action === "projects-back-to-portfolio") {
+      router.push(projectsBaseHref);
+      return;
+    }
+    if (item.action === "projects-open-board") {
+      const projectId = pathname.split("/")[2];
+      if (projectId) {
+        router.push(`${projectsBaseHref}/${projectId}/${projectsBaseHref === "/projects" ? "tasks" : "tarefas"}`);
+      }
+      return;
+    }
+
+    if (item.action) {
+      window.dispatchEvent(new Event(toolbarWindowEventByAction[item.action] ?? item.action));
     }
   };
 
@@ -147,17 +150,11 @@ export function PreviewShellLayoutClient({
       }
       header={
         <AppHeader
-          kicker={kicker}
-          title={title}
-          count={count}
+          title={activeNavItem?.label}
           pathname={pathname}
           toolbarRoutes={toolbarRoutes}
           toolbarActions={toolbarActions}
           onToolbarAction={handleToolbarAction}
-          notifications={{
-            notifications: previewNotifications,
-            unreadCount: previewNotifications.length,
-          }}
         >
           {toolbarControls}
         </AppHeader>
