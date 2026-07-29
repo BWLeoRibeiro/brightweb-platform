@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createServiceRoleClient } from "@brightweblabs/infra/server";
+import { fetchAllRows } from "./data";
 import {
   type CreateProjectInput,
   type CreateProjectOrganizationInput,
@@ -425,14 +426,12 @@ export async function listProjects(
       { data: taskRows, error: taskRowsError },
       { data: milestoneRows, error: milestoneRowsError },
     ] = await Promise.all([
-      supabase
-        .from("project_tasks")
-        .select("project_id, status, due_date")
-        .in("project_id", ids),
-      supabase
-        .from("project_milestones")
-        .select("project_id, status")
-        .in("project_id", ids),
+      fetchAllRows((from, to) =>
+        supabase.from("project_tasks").select("project_id, status, due_date").in("project_id", ids).range(from, to),
+      ),
+      fetchAllRows((from, to) =>
+        supabase.from("project_milestones").select("project_id, status").in("project_id", ids).range(from, to),
+      ),
     ]);
 
     const enrichmentError = taskRowsError ?? milestoneRowsError;
@@ -586,14 +585,12 @@ export async function listOrgAdminProjectsByProfile(
       { data: taskRows, error: taskRowsError },
       { data: milestoneRows, error: milestoneRowsError },
     ] = await Promise.all([
-      supabase
-        .from("project_tasks")
-        .select("project_id, status, due_date")
-        .in("project_id", ids),
-      supabase
-        .from("project_milestones")
-        .select("project_id, status")
-        .in("project_id", ids),
+      fetchAllRows((from, to) =>
+        supabase.from("project_tasks").select("project_id, status, due_date").in("project_id", ids).range(from, to),
+      ),
+      fetchAllRows((from, to) =>
+        supabase.from("project_milestones").select("project_id, status").in("project_id", ids).range(from, to),
+      ),
     ]);
 
     const enrichmentError = taskRowsError ?? milestoneRowsError;

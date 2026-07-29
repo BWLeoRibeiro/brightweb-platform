@@ -39,9 +39,11 @@ type SelectError = { message: string };
 type SelectErrorFactory = (context: { table: string; columns: string }) => SelectError | null;
 type SelectOptions = { count?: string; head?: boolean };
 type SelectSpy = (context: { table: string; columns: string; options?: SelectOptions }) => void;
+type RangeSpy = (context: { table: string; from: number; to: number }) => void;
 type FakeSupabaseOptions = {
   selectErrorFactory?: SelectErrorFactory;
   selectSpy?: SelectSpy;
+  rangeSpy?: RangeSpy;
   defaultSelectLimit?: number;
 };
 
@@ -92,6 +94,7 @@ class FakeQuery {
   }
 
   range(from: number, to: number) {
+    this.options.rangeSpy?.({ table: this.table, from, to });
     this.rangeStart = from;
     this.rangeEnd = to;
     this.hasExplicitRange = true;
@@ -841,6 +844,66 @@ test("project aggregate enrichment propagates task and milestone provider errors
       );
     }
   }
+});
+
+test("listProjects pages task enrichment past the PostgREST 1000-row default cap", async () => {
+  const pageTwoTaskCount = 7;
+  const taskRows = Array.from({ length: 1000 + pageTwoTaskCount }, (_, index) => ({
+    project_id: "project-1",
+    // The final rows only appear on the second range page; counting them as "done"
+    // proves page-2 rows made it into the aggregation.
+    status: index >= 1000 ? "done" : "todo",
+    due_date: null,
+  }));
+  const taskRangeCalls: Array<{ from: number; to: number }> = [];
+
+  const supabase = new FakeSupabase({
+    projects: [
+      {
+        id: "project-1",
+        organization_id: "org-1",
+        name: "Task Heavy",
+        code: "THV",
+        status: "active",
+        health: "on_track",
+        owner_profile_id: null,
+        activated_at: "2026-01-01",
+        target_date: null,
+        completed_at: null,
+        cancellation_reason: null,
+        summary: null,
+        created_at: "2026-01-01T12:00:00.000Z",
+        updated_at: "2026-03-10T12:00:00.000Z",
+        organizations: [{ name: "Acme Labs", primary_contact: [] }],
+        owner: [],
+      },
+    ],
+    project_tasks: taskRows,
+    project_milestones: [
+      { project_id: "project-1", status: "achieved" },
+    ],
+  }, {
+    // Mirror PostgREST's implicit 1000-row cap so an unpaged query would truncate.
+    defaultSelectLimit: 1000,
+    rangeSpy: ({ table, from, to }) => {
+      if (table === "project_tasks") taskRangeCalls.push({ from, to });
+    },
+  });
+
+  const result = await listProjects(supabase as never, { page: 1, pageSize: 10 });
+
+  assert.equal(result.items.length, 1);
+  assert.deepEqual(result.items[0]?.taskStats, {
+    total: 1000 + pageTwoTaskCount,
+    done: pageTwoTaskCount,
+    overdue: 0,
+    blocked: 0,
+  });
+  assert.deepEqual(result.items[0]?.milestoneStats, { total: 1, achieved: 1, delayed: 0 });
+  assert.deepEqual(taskRangeCalls, [
+    { from: 0, to: 999 },
+    { from: 1000, to: 1999 },
+  ]);
 });
 
 test("CRM stable helpers return filtered, paginated, and summarized results", async () => {

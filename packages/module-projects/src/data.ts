@@ -299,6 +299,26 @@ export async function getProjectPortfolioStats(
   };
 }
 
+const ENRICHMENT_PAGE_SIZE = 1000;
+
+// Supabase/PostgREST caps unbounded selects at 1000 rows, which silently truncates
+// task/milestone enrichment for task-heavy portfolios. Page explicitly until a short
+// page signals the end. Long-term alternative (deferred): a grouped-count RPC so the
+// database aggregates per project instead of shipping every row.
+export async function fetchAllRows<TRow>(
+  runPageQuery: (from: number, to: number) => PromiseLike<{ data: TRow[] | null; error: { message: string } | null }>,
+): Promise<{ data: TRow[]; error: { message: string } | null }> {
+  const rows: TRow[] = [];
+  for (let offset = 0; ; offset += ENRICHMENT_PAGE_SIZE) {
+    const { data, error } = await runPageQuery(offset, offset + ENRICHMENT_PAGE_SIZE - 1);
+    if (error) return { data: rows, error };
+    const page = data ?? [];
+    rows.push(...page);
+    if (page.length < ENRICHMENT_PAGE_SIZE) break;
+  }
+  return { data: rows, error: null };
+}
+
 export async function listProjects(
   supabase: SupabaseClient,
   params: ListProjectsParams,
@@ -375,8 +395,12 @@ export async function listProjects(
       { data: taskRows, error: taskRowsError },
       { data: milestoneRows, error: milestoneRowsError },
     ] = await Promise.all([
-      supabase.from("project_tasks").select("project_id, status, due_date").in("project_id", ids),
-      supabase.from("project_milestones").select("project_id, status").in("project_id", ids),
+      fetchAllRows((from, to) =>
+        supabase.from("project_tasks").select("project_id, status, due_date").in("project_id", ids).range(from, to),
+      ),
+      fetchAllRows((from, to) =>
+        supabase.from("project_milestones").select("project_id, status").in("project_id", ids).range(from, to),
+      ),
     ]);
 
     const enrichmentError = taskRowsError ?? milestoneRowsError;
