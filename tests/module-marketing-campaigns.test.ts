@@ -46,10 +46,14 @@ class FakeQuery implements PromiseLike<any> {
   private limitValue: number | null = null;
   private ignoreDuplicates = false;
   private orders: Array<{ key: string; ascending: boolean }> = [];
+  private rangeStart = 0;
+  private rangeEnd: number | null = null;
+  private readonly metrics?: { maxInValues: number; maxWriteRows: number; ranges: number };
 
-  constructor(tables: Tables, table: string) {
+  constructor(tables: Tables, table: string, metrics?: { maxInValues: number; maxWriteRows: number; ranges: number }) {
     this.tables = tables;
     this.table = table;
+    this.metrics = metrics;
   }
 
   select(_columns?: string, options?: { count?: string; head?: boolean }) {
@@ -89,7 +93,15 @@ class FakeQuery implements PromiseLike<any> {
   }
 
   in(key: string, value: unknown[]) {
+    if (this.metrics) this.metrics.maxInValues = Math.max(this.metrics.maxInValues, value.length);
     this.filters.push(["in", key, value]);
+    return this;
+  }
+
+  range(start: number, end: number) {
+    this.rangeStart = start;
+    this.rangeEnd = end;
+    if (this.metrics) this.metrics.ranges += 1;
     return this;
   }
 
@@ -159,10 +171,10 @@ class FakeQuery implements PromiseLike<any> {
   private execute() {
     const table = this.tables[this.table] ?? (this.tables[this.table] = []);
     if (this.operation === "select") {
-      const rows = this.matchingRows().slice(
-        0,
-        this.limitValue ?? Number.POSITIVE_INFINITY,
-      );
+      const end = this.rangeEnd == null
+        ? (this.limitValue ?? Number.POSITIVE_INFINITY)
+        : this.rangeEnd + 1;
+      const rows = this.matchingRows().slice(this.rangeStart, end);
       if (this.countMode) {
         return { data: this.head ? null : rows, count: rows.length, error: null };
       }
@@ -175,6 +187,7 @@ class FakeQuery implements PromiseLike<any> {
     const payloads = (Array.isArray(this.payload) ? this.payload : [this.payload])
       .filter((row): row is Row => Boolean(row))
       .map((row) => ({ ...row }));
+    if (this.metrics) this.metrics.maxWriteRows = Math.max(this.metrics.maxWriteRows, payloads.length);
     if (this.operation === "insert" || this.operation === "upsert") {
       const inserted: Row[] = [];
       for (const payload of payloads) {
@@ -240,11 +253,14 @@ class FakeQuery implements PromiseLike<any> {
   }
 }
 
-function fakeSupabase(tables: Tables, options: { failWebhookAfterEventOnce?: boolean } = {}) {
+function fakeSupabase(tables: Tables, options: {
+  failWebhookAfterEventOnce?: boolean;
+  metrics?: { maxInValues: number; maxWriteRows: number; ranges: number };
+} = {}) {
   let failWebhookAfterEvent = options.failWebhookAfterEventOnce === true;
   return {
     from(table: string) {
-      return new FakeQuery(tables, table);
+      return new FakeQuery(tables, table, options.metrics);
     },
     async rpc(name: string, args: Record<string, unknown>) {
       if (name === "process_marketing_resend_webhook") {
@@ -968,6 +984,39 @@ test("campaign segment intersects topic consent and never widens recipients", as
   );
 });
 
+test("campaign expansion paginates large audiences and bounds query payloads", async () => {
+  const audienceSize = 1_205;
+  const subscriptions = Array.from({ length: audienceSize }, (_, index) => ({
+    contact_id: `contact-${String(index).padStart(4, "0")}`,
+    topic_id: "topic-1",
+    status: "subscribed",
+  }));
+  const contacts = subscriptions.map((subscription, index) => ({
+    id: subscription.contact_id,
+    email: `person-${index}@example.com`,
+    created_at: "2026-07-01T00:00:00.000Z",
+  }));
+  const tables: Tables = {
+    marketing_campaigns: [campaign()],
+    marketing_subscriptions: subscriptions,
+    crm_contacts: contacts,
+    marketing_suppressions: [{ email: "person-1204@example.com" }],
+    marketing_campaign_recipients: [],
+  };
+  const metrics = { maxInValues: 0, maxWriteRows: 0, ranges: 0 };
+
+  const result = await expandCampaignRecipients(
+    fakeSupabase(tables, { metrics }),
+    "campaign-1",
+  );
+
+  assert.deepEqual(result, { total: audienceSize, queued: audienceSize - 1, suppressed: 1 });
+  assert.equal(tables.marketing_campaign_recipients.length, audienceSize);
+  assert.ok(metrics.ranges >= 2, "subscriptions are read with explicit pages");
+  assert.ok(metrics.maxInValues <= 200, `largest in() payload was ${metrics.maxInValues}`);
+  assert.ok(metrics.maxWriteRows <= 200, `largest write payload was ${metrics.maxWriteRows}`);
+});
+
 test("worker claims once and records fake sender sent/failed outcomes", async () => {
   const tables: Tables = {
     marketing_campaigns: [campaign({ status: "sending", total_recipients: 2 })],
@@ -1111,6 +1160,53 @@ test("worker re-checks consent and suppression after recipients were queued", as
     tables.marketing_campaign_recipients.map((row) => row.status),
     ["suppressed", "suppressed"],
   );
+});
+
+test("worker bounds consent lookups for a large claimed batch", async () => {
+  const audienceSize = 401;
+  const contacts = Array.from({ length: audienceSize }, (_, index) => ({
+    id: `contact-${index}`,
+    email: `batch-${index}@example.com`,
+  }));
+  const tables: Tables = {
+    marketing_campaigns: [campaign({ status: "sending", total_recipients: audienceSize, batch_size: audienceSize })],
+    marketing_campaign_recipients: contacts.map((contact, index) => ({
+      id: `recipient-${index}`,
+      campaign_id: "campaign-1",
+      contact_id: contact.id,
+      email: contact.email,
+      status: "queued",
+      attempt_count: 0,
+      next_attempt_at: null,
+    })),
+    crm_contacts: contacts,
+    marketing_subscriptions: contacts.map((contact) => ({
+      contact_id: contact.id,
+      topic_id: "topic-1",
+      status: "subscribed",
+    })),
+    marketing_suppressions: [],
+    marketing_contact_settings: contacts.map((contact) => ({
+      contact_id: contact.id,
+      unsubscribe_token: `token-${contact.id}`,
+    })),
+  };
+  const metrics = { maxInValues: 0, maxWriteRows: 0, ranges: 0 };
+  const sender: MarketingEmailSender = {
+    async sendOne() { throw new Error("not used"); },
+    async sendBatch(messages) {
+      return messages.map((_, index) => ({ ok: true as const, providerMessageId: `provider-${index}` }));
+    },
+  };
+
+  const result = await runMarketingWorker({
+    supabase: fakeSupabase(tables, { metrics }),
+    sender,
+    now: () => new Date("2026-07-25T13:00:00.000Z"),
+  });
+
+  assert.equal(result.sent, audienceSize);
+  assert.ok(metrics.maxInValues <= 200, `largest in() payload was ${metrics.maxInValues}`);
 });
 
 test("worker automatically retries a due failed recipient up to the attempt limit", async () => {

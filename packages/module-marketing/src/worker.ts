@@ -8,7 +8,6 @@ import {
   processDueWorkflowRuns,
   scanActivityTriggers,
 } from "./workflows";
-import { isEmailable, isSuppressed } from "./server";
 
 type WorkerClient = {
   from: (table: string) => any;
@@ -29,6 +28,8 @@ type RecipientRow = {
 };
 
 const MAX_DELIVERY_ATTEMPTS = 3;
+const QUERY_CHUNK_SIZE = 200;
+const DELIVERY_UPDATE_CONCURRENCY = 20;
 
 export type MarketingWorkerDependencies = {
   supabase: unknown;
@@ -62,6 +63,32 @@ function throwIfError(error: { message?: string } | null | undefined) {
 function retryAt(now: Date, attemptCount: number) {
   const delayMinutes = Math.min(24 * 60, 2 ** Math.max(0, attemptCount - 1));
   return new Date(now.getTime() + delayMinutes * 60_000).toISOString();
+}
+
+function chunks<T>(values: T[], size = QUERY_CHUNK_SIZE): T[][] {
+  const result: T[][] = [];
+  for (let index = 0; index < values.length; index += size) {
+    result.push(values.slice(index, index + size));
+  }
+  return result;
+}
+
+async function mapWithConcurrency<T>(
+  values: T[],
+  concurrency: number,
+  task: (value: T, index: number) => Promise<void>,
+) {
+  let nextIndex = 0;
+  await Promise.all(Array.from(
+    { length: Math.min(concurrency, values.length) },
+    async () => {
+      while (nextIndex < values.length) {
+        const index = nextIndex;
+        nextIndex += 1;
+        await task(values[index]!, index);
+      }
+    },
+  ));
 }
 
 async function promoteScheduledCampaigns(
@@ -100,15 +127,18 @@ async function unsubscribeTokens(
     rows.map((row) => row.contact_id).filter((id): id is string => Boolean(id)),
   ));
   if (!contactIds.length) return new Map();
-  const result = await db(supabase)
-    .from("marketing_contact_settings")
-    .select("contact_id,unsubscribe_token")
-    .in("contact_id", contactIds);
-  throwIfError(result.error);
-  return new Map(
-    ((result.data ?? []) as Array<{ contact_id: string; unsubscribe_token: string }>)
-      .map((row) => [row.contact_id, row.unsubscribe_token]),
-  );
+  const tokens = new Map<string, string>();
+  for (const contactIdChunk of chunks(contactIds)) {
+    const result = await db(supabase)
+      .from("marketing_contact_settings")
+      .select("contact_id,unsubscribe_token")
+      .in("contact_id", contactIdChunk);
+    throwIfError(result.error);
+    for (const row of (result.data ?? []) as Array<{ contact_id: string; unsubscribe_token: string }>) {
+      tokens.set(row.contact_id, row.unsubscribe_token);
+    }
+  }
+  return tokens;
 }
 
 function messageForRecipient(
@@ -167,37 +197,87 @@ async function applyDeliveryResult(
   throwIfError(update.error);
 }
 
-async function suppressRecipient(supabase: unknown, recipientId: string) {
-  const update = await db(supabase)
-    .from("marketing_campaign_recipients")
-    .update({
-      status: "suppressed",
-      error: "Consent or suppression changed before delivery.",
-      next_attempt_at: null,
-    })
-    .eq("id", recipientId)
-    .eq("status", "sending");
-  throwIfError(update.error);
-}
-
 async function emailableRecipients(
   supabase: unknown,
   topicId: string,
   recipients: RecipientRow[],
 ) {
-  const checks = await Promise.all(recipients.map(async (recipient) => {
-    const emailable = recipient.contact_id
-      ? await isEmailable(supabase, recipient.contact_id, topicId)
-      : !(await isSuppressed(supabase, recipient.email));
-    return { recipient, emailable };
-  }));
-  const allowed: RecipientRow[] = [];
-  for (const check of checks) {
-    if (check.emailable) {
-      allowed.push(check.recipient);
-    } else {
-      await suppressRecipient(supabase, check.recipient.id);
+  const contactIds = Array.from(new Set(
+    recipients.map((recipient) => recipient.contact_id).filter((id): id is string => Boolean(id)),
+  ));
+  const subscribedContactIds = new Set<string>();
+  const currentEmails = new Map<string, string>();
+  for (const contactIdChunk of chunks(contactIds)) {
+    const [subscriptions, contacts] = await Promise.all([
+      db(supabase)
+        .from("marketing_subscriptions")
+        .select("contact_id")
+        .in("contact_id", contactIdChunk)
+        .eq("topic_id", topicId)
+        .eq("status", "subscribed"),
+      db(supabase)
+        .from("crm_contacts")
+        .select("id,email")
+        .in("id", contactIdChunk)
+        .not("email", "is", null),
+    ]);
+    throwIfError(subscriptions.error);
+    throwIfError(contacts.error);
+    for (const row of (subscriptions.data ?? []) as Array<{ contact_id: string }>) {
+      subscribedContactIds.add(row.contact_id);
     }
+    for (const row of (contacts.data ?? []) as Array<{ id: string; email: string }>) {
+      currentEmails.set(row.id, row.email.trim().toLowerCase());
+    }
+  }
+
+  const candidateEmails = Array.from(new Set(recipients.flatMap((recipient) => {
+    const values = [recipient.email.trim().toLowerCase()];
+    if (recipient.contact_id && currentEmails.has(recipient.contact_id)) {
+      values.push(currentEmails.get(recipient.contact_id)!);
+    }
+    return values.filter(Boolean);
+  })));
+  const suppressedEmails = new Set<string>();
+  for (const emailChunk of chunks(candidateEmails)) {
+    const result = await db(supabase)
+      .from("marketing_suppressions")
+      .select("email")
+      .in("email", emailChunk);
+    throwIfError(result.error);
+    for (const row of (result.data ?? []) as Array<{ email: string }>) {
+      suppressedEmails.add(row.email.trim().toLowerCase());
+    }
+  }
+
+  const allowed: RecipientRow[] = [];
+  const rejectedIds: string[] = [];
+  for (const recipient of recipients) {
+    const queuedEmail = recipient.email.trim().toLowerCase();
+    const currentEmail = recipient.contact_id ? currentEmails.get(recipient.contact_id) : queuedEmail;
+    const emailable = recipient.contact_id
+      ? subscribedContactIds.has(recipient.contact_id)
+        && Boolean(currentEmail)
+        && currentEmail === queuedEmail
+        && !suppressedEmails.has(queuedEmail)
+      : Boolean(queuedEmail) && !suppressedEmails.has(queuedEmail);
+    if (emailable) {
+      allowed.push(recipient);
+    } else {
+      rejectedIds.push(recipient.id);
+    }
+  }
+  for (const recipientIdChunk of chunks(rejectedIds)) {
+    const update = await db(supabase)
+      .from("marketing_campaign_recipients")
+      .update({
+        status: "suppressed",
+        error: "Consent or suppression changed before delivery.",
+        next_attempt_at: null,
+      })
+      .in("id", recipientIdChunk)
+      .eq("status", "sending");
+    throwIfError(update.error);
   }
   return allowed;
 }
@@ -312,20 +392,20 @@ export async function runMarketingWorker(
       results = recipients.map(() => ({ ok: false, error: message }));
     }
 
-    for (let index = 0; index < recipients.length; index += 1) {
+    await mapWithConcurrency(recipients, DELIVERY_UPDATE_CONCURRENCY, async (recipient, index) => {
       const result = results[index] ?? {
         ok: false as const,
         error: "Email sender returned no result.",
       };
       await applyDeliveryResult(
         dependencies.supabase,
-        recipients[index]!,
+        recipient,
         result,
         now,
       );
       if (result.ok) totals.sent += 1;
       else totals.failed += 1;
-    }
+    });
     await refreshCampaignState(dependencies.supabase, row.id, now);
   }
 

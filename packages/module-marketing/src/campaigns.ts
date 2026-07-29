@@ -6,6 +6,9 @@ type QueryClient = {
   from: (table: string) => any;
 };
 
+const QUERY_PAGE_SIZE = 1_000;
+const QUERY_CHUNK_SIZE = 200;
+
 export type CampaignStatus =
   | "draft"
   | "scheduled"
@@ -93,6 +96,25 @@ function db(supabase: unknown) {
 
 function throwIfError(error: { message?: string } | null | undefined) {
   if (error) throw new Error(error.message || "Marketing campaign request failed.");
+}
+
+function chunks<T>(values: T[], size = QUERY_CHUNK_SIZE): T[][] {
+  const result: T[][] = [];
+  for (let index = 0; index < values.length; index += size) {
+    result.push(values.slice(index, index + size));
+  }
+  return result;
+}
+
+async function collectPages<T>(createQuery: () => any): Promise<T[]> {
+  const rows: T[] = [];
+  for (let start = 0; ; start += QUERY_PAGE_SIZE) {
+    const result = await createQuery().range(start, start + QUERY_PAGE_SIZE - 1);
+    throwIfError(result.error);
+    const page = (result.data ?? []) as T[];
+    rows.push(...page);
+    if (page.length < QUERY_PAGE_SIZE) return rows;
+  }
 }
 
 function fromRow(row: CampaignRow): MarketingCampaign {
@@ -289,14 +311,14 @@ export async function expandCampaignRecipients(
   const campaign = await getCampaign(supabase, campaignId);
   if (!campaign) throw new Error("Campaign not found.");
 
-  const subscriptions = await db(supabase)
+  const subscriptionRows = await collectPages<{ contact_id: string }>(() => db(supabase)
     .from("marketing_subscriptions")
     .select("contact_id")
     .eq("topic_id", campaign.topicId)
-    .eq("status", "subscribed");
-  throwIfError(subscriptions.error);
+    .eq("status", "subscribed")
+    .order("contact_id", { ascending: true }));
   const contactIds = Array.from(new Set(
-    ((subscriptions.data ?? []) as Array<{ contact_id: string }>).map((row) => row.contact_id),
+    subscriptionRows.map((row) => row.contact_id),
   ));
 
   if (contactIds.length === 0) {
@@ -308,18 +330,21 @@ export async function expandCampaignRecipients(
     return { total: 0, queued: 0, suppressed: 0 };
   }
 
-  const contacts = await db(supabase)
-    .from("crm_contacts")
-    .select("id,email")
-    .in("id", contactIds)
-    .not("email", "is", null);
-  throwIfError(contacts.error);
-  let contactRows = (contacts.data ?? []) as Array<{ id: string; email: string }>;
+  let contactRows: Array<{ id: string; email: string }> = [];
+  for (const contactIdChunk of chunks(contactIds)) {
+    const contacts = await db(supabase)
+      .from("crm_contacts")
+      .select("id,email")
+      .in("id", contactIdChunk)
+      .not("email", "is", null);
+    throwIfError(contacts.error);
+    contactRows.push(...(contacts.data ?? []) as Array<{ id: string; email: string }>);
+  }
   if (campaign.segmentId) {
     const segmentContacts = await resolveSegmentContacts(
       supabase,
       campaign.segmentId,
-      { limit: 5_000 },
+      { all: true },
     );
     const segmentContactIds = new Set(segmentContacts.map((contact) => contact.id));
     contactRows = contactRows.filter((contact) => segmentContactIds.has(contact.id));
@@ -327,17 +352,17 @@ export async function expandCampaignRecipients(
   const normalizedEmails = Array.from(new Set(
     contactRows.map((row) => row.email.trim().toLowerCase()).filter(Boolean),
   ));
-  const suppressionResult = normalizedEmails.length
-    ? await db(supabase)
+  const suppressedEmails = new Set<string>();
+  for (const emailChunk of chunks(normalizedEmails)) {
+    const suppressionResult = await db(supabase)
       .from("marketing_suppressions")
       .select("email")
-      .in("email", normalizedEmails)
-    : { data: [], error: null };
-  throwIfError(suppressionResult.error);
-  const suppressedEmails = new Set(
-    ((suppressionResult.data ?? []) as Array<{ email: string }>)
-      .map((row) => row.email.trim().toLowerCase()),
-  );
+      .in("email", emailChunk);
+    throwIfError(suppressionResult.error);
+    for (const row of (suppressionResult.data ?? []) as Array<{ email: string }>) {
+      suppressedEmails.add(row.email.trim().toLowerCase());
+    }
+  }
   const rows = contactRows
     .map((contact) => ({
       campaign_id: campaignId,
@@ -349,10 +374,10 @@ export async function expandCampaignRecipients(
     }))
     .filter((row) => row.email);
 
-  if (rows.length) {
+  for (const rowChunk of chunks(rows)) {
     const inserted = await db(supabase)
       .from("marketing_campaign_recipients")
-      .upsert(rows, {
+      .upsert(rowChunk, {
         onConflict: "campaign_id,contact_id",
         ignoreDuplicates: true,
       });
