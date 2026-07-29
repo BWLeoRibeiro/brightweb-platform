@@ -5,7 +5,7 @@ export type ThemeScriptProps = Pick<ScriptHTMLAttributes<HTMLScriptElement>, "no
   defaultTheme?: ThemeMode;
 };
 
-export function ThemeScript({ defaultTheme = "light", nonce }: ThemeScriptProps) {
+export function ThemeScript({ defaultTheme = "system", nonce }: ThemeScriptProps) {
   return (
     <script
       nonce={nonce}

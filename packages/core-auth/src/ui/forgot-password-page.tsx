@@ -42,9 +42,9 @@ export function ForgotPasswordPage() {
         ) : (
           <form onSubmit={handleSubmit} className="flex flex-col gap-5">
             <Field>
-              <FieldLabel htmlFor="email" className="mb-1.5 block paragraph-small font-semibold text-foreground/60">{dictionary.common.email}</FieldLabel>
+              <FieldLabel htmlFor="email" className="mb-1.5 block paragraph-small font-semibold text-foreground-muted-accessible">{dictionary.common.email}</FieldLabel>
               <FieldContent>
-                <Input id="email" type="email" placeholder={dictionary.common.emailPlaceholder} value={email} onChange={(event) => setEmail(event.target.value)} required disabled={loading} aria-describedby={error ? "forgot-password-error" : undefined} aria-invalid={!!error} />
+                <Input id="email" name="email" type="email" placeholder={dictionary.common.emailPlaceholder} value={email} onChange={(event) => setEmail(event.target.value)} required disabled={loading} autoComplete="email" spellCheck={false} aria-describedby={error ? "forgot-password-error" : undefined} aria-invalid={!!error} />
               </FieldContent>
             </Field>
             <Button type="submit" className="h-11 w-full rounded-full" disabled={loading}>

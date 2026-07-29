@@ -169,19 +169,19 @@ function LoginPageContent({ allowMagicLink }: Required<LoginPageProps>) {
         {info ? <AuthNotice tone="success">{info}</AuthNotice> : null}
         <form onSubmit={handleLogin} className="flex flex-col gap-5">
           <Field>
-            <FieldLabel htmlFor="email" className="mb-1.5 block paragraph-small font-semibold text-foreground/60">{dictionary.common.email}</FieldLabel>
+            <FieldLabel htmlFor="email" className="mb-1.5 block paragraph-small font-semibold text-foreground-muted-accessible">{dictionary.common.email}</FieldLabel>
             <FieldContent>
-              <Input id="email" type="email" placeholder={dictionary.common.emailPlaceholder} value={email} onChange={(event) => setEmail(event.target.value)} required disabled={loading} autoComplete="email" />
+              <Input id="email" name="email" type="email" placeholder={dictionary.common.emailPlaceholder} value={email} onChange={(event) => setEmail(event.target.value)} required disabled={loading} autoComplete="email" spellCheck={false} />
             </FieldContent>
           </Field>
           {activeMode === "password" ? (
             <Field>
               <div className="mb-1.5 flex items-center justify-between">
-                <FieldLabel htmlFor="password" className="block paragraph-small font-semibold text-foreground/60">{dictionary.common.password}</FieldLabel>
+                <FieldLabel htmlFor="password" className="block paragraph-small font-semibold text-foreground-muted-accessible">{dictionary.common.password}</FieldLabel>
                 <Button variant="link" size="link" asChild><Link href="/forgot-password" className="paragraph-mini text-primary hover:text-primary/80">{d.forgot}</Link></Button>
               </div>
               <FieldContent>
-                <PasswordInput ref={passwordInputRef} id="password" placeholder={dictionary.common.passwordPlaceholder} value={password} onChange={(event) => setPassword(event.target.value)} required disabled={loading} autoComplete="current-password" aria-describedby={error ? "login-error" : undefined} aria-invalid={!!error} showPasswordLabel={dictionary.common.showPassword} hidePasswordLabel={dictionary.common.hidePassword} />
+                <PasswordInput ref={passwordInputRef} id="password" name="password" placeholder={dictionary.common.passwordPlaceholder} value={password} onChange={(event) => setPassword(event.target.value)} required disabled={loading} autoComplete="current-password" aria-describedby={error ? "login-error" : undefined} aria-invalid={!!error} showPasswordLabel={dictionary.common.showPassword} hidePasswordLabel={dictionary.common.hidePassword} />
               </FieldContent>
             </Field>
           ) : null}
@@ -190,7 +190,7 @@ function LoginPageContent({ allowMagicLink }: Required<LoginPageProps>) {
           </Button>
         </form>
         {allowMagicLink ? (
-          <Button type="button" variant="link" size="link" onClick={() => { setMode(mode === "password" ? "magic" : "password"); setError(null); setInfo(null); }} className="mx-auto paragraph-mini text-foreground/60">
+          <Button type="button" variant="link" size="link" onClick={() => { setMode(mode === "password" ? "magic" : "password"); setError(null); setInfo(null); }} className="mx-auto paragraph-mini text-foreground-muted-accessible">
             {mode === "password" ? d.magicLink : d.passwordMode}
           </Button>
         ) : null}

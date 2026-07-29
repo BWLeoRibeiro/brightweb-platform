@@ -129,26 +129,26 @@ export function InvitePage({ invitationId, kind = "organization" }: { invitation
               <div className="flex flex-col gap-3">
                 {unavailable === "load-error" ? <Button type="button" onClick={() => window.location.reload()} className="h-11 w-full rounded-full">{dictionary.common.retry}</Button> : null}
                 <Button asChild variant={unavailable === "load-error" ? "ghost" : "default"} className="h-11 w-full rounded-full"><Link href={loginHref}>{dictionary.common.login}</Link></Button>
-                {unavailable === "used" || unavailable === "expired" ? <p className="paragraph-mini text-center text-foreground/45">{d.contactForInvite}</p> : null}
+                {unavailable === "used" || unavailable === "expired" ? <p className="paragraph-mini text-center text-foreground-muted-accessible">{d.contactForInvite}</p> : null}
               </div>
             ) : (
               <form onSubmit={handleSubmit} className="flex flex-col gap-5">
                 {error ? <AuthNotice id="invite-error">{error}</AuthNotice> : null}
                 {step === "identity" ? (
                   <>
-                    <div className="grid grid-cols-2 gap-3">
-                      <Field><FieldLabel htmlFor="firstName" className="mb-1.5 paragraph-small font-semibold text-foreground/60">{dictionary.common.firstName}</FieldLabel><FieldContent><Input id="firstName" value={firstName} onChange={(event) => setFirstName(event.target.value)} required autoComplete="given-name" /></FieldContent></Field>
-                      <Field><FieldLabel htmlFor="lastName" className="mb-1.5 paragraph-small font-semibold text-foreground/60">{dictionary.common.lastName}</FieldLabel><FieldContent><Input id="lastName" value={lastName} onChange={(event) => setLastName(event.target.value)} required autoComplete="family-name" /></FieldContent></Field>
+                    <div className="auth-name-grid">
+                      <Field><FieldLabel htmlFor="firstName" className="mb-1.5 paragraph-small font-semibold text-foreground-muted-accessible">{dictionary.common.firstName}</FieldLabel><FieldContent><Input id="firstName" name="firstName" value={firstName} onChange={(event) => setFirstName(event.target.value)} required autoComplete="given-name" /></FieldContent></Field>
+                      <Field><FieldLabel htmlFor="lastName" className="mb-1.5 paragraph-small font-semibold text-foreground-muted-accessible">{dictionary.common.lastName}</FieldLabel><FieldContent><Input id="lastName" name="lastName" value={lastName} onChange={(event) => setLastName(event.target.value)} required autoComplete="family-name" /></FieldContent></Field>
                     </div>
-                    <Field><FieldLabel htmlFor="email" className="mb-1.5 paragraph-small font-semibold text-foreground/60">{dictionary.common.email}</FieldLabel><FieldContent><Input id="email" type="email" value={email} disabled autoComplete="email" /></FieldContent></Field>
+                    <Field><FieldLabel htmlFor="email" className="mb-1.5 paragraph-small font-semibold text-foreground-muted-accessible">{dictionary.common.email}</FieldLabel><FieldContent><Input id="email" name="email" type="email" value={email} disabled autoComplete="email" spellCheck={false} /></FieldContent></Field>
                   </>
                 ) : (
                   <>
                     <Field>
-                      <FieldLabel htmlFor="password" className="mb-1.5 paragraph-small font-semibold text-foreground/60">{dictionary.common.password}</FieldLabel>
-                      <FieldContent><PasswordInput ref={passwordRef} id="password" value={password} onChange={(event) => setPassword(event.target.value)} required minLength={8} autoComplete="new-password" aria-describedby={error ? "invite-error" : "invite-password-description"} aria-invalid={!!error} showPasswordLabel={dictionary.common.showPassword} hidePasswordLabel={dictionary.common.hidePassword} />{password ? <PasswordStrength password={password} className="mt-2" /> : null}<FieldDescription id="invite-password-description" className="mt-1.5 paragraph-mini text-foreground-muted-accessible">{dictionary.reset.passwordHint}</FieldDescription></FieldContent>
+                      <FieldLabel htmlFor="password" className="mb-1.5 paragraph-small font-semibold text-foreground-muted-accessible">{dictionary.common.password}</FieldLabel>
+                      <FieldContent><PasswordInput ref={passwordRef} id="password" name="password" value={password} onChange={(event) => setPassword(event.target.value)} required minLength={8} autoComplete="new-password" aria-describedby={error ? "invite-error" : "invite-password-description"} aria-invalid={!!error} showPasswordLabel={dictionary.common.showPassword} hidePasswordLabel={dictionary.common.hidePassword} />{password ? <PasswordStrength password={password} className="mt-2" /> : null}<FieldDescription id="invite-password-description" className="mt-1.5 paragraph-mini text-foreground-muted-accessible">{dictionary.reset.passwordHint}</FieldDescription></FieldContent>
                     </Field>
-                    <Field><FieldLabel htmlFor="confirmPassword" className="mb-1.5 paragraph-small font-semibold text-foreground/60">{dictionary.common.confirmPassword}</FieldLabel><FieldContent><PasswordInput id="confirmPassword" value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} required minLength={8} autoComplete="new-password" showPasswordLabel={dictionary.common.showPassword} hidePasswordLabel={dictionary.common.hidePassword} /></FieldContent></Field>
+                    <Field><FieldLabel htmlFor="confirmPassword" className="mb-1.5 paragraph-small font-semibold text-foreground-muted-accessible">{dictionary.common.confirmPassword}</FieldLabel><FieldContent><PasswordInput id="confirmPassword" name="confirmPassword" value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} required minLength={8} autoComplete="new-password" showPasswordLabel={dictionary.common.showPassword} hidePasswordLabel={dictionary.common.hidePassword} /></FieldContent></Field>
                   </>
                 )}
                 <Button type="submit" className="h-11 w-full rounded-full" disabled={submitting}>{step === "identity" ? dictionary.common.continue : submitting ? d.creating : d.create}</Button>

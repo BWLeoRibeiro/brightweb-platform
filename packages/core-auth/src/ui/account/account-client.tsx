@@ -106,6 +106,7 @@ export function AccountClient({
               <Label htmlFor="account-first-name">{dictionary.profile.firstName}</Label>
               <Input
                 id="account-first-name"
+                name="firstName"
                 value={firstName}
                 onChange={(event) => setFirstName(event.target.value)}
                 placeholder={dictionary.profile.firstNamePlaceholder}
@@ -117,6 +118,7 @@ export function AccountClient({
               <Label htmlFor="account-last-name">{dictionary.profile.lastName}</Label>
               <Input
                 id="account-last-name"
+                name="lastName"
                 value={lastName}
                 onChange={(event) => setLastName(event.target.value)}
                 placeholder={dictionary.profile.lastNamePlaceholder}
@@ -128,7 +130,7 @@ export function AccountClient({
 
           <div className="space-y-1.5">
             <Label htmlFor="account-email">{dictionary.profile.email}</Label>
-            <Input id="account-email" value={profile.email ?? ""} readOnly disabled />
+            <Input id="account-email" name="email" type="email" value={profile.email ?? ""} readOnly disabled autoComplete="email" spellCheck={false} />
           </div>
 
           <div className="space-y-1.5">

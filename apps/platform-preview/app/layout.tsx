@@ -1,22 +1,30 @@
 import type { ReactNode } from "react";
+import type { Metadata, Viewport } from "next";
 import { starterBrandConfig } from "../config/brand";
 import { ThemeProvider, ThemeScript } from "@brightweblabs/app-shell";
 import { geistMono, geistSans } from "./fonts";
 import "./globals.css";
 
-export const metadata = {
+export const metadata: Metadata = {
   title: `${starterBrandConfig.companyName} Platform Preview`,
   description: `Internal preview app for ${starterBrandConfig.companyName} platform features.`,
 };
 
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "white" },
+    { media: "(prefers-color-scheme: dark)", color: "black" },
+  ],
+};
+
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`} suppressHydrationWarning>
+    <html lang="pt-PT" className={`${geistSans.variable} ${geistMono.variable}`} suppressHydrationWarning>
       <head>
-        <ThemeScript defaultTheme="light" />
+        <ThemeScript defaultTheme="system" />
       </head>
       <body>
-        <ThemeProvider defaultTheme="light" disableTransitionOnChange>
+        <ThemeProvider defaultTheme="system" disableTransitionOnChange>
           {children}
         </ThemeProvider>
       </body>

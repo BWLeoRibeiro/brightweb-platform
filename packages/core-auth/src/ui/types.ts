@@ -93,6 +93,7 @@ export type AuthUiDictionary = {
     help: string;
     continue: string;
     back: string;
+    skipToContent: string;
   };
   layout: {
     footer: (companyName: string) => string;

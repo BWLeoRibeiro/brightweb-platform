@@ -37,8 +37,29 @@ export * from "./components/popover";
 export * from "./components/sheet";
 export * from "./components/table";
 export { Toaster } from "./components/sonner";
-export { ThemeProvider, useTheme } from "./components/theme-provider";
-export type { Theme, ThemeContextValue, ThemeProviderProps } from "./components/theme-provider";
+export {
+  ThemeProvider,
+  useTheme,
+} from "./components/theme-provider";
+export {
+  applyResolvedTheme,
+  BW_THEME_MEDIA_QUERY,
+  BW_THEME_STORAGE_KEY,
+  getSystemTheme,
+  getThemeBootstrapScript,
+  isThemeMode,
+  persistTheme,
+  readStoredTheme,
+  resolveTheme,
+  subscribeToSystemTheme,
+  THEME_MODES,
+} from "./theme/theme-controller";
+export type {
+  Theme,
+  ThemeContextValue,
+  ThemeProviderProps,
+} from "./components/theme-provider";
+export type { ResolvedTheme, ThemeMode } from "./theme/theme-controller";
 export { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./components/tooltip";
 export { ActivityMessage } from "./components/activity-message";
 export * from "./components/action";

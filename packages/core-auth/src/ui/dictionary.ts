@@ -20,6 +20,7 @@ export const defaultAuthUiDictionary: AuthUiDictionary = {
     help: "Ajuda",
     continue: "Continuar",
     back: "Voltar",
+    skipToContent: "Saltar para o conteúdo principal",
   },
   layout: {
     footer: (companyName) => `© ${companyName}`,
