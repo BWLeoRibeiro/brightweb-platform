@@ -1,5 +1,11 @@
 # create-bw-app
 
+## 0.19.0
+
+### Minor Changes
+
+- 1830b1e: Add the first-administrator bootstrap command, transactional profile and role setup, Supabase-aware Vercel region scaffolding, and deployed function-region diagnostics.
+
 ## 0.18.6
 
 ### Patch Changes
