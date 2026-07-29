@@ -224,6 +224,9 @@ importers:
       '@inquirer/prompts':
         specifier: ^7.10.1
         version: 7.10.1(@types/node@25.5.0)
+      '@supabase/supabase-js':
+        specifier: ^2.110.8
+        version: 2.110.8
 
   packages/infra:
     dependencies:

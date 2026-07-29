@@ -3,11 +3,150 @@ import path from "node:path";
 import { stdout as output } from "node:process";
 import { cursorMigrationStatus } from "./migrations.mjs";
 import { findWorkspaceRoot, loadModuleCatalog, MODULE_PACKAGES, readAppManifest, readConfiguredModuleFlags, satisfiesVersion, validateAppManifest, writeAppManifest } from "./app-manifest.mjs";
+import { loadAppEnvironment, readFirstEnvironmentValue } from "./env.mjs";
 import { pathExists, readJsonIfPresent } from "./generator.mjs";
+import { nearestVercelRegion, normalizeSupabaseRegion } from "./regions.mjs";
 import { scaffoldDrift } from "./scaffold.mjs";
 
-const HELP = `Usage: bw doctor [options]\n\nOptions:\n  --target-dir <path>       App directory (defaults to cwd)\n  --workspace-root <path>   BrightWeb workspace root\n  --strict                  Treat warnings as failures\n  --report                  Stamp lastDoctor in the app manifest\n  --help                    Show this help`;
+const HELP = `Usage: bw doctor [options]\n\nOptions:\n  --target-dir <path>       App directory (defaults to cwd)\n  --workspace-root <path>   BrightWeb workspace root\n  --deployment-url <url>    Deployed app URL (defaults to PUBLIC_APP_URL/NEXT_PUBLIC_APP_URL)\n  --supabase-region <id>    Current Supabase project region override\n  --strict                  Treat warnings as failures\n  --report                  Stamp lastDoctor in the app manifest\n  --help                    Show this help`;
 const RUNTIME_PACKAGE_NAMES = ["react", "react-dom", "next"];
+
+function isLocalDeploymentUrl(value) {
+  try {
+    const url = new URL(value);
+    return url.hostname === "localhost" || url.hostname === "127.0.0.1" || url.hostname === "::1";
+  } catch {
+    return false;
+  }
+}
+
+export function parseVercelFunctionRegion(vercelId) {
+  if (typeof vercelId !== "string") return null;
+  const regions = vercelId
+    .split("::")
+    .map((segment) => segment.match(/^([a-z]{3}\d)/)?.[1] ?? null)
+    .filter(Boolean);
+  return regions[1] || null;
+}
+
+async function inspectFunctionRegion({
+  targetDir,
+  options,
+  runtimeOptions,
+  appManifest,
+  environment,
+  add,
+}) {
+  if (appManifest.app.template !== "platform") return;
+
+  const supabaseRegion = normalizeSupabaseRegion(
+    options.supabaseRegion
+      || environment.SUPABASE_PROJECT_REGION
+      || appManifest.infrastructure?.supabaseRegion,
+  );
+  const expectedVercelRegion = nearestVercelRegion(supabaseRegion);
+  const vercelConfig = await readJsonIfPresent(path.join(targetDir, "vercel.json"));
+  const configuredVercelRegions = Array.isArray(vercelConfig?.regions)
+    ? vercelConfig.regions.filter((entry) => typeof entry === "string")
+    : [];
+
+  if (!supabaseRegion) {
+    add(
+      "WARN",
+      "function-region",
+      "Supabase region is unknown; set SUPABASE_PROJECT_REGION or pass --supabase-region before pinning Vercel Functions.",
+    );
+    return;
+  }
+  if (!expectedVercelRegion) {
+    add(
+      "WARN",
+      "function-region",
+      `Supabase region ${supabaseRegion} has no verified Vercel mapping; vercel.json was left unpinned.`,
+    );
+    return;
+  }
+  if (!configuredVercelRegions.includes(expectedVercelRegion)) {
+    add(
+      "WARN",
+      "function-region-config",
+      `Supabase ${supabaseRegion} maps to ${expectedVercelRegion}, but vercel.json has ${configuredVercelRegions.join(", ") || "no regions"}.`,
+    );
+  } else {
+    add(
+      "PASS",
+      "function-region-config",
+      `Supabase ${supabaseRegion} maps to configured Vercel region ${expectedVercelRegion}.`,
+    );
+  }
+
+  const deploymentUrl = readFirstEnvironmentValue(
+    {
+      ...environment,
+      ...(options.deploymentUrl ? { BW_DOCTOR_DEPLOYMENT_URL: options.deploymentUrl } : {}),
+    },
+    ["BW_DOCTOR_DEPLOYMENT_URL", "PUBLIC_APP_URL", "NEXT_PUBLIC_APP_URL"],
+  );
+  if (!deploymentUrl || isLocalDeploymentUrl(deploymentUrl)) {
+    add(
+      "INFO",
+      "function-region-deployed",
+      "SKIP deployed region check; pass --deployment-url with a non-local app URL.",
+    );
+    return;
+  }
+
+  let endpoint;
+  try {
+    endpoint = new URL("/api/cron/keepalive", deploymentUrl).toString();
+  } catch {
+    add("WARN", "function-region-deployed", `Invalid deployment URL: ${deploymentUrl}.`);
+    return;
+  }
+
+  const fetchImpl = runtimeOptions.fetchImpl || globalThis.fetch;
+  const controller = new AbortController();
+  const timeout = setTimeout(
+    () => controller.abort(),
+    runtimeOptions.regionCheckTimeoutMs || 5_000,
+  );
+  try {
+    const response = await fetchImpl(endpoint, {
+      method: "GET",
+      redirect: "follow",
+      signal: controller.signal,
+    });
+    const vercelId = response.headers.get("x-vercel-id");
+    const deployedRegion = parseVercelFunctionRegion(vercelId);
+    if (!deployedRegion) {
+      add(
+        "WARN",
+        "function-region-deployed",
+        `No Vercel Function region was present in x-vercel-id from ${endpoint}.`,
+      );
+    } else if (deployedRegion !== expectedVercelRegion) {
+      add(
+        "WARN",
+        "function-region-deployed",
+        `Deployed function region ${deployedRegion} does not match ${expectedVercelRegion} for Supabase ${supabaseRegion}.`,
+      );
+    } else {
+      add(
+        "PASS",
+        "function-region-deployed",
+        `Deployed function region ${deployedRegion} matches Supabase ${supabaseRegion}.`,
+      );
+    }
+  } catch (error) {
+    add(
+      "WARN",
+      "function-region-deployed",
+      `Could not inspect ${endpoint}: ${error instanceof Error ? error.message : String(error)}.`,
+    );
+  } finally {
+    clearTimeout(timeout);
+  }
+}
 
 export async function findInstalledRuntimeVersions(targetDir) {
   const storeDir = path.join(targetDir, "node_modules", ".pnpm");
@@ -107,17 +246,20 @@ export async function doctorBrightwebApp(argvOptions = {}, runtimeOptions = {}) 
   add(scaffoldStatus, "scaffold", `${scaffoldGroups.current.length} current, ${scaffoldGroups.owned.length} owned, ${scaffoldGroups.skipped.length} skipped, ${scaffoldGroups.undecidedDrift.length} undecided-drift, ${scaffoldGroups.undecidedMissing.length} undecided-missing, ${scaffoldGroups.mismatched.length} intent-mismatch.`);
   add("INFO", "owned-surfaces", `Owned surfaces: ${(appManifest.ownedSurfaces || []).join(", ") || "none"}.`);
 
-  const envNames = new Set(Object.keys(process.env));
-  const envPath = path.join(targetDir, ".env.local");
-  if (await pathExists(envPath)) {
-    for (const line of (await fs.readFile(envPath, "utf8")).split(/\r?\n/)) {
-      const match = line.match(/^\s*(?:export\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*=/);
-      if (match) envNames.add(match[1]);
-    }
-  }
+  const environment = await loadAppEnvironment(targetDir, runtimeOptions.env || process.env);
+  const envNames = new Set(Object.keys(environment));
   const missingEnv = [];
   for (const key of Object.keys(appManifest.modules || {})) for (const entry of catalog[key]?.manifest?.env || []) if (entry.required && !envNames.has(entry.name)) missingEnv.push(`${key}:${entry.name}`);
   add(missingEnv.length ? "FAIL" : "PASS", "env", missingEnv.length ? `Missing required names: ${missingEnv.join(", ")}` : "Required environment variable names are present.");
+
+  await inspectFunctionRegion({
+    targetDir,
+    options: argvOptions,
+    runtimeOptions,
+    appManifest,
+    environment,
+    add,
+  });
 
   const migrationProblems = [];
   const migrationKeys = appManifest.app.template === "platform"

@@ -4,6 +4,7 @@ import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 import { addBrightwebModule } from "../packages/create-bw-app/src/add.mjs";
+import { createFirstAdmin } from "../packages/create-bw-app/src/admin.mjs";
 import { adoptBrightwebApp } from "../packages/create-bw-app/src/adopt.mjs";
 import { loadModuleCatalog, validateAppManifest } from "../packages/create-bw-app/src/app-manifest.mjs";
 import { runBwCli } from "../packages/create-bw-app/src/bw.mjs";
@@ -40,6 +41,75 @@ async function migrationSnapshot(targetDir: string) {
   const migrationsDir = path.join(targetDir, "supabase", "migrations");
   return Object.fromEntries(await Promise.all((await fs.readdir(migrationsDir)).sort().map(async (name) => [name, await fs.readFile(path.join(migrationsDir, name), "utf8")])));
 }
+
+function createAdminClientFixture(options: {
+  hasAdmin?: boolean;
+  existingUser?: { id: string; email: string } | null;
+  rpcError?: { message: string } | null;
+  recoveryError?: { message: string } | null;
+  deleteError?: { message: string } | null;
+} = {}) {
+  const calls = {
+    createUser: [] as Array<Record<string, unknown>>,
+    rpc: [] as Array<{ name: string; params: Record<string, unknown> }>,
+    recovery: [] as Array<{ email: string; options: Record<string, unknown> }>,
+    deletedUserIds: [] as string[],
+  };
+  const client = {
+    from(table: string) {
+      assert.equal(table, "user_role_assignments");
+      return {
+        select() { return this; },
+        eq() { return this; },
+        async limit() {
+          return {
+            data: options.hasAdmin ? [{ profile_id: "existing-admin-profile" }] : [],
+            error: null,
+          };
+        },
+      };
+    },
+    auth: {
+      admin: {
+        async listUsers() {
+          return {
+            data: { users: options.existingUser ? [options.existingUser] : [] },
+            error: null,
+          };
+        },
+        async createUser(input: Record<string, unknown>) {
+          calls.createUser.push(input);
+          return {
+            data: { user: { id: "auth-user-1", email: input.email } },
+            error: null,
+          };
+        },
+        async deleteUser(userId: string) {
+          calls.deletedUserIds.push(userId);
+          return { error: options.deleteError || null };
+        },
+      },
+      async resetPasswordForEmail(email: string, recoveryOptions: Record<string, unknown>) {
+        calls.recovery.push({ email, options: recoveryOptions });
+        return { error: options.recoveryError || null };
+      },
+    },
+    async rpc(name: string, params: Record<string, unknown>) {
+      calls.rpc.push({ name, params });
+      return {
+        data: options.rpcError ? null : [{ profile_id: "profile-1", previous_role_code: "client" }],
+        error: options.rpcError || null,
+      };
+    },
+  };
+  return { client, calls };
+}
+
+const ADMIN_ENV = {
+  NEXT_PUBLIC_APP_URL: "https://portal.example",
+  NEXT_PUBLIC_SUPABASE_URL: "https://project-ref.supabase.co",
+  SUPABASE_SECRET_DEFAULT_KEY: "sb_secret_test-only",
+};
 
 async function legacyFixture() {
   const fixture = await scaffold(["crm"]);
@@ -99,6 +169,151 @@ test("invite-only scaffolds do not emit a signup route", async (t) => {
   assert.doesNotMatch(
     await fs.readFile(path.join(targetDir, "README.md"), "utf8"),
     /`\/signup`/,
+  );
+});
+
+test("bw admin create uses the transactional bootstrap and recovery flow without a password, and rolls back failures", async (t) => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "bw-admin-create-test-"));
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+
+  await assert.rejects(
+    () => createFirstAdmin(
+      "create",
+      { email: "owner@example.com", password: "must-not-enter-shell-history" },
+      { targetDir: root, env: ADMIN_ENV },
+    ),
+    /Passwords are not accepted/,
+  );
+
+  const success = createAdminClientFixture();
+  const result = await createFirstAdmin(
+    "create",
+    { email: " Owner@Example.com " },
+    {
+      targetDir: root,
+      env: ADMIN_ENV,
+      createClient: () => success.client,
+      output: { write() {} },
+    },
+  );
+
+  assert.equal(result.email, "owner@example.com");
+  assert.deepEqual(success.calls.createUser, [{
+    email: "owner@example.com",
+    email_confirm: true,
+  }]);
+  assert.equal("password" in success.calls.createUser[0], false);
+  assert.deepEqual(success.calls.rpc, [{
+    name: "bootstrap_first_admin",
+    params: {
+      p_user_id: "auth-user-1",
+      p_email: "owner@example.com",
+      p_force: false,
+    },
+  }]);
+  assert.deepEqual(success.calls.recovery, [{
+    email: "owner@example.com",
+    options: { redirectTo: "https://portal.example/reset-password" },
+  }]);
+
+  const failed = createAdminClientFixture({
+    recoveryError: { message: "SMTP unavailable" },
+  });
+  await assert.rejects(
+    () => createFirstAdmin(
+      "create",
+      { email: "owner@example.com" },
+      {
+        targetDir: root,
+        env: ADMIN_ENV,
+        createClient: () => failed.client,
+        output: { write() {} },
+      },
+    ),
+    /password-set email.*rolled back/,
+  );
+  assert.deepEqual(failed.calls.deletedUserIds, ["auth-user-1"]);
+});
+
+test("bw admin create requires force for an existing admin and never promotes an existing Auth user", async (t) => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "bw-admin-guard-test-"));
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+
+  const existingAdmin = createAdminClientFixture({ hasAdmin: true });
+  await assert.rejects(
+    () => createFirstAdmin(
+      "create",
+      { email: "second@example.com" },
+      { targetDir: root, env: ADMIN_ENV, createClient: () => existingAdmin.client },
+    ),
+    /administrator already exists.*--force/,
+  );
+  assert.equal(existingAdmin.calls.createUser.length, 0);
+
+  const existingUser = createAdminClientFixture({
+    hasAdmin: true,
+    existingUser: { id: "auth-existing", email: "second@example.com" },
+  });
+  await assert.rejects(
+    () => createFirstAdmin(
+      "create",
+      { email: "second@example.com", force: true },
+      { targetDir: root, env: ADMIN_ENV, createClient: () => existingUser.client },
+    ),
+    /already exists.*Refusing to promote/,
+  );
+  assert.equal(existingUser.calls.createUser.length, 0);
+});
+
+test("platform scaffolds pin mapped Vercel regions and leave a valid commented fallback for unknown regions", async (t) => {
+  const knownRoot = await fs.mkdtemp(path.join(os.tmpdir(), "bw-region-known-test-"));
+  const unknownRoot = await fs.mkdtemp(path.join(os.tmpdir(), "bw-region-unknown-test-"));
+  t.after(() => Promise.all([
+    fs.rm(knownRoot, { recursive: true, force: true }),
+    fs.rm(unknownRoot, { recursive: true, force: true }),
+  ]));
+
+  const knownTarget = path.join(knownRoot, "app");
+  await createBrightwebClientApp(
+    {
+      name: "region-known",
+      template: "platform",
+      modules: "none",
+      supabaseRegion: "eu-west-3",
+      install: false,
+      yes: true,
+    },
+    { targetDir: knownTarget, dependencyMode: "published", workspaceRoot: REPO_ROOT, banner: "test" },
+  );
+  assert.deepEqual(await readJson(path.join(knownTarget, "vercel.json")), {
+    $schema: "https://openapi.vercel.sh/vercel.json",
+    regions: ["cdg1"],
+  });
+  assert.match(await fs.readFile(path.join(knownTarget, ".env.local"), "utf8"), /^SUPABASE_PROJECT_REGION=eu-west-3$/m);
+  const knownManifest = await readJson(path.join(knownTarget, ".brightweb", "app-manifest.json"));
+  assert.deepEqual(knownManifest.infrastructure, {
+    supabaseRegion: "eu-west-3",
+    vercelRegion: "cdg1",
+  });
+
+  const unknownTarget = path.join(unknownRoot, "app");
+  await createBrightwebClientApp(
+    {
+      name: "region-unknown",
+      template: "platform",
+      modules: "none",
+      supabaseRegion: "moon-1",
+      install: false,
+      yes: true,
+    },
+    { targetDir: unknownTarget, dependencyMode: "published", workspaceRoot: REPO_ROOT, banner: "test" },
+  );
+  assert.deepEqual(await readJson(path.join(unknownTarget, "vercel.json")), {
+    $schema: "https://openapi.vercel.sh/vercel.json",
+  });
+  assert.match(
+    await fs.readFile(path.join(unknownTarget, "README.md"), "utf8"),
+    /<!-- vercel\.json region placeholder:/,
   );
 });
 
@@ -455,6 +670,46 @@ test("bw doctor passes a fresh scaffold", async (t) => {
   const result = await doctorBrightwebApp({ targetDir }, { workspaceRoot: REPO_ROOT });
   assert.equal(result.ok, true);
   assert.equal(result.checks.find((entry: { id: string }) => entry.id === "runtime-singletons")?.status, "PASS");
+});
+
+test("bw doctor warns when x-vercel-id reports a deployed function outside the mapped Supabase region", async (t) => {
+  const { root, targetDir } = await scaffold(["crm"]);
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+  await fs.appendFile(path.join(targetDir, ".env.local"), "SUPABASE_PROJECT_REGION=eu-west-3\n");
+  await writeJson(path.join(targetDir, "vercel.json"), {
+    $schema: "https://openapi.vercel.sh/vercel.json",
+    regions: ["cdg1"],
+  });
+
+  const result = await doctorBrightwebApp(
+    {
+      targetDir,
+      deploymentUrl: "https://portal.example",
+    },
+    {
+      workspaceRoot: REPO_ROOT,
+      async fetchImpl(url: string, init: { method: string }) {
+        assert.equal(url, "https://portal.example/api/cron/keepalive");
+        assert.equal(init.method, "GET");
+        return {
+          headers: {
+            get(name: string) {
+              return name === "x-vercel-id" ? "cdg1::iad1::request-123" : null;
+            },
+          },
+        };
+      },
+    },
+  );
+
+  assert.equal(result.ok, true);
+  assert.equal(
+    result.checks.find((entry: { id: string }) => entry.id === "function-region-config")?.status,
+    "PASS",
+  );
+  const deployed = result.checks.find((entry: { id: string }) => entry.id === "function-region-deployed");
+  assert.equal(deployed?.status, "WARN");
+  assert.match(deployed?.message || "", /iad1 does not match cdg1 for Supabase eu-west-3/);
 });
 
 test("bw doctor fails when the app store resolves duplicate runtimes", async (t) => {

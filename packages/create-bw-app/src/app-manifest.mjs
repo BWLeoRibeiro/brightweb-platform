@@ -104,6 +104,7 @@ export async function writeAppManifest(targetDir, manifest) {
 
 export function validateAppManifest(manifest) {
   const errors = [];
+  const isNullableString = (value) => value === null || typeof value === "string";
   if (!manifest || typeof manifest !== "object" || Array.isArray(manifest)) return ["manifest must be an object"];
   if (manifest.contractVersion !== 1) errors.push("contractVersion must equal 1");
   if (!manifest.app || typeof manifest.app.slug !== "string" || !["platform", "site"].includes(manifest.app.template) || typeof manifest.app.scaffoldedWith !== "string") {
@@ -120,6 +121,15 @@ export function validateAppManifest(manifest) {
     if (!entry || typeof entry.module !== "string" || !/^sha256:[a-f0-9]{64}$/.test(entry.hash || "") || !["current", "drifted", "missing"].includes(entry.status) || (entry.intent != null && !["managed", "owned", "skipped"].includes(entry.intent))) errors.push(`scaffoldFiles.${relativePath} is invalid`);
   }
   if (manifest.lastDoctor != null && (typeof manifest.lastDoctor.at !== "string" || typeof manifest.lastDoctor.ok !== "boolean")) errors.push("lastDoctor is invalid");
+  if (
+    manifest.infrastructure != null
+    && (
+      typeof manifest.infrastructure !== "object"
+      || Array.isArray(manifest.infrastructure)
+      || !isNullableString(manifest.infrastructure.supabaseRegion)
+      || !isNullableString(manifest.infrastructure.vercelRegion)
+    )
+  ) errors.push("infrastructure is invalid");
   return errors;
 }
 
@@ -156,7 +166,16 @@ export async function collectScaffoldFiles(targetDir, selectedModules) {
   return result;
 }
 
-export async function createInitialAppManifest({ targetDir, slug, template, selectedModules, versionMap, dbInstallPlan, cliVersion }) {
+export async function createInitialAppManifest({
+  targetDir,
+  slug,
+  template,
+  selectedModules,
+  versionMap,
+  dbInstallPlan,
+  cliVersion,
+  infrastructure,
+}) {
   const now = new Date().toISOString();
   const modules = {};
   if (template === "platform") {
@@ -179,6 +198,7 @@ export async function createInitialAppManifest({ targetDir, slug, template, sele
     scaffoldFiles: template === "platform" ? await collectScaffoldFiles(targetDir, selectedModules) : {},
     managedFiles: template === "platform" ? MANAGED_APP_FILES : ["docs/ai/app-context.json"],
     migrationCursor,
+    ...(infrastructure ? { infrastructure } : {}),
   };
 }
 
