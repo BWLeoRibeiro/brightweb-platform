@@ -14,6 +14,9 @@ import {
   type ShellNavStateGroup,
 } from "@brightweblabs/app-shell";
 import { createAuthUiClient } from "@brightweblabs/core-auth/ui";
+import { AdminToolbarControls } from "@brightweblabs/module-admin/ui";
+import { CrmToolbarControls } from "@brightweblabs/module-crm/ui";
+import { ProjectsToolbarControls } from "@brightweblabs/module-projects/ui";
 import { Toaster } from "@brightweblabs/ui";
 import { getStarterShellConfig } from "../../config/shell";
 import "@brightweblabs/app-shell/dashboard.css";
@@ -72,6 +75,13 @@ export function ShellLayoutClient({
     viewer.email ||
     "Conta";
   const projectsBaseHref = pathname.startsWith("/projects") ? "/projects" : "/projetos";
+  const toolbarControls = pathname === "/crm"
+    ? <CrmToolbarControls />
+    : pathname === projectsBaseHref
+      ? <ProjectsToolbarControls />
+      : pathname === "/admin/users"
+        ? <AdminToolbarControls />
+        : null;
 
   const handleToolbarAction = (item: ShellContextualAction) => {
     if (item.action === "projects-back-to-portfolio") {
@@ -143,8 +153,9 @@ export function ShellLayoutClient({
           toolbarRoutes={toolbarRoutes}
           toolbarActions={toolbarActions}
           onToolbarAction={handleToolbarAction}
+          notifications={{}}
         >
-          {null}
+          {toolbarControls}
         </AppHeader>
       }
       mobileNav={

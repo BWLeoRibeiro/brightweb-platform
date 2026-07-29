@@ -155,6 +155,7 @@ export function PreviewShellLayoutClient({
           toolbarRoutes={toolbarRoutes}
           toolbarActions={toolbarActions}
           onToolbarAction={handleToolbarAction}
+          notifications={{}}
         >
           {toolbarControls}
         </AppHeader>
