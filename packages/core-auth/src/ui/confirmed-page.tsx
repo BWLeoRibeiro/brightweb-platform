@@ -24,10 +24,10 @@ function ConfirmedContent() {
   const href = target === "app" ? "/auth/post-login" : "/login?confirmed=1";
   return (
     <AuthLayout>
-      <AuthCard className="text-center">
+      <AuthCard className="auth-vessel--centered">
         <AuthHeading title={d.title} description={target === "app" ? d.appDescription : d.loginDescription} />
         <Button variant="link" size="link" asChild>
-          <Link href={href} className="mx-auto paragraph-small font-semibold text-primary hover:text-primary/80">
+          <Link href={href} className="auth-support-action">
             {target === "app" ? d.continue : dictionary.common.login}
           </Link>
         </Button>
@@ -38,7 +38,7 @@ function ConfirmedContent() {
 
 function ConfirmedFallback() {
   const { dictionary } = useAuthUi();
-  return <AuthLayout><AuthCard className="text-center"><AuthHeading title={dictionary.confirmed.title} description={dictionary.confirmed.redirecting} /></AuthCard></AuthLayout>;
+  return <AuthLayout><AuthCard className="auth-vessel--centered"><AuthHeading title={dictionary.confirmed.title} description={dictionary.confirmed.redirecting} /></AuthCard></AuthLayout>;
 }
 
 export function AuthConfirmedPage() {

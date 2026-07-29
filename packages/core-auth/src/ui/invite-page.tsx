@@ -112,7 +112,7 @@ export function InvitePage({ invitationId, kind = "organization" }: { invitation
   return (
     <AuthLayout>
       <AuthCard>
-        {loading ? <p className="paragraph-mini text-center text-muted-foreground">{dictionary.common.loading}</p> : (
+        {loading ? <p className="auth-centered-copy">{dictionary.common.loading}</p> : (
           <>
             <AuthHeading
               eyebrow={currentUser ? d.activeSession : d.eyebrow}
@@ -120,42 +120,42 @@ export function InvitePage({ invitationId, kind = "organization" }: { invitation
               description={currentUser ? (sameEmail ? d.sameAccountDescription : d.otherAccountDescription) : unavailable ? d.unavailable[unavailable].description : description}
             />
             {currentUser ? (
-              <Button asChild className="h-11 w-full rounded-full">
+              <Button asChild className="auth-primary-action">
                 <Link href={sameEmail ? `/auth/post-login?invitationId=${encodeURIComponent(invitationId)}` : "/login"}>
                   {sameEmail ? dictionary.common.continue : dictionary.common.login}
                 </Link>
               </Button>
             ) : unavailable ? (
-              <div className="flex flex-col gap-3">
-                {unavailable === "load-error" ? <Button type="button" onClick={() => window.location.reload()} className="h-11 w-full rounded-full">{dictionary.common.retry}</Button> : null}
-                <Button asChild variant={unavailable === "load-error" ? "ghost" : "default"} className="h-11 w-full rounded-full"><Link href={loginHref}>{dictionary.common.login}</Link></Button>
-                {unavailable === "used" || unavailable === "expired" ? <p className="paragraph-mini text-center text-foreground/45">{d.contactForInvite}</p> : null}
+              <div className="auth-form">
+                {unavailable === "load-error" ? <Button type="button" onClick={() => window.location.reload()} className="auth-primary-action">{dictionary.common.retry}</Button> : null}
+                <Button asChild variant={unavailable === "load-error" ? "ghost" : "default"} className="auth-primary-action"><Link href={loginHref}>{dictionary.common.login}</Link></Button>
+                {unavailable === "used" || unavailable === "expired" ? <p className="auth-centered-copy">{d.contactForInvite}</p> : null}
               </div>
             ) : (
-              <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+              <form onSubmit={handleSubmit} className="auth-form">
                 {error ? <AuthNotice id="invite-error">{error}</AuthNotice> : null}
                 {step === "identity" ? (
                   <>
-                    <div className="grid grid-cols-2 gap-3">
-                      <Field><FieldLabel htmlFor="firstName" className="mb-1.5 paragraph-small font-semibold text-foreground/60">{dictionary.common.firstName}</FieldLabel><FieldContent><Input id="firstName" value={firstName} onChange={(event) => setFirstName(event.target.value)} required autoComplete="given-name" /></FieldContent></Field>
-                      <Field><FieldLabel htmlFor="lastName" className="mb-1.5 paragraph-small font-semibold text-foreground/60">{dictionary.common.lastName}</FieldLabel><FieldContent><Input id="lastName" value={lastName} onChange={(event) => setLastName(event.target.value)} required autoComplete="family-name" /></FieldContent></Field>
+                    <div className="auth-name-grid">
+                      <Field><FieldLabel htmlFor="firstName" className="auth-field-label">{dictionary.common.firstName}</FieldLabel><FieldContent><Input id="firstName" value={firstName} onChange={(event) => setFirstName(event.target.value)} required autoComplete="given-name" /></FieldContent></Field>
+                      <Field><FieldLabel htmlFor="lastName" className="auth-field-label">{dictionary.common.lastName}</FieldLabel><FieldContent><Input id="lastName" value={lastName} onChange={(event) => setLastName(event.target.value)} required autoComplete="family-name" /></FieldContent></Field>
                     </div>
-                    <Field><FieldLabel htmlFor="email" className="mb-1.5 paragraph-small font-semibold text-foreground/60">{dictionary.common.email}</FieldLabel><FieldContent><Input id="email" type="email" value={email} disabled autoComplete="email" /></FieldContent></Field>
+                    <Field><FieldLabel htmlFor="email" className="auth-field-label">{dictionary.common.email}</FieldLabel><FieldContent><Input id="email" type="email" value={email} disabled autoComplete="email" /></FieldContent></Field>
                   </>
                 ) : (
                   <>
                     <Field>
-                      <FieldLabel htmlFor="password" className="mb-1.5 paragraph-small font-semibold text-foreground/60">{dictionary.common.password}</FieldLabel>
-                      <FieldContent><PasswordInput ref={passwordRef} id="password" value={password} onChange={(event) => setPassword(event.target.value)} required minLength={8} autoComplete="new-password" aria-describedby={error ? "invite-error" : "invite-password-description"} aria-invalid={!!error} showPasswordLabel={dictionary.common.showPassword} hidePasswordLabel={dictionary.common.hidePassword} />{password ? <PasswordStrength password={password} className="mt-2" /> : null}<FieldDescription id="invite-password-description" className="mt-1.5 paragraph-mini text-foreground-muted-accessible">{dictionary.reset.passwordHint}</FieldDescription></FieldContent>
+                      <FieldLabel htmlFor="password" className="auth-field-label">{dictionary.common.password}</FieldLabel>
+                      <FieldContent><PasswordInput ref={passwordRef} id="password" value={password} onChange={(event) => setPassword(event.target.value)} required minLength={8} autoComplete="new-password" aria-describedby={error ? "invite-error" : "invite-password-description"} aria-invalid={!!error} showPasswordLabel={dictionary.common.showPassword} hidePasswordLabel={dictionary.common.hidePassword} />{password ? <PasswordStrength password={password} className="auth-password-strength" /> : null}<FieldDescription id="invite-password-description" className="auth-field-hint">{dictionary.reset.passwordHint}</FieldDescription></FieldContent>
                     </Field>
-                    <Field><FieldLabel htmlFor="confirmPassword" className="mb-1.5 paragraph-small font-semibold text-foreground/60">{dictionary.common.confirmPassword}</FieldLabel><FieldContent><PasswordInput id="confirmPassword" value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} required minLength={8} autoComplete="new-password" showPasswordLabel={dictionary.common.showPassword} hidePasswordLabel={dictionary.common.hidePassword} /></FieldContent></Field>
+                    <Field><FieldLabel htmlFor="confirmPassword" className="auth-field-label">{dictionary.common.confirmPassword}</FieldLabel><FieldContent><PasswordInput id="confirmPassword" value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} required minLength={8} autoComplete="new-password" showPasswordLabel={dictionary.common.showPassword} hidePasswordLabel={dictionary.common.hidePassword} /></FieldContent></Field>
                   </>
                 )}
-                <Button type="submit" className="h-11 w-full rounded-full" disabled={submitting}>{step === "identity" ? dictionary.common.continue : submitting ? d.creating : d.create}</Button>
-                {step === "password" ? <Button type="button" variant="ghost" className="h-10 w-full rounded-full" disabled={submitting} onClick={() => { setError(null); setStep("identity"); }}>{dictionary.common.back}</Button> : null}
+                <Button type="submit" className="auth-primary-action" disabled={submitting}>{step === "identity" ? dictionary.common.continue : submitting ? d.creating : d.create}</Button>
+                {step === "password" ? <Button type="button" variant="ghost" className="auth-primary-action" disabled={submitting} onClick={() => { setError(null); setStep("identity"); }}>{dictionary.common.back}</Button> : null}
               </form>
             )}
-            <div className="flex items-center justify-center gap-1.5 pt-1"><span className="paragraph-mini text-foreground-muted-accessible">{d.alreadyAccount}</span><Button variant="link" size="link" asChild><Link href={loginHref} className="paragraph-mini font-semibold text-primary hover:text-primary/80">{dictionary.common.login}</Link></Button></div>
+            <div className="auth-support-row"><span className="text-foreground-muted-accessible">{d.alreadyAccount}</span><Button variant="link" size="link" asChild><Link href={loginHref} className="auth-support-action">{dictionary.common.login}</Link></Button></div>
           </>
         )}
       </AuthCard>

@@ -40,21 +40,21 @@ export function ForgotPasswordPage() {
         {success ? (
           <AuthNotice tone="success"><strong>{d.sentTitle}</strong> {d.sentDescription(email)}</AuthNotice>
         ) : (
-          <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+          <form onSubmit={handleSubmit} className="auth-form">
             <Field>
-              <FieldLabel htmlFor="email" className="mb-1.5 block paragraph-small font-semibold text-foreground/60">{dictionary.common.email}</FieldLabel>
+              <FieldLabel htmlFor="email" className="auth-field-label">{dictionary.common.email}</FieldLabel>
               <FieldContent>
                 <Input id="email" type="email" placeholder={dictionary.common.emailPlaceholder} value={email} onChange={(event) => setEmail(event.target.value)} required disabled={loading} aria-describedby={error ? "forgot-password-error" : undefined} aria-invalid={!!error} />
               </FieldContent>
             </Field>
-            <Button type="submit" className="h-11 w-full rounded-full" disabled={loading}>
+            <Button type="submit" className="auth-primary-action" disabled={loading}>
               {loading ? d.submitting : d.submit}
             </Button>
           </form>
         )}
-        <div className="flex items-center justify-center gap-1.5 pt-1">
-          <span className="paragraph-mini text-foreground-muted-accessible">{d.remember}</span>
-          <Button variant="link" size="link" asChild><Link href="/login" className="paragraph-mini font-semibold text-primary hover:text-primary/80">{dictionary.common.login}</Link></Button>
+        <div className="auth-support-row">
+          <span className="text-foreground-muted-accessible">{d.remember}</span>
+          <Button variant="link" size="link" asChild><Link href="/login" className="auth-support-action">{dictionary.common.login}</Link></Button>
         </div>
       </AuthCard>
     </AuthLayout>

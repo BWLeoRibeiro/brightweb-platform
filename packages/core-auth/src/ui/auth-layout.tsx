@@ -66,26 +66,26 @@ export function AuthCard({
   className?: string;
 }) {
   return (
-    <div className={`auth-vessel dark relative w-full max-w-[440px] overflow-hidden rounded-[2.5rem] ${className}`}>
+    <div className={`auth-vessel dark ${className}`}>
       <div className="auth-vessel__wash" aria-hidden="true" />
-      <div className="relative z-10 flex flex-col gap-7 p-9 lg:p-10">{children}</div>
+      <div className="auth-vessel__body">{children}</div>
     </div>
   );
 }
 
 export function AuthHeading({ title, description, eyebrow }: { title: string; description: string; eyebrow?: string }) {
   return (
-    <div className="flex flex-col gap-2">
+    <div className="auth-heading">
       {eyebrow ? <span className="eyebrow">{eyebrow}</span> : null}
-      <h1 className="heading-2 text-foreground">{title}</h1>
-      <p className="paragraph-small text-foreground/45">{description}</p>
+      <h1 className="heading-2">{title}</h1>
+      <p className="paragraph-small">{description}</p>
     </div>
   );
 }
 
 export function AuthDivider() {
   return (
-    <div className="flex items-center gap-3" aria-hidden="true">
+    <div className="auth-divider" aria-hidden="true">
       <span className="auth-divider-line" />
       <span className="auth-divider-dot" />
       <span className="auth-divider-line" />
@@ -99,7 +99,7 @@ export function AuthNotice({ children, tone = "error", id }: { children: React.R
       id={id}
       role={tone === "error" ? "alert" : "status"}
       aria-live="polite"
-      className={`auth-notice auth-notice--${tone} rounded-xl p-3.5`}
+      className={`auth-notice auth-notice--${tone}`}
     >
       <p className="paragraph-mini">{children}</p>
     </div>

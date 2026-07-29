@@ -125,26 +125,26 @@ export function ResetPasswordPage() {
         <AuthHeading title={d.title} description={d.description} />
         <AuthDivider />
         {error ? <AuthNotice id="reset-password-error">{error}</AuthNotice> : null}
-        <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+        <form onSubmit={handleSubmit} className="auth-form">
           <Field>
-            <FieldLabel htmlFor="password" className="mb-1.5 block paragraph-small font-semibold text-foreground/60">{dictionary.common.newPassword}</FieldLabel>
+            <FieldLabel htmlFor="password" className="auth-field-label">{dictionary.common.newPassword}</FieldLabel>
             <FieldContent>
               <PasswordInput id="password" placeholder={dictionary.common.passwordPlaceholder} value={password} onChange={(event) => setPassword(event.target.value)} required minLength={8} autoComplete="new-password" aria-describedby={error ? "reset-password-error" : "password-description"} aria-invalid={!!error} showPasswordLabel={dictionary.common.showPassword} hidePasswordLabel={dictionary.common.hidePassword} />
-              {password ? <PasswordStrength password={password} className="mt-2" /> : null}
-              <FieldDescription id="password-description" className="mt-1.5 paragraph-mini text-foreground-muted-accessible">{d.passwordHint}</FieldDescription>
+              {password ? <PasswordStrength password={password} className="auth-password-strength" /> : null}
+              <FieldDescription id="password-description" className="auth-field-hint text-foreground-muted-accessible">{d.passwordHint}</FieldDescription>
             </FieldContent>
           </Field>
           <Field>
-            <FieldLabel htmlFor="confirmPassword" className="mb-1.5 block paragraph-small font-semibold text-foreground/60">{dictionary.common.confirmPassword}</FieldLabel>
+            <FieldLabel htmlFor="confirmPassword" className="auth-field-label">{dictionary.common.confirmPassword}</FieldLabel>
             <FieldContent>
               <PasswordInput id="confirmPassword" placeholder={dictionary.common.passwordPlaceholder} value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} required minLength={8} autoComplete="new-password" aria-describedby={error ? "reset-password-error" : undefined} aria-invalid={!!error} showPasswordLabel={dictionary.common.showPassword} hidePasswordLabel={dictionary.common.hidePassword} />
             </FieldContent>
           </Field>
-          <Button type="submit" className="h-11 w-full rounded-full" disabled={loading || preparing}>
+          <Button type="submit" className="auth-primary-action" disabled={loading || preparing}>
             {preparing ? d.preparing : loading ? d.submitting : d.submit}
           </Button>
         </form>
-        <Button variant="link" size="link" asChild><Link href="/login" className="mx-auto paragraph-mini text-foreground/60 hover:text-foreground">{dictionary.common.backToLogin}</Link></Button>
+        <Button variant="link" size="link" asChild><Link href="/login" className="auth-support-action">{dictionary.common.backToLogin}</Link></Button>
       </AuthCard>
     </AuthLayout>
   );
