@@ -396,10 +396,10 @@ export async function listProjects(
       { data: milestoneRows, error: milestoneRowsError },
     ] = await Promise.all([
       fetchAllRows((from, to) =>
-        supabase.from("project_tasks").select("project_id, status, due_date").in("project_id", ids).range(from, to),
+        supabase.from("project_tasks").select("project_id, status, due_date").in("project_id", ids).order("id", { ascending: true }).range(from, to),
       ),
       fetchAllRows((from, to) =>
-        supabase.from("project_milestones").select("project_id, status").in("project_id", ids).range(from, to),
+        supabase.from("project_milestones").select("project_id, status").in("project_id", ids).order("id", { ascending: true }).range(from, to),
       ),
     ]);
 

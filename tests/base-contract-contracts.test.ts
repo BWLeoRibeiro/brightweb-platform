@@ -40,10 +40,12 @@ type SelectErrorFactory = (context: { table: string; columns: string }) => Selec
 type SelectOptions = { count?: string; head?: boolean };
 type SelectSpy = (context: { table: string; columns: string; options?: SelectOptions }) => void;
 type RangeSpy = (context: { table: string; from: number; to: number }) => void;
+type OrderSpy = (context: { table: string; field: string; ascending: boolean }) => void;
 type FakeSupabaseOptions = {
   selectErrorFactory?: SelectErrorFactory;
   selectSpy?: SelectSpy;
   rangeSpy?: RangeSpy;
+  orderSpy?: OrderSpy;
   defaultSelectLimit?: number;
 };
 
@@ -89,7 +91,9 @@ class FakeQuery {
   }
 
   order(field: string, options?: { ascending?: boolean }) {
-    this.orderRules.push({ field, ascending: options?.ascending !== false });
+    const ascending = options?.ascending !== false;
+    this.options.orderSpy?.({ table: this.table, field, ascending });
+    this.orderRules.push({ field, ascending });
     return this;
   }
 
@@ -567,6 +571,7 @@ type CreateProjectsSupabaseOptions = {
   includePhoneData?: boolean;
   simulateMissingProfilesPhone?: boolean;
   projectSelectColumnsLog?: string[];
+  orderSpy?: OrderSpy;
 };
 
 function createProjectsSupabase(options: CreateProjectsSupabaseOptions = {}) {
@@ -672,15 +677,15 @@ function createProjectsSupabase(options: CreateProjectsSupabaseOptions = {}) {
       },
     ],
     project_tasks: [
-      { project_id: "project-1", status: "todo", due_date: iso(yesterday) },
-      { project_id: "project-1", status: "blocked", due_date: iso(inThreeDays) },
-      { project_id: "project-1", status: "done", due_date: iso(today) },
-      { project_id: "project-3", status: "todo", due_date: iso(yesterday) },
+      { id: "task-1", project_id: "project-1", status: "todo", due_date: iso(yesterday) },
+      { id: "task-2", project_id: "project-1", status: "blocked", due_date: iso(inThreeDays) },
+      { id: "task-3", project_id: "project-1", status: "done", due_date: iso(today) },
+      { id: "task-4", project_id: "project-3", status: "todo", due_date: iso(yesterday) },
     ],
     project_milestones: [
-      { project_id: "project-1", status: "achieved" },
-      { project_id: "project-1", status: "delayed" },
-      { project_id: "project-3", status: "delayed" },
+      { id: "milestone-1", project_id: "project-1", status: "achieved" },
+      { id: "milestone-2", project_id: "project-1", status: "delayed" },
+      { id: "milestone-3", project_id: "project-3", status: "delayed" },
     ],
     user_role_assignments: [
       { profile_id: "profile-admin", role_code: "admin" },
@@ -699,6 +704,7 @@ function createProjectsSupabase(options: CreateProjectsSupabaseOptions = {}) {
     selectSpy: ({ table, columns }) => {
       if (table === "projects") options.projectSelectColumnsLog?.push(columns);
     },
+    orderSpy: options.orderSpy,
   });
 }
 
@@ -846,16 +852,44 @@ test("project aggregate enrichment propagates task and milestone provider errors
   }
 });
 
-test("listProjects pages task enrichment past the PostgREST 1000-row default cap", async () => {
+test("every Projects enrichment reader orders paginated task and milestone rows by primary key", async () => {
+  const aggregateReaders = [
+    (supabase: FakeSupabase) => listProjects(supabase as never, { page: 1, pageSize: 10 }),
+    (supabase: FakeSupabase) => listProjectsFromServer(supabase as never, { page: 1, pageSize: 10 }),
+    (supabase: FakeSupabase) => listOrgAdminProjectsByProfile(supabase as never, "profile-admin"),
+  ];
+
+  for (const read of aggregateReaders) {
+    const enrichmentOrders: Array<{ table: string; field: string; ascending: boolean }> = [];
+    await read(createProjectsSupabase({
+      orderSpy: (order) => {
+        if (["project_tasks", "project_milestones"].includes(order.table)) enrichmentOrders.push(order);
+      },
+    }));
+    assert.deepEqual(enrichmentOrders, [
+      { table: "project_tasks", field: "id", ascending: true },
+      { table: "project_milestones", field: "id", ascending: true },
+    ]);
+  }
+});
+
+test("listProjects deterministically pages shuffled task and milestone enrichment without gaps or duplicates", async () => {
   const pageTwoTaskCount = 7;
-  const taskRows = Array.from({ length: 1000 + pageTwoTaskCount }, (_, index) => ({
+  const pageTwoMilestoneCount = 5;
+  const shuffle = <T>(rows: T[]) => [...rows.filter((_, index) => index % 2 === 1).reverse(), ...rows.filter((_, index) => index % 2 === 0).reverse()];
+  const taskRows = shuffle(Array.from({ length: 1000 + pageTwoTaskCount }, (_, index) => ({
+    id: `task-${String(index).padStart(5, "0")}`,
     project_id: "project-1",
-    // The final rows only appear on the second range page; counting them as "done"
-    // proves page-2 rows made it into the aggregation.
     status: index >= 1000 ? "done" : "todo",
     due_date: null,
-  }));
+  })));
+  const milestoneRows = shuffle(Array.from({ length: 1000 + pageTwoMilestoneCount }, (_, index) => ({
+    id: `milestone-${String(index).padStart(5, "0")}`,
+    project_id: "project-1",
+    status: index >= 1000 ? "delayed" : "achieved",
+  })));
   const taskRangeCalls: Array<{ from: number; to: number }> = [];
+  const milestoneRangeCalls: Array<{ from: number; to: number }> = [];
 
   const supabase = new FakeSupabase({
     projects: [
@@ -879,14 +913,13 @@ test("listProjects pages task enrichment past the PostgREST 1000-row default cap
       },
     ],
     project_tasks: taskRows,
-    project_milestones: [
-      { project_id: "project-1", status: "achieved" },
-    ],
+    project_milestones: milestoneRows,
   }, {
     // Mirror PostgREST's implicit 1000-row cap so an unpaged query would truncate.
     defaultSelectLimit: 1000,
     rangeSpy: ({ table, from, to }) => {
       if (table === "project_tasks") taskRangeCalls.push({ from, to });
+      if (table === "project_milestones") milestoneRangeCalls.push({ from, to });
     },
   });
 
@@ -899,8 +932,16 @@ test("listProjects pages task enrichment past the PostgREST 1000-row default cap
     overdue: 0,
     blocked: 0,
   });
-  assert.deepEqual(result.items[0]?.milestoneStats, { total: 1, achieved: 1, delayed: 0 });
+  assert.deepEqual(result.items[0]?.milestoneStats, {
+    total: 1000 + pageTwoMilestoneCount,
+    achieved: 1000,
+    delayed: pageTwoMilestoneCount,
+  });
   assert.deepEqual(taskRangeCalls, [
+    { from: 0, to: 999 },
+    { from: 1000, to: 1999 },
+  ]);
+  assert.deepEqual(milestoneRangeCalls, [
     { from: 0, to: 999 },
     { from: 1000, to: 1999 },
   ]);
