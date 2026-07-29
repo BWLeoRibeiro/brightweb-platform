@@ -8,6 +8,7 @@
     "check:compatibility-set": "node ./scripts/validate-compatibility-set.mjs",
     "check:create-bw-app-templates": "node ./scripts/check-create-bw-app-templates.mjs",
     "check:module-manifest": "node ./scripts/validate-module-manifest.mjs",
+    "check:packed-release": "node ./scripts/check-packed-release.mjs",
     "changeset": "changeset",
     "create:client": "node ./scripts/create-brightweb-client.mjs",
     "db:materialize": "node ./scripts/materialize-client-migrations.mjs",
@@ -33,6 +34,7 @@
     "@types/react-dom": "^19.2.3",
     "react": "19.2.4",
     "react-dom": "19.2.4",
-    "typescript": "5.9.3"
+    "typescript": "5.9.3",
+    "verdaccio": "^6.9.0"
   }
 }

@@ -58,6 +58,9 @@ jobs:
       - name: Check scaffold template contracts
         run: pnpm check:create-bw-app-templates
 
+      - name: Check packed release install
+        run: pnpm check:packed-release
+
       - name: Typecheck platform
         run: pnpm lint
 
