@@ -60,3 +60,30 @@ jobs:
 
       - name: Build starter app
         run: pnpm build
+
+  # Authenticated runtime smoke of a generated app (issue #77): generates a
+  # platform fixture, builds and serves it against a local Supabase stub, signs
+  # in for real, and asserts page renders plus dashboard API contracts that
+  # build-time gates cannot see. Parallel to `build`; not on the critical path.
+  runtime-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.28.1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generated app runtime smoke
+        run: node tests/e2e/generated-app-smoke.mjs
