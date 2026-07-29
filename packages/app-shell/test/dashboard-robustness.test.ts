@@ -10,8 +10,10 @@ import {
 import {
   parseDashboardBootstrapResponse,
   parseDashboardCrmResponse,
+  parseDashboardOverviewShellResponse,
   parseDashboardProjectsResponse,
   parseDashboardTasksResponse,
+  parseErrorFromPayload,
 } from "../src/dashboard/dashboard-response-parser.ts";
 
 const projects = {
@@ -192,4 +194,27 @@ test("dashboard parsers reject malformed nested KPI values, items, enums, and nu
   assert.equal(parseDashboardTasksResponse({
     data: { ...tasks, tasks: [{ ...tasks.tasks[0], milestoneId: 7 }] },
   }).data, null);
+});
+
+test("dashboard parsers read publicError envelopes, plain strings, and reject garbage errors", () => {
+  const publicError = { error: { code: "FORBIDDEN", message: "Forbidden." } };
+
+  assert.equal(parseDashboardProjectsResponse(publicError).error, "Forbidden.");
+  assert.equal(parseDashboardCrmResponse(publicError).error, "Forbidden.");
+  assert.equal(parseDashboardTasksResponse(publicError).error, "Forbidden.");
+  assert.equal(parseDashboardBootstrapResponse(publicError).error, "Forbidden.");
+  assert.equal(parseDashboardOverviewShellResponse(publicError).error, "Forbidden.");
+  assert.equal(parseErrorFromPayload(publicError, "fallback"), "Forbidden.");
+
+  assert.equal(parseDashboardProjectsResponse({ error: "Sessão expirada." }).error, "Sessão expirada.");
+  assert.equal(parseDashboardBootstrapResponse({ error: "Sessão expirada." }).error, "Sessão expirada.");
+  assert.equal(parseErrorFromPayload({ error: "Sessão expirada." }, "fallback"), "Sessão expirada.");
+
+  assert.equal(parseDashboardProjectsResponse({ error: 500 }).error, null);
+  assert.equal(parseDashboardProjectsResponse({ error: { code: "FORBIDDEN" } }).error, null);
+  assert.equal(parseDashboardProjectsResponse({ error: null }).error, null);
+  assert.equal(parseDashboardBootstrapResponse({ error: { message: 42 } }).error, null);
+  assert.equal(parseDashboardTasksResponse({ error: { code: "FORBIDDEN" } }).error, null);
+  assert.equal(parseErrorFromPayload({ error: { code: "FORBIDDEN" } }, "fallback"), "fallback");
+  assert.equal(parseErrorFromPayload({ error: 500 }, "fallback"), "fallback");
 });
