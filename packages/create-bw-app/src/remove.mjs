@@ -98,7 +98,18 @@ export async function removeBrightwebModule(moduleKey, argvOptions = {}, runtime
     await fs.writeFile(targetPath, content, "utf8");
   }
   delete appManifest.modules[moduleKey];
+  if (appManifest.modules.orgs) {
+    appManifest.modules.orgs.exposed = remainingModules.some((key) => ["crm", "marketing", "projects"].includes(key));
+  }
   for (const [relativePath, record] of Object.entries(appManifest.scaffoldFiles || {})) if (record.module === moduleKey) delete appManifest.scaffoldFiles[relativePath];
+  for (const relativePath of Object.keys(managedWrites)) {
+    const record = appManifest.scaffoldFiles[relativePath];
+    if (!record) continue;
+    const targetPath = resolveSafeRelativePath(targetDir, relativePath, "Manifest scaffold file path");
+    if (!(await pathExists(targetPath))) continue;
+    record.hash = await hashFile(targetPath);
+    record.status = "current";
+  }
   await writeAppManifest(targetDir, appManifest);
   output.write(`Removed ${moduleKey} package wiring and ${cleanFiles.length} clean scaffold file${cleanFiles.length === 1 ? "" : "s"}. Install dependencies next.\n`);
   return { dryRun: false, moduleKey, cleanFiles, driftedFiles, notice };

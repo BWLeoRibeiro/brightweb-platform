@@ -718,6 +718,9 @@ test("bw add projects resolves orgs, writes overlays, migrations, and manifest s
   await assert.rejects(fs.access(path.join(targetDir, "app", "playground", "projects", "page.tsx")));
   const migrations = await fs.readdir(path.join(targetDir, "supabase", "migrations"));
   assert.ok(migrations.some((name) => name.includes("_projects__20260316093000_projects_v1.sql")));
+  const doctor = await doctorBrightwebApp({ targetDir }, { workspaceRoot: REPO_ROOT });
+  assert.equal(doctor.ok, true);
+  assert.equal(doctor.checks.find((entry: { id: string }) => entry.id === "scaffold")?.status, "PASS");
 });
 
 test("bw add reports a clean module version conflict", async (t) => {
@@ -1048,6 +1051,9 @@ test("bw remove deletes clean scaffold files, leaves drifted files, and never to
     /CrmToolbarControls/,
   );
   assert.deepEqual(await migrationSnapshot(targetDir), migrationsBefore);
+  const doctor = await doctorBrightwebApp({ targetDir }, { workspaceRoot: REPO_ROOT });
+  assert.equal(doctor.ok, true);
+  assert.equal(doctor.checks.find((entry: { id: string }) => entry.id === "scaffold")?.status, "PASS");
 });
 
 test("bw doctor fails a null migration cursor unless adoption allows it", async (t) => {
