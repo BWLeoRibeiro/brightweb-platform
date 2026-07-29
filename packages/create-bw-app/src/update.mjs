@@ -27,6 +27,7 @@ import {
   readJsonIfPresent,
   runInstall,
 } from "./generator.mjs";
+import { readAppManifest } from "./app-manifest.mjs";
 
 const MANAGED_PLATFORM_FILES = [
   "next.config.ts",
@@ -455,6 +456,7 @@ function renderPlanSummary(plan, options = {}) {
 
 export async function buildBrightwebAppUpdatePlan(argvOptions = {}, runtimeOptions = {}) {
   const targetDir = resolveUpdateTargetDirectory(runtimeOptions, argvOptions);
+  await readAppManifest(targetDir, { required: false });
   const packageJsonPath = path.join(targetDir, "package.json");
   const manifest = await readJsonIfPresent(packageJsonPath);
 

@@ -1,5 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
+import { resolveSafeRelativePath } from "./safe-path.mjs";
 import { TEMPLATE_ROOT, pathExists } from "./generator.mjs";
 
 export async function findAppMigrationsDirectory(targetDir) {
@@ -16,7 +17,9 @@ export async function findAppMigrationsDirectory(targetDir) {
 export async function getModuleMigrations(moduleKey, catalogEntry = {}) {
   const candidates = [];
   const configuredPath = catalogEntry.manifest?.database?.migrations;
-  if (catalogEntry.packageRoot && configuredPath) candidates.push(path.resolve(catalogEntry.packageRoot, configuredPath));
+  if (catalogEntry.packageRoot && configuredPath) {
+    candidates.push(resolveSafeRelativePath(catalogEntry.packageRoot, configuredPath, `${catalogEntry.key || "Module"} migration manifest path`));
+  }
   if (catalogEntry.packageRoot) candidates.push(path.join(catalogEntry.packageRoot, "migrations"));
   candidates.push(path.join(TEMPLATE_ROOT, "supabase", "modules", moduleKey, "migrations"));
   for (const directory of candidates) {

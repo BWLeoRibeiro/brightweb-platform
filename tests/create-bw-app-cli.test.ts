@@ -13,7 +13,9 @@ import { diffBrightwebScaffold } from "../packages/create-bw-app/src/diff.mjs";
 import { doctorBrightwebApp } from "../packages/create-bw-app/src/doctor.mjs";
 import { createBrightwebClientApp, resolveModuleOrder as resolveGeneratorModuleOrder } from "../packages/create-bw-app/src/generator.mjs";
 import { removeBrightwebModule } from "../packages/create-bw-app/src/remove.mjs";
+import { normalizeSafeRelativePath, resolveSafeRelativePath } from "../packages/create-bw-app/src/safe-path.mjs";
 import { scaffoldBrightwebApp } from "../packages/create-bw-app/src/scaffold-cmd.mjs";
+import { updateBrightwebApp } from "../packages/create-bw-app/src/update.mjs";
 import { upgradeBrightwebApp } from "../packages/create-bw-app/src/upgrade.mjs";
 import { resolveModuleOrder as resolveScriptModuleOrder } from "../scripts/_db-modules.mjs";
 
@@ -153,6 +155,53 @@ test("scaffold writes a valid app manifest", async (t) => {
   assert.equal(packageJson.dependencies["react-dom"], "^19.0.0");
   assert.match(await fs.readFile(path.join(targetDir, "app", "fonts.ts"), "utf8"), /GeistSans as geistSans/);
   assert.match(await fs.readFile(path.join(targetDir, "app", "layout.tsx"), "utf8"), /geistSans\.variable/);
+});
+
+test("safe relative paths reject empty, absolute, traversal, drive, UNC, and containment escapes", () => {
+  const targetDir = path.join(os.tmpdir(), "safe-target");
+  for (const unsafePath of [
+    "",
+    "   ",
+    "/tmp/escape.txt",
+    "../escape.txt",
+    "nested/../../escape.txt",
+    "C:\\escape.txt",
+    "C:escape.txt",
+    "\\\\server\\share\\escape.txt",
+  ]) {
+    assert.throws(
+      () => resolveSafeRelativePath(targetDir, unsafePath, "Test path"),
+      /non-empty relative path|relative to the target directory|parent-directory traversal|inside the target directory/,
+      unsafePath,
+    );
+  }
+  assert.equal(normalizeSafeRelativePath("./app\\page.tsx"), "app/page.tsx");
+  assert.equal(resolveSafeRelativePath(targetDir, "app/page.tsx"), path.join(targetDir, "app", "page.tsx"));
+});
+
+test("add, remove, update, and scaffold reject unsafe manifest-controlled paths before filesystem changes", async (t) => {
+  const { root, targetDir } = await scaffold(["crm"]);
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+  const manifestPath = path.join(targetDir, ".brightweb", "app-manifest.json");
+  const manifest = await readJson(manifestPath);
+  const [trackedPath, trackedRecord] = Object.entries(manifest.scaffoldFiles)[0];
+  delete manifest.scaffoldFiles[trackedPath];
+  manifest.scaffoldFiles["../outside.txt"] = trackedRecord;
+  await writeJson(manifestPath, manifest);
+  const packageBefore = await fs.readFile(path.join(targetDir, "package.json"), "utf8");
+
+  const operations = [
+    () => addBrightwebModule("projects", { targetDir }, { workspaceRoot: REPO_ROOT }),
+    () => removeBrightwebModule("crm", { targetDir, yes: true }, { workspaceRoot: REPO_ROOT }),
+    () => updateBrightwebApp({ targetDir }, { workspaceRoot: REPO_ROOT, fetchImpl: mockNpmFetch }),
+    () => scaffoldBrightwebApp("list", [], { targetDir }, { workspaceRoot: REPO_ROOT }),
+  ];
+  for (const operation of operations) {
+    await assert.rejects(operation, /Invalid BrightWeb app manifest:.*parent-directory traversal/);
+  }
+
+  assert.equal(await fs.readFile(path.join(targetDir, "package.json"), "utf8"), packageBefore);
+  await assert.rejects(fs.access(path.join(root, "outside.txt")), { code: "ENOENT" });
 });
 
 test("invite-only scaffolds do not emit a signup route", async (t) => {

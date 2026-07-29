@@ -3,6 +3,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { APP_DEPENDENCY_DEFAULTS, MODULE_STARTER_FILES, PLATFORM_STARTER_FILES, SELECTABLE_MODULES } from "./constants.mjs";
+import { normalizeSafeRelativePath, resolveSafeRelativePath } from "./safe-path.mjs";
 
 const TEMPLATE_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "template");
 
@@ -86,6 +87,10 @@ export async function readAppManifest(targetDir, { required = true } = {}) {
   if (!manifest && required) {
     throw new Error(`No BrightWeb app manifest found at ${APP_MANIFEST_PATH}. Pre-manifest apps must be adopted before using bw.`);
   }
+  if (manifest) {
+    const errors = validateAppManifest(manifest);
+    if (errors.length > 0) throw new Error(`Invalid BrightWeb app manifest: ${errors.join("; ")}`);
+  }
   return manifest;
 }
 
@@ -114,10 +119,14 @@ export function validateAppManifest(manifest) {
     if (!manifest[key] || typeof manifest[key] !== "object" || Array.isArray(manifest[key])) errors.push(`${key} must be an object`);
   }
   if (!Array.isArray(manifest.managedFiles) || manifest.managedFiles.some((entry) => typeof entry !== "string")) errors.push("managedFiles must be an array of paths");
+  else for (const [index, relativePath] of manifest.managedFiles.entries()) {
+    try { normalizeSafeRelativePath(relativePath, `managedFiles[${index}]`); } catch (error) { errors.push(error.message); }
+  }
   for (const [key, entry] of Object.entries(manifest.modules || {})) {
     if (!entry || !cleanVersion(entry.version) || typeof entry.installedAt !== "string" || typeof entry.exposed !== "boolean") errors.push(`modules.${key} is invalid`);
   }
   for (const [relativePath, entry] of Object.entries(manifest.scaffoldFiles || {})) {
+    try { normalizeSafeRelativePath(relativePath, `scaffoldFiles path`); } catch (error) { errors.push(error.message); }
     if (!entry || typeof entry.module !== "string" || !/^sha256:[a-f0-9]{64}$/.test(entry.hash || "") || !["current", "drifted", "missing"].includes(entry.status) || (entry.intent != null && !["managed", "owned", "skipped"].includes(entry.intent))) errors.push(`scaffoldFiles.${relativePath} is invalid`);
   }
   if (manifest.lastDoctor != null && (typeof manifest.lastDoctor.at !== "string" || typeof manifest.lastDoctor.ok !== "boolean")) errors.push("lastDoctor is invalid");
@@ -160,7 +169,7 @@ export async function collectScaffoldFiles(targetDir, selectedModules) {
   }
   const result = {};
   for (const [relativePath, moduleKey] of Array.from(files.entries()).sort()) {
-    const targetPath = path.join(targetDir, relativePath);
+    const targetPath = resolveSafeRelativePath(targetDir, relativePath, "Scaffold file path");
     if (await pathExists(targetPath)) result[relativePath] = { module: moduleKey, hash: await hashFile(targetPath), status: "current" };
   }
   return result;

@@ -22,6 +22,7 @@ import {
   pathExists,
   readJsonIfPresent,
 } from "./generator.mjs";
+import { resolveSafeRelativePath } from "./safe-path.mjs";
 
 const HELP = `Usage: bw remove <moduleKey> [options]\n\nOptions:\n  --target-dir <path>       App directory (defaults to cwd)\n  --workspace-root <path>   BrightWeb workspace root\n  --dry-run                 Print the removal plan without writing\n  --yes                     Apply the removal plan\n  --help                    Show this help`;
 
@@ -74,7 +75,7 @@ export async function removeBrightwebModule(moduleKey, argvOptions = {}, runtime
   const driftedFiles = [];
   for (const [relativePath, record] of Object.entries(appManifest.scaffoldFiles || {})) {
     if (record.module !== moduleKey) continue;
-    const filePath = path.join(targetDir, relativePath);
+    const filePath = resolveSafeRelativePath(targetDir, relativePath, "Manifest scaffold file path");
     if (!(await pathExists(filePath))) continue;
     if ((record.intent || "managed") === "managed" && await hashFile(filePath) === record.hash) cleanFiles.push(relativePath);
     else driftedFiles.push(relativePath);
@@ -90,7 +91,7 @@ export async function removeBrightwebModule(moduleKey, argvOptions = {}, runtime
   if (!apply) return { dryRun: true, moduleKey, cleanFiles, driftedFiles, notice };
 
   await fs.writeFile(packagePath, `${JSON.stringify(nextPackageJson, null, 2)}\n`, "utf8");
-  for (const relativePath of cleanFiles) await fs.rm(path.join(targetDir, relativePath));
+  for (const relativePath of cleanFiles) await fs.rm(resolveSafeRelativePath(targetDir, relativePath, "Manifest scaffold file path"));
   for (const [relativePath, content] of Object.entries(managedWrites)) {
     const targetPath = path.join(targetDir, relativePath);
     await fs.mkdir(path.dirname(targetPath), { recursive: true });

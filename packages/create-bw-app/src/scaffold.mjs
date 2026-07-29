@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 import { MODULE_STARTER_FILES, PLATFORM_STARTER_FILES, SELECTABLE_MODULES } from "./constants.mjs";
 import { hashFile } from "./app-manifest.mjs";
 import { pathExists } from "./generator.mjs";
+import { resolveSafeRelativePath } from "./safe-path.mjs";
 
 const BUNDLED_TEMPLATE_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "template");
 
@@ -42,7 +43,7 @@ export async function inventoryScaffoldFiles({ targetDir, moduleKeys, templateRo
       unsupported.push(definition.relativePath);
       continue;
     }
-    const appPath = path.join(targetDir, definition.relativePath);
+    const appPath = resolveSafeRelativePath(targetDir, definition.relativePath, "Scaffold file path");
     const templateHash = await hashFile(templatePath);
     const exists = await pathExists(appPath);
     records[definition.relativePath] = {
@@ -60,7 +61,7 @@ export async function scaffoldDrift(targetDir, scaffoldFiles = {}) {
   const missing = [];
   const entries = [];
   for (const [relativePath, record] of Object.entries(scaffoldFiles)) {
-    const appPath = path.join(targetDir, relativePath);
+    const appPath = resolveSafeRelativePath(targetDir, relativePath, "Manifest scaffold file path");
     const intent = record.intent || "managed";
     let status = "missing";
     if (await pathExists(appPath)) {
