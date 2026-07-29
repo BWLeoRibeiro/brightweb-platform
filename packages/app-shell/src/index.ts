@@ -47,6 +47,7 @@ export {
   useShellAction,
   useShellActionDispatch,
   useShellActionReady,
+  useShellActionsReady,
   useShellActionsRegistry,
 } from "./lib/shell-actions";
 export type { ShellActionsProviderProps } from "./lib/shell-actions";

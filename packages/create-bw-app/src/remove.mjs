@@ -12,7 +12,9 @@ import {
 import {
   createAppContextFile,
   createDbInstallPlan,
+  createModuleToolbarControlsConfig,
   createNextConfig,
+  createOptionalModuleRouteFiles,
   createPlatformGlobalsCss,
   createPlatformModulesConfigFile,
   createShellConfig,
@@ -61,9 +63,11 @@ export async function removeBrightwebModule(moduleKey, argvOptions = {}, runtime
   const managedWrites = {
     "next.config.ts": createNextConfig({ template: "platform", selectedModules: remainingModules }),
     "app/globals.css": await createPlatformGlobalsCss(remainingModules),
+    "config/module-toolbar-controls.tsx": createModuleToolbarControlsConfig(remainingModules),
     "config/modules.ts": createPlatformModulesConfigFile(remainingModules),
     "config/shell.ts": createShellConfig(remainingModules),
     "docs/ai/app-context.json": createAppContextFile({ slug: appManifest.app.slug, template: "platform", selectedModules: remainingModules.filter((key) => key !== "orgs"), dbInstallPlan }),
+    ...createOptionalModuleRouteFiles(remainingModules),
   };
 
   const cleanFiles = [];

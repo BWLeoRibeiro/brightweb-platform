@@ -85,6 +85,15 @@ test("aliases resolve toolbar action ids onto registered event types", () => {
   assert.equal(registry.resolveType("unmapped"), "unmapped");
 });
 
+test("areReady requires every action and honors aliases", () => {
+  const registry = new ShellActionRegistry({ "projects-refresh": "projects:refresh" });
+  registry.register("projects:refresh", () => {});
+  registry.register("projects:set-search", () => {});
+
+  assert.equal(registry.areReady(["projects-refresh", "projects:set-search"]), true);
+  assert.equal(registry.areReady(["projects-refresh", "projects:set-health"]), false);
+});
+
 test("subscribers stop being notified after unsubscribe", () => {
   const registry = new ShellActionRegistry();
   let notified = 0;

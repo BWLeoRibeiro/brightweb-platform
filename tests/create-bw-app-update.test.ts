@@ -462,6 +462,28 @@ test("detects workspace dependency mode from installed brightweb packages", asyn
   assert.equal(plan.packageUpdates.length, 0);
 });
 
+test("update restores the module-selected toolbar controls config", async (t) => {
+  const { tempRoot, targetDir } = await scaffoldPlatformApp({
+    modules: ["crm"],
+    workspaceRoot: REPO_ROOT,
+  });
+  t.after(async () => fs.rm(tempRoot, { recursive: true, force: true }));
+
+  const toolbarConfigPath = path.join(targetDir, "config", "module-toolbar-controls.tsx");
+  await fs.rm(toolbarConfigPath);
+
+  const plan = await buildBrightwebAppUpdatePlan(
+    { targetDir },
+    { workspaceRoot: REPO_ROOT },
+  );
+  const toolbarWrite = plan.fileWrites.find(
+    (entry) => entry.relativePath === path.join("config", "module-toolbar-controls.tsx"),
+  );
+
+  assert.match(toolbarWrite?.content ?? "", /CrmToolbarControls/);
+  assert.doesNotMatch(toolbarWrite?.content ?? "", /AdminToolbarControls|ProjectsToolbarControls/);
+});
+
 test("detects a site app as a no-op update target", async (t) => {
   const { tempRoot, targetDir } = await scaffoldSiteApp();
   t.after(async () => fs.rm(tempRoot, { recursive: true, force: true }));

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Filter, Plus, Search } from "lucide-react";
-import { useShellActionDispatch, useShellActionReady } from "@brightweblabs/app-shell";
+import { useShellActionDispatch, useShellActionReady, useShellActionsReady } from "@brightweblabs/app-shell";
 import { Input } from "@brightweblabs/ui";
 import { useProjectsUiDictionary } from "./context";
 import {
@@ -34,6 +34,11 @@ export function ProjectsToolbarControls() {
   const dictionary = useProjectsUiDictionary();
   const dispatchShellAction = useShellActionDispatch();
   const newProjectReady = useShellActionReady(PROJECTS_EVENTS.openNewProject);
+  const filtersReady = useShellActionsReady([
+    PROJECTS_EVENTS.setSearch,
+    PROJECTS_EVENTS.setStatus,
+    PROJECTS_EVENTS.setHealth,
+  ]);
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState<ProjectsStatusFilter>("all");
   const [health, setHealth] = useState<ProjectsHealthFilter>("all");
@@ -75,6 +80,7 @@ export function ProjectsToolbarControls() {
         <Search className="size-[var(--toolbar-icon-size)] shrink-0" aria-hidden />
         <Input
           value={search}
+          disabled={!filtersReady}
           onChange={(event) => {
             const query = event.target.value;
             setSearch(query);
@@ -89,9 +95,10 @@ export function ProjectsToolbarControls() {
       <div className="relative" ref={wrapRef}>
         <button
           type="button"
+          disabled={!filtersReady}
           className={cn(
             controlClassName,
-            "border-[color:var(--hairline-strong)] bg-[color:var(--elevate-1)] text-[color:var(--foreground)] hover:border-[color:var(--border-strong)] hover:bg-[color:var(--surface-hover)]",
+            "border-[color:var(--hairline-strong)] bg-[color:var(--elevate-1)] text-[color:var(--foreground)] hover:border-[color:var(--border-strong)] hover:bg-[color:var(--surface-hover)] disabled:cursor-not-allowed disabled:opacity-60",
             activeCount > 0 && "border-[color:var(--border-selection)] bg-[color:var(--surface-selection)]",
           )}
           onClick={(event) => {

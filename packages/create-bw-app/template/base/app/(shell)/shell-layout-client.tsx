@@ -17,10 +17,8 @@ import {
   type ShellNavStateGroup,
 } from "@brightweblabs/app-shell";
 import { createAuthUiClient } from "@brightweblabs/core-auth/ui";
-import { AdminToolbarControls } from "@brightweblabs/module-admin/ui";
-import { CrmToolbarControls } from "@brightweblabs/module-crm/ui";
-import { ProjectsToolbarControls } from "@brightweblabs/module-projects/ui";
 import { Toaster } from "@brightweblabs/ui";
+import { getModuleToolbarControls } from "../../config/module-toolbar-controls";
 import { getStarterShellConfig } from "../../config/shell";
 import "@brightweblabs/app-shell/dashboard.css";
 
@@ -89,13 +87,7 @@ function ShellLayoutInner({
     viewer.email ||
     "Conta";
   const projectsBaseHref = pathname.startsWith("/projects") ? "/projects" : "/projetos";
-  const toolbarControls = pathname === "/crm"
-    ? <CrmToolbarControls />
-    : pathname === projectsBaseHref
-      ? <ProjectsToolbarControls />
-      : pathname === "/admin/users"
-        ? <AdminToolbarControls />
-        : null;
+  const toolbarControls = getModuleToolbarControls(pathname, projectsBaseHref);
 
   const dispatchShellAction = useShellActionDispatch();
   useShellAction("projects-back-to-portfolio", () => {

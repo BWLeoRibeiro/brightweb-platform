@@ -82,6 +82,13 @@ export function useShellActionReady(type: string): boolean {
   return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 }
 
+/** Whether every action type is ready. Without a provider, legacy dispatch remains enabled. */
+export function useShellActionsReady(types: readonly string[]): boolean {
+  const registry = useContext(ShellActionsContext);
+  useRegisteredShellActions();
+  return !registry || registry.areReady(types);
+}
+
 /**
  * Pure trigger for a shell toolbar action: invokes the registered handler
  * when a registry is present and has one, otherwise falls back to the

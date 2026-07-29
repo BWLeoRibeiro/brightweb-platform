@@ -221,21 +221,9 @@ async function main() {
       ].join("\n"),
     );
 
-    // Typechecking of generated fixtures is already gated by
-    // scripts/check-create-bw-app-templates.mjs (next typegen + tsc); this
-    // smoke test is about runtime behavior, so skip the duplicate (and
-    // subtly stricter) `next build` typecheck.
-    const nextConfigPath = path.join(fixtureDir, "next.config.ts");
-    const nextConfigSource = await fs.readFile(nextConfigPath, "utf8");
-    await fs.writeFile(
-      nextConfigPath,
-      nextConfigSource.replace(
-        "const nextConfig: NextConfig = {",
-        "const nextConfig: NextConfig = {\n  typescript: { ignoreBuildErrors: true },",
-      ),
-    );
-
     // 4. Production build + start -----------------------------------------
+    // Keep the real Next typecheck enabled: a generated app that cannot pass
+    // `next build` is not runtime-smoke ready.
     // --webpack for the same reason apps/platform-preview builds with it:
     // Turbopack refuses a node_modules symlink that points outside the
     // project root, which is exactly how this fixture (and the template

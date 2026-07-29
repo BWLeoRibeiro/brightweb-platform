@@ -53,8 +53,11 @@ export function AppHeaderToolbarActionButton({ action, onToolbarAction }: AppHea
 
 function AppHeaderBreadcrumbActionButton({ crumb, backActions, onToolbarAction }: { crumb: AppHeaderBreadcrumb; backActions: ShellContextualAction[]; onToolbarAction?: (action: ShellContextualAction) => void }) {
   const shellActions = useShellActionsRegistry();
+  const action = backActions.find((item) => item.action === crumb.action || item.label === crumb.label);
+  const ready = useShellActionReady(action?.action ?? "");
+  const disabled = Boolean(shellActions && action?.action && !ready);
   return (
-    <button type="button" className={styles.navbarCrumbLink} onClick={() => { const action = backActions.find((item) => item.action === crumb.action || item.label === crumb.label); if (action) triggerShellToolbarAction(shellActions, action, onToolbarAction); }}>
+    <button type="button" className={styles.navbarCrumbLink} disabled={disabled} onClick={() => { if (action) triggerShellToolbarAction(shellActions, action, onToolbarAction); }}>
       <span aria-hidden>‹</span>
       {crumb.label}
     </button>

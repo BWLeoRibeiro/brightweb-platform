@@ -49,6 +49,10 @@ export class ShellActionRegistry {
     return this.handlers.has(this.resolveType(type));
   }
 
+  areReady(types: readonly string[]): boolean {
+    return types.every((type) => this.isReady(type));
+  }
+
   /** Invokes the registered handler. Returns false when none is registered. */
   invoke(type: string, detail?: unknown): boolean {
     const handler = this.handlers.get(this.resolveType(type));

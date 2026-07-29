@@ -363,6 +363,36 @@ test("scaffolded shell derives its title from active registration nav and dispat
   assert.match(shellLayout, /onToolbarAction=\{handleToolbarAction\}/);
   assert.match(shellLayout, /"projects-new-menu": "projects:open-new-project"/);
   assert.match(shellLayout, /"crm-create-menu": "brightweb:crm:create-contact"/);
+  assert.match(shellLayout, /getModuleToolbarControls/);
+  assert.doesNotMatch(shellLayout, /@brightweblabs\/module-(admin|crm|projects)/);
+
+  const toolbarControls = await fs.readFile(
+    path.join(targetDir, "config", "module-toolbar-controls.tsx"),
+    "utf8",
+  );
+  assert.match(toolbarControls, /CrmToolbarControls/);
+  assert.match(toolbarControls, /ProjectsToolbarControls/);
+  assert.doesNotMatch(toolbarControls, /AdminToolbarControls/);
+});
+
+test("core-only scaffold does not import or declare optional module toolbar packages", async (t) => {
+  const { root, targetDir } = await scaffold([]);
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+
+  const packageJson = await readJson(path.join(targetDir, "package.json"));
+  const toolbarControls = await fs.readFile(
+    path.join(targetDir, "config", "module-toolbar-controls.tsx"),
+    "utf8",
+  );
+
+  assert.doesNotMatch(toolbarControls, /@brightweblabs\/module-/);
+  for (const packageName of [
+    "@brightweblabs/module-admin",
+    "@brightweblabs/module-crm",
+    "@brightweblabs/module-projects",
+  ]) {
+    assert.equal(packageJson.dependencies[packageName], undefined);
+  }
 });
 
 test("admin scaffold mounts invitation list, create, and revoke handlers", async (t) => {
@@ -632,6 +662,10 @@ test("bw add projects resolves orgs, writes overlays, migrations, and manifest s
   assert.equal(updated.modules.projects.version, release.packages["@brightweblabs/module-projects"]);
   assert.equal(updated.migrationCursor.projects, "20260421201528_portal_read_indexes.sql");
   assert.match(await fs.readFile(path.join(targetDir, "app", "globals.css"), "utf8"), /@source "\.\.\/node_modules\/@brightweblabs\/module-projects\/src";/);
+  assert.match(
+    await fs.readFile(path.join(targetDir, "config", "module-toolbar-controls.tsx"), "utf8"),
+    /ProjectsToolbarControls/,
+  );
   await assert.rejects(fs.access(path.join(targetDir, "app", "playground", "projects", "page.tsx")));
   const migrations = await fs.readdir(path.join(targetDir, "supabase", "migrations"));
   assert.ok(migrations.some((name) => name.includes("_projects__20260316093000_projects_v1.sql")));
@@ -960,6 +994,10 @@ test("bw remove deletes clean scaffold files, leaves drifted files, and never to
   assert.equal(packageJson.dependencies["@brightweblabs/module-crm"], undefined);
   assert.equal(manifest.modules.crm, undefined);
   assert.equal(manifest.scaffoldFiles["app/(shell)/crm/page.tsx"], undefined);
+  assert.doesNotMatch(
+    await fs.readFile(path.join(targetDir, "config", "module-toolbar-controls.tsx"), "utf8"),
+    /CrmToolbarControls/,
+  );
   assert.deepEqual(await migrationSnapshot(targetDir), migrationsBefore);
 });
 

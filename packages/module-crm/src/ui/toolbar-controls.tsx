@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Building2, Filter, Plus, Search, UserPlus } from "lucide-react";
-import { ToolbarNewMenu, useShellActionDispatch, useShellActionReady } from "@brightweblabs/app-shell";
+import { ToolbarNewMenu, useShellActionDispatch, useShellActionReady, useShellActionsReady } from "@brightweblabs/app-shell";
 import { Button, Input, Popover, PopoverContent, PopoverTrigger, TooltipProvider } from "@brightweblabs/ui";
 
 import type { CrmContactSort } from "../data";
@@ -19,14 +19,15 @@ type CrmToolbarState = {
 export type CrmToolbarSearchChipProps = {
   value: string;
   onChange: (value: string) => void;
+  disabled?: boolean;
   dictionary?: CrmUiDictionary;
 };
 
-export function CrmToolbarSearchChip({ value, onChange, dictionary = defaultCrmUiDictionary }: CrmToolbarSearchChipProps) {
+export function CrmToolbarSearchChip({ value, onChange, disabled, dictionary = defaultCrmUiDictionary }: CrmToolbarSearchChipProps) {
   return (
     <label className="inline-flex h-9 min-w-[var(--toolbar-search-min-width)] items-center gap-2 rounded-[var(--radius-control)] border border-[color:var(--hairline-strong)] bg-[color:var(--elevate-1)] px-3 text-[color:var(--muted-foreground)]">
       <Search className="size-[var(--toolbar-icon-size)] shrink-0" aria-hidden />
-      <Input value={value} onChange={(event) => onChange(event.target.value)} placeholder={dictionary.table.searchPlaceholder} aria-label={dictionary.table.searchPlaceholder} className="h-8 w-full border-0 bg-transparent px-0 text-[length:var(--text-ui-action)] text-[color:var(--foreground)] shadow-none focus-visible:ring-0" />
+      <Input value={value} onChange={(event) => onChange(event.target.value)} disabled={disabled} placeholder={dictionary.table.searchPlaceholder} aria-label={dictionary.table.searchPlaceholder} className="h-8 w-full border-0 bg-transparent px-0 text-[length:var(--text-ui-action)] text-[color:var(--foreground)] shadow-none focus-visible:ring-0" />
     </label>
   );
 }
@@ -36,10 +37,11 @@ export type CrmToolbarFiltersPillProps = {
   sort: CrmContactSort;
   stages?: CrmStageConfig[];
   dictionary?: CrmUiDictionary;
+  disabled?: boolean;
   onApply: (status: string | null, sort: CrmContactSort) => void;
 };
 
-export function CrmToolbarFiltersPill({ status, sort, stages, dictionary = defaultCrmUiDictionary, onApply }: CrmToolbarFiltersPillProps) {
+export function CrmToolbarFiltersPill({ status, sort, stages, dictionary = defaultCrmUiDictionary, disabled, onApply }: CrmToolbarFiltersPillProps) {
   const resolvedStages = resolveCrmStages(dictionary, stages);
   const [open, setOpen] = useState(false);
   const [draftStatus, setDraftStatus] = useState<string | null>(status);
@@ -50,7 +52,7 @@ export function CrmToolbarFiltersPill({ status, sort, stages, dictionary = defau
   return (
     <Popover open={open} onOpenChange={(next) => next ? begin() : setOpen(false)}>
       <PopoverTrigger asChild>
-        <button type="button" className="inline-flex h-9 items-center gap-2 whitespace-nowrap rounded-[var(--radius-control)] border border-[color:var(--hairline-strong)] bg-[color:var(--elevate-1)] px-3 text-[length:var(--text-ui-action)] font-extrabold text-[color:var(--foreground)] transition-colors hover:border-[color:var(--border-strong)] hover:bg-[color:var(--surface-hover)]" onClick={() => open ? setOpen(false) : begin()}>
+        <button type="button" disabled={disabled} className="inline-flex h-9 items-center gap-2 whitespace-nowrap rounded-[var(--radius-control)] border border-[color:var(--hairline-strong)] bg-[color:var(--elevate-1)] px-3 text-[length:var(--text-ui-action)] font-extrabold text-[color:var(--foreground)] transition-colors hover:border-[color:var(--border-strong)] hover:bg-[color:var(--surface-hover)] disabled:cursor-not-allowed disabled:opacity-60" onClick={() => open ? setOpen(false) : begin()}>
           <Filter className="size-[var(--toolbar-icon-size)] text-[color:var(--muted-foreground)]" aria-hidden />
           {dictionary.toolbar.filters}
           {activeCount > 0 ? <span className="inline-flex size-5 items-center justify-center rounded-full bg-[color:var(--surface-button-brand)] text-ui-micro text-accent-foreground">{activeCount}</span> : null}
@@ -103,6 +105,11 @@ export type CrmToolbarControlsProps = { dictionary?: CrmUiDictionary; stages?: C
 
 export function CrmToolbarControls({ dictionary = defaultCrmUiDictionary, stages }: CrmToolbarControlsProps) {
   const dispatchShellAction = useShellActionDispatch();
+  const filtersReady = useShellActionsReady([
+    CRM_UI_EVENTS.setSearch,
+    CRM_UI_EVENTS.selectSegment,
+    CRM_UI_EVENTS.setSort,
+  ]);
   const [state, setState] = useState<CrmToolbarState>({ search: "", status: null, sort: "date_desc" });
   useEffect(() => {
     const handleState = (event: Event) => setState((current) => ({ ...current, ...(event as CustomEvent<Partial<CrmToolbarState>>).detail }));
@@ -111,8 +118,8 @@ export function CrmToolbarControls({ dictionary = defaultCrmUiDictionary, stages
   }, []);
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <CrmToolbarSearchChip value={state.search} dictionary={dictionary} onChange={(search) => { setState((current) => ({ ...current, search })); dispatchShellAction(CRM_UI_EVENTS.setSearch, { search }); }} />
-      <CrmToolbarFiltersPill status={state.status} sort={state.sort} stages={stages} dictionary={dictionary} onApply={(status, sort) => { setState((current) => ({ ...current, status, sort })); dispatchShellAction(CRM_UI_EVENTS.selectSegment, { status }); dispatchShellAction(CRM_UI_EVENTS.setSort, { sort }); }} />
+      <CrmToolbarSearchChip value={state.search} disabled={!filtersReady} dictionary={dictionary} onChange={(search) => { setState((current) => ({ ...current, search })); dispatchShellAction(CRM_UI_EVENTS.setSearch, { search }); }} />
+      <CrmToolbarFiltersPill status={state.status} sort={state.sort} disabled={!filtersReady} stages={stages} dictionary={dictionary} onApply={(status, sort) => { setState((current) => ({ ...current, status, sort })); dispatchShellAction(CRM_UI_EVENTS.selectSegment, { status }); dispatchShellAction(CRM_UI_EVENTS.setSort, { sort }); }} />
       <CrmToolbarCreateMenu dictionary={dictionary} />
     </div>
   );

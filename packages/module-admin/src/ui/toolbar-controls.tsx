@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Filter, Search } from "lucide-react";
-import { useShellActionDispatch } from "@brightweblabs/app-shell";
+import { useShellActionDispatch, useShellActionsReady } from "@brightweblabs/app-shell";
 import { Button, Input, Popover, PopoverContent, PopoverTrigger } from "@brightweblabs/ui";
 import {
   ADMIN_EVENTS,
@@ -22,6 +22,10 @@ export type AdminToolbarControlsProps = {
 
 export function AdminToolbarControls({ dictionary = defaultAdminUiDictionary }: AdminToolbarControlsProps) {
   const dispatchShellAction = useShellActionDispatch();
+  const filtersReady = useShellActionsReady([
+    ADMIN_EVENTS.setSearch,
+    ADMIN_EVENTS.setRoleFilter,
+  ]);
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState<AdminRoleFilter>("all");
   const [draftRole, setDraftRole] = useState<AdminRoleFilter>("all");
@@ -48,6 +52,7 @@ export function AdminToolbarControls({ dictionary = defaultAdminUiDictionary }: 
         <Search className="size-[var(--toolbar-icon-size)] shrink-0" aria-hidden />
         <Input
           value={search}
+          disabled={!filtersReady}
           onChange={(event) => {
             const value = event.target.value;
             setSearch(value);
@@ -63,7 +68,8 @@ export function AdminToolbarControls({ dictionary = defaultAdminUiDictionary }: 
         <PopoverTrigger asChild>
           <button
             type="button"
-            className="inline-flex h-9 items-center gap-2 whitespace-nowrap rounded-[var(--radius-control)] border border-[color:var(--hairline-strong)] bg-[color:var(--elevate-1)] px-3 text-[length:var(--text-ui-action)] font-extrabold text-[color:var(--foreground)] transition-colors hover:border-[color:var(--border-strong)] hover:bg-[color:var(--surface-hover)]"
+            disabled={!filtersReady}
+            className="inline-flex h-9 items-center gap-2 whitespace-nowrap rounded-[var(--radius-control)] border border-[color:var(--hairline-strong)] bg-[color:var(--elevate-1)] px-3 text-[length:var(--text-ui-action)] font-extrabold text-[color:var(--foreground)] transition-colors hover:border-[color:var(--border-strong)] hover:bg-[color:var(--surface-hover)] disabled:cursor-not-allowed disabled:opacity-60"
             onClick={() => open ? setOpen(false) : begin()}
           >
             <Filter className="size-[var(--toolbar-icon-size)] text-[color:var(--muted-foreground)]" aria-hidden />

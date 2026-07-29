@@ -85,6 +85,8 @@ async function scanDirectoryForBlockedToken(rootPath, relativeToPath, labelPrefi
 async function scanGeneratedAppsForBlockedToken() {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), "bw-create-bw-app-template-check-"));
   const platformTarget = path.join(tempRoot, "generated-platform");
+  const corePlatformTarget = path.join(tempRoot, "generated-platform-core");
+  const projectsPlatformTarget = path.join(tempRoot, "generated-platform-projects");
   const siteTarget = path.join(tempRoot, "generated-site");
 
   try {
@@ -106,6 +108,38 @@ async function scanGeneratedAppsForBlockedToken() {
 
     await createBrightwebClientApp(
       {
+        name: "generated-platform-core",
+        template: "platform",
+        modules: "none",
+        install: false,
+        yes: true,
+      },
+      {
+        banner: "Template contract check",
+        dependencyMode: "published",
+        targetDir: corePlatformTarget,
+        workspaceRoot: repoRoot,
+      },
+    );
+
+    await createBrightwebClientApp(
+      {
+        name: "generated-platform-projects",
+        template: "platform",
+        modules: "projects",
+        install: false,
+        yes: true,
+      },
+      {
+        banner: "Template contract check",
+        dependencyMode: "published",
+        targetDir: projectsPlatformTarget,
+        workspaceRoot: repoRoot,
+      },
+    );
+
+    await createBrightwebClientApp(
+      {
         name: "generated-site",
         template: "site",
         install: false,
@@ -119,16 +153,22 @@ async function scanGeneratedAppsForBlockedToken() {
     );
 
     const platformMatches = await scanDirectoryForBlockedToken(platformTarget, platformTarget, "generated-platform");
+    const corePlatformMatches = await scanDirectoryForBlockedToken(corePlatformTarget, corePlatformTarget, "generated-platform-core");
+    const projectsPlatformMatches = await scanDirectoryForBlockedToken(projectsPlatformTarget, projectsPlatformTarget, "generated-platform-projects");
     const siteMatches = await scanDirectoryForBlockedToken(siteTarget, siteTarget, "generated-site");
     await Promise.all([
       checkFixtureDependencyDeclarations(platformTarget, "generated-platform"),
+      checkFixtureDependencyDeclarations(corePlatformTarget, "generated-platform-core"),
+      checkFixtureDependencyDeclarations(projectsPlatformTarget, "generated-platform-projects"),
       checkFixtureDependencyDeclarations(siteTarget, "generated-site"),
     ]);
     await Promise.all([
       typecheckGeneratedFixture(platformTarget, "generated-platform"),
+      typecheckGeneratedFixture(corePlatformTarget, "generated-platform-core"),
+      typecheckGeneratedFixture(projectsPlatformTarget, "generated-platform-projects"),
       typecheckGeneratedFixture(siteTarget, "generated-site"),
     ]);
-    return [...platformMatches, ...siteMatches];
+    return [...platformMatches, ...corePlatformMatches, ...projectsPlatformMatches, ...siteMatches];
   } finally {
     await fs.rm(tempRoot, { recursive: true, force: true });
   }
