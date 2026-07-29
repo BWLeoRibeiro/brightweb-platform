@@ -1,8 +1,10 @@
 import { Webhook } from "svix";
-import { suppress } from "./server";
 
 type WebhookClient = {
-  from: (table: string) => any;
+  rpc: (name: string, args: Record<string, unknown>) => PromiseLike<{
+    data: unknown;
+    error: { message?: string; code?: string } | null;
+  }>;
 };
 
 type ResendWebhookPayload = {
@@ -41,10 +43,6 @@ function normalizeEventType(type: string) {
   return type.startsWith("email.") ? type.slice("email.".length) : type;
 }
 
-function isSuppressionEvent(type: string) {
-  return type === "bounced" || type === "complained" || type === "unsubscribed";
-}
-
 export async function processResendWebhook(
   supabase: unknown,
   rawBody: string,
@@ -61,86 +59,25 @@ export async function processResendWebhook(
   const providerEventId = headerValue(headers, "svix-id");
   const providerMessageId = verified.data?.email_id ?? null;
 
-  let recipient: {
-    id: string;
-    campaign_id: string;
-    contact_id: string | null;
-    email: string;
-  } | null = null;
-  if (providerMessageId) {
-    const recipientResult = await db(supabase)
-      .from("marketing_campaign_recipients")
-      .select("id,campaign_id,contact_id,email")
-      .eq("provider_message_id", providerMessageId)
-      .maybeSingle();
-    throwIfError(recipientResult.error);
-    recipient = recipientResult.data;
+  const result = await db(supabase).rpc("process_marketing_resend_webhook", {
+    p_provider_event_id: providerEventId || null,
+    p_event_type: eventType,
+    p_provider_message_id: providerMessageId,
+    p_payload: verified,
+    p_occurred_at: verified.created_at ?? new Date().toISOString(),
+  });
+  throwIfError(result.error);
+  const row = (Array.isArray(result.data) ? result.data[0] : result.data) as {
+    duplicate?: boolean;
+    event_type?: string;
+    recipient_id?: string | null;
+  } | null;
+  if (!row || typeof row.duplicate !== "boolean") {
+    throw new Error("Marketing webhook transaction returned an invalid result.");
   }
-
-  const inserted = await db(supabase)
-    .from("marketing_message_events")
-    .insert({
-      campaign_id: recipient?.campaign_id ?? null,
-      recipient_id: recipient?.id ?? null,
-      contact_id: recipient?.contact_id ?? null,
-      provider: "resend",
-      event_type: eventType,
-      provider_event_id: providerEventId || null,
-      payload: verified,
-      occurred_at: verified.created_at ?? new Date().toISOString(),
-    });
-  if (inserted.error?.code === "23505") {
-    return { duplicate: true, eventType, recipientId: recipient?.id ?? null };
-  }
-  throwIfError(inserted.error);
-
-  if (recipient && (eventType === "delivered" || eventType === "sent")) {
-    const recipientUpdate = await db(supabase)
-      .from("marketing_campaign_recipients")
-      .update({
-        status: "sent",
-        sent_at: verified.created_at ?? new Date().toISOString(),
-        error: null,
-      })
-      .eq("id", recipient.id);
-    throwIfError(recipientUpdate.error);
-  } else if (recipient && eventType === "failed") {
-    const recipientUpdate = await db(supabase)
-      .from("marketing_campaign_recipients")
-      .update({ status: "failed", error: "Resend reported delivery failure." })
-      .eq("id", recipient.id);
-    throwIfError(recipientUpdate.error);
-  } else if (recipient && isSuppressionEvent(eventType)) {
-    const recipientUpdate = await db(supabase)
-      .from("marketing_campaign_recipients")
-      .update({
-        status: "suppressed",
-        error: `Resend reported ${eventType}.`,
-      })
-      .eq("id", recipient.id);
-    throwIfError(recipientUpdate.error);
-    await suppress(supabase, {
-      email: recipient.email,
-      reason: (
-        eventType === "bounced"
-          ? "bounced"
-          : eventType === "complained"
-            ? "complained"
-            : "unsubscribed_all"
-      ),
-      source: "resend_webhook",
-    });
-    if (recipient.contact_id) {
-      const subscriptions = await db(supabase)
-        .from("marketing_subscriptions")
-        .update({
-          status: "unsubscribed",
-          unsubscribed_at: new Date().toISOString(),
-        })
-        .eq("contact_id", recipient.contact_id);
-      throwIfError(subscriptions.error);
-    }
-  }
-
-  return { duplicate: false, eventType, recipientId: recipient?.id ?? null };
+  return {
+    duplicate: row.duplicate,
+    eventType: row.event_type ?? eventType,
+    recipientId: row.recipient_id ?? null,
+  };
 }
