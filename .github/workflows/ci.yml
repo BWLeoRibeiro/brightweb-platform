@@ -58,11 +58,25 @@ jobs:
       - name: Check scaffold template contracts
         run: pnpm check:create-bw-app-templates
 
+      - name: Typecheck platform
+        run: pnpm lint
+
+      - name: Typecheck docs without tracked changes
+        run: |
+          pnpm lint:docs
+          git diff --exit-code
+
       - name: Test
         run: pnpm test
 
       - name: Build starter app
         run: pnpm build
+
+      - name: Build docs
+        run: pnpm build:docs
+
+      - name: Audit production dependencies
+        run: pnpm audit --prod --audit-level high
 
   # Authenticated runtime smoke of a generated app (issue #77): generates a
   # platform fixture, builds and serves it against a local Supabase stub, signs

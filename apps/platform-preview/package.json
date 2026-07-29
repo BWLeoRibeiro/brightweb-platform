@@ -7,7 +7,7 @@
     "build": "next build --webpack",
     "db:seed": "node --env-file-if-exists=.env.local ./scripts/seed-dev-data.mjs",
     "start": "next start",
-    "lint": "tsc --noEmit"
+    "lint": "node ../../scripts/check-next-types.mjs ."
   },
   "dependencies": {
     "@brightweblabs/app-shell": "workspace:*",
