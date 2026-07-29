@@ -230,6 +230,7 @@ Scaffold options:
   --target-dir <path>            Exact output directory, bypassing slug folder creation
   --workspace-root <path>        BrightWeb workspace root for local mode
   --dependency-mode <mode>       "workspace" or "published"
+  --supabase-region <region>      Supabase project region used to place Vercel Functions
   --install                      Install dependencies after scaffolding
   --no-install                   Skip dependency installation
   --yes                          Accept defaults for any missing optional prompt

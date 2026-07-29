@@ -25,6 +25,7 @@
     "node": ">=20"
   },
   "dependencies": {
-    "@inquirer/prompts": "^7.10.1"
+    "@inquirer/prompts": "^7.10.1",
+    "@supabase/supabase-js": "^2.110.8"
   }
 }

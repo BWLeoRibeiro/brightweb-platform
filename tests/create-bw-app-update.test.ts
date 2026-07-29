@@ -279,11 +279,12 @@ test("published platform scaffolds resolved supabase migrations for the selected
       "0002_core__20260726180000_enable_rate_limit_counters_rls.sql",
       "0003_admin__20260316091000_admin_v1.sql",
       "0004_admin__20260724121000_admin_user_invitations.sql",
-      "0005_orgs__20260316091500_orgs_v1.sql",
-      "0006_crm__20260316092000_crm_v1.sql",
-      "0007_crm__20260316092010_crm_org_integration.sql",
-      "0008_crm__20260421201523_portal_read_indexes.sql",
-      "0009_crm__20260724120000_crm_status_authorization.sql",
+      "0005_admin__20260729120000_bootstrap_first_admin.sql",
+      "0006_orgs__20260316091500_orgs_v1.sql",
+      "0007_crm__20260316092000_crm_v1.sql",
+      "0008_crm__20260316092010_crm_org_integration.sql",
+      "0009_crm__20260421201523_portal_read_indexes.sql",
+      "0010_crm__20260724120000_crm_status_authorization.sql",
     ],
   );
 
@@ -291,6 +292,14 @@ test("published platform scaffolds resolved supabase migrations for the selected
   await fs.access(path.join(targetDir, "supabase", "modules", "core", "migrations", "20260726180000_enable_rate_limit_counters_rls.sql"));
   await fs.access(path.join(targetDir, "supabase", "modules", "admin", "migrations", "20260316091000_admin_v1.sql"));
   await fs.access(path.join(targetDir, "supabase", "modules", "admin", "migrations", "20260724121000_admin_user_invitations.sql"));
+  const bootstrapMigration = await fs.readFile(
+    path.join(targetDir, "supabase", "modules", "admin", "migrations", "20260729120000_bootstrap_first_admin.sql"),
+    "utf8",
+  );
+  assert.match(bootstrapMigration, /pg_advisory_xact_lock/);
+  assert.match(bootstrapMigration, /auth\.jwt\(\) ->> 'role'.*service_role/);
+  assert.match(bootstrapMigration, /REVOKE ALL ON FUNCTION public\.bootstrap_first_admin\(uuid, text, boolean\) FROM PUBLIC/);
+  assert.match(bootstrapMigration, /GRANT EXECUTE ON FUNCTION public\.bootstrap_first_admin\(uuid, text, boolean\) TO service_role/);
   await fs.access(path.join(targetDir, "supabase", "modules", "orgs", "migrations", "20260316091500_orgs_v1.sql"));
   await fs.access(path.join(targetDir, "supabase", "modules", "crm", "migrations", "20260316092000_crm_v1.sql"));
   await fs.access(path.join(targetDir, "supabase", "modules", "crm", "migrations", "20260421201523_portal_read_indexes.sql"));
@@ -323,13 +332,14 @@ test("projects scaffolding resolves organizations without CRM", async (t) => {
 
   const migrations = (await fs.readdir(path.join(targetDir, "supabase", "migrations")))
     .filter((fileName) => fileName.endsWith(".sql"));
-  assert.deepEqual(migrations.slice(0, 6), [
+  assert.deepEqual(migrations.slice(0, 7), [
     "0001_core__20260316090000_core_v1.sql",
     "0002_core__20260726180000_enable_rate_limit_counters_rls.sql",
     "0003_admin__20260316091000_admin_v1.sql",
     "0004_admin__20260724121000_admin_user_invitations.sql",
-    "0005_orgs__20260316091500_orgs_v1.sql",
-    "0006_projects__20260316093000_projects_v1.sql",
+    "0005_admin__20260729120000_bootstrap_first_admin.sql",
+    "0006_orgs__20260316091500_orgs_v1.sql",
+    "0007_projects__20260316093000_projects_v1.sql",
   ]);
   assert.equal(migrations.some((fileName) => fileName.includes("_crm__")), false);
 

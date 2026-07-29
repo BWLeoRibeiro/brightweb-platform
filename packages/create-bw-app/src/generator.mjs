@@ -17,6 +17,12 @@ import {
   TEMPLATE_OPTIONS,
 } from "./constants.mjs";
 import { createInitialAppManifest, writeAppManifest } from "./app-manifest.mjs";
+import {
+  createVercelConfig,
+  nearestVercelRegion,
+  normalizeSupabaseRegion,
+  regionSetupNote,
+} from "./regions.mjs";
 
 export const PACKAGE_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 export const TEMPLATE_ROOT = path.join(PACKAGE_ROOT, "template");
@@ -416,13 +422,14 @@ export function createPlatformModulesConfigFile(selectedModules) {
   ].join("\n");
 }
 
-function createEnvFileContent() {
+function createEnvFileContent(supabaseRegion) {
   return [
     "NEXT_PUBLIC_APP_URL=http://localhost:3000",
     "PUBLIC_APP_URL=http://localhost:3000",
     "NEXT_PUBLIC_SUPABASE_URL=",
     "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY=",
     "SUPABASE_SECRET_DEFAULT_KEY=",
+    `SUPABASE_PROJECT_REGION=${normalizeSupabaseRegion(supabaseRegion) || ""}`,
     "RESEND_API_KEY=",
     "RESEND_WEBHOOK_SECRET=",
     "RESEND_FROM_TRANSACTIONAL=",
@@ -512,6 +519,7 @@ function createPlatformReadme({
   workspaceMode,
   packageManager,
   dbInstallPlan,
+  supabaseRegion,
 }) {
   const moduleLines = SELECTABLE_MODULES.map((moduleDefinition) => {
     const enabled = selectedModules.includes(moduleDefinition.key);
@@ -524,12 +532,16 @@ function createPlatformReadme({
     ? [
         "1. Review `.env.local` and fill in real service credentials.",
         "2. Run `pnpm install` from the BrightWeb workspace root.",
-        `3. Run \`pnpm --filter ${slug} dev\`.`,
+        "3. Link the Supabase project and run `supabase db push` from this app.",
+        "4. Run `bw admin create --email you@example.com` to create the first administrator.",
+        `5. Run \`pnpm --filter ${slug} dev\`.`,
       ]
     : [
         "1. Review `.env.local` and fill in real service credentials.",
         `2. Run \`${packageManager} install\`.`,
-        `3. Run \`${packageManager} dev\`.`,
+        "3. Link the Supabase project and run `supabase db push`.",
+        "4. Run `bw admin create --email you@example.com` to create the first administrator.",
+        `5. Run \`${packageManager} dev\`.`,
       ];
 
   return [
@@ -563,6 +575,16 @@ function createPlatformReadme({
           "",
         ]
       : []),
+    "## First administrator",
+    "",
+    "Run `bw admin create --email you@example.com` after the generated migrations and `.env.local` values are in place.",
+    "The command refuses projects that already contain an admin unless `--force` is explicit, refuses to promote an existing Auth user, never accepts a password, and sends the new user through the Core Auth `/reset-password` flow.",
+    "",
+    "## Function region",
+    "",
+    regionSetupNote(supabaseRegion),
+    "Keep `SUPABASE_PROJECT_REGION` current if the Supabase project is replaced, then run `bw doctor --deployment-url https://your-app.example` to compare it with the deployed Vercel Function region.",
+    "",
     "## Package mounts",
     "",
     ...getPlatformStarterRoutes(selectedModules).map((route) => `- \`${route}\``),
@@ -1080,6 +1102,10 @@ async function writeClientStack(baseRoot, slug, dbInstallPlan, options = {}) {
         historyMode: "greenfield-modular",
         futureMode: "forward-only-modular",
         enabledModules,
+        infrastructure: {
+          supabaseRegion: normalizeSupabaseRegion(options.supabaseRegion),
+          vercelRegion: nearestVercelRegion(options.supabaseRegion),
+        },
         clientMigrationPath: `supabase/clients/${slug}/migrations`,
         notes: [
           generatedInWorkspaceMode
@@ -1126,7 +1152,13 @@ async function writeSupabaseCliMigrations({ targetDir, dbInstallPlan }) {
   }
 }
 
-async function writeBundledSupabaseBaseline({ targetDir, slug, dbInstallPlan, registry }) {
+async function writeBundledSupabaseBaseline({
+  targetDir,
+  slug,
+  dbInstallPlan,
+  registry,
+  supabaseRegion,
+}) {
   const shippedModuleKeys = dbInstallPlan.resolvedOrder;
   if (shippedModuleKeys.length === 0) {
     return;
@@ -1155,7 +1187,7 @@ async function writeBundledSupabaseBaseline({ targetDir, slug, dbInstallPlan, re
     );
   }
 
-  await writeClientStack(targetDir, slug, dbInstallPlan);
+  await writeClientStack(targetDir, slug, dbInstallPlan, { supabaseRegion });
   await writeSupabaseCliMigrations({ targetDir, dbInstallPlan });
 }
 
@@ -1188,6 +1220,7 @@ function renderPlanSummary({
   install,
   template,
   dbInstallPlan,
+  supabaseRegion,
 }) {
   const installLocation = workspaceMode ? "workspace root" : "project directory";
   const templateLabel = TEMPLATE_OPTIONS.find((templateOption) => templateOption.key === template)?.label || template;
@@ -1207,6 +1240,12 @@ function renderPlanSummary({
       ? [
           `Resolved database stack: ${dbInstallPlan.resolvedOrder.map((moduleKey) => getModuleLabel(moduleKey)).join(" -> ")}`,
           ...dbInstallPlan.notes.map((note) => `- ${note}`),
+        ]
+      : []),
+    ...(template === "platform"
+      ? [
+          `Supabase region: ${normalizeSupabaseRegion(supabaseRegion) || "unknown"}`,
+          `Vercel Functions region: ${nearestVercelRegion(supabaseRegion) || "placeholder (not pinned)"}`,
         ]
       : []),
     `Install dependencies: ${install ? `yes (${packageManager} in ${installLocation})` : "no"}`,
@@ -1243,6 +1282,7 @@ async function collectAnswers(argvOptions, runtimeOptions) {
   }
 
   let selectedModules = [];
+  let supabaseRegion = null;
 
   if (template === "platform") {
     const askedModules = [];
@@ -1264,6 +1304,15 @@ async function collectAnswers(argvOptions, runtimeOptions) {
       : argvOptions.yes
         ? []
         : askedModules;
+
+    supabaseRegion = normalizeSupabaseRegion(
+      argvOptions.supabaseRegion
+        || (argvOptions.yes
+          ? null
+          : await promptInput({
+              message: "What Supabase region is the project in? (for example eu-west-3; leave blank if unknown)",
+            })),
+    );
   }
 
   const install =
@@ -1280,6 +1329,7 @@ async function collectAnswers(argvOptions, runtimeOptions) {
     slug: resolvedSlug,
     template,
     selectedModules,
+    supabaseRegion,
     install,
   };
 }
@@ -1351,9 +1401,10 @@ async function scaffoldPlatformProject({
     }),
   );
 
-  const envFileContent = createEnvFileContent();
+  const vercelConfig = createVercelConfig(answers.supabaseRegion);
 
-  await fs.writeFile(path.join(targetDir, ".env.local"), envFileContent);
+  await fs.writeFile(path.join(targetDir, ".env.local"), createEnvFileContent(answers.supabaseRegion));
+  await fs.writeFile(path.join(targetDir, "vercel.json"), `${JSON.stringify(vercelConfig.config, null, 2)}\n`);
   await fs.writeFile(path.join(targetDir, ".gitignore"), createGitignore());
   await fs.writeFile(
     path.join(targetDir, "README.md"),
@@ -1363,11 +1414,15 @@ async function scaffoldPlatformProject({
       workspaceMode,
       packageManager,
       dbInstallPlan,
+      supabaseRegion: answers.supabaseRegion,
     }),
   );
 
   if (workspaceMode) {
-    await writeClientStack(workspaceRoot, answers.slug, dbInstallPlan, { workspaceMode: true });
+    await writeClientStack(workspaceRoot, answers.slug, dbInstallPlan, {
+      workspaceMode: true,
+      supabaseRegion: answers.supabaseRegion,
+    });
     await writeSupabaseCliMigrations({ targetDir, dbInstallPlan });
   } else {
     await writeBundledSupabaseBaseline({
@@ -1375,6 +1430,7 @@ async function scaffoldPlatformProject({
       slug: answers.slug,
       dbInstallPlan,
       registry: dbRegistry,
+      supabaseRegion: answers.supabaseRegion,
     });
   }
 
@@ -1387,6 +1443,10 @@ async function scaffoldPlatformProject({
     versionMap,
     dbInstallPlan,
     cliVersion: cliPackage?.version || "0.0.0",
+    infrastructure: {
+      supabaseRegion: vercelConfig.supabaseRegion,
+      vercelRegion: vercelConfig.vercelRegion,
+    },
   }));
 }
 
@@ -1515,6 +1575,7 @@ export async function createBrightwebClientApp(argvOptions, runtimeOptions = {})
       install: answers.install,
       template: answers.template,
       dbInstallPlan,
+      supabaseRegion: answers.supabaseRegion,
     })}\n\n`);
     return {
       answers,
@@ -1535,6 +1596,7 @@ export async function createBrightwebClientApp(argvOptions, runtimeOptions = {})
     install: answers.install,
     template: answers.template,
     dbInstallPlan,
+    supabaseRegion: answers.supabaseRegion,
   })}\n\n`);
 
   if (answers.template === "site") {

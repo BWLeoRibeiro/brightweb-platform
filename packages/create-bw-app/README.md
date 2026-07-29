@@ -33,11 +33,13 @@ From a generated app, use `bw` to manage the machine-readable `.brightweb/app-ma
 bw add projects
 bw upgrade
 bw doctor
+bw admin create --email owner@example.com
 ```
 
 - `bw add <moduleKey>` resolves requirements, installs thin package mounts and module wiring, and appends migrations.
 - `bw upgrade [moduleKey]` includes the existing managed update flow plus forward-only module migrations.
-- `bw doctor` checks package, config, scaffold, environment-name, and migration consistency. Add `--report` to stamp the result in the app manifest.
+- `bw doctor` checks package, config, scaffold, environment-name, migration, configured function-region, and deployed function-region consistency. Pass `--deployment-url` to inspect the deployed `x-vercel-id`; add `--report` to stamp the result in the app manifest.
+- `bw admin create --email <email>` creates a passwordless Supabase Auth user, transactionally ensures its profile and `admin` assignment, then sends the Core Auth `/reset-password` flow. It refuses an existing admin unless `--force` is passed and never promotes an existing Auth user.
 - All mutating commands support `--dry-run`.
 
 ## Update existing apps
@@ -67,6 +69,8 @@ Current updater behavior:
 - prompts for app type: `platform` or `site`
 - prompts for project name
 - prompts for optional platform modules: `admin`, `crm`, `marketing`, and `projects`
+- accepts or prompts for the Supabase project region and writes the nearest verified Vercel Functions region to `vercel.json`
+- leaves `vercel.json` valid but unpinned, with a commented setup placeholder in the generated runbook, when the Supabase region is absent or unknown
 - prompts to install dependencies immediately
 - copies a clean Next.js App Router starter template
 - platform apps include BrightWeb auth, shell wiring, and optional direct package mounts
@@ -89,6 +93,8 @@ When this package runs in BrightWeb workspace mode, it can:
 - create a client-only migrations folder so database planning stays aligned with scaffolded modules
 
 Platform mode always resolves to the `Core + Admin` database baseline. Selecting `admin` affects the Admin package mount and wiring, not whether the Admin database layer exists.
+
+The scaffold records `SUPABASE_PROJECT_REGION` in `.env.local` and infrastructure metadata. Keep it aligned when replacing a Supabase project so `bw doctor --deployment-url <url>` can compare the current database location with the region observed from Vercel's `x-vercel-id` response header.
 
 ## Related references
 
