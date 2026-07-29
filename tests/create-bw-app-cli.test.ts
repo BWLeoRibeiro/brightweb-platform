@@ -208,9 +208,9 @@ test("bw admin create uses the transactional bootstrap and recovery flow without
     params: {
       p_user_id: "auth-user-1",
       p_email: "owner@example.com",
-      p_force: false,
     },
   }]);
+  assert.equal("p_force" in success.calls.rpc[0].params, false);
   assert.deepEqual(success.calls.recovery, [{
     email: "owner@example.com",
     options: { redirectTo: "https://portal.example/reset-password" },
@@ -235,7 +235,7 @@ test("bw admin create uses the transactional bootstrap and recovery flow without
   assert.deepEqual(failed.calls.deletedUserIds, ["auth-user-1"]);
 });
 
-test("bw admin create requires force for an existing admin and never promotes an existing Auth user", async (t) => {
+test("bw admin create always refuses when an admin exists and never promotes an existing Auth user", async (t) => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), "bw-admin-guard-test-"));
   t.after(() => fs.rm(root, { recursive: true, force: true }));
 
@@ -246,23 +246,56 @@ test("bw admin create requires force for an existing admin and never promotes an
       { email: "second@example.com" },
       { targetDir: root, env: ADMIN_ENV, createClient: () => existingAdmin.client },
     ),
-    /administrator already exists.*--force/,
+    /administrator already exists.*in-app admin role controls/,
   );
   assert.equal(existingAdmin.calls.createUser.length, 0);
 
   const existingUser = createAdminClientFixture({
-    hasAdmin: true,
     existingUser: { id: "auth-existing", email: "second@example.com" },
   });
   await assert.rejects(
     () => createFirstAdmin(
       "create",
-      { email: "second@example.com", force: true },
+      { email: "second@example.com" },
       { targetDir: root, env: ADMIN_ENV, createClient: () => existingUser.client },
     ),
     /already exists.*Refusing to promote/,
   );
   assert.equal(existingUser.calls.createUser.length, 0);
+});
+
+test("bw admin create rejects the removed --force flag and dry-runs without it", async (t) => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "bw-admin-force-removed-test-"));
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+
+  const withForce = createAdminClientFixture();
+  await assert.rejects(
+    () => createFirstAdmin(
+      "create",
+      { email: "owner@example.com", force: true },
+      { targetDir: root, env: ADMIN_ENV, createClient: () => withForce.client },
+    ),
+    /--force has been removed; use the in-app admin role controls to add administrators\./,
+  );
+  assert.equal(withForce.calls.createUser.length, 0);
+
+  const dryRun = createAdminClientFixture();
+  let dryRunOutput = "";
+  const result = await createFirstAdmin(
+    "create",
+    { email: "owner@example.com", dryRun: true },
+    {
+      targetDir: root,
+      env: ADMIN_ENV,
+      createClient: () => dryRun.client,
+      output: { write(chunk: string) { dryRunOutput += chunk; } },
+    },
+  );
+  assert.deepEqual(result, { dryRun: true, email: "owner@example.com" });
+  assert.equal("forced" in result, false);
+  assert.match(dryRunOutput, /DRY RUN owner@example\.com can be created as the first administrator\./);
+  assert.doesNotMatch(dryRunOutput, /--force/);
+  assert.equal(dryRun.calls.createUser.length, 0);
 });
 
 test("platform scaffolds pin mapped Vercel regions and leave a valid commented fallback for unknown regions", async (t) => {

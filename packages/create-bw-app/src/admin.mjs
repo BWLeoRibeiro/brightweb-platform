@@ -8,7 +8,6 @@ const HELP = `Usage: bw admin create --email <email> [options]
 Options:
   --email <email>          Email address for the first administrator
   --target-dir <path>      App directory (defaults to cwd)
-  --force                  Allow creation when the project already has an admin
   --dry-run                Validate and inspect without creating the user
   --help                   Show this help
 
@@ -94,7 +93,7 @@ async function deleteCreatedAuthUser(supabase, userId) {
 function bootstrapErrorMessage(error) {
   const message = error?.message || "Unknown database error";
   if (message.toLowerCase().includes("administrator already exists")) {
-    return "A project administrator already exists. Re-run with --force only when intentionally adding another new admin.";
+    return "A project administrator already exists. Use the in-app admin role controls to add administrators.";
   }
   return `Could not create the administrator profile and role: ${message}`;
 }
@@ -109,6 +108,9 @@ export async function createFirstAdmin(action, argvOptions = {}, runtimeOptions 
   }
   if ("password" in argvOptions) {
     throw new Error("Passwords are not accepted by bw admin create. The command sends a password-set email instead.");
+  }
+  if ("force" in argvOptions) {
+    throw new Error("--force has been removed; use the in-app admin role controls to add administrators.");
   }
 
   const email = normalizeEmail(argvOptions.email);
@@ -129,9 +131,9 @@ export async function createFirstAdmin(action, argvOptions = {}, runtimeOptions 
   });
 
   const hasAdmin = await projectHasAdmin(supabase);
-  if (hasAdmin && !argvOptions.force) {
+  if (hasAdmin) {
     throw new Error(
-      "A project administrator already exists. Refusing bootstrap; pass --force only when intentionally adding another new admin.",
+      "A project administrator already exists. Refusing bootstrap; use the in-app admin role controls to add administrators.",
     );
   }
 
@@ -144,9 +146,9 @@ export async function createFirstAdmin(action, argvOptions = {}, runtimeOptions 
 
   if (argvOptions.dryRun) {
     (runtimeOptions.output || output).write(
-      `DRY RUN ${email} can be created${hasAdmin ? " with --force" : " as the first administrator"}.\n`,
+      `DRY RUN ${email} can be created as the first administrator.\n`,
     );
-    return { dryRun: true, email, forced: Boolean(argvOptions.force) };
+    return { dryRun: true, email };
   }
 
   const { data: created, error: createError } = await supabase.auth.admin.createUser({
@@ -165,7 +167,6 @@ export async function createFirstAdmin(action, argvOptions = {}, runtimeOptions 
       {
         p_user_id: userId,
         p_email: email,
-        p_force: Boolean(argvOptions.force),
       },
     );
     if (bootstrapError) throw new Error(bootstrapErrorMessage(bootstrapError));
@@ -196,7 +197,6 @@ export async function createFirstAdmin(action, argvOptions = {}, runtimeOptions 
     email,
     userId,
     profileId,
-    forced: Boolean(argvOptions.force),
     resetPasswordUrl,
   };
 }
