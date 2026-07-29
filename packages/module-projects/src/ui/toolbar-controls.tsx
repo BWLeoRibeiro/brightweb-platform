@@ -2,12 +2,11 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Filter, Plus, Search } from "lucide-react";
+import { useShellActionDispatch, useShellActionReady } from "@brightweblabs/app-shell";
 import { Input } from "@brightweblabs/ui";
 import { useProjectsUiDictionary } from "./context";
 import {
   PROJECTS_EVENTS,
-  dispatchProjectsCustomEvent,
-  dispatchProjectsEvent,
   type ProjectsHealthFilter,
   type ProjectsStateEventDetail,
   type ProjectsStatusFilter,
@@ -33,6 +32,8 @@ const controlClassName = "relative inline-flex h-9 items-center gap-2 whitespace
 
 export function ProjectsToolbarControls() {
   const dictionary = useProjectsUiDictionary();
+  const dispatchShellAction = useShellActionDispatch();
+  const newProjectReady = useShellActionReady(PROJECTS_EVENTS.openNewProject);
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState<ProjectsStatusFilter>("all");
   const [health, setHealth] = useState<ProjectsHealthFilter>("all");
@@ -77,7 +78,7 @@ export function ProjectsToolbarControls() {
           onChange={(event) => {
             const query = event.target.value;
             setSearch(query);
-            dispatchProjectsCustomEvent(PROJECTS_EVENTS.setSearch, { query });
+            dispatchShellAction(PROJECTS_EVENTS.setSearch, { query });
           }}
           placeholder={dictionary.toolbar.searchPlaceholder}
           aria-label={dictionary.toolbar.searchPlaceholder}
@@ -127,13 +128,13 @@ export function ProjectsToolbarControls() {
             </div>
 
             <div className="mt-4">
-              <button type="button" className={cn(controlClassName, "w-full justify-center border-transparent bg-[color:var(--accent)] text-[color:var(--accent-foreground)] shadow-[var(--shadow-toolbar-control)]")} onClick={() => { setStatus(draftStatus); setHealth(draftHealth); dispatchProjectsCustomEvent(PROJECTS_EVENTS.setStatus, { status: draftStatus }); dispatchProjectsCustomEvent(PROJECTS_EVENTS.setHealth, { health: draftHealth }); setOpen(false); }}>{dictionary.toolbar.apply}</button>
+              <button type="button" className={cn(controlClassName, "w-full justify-center border-transparent bg-[color:var(--accent)] text-[color:var(--accent-foreground)] shadow-[var(--shadow-toolbar-control)]")} onClick={() => { setStatus(draftStatus); setHealth(draftHealth); dispatchShellAction(PROJECTS_EVENTS.setStatus, { status: draftStatus }); dispatchShellAction(PROJECTS_EVENTS.setHealth, { health: draftHealth }); setOpen(false); }}>{dictionary.toolbar.apply}</button>
             </div>
           </div>
         ) : null}
       </div>
 
-      <button type="button" className={cn(controlClassName, "border-transparent bg-[color:var(--accent)] text-[color:var(--accent-foreground)] shadow-[var(--shadow-toolbar-control)]")} onClick={() => dispatchProjectsEvent(PROJECTS_EVENTS.openNewProject)}>
+      <button type="button" className={cn(controlClassName, "border-transparent bg-[color:var(--accent)] text-[color:var(--accent-foreground)] shadow-[var(--shadow-toolbar-control)] disabled:cursor-not-allowed disabled:opacity-60")} disabled={!newProjectReady} onClick={() => dispatchShellAction(PROJECTS_EVENTS.openNewProject)}>
         <Plus className="size-[var(--toolbar-icon-size)]" aria-hidden />
         {dictionary.toolbar.newProject}
       </button>

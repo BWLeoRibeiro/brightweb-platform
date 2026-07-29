@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Building2, Filter, Plus, Search, UserPlus } from "lucide-react";
-import { ToolbarNewMenu } from "@brightweblabs/app-shell";
+import { ToolbarNewMenu, useShellActionDispatch, useShellActionReady } from "@brightweblabs/app-shell";
 import { Button, Input, Popover, PopoverContent, PopoverTrigger, TooltipProvider } from "@brightweblabs/ui";
 
 import type { CrmContactSort } from "../data";
@@ -15,10 +15,6 @@ type CrmToolbarState = {
   status: string | null;
   sort: CrmContactSort;
 };
-
-function dispatchCrmDetail<T>(name: string, detail: T) {
-  window.dispatchEvent(new CustomEvent(name, { detail }));
-}
 
 export type CrmToolbarSearchChipProps = {
   value: string;
@@ -94,15 +90,19 @@ export function CrmToolbarFiltersPill({ status, sort, stages, dictionary = defau
 export type CrmToolbarCreateMenuProps = { dictionary?: CrmUiDictionary };
 
 export function CrmToolbarCreateMenu({ dictionary = defaultCrmUiDictionary }: CrmToolbarCreateMenuProps) {
+  const dispatchShellAction = useShellActionDispatch();
+  const createContactReady = useShellActionReady(CRM_UI_EVENTS.createContact);
+  const createOrganizationReady = useShellActionReady(CRM_UI_EVENTS.createOrganization);
   return <TooltipProvider><ToolbarNewMenu id="crm-create-menu" icon={Plus} label={dictionary.toolbar.create} tooltip={dictionary.toolbar.create} items={[
-    { icon: UserPlus, label: dictionary.toolbar.newContact, onSelect: () => window.dispatchEvent(new Event(CRM_UI_EVENTS.createContact)) },
-    { icon: Building2, label: dictionary.toolbar.newOrganization, onSelect: () => window.dispatchEvent(new Event(CRM_UI_EVENTS.createOrganization)) },
+    { icon: UserPlus, label: dictionary.toolbar.newContact, disabled: !createContactReady, onSelect: () => dispatchShellAction(CRM_UI_EVENTS.createContact) },
+    { icon: Building2, label: dictionary.toolbar.newOrganization, disabled: !createOrganizationReady, onSelect: () => dispatchShellAction(CRM_UI_EVENTS.createOrganization) },
   ]} /></TooltipProvider>;
 }
 
 export type CrmToolbarControlsProps = { dictionary?: CrmUiDictionary; stages?: CrmStageConfig[] };
 
 export function CrmToolbarControls({ dictionary = defaultCrmUiDictionary, stages }: CrmToolbarControlsProps) {
+  const dispatchShellAction = useShellActionDispatch();
   const [state, setState] = useState<CrmToolbarState>({ search: "", status: null, sort: "date_desc" });
   useEffect(() => {
     const handleState = (event: Event) => setState((current) => ({ ...current, ...(event as CustomEvent<Partial<CrmToolbarState>>).detail }));
@@ -111,8 +111,8 @@ export function CrmToolbarControls({ dictionary = defaultCrmUiDictionary, stages
   }, []);
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <CrmToolbarSearchChip value={state.search} dictionary={dictionary} onChange={(search) => { setState((current) => ({ ...current, search })); dispatchCrmDetail(CRM_UI_EVENTS.setSearch, { search }); }} />
-      <CrmToolbarFiltersPill status={state.status} sort={state.sort} stages={stages} dictionary={dictionary} onApply={(status, sort) => { setState((current) => ({ ...current, status, sort })); dispatchCrmDetail(CRM_UI_EVENTS.selectSegment, { status }); dispatchCrmDetail(CRM_UI_EVENTS.setSort, { sort }); }} />
+      <CrmToolbarSearchChip value={state.search} dictionary={dictionary} onChange={(search) => { setState((current) => ({ ...current, search })); dispatchShellAction(CRM_UI_EVENTS.setSearch, { search }); }} />
+      <CrmToolbarFiltersPill status={state.status} sort={state.sort} stages={stages} dictionary={dictionary} onApply={(status, sort) => { setState((current) => ({ ...current, status, sort })); dispatchShellAction(CRM_UI_EVENTS.selectSegment, { status }); dispatchShellAction(CRM_UI_EVENTS.setSort, { sort }); }} />
       <CrmToolbarCreateMenu dictionary={dictionary} />
     </div>
   );

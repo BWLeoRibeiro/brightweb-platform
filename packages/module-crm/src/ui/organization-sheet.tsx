@@ -42,7 +42,7 @@ export function CrmOrganizationSheet({ open, organization, dictionary = defaultC
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
-    if (!editing || !value.name?.trim()) return;
+    if (saving || !editing || !value.name?.trim()) return;
     setSaving(true);
     try { await onSubmit(value, organization); onOpenChange(false); } finally { setSaving(false); }
   };

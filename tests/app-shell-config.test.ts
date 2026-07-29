@@ -9,7 +9,9 @@ import {
   resolveClientAppShellConfig,
   resolveShellToolbarSurface,
 } from "../packages/app-shell/src/config.ts";
-import { AppHeader } from "../packages/app-shell/src/components/app-header.tsx";
+import { AppHeader, AppHeaderToolbarActionButton, type AppHeaderToolbarActionButtonProps } from "../packages/app-shell/src/components/app-header.tsx";
+import { triggerShellToolbarAction } from "../packages/app-shell/src/lib/shell-actions.tsx";
+import { ShellActionRegistry } from "../packages/app-shell/src/lib/shell-action-registry.ts";
 import { DesktopSidebar } from "../packages/app-shell/src/components/desktop-sidebar.tsx";
 import { MobileNav } from "../packages/app-shell/src/components/mobile-nav.tsx";
 import { MobileNavPill, SidebarSectionToggle } from "../packages/app-shell/src/components/nav-primitives.tsx";
@@ -100,13 +102,29 @@ test("AppHeader renders and dispatches unplaced toolbar actions without a title"
     toolbarActions: { projects: actions },
     onToolbarAction: (action) => dispatched.push(action.action ?? ""),
   });
-  const buttons = collectElementProps(header, "button");
+  const buttons = collectElementProps(header, AppHeaderToolbarActionButton) as AppHeaderToolbarActionButtonProps[];
 
   assert.equal(header.type, "div");
-  assert.deepEqual(buttons.map((props) => props.children?.[1]), ["Atualizar", "Novo"]);
-  (buttons[0]?.onClick as (() => void) | undefined)?.();
-  (buttons[1]?.onClick as (() => void) | undefined)?.();
+  assert.deepEqual(buttons.map((props) => props.action.label), ["Atualizar", "Novo"]);
+  // Without a shell action registry the buttons fall back to onToolbarAction.
+  for (const props of buttons) triggerShellToolbarAction(null, props.action, props.onToolbarAction);
   assert.deepEqual(dispatched, ["projects-refresh", "projects-new-menu"]);
+});
+
+test("toolbar actions invoke registered shell action handlers instead of the window-event fallback", () => {
+  const registry = new ShellActionRegistry({ "projects-refresh": "projects:refresh" });
+  const invoked: string[] = [];
+  const fallback: string[] = [];
+  registry.register("projects:refresh", () => invoked.push("projects:refresh"));
+
+  const refresh: ShellContextualAction = { label: "Atualizar", icon: TestNavIcon, action: "projects-refresh" };
+  const unregistered: ShellContextualAction = { label: "Novo", icon: TestNavIcon, action: "projects-new-menu" };
+
+  triggerShellToolbarAction(registry, refresh, (action) => fallback.push(action.action ?? ""));
+  triggerShellToolbarAction(registry, unregistered, (action) => fallback.push(action.action ?? ""));
+
+  assert.deepEqual(invoked, ["projects:refresh"]);
+  assert.deepEqual(fallback, ["projects-new-menu"]);
 });
 
 test("applies registration overrides without mutating input registrations", () => {

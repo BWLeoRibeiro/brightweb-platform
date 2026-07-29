@@ -7,8 +7,11 @@ import {
   AppShellFrame,
   DesktopSidebar,
   MobileNav,
+  ShellActionsProvider,
   computeInitials,
   isShellNavItemActive,
+  useShellAction,
+  useShellActionDispatch,
   useShellNavState,
   type ShellContextualAction,
   type ShellNavStateGroup,
@@ -40,6 +43,17 @@ const toolbarWindowEventByAction: Record<string, string> = {
 };
 
 export function PreviewShellLayoutClient({
+  children,
+  viewer,
+}: Readonly<{ children: ReactNode; viewer: ShellViewer }>) {
+  return (
+    <ShellActionsProvider aliases={toolbarWindowEventByAction}>
+      <PreviewShellLayoutInner viewer={viewer}>{children}</PreviewShellLayoutInner>
+    </ShellActionsProvider>
+  );
+}
+
+function PreviewShellLayoutInner({
   children,
   viewer,
 }: Readonly<{ children: ReactNode; viewer: ShellViewer }>) {
@@ -90,22 +104,19 @@ export function PreviewShellLayoutClient({
         ? <AdminToolbarControls />
         : null;
 
-  const handleToolbarAction = (item: ShellContextualAction) => {
-    if (item.action === "projects-back-to-portfolio") {
-      router.push(projectsBaseHref);
-      return;
+  const dispatchShellAction = useShellActionDispatch();
+  useShellAction("projects-back-to-portfolio", () => {
+    router.push(projectsBaseHref);
+  });
+  useShellAction("projects-open-board", () => {
+    const projectId = pathname.split("/")[2];
+    if (projectId) {
+      router.push(`${projectsBaseHref}/${projectId}/${projectsBaseHref === "/projects" ? "tasks" : "tarefas"}`);
     }
-    if (item.action === "projects-open-board") {
-      const projectId = pathname.split("/")[2];
-      if (projectId) {
-        router.push(`${projectsBaseHref}/${projectId}/${projectsBaseHref === "/projects" ? "tasks" : "tarefas"}`);
-      }
-      return;
-    }
+  });
 
-    if (item.action) {
-      window.dispatchEvent(new Event(toolbarWindowEventByAction[item.action] ?? item.action));
-    }
+  const handleToolbarAction = (item: ShellContextualAction) => {
+    if (item.action) dispatchShellAction(item.action);
   };
 
   return (

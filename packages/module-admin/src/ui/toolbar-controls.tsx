@@ -2,10 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { Filter, Search } from "lucide-react";
+import { useShellActionDispatch } from "@brightweblabs/app-shell";
 import { Button, Input, Popover, PopoverContent, PopoverTrigger } from "@brightweblabs/ui";
 import {
   ADMIN_EVENTS,
-  dispatchAdminCustomEvent,
   type AdminStateEventDetail,
 } from "../events";
 import type { AdminManagedRole } from "../users";
@@ -21,6 +21,7 @@ export type AdminToolbarControlsProps = {
 };
 
 export function AdminToolbarControls({ dictionary = defaultAdminUiDictionary }: AdminToolbarControlsProps) {
+  const dispatchShellAction = useShellActionDispatch();
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState<AdminRoleFilter>("all");
   const [draftRole, setDraftRole] = useState<AdminRoleFilter>("all");
@@ -50,7 +51,7 @@ export function AdminToolbarControls({ dictionary = defaultAdminUiDictionary }: 
           onChange={(event) => {
             const value = event.target.value;
             setSearch(value);
-            dispatchAdminCustomEvent(ADMIN_EVENTS.setSearch, { query: value });
+            dispatchShellAction(ADMIN_EVENTS.setSearch, { query: value });
           }}
           placeholder={dictionary.toolbar.searchPlaceholder}
           aria-label={dictionary.toolbar.searchPlaceholder}
@@ -110,7 +111,7 @@ export function AdminToolbarControls({ dictionary = defaultAdminUiDictionary }: 
               className="h-9 w-full rounded-[var(--radius-control)] bg-[color:var(--accent)] text-[length:var(--text-ui-action)] font-extrabold text-[color:var(--accent-foreground)]"
               onClick={() => {
                 setRoleFilter(draftRole);
-                dispatchAdminCustomEvent(ADMIN_EVENTS.setRoleFilter, { role: draftRole });
+                dispatchShellAction(ADMIN_EVENTS.setRoleFilter, { role: draftRole });
                 setOpen(false);
               }}
             >

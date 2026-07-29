@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useEffectEvent, useRef, useState } from "react";
+import { useShellAction } from "@brightweblabs/app-shell";
 import { motion, useReducedMotion } from "motion/react";
 import { Send, Trash2, Users } from "lucide-react";
 import { toast } from "sonner";
@@ -158,15 +159,6 @@ export function AdminUsersClient({
   }, [loadUsers]);
   useEffect(() => { void loadInvitations(); }, [loadInvitations]);
 
-  const handleSetSearch = useEffectEvent((event: Event) => setSearch((event as CustomEvent<AdminSetSearchEventDetail>).detail?.query ?? ""));
-  const handleSetRoleFilter = useEffectEvent((event: Event) => {
-    setRoleFilter((event as CustomEvent<AdminSetRoleFilterEventDetail>).detail?.role ?? "all");
-    setPage(1);
-  });
-  const handleSetBulkRole = useEffectEvent((event: Event) => {
-    const role = (event as CustomEvent<AdminSetBulkRoleEventDetail>).detail?.role;
-    if (role) setBulkTargetRole(role);
-  });
   const handleApplyBulk = useEffectEvent(() => {
     if (selectedIds.length === 0) { toast.error(dictionary.roleChange.selectRequired); return; }
     const { profileIdsToChange, unchangedCount } = getBulkRoleSelectionSummary(rows, selectedIds, bulkTargetRole);
@@ -183,25 +175,16 @@ export function AdminUsersClient({
     if (activeView === "invites") void loadInvitations({ force: true });
   });
 
-  useEffect(() => {
-    const onSetSearch = (event: Event) => handleSetSearch(event);
-    const onSetRoleFilter = (event: Event) => handleSetRoleFilter(event);
-    const onSetBulkRole = (event: Event) => handleSetBulkRole(event);
-    const onApplyBulk = () => handleApplyBulk();
-    const onRefresh = () => handleRefresh();
-    window.addEventListener(ADMIN_EVENTS.setSearch, onSetSearch);
-    window.addEventListener(ADMIN_EVENTS.setRoleFilter, onSetRoleFilter);
-    window.addEventListener(ADMIN_EVENTS.setBulkRole, onSetBulkRole);
-    window.addEventListener(ADMIN_EVENTS.applyBulk, onApplyBulk);
-    window.addEventListener(ADMIN_EVENTS.refresh, onRefresh);
-    return () => {
-      window.removeEventListener(ADMIN_EVENTS.setSearch, onSetSearch);
-      window.removeEventListener(ADMIN_EVENTS.setRoleFilter, onSetRoleFilter);
-      window.removeEventListener(ADMIN_EVENTS.setBulkRole, onSetBulkRole);
-      window.removeEventListener(ADMIN_EVENTS.applyBulk, onApplyBulk);
-      window.removeEventListener(ADMIN_EVENTS.refresh, onRefresh);
-    };
-  }, []);
+  useShellAction<AdminSetSearchEventDetail | undefined>(ADMIN_EVENTS.setSearch, (detail) => setSearch(detail?.query ?? ""));
+  useShellAction<AdminSetRoleFilterEventDetail | undefined>(ADMIN_EVENTS.setRoleFilter, (detail) => {
+    setRoleFilter(detail?.role ?? "all");
+    setPage(1);
+  });
+  useShellAction<AdminSetBulkRoleEventDetail | undefined>(ADMIN_EVENTS.setBulkRole, (detail) => {
+    if (detail?.role) setBulkTargetRole(detail.role);
+  });
+  useShellAction(ADMIN_EVENTS.applyBulk, () => handleApplyBulk());
+  useShellAction(ADMIN_EVENTS.refresh, () => handleRefresh());
 
   useEffect(() => {
     dispatchAdminCustomEvent(ADMIN_EVENTS.state, {

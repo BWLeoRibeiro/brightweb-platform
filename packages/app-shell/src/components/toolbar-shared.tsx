@@ -11,6 +11,7 @@ import { cn } from "../lib/utils";
 type NewMenuItem = {
   icon?: LucideIcon;
   label: string;
+  disabled?: boolean;
   onSelect: () => void;
 };
 
@@ -42,7 +43,7 @@ export function ToolbarNewMenu({ id, icon: Icon, label = "Novo", tooltip, items 
         </TooltipTrigger>
         <DropdownMenuContent align="end" className="w-52 border-[color:var(--hairline)] bg-[color:var(--popover)]">
           {items.map((item) => (
-            <DropdownMenuItem key={item.label} className="whitespace-nowrap" onClick={item.onSelect}>
+            <DropdownMenuItem key={item.label} className="whitespace-nowrap" disabled={item.disabled} onClick={item.onSelect}>
               {item.icon ? <item.icon className="size-4" /> : null}
               {item.label}
             </DropdownMenuItem>

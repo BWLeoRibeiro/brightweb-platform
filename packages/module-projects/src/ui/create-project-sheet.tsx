@@ -51,7 +51,7 @@ import {
   SheetFooter,
 } from "@brightweblabs/ui";
 import { PROJECT_MEMBER_ROLE_LABELS_PT, type ProjectMemberRole } from "../contracts";
-import { useWindowEventBridge } from "./window-events";
+import { useShellAction } from "@brightweblabs/app-shell";
 
 
 type OrganizationOption = {
@@ -151,9 +151,9 @@ export function CreateProjectSheet({ organizations, initialOpen = false }: Creat
     performOrganizationCancel();
   }, [isOrganizationDirty, performOrganizationCancel]);
 
-  useWindowEventBridge(PROJECTS_EVENTS.openNewProject, () => {
+  useShellAction(PROJECTS_EVENTS.openNewProject, () => {
     setOpen(true);
-  }, { custom: false });
+  });
 
   const loadOrganizations = useCallback(async () => {
     if (hasLoadedOrganizations || isLoadingOrganizations) return;
