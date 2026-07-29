@@ -153,8 +153,13 @@ test("scaffold writes a valid app manifest", async (t) => {
   assert.equal(packageJson.dependencies.next, "^16.0.0");
   assert.equal(packageJson.dependencies.react, "^19.0.0");
   assert.equal(packageJson.dependencies["react-dom"], "^19.0.0");
+  assert.equal(packageJson.scripts.build, "next build --webpack");
   assert.match(await fs.readFile(path.join(targetDir, "app", "fonts.ts"), "utf8"), /GeistSans as geistSans/);
   assert.match(await fs.readFile(path.join(targetDir, "app", "layout.tsx"), "utf8"), /geistSans\.variable/);
+  assert.equal(
+    await fs.readFile(path.join(targetDir, "pnpm-workspace.yaml"), "utf8"),
+    "allowBuilds:\n  sharp: true\n",
+  );
 });
 
 test("safe relative paths reject empty, absolute, traversal, drive, UNC, and containment escapes", () => {
@@ -640,6 +645,9 @@ test("full-modules scaffold mounts shell, auth, account, dashboard, projects, ad
   const rootLayout = await fs.readFile(path.join(targetDir, "app", "layout.tsx"), "utf8");
   assert.match(rootLayout, /ThemeProvider/);
   assert.match(rootLayout, /ThemeScript/);
+  assert.match(rootLayout, /defaultTheme="system"/);
+  const globalsCss = await fs.readFile(path.join(targetDir, "app", "globals.css"), "utf8");
+  assert.match(globalsCss, /@brightweblabs\/core-auth\/src/);
 
   const shellConfig = await fs.readFile(path.join(targetDir, "config", "shell.ts"), "utf8");
   for (const registration of [

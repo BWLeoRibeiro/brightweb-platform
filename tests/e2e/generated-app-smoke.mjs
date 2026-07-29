@@ -22,7 +22,7 @@ import { pathToFileURL } from "node:url";
 import { createBrightwebClientApp } from "../../packages/create-bw-app/src/generator.mjs";
 import { SELECTABLE_MODULES } from "../../packages/create-bw-app/src/constants.mjs";
 import { startSupabaseStub } from "./supabase-stub.mjs";
-import { CRM_TOTAL_CONTACTS, USER_EMAIL, USER_PASSWORD } from "./fixtures.mjs";
+import { CRM_TOTAL_CONTACTS, SECOND_PROFILE_ID, USER_EMAIL, USER_PASSWORD } from "./fixtures.mjs";
 
 const repoRoot = path.resolve(new URL("../..", import.meta.url).pathname);
 const previewNodeModules = path.join(repoRoot, "apps", "platform-preview", "node_modules");
@@ -254,7 +254,7 @@ async function main() {
     assert(loginResponse.status === 200, "GET /login responds 200");
     assert(loginHtml.includes("<html"), "GET /login returns an HTML document");
 
-    for (const protectedPath of ["/dashboard", "/projetos", "/crm"]) {
+    for (const protectedPath of ["/dashboard", "/projetos", "/crm", "/admin/users", "/marketing"]) {
       const response = await fetch(`${appUrl}${protectedPath}`, { redirect: "manual" });
       const location = response.headers.get("location") ?? "";
       assert(
@@ -271,6 +271,8 @@ async function main() {
       unauthorizedPayload?.error?.code === "ACCESS_DENIED",
       "401 payload carries the public error envelope { error: { code: \"ACCESS_DENIED\" } }",
     );
+    const unauthorizedKeepalive = await fetch(`${appUrl}/api/cron/keepalive`);
+    assert(unauthorizedKeepalive.status === 401, "keepalive rejects requests without its bearer secret");
 
     // 6. Real authenticated session ----------------------------------------
     // Sign in through @supabase/ssr's createServerClient with an in-memory
@@ -312,6 +314,8 @@ async function main() {
       { pathname: "/dashboard", marker: "Ana Silva" },
       { pathname: "/projetos", marker: "Website Redesign" },
       { pathname: "/crm", marker: "Relatório CRM" },
+      { pathname: "/admin/users", marker: "Administração" },
+      { pathname: "/marketing", marker: "Campanhas" },
     ];
     for (const { pathname, marker } of pageChecks) {
       const response = await authedFetch(pathname);
@@ -361,6 +365,64 @@ async function main() {
       (stub.stats.headRequestsByTable.get("crm_contacts") ?? 0) > 0,
       "the app issued HEAD count requests against crm_contacts",
     );
+
+    // 10. Admin and Marketing runtime APIs plus reversible local mutations.
+    console.log("[smoke] admin and marketing runtime mutations");
+    const adminUsers = await authedFetch("/api/admin/users?page=1&pageSize=100");
+    const adminUsersPayload = await adminUsers.json();
+    assert(adminUsers.status === 200 && adminUsersPayload.data.length >= 2, "Admin users API lists fixture users");
+    const invitations = await authedFetch("/api/admin/users/invitations");
+    const invitationsPayload = await invitations.json();
+    assert(invitations.status === 200 && Array.isArray(invitationsPayload.data), "Admin invitations API lists fixture invitations");
+
+    const changeRole = async (newRole) => {
+      const response = await authedFetch("/api/admin/users/roles", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          profileIds: [SECOND_PROFILE_ID],
+          newRole,
+          reason: "Generated runtime smoke mutation.",
+        }),
+      });
+      const payload = await response.json();
+      assert(response.status === 200 && payload.summary.changed === 1, `Admin role mutation changes fixture user to ${newRole}`);
+    };
+    await changeRole("staff");
+    const changedUsers = await (await authedFetch("/api/admin/users?page=1&pageSize=100")).json();
+    assert(changedUsers.data.find((user) => user.profileId === SECOND_PROFILE_ID)?.role === "staff", "Admin role mutation is visible on a subsequent read");
+    await changeRole("client");
+
+    const topicsResponse = await authedFetch("/api/marketing/topics");
+    const topics = await topicsResponse.json();
+    assert(topicsResponse.status === 200 && topics.length > 0, "Marketing topics API lists fixture topics");
+    const topicId = topics[0].id;
+    const createCampaignResponse = await authedFetch("/api/marketing/campaigns", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ name: "Smoke draft", subject: "Smoke subject", topicId }),
+    });
+    const createdCampaign = await createCampaignResponse.json();
+    assert(createCampaignResponse.status === 201 && Boolean(createdCampaign.id), "Marketing API creates a local draft campaign");
+    const updateCampaignResponse = await authedFetch(`/api/marketing/campaigns/${createdCampaign.id}`, {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ subject: "Updated smoke subject" }),
+    });
+    const updatedCampaign = await updateCampaignResponse.json();
+    assert(updateCampaignResponse.status === 200 && updatedCampaign.subject === "Updated smoke subject", "Marketing API updates the draft campaign");
+    const campaignRead = await authedFetch(`/api/marketing/campaigns/${createdCampaign.id}`);
+    assert(campaignRead.status === 200, "Marketing API reads the mutated draft campaign");
+    const campaignDelete = await authedFetch(`/api/marketing/campaigns/${createdCampaign.id}`, { method: "DELETE" });
+    assert(campaignDelete.status === 204, "Marketing API deletes the local draft campaign");
+    const deletedCampaignRead = await authedFetch(`/api/marketing/campaigns/${createdCampaign.id}`);
+    assert(deletedCampaignRead.status === 404, "deleted Marketing draft is absent on a subsequent read");
+
+    const keepalive = await fetch(`${appUrl}/api/cron/keepalive`, {
+      headers: { authorization: "Bearer smoke-keepalive-secret" },
+    });
+    const keepalivePayload = await keepalive.json();
+    assert(keepalive.status === 200 && keepalivePayload.metrics.profiles === 2, "authorized keepalive reaches the database count query");
 
     const totalSeconds = (performance.now() - overallStart) / 1_000;
     console.log(`\n[smoke] PASS - ${assertionCount} assertions in ${totalSeconds.toFixed(1)}s`);

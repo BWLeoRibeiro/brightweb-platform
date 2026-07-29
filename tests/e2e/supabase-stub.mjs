@@ -73,6 +73,19 @@ function sendJson(response, status, body, extraHeaders = {}) {
   response.end(serialized);
 }
 
+function readJsonBody(request) {
+  return new Promise((resolve, reject) => {
+    let body = "";
+    request.setEncoding("utf8");
+    request.on("data", (chunk) => { body += chunk; });
+    request.on("end", () => {
+      if (!body) return resolve(null);
+      try { resolve(JSON.parse(body)); } catch (error) { reject(error); }
+    });
+    request.on("error", reject);
+  });
+}
+
 // Apply only the deterministic subset of PostgREST filters: `column=eq.value`
 // and `column=is.null`. Everything else (neq, gte, lte, lt, in, not.*, or,
 // embedded-table params, order, ...) intentionally passes rows through.
@@ -87,6 +100,9 @@ function filterRows(rows, searchParams) {
       filtered = filtered.filter((row) => String(row[key]) === expected);
     } else if (value === "is.null") {
       filtered = filtered.filter((row) => row[key] === null || row[key] === undefined);
+    } else if (value.startsWith("in.(") && value.endsWith(")")) {
+      const expected = new Set(value.slice(4, -1).split(",").map((entry) => entry.replace(/^"|"$/gu, "")));
+      filtered = filtered.filter((row) => expected.has(String(row[key])));
     }
   }
   return filtered;
@@ -107,7 +123,7 @@ function contentRange(pageLength, total, offset = 0) {
 
 export async function startSupabaseStub({ log = () => {} } = {}) {
   const issuedTokens = new Set();
-  const stats = { headRequestsByTable: new Map(), unhandled: [] };
+  const stats = { headRequestsByTable: new Map(), requestsByMethodAndTable: new Map(), unhandled: [] };
 
   const server = http.createServer((request, response) => {
     const url = new URL(request.url, "http://stub.local");
@@ -174,6 +190,9 @@ export async function startSupabaseStub({ log = () => {} } = {}) {
         });
       }
 
+      const statKey = `${method} ${resource}`;
+      stats.requestsByMethodAndTable.set(statKey, (stats.requestsByMethodAndTable.get(statKey) ?? 0) + 1);
+
       const filtered = filterRows(rows, url.searchParams);
 
       if (method === "HEAD") {
@@ -186,9 +205,55 @@ export async function startSupabaseStub({ log = () => {} } = {}) {
         return response.end();
       }
 
-      if (method === "GET" || method === "POST") {
-        // POST on a table (inserts) is accepted leniently and echoes the fixtures;
-        // the read-path smoke test never mutates, but auth-adjacent probes may POST.
+      if (method === "POST" || method === "PATCH" || method === "DELETE") {
+        void readJsonBody(request).then((payload) => {
+          let affected = [];
+          if (method === "POST") {
+            const inputs = (Array.isArray(payload) ? payload : [payload]).filter(Boolean);
+            affected = inputs.map((input, index) => {
+              const timestamp = new Date().toISOString();
+              const defaults = resource === "marketing_campaigns" ? {
+                id: `cccccccc-cccc-4ccc-8ccc-${String(rows.length + index + 1).padStart(12, "0")}`,
+                preheader: null,
+                from_name: null,
+                from_email: null,
+                segment_id: null,
+                body_html: null,
+                body_text: null,
+                body_json: null,
+                status: "draft",
+                scheduled_at: null,
+                sent_at: null,
+                batch_size: 100,
+                rate_per_minute: null,
+                total_recipients: 0,
+                sent_count: 0,
+                failed_count: 0,
+                created_at: timestamp,
+                updated_at: timestamp,
+              } : { id: `stub-${resource}-${rows.length + index + 1}`, created_at: timestamp, updated_at: timestamp };
+              return { ...defaults, ...input };
+            });
+            rows.push(...affected);
+          } else if (method === "PATCH") {
+            affected = [...filtered];
+            for (const row of affected) Object.assign(row, payload, { updated_at: new Date().toISOString() });
+          } else {
+            affected = [...filtered];
+            for (const row of affected) rows.splice(rows.indexOf(row), 1);
+          }
+          const accept = request.headers.accept ?? "";
+          log(`rest: ${method} ${resource} -> ${affected.length} rows`);
+          if (accept.includes("application/vnd.pgrst.object+json")) {
+            return sendJson(response, 200, affected[0] ?? null);
+          }
+          const prefer = request.headers.prefer ?? "";
+          return sendJson(response, method === "POST" ? 201 : 200, prefer.includes("return=representation") ? affected : []);
+        }).catch((error) => sendJson(response, 400, { message: String(error) }));
+        return undefined;
+      }
+
+      if (method === "GET") {
         const offset = Number.parseInt(url.searchParams.get("offset") ?? "0", 10) || 0;
         const page = paginate(filtered, url.searchParams);
         const accept = request.headers.accept ?? "";
@@ -216,6 +281,23 @@ export async function startSupabaseStub({ log = () => {} } = {}) {
     const rpcMatch = pathname.match(/^\/rest\/v1\/rpc\/([^/]+)$/u);
     if (rpcMatch && (method === "POST" || method === "GET" || method === "HEAD")) {
       const rpcName = decodeURIComponent(rpcMatch[1]);
+      if (rpcName === "admin_set_user_role" && method === "POST") {
+        void readJsonBody(request).then((payload) => {
+          const assignment = tables.user_role_assignments.find(
+            (row) => row.profile_id === payload?.p_target_profile_id,
+          );
+          if (!assignment) return sendJson(response, 200, []);
+          const oldRole = assignment.role_code;
+          assignment.role_code = payload.p_new_role_code;
+          return sendJson(response, 200, [{
+            changed: oldRole !== assignment.role_code,
+            old_role_code: oldRole,
+            new_role_code: assignment.role_code,
+            reason: payload.p_reason,
+          }]);
+        }).catch((error) => sendJson(response, 400, { message: String(error) }));
+        return undefined;
+      }
       if (Object.hasOwn(rpcResults, rpcName)) {
         log(`rest: rpc ${rpcName}`);
         // Drain any request body before responding.

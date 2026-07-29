@@ -708,6 +708,7 @@ test("reports missing and drifted starter files and only refreshes them with the
   t.after(async () => fs.rm(tempRoot, { recursive: true, force: true }));
 
   await fs.rm(path.join(targetDir, "app", "(shell)", "crm", "page.tsx"));
+  await fs.rm(path.join(targetDir, "app", "api", "cron", "keepalive", "route.ts"));
   await fs.rm(path.join(targetDir, "config", "shell.overrides.ts"));
   await fs.writeFile(path.join(targetDir, "app", "api", "crm", "stats", "route.ts"), "export {};\n", "utf8");
 
@@ -727,6 +728,7 @@ test("reports missing and drifted starter files and only refreshes them with the
   );
 
   assert.deepEqual(dryPlan.starterFilesMissing, [
+    "app/api/cron/keepalive/route.ts",
     "config/shell.overrides.ts",
     "app/(shell)/crm/page.tsx",
   ]);
@@ -734,6 +736,7 @@ test("reports missing and drifted starter files and only refreshes them with the
   assert.deepEqual(refreshPlan.starterFilesToRefresh.sort(), [
     "app/(shell)/crm/page.tsx",
     "app/api/crm/stats/route.ts",
+    "app/api/cron/keepalive/route.ts",
     "config/shell.overrides.ts",
   ]);
 });

@@ -12,6 +12,7 @@
 
 export const USER_ID = "11111111-1111-4111-8111-111111111111";
 export const PROFILE_ID = "22222222-2222-4222-8222-222222222222";
+export const SECOND_PROFILE_ID = "22222222-2222-4222-8222-222222222223";
 export const ORG_ID = "33333333-3333-4333-8333-333333333333";
 export const USER_EMAIL = "smoke@example.com";
 export const USER_PASSWORD = "Smoke-Test-1234";
@@ -38,6 +39,28 @@ const profileEmbed = {
   last_name: "Silva",
   email: USER_EMAIL,
   phone: "+351910000000",
+  created_at: profileRow.created_at,
+  updated_at: profileRow.updated_at,
+};
+
+const secondProfileRow = {
+  id: SECOND_PROFILE_ID,
+  user_id: "11111111-1111-4111-8111-111111111112",
+  first_name: "Rui",
+  last_name: "Teste",
+  email: "rui@example.com",
+  phone: null,
+  created_at: iso(-100),
+  updated_at: iso(-2),
+};
+
+const secondProfileEmbed = {
+  id: SECOND_PROFILE_ID,
+  first_name: "Rui",
+  last_name: "Teste",
+  email: "rui@example.com",
+  created_at: secondProfileRow.created_at,
+  updated_at: secondProfileRow.updated_at,
 };
 
 const organizationRow = {
@@ -260,10 +283,55 @@ const userRoleAssignments = [
     assigned_at: iso(-200),
     profile: profileEmbed,
   },
+  {
+    profile_id: SECOND_PROFILE_ID,
+    role_code: "client",
+    assigned_at: iso(-90),
+    profile: secondProfileEmbed,
+  },
 ];
 
+const marketingTopicId = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1";
+const marketingCampaignId = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb1";
+
+const marketingTopics = [{
+  id: marketingTopicId,
+  slug: "novidades",
+  label: "Novidades",
+  description: "Atualizações do produto.",
+  is_active: true,
+  position: 1,
+  created_at: iso(-60),
+  updated_at: iso(-1),
+}];
+
+const marketingCampaigns = [{
+  id: marketingCampaignId,
+  name: "Boletim de julho",
+  subject: "Novidades BrightWeb",
+  preheader: null,
+  from_name: "Smoke",
+  from_email: "news@example.com",
+  topic_id: marketingTopicId,
+  segment_id: null,
+  body_html: "<p>Olá</p>",
+  body_text: "Olá",
+  body_json: null,
+  status: "draft",
+  scheduled_at: null,
+  sent_at: null,
+  batch_size: 100,
+  rate_per_minute: null,
+  total_recipients: 0,
+  sent_count: 0,
+  failed_count: 0,
+  created_by_profile_id: PROFILE_ID,
+  created_at: iso(-5),
+  updated_at: iso(-1),
+}];
+
 export const tables = {
-  profiles: [profileRow],
+  profiles: [profileRow, secondProfileRow],
   organizations: [organizationRow],
   projects,
   project_tasks: projectTasks,
@@ -272,7 +340,20 @@ export const tables = {
   organization_members: [],
   crm_contacts: crmContacts,
   crm_status_log: crmStatusLog,
-  user_role_assignments: [userRoleAssignments[0]],
+  user_role_assignments: userRoleAssignments,
+  admin_user_invitations: [],
+  marketing_topics: marketingTopics,
+  marketing_campaigns: marketingCampaigns,
+  marketing_segments: [],
+  marketing_campaign_recipients: [],
+  marketing_subscriptions: [],
+  marketing_suppressions: [],
+  marketing_contact_settings: [],
+  marketing_message_events: [],
+  marketing_workflows: [],
+  marketing_workflow_nodes: [],
+  marketing_workflow_runs: [],
+  marketing_worker_cursors: [],
 };
 
 export const rpcResults = {

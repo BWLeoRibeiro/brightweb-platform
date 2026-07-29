@@ -839,7 +839,7 @@ export function createPackageJson({
     version: "0.0.0",
     scripts: {
       dev: "next dev",
-      build: "next build",
+      build: "next build --webpack",
       start: "next start",
       lint: "tsc --noEmit",
     },
@@ -897,6 +897,7 @@ export async function createPlatformGlobalsCss(selectedModules) {
   const sourcePackages = [
     "@brightweblabs/ui",
     "@brightweblabs/app-shell",
+    "@brightweblabs/core-auth",
     ...SELECTABLE_MODULES
       .filter((moduleDefinition) => selectedModules.includes(moduleDefinition.key))
       .map((moduleDefinition) => moduleDefinition.packageName),
@@ -1566,6 +1567,10 @@ async function scaffoldPlatformProject({
   await ensureDirectory(path.dirname(targetDir));
   await copyDirectory(baseTemplateDir, targetDir);
 
+  if (!workspaceMode && packageManager === "pnpm") {
+    await fs.writeFile(path.join(targetDir, "pnpm-workspace.yaml"), "allowBuilds:\n  sharp: true\n");
+  }
+
   for (const moduleDefinition of SELECTABLE_MODULES) {
     if (!selectedModules.includes(moduleDefinition.key)) continue;
     const moduleTemplateDir = path.join(TEMPLATE_ROOT, "modules", moduleDefinition.templateFolder);
@@ -1676,6 +1681,9 @@ async function scaffoldSiteProject({
 
   await ensureDirectory(path.dirname(targetDir));
   await copyDirectory(baseTemplateDir, targetDir);
+  if (!workspaceMode && packageManager === "pnpm") {
+    await fs.writeFile(path.join(targetDir, "pnpm-workspace.yaml"), "allowBuilds:\n  sharp: true\n");
+  }
   await ensureDirectory(path.join(targetDir, "config"));
   await ensureDirectory(path.join(targetDir, "docs", "ai"));
 
