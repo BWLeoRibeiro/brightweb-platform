@@ -49,6 +49,9 @@ jobs:
       - name: Check module manifests
         run: pnpm check:module-manifest
 
+      - name: Check base contract
+        run: pnpm check:base-contract
+
       - name: Check compatibility set
         run: pnpm check:compatibility-set
 

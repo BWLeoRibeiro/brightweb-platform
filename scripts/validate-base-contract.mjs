@@ -1,5 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 const repoRoot = path.resolve(new URL("..", import.meta.url).pathname);
 const manifestPath = path.join(repoRoot, "docs", "modules", "base-contract.json");
@@ -345,36 +346,30 @@ async function collectRuntimeExports(filePath, cache) {
   return exportNames;
 }
 
-async function resolveModulePath(filePath) {
+export async function resolveModulePath(filePath) {
   const resolved = path.isAbsolute(filePath) ? filePath : path.join(repoRoot, filePath);
-  await assertPathExists(resolved, `Missing module file "${resolved}"`);
-  return resolved;
-}
-
-async function resolveImportPath(fromDir, specifier) {
-  const candidates = [
-    specifier,
-    `${specifier}.ts`,
-    `${specifier}.tsx`,
-    `${specifier}.js`,
-    `${specifier}.mjs`,
-    path.join(specifier, "index.ts"),
-    path.join(specifier, "index.tsx"),
-    path.join(specifier, "index.js"),
-    path.join(specifier, "index.mjs"),
-  ];
+  const candidates = [resolved];
+  if (!path.extname(resolved)) {
+    for (const extension of [".ts", ".tsx", ".js", ".mjs"]) candidates.push(`${resolved}${extension}`);
+  }
+  for (const extension of [".ts", ".tsx", ".js", ".mjs"]) candidates.push(path.join(resolved, `index${extension}`));
 
   for (const candidate of candidates) {
-    const absolutePath = path.resolve(fromDir, candidate);
     try {
-      await fs.access(absolutePath);
-      return absolutePath;
+      if ((await fs.stat(candidate)).isFile()) return candidate;
     } catch {
       continue;
     }
   }
+  throw new Error(`Missing module file "${resolved}"`);
+}
 
-  throw new Error(`Unable to resolve export path "${specifier}" from "${fromDir}".`);
+export async function resolveImportPath(fromDir, specifier) {
+  try {
+    return await resolveModulePath(path.resolve(fromDir, specifier));
+  } catch {
+    throw new Error(`Unable to resolve export path "${specifier}" from "${fromDir}".`);
+  }
 }
 
 async function validateDocsLinks(docsDir) {
@@ -405,7 +400,9 @@ async function assertPathExists(targetPath, errorMessage) {
   }
 }
 
-main().catch((error) => {
-  console.error(error instanceof Error ? error.message : error);
-  process.exitCode = 1;
-});
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  main().catch((error) => {
+    console.error(error instanceof Error ? error.message : error);
+    process.exitCode = 1;
+  });
+}
