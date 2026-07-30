@@ -1,5 +1,17 @@
 # @brightweblabs/ui
 
+## 1.2.0
+
+### Minor Changes
+
+- 90c9bf0: Converge theme state on one BrightWeb provider, default new apps to the system theme, improve packaged auth geometry and accessibility, make pnpm plus keepalive setup reproducible in generated apps, and bound Marketing audience processing.
+
+### Patch Changes
+
+- c05dc17: Migrate package-owned interface typography to the canonical visual-role utilities while preserving contextual auth, report, dashboard, and compact-control sizing.
+- Updated dependencies [1ecd0c1]
+  - @brightweblabs/theme@0.5.1
+
 ## 1.1.1
 
 ### Patch Changes
