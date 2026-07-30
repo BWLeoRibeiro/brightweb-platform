@@ -81,22 +81,22 @@ export function AccountClient({
       {!isEditing ? (
         <div className="divide-y divide-border/40">
           <div className="flex items-center justify-between py-2.5">
-            <span className="text-xs text-muted-foreground">{dictionary.profile.firstName}</span>
-            <span className="text-sm font-semibold">{saved.firstName || dictionary.profile.emptyValue}</span>
+            <span className="text-meta text-muted-foreground">{dictionary.profile.firstName}</span>
+            <span className="text-body font-semibold">{saved.firstName || dictionary.profile.emptyValue}</span>
           </div>
           <div className="flex items-center justify-between py-2.5">
-            <span className="text-xs text-muted-foreground">{dictionary.profile.lastName}</span>
-            <span className="text-sm font-semibold">{saved.lastName || dictionary.profile.emptyValue}</span>
+            <span className="text-meta text-muted-foreground">{dictionary.profile.lastName}</span>
+            <span className="text-body font-semibold">{saved.lastName || dictionary.profile.emptyValue}</span>
           </div>
           <div className="flex items-center justify-between py-2.5">
-            <span className="text-xs text-muted-foreground">{dictionary.profile.email}</span>
-            <span className="max-w-[60%] truncate text-sm font-semibold text-muted-foreground">
+            <span className="text-meta text-muted-foreground">{dictionary.profile.email}</span>
+            <span className="max-w-[60%] truncate text-body font-semibold text-muted-foreground">
               {profile.email ?? dictionary.profile.emptyValue}
             </span>
           </div>
           <div className="flex items-center justify-between py-2.5">
-            <span className="text-xs text-muted-foreground">{dictionary.profile.language}</span>
-            <span className="text-sm font-semibold">{languageLabels[saved.preferredLanguage]}</span>
+            <span className="text-meta text-muted-foreground">{dictionary.profile.language}</span>
+            <span className="text-body font-semibold">{languageLabels[saved.preferredLanguage]}</span>
           </div>
         </div>
       ) : (
@@ -140,7 +140,7 @@ export function AccountClient({
               value={preferredLanguage}
               onChange={(event) => setPreferredLanguage(event.target.value === "en" ? "en" : "pt-PT")}
               disabled={isSaving}
-              className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs transition-colors outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+              className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-body shadow-xs transition-colors outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
             >
               <option value="pt-PT">{dictionary.profile.portuguese}</option>
               <option value="en">{dictionary.profile.english}</option>
@@ -152,7 +152,7 @@ export function AccountClient({
       <div className="flex items-center justify-between gap-3 pt-1">
         {!isEditing ? (
           <>
-            <p className="text-xs text-muted-foreground">{dictionary.profile.emailHint}</p>
+            <p className="text-meta text-muted-foreground">{dictionary.profile.emailHint}</p>
             <Button
               type="button"
               variant="outline"

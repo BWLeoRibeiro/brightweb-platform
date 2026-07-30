@@ -4,7 +4,7 @@ import type { KeyboardEvent, MouseEvent } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowUpRight, CalendarDays, ListChecks } from "lucide-react";
 import { toast } from "sonner";
-import { portalMonoTabularClassName as MONO } from "./typography";
+import { monoTabularClassName as MONO } from "./typography";
 import { ProjectOwnerAvatar } from "./project-owner-avatar";
 import { PROJECT_RISK_META, resolveProjectRisk } from "./project-risk";
 import { getCompletionPercent } from "./project-progress";
@@ -93,10 +93,10 @@ export function ProjectSummaryCard({ project }: { project: ProjectSummaryCardIte
         </Tooltip>
 
         {/* header — fixed height so pills/progress align across cards */}
-        <p className="portal-label truncate pr-6">
+        <p className="text-label text-muted-foreground truncate pr-6">
           {project.organizationName ?? "-"}
         </p>
-        <h3 className="portal-card-title mt-1 line-clamp-2 min-h-[2.6em] font-bold leading-[var(--type-leading-130)]">
+        <h3 className="text-title text-foreground mt-1 line-clamp-2 min-h-[2.6em] font-bold leading-[var(--type-leading-130)]">
           {project.name}
         </h3>
 
@@ -104,7 +104,7 @@ export function ProjectSummaryCard({ project }: { project: ProjectSummaryCardIte
         <div className="mt-3 flex min-h-[24px] items-center gap-x-2">
           <Tooltip>
             <TooltipTrigger asChild>
-              <span className="pointer-events-auto inline-flex items-center gap-1.5 text-[length:var(--text-ui-meta)] font-semibold text-[color:var(--foreground)]">
+              <span className="pointer-events-auto inline-flex items-center gap-1.5 text-meta font-semibold text-[color:var(--foreground)]">
                 <span className={`h-[7px] w-[7px] shrink-0 rounded-full ${statusMeta.dot}`} />
                 {statusMeta.label}
               </span>
@@ -113,7 +113,7 @@ export function ProjectSummaryCard({ project }: { project: ProjectSummaryCardIte
           </Tooltip>
           {riskMeta ? (
             <span
-              className="inline-flex items-center rounded-full border px-2 py-[3px] text-[length:var(--text-ui-label)] font-bold"
+              className="inline-flex items-center rounded-full border px-2 py-[3px] text-label font-bold"
               style={{
                 color: riskMeta.var,
                 ["--project-dynamic-risk" as string]: riskMeta.var,
@@ -128,14 +128,14 @@ export function ProjectSummaryCard({ project }: { project: ProjectSummaryCardIte
 
         {/* owner + progress */}
         <div className="mt-3.5">
-          <div className="portal-meta flex items-center justify-between">
+          <div className="text-meta text-muted-foreground flex items-center justify-between">
             <span className="inline-flex min-w-0 items-center gap-2">
               <ProjectOwnerAvatar label={project.ownerLabel} size="sm" roleColor="manager" />
               <span className="truncate">{project.ownerLabel ?? dictionary.detail.noOwnerLowercase}</span>
             </span>
             <Tooltip>
               <TooltipTrigger asChild>
-                <span className={`${MONO} pointer-events-auto text-[length:var(--text-ui-action)] font-extrabold text-[color:var(--foreground)]`}>
+                <span className={`${MONO} pointer-events-auto text-body text-[length:var(--text-ui-action)] font-extrabold text-[color:var(--foreground)]`}>
                   {progress}%
                 </span>
               </TooltipTrigger>
@@ -154,12 +154,12 @@ export function ProjectSummaryCard({ project }: { project: ProjectSummaryCardIte
         </div>
 
         {/* footer — pinned to bottom */}
-        <div className="portal-meta mt-auto flex min-w-0 items-center justify-between gap-3 border-t border-[color:var(--border)] pt-3">
+        <div className="text-meta text-muted-foreground mt-auto flex min-w-0 items-center justify-between gap-3 border-t border-[color:var(--border)] pt-3">
           <Tooltip>
             <TooltipTrigger asChild>
               <button
                 type="button"
-                className={`${MONO} portal-micro pointer-events-auto min-w-0 max-w-[44%] truncate text-left tracking-[var(--type-tracking-060)] transition hover:text-[color:var(--foreground)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--ring)]`}
+                className={`${MONO} text-micro text-muted-foreground pointer-events-auto min-w-0 max-w-[44%] truncate text-left tracking-[var(--type-tracking-060)] transition hover:text-[color:var(--foreground)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--ring)]`}
                 onClick={copyProjectId}
               >
                 {projectCode}

@@ -12,8 +12,8 @@ export const STATUS_PILL_BASE_CLASS =
   "inline-flex shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-full border font-semibold leading-none";
 
 export const STATUS_PILL_SIZE_CLASSES: Record<StatusPillSize, string> = {
-  small: "h-5 px-2 text-ui-micro",
-  normal: "h-7 px-3 text-ui-meta",
+  small: "h-5 px-2 text-micro",
+  normal: "h-7 px-3 text-meta",
 };
 
 export type StatusPillProps = Omit<ComponentProps<"span">, "children"> & {

@@ -68,12 +68,12 @@ function ErrorPage({ title, children }: { title: string; children: ReactNode }) 
       <div className="panel-inner space-y-4">
         <Link
           href="/account/projetos"
-          className="inline-flex items-center gap-2 text-sm font-semibold text-primary hover:underline"
+          className="inline-flex items-center gap-2 text-body font-semibold text-primary hover:underline"
         >
           <ArrowLeft className="size-4" />
           {clientProjectsDictionary.detail.back}
         </Link>
-        <h1 className="text-2xl font-semibold">{title}</h1>
+        <h1 className="text-heading-2 font-semibold">{title}</h1>
         {children}
       </div>
     </section>
@@ -92,7 +92,7 @@ export async function ClientProjectDetailPage({
     if (access.status === 401) redirect("/login");
     return (
       <ErrorPage title={dictionary.noAccessTitle}>
-        <p className="text-sm text-muted-foreground">{access.error}</p>
+        <p className="text-body text-muted-foreground">{access.error}</p>
       </ErrorPage>
     );
   }
@@ -115,7 +115,7 @@ export async function ClientProjectDetailPage({
   if (schemaMissing) {
     return (
       <ErrorPage title={dictionary.moduleUnavailableTitle}>
-        <p className="rounded-md border border-amber-300/70 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-400/40 dark:bg-amber-500/10 dark:text-amber-100">
+        <p className="rounded-md border border-amber-300/70 bg-amber-50 px-3 py-2 text-body text-amber-900 dark:border-amber-400/40 dark:bg-amber-500/10 dark:text-amber-100">
           {dictionary.schemaMissing}
         </p>
       </ErrorPage>
@@ -125,7 +125,7 @@ export async function ClientProjectDetailPage({
   if (!data || loadError) {
     return (
       <ErrorPage title={dictionary.loadErrorTitle}>
-        <p className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+        <p className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-body text-destructive">
           {loadError ?? dictionary.unexpectedDataError}
         </p>
       </ErrorPage>
@@ -165,7 +165,7 @@ export async function ClientProjectDetailPage({
       <div className="panel-inner space-y-6">
         <Link
           href="/account/projetos"
-          className="inline-flex items-center gap-1.5 text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground motion-reduce:transition-none"
+          className="inline-flex items-center gap-1.5 text-body font-semibold text-muted-foreground transition-colors hover:text-foreground motion-reduce:transition-none"
         >
           <ArrowLeft className="size-4" />
           {dictionary.back}
@@ -174,12 +174,12 @@ export async function ClientProjectDetailPage({
         <header className="space-y-2">
           <div className="flex flex-wrap items-center gap-2">
             <span
-              className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-ui-label font-semibold ${CLIENT_PROJECT_STATUS_STYLES[project.status]}`}
+              className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-label font-semibold ${CLIENT_PROJECT_STATUS_STYLES[project.status]}`}
             >
               {CLIENT_PROJECT_STATUS_LABELS[project.status]}
             </span>
             <span
-              className="inline-flex items-center gap-1.5 text-ui-label font-semibold"
+              className="inline-flex items-center gap-1.5 text-label font-semibold"
               style={{ color: healthVar }}
             >
               <span className="size-1.5 rounded-full" style={{ background: healthVar }} />
@@ -189,16 +189,16 @@ export async function ClientProjectDetailPage({
 
           <div>
             {project.code ? (
-              <p className="mb-0.5 select-all font-mono text-ui-label text-muted-foreground/60">
+              <p className="mb-0.5 select-all font-mono text-label text-muted-foreground/60">
                 {project.code}
               </p>
             ) : null}
-            <h1 className="text-2xl font-semibold leading-tight sm:text-3xl">{project.name}</h1>
-            <p className="mt-1 text-sm text-muted-foreground">{project.organizationName}</p>
+            <h1 className="text-heading-2 font-semibold leading-tight sm:text-heading-1">{project.name}</h1>
+            <p className="mt-1 text-body text-muted-foreground">{project.organizationName}</p>
           </div>
 
           {project.summary ? (
-            <p className="max-w-[42rem] text-sm text-muted-foreground">{project.summary}</p>
+            <p className="max-w-[42rem] text-body text-muted-foreground">{project.summary}</p>
           ) : null}
         </header>
 
@@ -277,7 +277,7 @@ export async function ClientProjectDetailPage({
                     </span>
                     <div className="min-w-0 flex-1">
                       <p
-                        className={`text-sm font-semibold leading-snug ${
+                        className={`text-body font-semibold leading-snug ${
                           milestone.status === "achieved"
                             ? "text-muted-foreground line-through"
                             : ""
@@ -285,7 +285,7 @@ export async function ClientProjectDetailPage({
                       >
                         {milestone.title}
                       </p>
-                      <p className="mt-0.5 flex flex-wrap items-center gap-x-2 text-xs text-muted-foreground">
+                      <p className="mt-0.5 flex flex-wrap items-center gap-x-2 text-meta text-muted-foreground">
                         <span className={statusClassName}>
                           {CLIENT_MILESTONE_STATUS_LABELS[milestone.status]}
                         </span>
@@ -322,7 +322,7 @@ export async function ClientProjectDetailPage({
             {dictionary.linksTitle}
           </SectionHeading>
           {data.links.length === 0 ? (
-            <p className="text-sm text-muted-foreground">{dictionary.linksEmpty}</p>
+            <p className="text-body text-muted-foreground">{dictionary.linksEmpty}</p>
           ) : (
             <ul className="space-y-2">
               {data.links.map((link) => (
@@ -337,10 +337,10 @@ export async function ClientProjectDetailPage({
                       {LINK_KIND_ICONS[link.kind]}
                     </span>
                     <span className="min-w-0 flex-1">
-                      <span className="block text-sm font-semibold leading-snug text-primary group-hover:underline">
+                      <span className="block text-body font-semibold leading-snug text-primary group-hover:underline">
                         {link.label}
                       </span>
-                      <span className="block text-xs text-muted-foreground">
+                      <span className="block text-meta text-muted-foreground">
                         {CLIENT_PROJECT_LINK_KIND_LABELS[link.kind]}
                       </span>
                     </span>
@@ -363,15 +363,15 @@ export async function ClientProjectDetailPage({
                 const content = (
                   <>
                     <span
-                      className={`inline-flex size-7 shrink-0 items-center justify-center rounded-full text-ui-label font-bold ${avatarRoleClass(colorRole)}`}
+                      className={`inline-flex size-7 shrink-0 items-center justify-center rounded-full text-label font-bold ${avatarRoleClass(colorRole)}`}
                     >
                       {getInitials(member.label)}
                     </span>
                     <div className="min-w-0 max-w-48">
-                      <p className="truncate text-sm font-semibold leading-none">
+                      <p className="truncate text-body font-semibold leading-none">
                         {member.label}
                       </p>
-                      <p className="mt-0.5 truncate text-ui-label text-muted-foreground">
+                      <p className="mt-0.5 truncate text-label text-muted-foreground">
                         {getMemberDisplayLabel(member.role, colorRole)}
                         {member.email ? ` · ${member.email}` : ""}
                       </p>
@@ -406,7 +406,7 @@ export async function ClientProjectDetailPage({
 
 function SectionHeading({ icon, children }: { icon: ReactNode; children: ReactNode }) {
   return (
-    <h2 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+    <h2 className="flex items-center gap-2 text-body font-semibold uppercase tracking-wide text-muted-foreground">
       {icon}
       {children}
     </h2>
@@ -430,12 +430,12 @@ function StatCard({
 }) {
   return (
     <div className="space-y-1.5 rounded-xl border border-border/60 bg-background/60 px-3.5 py-3">
-      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+      <div className="flex items-center gap-1.5 text-meta text-muted-foreground">
         <span style={accent ? { color: accent } : undefined}>{icon}</span>
         {label}
       </div>
       <p
-        className="text-base font-semibold leading-none tabular-nums"
+        className="text-body-lg font-semibold leading-none tabular-nums"
         style={accent ? { color: accent } : undefined}
       >
         {value}
@@ -450,7 +450,7 @@ function StatCard({
       ) : null}
       {note ? (
         <p
-          className="text-ui-micro leading-none"
+          className="text-micro leading-none"
           style={
             accent
               ? { color: accent }

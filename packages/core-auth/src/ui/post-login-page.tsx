@@ -91,7 +91,7 @@ function PostLoginContent() {
       <div className="auth-post-login__content" aria-live="polite">
         <div className="auth-layout__brand-logo">{brand.logo}</div>
         <span className="auth-spinner" aria-hidden="true" />
-        <p className="paragraph-small text-muted-foreground">{dictionary.postLogin.preparing}</p>
+        <p className="text-body auth-paragraph-small text-muted-foreground">{dictionary.postLogin.preparing}</p>
         {showSkeleton ? <span className="auth-skeleton-line" aria-hidden="true" /> : null}
       </div>
     </main>
@@ -100,7 +100,7 @@ function PostLoginContent() {
 
 function PostLoginFallback() {
   const { brand, dictionary } = useAuthUi();
-  return <main className="auth-post-login"><div className="auth-post-login__content"><div className="auth-layout__brand-logo">{brand.logo}</div><span className="auth-spinner" aria-hidden="true" /><p className="paragraph-small text-muted-foreground">{dictionary.postLogin.preparing}</p></div></main>;
+  return <main className="auth-post-login"><div className="auth-post-login__content"><div className="auth-layout__brand-logo">{brand.logo}</div><span className="auth-spinner" aria-hidden="true" /><p className="text-body auth-paragraph-small text-muted-foreground">{dictionary.postLogin.preparing}</p></div></main>;
 }
 
 export function PostLoginPage() {

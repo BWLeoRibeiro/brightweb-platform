@@ -121,12 +121,12 @@ function HeroMetricMini({ value, label, tone }: { value: number; label: string; 
       className="flex items-center justify-between gap-4 rounded-[var(--radius-card)] border px-4 py-2.5"
       style={{ borderColor: "var(--project-hero-border)", background: "var(--project-hero-surface-raised)" }}
     >
-      <span className="inline-flex items-center gap-2 text-[length:var(--text-ui-meta)]" style={{ color: "var(--project-hero-muted)" }}>
+      <span className="inline-flex items-center gap-2 text-meta" style={{ color: "var(--project-hero-muted)" }}>
         <span className="h-1.5 w-1.5 rounded-full" style={{ background: dot }} />
         {label}
       </span>
       <span
-        className="font-display text-[length:var(--text-ui-dashboard-card-title)] font-extrabold leading-none tracking-[var(--type-tracking-n030)]"
+        className="font-display text-heading-3 text-[length:var(--text-ui-dashboard-card-title)] font-extrabold leading-none tracking-[var(--type-tracking-n030)]"
         style={{ color: "var(--project-hero-foreground)" }}
       >
         {value}
@@ -144,12 +144,12 @@ function HeroMetrics({ activeProjects, overdueProjects, newLeads }: { activeProj
         style={{ borderColor: "var(--project-hero-border)", background: "var(--project-hero-surface-raised)" }}
       >
         <span
-          className="font-display text-[length:var(--text-ui-dashboard-metric)] font-black leading-[var(--type-leading-090)] tracking-[var(--type-tracking-n050)]"
+          className="font-display text-metric-lg text-[length:var(--text-ui-dashboard-metric)] font-black leading-[var(--type-leading-090)] tracking-[var(--type-tracking-n050)]"
           style={{ color: "var(--accent)" }}
         >
           {activeProjects}
         </span>
-        <span className="mt-1.5 text-[length:var(--text-ui-meta)]" style={{ color: "var(--project-hero-muted)" }}>
+        <span className="mt-1.5 text-meta" style={{ color: "var(--project-hero-muted)" }}>
           {dictionary.welcome.activeProjects}
         </span>
       </div>
@@ -206,7 +206,7 @@ function WelcomeHeader({
       <div className="relative flex flex-col gap-7 lg:flex-row lg:items-end lg:justify-between">
         <div className="min-w-0 lg:flex-1">
           <p
-            className="inline-flex items-center gap-2 text-[length:var(--text-ui-label)] font-semibold uppercase tracking-[var(--type-tracking-160)]"
+            className="inline-flex items-center gap-2 text-label font-semibold uppercase tracking-[var(--type-tracking-160)]"
             style={{ color: "var(--project-hero-muted)" }}
           >
             <CalendarDays className="h-3.5 w-3.5" style={{ color: "var(--accent)" }} />
@@ -215,7 +215,7 @@ function WelcomeHeader({
             <span>{time}</span>
           </p>
 
-          <h1 className="font-display mt-4 text-[length:var(--text-ui-dashboard-title)] font-extrabold leading-[var(--type-leading-102)] tracking-[var(--type-tracking-n035)] md:text-[length:var(--text-ui-dashboard-title-lg)]">
+          <h1 className="font-display mt-4 text-heading-1 text-[length:var(--text-ui-dashboard-title)] font-extrabold leading-[var(--type-leading-102)] tracking-[var(--type-tracking-n035)] md:text-heading-1 text-[length:var(--text-ui-dashboard-title-lg)]">
             {greeting}
             {name ? (
               <>
@@ -227,7 +227,7 @@ function WelcomeHeader({
             .
           </h1>
 
-          <p className="mt-3 max-w-[32rem] text-[length:var(--text-ui-card-title)]" style={{ color: "var(--project-hero-muted)" }}>
+          <p className="mt-3 max-w-[32rem] text-title" style={{ color: "var(--project-hero-muted)" }}>
             {urgentCount > 0 ? (
               <>
                 <span className="font-semibold" style={{ color: "var(--project-hero-foreground)" }}>
@@ -245,7 +245,7 @@ function WelcomeHeader({
               {errors.map((error) => (
                 <span
                   key={error}
-                  className="dashboard-error inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[length:var(--text-ui-label)] font-semibold"
+                  className="dashboard-error inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-label font-semibold"
                 >
                   <AlertTriangle className="h-3 w-3" />
                   {error}
@@ -291,7 +291,7 @@ function TabsRow({ value, onChange, sections }: { value: TabKey; onChange: (v: T
             whileTap={prefersReducedMotion ? undefined : { scale: 0.95 }}
             transition={prefersReducedMotion ? { duration: 0 } : { type: "spring", stiffness: 500, damping: 32 }}
             aria-pressed={active}
-            className="relative rounded-full px-4 py-1.5 text-[length:var(--text-ui-action)] font-semibold outline-none transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-[color:var(--ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--background)] motion-reduce:transition-none"
+            className="relative rounded-full px-4 py-1.5 text-body text-[length:var(--text-ui-action)] font-semibold outline-none transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-[color:var(--ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--background)] motion-reduce:transition-none"
             style={{
               color: active
                 ? "var(--accent-foreground)"
@@ -367,12 +367,12 @@ function KpiBreakdownBar({ items }: { items: KpiBreakdownItem[] }) {
       </TooltipProvider>
       <div className="mt-3.5 grid grid-cols-2 gap-x-6 gap-y-1.5">
         {items.map((i) => (
-          <div key={i.label} className="flex items-center justify-between gap-2 text-[length:var(--text-ui-meta)]">
+          <div key={i.label} className="flex items-center justify-between gap-2 text-meta">
             <span className="flex min-w-0 items-center gap-2 text-[color:var(--muted-foreground)]">
               <span className="h-1.5 w-1.5 shrink-0 rounded-[2px]" style={{ background: TONE_COLOR[i.tone] }} />
               <span className="truncate">{i.label}</span>
             </span>
-            <span className={`${MONO} text-[length:var(--text-ui-action)] font-bold text-[color:var(--foreground)]`}>{i.value}</span>
+            <span className={`${MONO} text-body text-[length:var(--text-ui-action)] font-bold text-[color:var(--foreground)]`}>{i.value}</span>
           </div>
         ))}
       </div>
@@ -406,8 +406,8 @@ function ProjectsKpiCard({ projects }: { projects: DashboardProjectsData | null 
         <span className={LABEL}>{dictionary.projects.title}</span>
       </div>
       <div className="mt-4 flex items-baseline gap-2">
-        <span className="portal-metric-xl">{active}</span>
-        <span className="text-sm font-semibold text-[color:var(--muted-foreground)]">{dictionary.projects.active}</span>
+        <span className="text-metric-lg text-foreground">{active}</span>
+        <span className="text-body font-semibold text-[color:var(--muted-foreground)]">{dictionary.projects.active}</span>
       </div>
       <KpiBreakdownBar
         items={[
@@ -446,8 +446,8 @@ function CrmKpiCard({ crm }: { crm: DashboardCrmData | null }) {
         <span className={LABEL}>{dictionary.crm.title}</span>
       </div>
       <div className="mt-4 flex items-baseline gap-2">
-        <span className="portal-metric-xl">{total}</span>
-        <span className="text-sm font-semibold text-[color:var(--muted-foreground)]">{dictionary.crm.contacts}</span>
+        <span className="text-metric-lg text-foreground">{total}</span>
+        <span className="text-body font-semibold text-[color:var(--muted-foreground)]">{dictionary.crm.contacts}</span>
       </div>
       <KpiBreakdownBar
         items={[
@@ -500,8 +500,8 @@ const GROUP_HEADER_TONE: Record<TaskRow["group"], { header: string; label: strin
 };
 
 // Explicit label styling (11px/600/uppercase) so the per-group tone color wins
-// over the shared muted portal-label color.
-const TASK_GROUP_LABEL_BASE = "text-[length:var(--text-ui-label)] font-semibold uppercase tracking-[var(--type-tracking-060)]";
+// over the shared muted text-label text-muted-foreground color.
+const TASK_GROUP_LABEL_BASE = "text-label font-semibold uppercase tracking-[var(--type-tracking-060)]";
 
 function groupFromTask(task: DashboardAssignedTask): TaskRow["group"] {
   if (task.status === "blocked") return "risk";
@@ -559,13 +559,13 @@ function TasksTable({
           </span>
           <div>
             <h2 className={CARD_TITLE}>{title ?? dictionary.tasks.title}</h2>
-            <p className="text-[length:var(--text-ui-meta)] text-[color:var(--muted-foreground)]">{dictionary.tasks.groupedByUrgency}</p>
+            <p className="text-meta text-[color:var(--muted-foreground)]">{dictionary.tasks.groupedByUrgency}</p>
           </div>
         </div>
         {isLoading && rows.length === 0 ? (
           <Skeleton className="h-[26px] w-16 rounded-full" />
         ) : (
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-[color:var(--accent)]/30 bg-[color:var(--accent)]/10 px-2.5 py-1 text-[length:var(--text-ui-label)] font-bold text-[color:var(--accent)]">
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-[color:var(--accent)]/30 bg-[color:var(--accent)]/10 px-2.5 py-1 text-label font-bold text-[color:var(--accent)]">
             {rows.length} {dictionary.tasks.active}
           </span>
         )}
@@ -600,8 +600,8 @@ function TasksTable({
               <CheckCircle2 className="h-5 w-5" />
             </span>
             <div>
-              <p className="text-sm font-semibold text-[color:var(--foreground)]">{dictionary.tasks.allClear}</p>
-              <p className="mt-0.5 text-[length:var(--text-ui-meta)] text-[color:var(--muted-foreground)]">{dictionary.tasks.urgentEmpty}</p>
+              <p className="text-body font-semibold text-[color:var(--foreground)]">{dictionary.tasks.allClear}</p>
+              <p className="mt-0.5 text-meta text-[color:var(--muted-foreground)]">{dictionary.tasks.urgentEmpty}</p>
             </div>
           </div>
         ) : (
@@ -616,7 +616,7 @@ function TasksTable({
                   <span className={cn(TASK_GROUP_LABEL_BASE, "min-w-0 flex-1", tone.label)}>
                     {groupLabel[g]}
                   </span>
-                  <span className={`${MONO} text-[length:var(--text-ui-micro)] text-[color:var(--muted-foreground)]`}>{gr.length}</span>
+                  <span className={`${MONO} text-micro text-[color:var(--muted-foreground)]`}>{gr.length}</span>
                 </div>
                 {gr.map((r) => (
                   <Link
@@ -627,7 +627,7 @@ function TasksTable({
                   >
                     {/* Primary: title + due date */}
                     <div className="flex min-w-0 items-start gap-2">
-                      <p className="portal-body min-w-0 flex-1 font-semibold leading-snug line-clamp-2" title={r.name}>
+                      <p className="text-body text-foreground min-w-0 flex-1 font-semibold leading-snug line-clamp-2" title={r.name}>
                         {r.name}
                       </p>
                       <TaskDueMeta
@@ -642,7 +642,7 @@ function TasksTable({
                       <TaskPriorityTag task={{ priority: r.priority, status: r.status }} />
                       <TaskStatusTag task={{ status: r.status, blockedReason: r.blockedReason }} />
                       <span
-                        className={`${MONO} ml-auto max-w-[8rem] truncate text-[length:var(--text-ui-label)] text-[color:var(--muted-foreground)]`}
+                        className={`${MONO} ml-auto max-w-[8rem] truncate text-label text-[color:var(--muted-foreground)]`}
                         title={r.code}
                       >
                         {r.code}
@@ -706,10 +706,10 @@ function MilestonesPanel({ items, isLoading = false, className = "" }: { items: 
           >
             <Flag className="size-3.5" />
           </span>
-          <h2 className="text-[length:var(--text-ui-card-title)] font-semibold tracking-tight">{dictionary.milestones.title}</h2>
+          <h2 className="text-title font-semibold tracking-tight">{dictionary.milestones.title}</h2>
         </div>
         <span
-          className="rounded-full border px-2 py-0.5 text-[length:var(--text-ui-micro)] font-bold tracking-widest"
+          className="rounded-full border px-2 py-0.5 text-micro font-bold tracking-widest"
           style={{ borderColor: "var(--project-hero-border)", color: "var(--project-hero-muted)" }}
         >
           {items.length ? `${items.length}` : dictionary.milestones.emptyBadge}
@@ -738,8 +738,8 @@ function MilestonesPanel({ items, isLoading = false, className = "" }: { items: 
             <Flag className="h-5 w-5" />
           </span>
           <div>
-            <p className="text-sm font-semibold" style={{ color: "var(--project-hero-foreground)" }}>{dictionary.milestones.emptyTitle}</p>
-            <p className="mt-0.5 text-[length:var(--text-ui-meta)]" style={{ color: "var(--project-hero-muted)" }}>{dictionary.milestones.emptyDescription}</p>
+            <p className="text-body font-semibold" style={{ color: "var(--project-hero-foreground)" }}>{dictionary.milestones.emptyTitle}</p>
+            <p className="mt-0.5 text-meta" style={{ color: "var(--project-hero-muted)" }}>{dictionary.milestones.emptyDescription}</p>
           </div>
         </div>
       ) : (
@@ -763,16 +763,16 @@ function MilestonesPanel({ items, isLoading = false, className = "" }: { items: 
                         }
                   }
                 >
-                  <span className="block text-[length:var(--text-ui-nano-lg)] font-bold leading-none tracking-[var(--type-tracking-080)] opacity-80">
+                  <span className="block text-micro text-[length:var(--text-ui-nano-lg)] font-bold leading-none tracking-[var(--type-tracking-080)] opacity-80">
                     {m.day}
                   </span>
-                  <span className={`${MONO} block text-[length:var(--text-ui-subhead)] font-extrabold leading-none`}>
+                  <span className={`${MONO} block text-heading-4 font-extrabold leading-none`}>
                     {m.date}
                   </span>
                 </div>
                 <div className="relative min-w-0 flex-1">
-                  <p className="truncate text-[length:var(--text-ui-action)] font-semibold">{m.title}</p>
-                  <p className={`${MONO} truncate text-[length:var(--text-ui-label)]`} style={{ color: "var(--project-hero-muted)" }}>
+                  <p className="truncate text-body text-[length:var(--text-ui-action)] font-semibold">{m.title}</p>
+                  <p className={`${MONO} truncate text-label`} style={{ color: "var(--project-hero-muted)" }}>
                     {m.code}
                   </p>
                 </div>
@@ -830,7 +830,7 @@ function ProjectsView({ projects, isLoading }: { projects: DashboardProjectsData
           ))}
         </div>
       ) : list.length === 0 ? (
-        <p className="text-sm text-[color:var(--muted-foreground)]">{dictionary.projects.noneNeedAttention(kpis?.projectsActive ?? 0)}</p>
+        <p className="text-body text-[color:var(--muted-foreground)]">{dictionary.projects.noneNeedAttention(kpis?.projectsActive ?? 0)}</p>
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {list.map((project) => (
@@ -849,7 +849,7 @@ type TagMeta = { label: string; color: string; strong: string };
 function Tag({ meta }: { meta: TagMeta }) {
   return (
     <span
-      className="tint-soft inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[length:var(--text-ui-micro)] font-bold uppercase tracking-[var(--type-tracking-080)]"
+      className="tint-soft inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-micro font-bold uppercase tracking-[var(--type-tracking-080)]"
       style={{ ["--tint" as string]: meta.color, ["--tint-strong" as string]: meta.strong }}
     >
       <span className="dashboard-status-dot h-1.5 w-1.5 rounded-full" />
@@ -894,12 +894,12 @@ function PeriodTile({
       <span className={LABEL}>{label}</span>
       <div className="relative mt-4 flex items-baseline gap-2">
         <span
-          className="portal-metric-display"
+          className="text-metric-display text-foreground"
           style={accent ? { color: "var(--accent)" } : undefined}
         >
           {isLoading ? "–" : value}
         </span>
-        <span className="text-sm font-semibold text-[color:var(--muted-foreground)]">
+        <span className="text-body font-semibold text-[color:var(--muted-foreground)]">
           {value === 1 ? dictionary.clients.newOne : dictionary.clients.newMany}
         </span>
       </div>
@@ -917,7 +917,7 @@ function ContactCard({ c }: { c: DashboardCrmRecentContact }) {
     >
       <div className="flex items-center gap-3">
         <span
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-[length:var(--text-ui-meta)] font-bold"
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-meta font-bold"
           style={{
             background: "var(--dashboard-client-avatar)",
             color: "var(--role-client-strong)",
@@ -927,11 +927,11 @@ function ContactCard({ c }: { c: DashboardCrmRecentContact }) {
           {initialsOf(c.name)}
         </span>
         <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-semibold text-[color:var(--foreground)]">{c.name}</p>
-          <p className="truncate text-xs text-[color:var(--muted-foreground)]">{c.company ?? "—"}</p>
+          <p className="truncate text-body font-semibold text-[color:var(--foreground)]">{c.name}</p>
+          <p className="truncate text-meta text-[color:var(--muted-foreground)]">{c.company ?? "—"}</p>
         </div>
       </div>
-      <div className="mt-4 flex items-center justify-between border-t border-[color:var(--border)] pt-3 text-[length:var(--text-ui-label)] text-[color:var(--muted-foreground)]">
+      <div className="mt-4 flex items-center justify-between border-t border-[color:var(--border)] pt-3 text-label text-[color:var(--muted-foreground)]">
         <Tag meta={meta} />
         <span className="inline-flex items-center gap-1.5">
           <CalendarDays className="h-3.5 w-3.5 opacity-70" strokeWidth={1.75} />
@@ -986,7 +986,7 @@ function ClientsView({ crm, isLoading }: { crm: DashboardCrmData | null; isLoadi
       <section className="space-y-3">
         <div className="flex items-end justify-between">
           <h3 className={CARD_TITLE}>{dictionary.clients.recentTitle}</h3>
-          <span className="text-[length:var(--text-ui-label)] text-[color:var(--muted-foreground)]">
+          <span className="text-label text-[color:var(--muted-foreground)]">
             {contacts.length} {contacts.length === 1 ? dictionary.clients.one : dictionary.clients.many}
           </span>
         </div>
@@ -1009,7 +1009,7 @@ function ClientsView({ crm, isLoading }: { crm: DashboardCrmData | null; isLoadi
             ))}
           </div>
         ) : contacts.length === 0 ? (
-          <p className="text-sm text-[color:var(--muted-foreground)]">{dictionary.clients.noRecent}</p>
+          <p className="text-body text-[color:var(--muted-foreground)]">{dictionary.clients.noRecent}</p>
         ) : (
           <div className="flex flex-wrap gap-4">
             {contacts.map((c) => (

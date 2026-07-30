@@ -50,6 +50,12 @@ Existing recipes remain supported and preserve their rendered values:
 
 The matching `portal-*` recipes have the same typography but continue to include their established tone: headings, titles, body, and metrics use `text-foreground`; meta, label, and micro roles use `text-muted-foreground`. `text-ui-title-sm`, shell/report/preview/auth sizes, MQ `heading-2`, and MQ paragraph aliases are contextual rather than exact canonical equivalents. Keep them until their route family is visually migrated and screenshot-checked.
 
+BrightWeb package-owned UI now consumes the canonical roles directly. Compatibility
+recipes remain exported for independently versioned clients, but new package code
+must not introduce `text-ui-*`, `portal-*`, MQ paragraph aliases, or raw named
+Tailwind font sizes. Contextual sizes compose a canonical role with the existing
+specialized size token so their established geometry remains explicit.
+
 Client themes can override the family without forking recipes. The MQ path is:
 
 ```css

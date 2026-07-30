@@ -33,7 +33,7 @@ export function ToolbarNewMenu({ id, icon: Icon, label = "Novo", tooltip, items 
               type="button"
               variant="brand"
               id={id}
-              className="h-9 px-3 text-[length:var(--text-ui-action)] shadow-[var(--shadow-toolbar-control)]"
+              className="h-9 px-3 text-body text-[length:var(--text-ui-action)] shadow-[var(--shadow-toolbar-control)]"
             >
               <Icon className="size-3.5" />
               {label}
@@ -132,7 +132,7 @@ export function ToolbarDropdownChip({ id, icon: Icon, label, tooltip, items }: T
             <button
               type="button"
               id={id}
-              className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border border-hairline bg-elevate-1 px-3 py-1.5 text-xs font-semibold text-foreground/75 transition-colors hover:border-hairline-strong hover:bg-elevate-3 hover:text-foreground"
+              className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border border-hairline bg-elevate-1 px-3 py-1.5 text-meta font-semibold text-foreground/75 transition-colors hover:border-hairline-strong hover:bg-elevate-3 hover:text-foreground"
             >
               <Icon className="size-3.5" />
               {label}
@@ -178,7 +178,7 @@ export function ToolbarSearchRefreshPill({
         value={searchValue}
         onChange={(event) => onSearchChange(event.target.value)}
         placeholder={placeholder}
-        className="h-8 w-40 border-transparent bg-transparent text-xs shadow-none focus-visible:ring-0 xl:w-56"
+        className="h-8 w-40 border-transparent bg-transparent text-meta shadow-none focus-visible:ring-0 xl:w-56"
       />
       <Tooltip>
         <TooltipTrigger asChild>

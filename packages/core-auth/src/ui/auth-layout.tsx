@@ -51,8 +51,8 @@ export function AuthLayout({
           <div className="auth-layout__brand-panel-inner">
             <div className="auth-layout__brand-logo auth-layout__brand-logo--inverse">{brand.logo}</div>
             <div className="auth-layout__brand-copy">
-              <h2>{brand.splitHeadline ?? dictionary.layout.splitHeadline}</h2>
-              <p>{brand.splitDescription ?? dictionary.layout.splitDescription}</p>
+              <h2 className="text-heading-1">{brand.splitHeadline ?? dictionary.layout.splitHeadline}</h2>
+              <p className="text-body-lg">{brand.splitDescription ?? dictionary.layout.splitDescription}</p>
             </div>
           </div>
         </aside>
@@ -80,8 +80,8 @@ export function AuthHeading({ title, description, eyebrow }: { title: string; de
   return (
     <div className="flex flex-col gap-2">
       {eyebrow ? <span className="eyebrow">{eyebrow}</span> : null}
-      <h1 className="heading-2 text-foreground">{title}</h1>
-      <p className="paragraph-small text-foreground-muted-accessible">{description}</p>
+      <h1 className="text-heading-1 auth-heading text-foreground">{title}</h1>
+      <p className="text-body auth-paragraph-small text-foreground-muted-accessible">{description}</p>
     </div>
   );
 }
@@ -104,7 +104,7 @@ export function AuthNotice({ children, tone = "error", id }: { children: React.R
       aria-live="polite"
       className={`auth-notice auth-notice--${tone} rounded-xl p-3.5`}
     >
-      <p className="paragraph-mini">{children}</p>
+      <p className="text-meta auth-paragraph-mini">{children}</p>
     </div>
   );
 }

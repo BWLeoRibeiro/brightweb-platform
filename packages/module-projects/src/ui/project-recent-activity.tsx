@@ -8,7 +8,7 @@ import {
 } from "./constants";
 import { AppSheetHeader } from "./shared/app-sheet";
 import { ActivityChangeRows } from "./shared/activity-change-rows";
-import { portalMonoTabularClassName as MONO } from "./shared/typography";
+import { monoTabularClassName as MONO } from "./shared/typography";
 import { ProjectOwnerAvatar } from "./shared/project-owner-avatar";
 import { ProjectSurfaceSectionHeader } from "./shared/project-surface-card";
 import { SectionIconButton } from "./shared/section-icon-button";
@@ -53,8 +53,8 @@ function ActivityRow({ item, showDetails = false }: { item: ProjectActivityItem;
       <ProjectOwnerAvatar label={changedBy} size="md" />
       <div className="min-w-0 flex-1">
         <div className="flex items-start gap-2">
-          <p className="portal-body min-w-0 flex-1 leading-snug"><ActivityMessage segs={message} /></p>
-          <span className={`${MONO} portal-micro shrink-0 text-right`}>
+          <p className="text-body text-foreground min-w-0 flex-1 leading-snug"><ActivityMessage segs={message} /></p>
+          <span className={`${MONO} text-micro text-muted-foreground shrink-0 text-right`}>
             {formatDateTime(item.createdAt)}
           </span>
         </div>
@@ -83,7 +83,7 @@ export function ProjectRecentActivity({ activity }: ProjectRecentActivityProps) 
       />
 
       {activity.length === 0 ? (
-        <p className="portal-meta mt-4 px-1 py-2">{dictionary.detail.noActivity}</p>
+        <p className="text-meta text-muted-foreground mt-4 px-1 py-2">{dictionary.detail.noActivity}</p>
       ) : (
         <ul className="portal-scroll mt-4 h-[17.75rem] rounded-[var(--radius-card)] border border-[color:var(--border)]">
           {previewItems.map((item) => (
@@ -101,7 +101,7 @@ export function ProjectRecentActivity({ activity }: ProjectRecentActivityProps) 
           />
           <div className={sheetBodyClassName}>
             {activity.length === 0 ? (
-              <p className="portal-meta px-1 py-2">{dictionary.detail.noActivity}</p>
+              <p className="text-meta text-muted-foreground px-1 py-2">{dictionary.detail.noActivity}</p>
             ) : (
               <ul className="overflow-hidden rounded-[var(--radius-card)] border border-[color:var(--border)]">
                 {activity.map((item) => (

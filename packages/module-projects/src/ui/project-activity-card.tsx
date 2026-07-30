@@ -112,7 +112,7 @@ export function ProjectActivityCard({ projectId, initialActivity, initialActivit
               subtitle={dictionary.detail.recentActivitySubtitle}
             />
             <div className="mt-4 flex flex-col items-start gap-3">
-              <p className="portal-meta">
+              <p className="text-meta text-muted-foreground">
                 {dictionary.detail.activityError}
               </p>
               <Button variant="outline" size="sm" onClick={retry}>

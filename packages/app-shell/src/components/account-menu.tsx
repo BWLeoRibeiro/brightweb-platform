@@ -69,7 +69,7 @@ export function AccountMenu({
             aria-label="Menu da conta"
           >
             <span className="relative inline-flex shrink-0">
-              <span className={cn("inline-flex h-8 w-8 items-center justify-center rounded-full text-[length:var(--text-ui-action)] font-extrabold", avatarTone)}>
+              <span className={cn("inline-flex h-8 w-8 items-center justify-center rounded-full text-body text-[length:var(--text-ui-action)] font-extrabold", avatarTone)}>
                 {userInitials || <User className="size-4" />}
               </span>
               <span className="absolute -bottom-px -right-px size-[var(--account-presence-size)] rounded-full border-2 border-[color:var(--card)] bg-[color:var(--account-presence)]" />
@@ -77,8 +77,8 @@ export function AccountMenu({
             {!collapsed ? (
               <>
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate text-[length:var(--text-ui-action)] font-bold leading-tight text-[color:var(--foreground)]" title={displayName ?? undefined}>{displayName}</span>
-                  <span className="block truncate text-[length:var(--text-ui-label)] leading-tight text-[color:var(--muted-foreground)]" title={secondaryLabel}>{secondaryLabel}</span>
+                  <span className="block truncate text-body text-[length:var(--text-ui-action)] font-bold leading-tight text-[color:var(--foreground)]" title={displayName ?? undefined}>{displayName}</span>
+                  <span className="block truncate text-label leading-tight text-[color:var(--muted-foreground)]" title={secondaryLabel}>{secondaryLabel}</span>
                 </span>
                 <ChevronDown className="size-4 shrink-0 text-foreground/45" />
               </>
@@ -86,8 +86,8 @@ export function AccountMenu({
           </button>
         ) : (
           <button id="header-account-menu-trigger" className="inline-flex items-center gap-xs rounded-full px-2xs.5 pr-xs text-foreground/80 transition-colors hover:bg-[color:var(--surface-account-hover)] hover:text-foreground" aria-label="Menu da conta">
-            <span className={cn("inline-flex h-7 w-7 items-center justify-center rounded-full text-[length:var(--text-ui-label)] font-semibold", avatarTone)}>{userInitials || <User className="size-3.5" />}</span>
-            <span className="hidden max-w-[7rem] truncate text-[length:var(--text-ui-meta)] font-semibold leading-none text-[color:var(--foreground)] xl:inline">{compactLabel}</span>
+            <span className={cn("inline-flex h-7 w-7 items-center justify-center rounded-full text-label font-semibold", avatarTone)}>{userInitials || <User className="size-3.5" />}</span>
+            <span className="hidden max-w-[7rem] truncate text-meta font-semibold leading-none text-[color:var(--foreground)] xl:inline">{compactLabel}</span>
             <ChevronDown className="hidden size-3.5 text-foreground/45 xl:block" />
           </button>
         )}
@@ -99,8 +99,8 @@ export function AccountMenu({
         className={cn("min-w-0 border-[color:var(--hairline)] bg-[color:var(--popover)]", isRail && !collapsed ? "w-[var(--radix-dropdown-menu-trigger-width)]" : "w-fit whitespace-nowrap")}
       >
         <DropdownMenuLabel className="space-y-0.5 font-normal">
-          {displayName ? <p className="paragraph-small truncate font-semibold text-foreground" title={displayName}>Olá, {displayName}</p> : null}
-          <p className="paragraph-mini truncate text-muted-foreground" title={user?.email ?? undefined}>{user?.email}</p>
+          {displayName ? <p className="text-body truncate font-semibold text-foreground" title={displayName}>Olá, {displayName}</p> : null}
+          <p className="text-meta truncate text-muted-foreground" title={user?.email ?? undefined}>{user?.email}</p>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         {isStaff ? (

@@ -63,7 +63,7 @@ export function CrmDashboardSidebar({
               ))}
             </div>
           ) : null}
-          {!isRefreshing && timelineEntries.length === 0 ? <p className="paragraph-mini text-[color:var(--muted-foreground)]">{dictionary.timeline.emptyHint}</p> : null}
+          {!isRefreshing && timelineEntries.length === 0 ? <p className="text-meta text-[color:var(--muted-foreground)]">{dictionary.timeline.emptyHint}</p> : null}
           <ol className="flex flex-col pl-[var(--timeline-list-inset)]">
             {timelineEntries.slice(0, 3).map((entry, index, list) => (
               <CrmActivityCard key={entry.id} item={entry} isLast={index === list.length - 1} locale={dictionary.locale} dictionary={dictionary.activity} systemActor={dictionary.timeline.systemActor} />
@@ -95,17 +95,17 @@ export function CrmDashboardSidebar({
             return (
               <div key={organization.id} className="flex items-center justify-between gap-3 rounded-[var(--radius-card)] px-2.5 py-2 transition-colors hover:bg-muted">
                 <div className="min-w-0">
-                  <p className="truncate paragraph-small font-semibold leading-tight text-[color:var(--foreground)]">{organization.name}</p>
-                  <p className="mt-0.5 paragraph-mini leading-tight text-[color:var(--muted-foreground)]">{organization.industry ?? dictionary.organizations.industry}</p>
+                  <p className="truncate text-body font-semibold leading-tight text-[color:var(--foreground)]">{organization.name}</p>
+                  <p className="mt-0.5 text-meta leading-tight text-[color:var(--muted-foreground)]">{organization.industry ?? dictionary.organizations.industry}</p>
                   {websiteHref ? (
-                    <a href={websiteHref} target="_blank" rel="noreferrer" className="group mt-1 inline-flex max-w-full items-center gap-1 paragraph-mini leading-tight text-[color:var(--muted-foreground)] hover:text-[color:var(--foreground)] hover:underline">
+                    <a href={websiteHref} target="_blank" rel="noreferrer" className="group mt-1 inline-flex max-w-full items-center gap-1 text-meta leading-tight text-[color:var(--muted-foreground)] hover:text-[color:var(--foreground)] hover:underline">
                       <span className="truncate">{organization.website_url}</span>
                       <ArrowUpRight className="size-3 opacity-0 transition-opacity group-hover:opacity-100" aria-hidden />
                     </a>
-                  ) : <p className="mt-1 paragraph-mini leading-tight text-[color:var(--muted-foreground)]">{dictionary.report.noWebsite}</p>}
+                  ) : <p className="mt-1 text-meta leading-tight text-[color:var(--muted-foreground)]">{dictionary.report.noWebsite}</p>}
                 </div>
                 <div className="flex shrink-0 items-center gap-1.5">
-                  <Badge variant="outline" className="h-6 min-w-6 justify-center rounded-full border-border-hairline-soft bg-transparent px-2 text-[length:var(--text-ui-label)] font-semibold text-[color:var(--muted-foreground)]">
+                  <Badge variant="outline" className="h-6 min-w-6 justify-center rounded-full border-border-hairline-soft bg-transparent px-2 text-label font-semibold text-[color:var(--muted-foreground)]">
                     {contactsByOrganization.get(organization.id) ?? 0}
                   </Badge>
                   <Button type="button" variant="ghost" size="icon-sm" className="size-7 rounded-full text-muted-foreground hover:bg-muted hover:text-foreground" onClick={() => onOpenOrganization(organization)} aria-label={dictionary.organizations.expand}>
@@ -118,7 +118,7 @@ export function CrmDashboardSidebar({
           {isLoadingOrganizations && organizations.length === 0 ? (
             <div className="space-y-2 px-2.5 py-2">{[0, 1, 2, 3].map((index) => <Skeleton key={index} className="h-10 w-full rounded-[var(--radius-card)]" />)}</div>
           ) : null}
-          {!isLoadingOrganizations && organizations.length === 0 ? <p className="px-2.5 py-4 text-ui-micro text-muted-foreground">{dictionary.organizations.emptyTitle}</p> : null}
+          {!isLoadingOrganizations && organizations.length === 0 ? <p className="px-2.5 py-4 text-micro text-muted-foreground">{dictionary.organizations.emptyTitle}</p> : null}
         </div>
       </SurfaceCard>
     </div>

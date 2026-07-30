@@ -172,7 +172,7 @@ export function CrmDashboard({ client: providedClient, initialData, dictionary =
 
   return (
     <div className="flex w-full flex-col gap-6 pt-0">
-      {loadFailed ? <p role="alert" className="rounded-[var(--radius-card)] border border-destructive/30 bg-destructive/10 px-4 py-3 text-ui-body text-destructive">{dictionary.dashboard.loadError}</p> : null}
+      {loadFailed ? <p role="alert" className="rounded-[var(--radius-card)] border border-destructive/30 bg-destructive/10 px-4 py-3 text-body text-destructive">{dictionary.dashboard.loadError}</p> : null}
       {slots?.aboveStats}
       {slots?.besideStats}
       {slots?.aboveTable}

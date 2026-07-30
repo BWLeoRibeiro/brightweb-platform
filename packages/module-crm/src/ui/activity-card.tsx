@@ -53,10 +53,10 @@ export function CrmActivityCard({
       />
       <div className="min-w-0 flex-1">
         <div className="flex items-start justify-between gap-2">
-          <p className="portal-meta leading-snug"><ActivityMessage segs={message} /></p>
-          <time className="shrink-0 portal-micro font-normal" dateTime={item.changed_at}>{formatDateTime(item.changed_at, locale)}</time>
+          <p className="text-meta text-muted-foreground leading-snug"><ActivityMessage segs={message} /></p>
+          <time className="shrink-0 text-micro text-muted-foreground font-normal" dateTime={item.changed_at}>{formatDateTime(item.changed_at, locale)}</time>
         </div>
-        {item.reason ? <p className="mt-0.5 portal-micro leading-snug">{item.reason}</p> : null}
+        {item.reason ? <p className="mt-0.5 text-micro text-muted-foreground leading-snug">{item.reason}</p> : null}
       </div>
     </li>
   );

@@ -34,14 +34,14 @@ export async function ClientProjectsPreview() {
     <div>
       <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h2 className="font-display text-base font-bold">{dictionary.title}</h2>
+          <h2 className="font-display text-body-lg font-bold">{dictionary.title}</h2>
           {projects.items.length > 0 ? (
             <div className="mt-1 flex flex-wrap items-center gap-3">
               {(Object.entries(healthCounts) as [ProjectHealth, number][]).map(
                 ([health, count]) => (
                   <span
                     key={health}
-                    className="inline-flex items-center gap-1 text-ui-label text-muted-foreground"
+                    className="inline-flex items-center gap-1 text-label text-muted-foreground"
                   >
                     <span
                       className="size-1.5 shrink-0 rounded-full"
@@ -56,7 +56,7 @@ export async function ClientProjectsPreview() {
         </div>
         <Link
           href={projectsHref}
-          className="mt-0.5 inline-flex shrink-0 items-center gap-1 text-sm font-semibold text-primary hover:underline"
+          className="mt-0.5 inline-flex shrink-0 items-center gap-1 text-body font-semibold text-primary hover:underline"
         >
           {dictionary.fullList}
           <ArrowRight className="size-3.5" />
@@ -64,13 +64,13 @@ export async function ClientProjectsPreview() {
       </div>
 
       {projects.schemaMissing ? (
-        <div className="rounded-xl border border-amber-300/60 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-400/30 dark:bg-amber-500/10 dark:text-amber-100">
+        <div className="rounded-xl border border-amber-300/60 bg-amber-50 px-4 py-3 text-body text-amber-900 dark:border-amber-400/30 dark:bg-amber-500/10 dark:text-amber-100">
           {dictionary.schemaMissing}
         </div>
       ) : null}
 
       {projects.error ? (
-        <div className="rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+        <div className="rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-body text-destructive">
           {dictionary.loadError} {projects.error}
         </div>
       ) : null}
@@ -81,10 +81,10 @@ export async function ClientProjectsPreview() {
           style={{ borderColor: "var(--border)", background: "var(--card)" }}
         >
           <FolderKanban className="mx-auto mb-3 size-9 text-muted-foreground/25" />
-          <p className="text-sm font-semibold text-muted-foreground">{dictionary.empty}</p>
+          <p className="text-body font-semibold text-muted-foreground">{dictionary.empty}</p>
           <Link
             href={projectsHref}
-            className="mt-3 inline-flex items-center gap-1 text-sm font-semibold text-primary hover:underline"
+            className="mt-3 inline-flex items-center gap-1 text-body font-semibold text-primary hover:underline"
           >
             {dictionary.explore} <ArrowRight className="size-3.5" />
           </Link>
@@ -112,10 +112,10 @@ export async function ClientProjectsPreview() {
               background: "var(--muted)",
             }}
           >
-            <span className="text-xs text-muted-foreground">{dictionary.showing}</span>
+            <span className="text-meta text-muted-foreground">{dictionary.showing}</span>
             <Link
               href={projectsHref}
-              className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline"
+              className="inline-flex items-center gap-1 text-meta font-semibold text-primary hover:underline"
             >
               {dictionary.viewAll}
               <ArrowRight className="size-3" />
@@ -155,7 +155,7 @@ export function ProjectRow({
       <div className="min-w-0 flex-1 pl-1">
         <div className="mb-1 flex flex-wrap items-center gap-2">
           <span
-            className="rounded-full px-2 py-0.5 text-ui-micro font-semibold"
+            className="rounded-full px-2 py-0.5 text-micro font-semibold"
             style={{
               background: "var(--muted)",
               color: "var(--muted-foreground)",
@@ -164,7 +164,7 @@ export function ProjectRow({
             {CLIENT_PROJECT_STATUS_LABELS[project.status]}
           </span>
           <span
-            className="inline-flex items-center gap-1 text-ui-micro font-semibold"
+            className="inline-flex items-center gap-1 text-micro font-semibold"
             style={{ color: healthVar }}
           >
             <span className="size-1.5 rounded-full" style={{ background: healthVar }} />
@@ -172,8 +172,8 @@ export function ProjectRow({
           </span>
         </div>
 
-        <h3 className="truncate text-sm font-semibold leading-snug">{project.name}</h3>
-        <p className="mt-0.5 text-ui-label text-muted-foreground">
+        <h3 className="truncate text-body font-semibold leading-snug">{project.name}</h3>
+        <p className="mt-0.5 text-label text-muted-foreground">
           {project.organizationName}
           {project.targetDate ? ` · ${formatClientProjectDate(project.targetDate)}` : ""}
         </p>
@@ -190,7 +190,7 @@ export function ProjectRow({
               />
             </div>
             <span
-              className="shrink-0 text-ui-micro font-bold tabular-nums"
+              className="shrink-0 text-micro font-bold tabular-nums"
               style={{ color: healthVar }}
             >
               {progressPct}%
@@ -201,7 +201,7 @@ export function ProjectRow({
 
       <Link
         href={resolveClientProjectDetailHref(isStaff, project.id)}
-        className="inline-flex shrink-0 items-center gap-1 text-xs font-semibold text-primary hover:underline"
+        className="inline-flex shrink-0 items-center gap-1 text-meta font-semibold text-primary hover:underline"
       >
         {clientProjectsDictionary.preview.open}
         <ArrowRight className="size-3" />

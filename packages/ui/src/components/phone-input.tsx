@@ -119,13 +119,13 @@ export function PhoneInput({ value, onChange, defaultCountry = "pt", disabled = 
             closePicker(true);
           }
         }}
-        className="flex h-7 items-center gap-1 border-0 bg-transparent pr-1.5 text-sm disabled:pointer-events-none disabled:opacity-100"
+        className="flex h-7 items-center gap-1 border-0 bg-transparent pr-1.5 text-body disabled:pointer-events-none disabled:opacity-100"
         aria-controls={countryListId}
         aria-expanded={open}
         aria-haspopup="listbox"
         aria-label="Choose country code"
       >
-        <span className="text-base leading-none">{flagEmoji(country.iso2)}</span>
+        <span className="text-body-lg leading-none">{flagEmoji(country.iso2)}</span>
         <svg className="size-2.5 text-foreground/40" viewBox="0 0 10 6" fill="none" aria-hidden>
           <path d="M1 1l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
@@ -149,7 +149,7 @@ export function PhoneInput({ value, onChange, defaultCountry = "pt", disabled = 
               }}
               onKeyDown={handlePickerKeyDown}
               placeholder="Search…"
-              className="w-full border-0 bg-transparent text-ui-meta text-foreground outline-none placeholder:text-foreground-muted-accessible"
+              className="w-full border-0 bg-transparent text-meta text-foreground outline-none placeholder:text-foreground-muted-accessible"
             />
           </div>
           <div id={countryListId} role="listbox" aria-label="Country calling codes" className="max-h-48 overflow-y-auto rounded-b-[var(--radius-card)] p-1">
@@ -170,18 +170,18 @@ export function PhoneInput({ value, onChange, defaultCountry = "pt", disabled = 
                   (country.iso2 === candidate.iso2 || activeIndex === index) && "bg-[color:var(--elevate-3)] text-[color:var(--brand-accent)]",
                 )}
               >
-                <span className="text-sm leading-none">{flagEmoji(candidate.iso2)}</span>
-                <span className="flex-1 truncate text-ui-label normal-case tracking-normal text-foreground">{candidate.name}</span>
-                <span className="shrink-0 text-ui-micro text-foreground-muted-accessible">+{candidate.dialCode}</span>
+                <span className="text-body leading-none">{flagEmoji(candidate.iso2)}</span>
+                <span className="flex-1 truncate text-label normal-case tracking-normal text-foreground">{candidate.name}</span>
+                <span className="shrink-0 text-micro text-foreground-muted-accessible">+{candidate.dialCode}</span>
               </button>
             ))}
-            {filteredCountries.length === 0 ? <p className="px-2 py-2 text-ui-meta text-foreground-muted-accessible">No results</p> : null}
+            {filteredCountries.length === 0 ? <p className="px-2 py-2 text-meta text-foreground-muted-accessible">No results</p> : null}
           </div>
         </div>
       ) : null}
 
       <span className="h-4 w-px shrink-0 bg-foreground/15" />
-      <input {...inputProps} ref={inputRef} value={inputValue} onChange={handlePhoneValueChange} disabled={disabled} placeholder={placeholder} type="tel" className="h-7 flex-1 border-0 bg-transparent pl-2 text-sm text-foreground outline-none placeholder:text-foreground-muted-accessible disabled:pointer-events-none disabled:opacity-100" />
+      <input {...inputProps} ref={inputRef} value={inputValue} onChange={handlePhoneValueChange} disabled={disabled} placeholder={placeholder} type="tel" className="h-7 flex-1 border-0 bg-transparent pl-2 text-body text-foreground outline-none placeholder:text-foreground-muted-accessible disabled:pointer-events-none disabled:opacity-100" />
     </div>
   );
 }

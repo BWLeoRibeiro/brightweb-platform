@@ -56,7 +56,7 @@ export function NotFoundPage({
       >
         <div className="max-w-[36rem]">
           <p className="label text-[var(--mq-brand-400)]">{dictionary.notFound.label}</p>
-          <h1 className="heading-2 mt-4">
+          <h1 className="text-heading-1 text-[length:var(--type-heading-2)] font-black leading-[var(--type-leading-110)] tracking-[var(--type-tracking-n025)] mt-4">
             {dictionary.notFound.heading}<span className="text-accent">.</span>
           </h1>
           <p className="paragraph mt-4 text-muted-foreground">

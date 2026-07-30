@@ -1,6 +1,6 @@
 import type { CSSProperties, ReactNode } from "react";
 import { CalendarDays, CalendarOff, Flag, User } from "lucide-react";
-import { portalMonoTabularClassName as MONO } from "./typography";
+import { monoTabularClassName as MONO } from "./typography";
 import type { ProjectTask } from "../../types";
 import { tintPill } from "@brightweblabs/theme/tint";
 import { cn } from "../utils";
@@ -41,7 +41,7 @@ export function TaskTag({ className, children, title, style }: { className?: str
       title={title}
       style={style}
       className={cn(
-        "inline-flex shrink-0 items-center gap-1 rounded-full border px-1.5 py-[1px] text-[length:var(--text-ui-micro)] font-semibold",
+        "inline-flex shrink-0 items-center gap-1 rounded-full border px-1.5 py-[1px] text-micro font-semibold",
         className,
       )}
     >
@@ -113,7 +113,7 @@ export function TaskStatusTag({ task }: { task: Pick<ProjectTask, "status" | "bl
 export function TaskMilestoneMeta({ title, className }: { title: string | null; className?: string }) {
   return (
     <span
-      className={cn("portal-micro inline-flex min-w-0 items-center gap-1", title ? "text-foreground/45" : "text-foreground/30", className)}
+      className={cn("text-micro text-muted-foreground inline-flex min-w-0 items-center gap-1", title ? "text-foreground/45" : "text-foreground/30", className)}
       title={title ?? defaultProjectsUiDictionary.board.noMilestoneAssociated}
     >
       <Flag className="size-3 shrink-0" />
@@ -125,7 +125,7 @@ export function TaskMilestoneMeta({ title, className }: { title: string | null; 
 export function TaskAssigneeMeta({ label, className }: { label: string | null; className?: string }) {
   return (
     <span
-      className={cn("portal-micro inline-flex min-w-0 items-center gap-1", label ? "text-foreground/45" : "text-foreground/30", className)}
+      className={cn("text-micro text-muted-foreground inline-flex min-w-0 items-center gap-1", label ? "text-foreground/45" : "text-foreground/30", className)}
       title={label ?? defaultProjectsUiDictionary.board.noAssignee}
     >
       <User className="size-3 shrink-0" />
@@ -146,7 +146,7 @@ export function TaskDueMeta({
   return (
     <span
       className={cn(
-        `${MONO} portal-micro inline-flex shrink-0 items-center gap-1`,
+        `${MONO} text-micro text-muted-foreground inline-flex shrink-0 items-center gap-1`,
         dueDate
           ? isOverdue
             ? "font-semibold text-[color:var(--project-risk-overdue-strong)]"

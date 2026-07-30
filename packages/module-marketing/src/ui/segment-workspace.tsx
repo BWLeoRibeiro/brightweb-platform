@@ -182,8 +182,8 @@ export function SegmentWorkspace({
           <div className="marketing-ledger-heading">
             <div>
               <p className="marketing-kicker">{dictionary.segments.eyebrow}</p>
-              <h2 className="text-xl font-semibold">{dictionary.segments.title}</h2>
-              <p className="text-sm text-muted-foreground">
+              <h2 className="text-heading-3 font-semibold">{dictionary.segments.title}</h2>
+              <p className="text-body text-muted-foreground">
                 {dictionary.segments.subtitle}
               </p>
             </div>
@@ -281,10 +281,10 @@ export function SegmentWorkspace({
               </div>
 
               <fieldset className="marketing-field marketing-field-wide">
-                <legend className="text-sm font-semibold">
+                <legend className="text-body font-semibold">
                   {dictionary.segments.fields.topics}
                 </legend>
-                <p className="mb-3 text-xs text-muted-foreground">
+                <p className="mb-3 text-meta text-muted-foreground">
                   {dictionary.segments.anyTopicHint}
                 </p>
                 <div className="flex flex-wrap gap-2">
@@ -292,7 +292,7 @@ export function SegmentWorkspace({
                     const selected = form.rule.topicIds?.includes(topic.id) ?? false;
                     return (
                       <label
-                        className="flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-sm"
+                        className="flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-body"
                         key={topic.id}
                       >
                         <Checkbox
@@ -388,7 +388,7 @@ export function SegmentWorkspace({
                     excludeSuppressed: event.target.checked,
                   })}
                 />
-                <span className="text-sm">
+                <span className="text-body">
                   {dictionary.segments.fields.excludeSuppressed}
                 </span>
               </label>
@@ -398,7 +398,7 @@ export function SegmentWorkspace({
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <p className="marketing-kicker">{dictionary.segments.previewTitle}</p>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-body text-muted-foreground">
                     {previewing
                       ? dictionary.segments.previewLoading
                       : `${preview.count} ${dictionary.segments.previewCount}`}
@@ -410,7 +410,7 @@ export function SegmentWorkspace({
                 </Badge>
               </div>
               {preview.sample.length === 0 ? (
-                <p className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
+                <p className="rounded-lg border border-dashed p-4 text-body text-muted-foreground">
                   {dictionary.segments.previewEmpty}
                 </p>
               ) : (
@@ -418,10 +418,10 @@ export function SegmentWorkspace({
                   {preview.sample.map((contact) => (
                     <div className="marketing-recipient-row" key={contact.id}>
                       <div className="min-w-0">
-                        <p className="truncate text-sm font-semibold">
+                        <p className="truncate text-body font-semibold">
                           {contact.name || contact.email}
                         </p>
-                        <p className="truncate text-xs text-muted-foreground">
+                        <p className="truncate text-meta text-muted-foreground">
                           {contact.email}
                         </p>
                       </div>

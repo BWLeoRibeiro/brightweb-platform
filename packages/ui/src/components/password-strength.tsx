@@ -79,7 +79,7 @@ export function PasswordStrength({ password, className }: PasswordStrengthProps)
         />
       </div>
 
-      <p className={cn("text-ui-meta !font-semibold transition-colors", config.textColor)}>
+      <p className={cn("text-meta !font-semibold transition-colors", config.textColor)}>
         Força: {config.label}
       </p>
     </div>

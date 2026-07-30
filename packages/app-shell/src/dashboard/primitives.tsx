@@ -2,16 +2,16 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 import { cn } from "../lib/utils";
 
-export const dashboardCardTitleClassName = "portal-card-title";
-export const dashboardLabelClassName = "portal-label";
+export const dashboardCardTitleClassName = "text-title text-foreground";
+export const dashboardLabelClassName = "text-label text-muted-foreground";
 export const dashboardMonoTabularClassName = "font-mono tabular-nums";
 
-const dashboardActionClassName = "inline-flex shrink-0 items-center gap-1.5 rounded-full border border-[color:var(--foreground-accent-link)]/40 bg-[color:var(--surface-button-brand)]/10 px-3.5 py-1.5 font-[inherit] text-[length:var(--text-ui-meta)] font-semibold text-[color:var(--foreground-accent-link)] transition hover:border-[color:var(--surface-button-brand)] hover:bg-[color:var(--surface-button-brand)] hover:text-[color:var(--accent-foreground)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-current [&_svg]:h-3.5 [&_svg]:w-3.5";
+const dashboardActionClassName = "inline-flex shrink-0 items-center gap-1.5 rounded-full border border-[color:var(--foreground-accent-link)]/40 bg-[color:var(--surface-button-brand)]/10 px-3.5 py-1.5 font-[inherit] text-meta font-semibold text-[color:var(--foreground-accent-link)] transition hover:border-[color:var(--surface-button-brand)] hover:bg-[color:var(--surface-button-brand)] hover:text-[color:var(--accent-foreground)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-current [&_svg]:h-3.5 [&_svg]:w-3.5";
 
 export function DashboardActionLink({ href, children, className, prefetch }: { href: string; children: ReactNode; className?: string; prefetch?: boolean }) {
   return <Link href={href} prefetch={prefetch} className={cn(dashboardActionClassName, className)}>{children}</Link>;
 }
 
 export function DashboardSectionHeading({ title, subtitle, action }: { title: ReactNode; subtitle?: ReactNode; action?: ReactNode }) {
-  return <div className="flex flex-wrap items-end justify-between gap-3"><div><h2 className="portal-heading">{title}</h2>{subtitle ? <p className="mt-1 text-sm text-[color:var(--muted-foreground)]">{subtitle}</p> : null}</div>{action}</div>;
+  return <div className="flex flex-wrap items-end justify-between gap-3"><div><h2 className="text-heading-2 text-foreground">{title}</h2>{subtitle ? <p className="mt-1 text-body text-[color:var(--muted-foreground)]">{subtitle}</p> : null}</div>{action}</div>;
 }

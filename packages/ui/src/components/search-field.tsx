@@ -41,7 +41,7 @@ export function SearchField({
         aria-label={ariaLabel ?? placeholder}
         className={cn(
           size === "sm" ? "h-8" : "h-9",
-          "rounded-[var(--radius-card)] border-border bg-card pl-8 text-ui-meta text-foreground",
+          "rounded-[var(--radius-card)] border-border bg-card pl-8 text-meta text-foreground",
           showClear ? "pr-8" : null,
           inputClassName,
         )}

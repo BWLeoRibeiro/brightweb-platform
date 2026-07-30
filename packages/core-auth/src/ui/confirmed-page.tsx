@@ -27,7 +27,7 @@ function ConfirmedContent() {
       <AuthCard className="text-center">
         <AuthHeading title={d.title} description={target === "app" ? d.appDescription : d.loginDescription} />
         <Button variant="link" size="link" asChild>
-          <Link href={href} className="mx-auto paragraph-small font-semibold text-primary hover:text-primary/80">
+          <Link href={href} className="mx-auto text-body auth-paragraph-small font-semibold text-primary hover:text-primary/80">
             {target === "app" ? d.continue : dictionary.common.login}
           </Link>
         </Button>

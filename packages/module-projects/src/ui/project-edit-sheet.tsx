@@ -203,8 +203,8 @@ export function ProjectEditSheet({
     isFieldEditable(field) ? sheetEditControlClassName : sheetViewControlClassName;
   const textareaClass = (field: (typeof allEditableFields)[number]) =>
     isFieldEditable(field)
-      ? "w-full rounded-xl border border-[color:var(--project-ui-color-01)] bg-[color:var(--card)] px-3 py-2 text-sm text-foreground placeholder:text-foreground/35 focus:border-[color:var(--accent)] focus:outline-none focus:ring-[3px] focus:ring-[color:var(--project-ui-color-10)] disabled:cursor-not-allowed disabled:opacity-55"
-      : "w-full resize-none bg-transparent p-0 text-sm text-foreground placeholder:text-foreground/35 disabled:opacity-100";
+      ? "w-full rounded-xl border border-[color:var(--project-ui-color-01)] bg-[color:var(--card)] px-3 py-2 text-body text-foreground placeholder:text-foreground/35 focus:border-[color:var(--accent)] focus:outline-none focus:ring-[3px] focus:ring-[color:var(--project-ui-color-10)] disabled:cursor-not-allowed disabled:opacity-55"
+      : "w-full resize-none bg-transparent p-0 text-body text-foreground placeholder:text-foreground/35 disabled:opacity-100";
   const targetDateValue = useMemo(() => parseIsoDate(form.targetDate), [form.targetDate]);
 
   const setField = (key: keyof FormState, value: string) => {
@@ -415,7 +415,7 @@ export function ProjectEditSheet({
                         variant="ghost"
                         disabled={!isFieldEditable("targetDate")}
                         className={cn(
-                          "h-9 w-full justify-start rounded-lg px-2.5 text-sm disabled:cursor-not-allowed disabled:opacity-55",
+                          "h-9 w-full justify-start rounded-lg px-2.5 text-body disabled:cursor-not-allowed disabled:opacity-55",
                           isFieldEditable("targetDate")
                             ? "border border-[color:var(--project-ui-color-01)] bg-[color:var(--card)] hover:bg-[color:var(--card)]"
                             : "border-0 bg-transparent hover:bg-transparent",
@@ -446,16 +446,16 @@ export function ProjectEditSheet({
           {canDeleteProject ? (
             <div className="overflow-hidden rounded-2xl border border-rose-300/60 bg-rose-50/45 dark:border-rose-500/30 dark:bg-rose-500/10">
               <div className="bg-rose-500 px-4 py-2.5">
-                <p className="text-[length:var(--text-ui-label)] font-semibold uppercase tracking-widest text-white/90">{dictionary.projectEdit.dangerZone}</p>
+                <p className="text-label font-semibold uppercase tracking-widest text-white/90">{dictionary.projectEdit.dangerZone}</p>
               </div>
               <div className="space-y-3 px-4 py-3">
-                <p className="text-xs text-rose-700/90 dark:text-rose-200/90">
+                <p className="text-meta text-rose-700/90 dark:text-rose-200/90">
                   {dictionary.projectEdit.dangerDescription}
                 </p>
                 <Button
                   type="button"
                   variant="destructive"
-                  className="h-8 rounded-lg px-3 text-xs"
+                  className="h-8 rounded-lg px-3 text-meta"
                   onClick={() => setDeleteDialogOpen(true)}
                   disabled={isDeleting}
                 >
@@ -500,13 +500,13 @@ export function ProjectEditSheet({
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel
-              className="rounded-full border-black/10 px-4 text-xs dark:border-white/15"
+              className="rounded-full border-black/10 px-4 text-meta dark:border-white/15"
               disabled={isDeleting}
             >
               {dictionary.actions.cancel}
             </AlertDialogCancel>
             <AlertDialogAction
-              className="rounded-full bg-rose-600 px-4 text-xs text-white hover:bg-rose-700"
+              className="rounded-full bg-rose-600 px-4 text-meta text-white hover:bg-rose-700"
               onClick={(event: MouseEvent<HTMLButtonElement>) => {
                 event.preventDefault();
                 void handleDelete();

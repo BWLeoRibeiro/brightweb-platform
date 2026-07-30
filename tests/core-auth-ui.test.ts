@@ -160,12 +160,14 @@ test("preview mounts invitation detail, registration, and post-login acceptance 
 
 test("auth typography overrides stay scoped and preview defaults to split layout", async () => {
   const tokens = await read("tokens.css");
-  for (const selector of ["heading-2", "paragraph-small", "paragraph-mini", "eyebrow"]) {
+  for (const selector of ["auth-heading", "auth-paragraph-small", "auth-paragraph-mini", "eyebrow"]) {
     assert.match(tokens, new RegExp(`\\.auth-layout \\.${selector.replaceAll("-", "\\-")}`));
   }
-  assert.doesNotMatch(tokens, /(?:^|\n)\.(?:heading-2|paragraph-small|paragraph-mini|eyebrow)\s*(?:,|\{)/);
+  assert.doesNotMatch(tokens, /(?:^|\n)\.(?:auth-heading|auth-paragraph-small|auth-paragraph-mini|eyebrow)\s*(?:,|\{)/);
 
   const layout = await read("src/ui/auth-layout.tsx");
+  assert.match(layout, /text-heading-1 auth-heading/);
+  assert.match(layout, /text-body auth-paragraph-small/);
   assert.match(layout, /value === "split" \|\| value === "centered"/);
   assert.match(layout, /variant \?\? queryVariant \?\? layoutVariant \?\? "centered"/);
 

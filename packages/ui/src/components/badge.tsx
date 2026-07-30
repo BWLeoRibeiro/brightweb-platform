@@ -21,8 +21,8 @@ const badgeVariants = cva(
         tint: "text-current [background-color:var(--surface-badge-tint)]",
       },
       size: {
-        default: "gap-1 px-2 py-0.5 text-xs font-semibold",
-        sm: "gap-1.5 px-xs py-0.5 text-[length:var(--text-ui-micro)] font-semibold leading-none",
+        default: "gap-1 px-2 py-0.5 text-meta font-semibold",
+        sm: "gap-1.5 px-xs py-0.5 text-micro font-semibold leading-none",
       },
     },
     defaultVariants: {

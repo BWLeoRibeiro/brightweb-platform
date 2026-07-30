@@ -35,7 +35,7 @@ export const defaultAdminUiDictionary: AdminUiDictionary = {
   invitations: {
     title: "Convidar utilizador do portal",
     description: "Administradores e colaboradores da aplicação. Clientes continuam no CRM da organização.",
-    updating: "A atualizar convites...",
+    updating: "A atualizar convites…",
     emailLabel: "E-mail do utilizador",
     emailPlaceholder: "email@empresa.pt",
     roleLabel: "Função do utilizador",

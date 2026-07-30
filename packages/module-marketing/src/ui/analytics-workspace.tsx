@@ -71,7 +71,7 @@ export function CampaignAnalyticsPanel({
         <p className="marketing-kicker" id="campaign-analytics-title">
           {dictionary.analytics.detailsTitle}
         </p>
-        <p className="mt-1 text-sm text-muted-foreground">
+        <p className="mt-1 text-body text-muted-foreground">
           {dictionary.analytics.detailsSubtitle}
         </p>
       </div>
@@ -160,10 +160,10 @@ export function AnalyticsWorkspace({
           <div className="flex items-start justify-between gap-4 border-b p-6">
             <div>
               <p className="marketing-kicker">{dictionary.analytics.eyebrow}</p>
-              <h2 className="mt-2 text-2xl font-semibold tracking-tight" id="marketing-analytics-heading">
+              <h2 className="mt-2 text-heading-2 font-semibold tracking-tight" id="marketing-analytics-heading">
                 {dictionary.analytics.title}
               </h2>
-              <p className="mt-2 max-w-[42rem] text-sm text-muted-foreground">
+              <p className="mt-2 max-w-[42rem] text-body text-muted-foreground">
                 {dictionary.analytics.subtitle}
               </p>
             </div>
@@ -175,7 +175,7 @@ export function AnalyticsWorkspace({
             {stats.map((stat) => (
               <StatTile className="border-b border-r p-6" key={stat.label} label={stat.label}>
                 <StatValue size="large">{stat.value}</StatValue>
-                <p className="mt-2 text-xs text-muted-foreground">{stat.detail}</p>
+                <p className="mt-2 text-meta text-muted-foreground">{stat.detail}</p>
               </StatTile>
             ))}
           </div>
@@ -187,7 +187,7 @@ export function AnalyticsWorkspace({
           <div className="flex items-center justify-between border-b p-6">
             <div>
               <p className="marketing-kicker">{dictionary.analytics.campaignsTitle}</p>
-              <p className="mt-1 text-sm text-muted-foreground">
+              <p className="mt-1 text-body text-muted-foreground">
                 {dictionary.analytics.campaignCount(rows.length)}
               </p>
             </div>
@@ -196,12 +196,12 @@ export function AnalyticsWorkspace({
           {rows.length === 0 ? (
             <div className="flex flex-col items-center gap-3 px-6 py-14 text-center text-muted-foreground">
               <MailCheck className="size-7" aria-hidden="true" />
-              <p className="text-sm">{dictionary.analytics.noData}</p>
+              <p className="text-body">{dictionary.analytics.noData}</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[760px] text-left text-sm">
-                <thead className="border-b bg-muted/50 text-xs text-muted-foreground">
+              <table className="w-full min-w-[760px] text-left text-body">
+                <thead className="border-b bg-muted/50 text-meta text-muted-foreground">
                   <tr>
                     <th className="px-6 py-3 font-semibold">{dictionary.analytics.campaign}</th>
                     <th className="px-4 py-3 font-semibold">{dictionary.analytics.delivery}</th>
@@ -216,7 +216,7 @@ export function AnalyticsWorkspace({
                     <tr className="transition-colors hover:bg-muted/40" key={campaign.id}>
                       <td className="px-6 py-4">
                         <p className="font-semibold">{campaign.name}</p>
-                        <p className="mt-0.5 max-w-64 truncate text-xs text-muted-foreground">
+                        <p className="mt-0.5 max-w-64 truncate text-meta text-muted-foreground">
                           {campaign.subject}
                         </p>
                       </td>

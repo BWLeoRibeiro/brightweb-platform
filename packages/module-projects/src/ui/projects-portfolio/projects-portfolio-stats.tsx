@@ -135,14 +135,14 @@ export function ProjectsPortfolioStats({
                   <div className={cn("mb-4 flex w-fit items-center justify-center rounded-xl p-1.5", stat.iconWrapCn)}>
                     <Icon className={cn("size-4", stat.iconCn)} />
                   </div>
-                  <p className={cn("text-3xl font-semibold tracking-tight", stat.valueCn)}>
+                  <p className={cn("text-heading-1 font-semibold tracking-tight", stat.valueCn)}>
                     {stat.value.toLocaleString("pt-PT")}
                   </p>
                   <div className="mt-1 flex items-baseline justify-between gap-1">
-                    <p className={cn("text-xs font-semibold", stat.labelCn)}>{stat.label}</p>
-                    <span className={cn("text-[length:var(--text-ui-micro)] font-semibold tabular-nums", stat.pctCn)}>{stat.pct}%</span>
+                    <p className={cn("text-meta font-semibold", stat.labelCn)}>{stat.label}</p>
+                    <span className={cn("text-micro font-semibold tabular-nums", stat.pctCn)}>{stat.pct}%</span>
                   </div>
-                  <p className={cn("mt-0.5 text-[length:var(--text-ui-micro)]", stat.descCn)}>{stat.description}</p>
+                  <p className={cn("mt-0.5 text-micro", stat.descCn)}>{stat.description}</p>
                   <div className="mt-3 h-0.5 overflow-hidden rounded-full bg-black/8 dark:bg-white/8">
                     <div
                       className={cn("h-full rounded-full transition-all duration-1000 ease-out", stat.barCn)}
