@@ -16,7 +16,12 @@ export {
 export { Input } from "./components/input";
 export { PasswordInput } from "./components/password-input";
 export type { PasswordInputProps } from "./components/password-input";
-export { PasswordStrength } from "./components/password-strength";
+export { PasswordStrength, calculatePasswordStrength } from "./components/password-strength";
+export type {
+  PasswordStrengthLabels,
+  PasswordStrengthLevel,
+  PasswordStrengthProps,
+} from "./components/password-strength";
 export { PhoneInput } from "./components/phone-input";
 export type { PhoneInputProps } from "./components/phone-input";
 export { SearchField } from "./components/search-field";

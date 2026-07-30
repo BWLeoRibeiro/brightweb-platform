@@ -4,11 +4,19 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@brightweblabs/ui/button";
-import { Field, FieldContent, FieldDescription, FieldLabel } from "@brightweblabs/ui/field";
+import { Field, FieldContent, FieldDescription, FieldError, FieldLabel } from "@brightweblabs/ui/field";
 import { PasswordInput } from "@brightweblabs/ui/password-input";
 import { PasswordStrength } from "@brightweblabs/ui/password-strength";
 import { validatePassword } from "../shared";
-import { AuthCard, AuthDivider, AuthHeading, AuthLayout, AuthNotice } from "./auth-layout";
+import {
+  AuthCard,
+  AuthDivider,
+  AuthHeading,
+  AuthLayout,
+  AuthLoadingState,
+  AuthNotice,
+  AuthStateMark,
+} from "./auth-layout";
 import { useAuthUi } from "./context";
 import type { AuthUiClient } from "./types";
 
@@ -27,7 +35,7 @@ function cleanRecoveryUrl(currentUrl: URL) {
 
 export async function prepareRecoveryUrl(
   currentUrl: URL,
-  client: Pick<AuthUiClient, "establishRecoverySession" | "exchangeRecoveryCode">,
+  client: Pick<AuthUiClient, "establishRecoverySession" | "exchangeRecoveryCode"> & Partial<Pick<AuthUiClient, "getSession">>,
   invalidLink: string,
 ): Promise<RecoveryPreparation> {
   const fragment = new URLSearchParams(currentUrl.hash.replace(/^#/, ""));
@@ -62,7 +70,12 @@ export async function prepareRecoveryUrl(
     };
   }
 
-  return { error: null, replacementPath: null };
+  if (client.getSession) {
+    const session = await client.getSession();
+    if (session.user) return { error: null, replacementPath: null };
+  }
+
+  return { error: invalidLink, replacementPath: null };
 }
 
 export function ResetPasswordPage() {
@@ -73,7 +86,10 @@ export function ResetPasswordPage() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [preparing, setPreparing] = useState(true);
+  const [invalidRecovery, setInvalidRecovery] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [confirmPasswordError, setConfirmPasswordError] = useState<string | null>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -82,10 +98,16 @@ export function ResetPasswordPage() {
       try {
         const result = await prepareRecoveryUrl(currentUrl, client, d.invalidLink);
         if (!mounted) return;
-        if (result.error) setError(result.error);
+        if (result.error) {
+          setError(result.error);
+          setInvalidRecovery(true);
+        }
         if (result.replacementPath) router.replace(result.replacementPath);
       } catch {
-        if (mounted) setError(d.invalidLink);
+        if (mounted) {
+          setError(d.invalidLink);
+          setInvalidRecovery(true);
+        }
       } finally {
         if (mounted) setPreparing(false);
       }
@@ -98,14 +120,16 @@ export function ResetPasswordPage() {
     event.preventDefault();
     setLoading(true);
     setError(null);
+    setPasswordError(null);
+    setConfirmPasswordError(null);
     if (password !== confirmPassword) {
-      setError(d.mismatch);
+      setConfirmPasswordError(d.mismatch);
       setLoading(false);
       return;
     }
     const validation = validatePassword(password);
     if (!validation.isValid) {
-      setError(validation.errors.join(". "));
+      setPasswordError(validation.errors.join(". "));
       setLoading(false);
       return;
     }
@@ -122,29 +146,48 @@ export function ResetPasswordPage() {
   return (
     <AuthLayout>
       <AuthCard>
-        <AuthHeading title={d.title} description={d.description} />
-        <AuthDivider />
-        {error ? <AuthNotice id="reset-password-error">{error}</AuthNotice> : null}
-        <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-          <Field>
-            <FieldLabel htmlFor="password" className="mb-1.5 block text-body auth-paragraph-small font-semibold text-foreground-muted-accessible">{dictionary.common.newPassword}</FieldLabel>
-            <FieldContent>
-              <PasswordInput id="password" name="password" placeholder={dictionary.common.passwordPlaceholder} value={password} onChange={(event) => setPassword(event.target.value)} required minLength={8} autoComplete="new-password" aria-describedby={error ? "reset-password-error" : "password-description"} aria-invalid={!!error} showPasswordLabel={dictionary.common.showPassword} hidePasswordLabel={dictionary.common.hidePassword} />
-              {password ? <PasswordStrength password={password} className="mt-2" /> : null}
-              <FieldDescription id="password-description" className="mt-1.5 text-meta auth-paragraph-mini text-foreground-muted-accessible">{d.passwordHint}</FieldDescription>
-            </FieldContent>
-          </Field>
-          <Field>
-            <FieldLabel htmlFor="confirmPassword" className="mb-1.5 block text-body auth-paragraph-small font-semibold text-foreground-muted-accessible">{dictionary.common.confirmPassword}</FieldLabel>
-            <FieldContent>
-              <PasswordInput id="confirmPassword" name="confirmPassword" placeholder={dictionary.common.passwordPlaceholder} value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} required minLength={8} autoComplete="new-password" aria-describedby={error ? "reset-password-error" : undefined} aria-invalid={!!error} showPasswordLabel={dictionary.common.showPassword} hidePasswordLabel={dictionary.common.hidePassword} />
-            </FieldContent>
-          </Field>
-          <Button type="submit" className="h-11 w-full rounded-full" disabled={loading || preparing}>
-            {preparing ? d.preparing : loading ? d.submitting : d.submit}
-          </Button>
-        </form>
-        <Button variant="link" size="link" asChild><Link href="/login" className="mx-auto text-meta auth-paragraph-mini text-foreground-muted-accessible hover:text-foreground">{dictionary.common.backToLogin}</Link></Button>
+        {preparing ? <AuthLoadingState label={d.preparing} /> : invalidRecovery ? (
+          <div className="auth-state-panel">
+            <AuthStateMark tone="warning" />
+            <AuthHeading title={d.invalidTitle ?? d.title} description={d.invalidLink} />
+            <Button asChild className="h-11 w-full">
+              <Link href="/forgot-password">{d.requestNewLink ?? dictionary.common.backToLogin}</Link>
+            </Button>
+            <Button variant="link" size="link" asChild>
+              <Link href="/login" className="mx-auto text-meta auth-paragraph-mini text-foreground-muted-accessible hover:text-foreground">{dictionary.common.backToLogin}</Link>
+            </Button>
+          </div>
+        ) : (
+          <>
+            <AuthHeading title={d.title} description={d.description} />
+            <AuthDivider />
+            {error ? <AuthNotice id="reset-password-error">{error}</AuthNotice> : null}
+            <form onSubmit={handleSubmit} className="flex flex-col gap-5" aria-busy={loading}>
+              <Field data-invalid={Boolean(passwordError)}>
+                <FieldLabel htmlFor="password" className="mb-1.5 block text-body auth-paragraph-small font-semibold text-foreground-muted-accessible">{dictionary.common.newPassword}</FieldLabel>
+                <FieldContent>
+                  <PasswordInput id="password" name="password" placeholder={dictionary.common.passwordPlaceholder} value={password} onChange={(event) => { setPassword(event.target.value); setPasswordError(null); }} required minLength={8} autoComplete="new-password" aria-describedby={passwordError ? "reset-password-field-error" : "password-description"} aria-invalid={Boolean(passwordError)} showPasswordLabel={dictionary.common.showPassword} hidePasswordLabel={dictionary.common.hidePassword} />
+                  {password ? <PasswordStrength password={password} labels={dictionary.common.passwordStrength} className="mt-2" /> : null}
+                  <FieldDescription id="password-description" className="mt-1.5 text-meta auth-paragraph-mini text-foreground-muted-accessible">{d.passwordHint}</FieldDescription>
+                  <FieldError id="reset-password-field-error">{passwordError}</FieldError>
+                </FieldContent>
+              </Field>
+              <Field data-invalid={Boolean(confirmPasswordError)}>
+                <FieldLabel htmlFor="confirmPassword" className="mb-1.5 block text-body auth-paragraph-small font-semibold text-foreground-muted-accessible">{dictionary.common.confirmPassword}</FieldLabel>
+                <FieldContent>
+                  <PasswordInput id="confirmPassword" name="confirmPassword" placeholder={dictionary.common.passwordPlaceholder} value={confirmPassword} onChange={(event) => { setConfirmPassword(event.target.value); setConfirmPasswordError(null); }} required minLength={8} autoComplete="new-password" aria-describedby={confirmPasswordError ? "reset-confirm-password-error" : undefined} aria-invalid={Boolean(confirmPasswordError)} showPasswordLabel={dictionary.common.showPassword} hidePasswordLabel={dictionary.common.hidePassword} />
+                  <FieldError id="reset-confirm-password-error">{confirmPasswordError}</FieldError>
+                </FieldContent>
+              </Field>
+              <Button type="submit" className="h-11 w-full" disabled={loading}>
+                {loading ? d.submitting : d.submit}
+              </Button>
+            </form>
+            <Button variant="link" size="link" asChild>
+              <Link href="/login" className="mx-auto text-meta auth-paragraph-mini text-foreground-muted-accessible hover:text-foreground">{dictionary.common.backToLogin}</Link>
+            </Button>
+          </>
+        )}
       </AuthCard>
     </AuthLayout>
   );

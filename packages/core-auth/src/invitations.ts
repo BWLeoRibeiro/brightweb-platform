@@ -28,6 +28,9 @@ export type InvitationHttpDependencies = {
   acceptOrganizationInvitation(client: never, input: {
     invitationId: string; profileId: string; userEmail: string;
   }): Promise<{ organizationId: string }>;
+  acceptAdminInvitation?(client: never, input: {
+    invitationId: string; profileId: string; userEmail: string;
+  }): Promise<{ role: string }>;
 };
 
 function json(body: unknown, init?: ResponseInit) {
@@ -142,10 +145,14 @@ export function createInvitationRegisterHandler(dependencies: InvitationHttpDepe
 
 export function createInvitationAcceptHandler(dependencies: InvitationHttpDependencies) {
   return async function handleInvitationAcceptRequest(
-    _request: Request,
+    request: Request,
     context: { params: Promise<{ invitationId: string }> },
   ): Promise<Response> {
     const { invitationId } = await context.params;
+    const kindValue = new URL(request.url).searchParams.get("kind");
+    // Preserve the original organization-only endpoint for existing consumers.
+    const kind = kindValue === null ? "organization" : readKind(kindValue);
+    if (!kind) return json(publicError("INVALID_INVITATION_KIND", "Tipo de convite inválido."), { status: 400 });
     try {
       const access = await dependencies.getAccess();
       if (!access.ok) {
@@ -161,11 +168,23 @@ export function createInvitationAcceptHandler(dependencies: InvitationHttpDepend
       if (!access.user.email) {
         return json(publicError("ACCOUNT_EMAIL_MISSING", "E-mail da conta em falta."), { status: 409 });
       }
-      const result = await dependencies.acceptOrganizationInvitation(dependencies.getServiceClient() as never, {
+      if (kind === "admin" && !dependencies.acceptAdminInvitation) {
+        return json(
+          publicError(
+            "ADMIN_INVITATION_ACCEPTANCE_UNAVAILABLE",
+            "A aceitação de convites de administração não está configurada.",
+          ),
+          { status: 501 },
+        );
+      }
+      const input = {
         invitationId,
         profileId: access.profileId,
         userEmail: access.user.email,
-      });
+      };
+      const result = kind === "admin"
+        ? await dependencies.acceptAdminInvitation!(dependencies.getServiceClient() as never, input)
+        : await dependencies.acceptOrganizationInvitation(dependencies.getServiceClient() as never, input);
       return json({ data: result });
     } catch (error) {
       const message = error instanceof Error ? error.message : "Erro interno do servidor.";

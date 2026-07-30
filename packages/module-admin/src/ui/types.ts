@@ -69,6 +69,8 @@ export type AdminUiDictionary = {
   invitations: {
     title: string;
     description: string;
+    formHint?: string;
+    roleDescriptions?: Partial<Record<AdminInviteRole, string>>;
     updating: string;
     emailLabel: string;
     emailPlaceholder: string;
@@ -81,10 +83,19 @@ export type AdminUiDictionary = {
     revoke: (email: string) => string;
     emailRequired: string;
     sent: string;
+    sentTo?: (email: string) => string;
     sendError: string;
     revoked: string;
     revokeError: string;
     loadError: string;
+    retry?: string;
+    expirySoon?: (days: number) => string;
+    expiresToday?: string;
+    confirmRevokeTitle?: string;
+    confirmRevokeDescription?: (email: string) => string;
+    cancelRevoke?: string;
+    confirmRevoke?: string;
+    revoking?: string;
     columns: {
       email: string;
       role: string;

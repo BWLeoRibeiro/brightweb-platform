@@ -104,9 +104,12 @@ export function createAuthUiClient(options: {
         isStaff: resolvePostLoginPath(role) === "/dashboard",
       };
     },
-    async acceptInvite({ invitationId }) {
+    async acceptInvite({ invitationId, kind = "organization" }) {
       await parseInvitationAcceptResponse(
-        await fetcher(`${invitationBasePath}/${encodeURIComponent(invitationId)}/accept`, { method: "POST" }),
+        await fetcher(
+          `${invitationBasePath}/${encodeURIComponent(invitationId)}/accept?kind=${kind}`,
+          { method: "POST" },
+        ),
       );
     },
   };

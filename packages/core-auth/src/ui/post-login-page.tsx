@@ -63,11 +63,20 @@ function PostLoginContent() {
         }
 
         const invitationId = searchParams.get("invitationId");
+        const invitationKind = searchParams.get("invitationKind") === "admin" ? "admin" : "organization";
         if (invitationId && access.profileId && access.user.email && client.acceptInvite) {
           try {
-            await client.acceptInvite({ invitationId, profileId: access.profileId, email: access.user.email });
+            await client.acceptInvite({
+              invitationId,
+              profileId: access.profileId,
+              email: access.user.email,
+              kind: invitationKind,
+            });
           } catch {
-            // Invitation acceptance is best-effort, matching MQ's post-login route.
+            router.replace(
+              `/invite/${encodeURIComponent(invitationId)}?kind=${invitationKind}&acceptError=1`,
+            );
+            return;
           }
         }
 

@@ -1088,7 +1088,7 @@ export function createOptionalModuleRouteFiles(selectedModules) {
 
   if (adminEnabled) {
     dependencyImports.push(
-      'import { getAdminUserInvitationDetails, registerUserFromAdminInvitation } from "@brightweblabs/module-admin";',
+      'import { acceptAdminUserInvitation, getAdminUserInvitationDetails, registerUserFromAdminInvitation } from "@brightweblabs/module-admin";',
     );
   }
   if (orgsEnabled) {
@@ -1107,6 +1107,7 @@ export function createOptionalModuleRouteFiles(selectedModules) {
       'import { requireServerUserAccess } from "@brightweblabs/core-auth/server";',
       'import { requireServiceRoleClient } from "@brightweblabs/infra/server";',
       "import {",
+      "  acceptAdminUserInvitation,",
       "  getAdminUserInvitationDetails,",
       "  registerUserFromAdminInvitation,",
       '} from "@brightweblabs/module-admin";',
@@ -1132,6 +1133,7 @@ export function createOptionalModuleRouteFiles(selectedModules) {
       "    ensureCrmContactForProfile,",
       "  }),",
       "  registerAdminInvitation: registerUserFromAdminInvitation,",
+      "  acceptAdminInvitation: acceptAdminUserInvitation,",
       "  acceptOrganizationInvitation: (client: never, input: {",
       "    invitationId: string;",
       "    profileId: string;",
@@ -1174,6 +1176,7 @@ export function createOptionalModuleRouteFiles(selectedModules) {
     "    ensureCrmContactForProfile,",
     "  }),",
     "  registerAdminInvitation: registerUserFromAdminInvitation,",
+    ...(adminEnabled ? ["  acceptAdminInvitation: acceptAdminUserInvitation,"] : []),
     "  acceptOrganizationInvitation: (client: never, input: {",
     "    invitationId: string;",
     "    profileId: string;",

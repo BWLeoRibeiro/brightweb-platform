@@ -1,6 +1,7 @@
 import { requireServerUserAccess } from "@brightweblabs/core-auth/server";
 import { requireServiceRoleClient } from "@brightweblabs/infra/server";
 import {
+  acceptAdminUserInvitation,
   getAdminUserInvitationDetails,
   registerUserFromAdminInvitation,
 } from "@brightweblabs/module-admin";
@@ -26,6 +27,7 @@ export const invitationHttpDependencies = {
     ensureCrmContactForProfile,
   }),
   registerAdminInvitation: registerUserFromAdminInvitation,
+  acceptAdminInvitation: acceptAdminUserInvitation,
   acceptOrganizationInvitation: (client: never, input: {
     invitationId: string;
     profileId: string;

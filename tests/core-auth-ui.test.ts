@@ -13,6 +13,7 @@ import {
 } from "../packages/core-auth/src/invitations.ts";
 import { createAuthUiClient } from "../packages/core-auth/src/ui/client.ts";
 import { defaultAuthUiDictionary } from "../packages/core-auth/src/ui/dictionary.ts";
+import { resolveInvitationUnavailableKind } from "../packages/core-auth/src/ui/invite-state.ts";
 import { prepareRecoveryUrl } from "../packages/core-auth/src/ui/reset-password-page.tsx";
 import {
   parseInvitationAcceptResponse,
@@ -115,6 +116,9 @@ test("auth tokens have neutral defaults and MQ overrides", async () => {
     "--auth-error-border",
     "--auth-error-foreground",
     "--auth-error-surface",
+    "--auth-info-border",
+    "--auth-info-foreground",
+    "--auth-info-surface",
     "--auth-panel-border",
     "--auth-panel-foreground",
     "--auth-panel-muted",
@@ -124,6 +128,9 @@ test("auth tokens have neutral defaults and MQ overrides", async () => {
     "--auth-success-border",
     "--auth-success-foreground",
     "--auth-success-surface",
+    "--auth-warning-border",
+    "--auth-warning-foreground",
+    "--auth-warning-surface",
     "--auth-wash",
   ]);
   for (const token of tokens) assert.match(mq, new RegExp(`${token.replaceAll("-", "\\-")}\\s*:`));
@@ -185,7 +192,7 @@ test("auth layout owns keyboard navigation, heading order, and card geometry", a
     layout.indexOf('<section id="auth-main-content"') < layout.indexOf('<aside className="auth-layout__brand-panel">'),
     "the primary form and h1 must precede the decorative aside heading in DOM order",
   );
-  assert.match(tokens, /\.auth-vessel__content\s*{[\s\S]*?padding:\s*2\.25rem/);
+  assert.match(tokens, /\.auth-vessel__content\s*{[\s\S]*?padding:\s*1\.5rem/);
   assert.match(tokens, /@media \(min-width: 64rem\)[\s\S]*?\.auth-vessel__content\s*{[\s\S]*?padding:\s*2\.5rem/);
   assert.match(tokens, /\.auth-name-grid\s*{[\s\S]*?grid-template-columns:\s*1fr/);
   assert.match(tokens, /@media \(min-width: 64rem\)[\s\S]*?\.auth-name-grid\s*{[\s\S]*?repeat\(2/);
@@ -277,6 +284,24 @@ test("auth response parsers accept handler fixtures and reject malformed success
   );
   await parseInvitationAcceptResponse(acceptResponse);
 
+  let acceptedAdminInput: Record<string, string> | null = null;
+  const adminAcceptHandler = createInvitationAcceptHandler(invitationDependencies({
+    acceptAdminInvitation: async (_client, input) => {
+      acceptedAdminInput = input;
+      return { role: "admin" };
+    },
+  }));
+  const adminAcceptResponse = await adminAcceptHandler(
+    new Request("https://portal.test/api/invitations/invite-1/accept?kind=admin", { method: "POST" }),
+    { params: Promise.resolve({ invitationId: "invite-1" }) },
+  );
+  await parseInvitationAcceptResponse(adminAcceptResponse);
+  assert.deepEqual(acceptedAdminInput, {
+    invitationId: "invite-1",
+    profileId: "profile-1",
+    userEmail: "person@example.com",
+  });
+
   await assert.rejects(
     parseInvitationDetailsResponse(Response.json({ ...detailsFixture, kind: "admin" }), "organization"),
     /resposta inválida/,
@@ -297,6 +322,24 @@ test("auth response parsers accept handler fixtures and reject malformed success
     parseInvitationAcceptResponse(Response.json({ data: {} })),
     /resposta inválida/,
   );
+});
+
+test("invitation availability distinguishes every terminal and transport state", () => {
+  const invitation = {
+    id: "invite-1",
+    email: "person@example.com",
+    status: "pending" as const,
+    expiresAt: "2026-08-10T00:00:00.000Z",
+    kind: "admin" as const,
+  };
+  const now = new Date("2026-08-01T00:00:00.000Z");
+  assert.equal(resolveInvitationUnavailableKind(invitation, false, now), null);
+  assert.equal(resolveInvitationUnavailableKind({ ...invitation, status: "accepted" }, false, now), "accepted");
+  assert.equal(resolveInvitationUnavailableKind({ ...invitation, status: "revoked" }, false, now), "revoked");
+  assert.equal(resolveInvitationUnavailableKind({ ...invitation, status: "expired" }, false, now), "expired");
+  assert.equal(resolveInvitationUnavailableKind({ ...invitation, expiresAt: "2026-07-31T00:00:00.000Z" }, false, now), "expired");
+  assert.equal(resolveInvitationUnavailableKind(null, false, now), "not-found");
+  assert.equal(resolveInvitationUnavailableKind(null, true, now), "load-error");
 });
 
 test("auth response parsers consume the stable public error envelope", async () => {
@@ -464,6 +507,22 @@ test("reset recovery query codes still use the PKCE exchange path", async () => 
   assert.deepEqual(result, {
     error: null,
     replacementPath: "/reset-password?next=%2Faccount",
+  });
+});
+
+test("reset recovery rejects a direct form visit without tokens or a session", async () => {
+  const result = await prepareRecoveryUrl(
+    new URL("https://portal.test/reset-password"),
+    {
+      exchangeRecoveryCode: async () => undefined,
+      establishRecoverySession: async () => undefined,
+      getSession: async () => ({ user: null }),
+    },
+    defaultAuthUiDictionary.reset.invalidLink,
+  );
+  assert.deepEqual(result, {
+    error: defaultAuthUiDictionary.reset.invalidLink,
+    replacementPath: null,
   });
 });
 

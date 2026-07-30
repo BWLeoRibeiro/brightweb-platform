@@ -74,6 +74,12 @@
   --auth-success-surface: var(--surface-status-success);
   --auth-success-border: color-mix(in srgb, var(--semantic-success) 30%, transparent);
   --auth-success-foreground: var(--semantic-success-strong);
+  --auth-warning-surface: var(--surface-status-warning);
+  --auth-warning-border: color-mix(in srgb, var(--semantic-warning) 34%, transparent);
+  --auth-warning-foreground: var(--semantic-warning-strong);
+  --auth-info-surface: color-mix(in srgb, var(--semantic-info) 12%, transparent);
+  --auth-info-border: color-mix(in srgb, var(--semantic-info) 30%, transparent);
+  --auth-info-foreground: var(--semantic-info-strong);
   --auth-error-surface: var(--surface-danger-subtle);
   --auth-error-border: color-mix(in srgb, var(--destructive) 28%, transparent);
   --auth-error-foreground: var(--destructive);

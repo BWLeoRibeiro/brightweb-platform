@@ -6,6 +6,7 @@ export * from "./context";
 export { defaultAuthUiDictionary } from "./dictionary";
 export * from "./forgot-password-page";
 export * from "./invite-page";
+export * from "./invite-state";
 export * from "./login-page";
 export * from "./post-login-page";
 export * from "./reset-password-page";

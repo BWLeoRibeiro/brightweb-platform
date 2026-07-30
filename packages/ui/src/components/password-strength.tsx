@@ -3,14 +3,31 @@
 import * as React from "react";
 import { cn } from "../lib/utils";
 
-interface PasswordStrengthProps {
-  password: string;
-  className?: string;
+export type PasswordStrengthLevel = "weak" | "medium" | "strong" | null;
+
+export interface PasswordStrengthLabels {
+  weak: string;
+  medium: string;
+  strong: string;
+  ariaLabel: string;
+  prefix: string;
 }
 
-type StrengthLevel = "weak" | "medium" | "strong" | null;
+export interface PasswordStrengthProps {
+  password: string;
+  className?: string;
+  labels?: Partial<PasswordStrengthLabels>;
+}
 
-function calculatePasswordStrength(password: string): StrengthLevel {
+const defaultPasswordStrengthLabels: PasswordStrengthLabels = {
+  weak: "Fraca",
+  medium: "Média",
+  strong: "Forte",
+  ariaLabel: "Força da palavra-passe",
+  prefix: "Força",
+};
+
+export function calculatePasswordStrength(password: string): PasswordStrengthLevel {
   if (!password) return null;
 
   let score = 0;
@@ -31,37 +48,38 @@ function calculatePasswordStrength(password: string): StrengthLevel {
   return "strong";
 }
 
-function getStrengthConfig(strength: StrengthLevel) {
+function getStrengthConfig(strength: PasswordStrengthLevel, labels: PasswordStrengthLabels) {
   switch (strength) {
     case "weak":
       return {
-        label: "Fraca",
-        color: "bg-rose-500",
+        label: labels.weak,
+        color: "bg-[color:var(--semantic-danger)]",
         width: "w-1/3",
-        textColor: "text-rose-600 dark:text-rose-400",
+        textColor: "text-[color:var(--semantic-danger-strong)]",
       };
     case "medium":
       return {
-        label: "Média",
-        color: "bg-amber-500",
+        label: labels.medium,
+        color: "bg-[color:var(--semantic-warning)]",
         width: "w-2/3",
-        textColor: "text-amber-600 dark:text-amber-400",
+        textColor: "text-[color:var(--semantic-warning-strong)]",
       };
     case "strong":
       return {
-        label: "Forte",
-        color: "bg-emerald-500",
+        label: labels.strong,
+        color: "bg-[color:var(--semantic-success)]",
         width: "w-full",
-        textColor: "text-emerald-600 dark:text-emerald-400",
+        textColor: "text-[color:var(--semantic-success-strong)]",
       };
     default:
       return null;
   }
 }
 
-export function PasswordStrength({ password, className }: PasswordStrengthProps) {
+export function PasswordStrength({ password, className, labels: labelsOverride }: PasswordStrengthProps) {
+  const labels = { ...defaultPasswordStrengthLabels, ...labelsOverride };
   const strength = calculatePasswordStrength(password);
-  const config = getStrengthConfig(strength);
+  const config = getStrengthConfig(strength, labels);
 
   if (!config) return null;
 
@@ -69,18 +87,18 @@ export function PasswordStrength({ password, className }: PasswordStrengthProps)
     <div className={cn("flex flex-col gap-1.5", className)}>
       <div className="h-1 w-full overflow-hidden rounded-full bg-foreground/10">
         <div
-          className={cn("h-full transition-all duration-300", config.color, config.width)}
+          className={cn("h-full transition-[width,background-color] duration-300 motion-reduce:transition-none", config.color, config.width)}
           role="progressbar"
           aria-valuenow={strength === "weak" ? 33 : strength === "medium" ? 66 : 100}
           aria-valuemin={0}
           aria-valuemax={100}
-          aria-label="Força da palavra-passe"
+          aria-label={labels.ariaLabel}
           aria-valuetext={config.label}
         />
       </div>
 
-      <p className={cn("text-meta !font-semibold transition-colors", config.textColor)}>
-        Força: {config.label}
+      <p className={cn("text-meta !font-semibold transition-colors motion-reduce:transition-none", config.textColor)}>
+        {labels.prefix}: {config.label}
       </p>
     </div>
   );

@@ -75,7 +75,10 @@ export async function parseInvitationAcceptResponse(response: Response): Promise
   if (
     !isObject(payload)
     || !isObject(payload.data)
-    || typeof payload.data.organizationId !== "string"
+    || (
+      typeof payload.data.organizationId !== "string"
+      && typeof payload.data.role !== "string"
+    )
   ) {
     throw new Error("O servidor devolveu uma resposta inválida.");
   }

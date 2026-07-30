@@ -9,12 +9,17 @@ import { Input } from "@brightweblabs/ui/input";
 import { PasswordInput } from "@brightweblabs/ui/password-input";
 import { AUTH_RESEND_COOLDOWN_SECONDS, validateEmail } from "../shared";
 import { useCooldownTimer } from "../client";
-import { AuthCard, AuthDivider, AuthHeading, AuthLayout, AuthNotice } from "./auth-layout";
+import { AuthCard, AuthDivider, AuthHeading, AuthLayout, AuthLoadingState, AuthNotice } from "./auth-layout";
 import { useAuthUi } from "./context";
 
-function buildPostLoginPath(invitationId: string | null, redirectTo: string | null) {
+function buildPostLoginPath(
+  invitationId: string | null,
+  invitationKind: "organization" | "admin" | null,
+  redirectTo: string | null,
+) {
   const params = new URLSearchParams();
   if (invitationId) params.set("invitationId", invitationId);
+  if (invitationId && invitationKind) params.set("invitationKind", invitationKind);
   if (redirectTo) params.set("next", redirectTo);
   const query = params.toString();
   return query ? `/auth/post-login?${query}` : "/auth/post-login";
@@ -36,6 +41,11 @@ function LoginPageContent({ allowMagicLink }: Required<LoginPageProps>) {
   const passwordInputRef = useRef<HTMLInputElement>(null);
   const redirectInFlightRef = useRef(false);
   const invitationId = searchParams.get("invite");
+  const invitationKind = searchParams.get("inviteKind") === "admin"
+    ? "admin"
+    : invitationId
+      ? "organization"
+      : null;
   const redirectTo = searchParams.get("redirectTo");
   const shouldRecoverStaleSession = searchParams.get("error") === "session_reset";
   const [mode, setMode] = useState<"password" | "magic">("password");
@@ -72,7 +82,7 @@ function LoginPageContent({ allowMagicLink }: Required<LoginPageProps>) {
         if (!cancelled && user && !redirectInFlightRef.current) {
           redirectInFlightRef.current = true;
           setRedirecting(true);
-          router.replace(buildPostLoginPath(invitationId, redirectTo));
+          router.replace(buildPostLoginPath(invitationId, invitationKind, redirectTo));
         }
       } catch {
         if (!cancelled) setError(d.authSystemError);
@@ -82,7 +92,7 @@ function LoginPageContent({ allowMagicLink }: Required<LoginPageProps>) {
     }
     void prepare();
     return () => { cancelled = true; };
-  }, [client, d.authSystemError, invitationId, redirectTo, router, shouldRecoverStaleSession]);
+  }, [client, d.authSystemError, invitationId, invitationKind, redirectTo, router, shouldRecoverStaleSession]);
 
   useEffect(() => {
     if (error && activeMode === "password") passwordInputRef.current?.focus();
@@ -104,7 +114,7 @@ function LoginPageContent({ allowMagicLink }: Required<LoginPageProps>) {
       await client.signInWithPassword({ email: normalizedEmail, password });
       redirectInFlightRef.current = true;
       setRedirecting(true);
-      router.replace(buildPostLoginPath(invitationId, redirectTo));
+      router.replace(buildPostLoginPath(invitationId, invitationKind, redirectTo));
     } catch (authError) {
       const code = (authError as { code?: string } | null)?.code ?? "";
       const message = ((authError as { message?: string } | null)?.message ?? "").toLowerCase();
@@ -143,7 +153,7 @@ function LoginPageContent({ allowMagicLink }: Required<LoginPageProps>) {
   if (checking || redirecting) {
     return (
       <AuthLayout>
-        <AuthCard><p className="text-meta auth-paragraph-mini text-center text-muted-foreground">{redirecting ? d.redirecting : dictionary.common.loading}</p></AuthCard>
+        <AuthCard><AuthLoadingState label={redirecting ? d.redirecting : dictionary.common.loading} /></AuthCard>
       </AuthLayout>
     );
   }
@@ -167,7 +177,7 @@ function LoginPageContent({ allowMagicLink }: Required<LoginPageProps>) {
           </AuthNotice>
         ) : null}
         {info ? <AuthNotice tone="success">{info}</AuthNotice> : null}
-        <form onSubmit={handleLogin} className="flex flex-col gap-5">
+        <form onSubmit={handleLogin} className="flex flex-col gap-5" aria-busy={loading}>
           <Field>
             <FieldLabel htmlFor="email" className="mb-1.5 block text-body auth-paragraph-small font-semibold text-foreground-muted-accessible">{dictionary.common.email}</FieldLabel>
             <FieldContent>
@@ -185,7 +195,7 @@ function LoginPageContent({ allowMagicLink }: Required<LoginPageProps>) {
               </FieldContent>
             </Field>
           ) : null}
-          <Button type="submit" className="h-11 w-full rounded-full" disabled={loading}>
+          <Button type="submit" className="h-11 w-full" disabled={loading}>
             {loading ? (activeMode === "magic" ? d.magicSubmitting : d.submitting) : (activeMode === "magic" ? d.magicSubmit : d.submit)}
           </Button>
         </form>
@@ -203,7 +213,7 @@ function LoginPageContent({ allowMagicLink }: Required<LoginPageProps>) {
 export function LoginPage({ allowMagicLink = false }: LoginPageProps = {}) {
   const { dictionary } = useAuthUi();
   return (
-    <Suspense fallback={<AuthLayout><AuthCard><p className="text-meta auth-paragraph-mini text-center text-muted-foreground">{dictionary.common.loading}</p></AuthCard></AuthLayout>}>
+    <Suspense fallback={<AuthLayout><AuthCard><AuthLoadingState label={dictionary.common.loading} /></AuthCard></AuthLayout>}>
       <LoginPageContent allowMagicLink={allowMagicLink} />
     </Suspense>
   );

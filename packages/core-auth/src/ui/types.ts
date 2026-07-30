@@ -53,7 +53,12 @@ export interface AuthUiClient {
   getInvitation(invitationId: string, kind: AuthInvitation["kind"]): Promise<AuthInvitation | null>;
   registerInvite(input: RegisterInviteInput): Promise<{ email: string }>;
   getPostLoginAccess(): Promise<AuthPostLoginAccess>;
-  acceptInvite?(input: { invitationId: string; profileId: string; email: string }): Promise<void>;
+  acceptInvite?(input: {
+    invitationId: string;
+    profileId: string;
+    email: string;
+    kind?: AuthInvitation["kind"];
+  }): Promise<void>;
 }
 
 export type AuthBrandConfig = {
@@ -93,7 +98,15 @@ export type AuthUiDictionary = {
     help: string;
     continue: string;
     back: string;
+    switchAccount?: string;
     skipToContent: string;
+    passwordStrength?: {
+      weak: string;
+      medium: string;
+      strong: string;
+      ariaLabel: string;
+      prefix: string;
+    };
   };
   layout: {
     footer: (companyName: string) => string;
@@ -150,6 +163,8 @@ export type AuthUiDictionary = {
     preparing: string;
     mismatch: string;
     invalidLink: string;
+    invalidTitle?: string;
+    requestNewLink?: string;
     error: string;
     passwordHint: string;
   };
@@ -163,13 +178,28 @@ export type AuthUiDictionary = {
     mismatch: string;
     create: string;
     creating: string;
+    identityStep?: string;
+    passwordStep?: string;
+    invitedEmailLabel?: string;
     activeSession: string;
     sameAccount: string;
     otherAccount: string;
     sameAccountDescription: string;
     otherAccountDescription: string;
+    acceptanceError?: {
+      title: string;
+      description: string;
+      retry: string;
+    };
     alreadyAccount: string;
-    unavailable: Record<"load-error" | "not-found" | "used" | "expired", { title: string; description: string }>;
+    success?: {
+      eyebrow: string;
+      title: string;
+      description: (email: string) => string;
+      action: string;
+    };
+    unavailable: Record<"load-error" | "not-found" | "used" | "expired", { title: string; description: string }>
+      & Partial<Record<"accepted" | "revoked", { title: string; description: string }>>;
     contactForInvite: string;
   };
   confirmed: {

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Button } from "@brightweblabs/ui/button";
 import { Field, FieldContent, FieldLabel } from "@brightweblabs/ui/field";
 import { Input } from "@brightweblabs/ui/input";
-import { AuthCard, AuthDivider, AuthHeading, AuthLayout, AuthNotice } from "./auth-layout";
+import { AuthCard, AuthDivider, AuthHeading, AuthLayout, AuthNotice, AuthStateMark } from "./auth-layout";
 import { useAuthUi } from "./context";
 
 export function ForgotPasswordPage() {
@@ -34,28 +34,35 @@ export function ForgotPasswordPage() {
   return (
     <AuthLayout>
       <AuthCard>
-        <AuthHeading title={d.title} description={success ? d.checkEmail : d.description} />
-        <AuthDivider />
-        {error ? <AuthNotice id="forgot-password-error">{error}</AuthNotice> : null}
         {success ? (
-          <AuthNotice tone="success"><strong>{d.sentTitle}</strong> {d.sentDescription(email)}</AuthNotice>
+          <div className="auth-state-panel">
+            <AuthStateMark tone="success" />
+            <AuthHeading title={d.checkEmail} description={d.sentDescription(email)} />
+            <AuthNotice tone="success">{d.sentTitle}</AuthNotice>
+            <Button asChild className="h-11 w-full"><Link href="/login">{dictionary.common.login}</Link></Button>
+          </div>
         ) : (
-          <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-            <Field>
-              <FieldLabel htmlFor="email" className="mb-1.5 block text-body auth-paragraph-small font-semibold text-foreground-muted-accessible">{dictionary.common.email}</FieldLabel>
-              <FieldContent>
-                <Input id="email" name="email" type="email" placeholder={dictionary.common.emailPlaceholder} value={email} onChange={(event) => setEmail(event.target.value)} required disabled={loading} autoComplete="email" spellCheck={false} aria-describedby={error ? "forgot-password-error" : undefined} aria-invalid={!!error} />
-              </FieldContent>
-            </Field>
-            <Button type="submit" className="h-11 w-full rounded-full" disabled={loading}>
-              {loading ? d.submitting : d.submit}
-            </Button>
-          </form>
+          <>
+            <AuthHeading title={d.title} description={d.description} />
+            <AuthDivider />
+            {error ? <AuthNotice id="forgot-password-error">{error}</AuthNotice> : null}
+            <form onSubmit={handleSubmit} className="flex flex-col gap-5" aria-busy={loading}>
+              <Field>
+                <FieldLabel htmlFor="email" className="mb-1.5 block text-body auth-paragraph-small font-semibold text-foreground-muted-accessible">{dictionary.common.email}</FieldLabel>
+                <FieldContent>
+                  <Input id="email" name="email" type="email" placeholder={dictionary.common.emailPlaceholder} value={email} onChange={(event) => setEmail(event.target.value)} required disabled={loading} autoComplete="email" spellCheck={false} aria-describedby={error ? "forgot-password-error" : undefined} aria-invalid={!!error} />
+                </FieldContent>
+              </Field>
+              <Button type="submit" className="h-11 w-full" disabled={loading}>
+                {loading ? d.submitting : d.submit}
+              </Button>
+            </form>
+            <div className="flex items-center justify-center gap-1.5 pt-1">
+              <span className="text-meta auth-paragraph-mini text-foreground-muted-accessible">{d.remember}</span>
+              <Button variant="link" size="link" asChild><Link href="/login" className="text-meta auth-paragraph-mini font-semibold text-primary hover:text-primary/80">{dictionary.common.login}</Link></Button>
+            </div>
+          </>
         )}
-        <div className="flex items-center justify-center gap-1.5 pt-1">
-          <span className="text-meta auth-paragraph-mini text-foreground-muted-accessible">{d.remember}</span>
-          <Button variant="link" size="link" asChild><Link href="/login" className="text-meta auth-paragraph-mini font-semibold text-primary hover:text-primary/80">{dictionary.common.login}</Link></Button>
-        </div>
       </AuthCard>
     </AuthLayout>
   );

@@ -32,7 +32,7 @@ export function AuthLayout({
       </a>
       <section id="auth-main-content" className="auth-layout__form-side" tabIndex={-1}>
         <div className="auth-layout__stack">
-          {!split ? <div className="auth-layout__brand-logo">{brand.logo}</div> : null}
+          <div className={`auth-layout__brand-logo ${split ? "auth-layout__brand-logo--mobile" : ""}`}>{brand.logo}</div>
           {children}
           <footer className="auth-layout__footer">
             <span>{dictionary.layout.footer(brand.companyName)}</span>
@@ -69,7 +69,7 @@ export function AuthCard({
   className?: string;
 }) {
   return (
-    <div className={`auth-vessel relative w-full max-w-[440px] overflow-hidden rounded-[2.5rem] ${className}`}>
+    <div className={`auth-vessel relative w-full max-w-[440px] overflow-hidden ${className}`}>
       <div className="auth-vessel__wash" aria-hidden="true" />
       <div className="auth-vessel__content">{children}</div>
     </div>
@@ -96,7 +96,49 @@ export function AuthDivider() {
   );
 }
 
-export function AuthNotice({ children, tone = "error", id }: { children: React.ReactNode; tone?: "error" | "success"; id?: string }) {
+export function AuthStepIndicator({
+  current,
+  total,
+  label,
+}: {
+  current: number;
+  total: number;
+  label: string;
+}) {
+  return (
+    <div className="auth-step" aria-label={`${current} / ${total}: ${label}`}>
+      <span className="auth-step__count" aria-hidden="true">{current} / {total}</span>
+      <span className="auth-step__label">{label}</span>
+    </div>
+  );
+}
+
+export function AuthStateMark({ tone = "neutral" }: { tone?: "neutral" | "success" | "warning" | "error" }) {
+  return <span className={`auth-state-mark auth-state-mark--${tone}`} aria-hidden="true"><span /></span>;
+}
+
+export function AuthLoadingState({ label }: { label: string }) {
+  return (
+    <div className="auth-loading-state" role="status" aria-live="polite" aria-busy="true">
+      <span className="sr-only">{label}</span>
+      <span className="auth-loading-state__eyebrow" aria-hidden="true" />
+      <span className="auth-loading-state__heading" aria-hidden="true" />
+      <span className="auth-loading-state__copy" aria-hidden="true" />
+      <span className="auth-loading-state__copy auth-loading-state__copy--short" aria-hidden="true" />
+      <span className="auth-loading-state__action" aria-hidden="true" />
+    </div>
+  );
+}
+
+export function AuthNotice({
+  children,
+  tone = "error",
+  id,
+}: {
+  children: React.ReactNode;
+  tone?: "error" | "success" | "warning" | "info";
+  id?: string;
+}) {
   return (
     <div
       id={id}
