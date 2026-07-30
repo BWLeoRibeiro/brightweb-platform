@@ -1,5 +1,20 @@
 # @brightweblabs/app-shell
 
+## 0.8.0
+
+### Minor Changes
+
+- 90c9bf0: Converge theme state on one BrightWeb provider, default new apps to the system theme, improve packaged auth geometry and accessibility, make pnpm plus keepalive setup reproducible in generated apps, and bound Marketing audience processing.
+- a03392d: Toolbar actions now flow through a shell action registry (ShellActionsProvider / useShellAction) instead of fire-and-forget window events: header, breadcrumb, search, filter, and create controls stay disabled until the routed page has registered every handler they dispatch, so an interaction can never be silently swallowed (#84). Module action listeners migrated to the registry with a window-event compatibility bridge for shells without a provider; page-to-toolbar state sync events are unchanged. The CRM organization sheet also blocks re-submits while a save is in flight.
+
+### Patch Changes
+
+- c05dc17: Migrate package-owned interface typography to the canonical visual-role utilities while preserving contextual auth, report, dashboard, and compact-control sizing.
+- abe0722: Surface server publicError envelopes ({error: {code, message}}) in dashboard section errors instead of always falling back to generic copy, and treat data-less error payloads as envelopes.
+- Updated dependencies [c05dc17]
+- Updated dependencies [90c9bf0]
+  - @brightweblabs/ui@1.2.0
+
 ## 0.7.4
 
 ### Patch Changes

@@ -1,5 +1,11 @@
 # @brightweblabs/theme
 
+## 0.5.1
+
+### Patch Changes
+
+- 1ecd0c1: Add canonical visual-role typography utilities while retaining the existing typography systems as compatibility aliases.
+
 ## 0.5.0
 
 ### Minor Changes

@@ -1,5 +1,18 @@
 # create-bw-app
 
+## 0.20.0
+
+### Minor Changes
+
+- abe0722: Scaffolded apps now render only the selected modules' toolbar controls plus the notifications AlertsMenu in the shell header, matching the platform preview without importing uninstalled modules. Module add, remove, and update operations keep that generated toolbar wiring synchronized. BREAKING for the CLI: `bw admin create --force` has been removed — the bootstrap RPC is replaced with a two-argument signature that always refuses once an administrator exists; add further administrators through the in-app role controls.
+
+### Patch Changes
+
+- 90c9bf0: Converge theme state on one BrightWeb provider, default new apps to the system theme, improve packaged auth geometry and accessibility, make pnpm plus keepalive setup reproducible in generated apps, and bound Marketing audience processing.
+- c2bd394: Keep scaffold hashes synchronized after adding or removing modules so a subsequent doctor run sees the generated app as healthy.
+- cc1af39: Process persisted Resend events and all derived recipient, suppression, and subscription mutations in one retry-safe database transaction.
+- ed96652: Reject unsafe manifest-controlled filesystem paths before add, remove, update, scaffold, diff, doctor, or upgrade operations can access files.
+
 ## 0.19.0
 
 ### Minor Changes

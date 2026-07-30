@@ -1,5 +1,15 @@
 # @brightweblabs/core-auth
 
+## 0.7.3
+
+### Patch Changes
+
+- c05dc17: Migrate package-owned interface typography to the canonical visual-role utilities while preserving contextual auth, report, dashboard, and compact-control sizing.
+- 90c9bf0: Converge theme state on one BrightWeb provider, default new apps to the system theme, improve packaged auth geometry and accessibility, make pnpm plus keepalive setup reproducible in generated apps, and bound Marketing audience processing.
+- Updated dependencies [c05dc17]
+- Updated dependencies [90c9bf0]
+  - @brightweblabs/ui@1.2.0
+
 ## 0.7.2
 
 ### Patch Changes

@@ -1,5 +1,23 @@
 # @brightweblabs/module-projects
 
+## 0.9.2
+
+### Patch Changes
+
+- c05dc17: Migrate package-owned interface typography to the canonical visual-role utilities while preserving contextual auth, report, dashboard, and compact-control sizing.
+- abe0722: Page task and milestone enrichment queries past PostgREST's implicit 1000-row cap so project taskStats and health stay correct for task-heavy portfolios.
+- a03392d: Toolbar actions now flow through a shell action registry (ShellActionsProvider / useShellAction) instead of fire-and-forget window events: header, breadcrumb, search, filter, and create controls stay disabled until the routed page has registered every handler they dispatch, so an interaction can never be silently swallowed (#84). Module action listeners migrated to the registry with a window-event compatibility bridge for shells without a provider; page-to-toolbar state sync events are unchanged. The CRM organization sheet also blocks re-submits while a save is in flight.
+- 47cf33b: Order paginated task and milestone enrichment reads by primary key so multi-page project aggregates cannot skip or duplicate rows.
+- Updated dependencies [1ecd0c1]
+- Updated dependencies [c05dc17]
+- Updated dependencies [90c9bf0]
+- Updated dependencies [abe0722]
+- Updated dependencies [a03392d]
+  - @brightweblabs/theme@0.5.1
+  - @brightweblabs/app-shell@0.8.0
+  - @brightweblabs/core-auth@0.7.3
+  - @brightweblabs/ui@1.2.0
+
 ## 0.9.1
 
 ### Patch Changes
