@@ -1,5 +1,26 @@
 # @brightweblabs/module-admin
 
+## 0.6.0
+
+### Minor Changes
+
+- 3d52715: Redesign the shared invitation and recovery journeys for a more structured professional-services portal experience.
+
+  Add reusable, localizable password-strength APIs; responsive auth layouts and state primitives; distinct invitation loading, success, invalid, expired, accepted, revoked, and acceptance-error states; and invalid recovery-link handling.
+
+  Add kind-aware authenticated invitation acceptance, including admin-role invitations, and scaffold the required dependency for new BrightWeb applications.
+
+  Improve admin invitation creation and management with visible form guidance, inline delivery feedback, retryable loading errors, responsive mobile cards, expiry cues, and confirmed revocation.
+
+  Upgrade the default admin invitation email with a robust responsive layout, role context, expiry information, and a plain-text fallback.
+
+### Patch Changes
+
+- Updated dependencies [3d52715]
+  - @brightweblabs/ui@1.3.0
+  - @brightweblabs/core-auth@0.8.0
+  - @brightweblabs/app-shell@0.8.1
+
 ## 0.5.11
 
 ### Patch Changes
