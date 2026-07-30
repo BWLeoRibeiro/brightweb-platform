@@ -1,6 +1,9 @@
+"use client";
+
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { cn } from "../lib/utils";
+import { triggerShellToolbarAction, useShellActionReady, useShellActionsRegistry } from "../lib/shell-actions";
 import { resolveShellToolbarSurface } from "../config";
 import type { ShellContextualAction, ShellToolbarRouteConfig, ShellToolbarSurface } from "../types";
 import { AlertsMenu, type AlertsMenuProps } from "./alerts-menu";
@@ -23,6 +26,43 @@ export type AppHeaderProps = {
   onToolbarAction?: (action: ShellContextualAction) => void;
   notifications?: AlertsMenuProps;
 };
+
+export type AppHeaderToolbarActionButtonProps = {
+  action: ShellContextualAction;
+  onToolbarAction?: (action: ShellContextualAction) => void;
+};
+
+/**
+ * Toolbar action button that is registry-aware: when rendered inside a
+ * ShellActionsProvider it invokes the registered handler directly and renders
+ * disabled until one is registered, so a click can never fire before the
+ * target page listener has mounted. Without a provider it falls back to
+ * onToolbarAction (legacy behavior).
+ */
+export function AppHeaderToolbarActionButton({ action, onToolbarAction }: AppHeaderToolbarActionButtonProps) {
+  const shellActions = useShellActionsRegistry();
+  const ready = useShellActionReady(action.action ?? "");
+  const enabled = !shellActions || !action.action || ready;
+  return (
+    <button type="button" className={styles.navbarContextAction} disabled={!enabled} onClick={() => triggerShellToolbarAction(shellActions, action, onToolbarAction)}>
+      <action.icon aria-hidden />
+      {action.label}
+    </button>
+  );
+}
+
+function AppHeaderBreadcrumbActionButton({ crumb, backActions, onToolbarAction }: { crumb: AppHeaderBreadcrumb; backActions: ShellContextualAction[]; onToolbarAction?: (action: ShellContextualAction) => void }) {
+  const shellActions = useShellActionsRegistry();
+  const action = backActions.find((item) => item.action === crumb.action || item.label === crumb.label);
+  const ready = useShellActionReady(action?.action ?? "");
+  const disabled = Boolean(shellActions && action?.action && !ready);
+  return (
+    <button type="button" className={styles.navbarCrumbLink} disabled={disabled} onClick={() => { if (action) triggerShellToolbarAction(shellActions, action, onToolbarAction); }}>
+      <span aria-hidden>‹</span>
+      {crumb.label}
+    </button>
+  );
+}
 
 export function AppHeader({ children, className, kicker, title, count, trailing, utility, breadcrumbs, pathname, toolbarRoutes, toolbarActions, onToolbarAction, notifications }: AppHeaderProps) {
   const surface = pathname && toolbarRoutes ? resolveShellToolbarSurface(pathname, toolbarRoutes) : undefined;
@@ -60,9 +100,9 @@ export function AppHeader({ children, className, kicker, title, count, trailing,
       ) : null}
       <div className={styles.navbarSpacer} />
       {children}
-      {resolvedBreadcrumbs.length > 0 ? <nav className={styles.navbarCrumbs} aria-label="Breadcrumb">{resolvedBreadcrumbs.map((crumb, index) => <span key={`${crumb.label}-${index}`} className={styles.navbarCrumb}>{index > 0 ? <span className={styles.navbarCrumbSeparator}>/</span> : null}{crumb.href ? <Link href={crumb.href} className={styles.navbarCrumbLink}><span aria-hidden>‹</span>{crumb.label}</Link> : <button type="button" className={styles.navbarCrumbLink} onClick={() => { const action = backActions.find((item) => item.action === crumb.action || item.label === crumb.label); if (action) onToolbarAction?.(action); }}><span aria-hidden>‹</span>{crumb.label}</button>}</span>)}</nav> : null}
-      {contextualActions.map((action) => <button key={action.action ?? action.label} type="button" className={styles.navbarContextAction} onClick={() => onToolbarAction?.(action)}><action.icon aria-hidden />{action.label}</button>)}
-      {renderedPrimaryActions.map((action) => <button key={action.action ?? action.label} type="button" className={styles.navbarContextAction} onClick={() => onToolbarAction?.(action)}><action.icon aria-hidden />{action.label}</button>)}
+      {resolvedBreadcrumbs.length > 0 ? <nav className={styles.navbarCrumbs} aria-label="Breadcrumb">{resolvedBreadcrumbs.map((crumb, index) => <span key={`${crumb.label}-${index}`} className={styles.navbarCrumb}>{index > 0 ? <span className={styles.navbarCrumbSeparator}>/</span> : null}{crumb.href ? <Link href={crumb.href} className={styles.navbarCrumbLink}><span aria-hidden>‹</span>{crumb.label}</Link> : <AppHeaderBreadcrumbActionButton crumb={crumb} backActions={backActions} onToolbarAction={onToolbarAction} />}</span>)}</nav> : null}
+      {contextualActions.map((action) => <AppHeaderToolbarActionButton key={action.action ?? action.label} action={action} onToolbarAction={onToolbarAction} />)}
+      {renderedPrimaryActions.map((action) => <AppHeaderToolbarActionButton key={action.action ?? action.label} action={action} onToolbarAction={onToolbarAction} />)}
       {trailing}
       {utility || notifications ? <><span className={styles.navbarDivider} /><div className={styles.navbarUtility}>{utility}{notifications ? <AlertsMenu {...notifications} /> : null}</div></> : null}
     </div>

@@ -28,7 +28,7 @@ export function MobileNav({
 
         {navGroups.map((navGroup) => (
           <div key={navGroup.key} className="basis-full">
-            <p className="mb-2 mt-3 px-1 text-xs font-semibold text-foreground/60">
+            <p className="mb-2 mt-3 px-1 text-meta font-semibold text-foreground/60">
               {navGroup.label}
             </p>
             <div className="flex flex-wrap gap-2">

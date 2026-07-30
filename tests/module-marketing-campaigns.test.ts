@@ -46,10 +46,14 @@ class FakeQuery implements PromiseLike<any> {
   private limitValue: number | null = null;
   private ignoreDuplicates = false;
   private orders: Array<{ key: string; ascending: boolean }> = [];
+  private rangeStart = 0;
+  private rangeEnd: number | null = null;
+  private readonly metrics?: { maxInValues: number; maxWriteRows: number; ranges: number };
 
-  constructor(tables: Tables, table: string) {
+  constructor(tables: Tables, table: string, metrics?: { maxInValues: number; maxWriteRows: number; ranges: number }) {
     this.tables = tables;
     this.table = table;
+    this.metrics = metrics;
   }
 
   select(_columns?: string, options?: { count?: string; head?: boolean }) {
@@ -89,7 +93,15 @@ class FakeQuery implements PromiseLike<any> {
   }
 
   in(key: string, value: unknown[]) {
+    if (this.metrics) this.metrics.maxInValues = Math.max(this.metrics.maxInValues, value.length);
     this.filters.push(["in", key, value]);
+    return this;
+  }
+
+  range(start: number, end: number) {
+    this.rangeStart = start;
+    this.rangeEnd = end;
+    if (this.metrics) this.metrics.ranges += 1;
     return this;
   }
 
@@ -159,10 +171,10 @@ class FakeQuery implements PromiseLike<any> {
   private execute() {
     const table = this.tables[this.table] ?? (this.tables[this.table] = []);
     if (this.operation === "select") {
-      const rows = this.matchingRows().slice(
-        0,
-        this.limitValue ?? Number.POSITIVE_INFINITY,
-      );
+      const end = this.rangeEnd == null
+        ? (this.limitValue ?? Number.POSITIVE_INFINITY)
+        : this.rangeEnd + 1;
+      const rows = this.matchingRows().slice(this.rangeStart, end);
       if (this.countMode) {
         return { data: this.head ? null : rows, count: rows.length, error: null };
       }
@@ -175,6 +187,7 @@ class FakeQuery implements PromiseLike<any> {
     const payloads = (Array.isArray(this.payload) ? this.payload : [this.payload])
       .filter((row): row is Row => Boolean(row))
       .map((row) => ({ ...row }));
+    if (this.metrics) this.metrics.maxWriteRows = Math.max(this.metrics.maxWriteRows, payloads.length);
     if (this.operation === "insert" || this.operation === "upsert") {
       const inserted: Row[] = [];
       for (const payload of payloads) {
@@ -240,12 +253,79 @@ class FakeQuery implements PromiseLike<any> {
   }
 }
 
-function fakeSupabase(tables: Tables) {
+function fakeSupabase(tables: Tables, options: {
+  failWebhookAfterEventOnce?: boolean;
+  metrics?: { maxInValues: number; maxWriteRows: number; ranges: number };
+} = {}) {
+  let failWebhookAfterEvent = options.failWebhookAfterEventOnce === true;
   return {
     from(table: string) {
-      return new FakeQuery(tables, table);
+      return new FakeQuery(tables, table, options.metrics);
     },
     async rpc(name: string, args: Record<string, unknown>) {
+      if (name === "process_marketing_resend_webhook") {
+        const snapshot = structuredClone(tables);
+        const recipient = (tables.marketing_campaign_recipients ?? []).find(
+          (row) => row.provider_message_id === args.p_provider_message_id,
+        ) ?? null;
+        const existing = (tables.marketing_message_events ?? []).find(
+          (row) => row.provider === "resend" && row.provider_event_id === args.p_provider_event_id,
+        );
+        if (existing) {
+          return {
+            data: [{ duplicate: true, event_type: args.p_event_type, recipient_id: recipient?.id ?? null }],
+            error: null,
+          };
+        }
+
+        (tables.marketing_message_events ??= []).push({
+          id: `event-${tables.marketing_message_events.length + 1}`,
+          campaign_id: recipient?.campaign_id ?? null,
+          recipient_id: recipient?.id ?? null,
+          contact_id: recipient?.contact_id ?? null,
+          provider: "resend",
+          event_type: args.p_event_type,
+          provider_event_id: args.p_provider_event_id,
+          payload: args.p_payload,
+          occurred_at: args.p_occurred_at,
+        });
+        if (failWebhookAfterEvent) {
+          failWebhookAfterEvent = false;
+          for (const key of new Set([...Object.keys(tables), ...Object.keys(snapshot)])) {
+            if (snapshot[key]) tables[key] = snapshot[key];
+            else delete tables[key];
+          }
+          return { data: null, error: { message: "injected derived mutation failure" } };
+        }
+
+        const eventType = String(args.p_event_type);
+        if (recipient && ["delivered", "sent"].includes(eventType)) {
+          Object.assign(recipient, { status: "sent", sent_at: args.p_occurred_at, error: null });
+        } else if (recipient && eventType === "failed") {
+          Object.assign(recipient, { status: "failed", error: "Resend reported delivery failure." });
+        } else if (recipient && ["bounced", "complained", "unsubscribed"].includes(eventType)) {
+          const reason = eventType === "bounced" ? "bounced" : eventType === "complained" ? "complained" : "unsubscribed_all";
+          Object.assign(recipient, { status: "suppressed", error: `Resend reported ${eventType}.`, next_attempt_at: null });
+          const normalizedEmail = String(recipient.email).trim().toLowerCase();
+          const suppression = (tables.marketing_suppressions ??= []).find((row) => row.email === normalizedEmail);
+          if (suppression) Object.assign(suppression, { reason, source: "resend_webhook" });
+          else tables.marketing_suppressions.push({ id: `suppression-${tables.marketing_suppressions.length + 1}`, email: normalizedEmail, reason, source: "resend_webhook" });
+          for (const queued of tables.marketing_campaign_recipients ?? []) {
+            if (String(queued.email).trim().toLowerCase() === normalizedEmail && ["queued", "sending"].includes(queued.status)) {
+              Object.assign(queued, { status: "suppressed", error: `Email suppressed: ${reason}.`, next_attempt_at: null });
+            }
+          }
+          for (const subscription of tables.marketing_subscriptions ?? []) {
+            if (subscription.contact_id === recipient.contact_id) {
+              Object.assign(subscription, { status: "unsubscribed", unsubscribed_at: args.p_occurred_at });
+            }
+          }
+        }
+        return {
+          data: [{ duplicate: false, event_type: eventType, recipient_id: recipient?.id ?? null }],
+          error: null,
+        };
+      }
       if (name === "claim_marketing_workflow_runs") {
         const claimTime = String(args.claim_time);
         const claimed = (tables.marketing_workflow_runs ?? [])
@@ -904,6 +984,39 @@ test("campaign segment intersects topic consent and never widens recipients", as
   );
 });
 
+test("campaign expansion paginates large audiences and bounds query payloads", async () => {
+  const audienceSize = 1_205;
+  const subscriptions = Array.from({ length: audienceSize }, (_, index) => ({
+    contact_id: `contact-${String(index).padStart(4, "0")}`,
+    topic_id: "topic-1",
+    status: "subscribed",
+  }));
+  const contacts = subscriptions.map((subscription, index) => ({
+    id: subscription.contact_id,
+    email: `person-${index}@example.com`,
+    created_at: "2026-07-01T00:00:00.000Z",
+  }));
+  const tables: Tables = {
+    marketing_campaigns: [campaign()],
+    marketing_subscriptions: subscriptions,
+    crm_contacts: contacts,
+    marketing_suppressions: [{ email: "person-1204@example.com" }],
+    marketing_campaign_recipients: [],
+  };
+  const metrics = { maxInValues: 0, maxWriteRows: 0, ranges: 0 };
+
+  const result = await expandCampaignRecipients(
+    fakeSupabase(tables, { metrics }),
+    "campaign-1",
+  );
+
+  assert.deepEqual(result, { total: audienceSize, queued: audienceSize - 1, suppressed: 1 });
+  assert.equal(tables.marketing_campaign_recipients.length, audienceSize);
+  assert.ok(metrics.ranges >= 2, "subscriptions are read with explicit pages");
+  assert.ok(metrics.maxInValues <= 200, `largest in() payload was ${metrics.maxInValues}`);
+  assert.ok(metrics.maxWriteRows <= 200, `largest write payload was ${metrics.maxWriteRows}`);
+});
+
 test("worker claims once and records fake sender sent/failed outcomes", async () => {
   const tables: Tables = {
     marketing_campaigns: [campaign({ status: "sending", total_recipients: 2 })],
@@ -1047,6 +1160,53 @@ test("worker re-checks consent and suppression after recipients were queued", as
     tables.marketing_campaign_recipients.map((row) => row.status),
     ["suppressed", "suppressed"],
   );
+});
+
+test("worker bounds consent lookups for a large claimed batch", async () => {
+  const audienceSize = 401;
+  const contacts = Array.from({ length: audienceSize }, (_, index) => ({
+    id: `contact-${index}`,
+    email: `batch-${index}@example.com`,
+  }));
+  const tables: Tables = {
+    marketing_campaigns: [campaign({ status: "sending", total_recipients: audienceSize, batch_size: audienceSize })],
+    marketing_campaign_recipients: contacts.map((contact, index) => ({
+      id: `recipient-${index}`,
+      campaign_id: "campaign-1",
+      contact_id: contact.id,
+      email: contact.email,
+      status: "queued",
+      attempt_count: 0,
+      next_attempt_at: null,
+    })),
+    crm_contacts: contacts,
+    marketing_subscriptions: contacts.map((contact) => ({
+      contact_id: contact.id,
+      topic_id: "topic-1",
+      status: "subscribed",
+    })),
+    marketing_suppressions: [],
+    marketing_contact_settings: contacts.map((contact) => ({
+      contact_id: contact.id,
+      unsubscribe_token: `token-${contact.id}`,
+    })),
+  };
+  const metrics = { maxInValues: 0, maxWriteRows: 0, ranges: 0 };
+  const sender: MarketingEmailSender = {
+    async sendOne() { throw new Error("not used"); },
+    async sendBatch(messages) {
+      return messages.map((_, index) => ({ ok: true as const, providerMessageId: `provider-${index}` }));
+    },
+  };
+
+  const result = await runMarketingWorker({
+    supabase: fakeSupabase(tables, { metrics }),
+    sender,
+    now: () => new Date("2026-07-25T13:00:00.000Z"),
+  });
+
+  assert.equal(result.sent, audienceSize);
+  assert.ok(metrics.maxInValues <= 200, `largest in() payload was ${metrics.maxInValues}`);
 });
 
 test("worker automatically retries a due failed recipient up to the attempt limit", async () => {
@@ -1216,5 +1376,43 @@ test("verified bounce webhook deduplicates and suppresses the contact", async ()
   assert.equal(tables.marketing_campaign_recipients[1]?.status, "suppressed");
   assert.equal(tables.marketing_suppressions[0]?.email, "bounce@example.com");
   assert.equal(tables.marketing_suppressions[0]?.reason, "bounced");
+  assert.equal(tables.marketing_subscriptions[0]?.status, "unsubscribed");
+});
+
+test("webhook transaction rolls back an inserted event so a failed delivery mutation can retry", async () => {
+  const tables: Tables = {
+    marketing_campaign_recipients: [{
+      id: "recipient-1",
+      campaign_id: "campaign-1",
+      contact_id: "contact-1",
+      email: "retry@example.com",
+      provider_message_id: "provider-retry",
+      status: "sent",
+    }],
+    marketing_message_events: [],
+    marketing_suppressions: [],
+    marketing_subscriptions: [{ contact_id: "contact-1", topic_id: "topic-1", status: "subscribed" }],
+  };
+  const secret = `whsec_${Buffer.from("campaign-test-secret-32-bytes!!").toString("base64")}`;
+  const body = JSON.stringify({
+    type: "email.bounced",
+    created_at: "2026-07-25T13:00:00.000Z",
+    data: { email_id: "provider-retry", to: ["retry@example.com"] },
+  });
+  const headers = signedWebhook(body, secret);
+  const supabase = fakeSupabase(tables, { failWebhookAfterEventOnce: true });
+
+  await assert.rejects(
+    () => processResendWebhook(supabase, body, headers, secret),
+    /injected derived mutation failure/,
+  );
+  assert.equal(tables.marketing_message_events.length, 0);
+  assert.equal(tables.marketing_campaign_recipients[0]?.status, "sent");
+
+  const retried = await processResendWebhook(supabase, body, headers, secret);
+  assert.equal(retried.duplicate, false);
+  assert.equal(tables.marketing_message_events.length, 1);
+  assert.equal(tables.marketing_campaign_recipients[0]?.status, "suppressed");
+  assert.equal(tables.marketing_suppressions[0]?.email, "retry@example.com");
   assert.equal(tables.marketing_subscriptions[0]?.status, "unsubscribed");
 });

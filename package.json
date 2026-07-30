@@ -8,6 +8,7 @@
     "check:compatibility-set": "node ./scripts/validate-compatibility-set.mjs",
     "check:create-bw-app-templates": "node ./scripts/check-create-bw-app-templates.mjs",
     "check:module-manifest": "node ./scripts/validate-module-manifest.mjs",
+    "check:packed-release": "node ./scripts/check-packed-release.mjs",
     "changeset": "changeset",
     "create:client": "node ./scripts/create-brightweb-client.mjs",
     "db:materialize": "node ./scripts/materialize-client-migrations.mjs",
@@ -23,7 +24,7 @@
     "release:publish": "changeset publish",
     "start": "pnpm --filter platform-preview start",
     "start:docs": "pnpm --filter dev-docs start",
-    "test": "node --experimental-strip-types --loader ./tests/support/ts-extension-loader.mjs --test ./tests/app-shell-config.test.ts ./tests/app-shell-nav-state.test.ts ./tests/app-shell-theme.test.ts ./tests/app-shell-status-pages.test.ts ./tests/base-contract-contracts.test.ts ./tests/compatibility-set-sync.test.ts ./tests/core-auth-ui.test.ts ./tests/create-bw-app-update.test.ts ./tests/create-bw-app-cli.test.ts ./tests/dashboard-data-contract.test.ts ./tests/dashboard-scaffold-contract.test.ts ./tests/infra-supabase.test.ts ./tests/module-admin-ui.test.ts ./tests/module-crm-ui.test.ts ./tests/module-crm-writes.test.ts ./tests/module-marketing-consent.test.ts ./tests/module-marketing-campaigns.test.ts ./tests/module-marketing-analytics.test.ts ./tests/module-marketing-ui.test.ts ./tests/module-orgs-access.test.ts ./tests/module-projects-ui.test.ts ./tests/module-manifest-validator.test.ts ./tests/server-client-boundary.test.ts ./tests/template-thinness.test.ts ./tests/theme-contract.test.ts ./tests/tier0-backend.test.ts ./tests/tier1-robustness.test.ts ./tests/ui-hygiene.test.ts ./tests/ui-patterns.test.ts ./packages/app-shell/test/dashboard-robustness.test.ts",
+    "test": "node --experimental-strip-types --loader ./tests/support/ts-extension-loader.mjs --test \"./tests/**/*.test.ts\" \"./packages/*/test/**/*.test.ts\" \"./packages/*/src/**/*.test.ts\"",
     "lint": "pnpm --filter platform-preview lint",
     "lint:docs": "pnpm --filter dev-docs lint"
   },
@@ -33,6 +34,7 @@
     "@types/react-dom": "^19.2.3",
     "react": "19.2.4",
     "react-dom": "19.2.4",
-    "typescript": "5.9.3"
+    "typescript": "5.9.3",
+    "verdaccio": "^6.9.0"
   }
 }

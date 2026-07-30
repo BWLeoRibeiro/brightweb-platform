@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useShellAction } from "@brightweblabs/app-shell";
 
 import type { CrmContact, CrmContactsListParams, CrmContactsListResult, CrmContactStatusStats, CrmOwnerOption, CrmStatusLog } from "../data";
 import type { CrmContactStatus } from "../server";
@@ -159,25 +160,11 @@ export function CrmDashboard({ client: providedClient, initialData, dictionary =
     };
   }, [contacts.items, timeline]);
 
-  useEffect(() => {
-    const createContact = () => { setEditingContact(null); setContactDialogOpen(true); };
-    const openOrganizationList = () => createOrganization();
-    const setSearch = (event: Event) => setParams((current) => ({ ...current, search: (event as CustomEvent<{ search?: string }>).detail?.search ?? "", page: 1 }));
-    const setSegment = (event: Event) => setParams((current) => ({ ...current, status: (event as CustomEvent<{ status?: CrmContactStatus | null }>).detail?.status ?? null, page: 1 }));
-    const setSort = (event: Event) => setParams((current) => ({ ...current, sort: (event as CustomEvent<{ sort?: CrmContactsListParams["sort"] }>).detail?.sort ?? "date_desc", page: 1 }));
-    window.addEventListener(CRM_UI_EVENTS.createContact, createContact);
-    window.addEventListener(CRM_UI_EVENTS.createOrganization, openOrganizationList);
-    window.addEventListener(CRM_UI_EVENTS.setSearch, setSearch);
-    window.addEventListener(CRM_UI_EVENTS.selectSegment, setSegment);
-    window.addEventListener(CRM_UI_EVENTS.setSort, setSort);
-    return () => {
-      window.removeEventListener(CRM_UI_EVENTS.createContact, createContact);
-      window.removeEventListener(CRM_UI_EVENTS.createOrganization, openOrganizationList);
-      window.removeEventListener(CRM_UI_EVENTS.setSearch, setSearch);
-      window.removeEventListener(CRM_UI_EVENTS.selectSegment, setSegment);
-      window.removeEventListener(CRM_UI_EVENTS.setSort, setSort);
-    };
-  }, []);
+  useShellAction(CRM_UI_EVENTS.createContact, () => { setEditingContact(null); setContactDialogOpen(true); });
+  useShellAction(CRM_UI_EVENTS.createOrganization, () => createOrganization());
+  useShellAction<{ search?: string } | undefined>(CRM_UI_EVENTS.setSearch, (detail) => setParams((current) => ({ ...current, search: detail?.search ?? "", page: 1 })));
+  useShellAction<{ status?: CrmContactStatus | null } | undefined>(CRM_UI_EVENTS.selectSegment, (detail) => setParams((current) => ({ ...current, status: detail?.status ?? null, page: 1 })));
+  useShellAction<{ sort?: CrmContactsListParams["sort"] } | undefined>(CRM_UI_EVENTS.setSort, (detail) => setParams((current) => ({ ...current, sort: detail?.sort ?? "date_desc", page: 1 })));
 
   useEffect(() => {
     window.dispatchEvent(new CustomEvent(CRM_UI_EVENTS.state, { detail: { search: params.search ?? "", status: params.status ?? null, sort: params.sort ?? "date_desc" } }));
@@ -185,7 +172,7 @@ export function CrmDashboard({ client: providedClient, initialData, dictionary =
 
   return (
     <div className="flex w-full flex-col gap-6 pt-0">
-      {loadFailed ? <p role="alert" className="rounded-[var(--radius-card)] border border-destructive/30 bg-destructive/10 px-4 py-3 text-ui-body text-destructive">{dictionary.dashboard.loadError}</p> : null}
+      {loadFailed ? <p role="alert" className="rounded-[var(--radius-card)] border border-destructive/30 bg-destructive/10 px-4 py-3 text-body text-destructive">{dictionary.dashboard.loadError}</p> : null}
       {slots?.aboveStats}
       {slots?.besideStats}
       {slots?.aboveTable}

@@ -13,7 +13,48 @@ import { GeistSans } from "geist/font/sans";
 <body className={`${GeistSans.variable} ${GeistMono.variable}`}>
 ```
 
-The family contract starts at `--font-body`, `--font-heading`, and `--font-code`; Tailwind-facing `--font-sans`, `--font-display`, and `--font-mono` aliases resolve through those tokens. Raw sizes live only in the `--text-ui-*`, `--type-*`, weight, leading, and tracking scales in `src/tokens.css`. Components consume semantic utilities such as `text-ui-body`, `portal-title`, and `heading-2`, so changing a family or scale does not require component edits.
+The family contract starts at `--font-body`, `--font-heading`, and `--font-code`; Tailwind-facing `--font-sans`, `--font-display`, and `--font-mono` aliases resolve through those tokens. Canonical sizes live in visual-role `--text-*` tokens, with `--text-ui-*` and `--type-*` retained as compatibility scales. New components should use the canonical utilities below. A utility's role is visual rather than semantic: choose the correct HTML element independently, and compose text color separately.
+
+| Utility | Size | Intended role |
+| --- | --- | --- |
+| `text-heading-1` | `clamp(1.75rem, 1.6rem + 0.7vw, 2rem)` | Primary page heading |
+| `text-heading-2` | `1.5rem` | Major section heading |
+| `text-heading-3` | `1.25rem` | Panel or subsection heading |
+| `text-heading-4` | `1.125rem` | Compact subsection heading |
+| `text-title` | `0.9375rem` | Card or item title |
+| `text-body-lg` | `1rem` | Emphasized or introductory body copy |
+| `text-body` | `0.875rem` | Default interface body copy |
+| `text-meta` | `0.75rem` | Secondary metadata |
+| `text-label` | `0.6875rem` | Uppercase interface label |
+| `text-micro` | `0.625rem` | Dense supporting copy |
+| `text-metric` | `2.75rem` | Monospaced primary metric |
+| `text-metric-display` | `2.75rem` | Display-face primary metric |
+| `text-metric-lg` | `3.5rem` | Large display metric |
+
+Existing recipes remain supported and preserve their rendered values:
+
+| Compatibility utility | Canonical utility |
+| --- | --- |
+| `text-ui-title` | `text-heading-1` |
+| `text-ui-heading` | `text-heading-2` |
+| `text-ui-panel-title` | `text-heading-3` |
+| `text-ui-subhead` | `text-heading-4` |
+| `text-ui-card-title` | `text-title` |
+| `text-ui-body` | `text-body` |
+| `text-ui-meta` | `text-meta` |
+| `text-ui-label` | `text-label` |
+| `text-ui-micro` | `text-micro` |
+| `text-ui-metric` | `text-metric` |
+| `text-ui-metric-display` | `text-metric-display` |
+| `text-ui-metric-xl` | `text-metric-lg` |
+
+The matching `portal-*` recipes have the same typography but continue to include their established tone: headings, titles, body, and metrics use `text-foreground`; meta, label, and micro roles use `text-muted-foreground`. `text-ui-title-sm`, shell/report/preview/auth sizes, MQ `heading-2`, and MQ paragraph aliases are contextual rather than exact canonical equivalents. Keep them until their route family is visually migrated and screenshot-checked.
+
+BrightWeb package-owned UI now consumes the canonical roles directly. Compatibility
+recipes remain exported for independently versioned clients, but new package code
+must not introduce `text-ui-*`, `portal-*`, MQ paragraph aliases, or raw named
+Tailwind font sizes. Contextual sizes compose a canonical role with the existing
+specialized size token so their established geometry remains explicit.
 
 Client themes can override the family without forking recipes. The MQ path is:
 
@@ -59,7 +100,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 | --- | --- |
 | `--font-body`, `--font-heading`, `--font-code`; `--font-sans`, `--font-display`, `--font-mono` | Root font families and their Tailwind-facing aliases. |
 | `--type-weight-*`, `--type-leading-*`, `--type-tracking-*` | Shared typography weight, rhythm, and tracking primitives. |
-| `--text-ui-*`, `--type-paragraph*`, `--type-heading-2`, `--type-label` | Tokenized platform and compatibility type scales. |
+| `--text-heading-*`, `--text-title`, `--text-body*`, `--text-meta`, `--text-label`, `--text-micro`, `--text-metric*`; `--text-ui-*`, `--type-*` | Canonical visual-role typography tokens and compatibility scales. |
 | `--foreground-muted-accessible`, `--foreground-inverse-muted`, `--foreground-inverse-subtle` | Contrast-safe secondary and inverse text roles. |
 | `--text-ui-chip`, `--text-ui-action`, `--text-ui-calendar` | Compact control and calendar type sizes. |
 | `--text-ui-shell-title`, `--text-ui-report-title`, `--text-ui-report-title-lg`, `--text-ui-report-metric` | Shell and CRM report display type sizes. |

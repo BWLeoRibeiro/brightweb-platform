@@ -42,12 +42,12 @@ export function ProjectListCard({
       <div className="flex flex-1 flex-col gap-3 p-4">
         <div className="flex items-center justify-between">
           <span
-            className={`inline-flex items-center rounded-full px-2 py-0.5 text-ui-label font-semibold ${CLIENT_PROJECT_STATUS_STYLES[project.status]}`}
+            className={`inline-flex items-center rounded-full px-2 py-0.5 text-label font-semibold ${CLIENT_PROJECT_STATUS_STYLES[project.status]}`}
           >
             {CLIENT_PROJECT_STATUS_LABELS[project.status]}
           </span>
           <span
-            className="inline-flex items-center gap-1 text-ui-label font-semibold"
+            className="inline-flex items-center gap-1 text-label font-semibold"
             style={{ color: healthVar }}
           >
             <span className="size-1.5 rounded-full" style={{ background: healthVar }} />
@@ -57,26 +57,26 @@ export function ProjectListCard({
 
         <div>
           {project.code ? (
-            <p className="mb-0.5 select-all font-mono text-ui-micro text-muted-foreground/60">
+            <p className="mb-0.5 select-all font-mono text-micro text-muted-foreground/60">
               {project.code}
             </p>
           ) : null}
-          <h2 className="text-base font-semibold leading-snug">{project.name}</h2>
-          <p className="mt-0.5 text-xs text-muted-foreground">{project.organizationName}</p>
+          <h2 className="text-body-lg font-semibold leading-snug">{project.name}</h2>
+          <p className="mt-0.5 text-meta text-muted-foreground">{project.organizationName}</p>
         </div>
 
         {project.summary ? (
-          <p className="line-clamp-2 text-sm text-muted-foreground">{project.summary}</p>
+          <p className="line-clamp-2 text-body text-muted-foreground">{project.summary}</p>
         ) : null}
 
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-muted-foreground">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-meta text-muted-foreground">
           <span
             className={`inline-flex items-center gap-1.5 ${overdue ? "font-semibold" : ""}`}
             style={overdue ? { color: "var(--project-health-off-track)" } : undefined}
           >
             <CalendarDays className="size-3.5 shrink-0" />
             {formatClientProjectDate(project.targetDate)}
-            {overdue ? <span className="text-ui-micro">({clientProjectsDictionary.common.delayed})</span> : null}
+            {overdue ? <span className="text-micro">({clientProjectsDictionary.common.delayed})</span> : null}
           </span>
 
           <span
@@ -95,7 +95,7 @@ export function ProjectListCard({
               )
               : dictionary.noMilestones}
             {project.milestoneStats.delayed > 0 ? (
-              <span className="text-ui-micro">
+              <span className="text-micro">
                 {dictionary.delayedMilestones(project.milestoneStats.delayed)}
               </span>
             ) : null}
@@ -105,11 +105,11 @@ export function ProjectListCard({
         {milestoneProgressPct !== null ? (
           <div className="space-y-1">
             <div className="flex items-center justify-between">
-              <span className="text-ui-micro text-muted-foreground">
+              <span className="text-micro text-muted-foreground">
                 {dictionary.milestoneProgress}
               </span>
               <span
-                className="text-ui-micro font-bold tabular-nums"
+                className="text-micro font-bold tabular-nums"
                 style={{ color: healthVar }}
               >
                 {milestoneProgressPct}%
@@ -127,7 +127,7 @@ export function ProjectListCard({
         <div className="mt-auto pt-1">
           <Link
             href={href}
-            className="flex w-full items-center justify-between rounded-lg border border-border/60 bg-muted/30 px-3 py-2 text-sm font-semibold text-foreground transition-[color,background-color,border-color] hover:border-border hover:bg-muted/60 motion-reduce:transition-none"
+            className="flex w-full items-center justify-between rounded-lg border border-border/60 bg-muted/30 px-3 py-2 text-body font-semibold text-foreground transition-[color,background-color,border-color] hover:border-border hover:bg-muted/60 motion-reduce:transition-none"
           >
             <span className="inline-flex items-center gap-2">
               <FolderKanban className="size-4 text-muted-foreground" />

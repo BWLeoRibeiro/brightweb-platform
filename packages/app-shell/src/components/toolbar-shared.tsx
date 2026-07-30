@@ -11,6 +11,7 @@ import { cn } from "../lib/utils";
 type NewMenuItem = {
   icon?: LucideIcon;
   label: string;
+  disabled?: boolean;
   onSelect: () => void;
 };
 
@@ -32,7 +33,7 @@ export function ToolbarNewMenu({ id, icon: Icon, label = "Novo", tooltip, items 
               type="button"
               variant="brand"
               id={id}
-              className="h-9 px-3 text-[length:var(--text-ui-action)] shadow-[var(--shadow-toolbar-control)]"
+              className="h-9 px-3 text-body text-[length:var(--text-ui-action)] shadow-[var(--shadow-toolbar-control)]"
             >
               <Icon className="size-3.5" />
               {label}
@@ -42,7 +43,7 @@ export function ToolbarNewMenu({ id, icon: Icon, label = "Novo", tooltip, items 
         </TooltipTrigger>
         <DropdownMenuContent align="end" className="w-52 border-[color:var(--hairline)] bg-[color:var(--popover)]">
           {items.map((item) => (
-            <DropdownMenuItem key={item.label} className="whitespace-nowrap" onClick={item.onSelect}>
+            <DropdownMenuItem key={item.label} className="whitespace-nowrap" disabled={item.disabled} onClick={item.onSelect}>
               {item.icon ? <item.icon className="size-4" /> : null}
               {item.label}
             </DropdownMenuItem>
@@ -131,7 +132,7 @@ export function ToolbarDropdownChip({ id, icon: Icon, label, tooltip, items }: T
             <button
               type="button"
               id={id}
-              className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border border-hairline bg-elevate-1 px-3 py-1.5 text-xs font-semibold text-foreground/75 transition-colors hover:border-hairline-strong hover:bg-elevate-3 hover:text-foreground"
+              className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border border-hairline bg-elevate-1 px-3 py-1.5 text-meta font-semibold text-foreground/75 transition-colors hover:border-hairline-strong hover:bg-elevate-3 hover:text-foreground"
             >
               <Icon className="size-3.5" />
               {label}
@@ -177,7 +178,7 @@ export function ToolbarSearchRefreshPill({
         value={searchValue}
         onChange={(event) => onSearchChange(event.target.value)}
         placeholder={placeholder}
-        className="h-8 w-40 border-transparent bg-transparent text-xs shadow-none focus-visible:ring-0 xl:w-56"
+        className="h-8 w-40 border-transparent bg-transparent text-meta shadow-none focus-visible:ring-0 xl:w-56"
       />
       <Tooltip>
         <TooltipTrigger asChild>

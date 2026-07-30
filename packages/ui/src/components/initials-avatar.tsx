@@ -20,7 +20,7 @@ const toneClasses: Record<InitialsAvatarTone, string> = {
 export function InitialsAvatar({ label, fallback, tone = "active", className, ...props }: InitialsAvatarProps) {
   return (
     <Avatar className={cn("shrink-0", toneClasses[tone], className)} {...props}>
-      <AvatarFallback className="bg-transparent text-ui-meta font-bold uppercase text-current">
+      <AvatarFallback className="bg-transparent text-meta font-bold uppercase text-current">
         {getInitials(label, fallback)}
       </AvatarFallback>
     </Avatar>

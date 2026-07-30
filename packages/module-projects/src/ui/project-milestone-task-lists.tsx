@@ -5,7 +5,7 @@ import Link from "next/link";
 import { CalendarOff, ChevronDown, Flag, ListChecks, SquareKanban } from "lucide-react";
 import { PROJECTS_EVENTS, dispatchProjectsEvent } from "./events";
 import { ProjectProgressBar } from "./shared/project-progress";
-import { portalMonoTabularClassName as MONO } from "./shared/typography";
+import { monoTabularClassName as MONO } from "./shared/typography";
 import { ProjectSurfaceCard, ProjectSurfaceSectionHeader } from "./shared/project-surface-card";
 import { SectionAddButton } from "./shared/section-icon-button";
 import {
@@ -83,8 +83,8 @@ const taskGroupHeaderTone: Record<TaskGroupKey, { header: string; label: string 
 };
 
 // Explicit label styling (11px/600/uppercase) so the per-group tone color wins
-// deterministically over the shared portal-label utility's muted color.
-const TASK_GROUP_LABEL_BASE = "text-[length:var(--text-ui-label)] font-semibold uppercase tracking-[var(--type-tracking-060)]";
+// deterministically over the shared text-label text-muted-foreground utility's muted color.
+const TASK_GROUP_LABEL_BASE = "text-label font-semibold uppercase tracking-[var(--type-tracking-060)]";
 
 // How many tasks the detail-page bento previews before deferring to the board.
 const PREVIEW_TASK_LIMIT = 7;
@@ -199,8 +199,8 @@ function ProjectSectionEmptyState({ icon: Icon, title, hint }: { icon: typeof Fl
         <Icon className="size-5 text-foreground/30" />
       </div>
       <div>
-        <p className="text-sm font-semibold text-foreground/60">{title}</p>
-        <p className="mt-1 text-xs text-foreground-muted-accessible">{hint}</p>
+        <p className="text-body font-semibold text-foreground/60">{title}</p>
+        <p className="mt-1 text-meta text-foreground-muted-accessible">{hint}</p>
       </div>
     </div>
   );
@@ -227,7 +227,7 @@ function ProjectTaskRow({
     >
       {/* Primary: title + due date */}
       <div className="flex min-w-0 items-start gap-2">
-        <p className="portal-body min-w-0 flex-1 font-semibold leading-snug line-clamp-2" title={task.title}>
+        <p className="text-body text-foreground min-w-0 flex-1 font-semibold leading-snug line-clamp-2" title={task.title}>
           {task.title}
         </p>
         <TaskDueMeta dueDate={task.dueDate} isOverdue={isOverdue} className="whitespace-nowrap pt-0.5" />
@@ -235,7 +235,7 @@ function ProjectTaskRow({
 
       {/* Secondary: description */}
       {description ? (
-        <p className="portal-meta line-clamp-1 text-[color:var(--muted-foreground)]" title={description}>
+        <p className="text-meta text-muted-foreground line-clamp-1 text-[color:var(--muted-foreground)]" title={description}>
           {description}
         </p>
       ) : null}
@@ -283,7 +283,7 @@ function ProjectTaskGroupRows({
           <ChevronDown className={cn("size-3.5 transition-transform duration-200", tone.label, isCollapsed && "-rotate-90")} />
           <p className={cn(TASK_GROUP_LABEL_BASE, tone.label)}>{group.label}</p>
         </div>
-        <span className={`${MONO} portal-micro`}>
+        <span className={`${MONO} text-micro text-muted-foreground`}>
           {group.tasks.length}
         </span>
       </button>
@@ -428,23 +428,23 @@ export function ProjectMilestonesAndTasksLists({
                   >
                     {hasDate ? (
                       <>
-                        <span className="block text-[length:var(--text-ui-nano)] font-bold leading-none tracking-[var(--type-tracking-040)] opacity-70">
+                        <span className="block text-micro text-[length:var(--text-ui-nano)] font-bold leading-none tracking-[var(--type-tracking-040)] opacity-70">
                           {formatWeekday(milestone.targetDate)}
                         </span>
-                        <span className={`${MONO} block text-[length:var(--type-paragraph)] font-extrabold leading-none`}>
+                        <span className={`${MONO} block text-body-lg font-extrabold leading-none`}>
                           {formatDayOfMonth(milestone.targetDate)}
                         </span>
                       </>
                     ) : (
                       <>
                         <CalendarOff className="size-4 opacity-60" />
-                        <span className="block text-[length:var(--text-ui-nano)] font-semibold uppercase tracking-[var(--type-tracking-040)] opacity-70">{dictionary.detail.noDateShort}</span>
+                        <span className="block text-micro text-[length:var(--text-ui-nano)] font-semibold uppercase tracking-[var(--type-tracking-040)] opacity-70">{dictionary.detail.noDateShort}</span>
                       </>
                     )}
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
-                      <p className={cn("portal-body min-w-0 flex-1 truncate font-semibold", isAchieved && "text-[color:var(--muted-foreground)]")}>{milestone.title}</p>
+                      <p className={cn("text-body text-foreground min-w-0 flex-1 truncate font-semibold", isAchieved && "text-[color:var(--muted-foreground)]")}>{milestone.title}</p>
                       {progress && progress.total > 0 ? (
                         <span className="flex shrink-0 items-center gap-2">
                           <ProjectProgressBar
@@ -453,13 +453,13 @@ export function ProjectMilestonesAndTasksLists({
                             className="w-16 bg-[color:var(--project-ui-color-29)]"
                             fillClassName={isProgressComplete ? "bg-[color:var(--project-state-active)]" : "bg-[color:var(--accent)]"}
                           />
-                          <span className={`${MONO} portal-meta tabular-nums text-foreground/70`}>{progress.done}/{progress.total}</span>
+                          <span className={`${MONO} text-meta text-muted-foreground tabular-nums text-foreground/70`}>{progress.done}/{progress.total}</span>
                         </span>
                       ) : (
-                        <span className="portal-micro shrink-0 text-foreground-muted-accessible">{dictionary.detail.noTasksLowercase}</span>
+                        <span className="text-micro text-muted-foreground shrink-0 text-foreground-muted-accessible">{dictionary.detail.noTasksLowercase}</span>
                       )}
                     </div>
-                    <div className="portal-meta mt-1 flex min-w-0 items-center gap-x-2 whitespace-nowrap">
+                    <div className="text-meta text-muted-foreground mt-1 flex min-w-0 items-center gap-x-2 whitespace-nowrap">
                       <span className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap">
                         <span className={cn("size-1.5 shrink-0 rounded-full", milestoneStatusDotClass[milestone.status] ?? "bg-slate-400/70")} />
                         {milestoneStatusLabels[milestone.status] ?? milestone.status}
@@ -520,7 +520,7 @@ export function ProjectMilestonesAndTasksLists({
             {hiddenTaskCount > 0 ? (
               <Link
                 href={navigation.boardHref(projectId)}
-                className="portal-meta flex items-center justify-center gap-1.5 border-t border-[color:var(--border)] px-3 py-2 font-semibold text-[color:var(--muted-foreground)] transition-colors hover:bg-[color:var(--project-ui-color-09)] hover:text-[color:var(--accent)]"
+                className="text-meta text-muted-foreground flex items-center justify-center gap-1.5 border-t border-[color:var(--border)] px-3 py-2 font-semibold text-[color:var(--muted-foreground)] transition-colors hover:bg-[color:var(--project-ui-color-09)] hover:text-[color:var(--accent)]"
               >
                 <SquareKanban className="size-3.5" />
                 {dictionary.detail.moreTasks(hiddenTaskCount)}

@@ -1,1 +1,5 @@
-export { LoginPage as default } from "@brightweblabs/core-auth/ui";
+import { LoginPage } from "@brightweblabs/core-auth/ui";
+
+export default function Page() {
+  return <LoginPage />;
+}

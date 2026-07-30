@@ -116,7 +116,7 @@ export function MobileNavPill({ active, href, icon: Icon, label }: MobileNavPill
     <Link
       href={href}
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors",
+        "inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-meta font-semibold transition-colors",
         getMobilePillClasses(active),
       )}
     >
@@ -131,7 +131,7 @@ export function MobileTogglePill({ controlsId, expanded, onToggle }: MobileToggl
     <button
       onClick={onToggle}
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors",
+        "inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-meta font-semibold transition-colors",
         getMobilePillClasses(expanded),
       )}
       aria-expanded={expanded}

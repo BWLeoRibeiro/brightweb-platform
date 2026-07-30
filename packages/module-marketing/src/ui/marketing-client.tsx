@@ -141,7 +141,7 @@ function RecipientPanel({ recipients, dictionary }: {
     <section className="marketing-recipient-panel" aria-labelledby="marketing-recipients-title">
       <div>
         <p className="marketing-kicker" id="marketing-recipients-title">{dictionary.recipients.title}</p>
-        <p className="mt-1 text-sm text-muted-foreground">{dictionary.recipients.subtitle}</p>
+        <p className="mt-1 text-body text-muted-foreground">{dictionary.recipients.subtitle}</p>
       </div>
       <div className="marketing-count-grid">
         {(Object.keys(counts) as Array<keyof typeof counts>).map((status) => (
@@ -152,7 +152,7 @@ function RecipientPanel({ recipients, dictionary }: {
         ))}
       </div>
       {recipients.length === 0 ? (
-        <p className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
+        <p className="rounded-lg border border-dashed p-4 text-body text-muted-foreground">
           {dictionary.recipients.empty}
         </p>
       ) : (
@@ -160,8 +160,8 @@ function RecipientPanel({ recipients, dictionary }: {
           {recipients.map((recipient) => (
             <div className="marketing-recipient-row" key={recipient.id}>
               <div className="min-w-0">
-                <p className="truncate text-sm font-semibold">{recipient.email}</p>
-                {recipient.error ? <p className="truncate text-xs text-destructive">{recipient.error}</p> : null}
+                <p className="truncate text-body font-semibold">{recipient.email}</p>
+                {recipient.error ? <p className="truncate text-meta text-destructive">{recipient.error}</p> : null}
               </div>
               <Badge className={recipientTone[recipient.status]}>
                 {dictionary.recipients.statuses[recipient.status]}
@@ -409,7 +409,7 @@ export function MarketingClient({
           <div className="marketing-ledger-heading">
             <div>
               <p className="marketing-kicker">{dictionary.list.title}</p>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-body text-muted-foreground">
                 {dictionary.list.campaignCount(campaigns.length)}
               </p>
             </div>
@@ -541,7 +541,7 @@ export function MarketingClient({
                     </option>
                   ))}
                 </select>
-                <p className="mt-2 text-xs text-muted-foreground">
+                <p className="mt-2 text-meta text-muted-foreground">
                   {dictionary.editor.effectiveAudience}
                 </p>
               </div>
@@ -619,7 +619,7 @@ export function MarketingClient({
           </div>
 
           <footer className="marketing-editor-footer">
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <div className="flex items-center gap-2 text-meta text-muted-foreground">
               <Clock3 className={busy ? "size-3.5 animate-pulse" : "size-3.5"} />
               {busy ? dictionary.editor.saving : dictionary.editor.safeHtml}
             </div>

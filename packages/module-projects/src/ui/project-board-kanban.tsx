@@ -51,7 +51,7 @@ type TaskFormState = {
 type MilestoneFilterValue = "all" | "__none__" | string;
 type PendingBlockedMove = { taskId: string; nextStatus: TaskStatus };
 
-const sheetViewValueClassName = "mt-1.5 text-sm text-foreground";
+const sheetViewValueClassName = "mt-1.5 text-body text-foreground";
 
 const columnStyles: Record<TaskStatus, { surfaceClassName: string; headingClassName: string; dotClassName: string }> = {
   todo: {
@@ -284,11 +284,11 @@ export function ProjectBoardKanban({ canEditItems }: ProjectBoardKanbanProps) {
                 onDrop={(event) => { event.preventDefault(); setDropTarget(null); void moveTaskToStatus(column.key); }}
               >
                 <div className="mb-3 flex items-center justify-between px-1">
-                  <div className="flex items-center gap-2"><span className={cn("size-2 shrink-0 rounded-full", column.dotClassName)} /><h2 className={cn("text-[length:var(--text-ui-label)] font-semibold uppercase tracking-[var(--type-tracking-080)]", column.headingClassName)}>{column.label}</h2></div>
-                  <span className="inline-flex min-w-[1.5rem] items-center justify-center rounded-full border border-[color:var(--border)] bg-[color:var(--card)] px-1.5 text-[length:var(--text-ui-label)] font-semibold tabular-nums text-[color:var(--muted-foreground)]">{columnTasks.length}</span>
+                  <div className="flex items-center gap-2"><span className={cn("size-2 shrink-0 rounded-full", column.dotClassName)} /><h2 className={cn("text-label font-semibold uppercase tracking-[var(--type-tracking-080)]", column.headingClassName)}>{column.label}</h2></div>
+                  <span className="inline-flex min-w-[1.5rem] items-center justify-center rounded-full border border-[color:var(--border)] bg-[color:var(--card)] px-1.5 text-label font-semibold tabular-nums text-[color:var(--muted-foreground)]">{columnTasks.length}</span>
                 </div>
                 <div className="flex flex-col gap-2">
-                  {columnTasks.length === 0 ? <p className="portal-micro px-1 py-6 text-center text-foreground/35">{dictionary.board.noTasks}</p> : null}
+                  {columnTasks.length === 0 ? <p className="text-micro text-muted-foreground px-1 py-6 text-center text-foreground/35">{dictionary.board.noTasks}</p> : null}
                   {columnTasks.map((task) => {
                     const milestone = task.milestoneId ? milestoneById.get(task.milestoneId) : null;
                     return (
@@ -303,11 +303,11 @@ export function ProjectBoardKanban({ canEditItems }: ProjectBoardKanbanProps) {
                         className={cn("w-full rounded-[var(--radius-card)] border border-[color:var(--border)] bg-[color:var(--card)] p-2.5 text-left shadow-[var(--project-board-card-shadow)] transition hover:border-[color:var(--project-board-card-hover-border)] hover:shadow-[var(--project-board-card-hover-shadow)]", movingTaskId === task.id ? "cursor-wait opacity-70" : canEditItems ? "cursor-grab active:cursor-grabbing" : "cursor-pointer")}
                         data-status={column.key}
                       >
-                        <div className="flex items-start justify-between gap-2"><p className="portal-body min-w-0 flex-1 font-semibold leading-snug line-clamp-2" title={task.title}>{task.title}</p><TaskPriorityTag task={task} /></div>
-                        {task.description?.trim() ? <p className="portal-meta mt-1 line-clamp-2 text-[color:var(--muted-foreground)]" title={task.description}>{task.description}</p> : null}
+                        <div className="flex items-start justify-between gap-2"><p className="text-body text-foreground min-w-0 flex-1 font-semibold leading-snug line-clamp-2" title={task.title}>{task.title}</p><TaskPriorityTag task={task} /></div>
+                        {task.description?.trim() ? <p className="text-meta text-muted-foreground mt-1 line-clamp-2 text-[color:var(--muted-foreground)]" title={task.description}>{task.description}</p> : null}
                         <div className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1"><TaskDueMeta dueDate={task.dueDate} isOverdue={isTaskOverdue(task)} /><TaskMilestoneMeta title={milestone?.title ?? null} /></div>
                         <div className="mt-1.5"><TaskAssigneeMeta label={task.assigneeLabel} /></div>
-                        {task.status === "blocked" && task.blockedReason ? <p className="portal-micro mt-2 line-clamp-2 rounded-md border border-[color:var(--project-board-reason-border)] bg-[color:var(--project-board-reason-surface)] px-1.5 py-1 text-[color:var(--project-risk-overdue-strong)]" title={task.blockedReason}>{task.blockedReason}</p> : null}
+                        {task.status === "blocked" && task.blockedReason ? <p className="text-micro text-muted-foreground mt-2 line-clamp-2 rounded-md border border-[color:var(--project-board-reason-border)] bg-[color:var(--project-board-reason-surface)] px-1.5 py-1 text-[color:var(--project-risk-overdue-strong)]" title={task.blockedReason}>{task.blockedReason}</p> : null}
                       </button>
                     );
                   })}
@@ -340,7 +340,7 @@ export function ProjectBoardKanban({ canEditItems }: ProjectBoardKanbanProps) {
                     ) : (
                       <Popover>
                         <PopoverTrigger asChild>
-                          <Button id="board-task-due" type="button" variant="ghost" className={cn(sheetEditControlClassName, "mt-1.5 h-9 w-full justify-start px-2.5 text-sm", taskDueDateValue ? "text-foreground" : "text-foreground/45")}>
+                          <Button id="board-task-due" type="button" variant="ghost" className={cn(sheetEditControlClassName, "mt-1.5 h-9 w-full justify-start px-2.5 text-body", taskDueDateValue ? "text-foreground" : "text-foreground/45")}>
                             <CalendarIcon className="mr-2 size-4" />
                             {taskDueDateValue ? format(taskDueDateValue, "dd/MM/yyyy") : dictionary.board.selectDate}
                           </Button>
@@ -351,9 +351,9 @@ export function ProjectBoardKanban({ canEditItems }: ProjectBoardKanbanProps) {
                       </Popover>
                     )}
                   </div>
-                  {taskStatus === "blocked" ? <div><label className={sheetFieldLabelClassName} htmlFor="board-task-blocked">{dictionary.forms.blockedReason}</label>{taskMode === "view" ? <p className="mt-1.5 rounded-md border border-[color:var(--project-board-blocked-reason-border)] bg-[color:var(--project-board-blocked-reason-surface)] px-3 py-2 text-sm text-[color:var(--project-risk-at-risk-strong)]">{taskBlockedReason.trim() || dictionary.board.noBlockedReason}</p> : <Input id="board-task-blocked" value={taskBlockedReason} onChange={(event) => setTaskBlockedReason(event.target.value)} required className={cn(sheetEditControlClassName, "mt-1.5")} />}</div> : null}
+                  {taskStatus === "blocked" ? <div><label className={sheetFieldLabelClassName} htmlFor="board-task-blocked">{dictionary.forms.blockedReason}</label>{taskMode === "view" ? <p className="mt-1.5 rounded-md border border-[color:var(--project-board-blocked-reason-border)] bg-[color:var(--project-board-blocked-reason-surface)] px-3 py-2 text-body text-[color:var(--project-risk-at-risk-strong)]">{taskBlockedReason.trim() || dictionary.board.noBlockedReason}</p> : <Input id="board-task-blocked" value={taskBlockedReason} onChange={(event) => setTaskBlockedReason(event.target.value)} required className={cn(sheetEditControlClassName, "mt-1.5")} />}</div> : null}
                 </SheetSection>
-                {taskMode === "edit" && canEditItems ? <Button type="button" variant="link" size="link" className="w-fit p-0 text-sm text-[color:var(--destructive)]" onClick={() => setTaskDeleteDialogOpen(true)} disabled={isDeletingTask || isSavingTask}><Trash2 className="mr-1.5 size-3.5" />{dictionary.board.deleteTask}</Button> : null}
+                {taskMode === "edit" && canEditItems ? <Button type="button" variant="link" size="link" className="w-fit p-0 text-body text-[color:var(--destructive)]" onClick={() => setTaskDeleteDialogOpen(true)} disabled={isDeletingTask || isSavingTask}><Trash2 className="mr-1.5 size-3.5" />{dictionary.board.deleteTask}</Button> : null}
               </div>
               <SheetFooter className={`${sheetFooterClassName} gap-2`}>
                 {taskMode === "view" ? canEditItems ? (

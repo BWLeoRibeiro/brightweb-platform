@@ -40,6 +40,19 @@ export {
   resolveShellToolbarSurface,
 } from "./config";
 export { DesktopSidebar } from "./components/desktop-sidebar";
+export {
+  ShellActionsProvider,
+  triggerShellToolbarAction,
+  useRegisteredShellActions,
+  useShellAction,
+  useShellActionDispatch,
+  useShellActionReady,
+  useShellActionsReady,
+  useShellActionsRegistry,
+} from "./lib/shell-actions";
+export type { ShellActionsProviderProps } from "./lib/shell-actions";
+export { ShellActionRegistry } from "./lib/shell-action-registry";
+export type { ShellActionAliases, ShellActionHandler } from "./lib/shell-action-registry";
 export { MobileNav } from "./components/mobile-nav";
 export { ThemeMenu } from "./components/theme-menu";
 export * from "./theme/index";

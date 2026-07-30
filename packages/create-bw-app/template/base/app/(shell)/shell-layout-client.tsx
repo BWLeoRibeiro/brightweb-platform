@@ -7,14 +7,18 @@ import {
   AppShellFrame,
   DesktopSidebar,
   MobileNav,
+  ShellActionsProvider,
   computeInitials,
   isShellNavItemActive,
+  useShellAction,
+  useShellActionDispatch,
   useShellNavState,
   type ShellContextualAction,
   type ShellNavStateGroup,
 } from "@brightweblabs/app-shell";
 import { createAuthUiClient } from "@brightweblabs/core-auth/ui";
 import { Toaster } from "@brightweblabs/ui";
+import { getModuleToolbarControls } from "../../config/module-toolbar-controls";
 import { getStarterShellConfig } from "../../config/shell";
 import "@brightweblabs/app-shell/dashboard.css";
 
@@ -34,6 +38,17 @@ const toolbarWindowEventByAction: Record<string, string> = {
 };
 
 export function ShellLayoutClient({
+  children,
+  viewer,
+}: Readonly<{ children: ReactNode; viewer: ShellViewer }>) {
+  return (
+    <ShellActionsProvider aliases={toolbarWindowEventByAction}>
+      <ShellLayoutInner viewer={viewer}>{children}</ShellLayoutInner>
+    </ShellActionsProvider>
+  );
+}
+
+function ShellLayoutInner({
   children,
   viewer,
 }: Readonly<{ children: ReactNode; viewer: ShellViewer }>) {
@@ -72,23 +87,21 @@ export function ShellLayoutClient({
     viewer.email ||
     "Conta";
   const projectsBaseHref = pathname.startsWith("/projects") ? "/projects" : "/projetos";
+  const toolbarControls = getModuleToolbarControls(pathname, projectsBaseHref);
+
+  const dispatchShellAction = useShellActionDispatch();
+  useShellAction("projects-back-to-portfolio", () => {
+    router.push(projectsBaseHref);
+  });
+  useShellAction("projects-open-board", () => {
+    const projectId = pathname.split("/")[2];
+    if (projectId) {
+      router.push(`${projectsBaseHref}/${projectId}/${projectsBaseHref === "/projects" ? "tasks" : "tarefas"}`);
+    }
+  });
 
   const handleToolbarAction = (item: ShellContextualAction) => {
-    if (item.action === "projects-back-to-portfolio") {
-      router.push(projectsBaseHref);
-      return;
-    }
-    if (item.action === "projects-open-board") {
-      const projectId = pathname.split("/")[2];
-      if (projectId) {
-        router.push(`${projectsBaseHref}/${projectId}/${projectsBaseHref === "/projects" ? "tasks" : "tarefas"}`);
-      }
-      return;
-    }
-
-    if (item.action) {
-      window.dispatchEvent(new Event(toolbarWindowEventByAction[item.action] ?? item.action));
-    }
+    if (item.action) dispatchShellAction(item.action);
   };
 
   return (
@@ -143,8 +156,9 @@ export function ShellLayoutClient({
           toolbarRoutes={toolbarRoutes}
           toolbarActions={toolbarActions}
           onToolbarAction={handleToolbarAction}
+          notifications={{}}
         >
-          {null}
+          {toolbarControls}
         </AppHeader>
       }
       mobileNav={

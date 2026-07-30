@@ -182,30 +182,45 @@
   --radius-pill: 999px;
   --radius-scrollbar: 9999px;
 
-  /* MQ-derived size scale. Aliases below retain the current rendered sizes. */
+  /* Canonical visual-role typography scale. */
+  --text-heading-1: clamp(1.75rem, 1.6rem + 0.7vw, 2rem);
+  --text-heading-2: 1.5rem;
+  --text-heading-3: 1.25rem;
+  --text-heading-4: 1.125rem;
+  --text-title: 0.9375rem;
+  --text-body-lg: 1rem;
+  --text-body: 0.875rem;
+  --text-meta: 0.75rem;
+  --text-label: 0.6875rem;
+  --text-micro: 0.625rem;
+  --text-metric: 2.75rem;
+  --text-metric-display: var(--text-metric);
+  --text-metric-lg: 3.5rem;
+
+  /* Compatibility and contextual scales retain their current rendered sizes. */
   --text-ui-nano: 0.4375rem;
   --text-ui-nano-lg: 0.5rem;
   --text-ui-fine: 0.5625rem;
-  --text-ui-micro: 0.625rem;
-  --text-ui-label: 0.6875rem;
+  --text-ui-micro: var(--text-micro);
+  --text-ui-label: var(--text-label);
   --text-ui-label-relaxed: 0.7rem;
-  --text-ui-meta: 0.75rem;
+  --text-ui-meta: var(--text-meta);
   --text-ui-chip: 0.78125rem;
   --text-ui-action: 0.8125rem;
-  --text-ui-body: 0.875rem;
-  --text-ui-card-title: 0.9375rem;
-  --text-ui-subhead: 1.125rem;
-  --text-ui-panel-title: 1.25rem;
-  --text-ui-heading: 1.5rem;
+  --text-ui-body: var(--text-body);
+  --text-ui-card-title: var(--text-title);
+  --text-ui-subhead: var(--text-heading-4);
+  --text-ui-panel-title: var(--text-heading-3);
+  --text-ui-heading: var(--text-heading-2);
   --text-ui-title-sm: 1.875rem;
-  --text-ui-title: clamp(1.75rem, 1.6rem + 0.7vw, 2rem);
+  --text-ui-title: var(--text-heading-1);
   --text-ui-shell-title: 1.3125rem;
   --text-ui-report-title: 1.75rem;
   --text-ui-report-title-lg: 2.25rem;
   --text-ui-calendar: 0.8rem;
   --text-ui-report-metric: 2.5rem;
-  --text-ui-metric: 2.75rem;
-  --text-ui-metric-xl: 3.5rem;
+  --text-ui-metric: var(--text-metric);
+  --text-ui-metric-xl: var(--text-metric-lg);
   --text-ui-dashboard-card-title: 1.375rem;
   --text-ui-dashboard-title: 2.125rem;
   --text-ui-preview-card-title: 2.375rem;
@@ -214,7 +229,7 @@
   --text-ui-preview-stat: clamp(2rem, 4vw, 3rem);
   --text-ui-preview-title: clamp(2.4rem, 5.5vw, 4.8rem);
   --text-ui-auth-title: clamp(2.4rem, 5vw, 4.75rem);
-  --text-ui-metric-display: var(--text-ui-metric);
+  --text-ui-metric-display: var(--text-metric-display);
   --portal-text-micro: 0.625rem;
   --type-paragraph-large: 1.09375rem;
   --type-heading-2: clamp(2rem, 4vw, 2.8125rem);

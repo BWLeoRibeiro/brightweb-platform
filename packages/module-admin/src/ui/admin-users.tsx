@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useEffectEvent, useRef, useState } from "react";
+import { useShellAction } from "@brightweblabs/app-shell";
 import { motion, useReducedMotion } from "motion/react";
 import { Send, Trash2, Users } from "lucide-react";
 import { toast } from "sonner";
@@ -158,15 +159,6 @@ export function AdminUsersClient({
   }, [loadUsers]);
   useEffect(() => { void loadInvitations(); }, [loadInvitations]);
 
-  const handleSetSearch = useEffectEvent((event: Event) => setSearch((event as CustomEvent<AdminSetSearchEventDetail>).detail?.query ?? ""));
-  const handleSetRoleFilter = useEffectEvent((event: Event) => {
-    setRoleFilter((event as CustomEvent<AdminSetRoleFilterEventDetail>).detail?.role ?? "all");
-    setPage(1);
-  });
-  const handleSetBulkRole = useEffectEvent((event: Event) => {
-    const role = (event as CustomEvent<AdminSetBulkRoleEventDetail>).detail?.role;
-    if (role) setBulkTargetRole(role);
-  });
   const handleApplyBulk = useEffectEvent(() => {
     if (selectedIds.length === 0) { toast.error(dictionary.roleChange.selectRequired); return; }
     const { profileIdsToChange, unchangedCount } = getBulkRoleSelectionSummary(rows, selectedIds, bulkTargetRole);
@@ -183,25 +175,16 @@ export function AdminUsersClient({
     if (activeView === "invites") void loadInvitations({ force: true });
   });
 
-  useEffect(() => {
-    const onSetSearch = (event: Event) => handleSetSearch(event);
-    const onSetRoleFilter = (event: Event) => handleSetRoleFilter(event);
-    const onSetBulkRole = (event: Event) => handleSetBulkRole(event);
-    const onApplyBulk = () => handleApplyBulk();
-    const onRefresh = () => handleRefresh();
-    window.addEventListener(ADMIN_EVENTS.setSearch, onSetSearch);
-    window.addEventListener(ADMIN_EVENTS.setRoleFilter, onSetRoleFilter);
-    window.addEventListener(ADMIN_EVENTS.setBulkRole, onSetBulkRole);
-    window.addEventListener(ADMIN_EVENTS.applyBulk, onApplyBulk);
-    window.addEventListener(ADMIN_EVENTS.refresh, onRefresh);
-    return () => {
-      window.removeEventListener(ADMIN_EVENTS.setSearch, onSetSearch);
-      window.removeEventListener(ADMIN_EVENTS.setRoleFilter, onSetRoleFilter);
-      window.removeEventListener(ADMIN_EVENTS.setBulkRole, onSetBulkRole);
-      window.removeEventListener(ADMIN_EVENTS.applyBulk, onApplyBulk);
-      window.removeEventListener(ADMIN_EVENTS.refresh, onRefresh);
-    };
-  }, []);
+  useShellAction<AdminSetSearchEventDetail | undefined>(ADMIN_EVENTS.setSearch, (detail) => setSearch(detail?.query ?? ""));
+  useShellAction<AdminSetRoleFilterEventDetail | undefined>(ADMIN_EVENTS.setRoleFilter, (detail) => {
+    setRoleFilter(detail?.role ?? "all");
+    setPage(1);
+  });
+  useShellAction<AdminSetBulkRoleEventDetail | undefined>(ADMIN_EVENTS.setBulkRole, (detail) => {
+    if (detail?.role) setBulkTargetRole(detail.role);
+  });
+  useShellAction(ADMIN_EVENTS.applyBulk, () => handleApplyBulk());
+  useShellAction(ADMIN_EVENTS.refresh, () => handleRefresh());
 
   useEffect(() => {
     dispatchAdminCustomEvent(ADMIN_EVENTS.state, {
@@ -282,11 +265,11 @@ export function AdminUsersClient({
             const isActive = activeView === view.id;
             const isHovered = hoveredView === view.id && !isActive;
             return (
-              <motion.button key={view.id} type="button" onClick={() => setActiveView(view.id)} onMouseEnter={() => setHoveredView(view.id)} onFocus={() => setHoveredView(view.id)} whileTap={prefersReducedMotion ? undefined : { scale: 0.95 }} transition={prefersReducedMotion ? { duration: 0 } : { type: "spring", stiffness: 500, damping: 32 }} aria-pressed={isActive} className={`relative inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-[length:var(--text-ui-action)] font-semibold outline-none transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-[color:var(--ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--background)] motion-reduce:transition-none ${isActive ? "text-[color:var(--accent-foreground)]" : isHovered ? "text-[color:var(--foreground)]" : "text-[color:var(--muted-foreground)]"}`}>
+              <motion.button key={view.id} type="button" onClick={() => setActiveView(view.id)} onMouseEnter={() => setHoveredView(view.id)} onFocus={() => setHoveredView(view.id)} whileTap={prefersReducedMotion ? undefined : { scale: 0.95 }} transition={prefersReducedMotion ? { duration: 0 } : { type: "spring", stiffness: 500, damping: 32 }} aria-pressed={isActive} className={`relative inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-body text-[length:var(--text-ui-action)] font-semibold outline-none transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-[color:var(--ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--background)] motion-reduce:transition-none ${isActive ? "text-[color:var(--accent-foreground)]" : isHovered ? "text-[color:var(--foreground)]" : "text-[color:var(--muted-foreground)]"}`}>
                 {isHovered ? <motion.span layoutId={prefersReducedMotion ? undefined : "admin-users-tab-hover"} aria-hidden className="admin-tab-hover absolute inset-0 rounded-full" transition={prefersReducedMotion ? { duration: 0 } : { type: "spring", stiffness: 520, damping: 38 }} /> : null}
                 {isActive ? <motion.span layoutId={prefersReducedMotion ? undefined : "admin-users-tab-active"} aria-hidden className="admin-tab-active absolute inset-0 rounded-full" transition={prefersReducedMotion ? { duration: 0 } : { type: "spring", stiffness: 420, damping: 34 }} /> : null}
                 <span className="relative z-10">{view.label}</span>
-                <span className="relative z-10 font-mono text-[length:var(--text-ui-label)] opacity-75">{view.count}</span>
+                <span className="relative z-10 font-mono text-label opacity-75">{view.count}</span>
               </motion.button>
             );
           })}
@@ -299,16 +282,16 @@ export function AdminUsersClient({
             <div className="p-md lg:p-lg">
               <div className="flex flex-col gap-xs md:flex-row md:items-center md:justify-between">
                 <div className="min-w-0">
-                  <h2 className="portal-card-title">{dictionary.invitations.title}</h2>
-                  <p className="mt-2xs paragraph-small text-[color:var(--muted-foreground)]">{dictionary.invitations.description}</p>
+                  <h2 className="text-title text-foreground">{dictionary.invitations.title}</h2>
+                  <p className="mt-2xs text-body text-[color:var(--muted-foreground)]">{dictionary.invitations.description}</p>
                 </div>
-                {inviteLoading ? <span className="paragraph-mini text-[color:var(--muted-foreground)]">{dictionary.invitations.updating}</span> : null}
+                {inviteLoading ? <span className="text-meta text-[color:var(--muted-foreground)]">{dictionary.invitations.updating}</span> : null}
               </div>
               <form className="mt-md grid gap-sm md:grid-cols-[minmax(240px,1fr)_180px_auto]" onSubmit={(event) => { event.preventDefault(); void submitInvite(); }}>
                 <label htmlFor="admin-user-invite-email" className="sr-only">{dictionary.invitations.emailLabel}</label>
                 <Input id="admin-user-invite-email" type="email" value={inviteEmail} onChange={(event) => setInviteEmail(event.target.value)} placeholder={dictionary.invitations.emailPlaceholder} autoComplete="email" disabled={inviteSubmitting} />
                 <label htmlFor="admin-user-invite-role" className="sr-only">{dictionary.invitations.roleLabel}</label>
-                <select id="admin-user-invite-role" value={inviteRole} onChange={(event) => setInviteRole(event.target.value === "admin" ? "admin" : "staff")} disabled={inviteSubmitting} className="h-11 w-full rounded-xl border border-[color:var(--hairline-strong)] bg-[color:var(--elevate-1)] px-3 text-sm text-[color:var(--foreground)] shadow-xs outline-none transition-[color,box-shadow] focus:border-[color:var(--accent)] focus:ring-[color:var(--ring)] focus:ring-[3px] disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50">
+                <select id="admin-user-invite-role" value={inviteRole} onChange={(event) => setInviteRole(event.target.value === "admin" ? "admin" : "staff")} disabled={inviteSubmitting} className="h-11 w-full rounded-xl border border-[color:var(--hairline-strong)] bg-[color:var(--elevate-1)] px-3 text-body text-[color:var(--foreground)] shadow-xs outline-none transition-[color,box-shadow] focus:border-[color:var(--accent)] focus:ring-[color:var(--ring)] focus:ring-[3px] disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50">
                   {inviteRoleValues.map((role) => <option key={role} value={role}>{dictionary.roles[role]}</option>)}
                 </select>
                 <Button type="submit" variant="brand" size="lg" disabled={inviteSubmitting} className="h-11"><Send className="size-4" />{inviteSubmitting ? dictionary.invitations.sending : dictionary.invitations.send}</Button>
@@ -317,29 +300,29 @@ export function AdminUsersClient({
           </section>
           <section className="admin-dashboard-reveal admin-table-surface overflow-hidden">
             <div className="flex items-center justify-between border-b border-[color:var(--border)] px-md py-sm">
-              <h2 className="portal-card-title">{dictionary.invitations.pendingTitle}</h2>
-              <span className="paragraph-mini font-mono tabular-nums text-[color:var(--muted-foreground)]">{pendingInvites.length}</span>
+              <h2 className="text-title text-foreground">{dictionary.invitations.pendingTitle}</h2>
+              <span className="text-meta font-mono tabular-nums text-[color:var(--muted-foreground)]">{pendingInvites.length}</span>
             </div>
             <div className="overflow-x-auto">
               <Table className="min-w-[760px] table-fixed">
-                <TableHeader><TableRow className="border-b border-[color:var(--hairline-strong)] bg-[color:var(--elevate-2)] hover:bg-[color:var(--elevate-2)] [&_th]:h-9 [&_th]:align-middle [&_th]:text-[length:var(--portal-text-micro)] [&_th]:text-[color:var(--foreground)]">
-                  <TableHead className="portal-label w-[34%] px-4">{dictionary.invitations.columns.email}</TableHead>
-                  <TableHead className="portal-label w-[20%] px-4">{dictionary.invitations.columns.role}</TableHead>
-                  <TableHead className="portal-label w-[18%] px-4">{dictionary.invitations.columns.created}</TableHead>
-                  <TableHead className="portal-label w-[18%] px-4">{dictionary.invitations.columns.expires}</TableHead>
-                  <TableHead className="portal-label w-[10%] px-4 text-right">{dictionary.invitations.columns.actions}</TableHead>
+                <TableHeader><TableRow className="border-b border-[color:var(--hairline-strong)] bg-[color:var(--elevate-2)] hover:bg-[color:var(--elevate-2)] [&_th]:h-9 [&_th]:align-middle [&_th]:text-micro [&_th]:text-[color:var(--foreground)]">
+                  <TableHead className="text-label text-muted-foreground w-[34%] px-4">{dictionary.invitations.columns.email}</TableHead>
+                  <TableHead className="text-label text-muted-foreground w-[20%] px-4">{dictionary.invitations.columns.role}</TableHead>
+                  <TableHead className="text-label text-muted-foreground w-[18%] px-4">{dictionary.invitations.columns.created}</TableHead>
+                  <TableHead className="text-label text-muted-foreground w-[18%] px-4">{dictionary.invitations.columns.expires}</TableHead>
+                  <TableHead className="text-label text-muted-foreground w-[10%] px-4 text-right">{dictionary.invitations.columns.actions}</TableHead>
                 </TableRow></TableHeader>
                 <TableBody>
                   {pendingInvites.length === 0 ? (
                     <TableRow className="border-[color:var(--border)]"><TableCell colSpan={5} className="h-32 text-center">
-                      <div className="flex flex-col items-center gap-2 text-[color:var(--muted-foreground)]"><div className="admin-section-icon"><Send className="size-3.5" /></div><p className="text-sm font-semibold text-[color:var(--foreground)]">{dictionary.invitations.emptyTitle}</p><p className="text-sm">{dictionary.invitations.emptyHint}</p></div>
+                      <div className="flex flex-col items-center gap-2 text-[color:var(--muted-foreground)]"><div className="admin-section-icon"><Send className="size-3.5" /></div><p className="text-body font-semibold text-[color:var(--foreground)]">{dictionary.invitations.emptyTitle}</p><p className="text-body">{dictionary.invitations.emptyHint}</p></div>
                     </TableCell></TableRow>
                   ) : pendingInvites.map((invite) => (
                     <TableRow key={invite.id} className="admin-row-hover border-[color:var(--border)] [&_td]:py-2">
-                      <TableCell className="truncate px-4 paragraph-small font-semibold text-[color:var(--foreground)]">{invite.email}</TableCell>
+                      <TableCell className="truncate px-4 text-body font-semibold text-[color:var(--foreground)]">{invite.email}</TableCell>
                       <TableCell className="px-4"><AdminRolePill role={invite.role} dictionary={dictionary} /></TableCell>
-                      <TableCell className="px-4 paragraph-small text-[color:var(--muted-foreground)]">{formatAdminDate(invite.createdAt, dictionary.locale)}</TableCell>
-                      <TableCell className="px-4 paragraph-small text-[color:var(--muted-foreground)]">{formatAdminDate(invite.expiresAt, dictionary.locale)}</TableCell>
+                      <TableCell className="px-4 text-body text-[color:var(--muted-foreground)]">{formatAdminDate(invite.createdAt, dictionary.locale)}</TableCell>
+                      <TableCell className="px-4 text-body text-[color:var(--muted-foreground)]">{formatAdminDate(invite.expiresAt, dictionary.locale)}</TableCell>
                       <TableCell className="px-4 text-right"><Button type="button" variant="ghost" size="icon-sm" onClick={() => void revokeInvite(invite.id)} disabled={revokingInviteId === invite.id} aria-label={dictionary.invitations.revoke(invite.email)} className="rounded-full text-[color:var(--muted-foreground)] hover:text-[color:var(--destructive)]"><Trash2 className="size-4" /></Button></TableCell>
                     </TableRow>
                   ))}
@@ -354,27 +337,27 @@ export function AdminUsersClient({
         <section className="admin-dashboard-reveal admin-table-surface flex h-[calc(100dvh-12rem)] min-h-[560px] flex-col overflow-hidden">
           <div aria-busy={loading} className={`min-h-0 flex-1 overflow-auto transition-opacity duration-150 ${loading && rows.length > 0 ? "opacity-60" : ""}`}>
             <Table className="min-w-[860px] table-fixed">
-              <TableHeader><TableRow className="border-b border-[color:var(--hairline-strong)] bg-[color:var(--elevate-2)] hover:bg-[color:var(--elevate-2)] [&_th]:h-9 [&_th]:align-middle [&_th]:text-[length:var(--portal-text-micro)] [&_th]:text-[color:var(--foreground)]">
-                <TableHead className="portal-label w-12 px-4"><Checkbox checked={allOnPageSelected} onChange={(event) => setAllPageSelection(event.target.checked)} aria-label={dictionary.users.selectAll} /></TableHead>
-                <TableHead className="portal-label w-[22%] px-4">{dictionary.users.columns.name}</TableHead>
-                <TableHead className="portal-label w-[30%] px-4">{dictionary.users.columns.email}</TableHead>
-                <TableHead className="portal-label w-[18%] px-4">{dictionary.users.columns.role}</TableHead>
-                <TableHead className="portal-label w-[15%] px-4">{dictionary.users.columns.created}</TableHead>
-                <TableHead className="portal-label w-[15%] px-4">{dictionary.users.columns.updated}</TableHead>
+              <TableHeader><TableRow className="border-b border-[color:var(--hairline-strong)] bg-[color:var(--elevate-2)] hover:bg-[color:var(--elevate-2)] [&_th]:h-9 [&_th]:align-middle [&_th]:text-micro [&_th]:text-[color:var(--foreground)]">
+                <TableHead className="text-label text-muted-foreground w-12 px-4"><Checkbox checked={allOnPageSelected} onChange={(event) => setAllPageSelection(event.target.checked)} aria-label={dictionary.users.selectAll} /></TableHead>
+                <TableHead className="text-label text-muted-foreground w-[22%] px-4">{dictionary.users.columns.name}</TableHead>
+                <TableHead className="text-label text-muted-foreground w-[30%] px-4">{dictionary.users.columns.email}</TableHead>
+                <TableHead className="text-label text-muted-foreground w-[18%] px-4">{dictionary.users.columns.role}</TableHead>
+                <TableHead className="text-label text-muted-foreground w-[15%] px-4">{dictionary.users.columns.created}</TableHead>
+                <TableHead className="text-label text-muted-foreground w-[15%] px-4">{dictionary.users.columns.updated}</TableHead>
               </TableRow></TableHeader>
               <TableBody>
                 {loading && rows.length === 0 ? <TableRowsSkeleton rows={8} columns={["action", "text", "text", "chip", "text", "text"]} /> : rows.length === 0 ? (
-                  <TableRow className="border-[color:var(--border)]"><TableCell colSpan={6} className="h-36 text-center"><div className="flex flex-col items-center gap-2 text-[color:var(--muted-foreground)]"><div className="admin-section-icon"><Users className="size-3.5" /></div><p className="text-sm font-semibold text-[color:var(--foreground)]">{dictionary.users.emptyTitle}</p><p className="text-sm">{dictionary.users.emptyHint}</p></div></TableCell></TableRow>
+                  <TableRow className="border-[color:var(--border)]"><TableCell colSpan={6} className="h-36 text-center"><div className="flex flex-col items-center gap-2 text-[color:var(--muted-foreground)]"><div className="admin-section-icon"><Users className="size-3.5" /></div><p className="text-body font-semibold text-[color:var(--foreground)]">{dictionary.users.emptyTitle}</p><p className="text-body">{dictionary.users.emptyHint}</p></div></TableCell></TableRow>
                 ) : rows.map((row) => {
                   const isSelected = selectedIds.includes(row.profileId);
                   return (
                     <TableRow key={row.profileId} className={`admin-row-hover border-[color:var(--border)] [&_td]:py-2 ${isSelected ? "admin-row-selected" : ""}`}>
                       <TableCell className="w-12 px-4"><Checkbox checked={isSelected} onChange={() => setSelectedIds((current) => current.includes(row.profileId) ? current.filter((id) => id !== row.profileId) : [...current, row.profileId])} aria-label={dictionary.users.selectUser(row.email)} /></TableCell>
-                      <TableCell className="px-4"><div className="min-w-0 space-y-0.5"><p className="truncate paragraph-small font-semibold leading-tight text-[color:var(--foreground)]">{row.name}</p><p className="truncate paragraph-mini leading-tight text-[color:var(--muted-foreground)]">{row.profileId}</p></div></TableCell>
-                      <TableCell className="truncate px-4 text-sm text-[color:var(--muted-foreground)]">{row.email}</TableCell>
+                      <TableCell className="px-4"><div className="min-w-0 space-y-0.5"><p className="truncate text-body font-semibold leading-tight text-[color:var(--foreground)]">{row.name}</p><p className="truncate text-meta leading-tight text-[color:var(--muted-foreground)]">{row.profileId}</p></div></TableCell>
+                      <TableCell className="truncate px-4 text-body text-[color:var(--muted-foreground)]">{row.email}</TableCell>
                       <TableCell className="px-4"><DropdownMenu><DropdownMenuTrigger asChild><button type="button" id={`admin-user-role-trigger-${row.profileId}`} className="inline-flex items-center rounded-full" aria-label={dictionary.users.changeRole(row.email)}><AdminRolePill role={row.role} dictionary={dictionary} /></button></DropdownMenuTrigger><DropdownMenuContent align="start" className="min-w-44 rounded-[var(--radius-card)] border-[color:var(--hairline)] bg-[color:var(--popover)] p-1.5 text-[color:var(--popover-foreground)]">{roleValues.filter((role) => role !== row.role).map((role) => <DropdownMenuItem key={role} onClick={() => { setPendingRoleAction({ profileIds: [row.profileId], newRole: role, mode: "single" }); setReason(""); }} className="my-0.5 rounded-[var(--radius)]"><AdminRolePill role={role} dictionary={dictionary} /></DropdownMenuItem>)}</DropdownMenuContent></DropdownMenu></TableCell>
-                      <TableCell className="px-4 text-sm text-[color:var(--muted-foreground)]">{formatAdminDate(row.createdAt, dictionary.locale)}</TableCell>
-                      <TableCell className="px-4 text-sm text-[color:var(--muted-foreground)]">{formatAdminDate(row.updatedAt, dictionary.locale)}</TableCell>
+                      <TableCell className="px-4 text-body text-[color:var(--muted-foreground)]">{formatAdminDate(row.createdAt, dictionary.locale)}</TableCell>
+                      <TableCell className="px-4 text-body text-[color:var(--muted-foreground)]">{formatAdminDate(row.updatedAt, dictionary.locale)}</TableCell>
                     </TableRow>
                   );
                 })}
@@ -387,9 +370,9 @@ export function AdminUsersClient({
 
       <AlertDialog open={pendingRoleAction !== null} onOpenChange={(open) => { if (!open && !isSubmitting) { setPendingRoleAction(null); setReason(""); } }}>
         <AlertDialogContent className="max-w-[460px] rounded-[var(--radius-panel)]">
-          <AlertDialogHeader><AlertDialogTitle className="portal-card-title">{pendingRoleAction?.mode === "bulk" ? dictionary.roleChange.bulkTitle : dictionary.roleChange.singleTitle}</AlertDialogTitle><AlertDialogDescription>{pendingRoleAction?.mode === "bulk" ? dictionary.roleChange.bulkDescription(pendingLabel, pendingRoleAction.profileIds.length) : dictionary.roleChange.singleDescription(pendingLabel)}</AlertDialogDescription></AlertDialogHeader>
-          <div className="space-y-2"><label htmlFor="admin-role-reason" className="portal-label">{dictionary.roleChange.reason}</label><textarea id="admin-role-reason" value={reason} onChange={(event) => setReason(event.target.value)} placeholder={dictionary.roleChange.reasonPlaceholder} className="min-h-[110px] w-full rounded-[var(--radius-card)] border border-[color:var(--border)] bg-[color:var(--project-surface-secondary)] px-3 py-2 text-sm text-[color:var(--foreground)] outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--ring)]" disabled={isSubmitting} /></div>
-          <AlertDialogFooter><AlertDialogCancel className="rounded-full border-[color:var(--border)] px-4 text-xs" disabled={isSubmitting}>{dictionary.roleChange.cancel}</AlertDialogCancel><AlertDialogAction className="rounded-full border border-[color:var(--accent)] bg-[color:var(--accent)] px-4 text-xs font-semibold text-[color:var(--accent-foreground)]" onClick={(event) => { event.preventDefault(); void submitRoleChange(); }} disabled={isSubmitting}>{isSubmitting ? dictionary.roleChange.applying : dictionary.roleChange.confirm}</AlertDialogAction></AlertDialogFooter>
+          <AlertDialogHeader><AlertDialogTitle className="text-title text-foreground">{pendingRoleAction?.mode === "bulk" ? dictionary.roleChange.bulkTitle : dictionary.roleChange.singleTitle}</AlertDialogTitle><AlertDialogDescription>{pendingRoleAction?.mode === "bulk" ? dictionary.roleChange.bulkDescription(pendingLabel, pendingRoleAction.profileIds.length) : dictionary.roleChange.singleDescription(pendingLabel)}</AlertDialogDescription></AlertDialogHeader>
+          <div className="space-y-2"><label htmlFor="admin-role-reason" className="text-label text-muted-foreground">{dictionary.roleChange.reason}</label><textarea id="admin-role-reason" value={reason} onChange={(event) => setReason(event.target.value)} placeholder={dictionary.roleChange.reasonPlaceholder} className="min-h-[110px] w-full rounded-[var(--radius-card)] border border-[color:var(--border)] bg-[color:var(--project-surface-secondary)] px-3 py-2 text-body text-[color:var(--foreground)] outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--ring)]" disabled={isSubmitting} /></div>
+          <AlertDialogFooter><AlertDialogCancel className="rounded-full border-[color:var(--border)] px-4 text-meta" disabled={isSubmitting}>{dictionary.roleChange.cancel}</AlertDialogCancel><AlertDialogAction className="rounded-full border border-[color:var(--accent)] bg-[color:var(--accent)] px-4 text-meta font-semibold text-[color:var(--accent-foreground)]" onClick={(event) => { event.preventDefault(); void submitRoleChange(); }} disabled={isSubmitting}>{isSubmitting ? dictionary.roleChange.applying : dictionary.roleChange.confirm}</AlertDialogAction></AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
     </div>

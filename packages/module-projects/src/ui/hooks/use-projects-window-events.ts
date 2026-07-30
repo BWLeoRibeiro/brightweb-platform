@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { useShellAction } from "@brightweblabs/app-shell";
 import {
   PROJECTS_EVENTS,
   dispatchProjectsCustomEvent,
@@ -7,7 +8,6 @@ import {
   type ProjectsStateEventDetail,
   type ProjectsStatusFilter,
 } from "../events";
-import { useWindowEventBridge } from "../window-events";
 
 type UseProjectsWindowEventsParams = {
   search: string;
@@ -32,19 +32,19 @@ export function useProjectsWindowEvents({
   onSetStatus,
   onSetHealth,
 }: UseProjectsWindowEventsParams) {
-  useWindowEventBridge<ProjectsRefreshEventDetail | undefined>(PROJECTS_EVENTS.refresh, (detail) => {
+  useShellAction<ProjectsRefreshEventDetail | undefined>(PROJECTS_EVENTS.refresh, (detail) => {
     onRefresh(detail);
   });
 
-  useWindowEventBridge<{ query?: string }>(PROJECTS_EVENTS.setSearch, (detail) => {
+  useShellAction<{ query?: string } | undefined>(PROJECTS_EVENTS.setSearch, (detail) => {
     onSetSearch(detail?.query ?? "");
   });
 
-  useWindowEventBridge<{ status?: ProjectsStatusFilter }>(PROJECTS_EVENTS.setStatus, (detail) => {
+  useShellAction<{ status?: ProjectsStatusFilter } | undefined>(PROJECTS_EVENTS.setStatus, (detail) => {
     onSetStatus(detail?.status ?? "all");
   });
 
-  useWindowEventBridge<{ health?: ProjectsHealthFilter }>(PROJECTS_EVENTS.setHealth, (detail) => {
+  useShellAction<{ health?: ProjectsHealthFilter } | undefined>(PROJECTS_EVENTS.setHealth, (detail) => {
     onSetHealth(detail?.health ?? "all");
   });
 

@@ -106,3 +106,23 @@ test("bootstrap script honors a dark default when storage is unavailable", () =>
   assert.equal(attributes.get("data-theme"), "dark");
   assert.equal(root.style.colorScheme, "dark");
 });
+
+test("bootstrap script honors system preference when storage is unavailable", () => {
+  const classes = new Set<string>();
+  const root = {
+    classList: {
+      remove: (...names: string[]) => names.forEach((name) => classes.delete(name)),
+      add: (name: string) => classes.add(name),
+    },
+    setAttribute: () => undefined,
+    style: {} as Record<string, string>,
+  };
+
+  vm.runInNewContext(getThemeBootstrapScript("system"), {
+    document: { documentElement: root },
+    localStorage: { getItem: () => { throw new Error("storage blocked"); } },
+    matchMedia: () => ({ matches: true }),
+  });
+
+  assert.deepEqual([...classes], ["dark"]);
+});

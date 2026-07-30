@@ -143,7 +143,7 @@ function LoginPageContent({ allowMagicLink }: Required<LoginPageProps>) {
   if (checking || redirecting) {
     return (
       <AuthLayout>
-        <AuthCard><p className="paragraph-mini text-center text-muted-foreground">{redirecting ? d.redirecting : dictionary.common.loading}</p></AuthCard>
+        <AuthCard><p className="text-meta auth-paragraph-mini text-center text-muted-foreground">{redirecting ? d.redirecting : dictionary.common.loading}</p></AuthCard>
       </AuthLayout>
     );
   }
@@ -169,19 +169,19 @@ function LoginPageContent({ allowMagicLink }: Required<LoginPageProps>) {
         {info ? <AuthNotice tone="success">{info}</AuthNotice> : null}
         <form onSubmit={handleLogin} className="flex flex-col gap-5">
           <Field>
-            <FieldLabel htmlFor="email" className="mb-1.5 block paragraph-small font-semibold text-foreground/60">{dictionary.common.email}</FieldLabel>
+            <FieldLabel htmlFor="email" className="mb-1.5 block text-body auth-paragraph-small font-semibold text-foreground-muted-accessible">{dictionary.common.email}</FieldLabel>
             <FieldContent>
-              <Input id="email" type="email" placeholder={dictionary.common.emailPlaceholder} value={email} onChange={(event) => setEmail(event.target.value)} required disabled={loading} autoComplete="email" />
+              <Input id="email" name="email" type="email" placeholder={dictionary.common.emailPlaceholder} value={email} onChange={(event) => setEmail(event.target.value)} required disabled={loading} autoComplete="email" spellCheck={false} />
             </FieldContent>
           </Field>
           {activeMode === "password" ? (
             <Field>
               <div className="mb-1.5 flex items-center justify-between">
-                <FieldLabel htmlFor="password" className="block paragraph-small font-semibold text-foreground/60">{dictionary.common.password}</FieldLabel>
-                <Button variant="link" size="link" asChild><Link href="/forgot-password" className="paragraph-mini text-primary hover:text-primary/80">{d.forgot}</Link></Button>
+                <FieldLabel htmlFor="password" className="block text-body auth-paragraph-small font-semibold text-foreground-muted-accessible">{dictionary.common.password}</FieldLabel>
+                <Button variant="link" size="link" asChild><Link href="/forgot-password" className="text-meta auth-paragraph-mini text-primary hover:text-primary/80">{d.forgot}</Link></Button>
               </div>
               <FieldContent>
-                <PasswordInput ref={passwordInputRef} id="password" placeholder={dictionary.common.passwordPlaceholder} value={password} onChange={(event) => setPassword(event.target.value)} required disabled={loading} autoComplete="current-password" aria-describedby={error ? "login-error" : undefined} aria-invalid={!!error} showPasswordLabel={dictionary.common.showPassword} hidePasswordLabel={dictionary.common.hidePassword} />
+                <PasswordInput ref={passwordInputRef} id="password" name="password" placeholder={dictionary.common.passwordPlaceholder} value={password} onChange={(event) => setPassword(event.target.value)} required disabled={loading} autoComplete="current-password" aria-describedby={error ? "login-error" : undefined} aria-invalid={!!error} showPasswordLabel={dictionary.common.showPassword} hidePasswordLabel={dictionary.common.hidePassword} />
               </FieldContent>
             </Field>
           ) : null}
@@ -190,11 +190,11 @@ function LoginPageContent({ allowMagicLink }: Required<LoginPageProps>) {
           </Button>
         </form>
         {allowMagicLink ? (
-          <Button type="button" variant="link" size="link" onClick={() => { setMode(mode === "password" ? "magic" : "password"); setError(null); setInfo(null); }} className="mx-auto paragraph-mini text-foreground/60">
+          <Button type="button" variant="link" size="link" onClick={() => { setMode(mode === "password" ? "magic" : "password"); setError(null); setInfo(null); }} className="mx-auto text-meta auth-paragraph-mini text-foreground-muted-accessible">
             {mode === "password" ? d.magicLink : d.passwordMode}
           </Button>
         ) : null}
-        <p className="pt-1 text-center paragraph-mini text-foreground-muted-accessible">{d.inviteOnly}</p>
+        <p className="pt-1 text-center text-meta auth-paragraph-mini text-foreground-muted-accessible">{d.inviteOnly}</p>
       </AuthCard>
     </AuthLayout>
   );
@@ -203,7 +203,7 @@ function LoginPageContent({ allowMagicLink }: Required<LoginPageProps>) {
 export function LoginPage({ allowMagicLink = false }: LoginPageProps = {}) {
   const { dictionary } = useAuthUi();
   return (
-    <Suspense fallback={<AuthLayout><AuthCard><p className="paragraph-mini text-center text-muted-foreground">{dictionary.common.loading}</p></AuthCard></AuthLayout>}>
+    <Suspense fallback={<AuthLayout><AuthCard><p className="text-meta auth-paragraph-mini text-center text-muted-foreground">{dictionary.common.loading}</p></AuthCard></AuthLayout>}>
       <LoginPageContent allowMagicLink={allowMagicLink} />
     </Suspense>
   );

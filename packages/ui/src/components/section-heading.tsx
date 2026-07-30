@@ -18,8 +18,8 @@ export function SectionHeading({ icon: Icon, title, subtitle, action, className,
           <Icon className="size-3.5" />
         </span>
         <div className="min-w-0">
-          <h2 className="text-ui-panel-title">{title}</h2>
-          {subtitle ? <p className="mt-1 text-ui-body text-muted-foreground">{subtitle}</p> : null}
+          <h2 className="text-heading-3">{title}</h2>
+          {subtitle ? <p className="mt-1 text-body text-muted-foreground">{subtitle}</p> : null}
         </div>
       </div>
       {action ? <div className="shrink-0">{action}</div> : null}

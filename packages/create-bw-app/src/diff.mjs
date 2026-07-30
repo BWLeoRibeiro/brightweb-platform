@@ -4,6 +4,7 @@ import { stdout as output } from "node:process";
 import { findWorkspaceRoot, readAppManifest } from "./app-manifest.mjs";
 import { pathExists } from "./generator.mjs";
 import { findTrackedTemplate, scaffoldDrift } from "./scaffold.mjs";
+import { normalizeSafeRelativePath, resolveSafeRelativePath } from "./safe-path.mjs";
 
 const HELP = `Usage: bw diff <relpath> [options]\n       bw diff --list [options]\n\nOptions:\n  --target-dir <path>       App directory (defaults to cwd)\n  --workspace-root <path>   BrightWeb workspace root\n  --list                    Print tracked scaffold drift status\n  --help                    Show this help`;
 
@@ -58,8 +59,7 @@ export async function diffBrightwebScaffold(relativePath, argvOptions = {}, runt
     return { list: true, drift };
   }
   if (!relativePath) throw new Error("bw diff requires a tracked scaffold <relpath>, or pass --list.");
-  const normalized = path.normalize(relativePath).replace(/^\.\//, "");
-  if (path.isAbsolute(relativePath) || normalized.startsWith(`..${path.sep}`)) throw new Error(`Scaffold path must be relative to the app: ${relativePath}`);
+  const normalized = normalizeSafeRelativePath(relativePath, "Scaffold path");
   const workspaceRoot = runtimeOptions.workspaceRoot || argvOptions.workspaceRoot || await findWorkspaceRoot(targetDir);
   const located = await findTrackedTemplate({ relativePath: normalized, manifest, targetDir, workspaceRoot });
   if (!located.record) throw new Error(`${normalized} is not a tracked scaffold file.`);
@@ -68,7 +68,7 @@ export async function diffBrightwebScaffold(relativePath, argvOptions = {}, runt
     output.write(`${warning}\n`);
     return { supported: false, warning };
   }
-  const appPath = path.join(targetDir, normalized);
+  const appPath = resolveSafeRelativePath(targetDir, normalized, "Scaffold path");
   const [templateContent, appContent] = await Promise.all([
     fs.readFile(located.templatePath, "utf8"),
     pathExists(appPath) ? fs.readFile(appPath, "utf8") : Promise.resolve(""),

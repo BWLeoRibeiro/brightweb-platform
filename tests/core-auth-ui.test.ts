@@ -160,17 +160,49 @@ test("preview mounts invitation detail, registration, and post-login acceptance 
 
 test("auth typography overrides stay scoped and preview defaults to split layout", async () => {
   const tokens = await read("tokens.css");
-  for (const selector of ["heading-2", "paragraph-small", "paragraph-mini", "eyebrow"]) {
+  for (const selector of ["auth-heading", "auth-paragraph-small", "auth-paragraph-mini", "eyebrow"]) {
     assert.match(tokens, new RegExp(`\\.auth-layout \\.${selector.replaceAll("-", "\\-")}`));
   }
-  assert.doesNotMatch(tokens, /(?:^|\n)\.(?:heading-2|paragraph-small|paragraph-mini|eyebrow)\s*(?:,|\{)/);
+  assert.doesNotMatch(tokens, /(?:^|\n)\.(?:auth-heading|auth-paragraph-small|auth-paragraph-mini|eyebrow)\s*(?:,|\{)/);
 
   const layout = await read("src/ui/auth-layout.tsx");
+  assert.match(layout, /text-heading-1 auth-heading/);
+  assert.match(layout, /text-body auth-paragraph-small/);
   assert.match(layout, /value === "split" \|\| value === "centered"/);
   assert.match(layout, /variant \?\? queryVariant \?\? layoutVariant \?\? "centered"/);
 
   const provider = await readFile(path.join(repoRoot, "apps", "platform-preview", "app", "(auth)", "auth-provider.tsx"), "utf8");
   assert.match(provider, /layoutVariant="split"/);
+});
+
+test("auth layout owns keyboard navigation, heading order, and card geometry", async () => {
+  const layout = await read("src/ui/auth-layout.tsx");
+  const tokens = await read("tokens.css");
+
+  assert.doesNotMatch(layout, /className={`[^`]*\bdark\b/);
+  assert.match(layout, /<a className="auth-skip-link" href="#auth-main-content">/);
+  assert.ok(
+    layout.indexOf('<section id="auth-main-content"') < layout.indexOf('<aside className="auth-layout__brand-panel">'),
+    "the primary form and h1 must precede the decorative aside heading in DOM order",
+  );
+  assert.match(tokens, /\.auth-vessel__content\s*{[\s\S]*?padding:\s*2\.25rem/);
+  assert.match(tokens, /@media \(min-width: 64rem\)[\s\S]*?\.auth-vessel__content\s*{[\s\S]*?padding:\s*2\.5rem/);
+  assert.match(tokens, /\.auth-name-grid\s*{[\s\S]*?grid-template-columns:\s*1fr/);
+  assert.match(tokens, /@media \(min-width: 64rem\)[\s\S]*?\.auth-name-grid\s*{[\s\S]*?repeat\(2/);
+});
+
+test("auth form controls expose stable submission and autofill semantics", async () => {
+  const expectations = new Map([
+    ["src/ui/login-page.tsx", [/name="email"/, /autoComplete="email"/, /name="password"/, /autoComplete="current-password"/]],
+    ["src/ui/forgot-password-page.tsx", [/name="email"/, /autoComplete="email"/, /spellCheck={false}/]],
+    ["src/ui/reset-password-page.tsx", [/name="password"/, /name="confirmPassword"/, /autoComplete="new-password"/]],
+    ["src/ui/invite-page.tsx", [/name="firstName"/, /name="lastName"/, /name="email"/, /name="confirmPassword"/]],
+  ]);
+
+  for (const [file, patterns] of expectations) {
+    const source = await read(file);
+    for (const pattern of patterns) assert.match(source, pattern, `${file} must match ${pattern}`);
+  }
 });
 
 test("auth primary CTAs use the shared default Button color contract", async () => {

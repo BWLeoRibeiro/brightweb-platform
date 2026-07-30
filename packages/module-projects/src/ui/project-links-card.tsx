@@ -115,8 +115,8 @@ function LinksEmptyState() {
         <Link2 className="size-5 text-foreground/30" />
       </div>
       <div>
-        <p className="text-sm font-semibold text-foreground/60">{dictionary.links.noLinks}</p>
-        <p className="mt-1 text-xs text-foreground-muted-accessible">{dictionary.links.noLinksHint}</p>
+        <p className="text-body font-semibold text-foreground/60">{dictionary.links.noLinks}</p>
+        <p className="mt-1 text-meta text-foreground-muted-accessible">{dictionary.links.noLinksHint}</p>
       </div>
     </div>
   );
@@ -316,10 +316,10 @@ export function ProjectLinksCard({
                     </div>
                     <div className="min-w-0 flex-1 py-0.5 transition-[padding] duration-200 group-focus-within:pr-[5.25rem] group-hover:pr-[5.25rem]">
                       <div className="flex min-w-0 items-center gap-2">
-                        <p className="portal-body min-w-0 flex-1 truncate font-semibold leading-snug">{link.label}</p>
+                        <p className="text-body text-foreground min-w-0 flex-1 truncate font-semibold leading-snug">{link.label}</p>
                         <LinkVisibilityPill visibility={link.visibility} />
                       </div>
-                      <div className="portal-meta mt-0.5 flex min-w-0 items-center gap-x-2">
+                      <div className="text-meta text-muted-foreground mt-0.5 flex min-w-0 items-center gap-x-2">
                         <span className="shrink-0">{kindConfig.label}</span>
                         {hostname ? (
                           <>
@@ -448,7 +448,7 @@ export function ProjectLinksCard({
                     type="button"
                     variant="link"
                     size="link"
-                    className="w-fit p-0 text-sm text-rose-600 hover:text-rose-700 dark:text-rose-400 dark:hover:text-rose-300"
+                    className="w-fit p-0 text-body text-rose-600 hover:text-rose-700 dark:text-rose-400 dark:hover:text-rose-300"
                     onClick={() => setLinkDeleteDialogOpen(true)}
                     disabled={isDeletingLink || isSavingLink}
                   >

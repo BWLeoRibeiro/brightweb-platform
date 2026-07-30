@@ -23,10 +23,10 @@ export function ProjectsPortfolioList({
             <FolderKanban className="size-5 text-[color:var(--muted-foreground)]" />
           </div>
           <div>
-            <p className="text-sm font-semibold text-[color:var(--muted-foreground)]">
+            <p className="text-body font-semibold text-[color:var(--muted-foreground)]">
               {hasActiveFilters ? dictionary.portfolio.filteredEmptyTitle : dictionary.portfolio.emptyTitle}
             </p>
-            <p className="mt-1 text-xs text-[color:var(--muted-foreground)]">
+            <p className="mt-1 text-meta text-[color:var(--muted-foreground)]">
               {hasActiveFilters
                 ? dictionary.portfolio.filteredEmptyHint
                 : dictionary.portfolio.emptyHint}

@@ -1,3 +1,114 @@
+/* Canonical visual-role recipes. Semantic HTML and text color stay independent. */
+@utility text-heading-1 {
+  font-family: var(--font-display);
+  font-size: var(--text-heading-1);
+  font-weight: var(--font-weight-heavy);
+  line-height: var(--type-leading-105);
+  letter-spacing: var(--type-tracking-n030);
+  text-wrap: balance;
+}
+
+@utility text-heading-2 {
+  font-family: var(--font-display);
+  font-size: var(--text-heading-2);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--type-leading-115);
+  letter-spacing: var(--type-tracking-n020);
+  text-wrap: pretty;
+}
+
+@utility text-heading-3 {
+  font-family: var(--font-display);
+  font-size: var(--text-heading-3);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--type-leading-120);
+  letter-spacing: var(--type-tracking-n020);
+  text-wrap: pretty;
+}
+
+@utility text-heading-4 {
+  font-family: var(--font-display);
+  font-size: var(--text-heading-4);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--type-leading-tight);
+  letter-spacing: var(--type-tracking-n020);
+  text-wrap: pretty;
+}
+
+@utility text-title {
+  font-family: var(--font-body);
+  font-size: var(--text-title);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--type-leading-130);
+  letter-spacing: var(--type-tracking-n025);
+  text-wrap: pretty;
+}
+
+@utility text-body-lg {
+  font-family: var(--font-body);
+  font-size: var(--text-body-lg);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--type-leading-normal);
+}
+
+@utility text-body {
+  font-family: var(--font-body);
+  font-size: var(--text-body);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--type-leading-normal);
+}
+
+@utility text-meta {
+  font-family: var(--font-body);
+  font-size: var(--text-meta);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--type-leading-140);
+}
+
+@utility text-label {
+  font-family: var(--font-body);
+  font-size: var(--text-label);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--type-leading-none);
+  text-transform: uppercase;
+  letter-spacing: var(--type-tracking-140);
+}
+
+@utility text-micro {
+  font-family: var(--font-body);
+  font-size: var(--text-micro);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--type-leading-130);
+}
+
+@utility text-metric {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--text-metric);
+  font-weight: var(--font-weight-heavy);
+  line-height: var(--type-leading-none);
+  letter-spacing: var(--type-tracking-n040);
+}
+
+@utility text-metric-display {
+  font-family: var(--font-display);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--text-metric-display);
+  font-weight: var(--font-weight-heavy);
+  line-height: var(--type-leading-none);
+  letter-spacing: var(--type-tracking-n040);
+}
+
+@utility text-metric-lg {
+  font-family: var(--font-display);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--text-metric-lg);
+  font-weight: var(--font-weight-heavy);
+  line-height: var(--type-leading-095);
+  letter-spacing: var(--type-tracking-n040);
+}
+
+/* Compatibility recipes. New code should use the canonical visual roles above. */
 @utility text-ui-micro {
   font-family: var(--font-body);
   font-size: var(--text-ui-micro);

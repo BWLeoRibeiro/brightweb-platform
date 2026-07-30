@@ -280,11 +280,12 @@ test("published platform scaffolds resolved supabase migrations for the selected
       "0003_admin__20260316091000_admin_v1.sql",
       "0004_admin__20260724121000_admin_user_invitations.sql",
       "0005_admin__20260729120000_bootstrap_first_admin.sql",
-      "0006_orgs__20260316091500_orgs_v1.sql",
-      "0007_crm__20260316092000_crm_v1.sql",
-      "0008_crm__20260316092010_crm_org_integration.sql",
-      "0009_crm__20260421201523_portal_read_indexes.sql",
-      "0010_crm__20260724120000_crm_status_authorization.sql",
+      "0006_admin__20260729150000_bootstrap_first_admin_remove_force.sql",
+      "0007_orgs__20260316091500_orgs_v1.sql",
+      "0008_crm__20260316092000_crm_v1.sql",
+      "0009_crm__20260316092010_crm_org_integration.sql",
+      "0010_crm__20260421201523_portal_read_indexes.sql",
+      "0011_crm__20260724120000_crm_status_authorization.sql",
     ],
   );
 
@@ -300,6 +301,14 @@ test("published platform scaffolds resolved supabase migrations for the selected
   assert.match(bootstrapMigration, /auth\.jwt\(\) ->> 'role'.*service_role/);
   assert.match(bootstrapMigration, /REVOKE ALL ON FUNCTION public\.bootstrap_first_admin\(uuid, text, boolean\) FROM PUBLIC/);
   assert.match(bootstrapMigration, /GRANT EXECUTE ON FUNCTION public\.bootstrap_first_admin\(uuid, text, boolean\) TO service_role/);
+  const bootstrapRemoveForceMigration = await fs.readFile(
+    path.join(targetDir, "supabase", "modules", "admin", "migrations", "20260729150000_bootstrap_first_admin_remove_force.sql"),
+    "utf8",
+  );
+  assert.match(bootstrapRemoveForceMigration, /DROP FUNCTION IF EXISTS public\.bootstrap_first_admin\(uuid, text, boolean\)/);
+  assert.match(bootstrapRemoveForceMigration, /pg_advisory_xact_lock/);
+  assert.match(bootstrapRemoveForceMigration, /REVOKE ALL ON FUNCTION public\.bootstrap_first_admin\(uuid, text\) FROM PUBLIC/);
+  assert.match(bootstrapRemoveForceMigration, /GRANT EXECUTE ON FUNCTION public\.bootstrap_first_admin\(uuid, text\) TO service_role/);
   await fs.access(path.join(targetDir, "supabase", "modules", "orgs", "migrations", "20260316091500_orgs_v1.sql"));
   await fs.access(path.join(targetDir, "supabase", "modules", "crm", "migrations", "20260316092000_crm_v1.sql"));
   await fs.access(path.join(targetDir, "supabase", "modules", "crm", "migrations", "20260421201523_portal_read_indexes.sql"));
@@ -332,14 +341,15 @@ test("projects scaffolding resolves organizations without CRM", async (t) => {
 
   const migrations = (await fs.readdir(path.join(targetDir, "supabase", "migrations")))
     .filter((fileName) => fileName.endsWith(".sql"));
-  assert.deepEqual(migrations.slice(0, 7), [
+  assert.deepEqual(migrations.slice(0, 8), [
     "0001_core__20260316090000_core_v1.sql",
     "0002_core__20260726180000_enable_rate_limit_counters_rls.sql",
     "0003_admin__20260316091000_admin_v1.sql",
     "0004_admin__20260724121000_admin_user_invitations.sql",
     "0005_admin__20260729120000_bootstrap_first_admin.sql",
-    "0006_orgs__20260316091500_orgs_v1.sql",
-    "0007_projects__20260316093000_projects_v1.sql",
+    "0006_admin__20260729150000_bootstrap_first_admin_remove_force.sql",
+    "0007_orgs__20260316091500_orgs_v1.sql",
+    "0008_projects__20260316093000_projects_v1.sql",
   ]);
   assert.equal(migrations.some((fileName) => fileName.includes("_crm__")), false);
 
@@ -450,6 +460,28 @@ test("detects workspace dependency mode from installed brightweb packages", asyn
   assert.equal(plan.dependencyMode, "workspace");
   assert.deepEqual(plan.installedModules, ["crm", "projects"]);
   assert.equal(plan.packageUpdates.length, 0);
+});
+
+test("update restores the module-selected toolbar controls config", async (t) => {
+  const { tempRoot, targetDir } = await scaffoldPlatformApp({
+    modules: ["crm"],
+    workspaceRoot: REPO_ROOT,
+  });
+  t.after(async () => fs.rm(tempRoot, { recursive: true, force: true }));
+
+  const toolbarConfigPath = path.join(targetDir, "config", "module-toolbar-controls.tsx");
+  await fs.rm(toolbarConfigPath);
+
+  const plan = await buildBrightwebAppUpdatePlan(
+    { targetDir },
+    { workspaceRoot: REPO_ROOT },
+  );
+  const toolbarWrite = plan.fileWrites.find(
+    (entry) => entry.relativePath === path.join("config", "module-toolbar-controls.tsx"),
+  );
+
+  assert.match(toolbarWrite?.content ?? "", /CrmToolbarControls/);
+  assert.doesNotMatch(toolbarWrite?.content ?? "", /AdminToolbarControls|ProjectsToolbarControls/);
 });
 
 test("detects a site app as a no-op update target", async (t) => {
@@ -676,6 +708,7 @@ test("reports missing and drifted starter files and only refreshes them with the
   t.after(async () => fs.rm(tempRoot, { recursive: true, force: true }));
 
   await fs.rm(path.join(targetDir, "app", "(shell)", "crm", "page.tsx"));
+  await fs.rm(path.join(targetDir, "app", "api", "cron", "keepalive", "route.ts"));
   await fs.rm(path.join(targetDir, "config", "shell.overrides.ts"));
   await fs.writeFile(path.join(targetDir, "app", "api", "crm", "stats", "route.ts"), "export {};\n", "utf8");
 
@@ -695,6 +728,7 @@ test("reports missing and drifted starter files and only refreshes them with the
   );
 
   assert.deepEqual(dryPlan.starterFilesMissing, [
+    "app/api/cron/keepalive/route.ts",
     "config/shell.overrides.ts",
     "app/(shell)/crm/page.tsx",
   ]);
@@ -702,6 +736,7 @@ test("reports missing and drifted starter files and only refreshes them with the
   assert.deepEqual(refreshPlan.starterFilesToRefresh.sort(), [
     "app/(shell)/crm/page.tsx",
     "app/api/crm/stats/route.ts",
+    "app/api/cron/keepalive/route.ts",
     "config/shell.overrides.ts",
   ]);
 });

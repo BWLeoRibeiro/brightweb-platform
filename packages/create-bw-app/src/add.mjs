@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { stdout as output } from "node:process";
 import { SELECTABLE_MODULES } from "./constants.mjs";
-import { TEMPLATE_ROOT, createAppContextFile, createDbInstallPlan, createNextConfig, createPlatformGlobalsCss, createPlatformModulesConfigFile, createShellConfig, getDbModuleRegistry, getVersionMap, pathExists, readJsonIfPresent } from "./generator.mjs";
+import { TEMPLATE_ROOT, createAppContextFile, createDbInstallPlan, createModuleToolbarControlsConfig, createNextConfig, createOptionalModuleRouteFiles, createPlatformGlobalsCss, createPlatformModulesConfigFile, createShellConfig, getDbModuleRegistry, getVersionMap, pathExists, readJsonIfPresent } from "./generator.mjs";
 import { collectScaffoldFiles, findWorkspaceRoot, loadModuleCatalog, MODULE_PACKAGES, readAppManifest, resolveModuleClosure, satisfiesVersion, writeAppManifest } from "./app-manifest.mjs";
 import { applyMigrationWrites, planMigrationAppends } from "./migrations.mjs";
 
@@ -66,9 +66,11 @@ export async function addBrightwebModule(moduleKey, argvOptions = {}, runtimeOpt
   const managedWrites = {
     "next.config.ts": createNextConfig({ template: "platform", selectedModules: installedModuleKeys }),
     "app/globals.css": await createPlatformGlobalsCss(installedModuleKeys),
+    "config/module-toolbar-controls.tsx": createModuleToolbarControlsConfig(installedModuleKeys),
     "config/modules.ts": createPlatformModulesConfigFile(installedModuleKeys),
     "config/shell.ts": createShellConfig(installedModuleKeys),
     "docs/ai/app-context.json": createAppContextFile({ slug: appManifest.app.slug, template: "platform", selectedModules: installedModuleKeys.filter((key) => key !== "orgs"), dbInstallPlan }),
+    ...createOptionalModuleRouteFiles(installedModuleKeys),
   };
 
   const summary = [
@@ -93,7 +95,13 @@ export async function addBrightwebModule(moduleKey, argvOptions = {}, runtimeOpt
   for (const key of newModules) appManifest.modules[key] = { version: catalog[key].version, installedAt: now, exposed: true };
   appManifest.migrationCursor = migrationPlan.nextCursor;
   const collectedScaffoldFiles = await collectScaffoldFiles(targetDir, installedModuleKeys);
-  appManifest.scaffoldFiles = { ...collectedScaffoldFiles, ...appManifest.scaffoldFiles };
+  const refreshedScaffoldFiles = Object.fromEntries(
+    Object.entries(collectedScaffoldFiles).map(([relativePath, record]) => {
+      const intent = appManifest.scaffoldFiles[relativePath]?.intent;
+      return [relativePath, intent ? { ...record, intent } : record];
+    }),
+  );
+  appManifest.scaffoldFiles = { ...appManifest.scaffoldFiles, ...refreshedScaffoldFiles };
   await writeAppManifest(targetDir, appManifest);
   output.write(`Installed ${newModules.length} module${newModules.length === 1 ? "" : "s"}. ${migrationPlan.writes.length > 0 ? "Run your Supabase migration apply command. " : ""}Run your package manager install command next.\n`);
   return { dryRun: false, newModules, migrationPlan };

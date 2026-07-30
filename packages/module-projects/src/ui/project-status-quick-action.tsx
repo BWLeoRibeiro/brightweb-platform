@@ -220,15 +220,15 @@ export function ProjectStatusQuickAction({
             value={cancellationReason}
             onChange={(event) => setCancellationReason(event.target.value)}
             placeholder={dictionary.statusAction.cancelPlaceholder}
-            className="w-full rounded-xl border border-black/12 bg-background/70 px-3 py-2 text-sm text-foreground placeholder:text-foreground/40 focus:border-primary/50 focus:outline-none focus:ring-2 focus:ring-primary/20 dark:border-white/15 dark:bg-white/[0.04]"
+            className="w-full rounded-xl border border-black/12 bg-background/70 px-3 py-2 text-body text-foreground placeholder:text-foreground/40 focus:border-primary/50 focus:outline-none focus:ring-2 focus:ring-primary/20 dark:border-white/15 dark:bg-white/[0.04]"
             disabled={isSaving}
           />
           <AlertDialogFooter>
-            <AlertDialogCancel className="rounded-full px-4 text-xs" disabled={isSaving}>
+            <AlertDialogCancel className="rounded-full px-4 text-meta" disabled={isSaving}>
               {dictionary.statusAction.close}
             </AlertDialogCancel>
             <AlertDialogAction
-              className="rounded-full bg-rose-600 px-4 text-xs text-white hover:bg-rose-700"
+              className="rounded-full bg-rose-600 px-4 text-meta text-white hover:bg-rose-700"
               onClick={(event) => {
                 event.preventDefault();
                 handleConfirmCancel();

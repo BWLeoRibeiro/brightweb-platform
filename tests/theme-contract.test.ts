@@ -159,6 +159,56 @@ test("typography utilities do not poison consumer color utilities", async () => 
   }
 });
 
+test("canonical typography roles expose complete color-independent recipes and compatibility aliases", async () => {
+  const typography = await read("src/typography.css");
+  const tokens = await read("src/tokens.css");
+  const roles = [
+    "text-heading-1", "text-heading-2", "text-heading-3", "text-heading-4",
+    "text-title", "text-body-lg", "text-body", "text-meta", "text-label",
+    "text-micro", "text-metric", "text-metric-display", "text-metric-lg",
+  ] as const;
+  const utilities = new Map(Array.from(
+    typography.matchAll(/@utility\s+(text-(?!ui-)[a-z0-9-]+)\s*\{([^{}]*)\}/g),
+    ([, utility, body]) => [utility, body],
+  ));
+
+  for (const role of roles) {
+    const body = utilities.get(role);
+    assert.ok(body, `expected canonical ${role} utility`);
+    assert.match(body, /font-family:\s*var\(--font-(?:body|display|mono)\);/);
+    assert.match(body, new RegExp(`font-size:\\s*var\\(--${role}\\);`));
+    assert.match(body, /font-weight:\s*var\(--font-weight-[a-z0-9-]+\);/);
+    assert.match(body, /line-height:\s*var\(--type-leading-[a-z0-9-]+\);/);
+    assert.doesNotMatch(body, /(?:^|[;\s])color\s*:/, `${role} must not set color`);
+  }
+
+  assert.match(utilities.get("text-heading-1")!, /text-wrap:\s*balance;/);
+  for (const role of ["text-heading-2", "text-heading-3", "text-heading-4", "text-title"]) {
+    assert.match(utilities.get(role)!, /text-wrap:\s*pretty;/);
+  }
+  for (const role of ["text-metric", "text-metric-display", "text-metric-lg"]) {
+    assert.match(utilities.get(role)!, /font-variant-numeric:\s*tabular-nums;/);
+  }
+
+  const aliases = new Map([
+    ["--text-ui-title", "--text-heading-1"],
+    ["--text-ui-heading", "--text-heading-2"],
+    ["--text-ui-panel-title", "--text-heading-3"],
+    ["--text-ui-subhead", "--text-heading-4"],
+    ["--text-ui-card-title", "--text-title"],
+    ["--text-ui-body", "--text-body"],
+    ["--text-ui-meta", "--text-meta"],
+    ["--text-ui-label", "--text-label"],
+    ["--text-ui-micro", "--text-micro"],
+    ["--text-ui-metric", "--text-metric"],
+    ["--text-ui-metric-display", "--text-metric-display"],
+    ["--text-ui-metric-xl", "--text-metric-lg"],
+  ]);
+  for (const [alias, canonical] of aliases) {
+    assert.match(tokens, new RegExp(`${alias}:\\s*var\\(${canonical}\\);`));
+  }
+});
+
 test("the base reset contains one complete base layer and no outside rules", async () => {
   const css = stripComments(await read("src/base.css"));
   assert.match(css, /^@layer\s+base\s*\{/);

@@ -16,9 +16,18 @@ const sourceRoutesPath = path.join(sourceDir, "routes.d.ts");
 const targetRoutesPath = path.join(targetDir, "routes.d.ts");
 
 try {
+  await fs.access(targetRoutesPath);
+  process.exit(0);
+} catch {
+  // `next typegen` normally writes directly to `.next/types`. The fallback
+  // below supports workspaces whose only available route types came from
+  // `next dev`.
+}
+
+try {
   await fs.access(sourceRoutesPath);
 } catch {
-  console.error(`Next route types not found: ${sourceRoutesPath}`);
+  console.error(`Next route types not found: ${targetRoutesPath} or ${sourceRoutesPath}`);
   process.exit(1);
 }
 

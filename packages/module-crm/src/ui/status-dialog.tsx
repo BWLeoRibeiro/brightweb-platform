@@ -64,7 +64,7 @@ export function CrmStatusDialog({ open, contactIds, initialStatus = "lead", dict
           <div className="mt-5 grid gap-4">
             <Field>
               <FieldLabel htmlFor="crm-new-status">{dictionary.statusDialog.status}</FieldLabel>
-              <select id="crm-new-status" value={status} onChange={(event) => setStatus(event.target.value as CrmContactStatus)} className="h-11 w-full rounded-xl border border-foreground/15 bg-foreground/5 px-3 text-sm text-foreground outline-none focus:border-primary focus:ring-3 focus:ring-primary/40">
+              <select id="crm-new-status" value={status} onChange={(event) => setStatus(event.target.value as CrmContactStatus)} className="h-11 w-full rounded-xl border border-foreground/15 bg-foreground/5 px-3 text-body text-foreground outline-none focus:border-primary focus:ring-3 focus:ring-primary/40">
                 {resolvedStages.map((stage) => <option key={stage.value} value={stage.value}>{stage.label}</option>)}
               </select>
             </Field>

@@ -56,7 +56,7 @@ export function KpiBreakdownBar({ items, toneTokens, className }: KpiBreakdownBa
         {items.map((item) => {
           const token = toneTokens[item.tone];
           return (
-            <div key={`${item.tone}:${item.label}`} className="flex items-center justify-between gap-2 text-ui-meta">
+            <div key={`${item.tone}:${item.label}`} className="flex items-center justify-between gap-2 text-meta">
               <span className="flex min-w-0 items-center gap-2 text-muted-foreground">
                 <span className="size-1.5 shrink-0 rounded-[var(--radius-swatch)]" style={token ? tokenStyle(token) : undefined} />
                 <span className="truncate">{item.label}</span>

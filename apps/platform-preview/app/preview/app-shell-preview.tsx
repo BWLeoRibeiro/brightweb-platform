@@ -86,12 +86,12 @@ export function AppShellPreview() {
       <div className="app-preview-main">
         <AppHeader className="app-preview-header">
           <div className="app-preview-header-copy">
-            <span className="eyebrow">{starterBrandConfig.companyName}</span>
-            <h1>Logged-in shell preview</h1>
-            <p className="muted">This is the packaged shell running with the preview app registration.</p>
+            <span className="eyebrow text-label">{starterBrandConfig.companyName}</span>
+            <h1 className="text-heading-2">Logged-in shell preview</h1>
+            <p className="text-body muted">This is the packaged shell running with the preview app registration.</p>
           </div>
           <div className="app-preview-header-actions">
-            <div className="status ok">Admin preview</div>
+            <div className="status text-label ok">Admin preview</div>
             <AccountMenu
               displayName={displayName}
               isStaff
@@ -125,8 +125,8 @@ export function AppShellPreview() {
                     <div className="preview-card-icon">
                       <card.icon className="size-4" />
                     </div>
-                    <h2>{card.title}</h2>
-                    <p className="muted">{card.description}</p>
+                    <h2 className="text-heading-3">{card.title}</h2>
+                    <p className="text-body muted">{card.description}</p>
                   </div>
                 </article>
               ))}
@@ -136,8 +136,8 @@ export function AppShellPreview() {
               <div className="panel-inner">
                 <div className="preview-stage-head">
                   <div>
-                    <span className="eyebrow">Active path</span>
-                    <h2>{activeHref}</h2>
+                    <span className="eyebrow text-label">Active path</span>
+                    <h2 className="text-heading-3">{activeHref}</h2>
                   </div>
                   <div className="actions">
                     {[...config.primaryNav, ...moduleNavItems, ...(config.adminNavItem ? [config.adminNavItem] : []), ...config.toolsSection.items].map((item) => (
@@ -155,19 +155,19 @@ export function AppShellPreview() {
 
                 <div className="preview-surface-grid">
                   <div className="preview-surface-card">
-                    <p className="preview-label">Primary navigation</p>
-                    <strong>{config.primaryNav.length} item(s)</strong>
-                    <span>{config.primaryNav.map((item) => item.label).join(" · ")}</span>
+                    <p className="preview-label text-label">Primary navigation</p>
+                    <strong className="text-title">{config.primaryNav.length} item(s)</strong>
+                    <span className="text-body">{config.primaryNav.map((item) => item.label).join(" · ")}</span>
                   </div>
                   <div className="preview-surface-card">
-                    <p className="preview-label">Module groups</p>
-                    <strong>{moduleNavItems.length} item(s)</strong>
-                    <span>{config.moduleGroups.map((group) => group.label).join(" · ") || "No module groups enabled"}</span>
+                    <p className="preview-label text-label">Module groups</p>
+                    <strong className="text-title">{moduleNavItems.length} item(s)</strong>
+                    <span className="text-body">{config.moduleGroups.map((group) => group.label).join(" · ") || "No module groups enabled"}</span>
                   </div>
                   <div className="preview-surface-card">
-                    <p className="preview-label">Tools section</p>
-                    <strong>{config.toolsSection.items.length} item(s)</strong>
-                    <span>{config.toolsSection.items.map((item) => item.label).join(" · ") || "No tools enabled"}</span>
+                    <p className="preview-label text-label">Tools section</p>
+                    <strong className="text-title">{config.toolsSection.items.length} item(s)</strong>
+                    <span className="text-body">{config.toolsSection.items.map((item) => item.label).join(" · ") || "No tools enabled"}</span>
                   </div>
                 </div>
               </div>

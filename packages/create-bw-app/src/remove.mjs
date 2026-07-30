@@ -12,7 +12,9 @@ import {
 import {
   createAppContextFile,
   createDbInstallPlan,
+  createModuleToolbarControlsConfig,
   createNextConfig,
+  createOptionalModuleRouteFiles,
   createPlatformGlobalsCss,
   createPlatformModulesConfigFile,
   createShellConfig,
@@ -20,6 +22,7 @@ import {
   pathExists,
   readJsonIfPresent,
 } from "./generator.mjs";
+import { resolveSafeRelativePath } from "./safe-path.mjs";
 
 const HELP = `Usage: bw remove <moduleKey> [options]\n\nOptions:\n  --target-dir <path>       App directory (defaults to cwd)\n  --workspace-root <path>   BrightWeb workspace root\n  --dry-run                 Print the removal plan without writing\n  --yes                     Apply the removal plan\n  --help                    Show this help`;
 
@@ -61,16 +64,18 @@ export async function removeBrightwebModule(moduleKey, argvOptions = {}, runtime
   const managedWrites = {
     "next.config.ts": createNextConfig({ template: "platform", selectedModules: remainingModules }),
     "app/globals.css": await createPlatformGlobalsCss(remainingModules),
+    "config/module-toolbar-controls.tsx": createModuleToolbarControlsConfig(remainingModules),
     "config/modules.ts": createPlatformModulesConfigFile(remainingModules),
     "config/shell.ts": createShellConfig(remainingModules),
     "docs/ai/app-context.json": createAppContextFile({ slug: appManifest.app.slug, template: "platform", selectedModules: remainingModules.filter((key) => key !== "orgs"), dbInstallPlan }),
+    ...createOptionalModuleRouteFiles(remainingModules),
   };
 
   const cleanFiles = [];
   const driftedFiles = [];
   for (const [relativePath, record] of Object.entries(appManifest.scaffoldFiles || {})) {
     if (record.module !== moduleKey) continue;
-    const filePath = path.join(targetDir, relativePath);
+    const filePath = resolveSafeRelativePath(targetDir, relativePath, "Manifest scaffold file path");
     if (!(await pathExists(filePath))) continue;
     if ((record.intent || "managed") === "managed" && await hashFile(filePath) === record.hash) cleanFiles.push(relativePath);
     else driftedFiles.push(relativePath);
@@ -86,14 +91,25 @@ export async function removeBrightwebModule(moduleKey, argvOptions = {}, runtime
   if (!apply) return { dryRun: true, moduleKey, cleanFiles, driftedFiles, notice };
 
   await fs.writeFile(packagePath, `${JSON.stringify(nextPackageJson, null, 2)}\n`, "utf8");
-  for (const relativePath of cleanFiles) await fs.rm(path.join(targetDir, relativePath));
+  for (const relativePath of cleanFiles) await fs.rm(resolveSafeRelativePath(targetDir, relativePath, "Manifest scaffold file path"));
   for (const [relativePath, content] of Object.entries(managedWrites)) {
     const targetPath = path.join(targetDir, relativePath);
     await fs.mkdir(path.dirname(targetPath), { recursive: true });
     await fs.writeFile(targetPath, content, "utf8");
   }
   delete appManifest.modules[moduleKey];
+  if (appManifest.modules.orgs) {
+    appManifest.modules.orgs.exposed = remainingModules.some((key) => ["crm", "marketing", "projects"].includes(key));
+  }
   for (const [relativePath, record] of Object.entries(appManifest.scaffoldFiles || {})) if (record.module === moduleKey) delete appManifest.scaffoldFiles[relativePath];
+  for (const relativePath of Object.keys(managedWrites)) {
+    const record = appManifest.scaffoldFiles[relativePath];
+    if (!record) continue;
+    const targetPath = resolveSafeRelativePath(targetDir, relativePath, "Manifest scaffold file path");
+    if (!(await pathExists(targetPath))) continue;
+    record.hash = await hashFile(targetPath);
+    record.status = "current";
+  }
   await writeAppManifest(targetDir, appManifest);
   output.write(`Removed ${moduleKey} package wiring and ${cleanFiles.length} clean scaffold file${cleanFiles.length === 1 ? "" : "s"}. Install dependencies next.\n`);
   return { dryRun: false, moduleKey, cleanFiles, driftedFiles, notice };

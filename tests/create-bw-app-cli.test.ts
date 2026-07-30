@@ -13,7 +13,9 @@ import { diffBrightwebScaffold } from "../packages/create-bw-app/src/diff.mjs";
 import { doctorBrightwebApp } from "../packages/create-bw-app/src/doctor.mjs";
 import { createBrightwebClientApp, resolveModuleOrder as resolveGeneratorModuleOrder } from "../packages/create-bw-app/src/generator.mjs";
 import { removeBrightwebModule } from "../packages/create-bw-app/src/remove.mjs";
+import { normalizeSafeRelativePath, resolveSafeRelativePath } from "../packages/create-bw-app/src/safe-path.mjs";
 import { scaffoldBrightwebApp } from "../packages/create-bw-app/src/scaffold-cmd.mjs";
+import { updateBrightwebApp } from "../packages/create-bw-app/src/update.mjs";
 import { upgradeBrightwebApp } from "../packages/create-bw-app/src/upgrade.mjs";
 import { resolveModuleOrder as resolveScriptModuleOrder } from "../scripts/_db-modules.mjs";
 
@@ -151,8 +153,60 @@ test("scaffold writes a valid app manifest", async (t) => {
   assert.equal(packageJson.dependencies.next, "^16.0.0");
   assert.equal(packageJson.dependencies.react, "^19.0.0");
   assert.equal(packageJson.dependencies["react-dom"], "^19.0.0");
+  assert.equal(packageJson.scripts.build, "next build --webpack");
   assert.match(await fs.readFile(path.join(targetDir, "app", "fonts.ts"), "utf8"), /GeistSans as geistSans/);
   assert.match(await fs.readFile(path.join(targetDir, "app", "layout.tsx"), "utf8"), /geistSans\.variable/);
+  assert.equal(
+    await fs.readFile(path.join(targetDir, "pnpm-workspace.yaml"), "utf8"),
+    "allowBuilds:\n  sharp: true\n",
+  );
+});
+
+test("safe relative paths reject empty, absolute, traversal, drive, UNC, and containment escapes", () => {
+  const targetDir = path.join(os.tmpdir(), "safe-target");
+  for (const unsafePath of [
+    "",
+    "   ",
+    "/tmp/escape.txt",
+    "../escape.txt",
+    "nested/../../escape.txt",
+    "C:\\escape.txt",
+    "C:escape.txt",
+    "\\\\server\\share\\escape.txt",
+  ]) {
+    assert.throws(
+      () => resolveSafeRelativePath(targetDir, unsafePath, "Test path"),
+      /non-empty relative path|relative to the target directory|parent-directory traversal|inside the target directory/,
+      unsafePath,
+    );
+  }
+  assert.equal(normalizeSafeRelativePath("./app\\page.tsx"), "app/page.tsx");
+  assert.equal(resolveSafeRelativePath(targetDir, "app/page.tsx"), path.join(targetDir, "app", "page.tsx"));
+});
+
+test("add, remove, update, and scaffold reject unsafe manifest-controlled paths before filesystem changes", async (t) => {
+  const { root, targetDir } = await scaffold(["crm"]);
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+  const manifestPath = path.join(targetDir, ".brightweb", "app-manifest.json");
+  const manifest = await readJson(manifestPath);
+  const [trackedPath, trackedRecord] = Object.entries(manifest.scaffoldFiles)[0];
+  delete manifest.scaffoldFiles[trackedPath];
+  manifest.scaffoldFiles["../outside.txt"] = trackedRecord;
+  await writeJson(manifestPath, manifest);
+  const packageBefore = await fs.readFile(path.join(targetDir, "package.json"), "utf8");
+
+  const operations = [
+    () => addBrightwebModule("projects", { targetDir }, { workspaceRoot: REPO_ROOT }),
+    () => removeBrightwebModule("crm", { targetDir, yes: true }, { workspaceRoot: REPO_ROOT }),
+    () => updateBrightwebApp({ targetDir }, { workspaceRoot: REPO_ROOT, fetchImpl: mockNpmFetch }),
+    () => scaffoldBrightwebApp("list", [], { targetDir }, { workspaceRoot: REPO_ROOT }),
+  ];
+  for (const operation of operations) {
+    await assert.rejects(operation, /Invalid BrightWeb app manifest:.*parent-directory traversal/);
+  }
+
+  assert.equal(await fs.readFile(path.join(targetDir, "package.json"), "utf8"), packageBefore);
+  await assert.rejects(fs.access(path.join(root, "outside.txt")), { code: "ENOENT" });
 });
 
 test("invite-only scaffolds do not emit a signup route", async (t) => {
@@ -208,9 +262,9 @@ test("bw admin create uses the transactional bootstrap and recovery flow without
     params: {
       p_user_id: "auth-user-1",
       p_email: "owner@example.com",
-      p_force: false,
     },
   }]);
+  assert.equal("p_force" in success.calls.rpc[0].params, false);
   assert.deepEqual(success.calls.recovery, [{
     email: "owner@example.com",
     options: { redirectTo: "https://portal.example/reset-password" },
@@ -235,7 +289,7 @@ test("bw admin create uses the transactional bootstrap and recovery flow without
   assert.deepEqual(failed.calls.deletedUserIds, ["auth-user-1"]);
 });
 
-test("bw admin create requires force for an existing admin and never promotes an existing Auth user", async (t) => {
+test("bw admin create always refuses when an admin exists and never promotes an existing Auth user", async (t) => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), "bw-admin-guard-test-"));
   t.after(() => fs.rm(root, { recursive: true, force: true }));
 
@@ -246,23 +300,56 @@ test("bw admin create requires force for an existing admin and never promotes an
       { email: "second@example.com" },
       { targetDir: root, env: ADMIN_ENV, createClient: () => existingAdmin.client },
     ),
-    /administrator already exists.*--force/,
+    /administrator already exists.*in-app admin role controls/,
   );
   assert.equal(existingAdmin.calls.createUser.length, 0);
 
   const existingUser = createAdminClientFixture({
-    hasAdmin: true,
     existingUser: { id: "auth-existing", email: "second@example.com" },
   });
   await assert.rejects(
     () => createFirstAdmin(
       "create",
-      { email: "second@example.com", force: true },
+      { email: "second@example.com" },
       { targetDir: root, env: ADMIN_ENV, createClient: () => existingUser.client },
     ),
     /already exists.*Refusing to promote/,
   );
   assert.equal(existingUser.calls.createUser.length, 0);
+});
+
+test("bw admin create rejects the removed --force flag and dry-runs without it", async (t) => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "bw-admin-force-removed-test-"));
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+
+  const withForce = createAdminClientFixture();
+  await assert.rejects(
+    () => createFirstAdmin(
+      "create",
+      { email: "owner@example.com", force: true },
+      { targetDir: root, env: ADMIN_ENV, createClient: () => withForce.client },
+    ),
+    /--force has been removed; use the in-app admin role controls to add administrators\./,
+  );
+  assert.equal(withForce.calls.createUser.length, 0);
+
+  const dryRun = createAdminClientFixture();
+  let dryRunOutput = "";
+  const result = await createFirstAdmin(
+    "create",
+    { email: "owner@example.com", dryRun: true },
+    {
+      targetDir: root,
+      env: ADMIN_ENV,
+      createClient: () => dryRun.client,
+      output: { write(chunk: string) { dryRunOutput += chunk; } },
+    },
+  );
+  assert.deepEqual(result, { dryRun: true, email: "owner@example.com" });
+  assert.equal("forced" in result, false);
+  assert.match(dryRunOutput, /DRY RUN owner@example\.com can be created as the first administrator\./);
+  assert.doesNotMatch(dryRunOutput, /--force/);
+  assert.equal(dryRun.calls.createUser.length, 0);
 });
 
 test("platform scaffolds pin mapped Vercel regions and leave a valid commented fallback for unknown regions", async (t) => {
@@ -330,6 +417,36 @@ test("scaffolded shell derives its title from active registration nav and dispat
   assert.match(shellLayout, /onToolbarAction=\{handleToolbarAction\}/);
   assert.match(shellLayout, /"projects-new-menu": "projects:open-new-project"/);
   assert.match(shellLayout, /"crm-create-menu": "brightweb:crm:create-contact"/);
+  assert.match(shellLayout, /getModuleToolbarControls/);
+  assert.doesNotMatch(shellLayout, /@brightweblabs\/module-(admin|crm|projects)/);
+
+  const toolbarControls = await fs.readFile(
+    path.join(targetDir, "config", "module-toolbar-controls.tsx"),
+    "utf8",
+  );
+  assert.match(toolbarControls, /CrmToolbarControls/);
+  assert.match(toolbarControls, /ProjectsToolbarControls/);
+  assert.doesNotMatch(toolbarControls, /AdminToolbarControls/);
+});
+
+test("core-only scaffold does not import or declare optional module toolbar packages", async (t) => {
+  const { root, targetDir } = await scaffold([]);
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+
+  const packageJson = await readJson(path.join(targetDir, "package.json"));
+  const toolbarControls = await fs.readFile(
+    path.join(targetDir, "config", "module-toolbar-controls.tsx"),
+    "utf8",
+  );
+
+  assert.doesNotMatch(toolbarControls, /@brightweblabs\/module-/);
+  for (const packageName of [
+    "@brightweblabs/module-admin",
+    "@brightweblabs/module-crm",
+    "@brightweblabs/module-projects",
+  ]) {
+    assert.equal(packageJson.dependencies[packageName], undefined);
+  }
 });
 
 test("admin scaffold mounts invitation list, create, and revoke handlers", async (t) => {
@@ -528,6 +645,9 @@ test("full-modules scaffold mounts shell, auth, account, dashboard, projects, ad
   const rootLayout = await fs.readFile(path.join(targetDir, "app", "layout.tsx"), "utf8");
   assert.match(rootLayout, /ThemeProvider/);
   assert.match(rootLayout, /ThemeScript/);
+  assert.match(rootLayout, /defaultTheme="system"/);
+  const globalsCss = await fs.readFile(path.join(targetDir, "app", "globals.css"), "utf8");
+  assert.match(globalsCss, /@brightweblabs\/core-auth\/src/);
 
   const shellConfig = await fs.readFile(path.join(targetDir, "config", "shell.ts"), "utf8");
   for (const registration of [
@@ -599,9 +719,16 @@ test("bw add projects resolves orgs, writes overlays, migrations, and manifest s
   assert.equal(updated.modules.projects.version, release.packages["@brightweblabs/module-projects"]);
   assert.equal(updated.migrationCursor.projects, "20260421201528_portal_read_indexes.sql");
   assert.match(await fs.readFile(path.join(targetDir, "app", "globals.css"), "utf8"), /@source "\.\.\/node_modules\/@brightweblabs\/module-projects\/src";/);
+  assert.match(
+    await fs.readFile(path.join(targetDir, "config", "module-toolbar-controls.tsx"), "utf8"),
+    /ProjectsToolbarControls/,
+  );
   await assert.rejects(fs.access(path.join(targetDir, "app", "playground", "projects", "page.tsx")));
   const migrations = await fs.readdir(path.join(targetDir, "supabase", "migrations"));
   assert.ok(migrations.some((name) => name.includes("_projects__20260316093000_projects_v1.sql")));
+  const doctor = await doctorBrightwebApp({ targetDir }, { workspaceRoot: REPO_ROOT });
+  assert.equal(doctor.ok, true);
+  assert.equal(doctor.checks.find((entry: { id: string }) => entry.id === "scaffold")?.status, "PASS");
 });
 
 test("bw add reports a clean module version conflict", async (t) => {
@@ -927,7 +1054,14 @@ test("bw remove deletes clean scaffold files, leaves drifted files, and never to
   assert.equal(packageJson.dependencies["@brightweblabs/module-crm"], undefined);
   assert.equal(manifest.modules.crm, undefined);
   assert.equal(manifest.scaffoldFiles["app/(shell)/crm/page.tsx"], undefined);
+  assert.doesNotMatch(
+    await fs.readFile(path.join(targetDir, "config", "module-toolbar-controls.tsx"), "utf8"),
+    /CrmToolbarControls/,
+  );
   assert.deepEqual(await migrationSnapshot(targetDir), migrationsBefore);
+  const doctor = await doctorBrightwebApp({ targetDir }, { workspaceRoot: REPO_ROOT });
+  assert.equal(doctor.ok, true);
+  assert.equal(doctor.checks.find((entry: { id: string }) => entry.id === "scaffold")?.status, "PASS");
 });
 
 test("bw doctor fails a null migration cursor unless adoption allows it", async (t) => {

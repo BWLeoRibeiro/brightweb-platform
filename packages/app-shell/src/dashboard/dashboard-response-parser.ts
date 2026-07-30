@@ -119,23 +119,29 @@ function isDashboardTasksData(value: unknown): value is DashboardTasksData {
     && value.tasks.every(isDashboardAssignedTask);
 }
 
+function readErrorMessage(value: unknown): string | null {
+  if (isString(value)) return value;
+  if (isRecord(value) && isString(value.message)) return value.message;
+  return null;
+}
+
 function unwrapPayload(payload: unknown) {
-  return isRecord(payload) && "data" in payload ? payload : { data: payload };
+  return isRecord(payload) && ("data" in payload || "error" in payload) ? payload : { data: payload };
 }
 
 export function parseDashboardProjectsResponse(payload: unknown) {
   const value = unwrapPayload(payload);
-  return { data: isDashboardProjectsData(value.data) ? value.data : null, error: typeof value.error === "string" ? value.error : null };
+  return { data: isDashboardProjectsData(value.data) ? value.data : null, error: readErrorMessage(value.error) };
 }
 
 export function parseDashboardCrmResponse(payload: unknown) {
   const value = unwrapPayload(payload);
-  return { data: isDashboardCrmData(value.data) ? value.data : null, error: typeof value.error === "string" ? value.error : null };
+  return { data: isDashboardCrmData(value.data) ? value.data : null, error: readErrorMessage(value.error) };
 }
 
 export function parseDashboardTasksResponse(payload: unknown) {
   const value = unwrapPayload(payload);
-  return { data: isDashboardTasksData(value.data) ? value.data : null, error: typeof value.error === "string" ? value.error : null };
+  return { data: isDashboardTasksData(value.data) ? value.data : null, error: readErrorMessage(value.error) };
 }
 
 export function parseDashboardBootstrapResponse(payload: unknown) {
@@ -143,17 +149,17 @@ export function parseDashboardBootstrapResponse(payload: unknown) {
   const data = isRecord(value.data) && isDashboardProjectsData(value.data.projects)
     && isDashboardCrmData(value.data.crm) && isDashboardTasksData(value.data.tasks)
     ? value.data as DashboardBootstrapData : null;
-  return { data, error: typeof value.error === "string" ? value.error : null };
+  return { data, error: readErrorMessage(value.error) };
 }
 
 export function parseDashboardOverviewShellResponse(payload: unknown) {
   const value = unwrapPayload(payload);
   const data = isRecord(value.data) && isDashboardProjectsData(value.data.projects) && isDashboardCrmData(value.data.crm)
     ? value.data as DashboardOverviewShellData : null;
-  return { data, error: typeof value.error === "string" ? value.error : null };
+  return { data, error: readErrorMessage(value.error) };
 }
 
 export function parseErrorFromPayload(payload: unknown, fallback: string) {
   const value = unwrapPayload(payload);
-  return typeof value.error === "string" ? value.error : fallback;
+  return readErrorMessage(value.error) ?? fallback;
 }

@@ -1,5 +1,6 @@
 import { spawn } from "node:child_process";
 import fs from "node:fs/promises";
+import { builtinModules } from "node:module";
 import os from "node:os";
 import path from "node:path";
 import { performance } from "node:perf_hooks";
@@ -26,11 +27,14 @@ const textFileExtensions = new Set([
   ".yml",
 ]);
 
+const ignoredDirectoryNames = new Set(["node_modules", ".next", ".git"]);
+
 async function collectFiles(directoryPath) {
   const entries = await fs.readdir(directoryPath, { withFileTypes: true });
   const files = await Promise.all(entries.map(async (entry) => {
     const absolutePath = path.join(directoryPath, entry.name);
     if (entry.isDirectory()) {
+      if (ignoredDirectoryNames.has(entry.name)) return [];
       return collectFiles(absolutePath);
     }
     return [absolutePath];
@@ -60,7 +64,7 @@ async function main() {
     ].join("\n"));
   }
 
-  console.log("Template thinness, color ownership, and generated Platform typecheck passed.");
+  console.log("Template thinness, color ownership, dependency declarations, and generated fixture typechecks passed.");
 }
 
 async function scanDirectoryForBlockedToken(rootPath, relativeToPath, labelPrefix = "") {
@@ -81,6 +85,8 @@ async function scanDirectoryForBlockedToken(rootPath, relativeToPath, labelPrefi
 async function scanGeneratedAppsForBlockedToken() {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), "bw-create-bw-app-template-check-"));
   const platformTarget = path.join(tempRoot, "generated-platform");
+  const corePlatformTarget = path.join(tempRoot, "generated-platform-core");
+  const projectsPlatformTarget = path.join(tempRoot, "generated-platform-projects");
   const siteTarget = path.join(tempRoot, "generated-site");
 
   try {
@@ -102,6 +108,38 @@ async function scanGeneratedAppsForBlockedToken() {
 
     await createBrightwebClientApp(
       {
+        name: "generated-platform-core",
+        template: "platform",
+        modules: "none",
+        install: false,
+        yes: true,
+      },
+      {
+        banner: "Template contract check",
+        dependencyMode: "published",
+        targetDir: corePlatformTarget,
+        workspaceRoot: repoRoot,
+      },
+    );
+
+    await createBrightwebClientApp(
+      {
+        name: "generated-platform-projects",
+        template: "platform",
+        modules: "projects",
+        install: false,
+        yes: true,
+      },
+      {
+        banner: "Template contract check",
+        dependencyMode: "published",
+        targetDir: projectsPlatformTarget,
+        workspaceRoot: repoRoot,
+      },
+    );
+
+    await createBrightwebClientApp(
+      {
         name: "generated-site",
         template: "site",
         install: false,
@@ -115,15 +153,101 @@ async function scanGeneratedAppsForBlockedToken() {
     );
 
     const platformMatches = await scanDirectoryForBlockedToken(platformTarget, platformTarget, "generated-platform");
+    const corePlatformMatches = await scanDirectoryForBlockedToken(corePlatformTarget, corePlatformTarget, "generated-platform-core");
+    const projectsPlatformMatches = await scanDirectoryForBlockedToken(projectsPlatformTarget, projectsPlatformTarget, "generated-platform-projects");
     const siteMatches = await scanDirectoryForBlockedToken(siteTarget, siteTarget, "generated-site");
-    await typecheckGeneratedPlatformFixture(platformTarget);
-    return [...platformMatches, ...siteMatches];
+    await Promise.all([
+      checkFixtureDependencyDeclarations(platformTarget, "generated-platform"),
+      checkFixtureDependencyDeclarations(corePlatformTarget, "generated-platform-core"),
+      checkFixtureDependencyDeclarations(projectsPlatformTarget, "generated-platform-projects"),
+      checkFixtureDependencyDeclarations(siteTarget, "generated-site"),
+    ]);
+    await Promise.all([
+      typecheckGeneratedFixture(platformTarget, "generated-platform"),
+      typecheckGeneratedFixture(corePlatformTarget, "generated-platform-core"),
+      typecheckGeneratedFixture(projectsPlatformTarget, "generated-platform-projects"),
+      typecheckGeneratedFixture(siteTarget, "generated-site"),
+    ]);
+    return [...platformMatches, ...corePlatformMatches, ...projectsPlatformMatches, ...siteMatches];
   } finally {
     await fs.rm(tempRoot, { recursive: true, force: true });
   }
 }
 
-async function typecheckGeneratedPlatformFixture(platformTarget) {
+const dependencyCheckExtensions = new Set([".ts", ".tsx", ".mts", ".cts", ".js", ".jsx", ".mjs", ".cjs"]);
+
+const importSpecifierPatterns = [
+  // Static imports: import defaultExport, { named } from "x"; import type { T } from "x";
+  /\bimport\s+[^"'()]*?from\s*["']([^"']+)["']/g,
+  // Re-exports: export { x } from "x"; export * from "x"; export type { T } from "x";
+  /\bexport\s+[^"'()]*?from\s*["']([^"']+)["']/g,
+  // Side-effect imports: import "x";
+  /\bimport\s*["']([^"']+)["']/g,
+  // Dynamic imports: import("x")
+  /\bimport\s*\(\s*["']([^"']+)["']\s*\)/g,
+  // CommonJS: require("x")
+  /\brequire\s*\(\s*["']([^"']+)["']\s*\)/g,
+];
+
+const nodeBuiltinModules = new Set(builtinModules);
+
+function importSpecifierToPackageName(specifier) {
+  // Relative, absolute, and tsconfig alias (@/*) paths are not package imports.
+  if (specifier.startsWith(".") || specifier.startsWith("/") || specifier.startsWith("@/")) return null;
+  if (specifier.startsWith("node:")) return null;
+  const segments = specifier.split("/");
+  if (specifier.startsWith("@")) {
+    return segments.length >= 2 ? `${segments[0]}/${segments[1]}` : null;
+  }
+  return segments[0];
+}
+
+async function checkFixtureDependencyDeclarations(fixtureTarget, fixtureLabel) {
+  const packageManifest = JSON.parse(await fs.readFile(path.join(fixtureTarget, "package.json"), "utf8"));
+  const declaredPackages = new Set([
+    ...Object.keys(packageManifest.dependencies ?? {}),
+    ...Object.keys(packageManifest.devDependencies ?? {}),
+    ...Object.keys(packageManifest.peerDependencies ?? {}),
+  ]);
+
+  for (const requiredPackage of ["react", "react-dom", "next"]) {
+    if (!declaredPackages.has(requiredPackage)) {
+      throw new Error(`${fixtureLabel}/package.json is missing the required \`${requiredPackage}\` dependency.`);
+    }
+  }
+
+  const undeclaredImports = new Map();
+  const sourceFiles = (await collectFiles(fixtureTarget)).filter((filePath) =>
+    dependencyCheckExtensions.has(path.extname(filePath)),
+  );
+
+  for (const filePath of sourceFiles) {
+    const fileContents = await fs.readFile(filePath, "utf8");
+    for (const pattern of importSpecifierPatterns) {
+      for (const match of fileContents.matchAll(pattern)) {
+        const packageName = importSpecifierToPackageName(match[1]);
+        if (!packageName) continue;
+        if (nodeBuiltinModules.has(packageName)) continue;
+        if (declaredPackages.has(packageName)) continue;
+        if (!undeclaredImports.has(packageName)) {
+          undeclaredImports.set(packageName, new Set());
+        }
+        undeclaredImports.get(packageName).add(path.relative(fixtureTarget, filePath));
+      }
+    }
+  }
+
+  if (undeclaredImports.size > 0) {
+    throw new Error([
+      `Generated ${fixtureLabel} fixture imports packages that are not declared in its package.json:`,
+      ...[...undeclaredImports.entries()].sort(([a], [b]) => a.localeCompare(b)).map(
+        ([packageName, importingFiles]) => `- ${packageName} (imported by ${[...importingFiles].sort().join(", ")})`,
+      ),
+    ].join("\n"));
+  }
+}
+
+async function typecheckGeneratedFixture(fixtureTarget, fixtureLabel) {
   const nextCli = path.join(previewNodeModules, "next", "dist", "bin", "next");
   const tscCli = path.join(previewNodeModules, "typescript", "bin", "tsc");
 
@@ -131,22 +255,22 @@ async function typecheckGeneratedPlatformFixture(platformTarget) {
     await Promise.all([fs.access(nextCli), fs.access(tscCli)]);
   } catch {
     throw new Error(
-      "Generated Platform typecheck requires the workspace install. Run `pnpm install` first.",
+      "Generated fixture typecheck requires the workspace install. Run `pnpm install` first.",
     );
   }
 
   await fs.symlink(
     previewNodeModules,
-    path.join(platformTarget, "node_modules"),
+    path.join(fixtureTarget, "node_modules"),
     process.platform === "win32" ? "junction" : "dir",
   );
 
   const startedAt = performance.now();
-  await runFixtureCommand("next typegen", [nextCli, "typegen"], platformTarget);
-  await runFixtureCommand("tsc --noEmit", [tscCli, "--noEmit"], platformTarget);
+  await runFixtureCommand(`${fixtureLabel}: next typegen`, [nextCli, "typegen"], fixtureTarget);
+  await runFixtureCommand(`${fixtureLabel}: tsc --noEmit`, [tscCli, "--noEmit"], fixtureTarget);
   const durationSeconds = (performance.now() - startedAt) / 1_000;
   console.log(
-    `Generated all-modules Platform fixture typechecked in ${durationSeconds.toFixed(2)}s (next typegen + tsc --noEmit).`,
+    `Generated ${fixtureLabel} fixture typechecked in ${durationSeconds.toFixed(2)}s (next typegen + tsc --noEmit).`,
   );
 }
 
@@ -179,7 +303,7 @@ async function runFixtureCommand(label, cliArgs, cwd) {
       }
 
       reject(new Error([
-        `Generated Platform fixture failed \`${label}\` (exit ${exitCode}).`,
+        `Generated fixture failed \`${label}\` (exit ${exitCode}).`,
         stdout.trim(),
         stderr.trim(),
       ].filter(Boolean).join("\n")));

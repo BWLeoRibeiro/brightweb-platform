@@ -349,10 +349,10 @@ export function WorkflowWorkspace({
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <p className="marketing-kicker">{dictionary.workflows.eyebrow}</p>
-            <h2 id="marketing-workflows-title" className="text-xl font-semibold">
+            <h2 id="marketing-workflows-title" className="text-heading-3 font-semibold">
               {dictionary.workflows.title}
             </h2>
-            <p className="mt-1 text-sm text-muted-foreground">{dictionary.workflows.subtitle}</p>
+            <p className="mt-1 text-body text-muted-foreground">{dictionary.workflows.subtitle}</p>
           </div>
           <Button type="button" onClick={beginCreate}>
             <Plus className="size-4" />
@@ -368,7 +368,7 @@ export function WorkflowWorkspace({
               </div>
               <div>
                 <h3 className="font-semibold">{dictionary.workflows.emptyTitle}</h3>
-                <p className="mt-1 max-w-[28rem] text-sm text-muted-foreground">
+                <p className="mt-1 max-w-[28rem] text-body text-muted-foreground">
                   {dictionary.workflows.emptyDescription}
                 </p>
               </div>
@@ -390,7 +390,7 @@ export function WorkflowWorkspace({
                 <div className="flex items-start justify-between gap-4">
                   <div className="min-w-0">
                     <h3 className="truncate font-semibold">{workflow.name}</h3>
-                    <p className="mt-1 truncate text-sm text-muted-foreground">
+                    <p className="mt-1 truncate text-body text-muted-foreground">
                       {dictionary.workflows.triggers[workflow.triggerType]}
                     </p>
                   </div>
@@ -398,7 +398,7 @@ export function WorkflowWorkspace({
                     {dictionary.workflows.statuses[workflow.status]}
                   </Badge>
                 </div>
-                <div className="mt-5 flex gap-4 text-xs text-muted-foreground">
+                <div className="mt-5 flex gap-4 text-meta text-muted-foreground">
                   <span>{dictionary.workflows.nodeCount(workflow.nodeCount)}</span>
                   <span>{dictionary.workflows.runCount(workflow.runCount)}</span>
                 </div>
@@ -435,7 +435,7 @@ export function WorkflowWorkspace({
                   value={form.description}
                   onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))}
                   placeholder={dictionary.workflows.placeholders.description}
-                  className="min-h-24 w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  className="min-h-24 w-full rounded-md border border-input bg-background px-3 py-2 text-body outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 />
               </div>
               <div className="space-y-2">
@@ -448,7 +448,7 @@ export function WorkflowWorkspace({
                     triggerType: event.target.value as MarketingWorkflowTriggerType,
                     triggerValue: "",
                   }))}
-                  className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  className="h-10 w-full rounded-md border border-input bg-background px-3 text-body outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 >
                   {(Object.keys(dictionary.workflows.triggers) as MarketingWorkflowTriggerType[]).map((type) => (
                     <option value={type} key={type}>{dictionary.workflows.triggers[type]}</option>
@@ -472,14 +472,14 @@ export function WorkflowWorkspace({
               <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
                 <div>
                   <h3 className="font-semibold">{dictionary.workflows.steps.title}</h3>
-                  <p className="text-sm text-muted-foreground">{dictionary.workflows.steps.subtitle}</p>
+                  <p className="text-body text-muted-foreground">{dictionary.workflows.steps.subtitle}</p>
                 </div>
                 <div className="flex gap-2">
                   <select
                     value={addType}
                     onChange={(event) => setAddType(event.target.value as MarketingWorkflowNodeType)}
                     aria-label={dictionary.workflows.steps.add}
-                    className="h-9 rounded-md border border-input bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    className="h-9 rounded-md border border-input bg-background px-3 text-body outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   >
                     {(Object.keys(dictionary.workflows.steps.types) as MarketingWorkflowNodeType[]).map((type) => (
                       <option value={type} key={type}>{dictionary.workflows.steps.types[type]}</option>
@@ -497,7 +497,7 @@ export function WorkflowWorkspace({
               </div>
 
               {nodes.length === 0 ? (
-                <div className="rounded-xl border border-dashed p-8 text-center text-sm text-muted-foreground">
+                <div className="rounded-xl border border-dashed p-8 text-center text-body text-muted-foreground">
                   {dictionary.workflows.steps.empty}
                 </div>
               ) : (
@@ -514,7 +514,7 @@ export function WorkflowWorkspace({
                                 : <Tag className="size-4" />}
                           </div>
                           <div className="min-w-0 flex-1">
-                            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                            <p className="text-meta font-semibold uppercase tracking-wide text-muted-foreground">
                               {dictionary.workflows.steps.step(index + 1)}
                             </p>
                             <p className="font-semibold">{dictionary.workflows.steps.types[node.type]}</p>
@@ -583,7 +583,7 @@ export function WorkflowWorkspace({
                                 value={node.body}
                                 onChange={(event) => updateNode(node.key, { body: event.target.value })}
                                 placeholder={dictionary.workflows.steps.placeholders.body}
-                                className="min-h-32 w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                className="min-h-32 w-full rounded-md border border-input bg-background px-3 py-2 text-body outline-none focus-visible:ring-2 focus-visible:ring-ring"
                               />
                             </div>
                           </div>
@@ -611,7 +611,7 @@ export function WorkflowWorkspace({
                                 onChange={(event) => updateNode(node.key, {
                                   durationUnit: event.target.value as DraftNode["durationUnit"],
                                 })}
-                                className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                className="h-10 w-full rounded-md border border-input bg-background px-3 text-body outline-none focus-visible:ring-2 focus-visible:ring-ring"
                               >
                                 <option value="minutes">{dictionary.workflows.steps.units.minutes}</option>
                                 <option value="hours">{dictionary.workflows.steps.units.hours}</option>
@@ -645,16 +645,16 @@ export function WorkflowWorkspace({
                 <section className="space-y-4">
                   <div>
                     <h3 className="font-semibold">{dictionary.workflows.runs.title}</h3>
-                    <p className="text-sm text-muted-foreground">{dictionary.workflows.runs.subtitle}</p>
+                    <p className="text-body text-muted-foreground">{dictionary.workflows.runs.subtitle}</p>
                   </div>
                   {runs.length === 0 ? (
-                    <div className="rounded-xl border border-dashed p-6 text-center text-sm text-muted-foreground">
+                    <div className="rounded-xl border border-dashed p-6 text-center text-body text-muted-foreground">
                       {dictionary.workflows.runs.empty}
                     </div>
                   ) : (
                     <div className="overflow-x-auto rounded-xl border">
-                      <table className="w-full text-left text-sm">
-                        <thead className="border-b bg-muted/40 text-xs text-muted-foreground">
+                      <table className="w-full text-left text-body">
+                        <thead className="border-b bg-muted/40 text-meta text-muted-foreground">
                           <tr>
                             <th className="px-4 py-3 font-semibold">{dictionary.workflows.runs.contact}</th>
                             <th className="px-4 py-3 font-semibold">{dictionary.workflows.runs.status}</th>
@@ -668,7 +668,7 @@ export function WorkflowWorkspace({
                               <td className="px-4 py-3">
                                 <p className="font-semibold">{run.contactName || run.contactEmail || "—"}</p>
                                 {run.contactName && run.contactEmail ? (
-                                  <p className="text-xs text-muted-foreground">{run.contactEmail}</p>
+                                  <p className="text-meta text-muted-foreground">{run.contactEmail}</p>
                                 ) : null}
                               </td>
                               <td className="px-4 py-3">

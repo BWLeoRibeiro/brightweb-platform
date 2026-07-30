@@ -839,7 +839,7 @@ export function createPackageJson({
     version: "0.0.0",
     scripts: {
       dev: "next dev",
-      build: "next build",
+      build: "next build --webpack",
       start: "next start",
       lint: "tsc --noEmit",
     },
@@ -897,6 +897,7 @@ export async function createPlatformGlobalsCss(selectedModules) {
   const sourcePackages = [
     "@brightweblabs/ui",
     "@brightweblabs/app-shell",
+    "@brightweblabs/core-auth",
     ...SELECTABLE_MODULES
       .filter((moduleDefinition) => selectedModules.includes(moduleDefinition.key))
       .map((moduleDefinition) => moduleDefinition.packageName),
@@ -1016,6 +1017,211 @@ export function createShellConfig(selectedModules) {
     "}",
     "",
   ].join("\n");
+}
+
+export function createModuleToolbarControlsConfig(selectedModules) {
+  const imports = [];
+  const branches = [];
+
+  if (selectedModules.includes("admin")) {
+    imports.push('import { AdminToolbarControls } from "@brightweblabs/module-admin/ui";');
+    branches.push('  if (pathname === "/admin/users") return <AdminToolbarControls />;');
+  }
+  if (selectedModules.includes("crm")) {
+    imports.push('import { CrmToolbarControls } from "@brightweblabs/module-crm/ui";');
+    branches.push('  if (pathname === "/crm") return <CrmToolbarControls />;');
+  }
+  if (selectedModules.includes("projects")) {
+    imports.push('import { ProjectsToolbarControls } from "@brightweblabs/module-projects/ui";');
+    branches.push('  if (pathname === projectsBaseHref) return <ProjectsToolbarControls />;');
+  }
+
+  return [
+    '"use client";',
+    "",
+    "// MANAGED BY BRIGHTWEB — regenerated when modules are added, removed, or updated.",
+    ...imports,
+    imports.length > 0 ? "" : null,
+    "export function getModuleToolbarControls(pathname: string, projectsBaseHref: string) {",
+    ...branches,
+    "  return null;",
+    "}",
+    "",
+  ].filter((line) => line !== null).join("\n");
+}
+
+function createOrganizationRoute(methods, enabled) {
+  const lines = ['export const dynamic = "force-dynamic";', ""];
+  for (const { method, handler, context = false } of methods) {
+    if (enabled) {
+      lines.push(
+        `export async function ${method}(request: Request${context ? ', context: { params: Promise<{ id: string }> }' : ""}) {`,
+        `  const { ${handler} } = await import("@brightweblabs/module-orgs");`,
+        `  return ${handler}(request${context ? ", context" : ""});`,
+        "}",
+        "",
+      );
+    } else {
+      lines.push(
+        `export async function ${method}(_request: Request${context ? ', _context: { params: Promise<{ id: string }> }' : ""}) {`,
+        '  return new Response(null, { status: 404 });',
+        "}",
+        "",
+      );
+    }
+  }
+  return lines.join("\n");
+}
+
+export function createOptionalModuleRouteFiles(selectedModules) {
+  const adminEnabled = selectedModules.includes("admin");
+  const crmEnabled = selectedModules.includes("crm");
+  const orgsEnabled = selectedModules.includes("orgs")
+    || crmEnabled
+    || selectedModules.includes("marketing")
+    || selectedModules.includes("projects");
+  const dependencyImports = [
+    'import { requireServerUserAccess } from "@brightweblabs/core-auth/server";',
+    'import type { InvitationHttpDependencies } from "@brightweblabs/core-auth/routes";',
+    'import { requireServiceRoleClient } from "@brightweblabs/infra/server";',
+  ];
+
+  if (adminEnabled) {
+    dependencyImports.push(
+      'import { getAdminUserInvitationDetails, registerUserFromAdminInvitation } from "@brightweblabs/module-admin";',
+    );
+  }
+  if (orgsEnabled) {
+    dependencyImports.push(
+      'import { acceptOrganizationInvitation, getOrganizationInvitationDetails, registerUserFromOrganizationInvitation } from "@brightweblabs/module-orgs";',
+    );
+  }
+  if (crmEnabled) {
+    dependencyImports.push(
+      'import { ensureCrmContactForProfile } from "@brightweblabs/module-crm";',
+    );
+  }
+
+  const invitationDependencies = adminEnabled && orgsEnabled && crmEnabled
+    ? [
+      'import { requireServerUserAccess } from "@brightweblabs/core-auth/server";',
+      'import { requireServiceRoleClient } from "@brightweblabs/infra/server";',
+      "import {",
+      "  getAdminUserInvitationDetails,",
+      "  registerUserFromAdminInvitation,",
+      '} from "@brightweblabs/module-admin";',
+      'import { ensureCrmContactForProfile } from "@brightweblabs/module-crm";',
+      "import {",
+      "  acceptOrganizationInvitation,",
+      "  getOrganizationInvitationDetails,",
+      "  registerUserFromOrganizationInvitation,",
+      '} from "@brightweblabs/module-orgs";',
+      "",
+      "export const invitationHttpDependencies = {",
+      "  getServiceClient: requireServiceRoleClient,",
+      "  getAccess: requireServerUserAccess,",
+      "  getOrganizationInvitation: getOrganizationInvitationDetails,",
+      "  getAdminInvitation: getAdminUserInvitationDetails,",
+      "  registerOrganizationInvitation: (client: never, input: {",
+      "    invitationId: string;",
+      "    firstName: string;",
+      "    lastName: string;",
+      "    password: string;",
+      "  }) => registerUserFromOrganizationInvitation(client, {",
+      "    ...input,",
+      "    ensureCrmContactForProfile,",
+      "  }),",
+      "  registerAdminInvitation: registerUserFromAdminInvitation,",
+      "  acceptOrganizationInvitation: (client: never, input: {",
+      "    invitationId: string;",
+      "    profileId: string;",
+      "    userEmail: string;",
+      "  }) => acceptOrganizationInvitation(client, {",
+      "    ...input,",
+      "    ensureCrmContactForProfile,",
+      "  }),",
+      "};",
+      "",
+    ].join("\n")
+    : [
+    ...dependencyImports,
+    "",
+    ...(!adminEnabled ? [
+      "const getAdminUserInvitationDetails = async (_client: never, _invitationId: string) => null;",
+      'const registerUserFromAdminInvitation = async (_client: never, _input: unknown): Promise<never> => { throw new Error("INVITATION_NOT_FOUND"); };',
+    ] : []),
+    ...(!orgsEnabled ? [
+      "const getOrganizationInvitationDetails = async (_client: never, _invitationId: string) => null;",
+      'const registerUserFromOrganizationInvitation = async (_client: never, _input: unknown): Promise<never> => { throw new Error("INVITATION_NOT_FOUND"); };',
+      'const acceptOrganizationInvitation = async (_client: never, _input: unknown): Promise<never> => { throw new Error("Convite não encontrado."); };',
+    ] : []),
+    ...(!crmEnabled ? [
+      "const ensureCrmContactForProfile = async () => ({ success: true as const });",
+    ] : []),
+    (!adminEnabled || !orgsEnabled || !crmEnabled) ? "" : null,
+    "export const invitationHttpDependencies = {",
+    "  getServiceClient: requireServiceRoleClient,",
+    "  getAccess: requireServerUserAccess,",
+    "  getOrganizationInvitation: getOrganizationInvitationDetails,",
+    "  getAdminInvitation: getAdminUserInvitationDetails,",
+    "  registerOrganizationInvitation: (client: never, input: {",
+    "    invitationId: string;",
+    "    firstName: string;",
+    "    lastName: string;",
+    "    password: string;",
+    "  }) => registerUserFromOrganizationInvitation(client, {",
+    "    ...input,",
+    "    ensureCrmContactForProfile,",
+    "  }),",
+    "  registerAdminInvitation: registerUserFromAdminInvitation,",
+    "  acceptOrganizationInvitation: (client: never, input: {",
+    "    invitationId: string;",
+    "    profileId: string;",
+    "    userEmail: string;",
+    "  }) => acceptOrganizationInvitation(client, {",
+    "    ...input,",
+    "    ensureCrmContactForProfile,",
+    "  }),",
+    "} satisfies InvitationHttpDependencies;",
+    "",
+    ].filter((line) => line !== null).join("\n");
+
+  return {
+    "app/api/invitations/_dependencies.ts": invitationDependencies,
+    "app/api/organizations/route.ts": createOrganizationRoute([
+      { method: "POST", handler: "handleOrganizationsPostRequest" },
+    ], orgsEnabled),
+    "app/api/organizations/[id]/route.ts": createOrganizationRoute([
+      { method: "PATCH", handler: "handleOrganizationPatchRequest", context: true },
+    ], orgsEnabled),
+    "app/api/organizations/[id]/invitations/route.ts": createOrganizationRoute([
+      { method: "GET", handler: "handleOrganizationInvitationsGetRequest", context: true },
+      { method: "POST", handler: "handleOrganizationInvitationsPostRequest", context: true },
+    ], orgsEnabled),
+    "app/api/organizations/[id]/invitations/[invitationId]/route.ts": orgsEnabled
+      ? [
+        'export const dynamic = "force-dynamic";',
+        "",
+        "export async function DELETE(",
+        "  request: Request,",
+        "  context: { params: Promise<{ id: string; invitationId: string }> },",
+        ") {",
+        '  const { handleOrganizationInvitationDeleteRequest } = await import("@brightweblabs/module-orgs");',
+        "  return handleOrganizationInvitationDeleteRequest(request, context);",
+        "}",
+        "",
+      ].join("\n")
+      : [
+        'export const dynamic = "force-dynamic";',
+        "",
+        'type RouteContext = { params: Promise<{ id: string; invitationId: string }> };',
+        "",
+        "export async function DELETE(_request: Request, _context: RouteContext) {",
+        "  return new Response(null, { status: 404 });",
+        "}",
+        "",
+      ].join("\n"),
+  };
 }
 
 function createSiteConfigFile(slug) {
@@ -1361,6 +1567,10 @@ async function scaffoldPlatformProject({
   await ensureDirectory(path.dirname(targetDir));
   await copyDirectory(baseTemplateDir, targetDir);
 
+  if (!workspaceMode && packageManager === "pnpm") {
+    await fs.writeFile(path.join(targetDir, "pnpm-workspace.yaml"), "allowBuilds:\n  sharp: true\n");
+  }
+
   for (const moduleDefinition of SELECTABLE_MODULES) {
     if (!selectedModules.includes(moduleDefinition.key)) continue;
     const moduleTemplateDir = path.join(TEMPLATE_ROOT, "modules", moduleDefinition.templateFolder);
@@ -1390,7 +1600,14 @@ async function scaffoldPlatformProject({
     createPlatformBrandConfigFile({ slug: answers.slug, brandValues }),
   );
   await fs.writeFile(path.join(targetDir, "config", "modules.ts"), createPlatformModulesConfigFile(selectedModules));
+  await fs.writeFile(
+    path.join(targetDir, "config", "module-toolbar-controls.tsx"),
+    createModuleToolbarControlsConfig(selectedModules),
+  );
   await fs.writeFile(path.join(targetDir, "config", "shell.ts"), createShellConfig(selectedModules));
+  for (const [relativePath, content] of Object.entries(createOptionalModuleRouteFiles(selectedModules))) {
+    await fs.writeFile(path.join(targetDir, relativePath), content);
+  }
   await fs.writeFile(
     path.join(targetDir, "docs", "ai", "app-context.json"),
     createAppContextFile({
@@ -1464,6 +1681,9 @@ async function scaffoldSiteProject({
 
   await ensureDirectory(path.dirname(targetDir));
   await copyDirectory(baseTemplateDir, targetDir);
+  if (!workspaceMode && packageManager === "pnpm") {
+    await fs.writeFile(path.join(targetDir, "pnpm-workspace.yaml"), "allowBuilds:\n  sharp: true\n");
+  }
   await ensureDirectory(path.join(targetDir, "config"));
   await ensureDirectory(path.join(targetDir, "docs", "ai"));
 

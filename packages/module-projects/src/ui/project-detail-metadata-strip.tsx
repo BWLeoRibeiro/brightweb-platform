@@ -3,7 +3,7 @@
 import { CalendarClock, CheckCircle2, ChevronDown, History, Hourglass, Info, Zap } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useProjectDetailProject } from "./project-detail-data-provider";
-import { portalMonoTabularClassName as MONO } from "./shared/typography";
+import { monoTabularClassName as MONO } from "./shared/typography";
 import { Popover, PopoverContent, PopoverTrigger } from "@brightweblabs/ui";
 import { formatElapsedSince, formatProjectDateTime } from "./shared/formatters";
 import { useProjectsUiDictionary } from "./context";
@@ -12,12 +12,12 @@ function MetadataRow({ icon: Icon, label, value }: { icon: LucideIcon; label: st
   const isEmpty = value === "-" || value === "–";
   return (
     <div className="flex items-center justify-between gap-4 py-1.5">
-      <span className="portal-meta inline-flex items-center gap-2 text-foreground/55">
+      <span className="text-meta text-muted-foreground inline-flex items-center gap-2 text-foreground/55">
         <Icon className="size-3 text-foreground/35" />
         {label}
       </span>
       <span
-        className={`${MONO} portal-meta shrink-0 ${isEmpty ? "text-foreground/30" : "text-foreground/75"}`}
+        className={`${MONO} text-meta text-muted-foreground shrink-0 ${isEmpty ? "text-foreground/30" : "text-foreground/75"}`}
       >
         {value}
       </span>
@@ -45,7 +45,7 @@ export function ProjectDetailMetadataStrip() {
         <PopoverTrigger asChild>
           <button
             type="button"
-            className="portal-label inline-flex items-center gap-1.5 rounded-[var(--radius)] border border-border-hairline-soft bg-transparent px-2.5 py-1.5 text-foreground/55 transition-colors hover:bg-[color:var(--muted)] hover:text-foreground"
+            className="text-label text-muted-foreground inline-flex items-center gap-1.5 rounded-[var(--radius)] border border-border-hairline-soft bg-transparent px-2.5 py-1.5 text-foreground/55 transition-colors hover:bg-[color:var(--muted)] hover:text-foreground"
           >
             <Info className="size-3" />
             {dictionary.detail.details}
@@ -54,7 +54,7 @@ export function ProjectDetailMetadataStrip() {
         </PopoverTrigger>
         <PopoverContent align="end" className="w-64 p-0">
           <div className="border-b border-border-hairline-soft px-3 py-2.5">
-            <span className="portal-label text-foreground/45">{dictionary.detail.details}</span>
+            <span className="text-label text-muted-foreground text-foreground/45">{dictionary.detail.details}</span>
           </div>
           <div className="divide-y divide-border-hairline-soft px-3 py-1">
             {items.map((item) => (

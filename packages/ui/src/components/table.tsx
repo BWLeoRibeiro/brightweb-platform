@@ -8,7 +8,7 @@ const Table = React.forwardRef<
 >(
   ({ className, containerClassName, ...props }, ref) => (
     <div className={cn("w-full flex-1 overflow-auto", containerClassName)}>
-      <table ref={ref} className={cn("w-full caption-bottom text-sm", className)} {...props} />
+      <table ref={ref} className={cn("w-full caption-bottom text-body", className)} {...props} />
     </div>
   ),
 );
@@ -67,7 +67,7 @@ TableCell.displayName = "TableCell";
 
 const TableCaption = React.forwardRef<HTMLTableCaptionElement, React.HTMLAttributes<HTMLTableCaptionElement>>(
   ({ className, ...props }, ref) => (
-    <caption ref={ref} className={cn("mt-4 text-sm text-muted-foreground", className)} {...props} />
+    <caption ref={ref} className={cn("mt-4 text-body text-muted-foreground", className)} {...props} />
   ),
 );
 TableCaption.displayName = "TableCaption";

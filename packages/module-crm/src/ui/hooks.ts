@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useShellAction } from "@brightweblabs/app-shell";
 
 import type { CrmContact, CrmContactsListParams, CrmContactsListResult, CrmOwnerOption } from "../data";
 import type { CrmContactStatus } from "../server";
@@ -76,20 +77,8 @@ export function useCrmMutations(client: CrmUiClient, onComplete?: () => Promise<
 }
 
 export function useCrmWindowEvents(handlers: { onCreateContact?: () => void; onOpenOrganizations?: () => void; onOpenTimeline?: () => void; onSelectSegment?: (status: string | null) => void }) {
-  useEffect(() => {
-    const create = () => handlers.onCreateContact?.();
-    const organizations = () => handlers.onOpenOrganizations?.();
-    const timeline = () => handlers.onOpenTimeline?.();
-    const segment = (event: Event) => handlers.onSelectSegment?.((event as CustomEvent<{ status?: string | null }>).detail?.status ?? null);
-    window.addEventListener(CRM_UI_EVENTS.createContact, create);
-    window.addEventListener(CRM_UI_EVENTS.openOrganizations, organizations);
-    window.addEventListener(CRM_UI_EVENTS.openTimeline, timeline);
-    window.addEventListener(CRM_UI_EVENTS.selectSegment, segment);
-    return () => {
-      window.removeEventListener(CRM_UI_EVENTS.createContact, create);
-      window.removeEventListener(CRM_UI_EVENTS.openOrganizations, organizations);
-      window.removeEventListener(CRM_UI_EVENTS.openTimeline, timeline);
-      window.removeEventListener(CRM_UI_EVENTS.selectSegment, segment);
-    };
-  }, [handlers]);
+  useShellAction(CRM_UI_EVENTS.createContact, () => handlers.onCreateContact?.());
+  useShellAction(CRM_UI_EVENTS.openOrganizations, () => handlers.onOpenOrganizations?.());
+  useShellAction(CRM_UI_EVENTS.openTimeline, () => handlers.onOpenTimeline?.());
+  useShellAction<{ status?: string | null } | undefined>(CRM_UI_EVENTS.selectSegment, (detail) => handlers.onSelectSegment?.(detail?.status ?? null));
 }

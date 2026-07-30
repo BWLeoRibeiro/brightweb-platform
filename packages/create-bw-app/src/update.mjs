@@ -13,7 +13,9 @@ import {
   TEMPLATE_ROOT,
   createAppContextFile,
   createDbInstallPlan,
+  createModuleToolbarControlsConfig,
   createNextConfig,
+  createOptionalModuleRouteFiles,
   createPackageJson,
   createPlatformGlobalsCss,
   createPlatformModulesConfigFile,
@@ -25,18 +27,33 @@ import {
   readJsonIfPresent,
   runInstall,
 } from "./generator.mjs";
+import { readAppManifest } from "./app-manifest.mjs";
 
 const MANAGED_PLATFORM_FILES = [
   "next.config.ts",
   path.join("app", "globals.css"),
+  path.join("config", "module-toolbar-controls.tsx"),
   path.join("config", "modules.ts"),
   path.join("config", "shell.ts"),
+  path.join("app", "api", "invitations", "_dependencies.ts"),
+  path.join("app", "api", "organizations", "route.ts"),
+  path.join("app", "api", "organizations", "[id]", "route.ts"),
+  path.join("app", "api", "organizations", "[id]", "invitations", "route.ts"),
+  path.join("app", "api", "organizations", "[id]", "invitations", "[invitationId]", "route.ts"),
   path.join("docs", "ai", "app-context.json"),
 ];
 
 const MANAGED_SITE_FILES = [
   path.join("docs", "ai", "app-context.json"),
 ];
+
+const MODULE_SELECTED_PLATFORM_FILES = new Set([
+  path.join("app", "api", "invitations", "_dependencies.ts"),
+  path.join("app", "api", "organizations", "route.ts"),
+  path.join("app", "api", "organizations", "[id]", "route.ts"),
+  path.join("app", "api", "organizations", "[id]", "invitations", "route.ts"),
+  path.join("app", "api", "organizations", "[id]", "invitations", "[invitationId]", "route.ts"),
+]);
 
 function resolveUpdateTargetDirectory(runtimeOptions, argvOptions) {
   if (runtimeOptions.targetDir || argvOptions.targetDir) {
@@ -264,6 +281,21 @@ async function getStarterFileStatus(targetDir, installedModules) {
       continue;
     }
 
+    // These base files are generated from the installed module set and are
+    // validated/repaired through MANAGED_PLATFORM_FILES, not raw template
+    // byte parity.
+    if (MODULE_SELECTED_PLATFORM_FILES.has(relativePath)) {
+      starterFiles.push({
+        moduleKey: "platform-base",
+        relativePath,
+        sourcePath,
+        targetPath,
+        status: "current",
+        refreshable: false,
+      });
+      continue;
+    }
+
     const [sourceContent, targetContent] = await Promise.all([
       fs.readFile(sourcePath, "utf8"),
       fs.readFile(targetPath, "utf8"),
@@ -424,6 +456,7 @@ function renderPlanSummary(plan, options = {}) {
 
 export async function buildBrightwebAppUpdatePlan(argvOptions = {}, runtimeOptions = {}) {
   const targetDir = resolveUpdateTargetDirectory(runtimeOptions, argvOptions);
+  await readAppManifest(targetDir, { required: false });
   const packageJsonPath = path.join(targetDir, "package.json");
   const manifest = await readJsonIfPresent(packageJsonPath);
 
@@ -493,8 +526,10 @@ export async function buildBrightwebAppUpdatePlan(argvOptions = {}, runtimeOptio
     const canonicalConfigFiles = {
       "next.config.ts": createNextConfig({ template: "platform", selectedModules: installedModules }),
       [path.join("app", "globals.css")]: await createPlatformGlobalsCss(installedModules),
+      [path.join("config", "module-toolbar-controls.tsx")]: createModuleToolbarControlsConfig(installedModules),
       [path.join("config", "modules.ts")]: createPlatformModulesConfigFile(installedModules),
       [path.join("config", "shell.ts")]: createShellConfig(installedModules),
+      ...createOptionalModuleRouteFiles(installedModules),
       [path.join("docs", "ai", "app-context.json")]: createAppContextFile({
         slug: manifest.name || path.basename(targetDir),
         template: "platform",

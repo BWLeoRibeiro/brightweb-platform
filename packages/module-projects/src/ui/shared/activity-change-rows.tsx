@@ -7,7 +7,7 @@ export function ActivityChangeRows({ changes, className }: { changes: ActivityCh
   return (
     <ul className={cn("mt-1.5 flex flex-col gap-1 border-l-2 border-[color:var(--border)] pl-xs", className)}>
       {changes.map((change) => (
-        <li key={change.key} className="portal-micro flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5 font-normal">
+        <li key={change.key} className="text-micro text-muted-foreground flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5 font-normal">
           <span className="font-semibold text-[color:var(--foreground)]">{change.label}</span>
           {change.from || change.to ? (
             <span className="inline-flex items-baseline gap-1.5 text-[color:var(--muted-foreground)]">

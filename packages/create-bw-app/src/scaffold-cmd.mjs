@@ -3,16 +3,9 @@ import { stdout as output } from "node:process";
 import { findWorkspaceRoot, hashFile, readAppManifest, writeAppManifest } from "./app-manifest.mjs";
 import { pathExists } from "./generator.mjs";
 import { findTrackedTemplate, scaffoldDrift } from "./scaffold.mjs";
+import { normalizeSafeRelativePath, resolveSafeRelativePath } from "./safe-path.mjs";
 
 const HELP = `Usage: bw scaffold <action> [paths...] [options]\n\nActions:\n  list                List tracked files, live status, and intent\n  own <path>...       Mark existing tracked files as app-owned\n  skip <path>...      Mark missing tracked files as intentionally absent\n  manage <path>...    Return tracked files to BrightWeb management\n\nOptions:\n  --target-dir <path>       App directory (defaults to cwd)\n  --workspace-root <path>   BrightWeb workspace root\n  --help                    Show this help`;
-
-function normalizeTrackedPath(relativePath) {
-  const normalized = path.normalize(String(relativePath)).replace(/^\.\//, "");
-  if (path.isAbsolute(String(relativePath)) || normalized === ".." || normalized.startsWith(`..${path.sep}`)) {
-    throw new Error(`Scaffold path must be relative to the app: ${relativePath}`);
-  }
-  return normalized;
-}
 
 export async function scaffoldBrightwebApp(action, paths = [], argvOptions = {}, runtimeOptions = {}) {
   if (argvOptions.help || !action) { output.write(`${HELP}\n`); return { help: true }; }
@@ -30,7 +23,7 @@ export async function scaffoldBrightwebApp(action, paths = [], argvOptions = {},
     return { action, entries: live.entries };
   }
 
-  const normalizedPaths = Array.from(new Set(paths.map(normalizeTrackedPath)));
+  const normalizedPaths = Array.from(new Set(paths.map((entry) => normalizeSafeRelativePath(entry, "Scaffold path"))));
   for (const relativePath of normalizedPaths) {
     if (!manifest.scaffoldFiles?.[relativePath]) throw new Error(`${relativePath} is not a tracked scaffold file.`);
   }
@@ -47,7 +40,7 @@ export async function scaffoldBrightwebApp(action, paths = [], argvOptions = {},
     const record = manifest.scaffoldFiles[relativePath];
     const previousIntent = record.intent || "managed";
     const nextIntent = action === "manage" ? "managed" : action === "own" ? "owned" : "skipped";
-    const appPath = path.join(targetDir, relativePath);
+    const appPath = resolveSafeRelativePath(targetDir, relativePath, "Manifest scaffold file path");
     const exists = await pathExists(appPath);
     if (action === "manage") {
       const located = await findTrackedTemplate({ relativePath, manifest, targetDir, workspaceRoot });

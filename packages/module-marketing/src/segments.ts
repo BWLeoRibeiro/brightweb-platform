@@ -67,7 +67,7 @@ const SEGMENT_COLUMNS =
 const CONTACT_COLUMNS =
   "id,email,first_name,last_name,created_at";
 const DEFAULT_RESOLVE_LIMIT = 1_000;
-const MAX_RESOLVE_LIMIT = 5_000;
+const QUERY_PAGE_SIZE = 1_000;
 
 function db(supabase: unknown) {
   return supabase as QueryClient;
@@ -77,11 +77,14 @@ function throwIfError(error: { message?: string } | null | undefined) {
   if (error) throw new Error(error.message || "Marketing segment request failed.");
 }
 
-function warnIfResolutionMayBeTruncated(source: string, rowCount: number) {
-  if (rowCount >= MAX_RESOLVE_LIMIT) {
-    console.warn(
-      `[marketing] Segment ${source} reached the ${MAX_RESOLVE_LIMIT}-row resolution cap; results may be truncated.`,
-    );
+async function collectPages<T>(createQuery: () => any): Promise<T[]> {
+  const rows: T[] = [];
+  for (let start = 0; ; start += QUERY_PAGE_SIZE) {
+    const result = await createQuery().range(start, start + QUERY_PAGE_SIZE - 1);
+    throwIfError(result.error);
+    const page = (result.data ?? []) as T[];
+    rows.push(...page);
+    if (page.length < QUERY_PAGE_SIZE) return rows;
   }
 }
 
@@ -102,7 +105,7 @@ function normalizeLimit(limit?: number) {
   if (!Number.isInteger(limit) || limit < 1) {
     throw new Error("Segment limit must be a positive integer.");
   }
-  return Math.min(limit, MAX_RESOLVE_LIMIT);
+  return limit;
 }
 
 function validateRule(rule: MarketingSegmentRule) {
@@ -236,16 +239,14 @@ async function matchingTopicContactIds(
   topicIds: string[],
 ) {
   if (topicIds.length === 0) return null;
-  const { data, error } = await db(supabase)
+  const data = await collectPages<{ contact_id: string }>(() => db(supabase)
     .from("marketing_subscriptions")
     .select("contact_id")
     .eq("status", "subscribed")
     .in("topic_id", topicIds)
-    .limit(MAX_RESOLVE_LIMIT);
-  throwIfError(error);
-  warnIfResolutionMayBeTruncated("topic subscriptions", (data ?? []).length);
+    .order("contact_id", { ascending: true }));
   return new Set(
-    ((data ?? []) as Array<{ contact_id: string }>).map((row) => row.contact_id),
+    data.map((row) => row.contact_id),
   );
 }
 
@@ -256,18 +257,18 @@ async function engagedContactIds(
 ) {
   if (days === undefined) return null;
   const since = new Date(Date.now() - days * 86_400_000).toISOString();
-  let query = db(supabase)
-    .from("marketing_message_events")
-    .select("contact_id")
-    .gte("occurred_at", since)
-    .not("contact_id", "is", null)
-    .limit(MAX_RESOLVE_LIMIT);
-  if (type) query = query.eq("event_type", type);
-  const { data, error } = await query;
-  throwIfError(error);
-  warnIfResolutionMayBeTruncated("engagement events", (data ?? []).length);
+  const data = await collectPages<{ contact_id: string }>(() => {
+    let query = db(supabase)
+      .from("marketing_message_events")
+      .select("contact_id")
+      .gte("occurred_at", since)
+      .not("contact_id", "is", null)
+      .order("contact_id", { ascending: true });
+    if (type) query = query.eq("event_type", type);
+    return query;
+  });
   return new Set(
-    ((data ?? []) as Array<{ contact_id: string }>).map((row) => row.contact_id),
+    data.map((row) => row.contact_id),
   );
 }
 
@@ -276,28 +277,24 @@ async function preferredLanguageContactIds(
   preferredLanguage?: string,
 ) {
   if (!preferredLanguage) return null;
-  const { data, error } = await db(supabase)
+  const data = await collectPages<{ contact_id: string }>(() => db(supabase)
     .from("marketing_contact_settings")
     .select("contact_id")
     .eq("preferred_language", preferredLanguage)
-    .limit(MAX_RESOLVE_LIMIT);
-  throwIfError(error);
-  warnIfResolutionMayBeTruncated("language settings", (data ?? []).length);
+    .order("contact_id", { ascending: true }));
   return new Set(
-    ((data ?? []) as Array<{ contact_id: string }>).map((row) => row.contact_id),
+    data.map((row) => row.contact_id),
   );
 }
 
 async function suppressedEmails(supabase: unknown, exclude: boolean) {
   if (!exclude) return null;
-  const { data, error } = await db(supabase)
+  const data = await collectPages<{ email: string }>(() => db(supabase)
     .from("marketing_suppressions")
     .select("email")
-    .limit(MAX_RESOLVE_LIMIT);
-  throwIfError(error);
-  warnIfResolutionMayBeTruncated("suppressions", (data ?? []).length);
+    .order("email", { ascending: true }));
   return new Set(
-    ((data ?? []) as Array<{ email: string }>).map((row) =>
+    data.map((row) =>
       row.email.trim().toLowerCase()
     ),
   );
@@ -306,29 +303,32 @@ async function suppressedEmails(supabase: unknown, exclude: boolean) {
 export async function resolveSegmentContacts(
   supabase: unknown,
   ruleOrSegmentId: MarketingSegmentRule | string,
-  options: { limit?: number } = {},
+  options: { limit?: number; all?: boolean } = {},
 ): Promise<SegmentContact[]> {
   const rule = await ruleFromInput(supabase, ruleOrSegmentId);
   validateRule(rule);
-  const limit = normalizeLimit(options.limit);
+  const limit = options.all ? Number.POSITIVE_INFINITY : normalizeLimit(options.limit);
 
-  let query = db(supabase)
-    .from("crm_contacts")
-    .select(CONTACT_COLUMNS)
-    .not("email", "is", null)
-    .order("created_at", { ascending: false })
-    .limit(MAX_RESOLVE_LIMIT);
-  if (rule.createdAfter) query = query.gte("created_at", rule.createdAfter);
-  if (rule.createdBefore) query = query.lte("created_at", rule.createdBefore);
+  const contactQuery = () => {
+    let query = db(supabase)
+      .from("crm_contacts")
+      .select(CONTACT_COLUMNS)
+      .not("email", "is", null)
+      .order("created_at", { ascending: false })
+      .order("id", { ascending: true });
+    if (rule.createdAfter) query = query.gte("created_at", rule.createdAfter);
+    if (rule.createdBefore) query = query.lte("created_at", rule.createdBefore);
+    return query;
+  };
 
   const [
-    contactsResult,
+    contacts,
     topicContactIds,
     engagementContactIds,
     languageContactIds,
     suppressed,
   ] = await Promise.all([
-    query,
+    collectPages<ContactRow>(contactQuery),
     matchingTopicContactIds(supabase, rule.topicIds ?? []),
     engagedContactIds(
       supabase,
@@ -338,14 +338,9 @@ export async function resolveSegmentContacts(
     preferredLanguageContactIds(supabase, rule.preferredLanguage),
     suppressedEmails(supabase, rule.excludeSuppressed !== false),
   ]);
-  throwIfError(contactsResult.error);
-  warnIfResolutionMayBeTruncated(
-    "contacts",
-    (contactsResult.data ?? []).length,
-  );
 
   const matches: SegmentContact[] = [];
-  for (const contact of (contactsResult.data ?? []) as ContactRow[]) {
+  for (const contact of contacts) {
     const email = contact.email?.trim().toLowerCase();
     if (!email) continue;
     if (topicContactIds && !topicContactIds.has(contact.id)) continue;
@@ -365,7 +360,7 @@ export async function previewSegment(
 ): Promise<{ count: number; sample: SegmentContact[] }> {
   const sampleLimit = normalizeLimit(options.limit);
   const matches = await resolveSegmentContacts(supabase, rule, {
-    limit: MAX_RESOLVE_LIMIT,
+    all: true,
   });
   return { count: matches.length, sample: matches.slice(0, sampleLimit) };
 }

@@ -1,6 +1,6 @@
 import type { LucideIcon } from "lucide-react";
 import type { HTMLAttributes, ReactNode } from "react";
-import { portalCardTitleClassName } from "./typography";
+import { canonicalTitleClassName } from "./typography";
 import { cn } from "../utils";
 
 type ProjectSurfaceCardProps = HTMLAttributes<HTMLElement> & {
@@ -48,9 +48,9 @@ export function ProjectSurfaceSectionHeader({
         <Icon className={cn("size-3.5", iconClassName)} />
       </div>
       <div className="min-w-0 flex-1">
-        <h2 className={cn(portalCardTitleClassName, titleClassName)}>{title}</h2>
+        <h2 className={cn(canonicalTitleClassName, titleClassName)}>{title}</h2>
         {subtitle ? (
-          <p className={cn("text-sm text-[color:var(--muted-foreground)]", subtitleClassName)}>{subtitle}</p>
+          <p className={cn("text-body text-[color:var(--muted-foreground)]", subtitleClassName)}>{subtitle}</p>
         ) : null}
       </div>
       {rightSlot}

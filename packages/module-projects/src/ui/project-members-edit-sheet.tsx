@@ -55,8 +55,8 @@ function defaultRoleFor(member: ProjectMemberOption): ProjectMemberRole {
 function MemberIdentity({ member }: { member: ProjectMemberOption }) {
   return (
     <div className="min-w-0 flex-1">
-      <span className="block truncate text-sm font-semibold text-foreground">{member.label}</span>
-      <span className="block truncate text-xs text-foreground/60">
+      <span className="block truncate text-body font-semibold text-foreground">{member.label}</span>
+      <span className="block truncate text-meta text-foreground/60">
         {member.email ?? defaultProjectsUiDictionary.people.noEmail} · {PROJECT_MEMBER_SCOPE_LABELS[member.organizationRole]}
       </span>
     </div>
@@ -76,7 +76,7 @@ function TeamMemberRow({ member, role, onRoleChange, onRemove }: TeamMemberRowPr
       <MemberIdentity member={member} />
       {isInternalIdentity(member.organizationRole) ? (
         <select
-          className="h-7 rounded-md border border-black/10 bg-background px-2 text-xs dark:border-white/10"
+          className="h-7 rounded-md border border-black/10 bg-background px-2 text-meta dark:border-white/10"
           value={role}
           onChange={(event) => onRoleChange(event.target.value as ProjectMemberRole)}
         >
@@ -86,7 +86,7 @@ function TeamMemberRow({ member, role, onRoleChange, onRemove }: TeamMemberRowPr
         </select>
       ) : (
         // Client role is fixed and cannot be changed.
-        <span className="inline-flex h-7 items-center rounded-md border border-black/8 bg-background/60 px-2 text-xs text-foreground/60 dark:border-white/10">
+        <span className="inline-flex h-7 items-center rounded-md border border-black/8 bg-background/60 px-2 text-meta text-foreground/60 dark:border-white/10">
           {PROJECT_MEMBER_ROLE_LABELS_PT.observer}
         </span>
       )}
@@ -119,8 +119,8 @@ function AddResultRow({ member, onAdd }: { member: ProjectMemberOption; onAdd: (
 function SectionHeading({ title, count }: { title: string; count?: number }) {
   return (
     <div className="flex items-baseline gap-2 px-0.5">
-      <span className="text-xs font-semibold uppercase tracking-wide text-foreground/70">{title}</span>
-      {typeof count === "number" ? <span className="text-[length:var(--text-ui-label-relaxed)] text-foreground/45">{count}</span> : null}
+      <span className="text-meta font-semibold uppercase tracking-wide text-foreground/70">{title}</span>
+      {typeof count === "number" ? <span className="text-label text-[length:var(--text-label-relaxed)] text-foreground/45">{count}</span> : null}
     </div>
   );
 }
@@ -334,7 +334,7 @@ export function ProjectMembersEditSheet({
                 <section className="space-y-2">
                   <SectionHeading title={dictionary.team.inProject} count={teamMembers.length} />
                   {teamMembers.length === 0 ? (
-                    <p className="text-xs text-foreground/60">{dictionary.team.noneAllocated}</p>
+                    <p className="text-meta text-foreground/60">{dictionary.team.noneAllocated}</p>
                   ) : (
                     <div className="space-y-2">
                       {teamMembers.map((member) => (
@@ -361,16 +361,16 @@ export function ProjectMembersEditSheet({
                     placeholder={dictionary.team.searchPlaceholder}
                   />
                   {needle === "" ? (
-                    <p className="text-xs text-foreground/55">{dictionary.team.searchHint}</p>
+                    <p className="text-meta text-foreground/55">{dictionary.team.searchHint}</p>
                   ) : addResults.length === 0 ? (
-                    <p className="text-xs text-foreground/55">{dictionary.team.noResults(needle)}</p>
+                    <p className="text-meta text-foreground/55">{dictionary.team.noResults(needle)}</p>
                   ) : (
                     <div className="space-y-2">
                       {addResults.slice(0, MAX_ADD_RESULTS).map((member) => (
                         <AddResultRow key={member.profileId} member={member} onAdd={() => addMember(member)} />
                       ))}
                       {addResults.length > MAX_ADD_RESULTS ? (
-                        <p className="text-xs text-foreground/55">
+                        <p className="text-meta text-foreground/55">
                           {dictionary.team.resultLimit(MAX_ADD_RESULTS, addResults.length)}
                         </p>
                       ) : null}

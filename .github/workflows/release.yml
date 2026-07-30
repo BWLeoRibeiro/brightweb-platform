@@ -1,12 +1,16 @@
 name: Release Packages
 
 on:
-  push:
+  workflow_run:
+    workflows:
+      - CI
+    types:
+      - completed
     branches:
       - main
 
 concurrency:
-  group: release-${{ github.ref }}
+  group: release-main
   cancel-in-progress: true
 
 permissions:
@@ -16,13 +20,27 @@ permissions:
 
 jobs:
   release:
+    if: github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
+          ref: ${{ github.event.workflow_run.head_sha }}
           # Full history so the development sync below can test ancestry.
           fetch-depth: 0
+
+      - name: Verify successful CI commit is current main
+        env:
+          CI_HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+          CI_HEAD_BRANCH: ${{ github.event.workflow_run.head_branch }}
+          CI_RUN_CONCLUSION: ${{ github.event.workflow_run.conclusion }}
+        run: |
+          test "$CI_HEAD_BRANCH" = "main"
+          test "$CI_RUN_CONCLUSION" = "success"
+          test "$(git rev-parse HEAD)" = "$CI_HEAD_SHA"
+          git fetch --quiet origin main
+          test "$(git rev-parse origin/main)" = "$CI_HEAD_SHA"
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4

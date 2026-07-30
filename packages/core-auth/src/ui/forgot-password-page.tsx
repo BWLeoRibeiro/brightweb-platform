@@ -42,9 +42,9 @@ export function ForgotPasswordPage() {
         ) : (
           <form onSubmit={handleSubmit} className="flex flex-col gap-5">
             <Field>
-              <FieldLabel htmlFor="email" className="mb-1.5 block paragraph-small font-semibold text-foreground/60">{dictionary.common.email}</FieldLabel>
+              <FieldLabel htmlFor="email" className="mb-1.5 block text-body auth-paragraph-small font-semibold text-foreground-muted-accessible">{dictionary.common.email}</FieldLabel>
               <FieldContent>
-                <Input id="email" type="email" placeholder={dictionary.common.emailPlaceholder} value={email} onChange={(event) => setEmail(event.target.value)} required disabled={loading} aria-describedby={error ? "forgot-password-error" : undefined} aria-invalid={!!error} />
+                <Input id="email" name="email" type="email" placeholder={dictionary.common.emailPlaceholder} value={email} onChange={(event) => setEmail(event.target.value)} required disabled={loading} autoComplete="email" spellCheck={false} aria-describedby={error ? "forgot-password-error" : undefined} aria-invalid={!!error} />
               </FieldContent>
             </Field>
             <Button type="submit" className="h-11 w-full rounded-full" disabled={loading}>
@@ -53,8 +53,8 @@ export function ForgotPasswordPage() {
           </form>
         )}
         <div className="flex items-center justify-center gap-1.5 pt-1">
-          <span className="paragraph-mini text-foreground-muted-accessible">{d.remember}</span>
-          <Button variant="link" size="link" asChild><Link href="/login" className="paragraph-mini font-semibold text-primary hover:text-primary/80">{dictionary.common.login}</Link></Button>
+          <span className="text-meta auth-paragraph-mini text-foreground-muted-accessible">{d.remember}</span>
+          <Button variant="link" size="link" asChild><Link href="/login" className="text-meta auth-paragraph-mini font-semibold text-primary hover:text-primary/80">{dictionary.common.login}</Link></Button>
         </div>
       </AuthCard>
     </AuthLayout>

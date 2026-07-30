@@ -51,7 +51,7 @@ import {
   SheetFooter,
 } from "@brightweblabs/ui";
 import { PROJECT_MEMBER_ROLE_LABELS_PT, type ProjectMemberRole } from "../contracts";
-import { useWindowEventBridge } from "./window-events";
+import { useShellAction } from "@brightweblabs/app-shell";
 
 
 type OrganizationOption = {
@@ -151,9 +151,9 @@ export function CreateProjectSheet({ organizations, initialOpen = false }: Creat
     performOrganizationCancel();
   }, [isOrganizationDirty, performOrganizationCancel]);
 
-  useWindowEventBridge(PROJECTS_EVENTS.openNewProject, () => {
+  useShellAction(PROJECTS_EVENTS.openNewProject, () => {
     setOpen(true);
-  }, { custom: false });
+  });
 
   const loadOrganizations = useCallback(async () => {
     if (hasLoadedOrganizations || isLoadingOrganizations) return;
@@ -444,7 +444,7 @@ export function CreateProjectSheet({ organizations, initialOpen = false }: Creat
                         type="button"
                         variant="outline"
                         size="sm"
-                        className="h-9 shrink-0 rounded-lg px-2 text-[length:var(--text-ui-label)]"
+                        className="h-9 shrink-0 rounded-lg px-2 text-label"
                         onClick={() => organizationCreation.setOrganizationSheetOpen(true)}
                       >
                         <Plus className="mr-1 h-3 w-3" />
@@ -452,9 +452,9 @@ export function CreateProjectSheet({ organizations, initialOpen = false }: Creat
                       </Button>
                     </div>
                     {isLoadingOrganizations ? (
-                      <p className="mt-1 text-[length:var(--text-ui-micro)] text-foreground/55">{dictionary.projectCreate.loadingOrganizations}</p>
+                      <p className="mt-1 text-micro text-foreground/55">{dictionary.projectCreate.loadingOrganizations}</p>
                     ) : !hasOrganizations ? (
-                      <p className="mt-1 text-[length:var(--text-ui-micro)] text-foreground/55">{dictionary.projectCreate.createOrganizationToContinue}</p>
+                      <p className="mt-1 text-micro text-foreground/55">{dictionary.projectCreate.createOrganizationToContinue}</p>
                     ) : null}
                   </FieldContent>
                 </Field>
@@ -482,7 +482,7 @@ export function CreateProjectSheet({ organizations, initialOpen = false }: Creat
                       }}
                       className={cn(sheetEditControlClassName, "mt-1.5")}
                     />
-                    <p className="mt-0.5 text-[length:var(--text-ui-micro)] text-foreground/55">{dictionary.projectCreate.generatedCodeHint}</p>
+                    <p className="mt-0.5 text-micro text-foreground/55">{dictionary.projectCreate.generatedCodeHint}</p>
                   </FieldContent>
                 </Field>
                 <Field className="gap-1.5 px-4 py-2">
@@ -618,7 +618,7 @@ export function CreateProjectSheet({ organizations, initialOpen = false }: Creat
                       <FieldContent>
                         <div className="mt-0.5 space-y-2">
                           <div>
-                            <p className="text-[length:var(--text-ui-micro)] uppercase tracking-wider text-foreground/45">{dictionary.projectCreate.line1}</p>
+                            <p className="text-micro uppercase tracking-wider text-foreground/45">{dictionary.projectCreate.line1}</p>
                             <Input
                               value={organizationCreation.organizationForm.addressLine1}
                               onChange={(event) => organizationCreation.setOrganizationForm((prev) => ({ ...prev, addressLine1: event.target.value }))}
@@ -627,7 +627,7 @@ export function CreateProjectSheet({ organizations, initialOpen = false }: Creat
                             />
                           </div>
                           <div>
-                            <p className="text-[length:var(--text-ui-micro)] uppercase tracking-wider text-foreground/45">{dictionary.projectCreate.line2}</p>
+                            <p className="text-micro uppercase tracking-wider text-foreground/45">{dictionary.projectCreate.line2}</p>
                             <Input
                               value={organizationCreation.organizationForm.addressLine2}
                               onChange={(event) => organizationCreation.setOrganizationForm((prev) => ({ ...prev, addressLine2: event.target.value }))}
@@ -703,7 +703,7 @@ export function CreateProjectSheet({ organizations, initialOpen = false }: Creat
                           className="h-8"
                         />
                         <select
-                          className="h-8 rounded-md border border-black/10 bg-background px-2 text-xs dark:border-white/12 dark:bg-white/[0.04]"
+                          className="h-8 rounded-md border border-black/10 bg-background px-2 text-meta dark:border-white/12 dark:bg-white/[0.04]"
                           value={organizationCreation.organizationInviteDraft.role}
                           onChange={(event) => organizationCreation.setOrganizationInviteDraft((prev) => ({ ...prev, role: event.target.value === "admin" ? "admin" : "member" }))}
                         >
@@ -717,17 +717,17 @@ export function CreateProjectSheet({ organizations, initialOpen = false }: Creat
                       </div>
 
                       {organizationCreation.organizationInvites.length === 0 ? (
-                        <p className="text-xs text-foreground/55">{dictionary.projectCreate.optionalInvites}</p>
+                        <p className="text-meta text-foreground/55">{dictionary.projectCreate.optionalInvites}</p>
                       ) : (
                         <div className="space-y-1.5">
                           {organizationCreation.organizationInvites.map((invite) => (
                             <div
                               key={invite.email}
-                              className="flex items-center justify-between rounded-lg border border-black/8 bg-background/60 px-2.5 py-1.5 text-xs dark:border-white/12 dark:bg-white/[0.03]"
+                              className="flex items-center justify-between rounded-lg border border-black/8 bg-background/60 px-2.5 py-1.5 text-meta dark:border-white/12 dark:bg-white/[0.03]"
                             >
                               <span className="truncate text-foreground">{invite.email}</span>
                               <div className="flex items-center gap-2">
-                                <span className="rounded-full border border-black/10 px-2 py-0.5 text-[length:var(--text-ui-micro)] uppercase tracking-wide text-foreground/70 dark:border-white/15">
+                                <span className="rounded-full border border-black/10 px-2 py-0.5 text-micro uppercase tracking-wide text-foreground/70 dark:border-white/15">
                                   {invite.role === "admin" ? dictionary.projectCreate.admin : dictionary.people.member}
                                 </span>
                                 <button
@@ -742,7 +742,7 @@ export function CreateProjectSheet({ organizations, initialOpen = false }: Creat
                           ))}
                         </div>
                       )}
-                      <p className="text-[length:var(--text-ui-label)] text-foreground/55">
+                      <p className="text-label text-foreground/55">
                         {dictionary.projectCreate.primaryContactHint}
                       </p>
                   </SheetSection>
@@ -781,7 +781,7 @@ export function CreateProjectSheet({ organizations, initialOpen = false }: Creat
 
           {setup.loadingSetupData || !setup.setupState ? (
             <div className={`${sheetBodyClassName} flex items-center justify-center py-12`}>
-              <p className="inline-flex items-center gap-2 text-sm text-foreground/70">
+              <p className="inline-flex items-center gap-2 text-body text-foreground/70">
                 <Loader2 className="size-4 animate-spin" />
                 {dictionary.projectCreate.preparing}
               </p>
@@ -804,8 +804,8 @@ export function CreateProjectSheet({ organizations, initialOpen = false }: Creat
                           />
                         </div>
                         <div className="mt-1 space-y-2">
-                          {setup.memberOptions.length === 0 ? <p className="text-xs text-foreground/60">{dictionary.projectCreate.noUsers}</p> : null}
-                          {setup.memberOptions.length > 0 && setup.filteredMemberOptions.length === 0 ? <p className="text-xs text-foreground/60">{dictionary.projectCreate.noSearchResults}</p> : null}
+                          {setup.memberOptions.length === 0 ? <p className="text-meta text-foreground/60">{dictionary.projectCreate.noUsers}</p> : null}
+                          {setup.memberOptions.length > 0 && setup.filteredMemberOptions.length === 0 ? <p className="text-meta text-foreground/60">{dictionary.projectCreate.noSearchResults}</p> : null}
                           {setup.filteredMemberOptions.map((member) => {
                             const selectedRole = setup.setupState?.members[member.profileId];
                             return (
@@ -816,14 +816,14 @@ export function CreateProjectSheet({ organizations, initialOpen = false }: Creat
                                   checked={Boolean(selectedRole)}
                                   onChange={() => setup.toggleMember(member.profileId)}
                                 />
-                                <label htmlFor={`member-${member.profileId}`} className="min-w-0 flex-1 text-sm">
+                                <label htmlFor={`member-${member.profileId}`} className="min-w-0 flex-1 text-body">
                                   <span className="block truncate font-semibold text-foreground">{member.label}</span>
-                                  <span className="block truncate text-xs text-foreground/60">
+                                  <span className="block truncate text-meta text-foreground/60">
                                     {member.email ?? dictionary.people.noEmail} · {PROJECT_MEMBER_SCOPE_LABELS[member.organizationRole]}
                                   </span>
                                 </label>
                                 <select
-                                  className="h-7 rounded-md border border-black/10 bg-background px-2 text-xs dark:border-white/10"
+                                  className="h-7 rounded-md border border-black/10 bg-background px-2 text-meta dark:border-white/10"
                                   value={selectedRole ?? "contributor"}
                                   onChange={(event) => setup.setMemberRole(member.profileId, event.target.value as ProjectMemberRole)}
                                 >

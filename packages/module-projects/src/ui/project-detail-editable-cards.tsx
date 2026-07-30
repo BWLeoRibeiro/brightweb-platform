@@ -55,7 +55,7 @@ type ProjectMilestonesAndTasksCardsProps = {
 };
 type SheetMode = "view" | "edit";
 
-const sheetViewValueClassName = "mt-1.5 text-sm text-foreground";
+const sheetViewValueClassName = "mt-1.5 text-body text-foreground";
 
 const milestoneStatusLabels: Record<string, string> = {
   pending: defaultProjectsUiDictionary.status.pending,
@@ -453,7 +453,7 @@ export function ProjectMilestonesAndTasksCards({
                         type="button"
                         variant="ghost"
                         className={cn(
-                          "mt-1.5 h-9 w-full justify-start px-2.5 text-sm",
+                          "mt-1.5 h-9 w-full justify-start px-2.5 text-body",
                           "rounded-lg border border-[color:var(--project-ui-color-01)] bg-[color:var(--card)] hover:bg-[color:var(--card)]",
                           milestoneTargetDateValue ? "text-foreground" : "text-foreground/45",
                         )}
@@ -481,7 +481,7 @@ export function ProjectMilestonesAndTasksCards({
                   type="button"
                   variant="link"
                   size="link"
-                  className="w-fit p-0 text-sm text-rose-600 hover:text-rose-700 dark:text-rose-400 dark:hover:text-rose-300"
+                  className="w-fit p-0 text-body text-rose-600 hover:text-rose-700 dark:text-rose-400 dark:hover:text-rose-300"
                   onClick={() => setMilestoneDeleteDialogOpen(true)}
                   disabled={isDeletingMilestone || isSavingMilestone}
                 >
@@ -702,7 +702,7 @@ export function ProjectMilestonesAndTasksCards({
                         type="button"
                         variant="ghost"
                         className={cn(
-                          "mt-1.5 h-9 w-full justify-start px-2.5 text-sm",
+                          "mt-1.5 h-9 w-full justify-start px-2.5 text-body",
                           "rounded-lg border border-[color:var(--project-ui-color-01)] bg-[color:var(--card)] hover:bg-[color:var(--card)]",
                           taskDueDateValue ? "text-foreground" : "text-foreground/45",
                         )}
@@ -728,7 +728,7 @@ export function ProjectMilestonesAndTasksCards({
                 <div>
                   <label className={sheetFieldLabelClassName} htmlFor="task-edit-blocked">{dictionary.forms.blockedReason}</label>
                   {taskMode === "view" ? (
-                    <p className="mt-1.5 rounded-md border border-amber-500/25 bg-amber-500/10 px-3 py-2 text-sm text-amber-700 dark:text-amber-400">
+                    <p className="mt-1.5 rounded-md border border-amber-500/25 bg-amber-500/10 px-3 py-2 text-body text-amber-700 dark:text-amber-400">
                       {taskBlockedReason.trim() || dictionary.board.noBlockedReason}
                     </p>
                   ) : (
@@ -748,7 +748,7 @@ export function ProjectMilestonesAndTasksCards({
                   type="button"
                   variant="link"
                   size="link"
-                  className="w-fit p-0 text-sm text-rose-600 hover:text-rose-700 dark:text-rose-400 dark:hover:text-rose-300"
+                  className="w-fit p-0 text-body text-rose-600 hover:text-rose-700 dark:text-rose-400 dark:hover:text-rose-300"
                   onClick={() => setTaskDeleteDialogOpen(true)}
                   disabled={isDeletingTask || isSavingTask}
                 >

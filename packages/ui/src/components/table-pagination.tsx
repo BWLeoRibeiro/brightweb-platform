@@ -39,7 +39,7 @@ export function TablePagination({
   return (
     <div className={cn("flex min-w-0 flex-col gap-2 border-t border-[color:var(--border)] px-4 py-2 md:flex-row md:items-center md:justify-between", className)}>
       {summary ? (
-        <p className="min-w-0 truncate portal-meta leading-tight text-[color:var(--muted-foreground)]">
+        <p className="min-w-0 truncate text-meta text-muted-foreground leading-tight text-[color:var(--muted-foreground)]">
           <span className="font-semibold text-[color:var(--foreground)]">{pageLabel(safePage, safeTotalPages)}</span>
           <span className="px-1.5 text-[color:var(--border)]">·</span>
           {summary}
@@ -73,7 +73,7 @@ export function TablePagination({
                   changePage(item);
                 }}
                 className={cn(
-                  "size-8 rounded-full text-[length:var(--text-ui-label)] font-semibold",
+                  "size-8 rounded-full text-label font-semibold",
                   item === safePage
                     ? "border-[color:var(--border-pagination-active)] bg-[color:var(--surface-pagination-active)] text-[color:var(--foreground)]"
                     : "text-[color:var(--muted-foreground)] hover:bg-[color:var(--muted)] hover:text-[color:var(--foreground)]",

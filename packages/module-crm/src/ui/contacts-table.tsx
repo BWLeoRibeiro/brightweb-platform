@@ -106,8 +106,8 @@ export function CrmContactsTable({
     switch (column.key) {
       case "name": return (
         <div className="min-w-0 space-y-0.5">
-          <p className="truncate paragraph-small font-semibold leading-tight text-[color:var(--foreground)]">{contactName(contact, dictionary.table.noContact)}</p>
-          <p className="truncate paragraph-mini leading-tight text-[color:var(--muted-foreground)]">{contact.email ?? contact.phone ?? dictionary.table.noContact}</p>
+          <p className="truncate text-body font-semibold leading-tight text-[color:var(--foreground)]">{contactName(contact, dictionary.table.noContact)}</p>
+          <p className="truncate text-meta leading-tight text-[color:var(--muted-foreground)]">{contact.email ?? contact.phone ?? dictionary.table.noContact}</p>
         </div>
       );
       case "organization": return contact.organizations?.name ?? dictionary.table.unavailable;
@@ -147,7 +147,7 @@ export function CrmContactsTable({
           value={params.status ?? ""}
           onChange={(event) => updateParams({ status: event.target.value || null, page: 1 })}
           aria-label={dictionary.table.allSegments}
-          className="h-10 rounded-[var(--radius-control)] border border-hairline bg-card px-3 text-ui-meta text-foreground"
+          className="h-10 rounded-[var(--radius-control)] border border-hairline bg-card px-3 text-meta text-foreground"
         >
           <option value="">{dictionary.table.allSegments}</option>
           {resolvedStages.map((stage) => <option key={stage.value} value={stage.value}>{stage.label}</option>)}
@@ -156,7 +156,7 @@ export function CrmContactsTable({
           value={params.sort ?? "date_desc"}
           onChange={(event) => updateParams({ sort: event.target.value as CrmContactSort, page: 1 })}
           aria-label={dictionary.table.organizeBy}
-          className="h-10 rounded-[var(--radius-control)] border border-hairline bg-card px-3 text-ui-meta text-foreground"
+          className="h-10 rounded-[var(--radius-control)] border border-hairline bg-card px-3 text-meta text-foreground"
         >
           <option value="date_desc">{dictionary.table.sortNewest}</option>
           <option value="name">{dictionary.table.sortName}</option>
@@ -164,7 +164,7 @@ export function CrmContactsTable({
         </select>
         {selectedIds.length > 0 ? (
           <div className="ml-auto flex items-center gap-3 rounded-[var(--radius-card)] border border-hairline bg-muted px-3 py-2">
-            <span className="text-ui-meta font-semibold text-foreground">{dictionary.table.selectedCount(selectedIds.length)}</span>
+            <span className="text-meta font-semibold text-foreground">{dictionary.table.selectedCount(selectedIds.length)}</span>
             <Button type="button" size="sm" variant="outline" onClick={() => onBulkStatus?.(selectedIds)}>
               {dictionary.table.changeStatus}
             </Button>
@@ -177,7 +177,7 @@ export function CrmContactsTable({
 
       <Table containerClassName="overflow-x-hidden" className={`${data.total === 0 ? "h-full table-fixed" : "table-fixed"} ${CRM_TABLE_DIVIDERS}`}>
         <TableHeader>
-          <TableRow className="border-b border-[color:var(--hairline-strong)] bg-[color:var(--elevate-2)] hover:bg-[color:var(--elevate-2)] [&_th]:align-middle [&_th]:text-[length:var(--portal-text-micro)] [&_th]:text-[color:var(--foreground)]">
+          <TableRow className="border-b border-[color:var(--hairline-strong)] bg-[color:var(--elevate-2)] hover:bg-[color:var(--elevate-2)] [&_th]:align-middle [&_th]:text-micro [&_th]:text-[color:var(--foreground)]">
             <TableHead className="h-[var(--table-header-height)] w-[5%] px-[var(--table-cell-padding-x)]">
               <Checkbox
                 checked={allSelected}
@@ -189,12 +189,12 @@ export function CrmContactsTable({
             {visibleColumns.map((column) => {
               const label = column.label ?? dictionary.table.columns[column.key];
               return (
-                <TableHead key={column.key} className={`portal-label h-9 px-4 ${columnWidth[column.key]} ${columnVisibility[column.key] ?? ""}`}>
+                <TableHead key={column.key} className={`text-label text-muted-foreground h-9 px-4 ${columnWidth[column.key]} ${columnVisibility[column.key] ?? ""}`}>
                   {label}
                 </TableHead>
               );
             })}
-            {renderRowActions ? <TableHead className="portal-label h-9 px-4"><span className="sr-only">{dictionary.table.columns.status}</span></TableHead> : null}
+            {renderRowActions ? <TableHead className="text-label text-muted-foreground h-9 px-4"><span className="sr-only">{dictionary.table.columns.status}</span></TableHead> : null}
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -210,7 +210,7 @@ export function CrmContactsTable({
                     className="h-3.5 w-3.5 rounded border border-border-strong"
                   />
                 </TableCell>
-                {visibleColumns.map((column) => <TableCell key={column.key} className={`max-w-0 px-[var(--table-cell-padding-x)] py-[var(--table-cell-padding-y)] paragraph-small text-[color:var(--muted-foreground)] ${columnVisibility[column.key] ?? ""} ${column.key === "organization" || column.key === "owner" ? "truncate" : ""}`}>{renderCell(column, contact)}</TableCell>)}
+                {visibleColumns.map((column) => <TableCell key={column.key} className={`max-w-0 px-[var(--table-cell-padding-x)] py-[var(--table-cell-padding-y)] text-body text-[color:var(--muted-foreground)] ${columnVisibility[column.key] ?? ""} ${column.key === "organization" || column.key === "owner" ? "truncate" : ""}`}>{renderCell(column, contact)}</TableCell>)}
                 {renderRowActions ? <TableCell className="px-4 py-2" onClick={(event) => event.stopPropagation()}>{renderRowActions(contact)}</TableCell> : null}
               </TableRow>
             );
@@ -223,8 +223,8 @@ export function CrmContactsTable({
                     <Users className="size-5 text-foreground/30 dark:text-foreground/45" aria-hidden />
                   </div>
                   <div>
-                    <p className="paragraph-small font-semibold text-foreground/60 dark:text-foreground/72">{loading ? dictionary.table.emptyLoading : dictionary.table.emptyTitle}</p>
-                    <p className="mt-1 paragraph-mini text-foreground/40 dark:text-foreground/58">{loading ? dictionary.table.emptyLoadingHint : dictionary.table.emptyHint}</p>
+                    <p className="text-body font-semibold text-foreground/60 dark:text-foreground/72">{loading ? dictionary.table.emptyLoading : dictionary.table.emptyTitle}</p>
+                    <p className="mt-1 text-meta text-foreground/40 dark:text-foreground/58">{loading ? dictionary.table.emptyLoadingHint : dictionary.table.emptyHint}</p>
                   </div>
                 </div>
               </TableCell>

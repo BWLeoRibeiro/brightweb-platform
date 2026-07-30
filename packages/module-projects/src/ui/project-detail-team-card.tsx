@@ -76,11 +76,11 @@ export function ProjectDetailTeamCard({ canManageMembers, memberColorRoles }: Pr
                 <ProjectOwnerAvatar label={member.label} size="md" roleColor={colorRole} />
                 <div className={`min-w-0 flex-1 py-0.5 transition-[padding] duration-200 ${padHoverClass}`}>
                   <div className="flex min-w-0 items-center gap-2">
-                    <p className="portal-body min-w-0 flex-1 truncate font-semibold leading-snug">{member.label}</p>
+                    <p className="text-body text-foreground min-w-0 flex-1 truncate font-semibold leading-snug">{member.label}</p>
                     <MemberRoleBadge role={member.role} colorRole={colorRole} />
                   </div>
                   {contactText ? (
-                    <div className="portal-meta mt-0.5 truncate">{contactText}</div>
+                    <div className="text-meta text-muted-foreground mt-0.5 truncate">{contactText}</div>
                   ) : null}
                 </div>
                 {contactCount > 0 ? (

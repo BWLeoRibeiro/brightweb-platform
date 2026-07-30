@@ -27,19 +27,10 @@ export function AuthLayout({
 
   return (
     <main className="auth-layout" data-variant={resolvedVariant}>
-      {split ? (
-        <aside className="auth-layout__brand-panel">
-          <div className="auth-layout__brand-panel-inner">
-            <div className="auth-layout__brand-logo auth-layout__brand-logo--inverse">{brand.logo}</div>
-            <div className="auth-layout__brand-copy">
-              <h2>{brand.splitHeadline ?? dictionary.layout.splitHeadline}</h2>
-              <p>{brand.splitDescription ?? dictionary.layout.splitDescription}</p>
-            </div>
-          </div>
-        </aside>
-      ) : null}
-
-      <section className="auth-layout__form-side">
+      <a className="auth-skip-link" href="#auth-main-content">
+        {dictionary.common.skipToContent}
+      </a>
+      <section id="auth-main-content" className="auth-layout__form-side" tabIndex={-1}>
         <div className="auth-layout__stack">
           {!split ? <div className="auth-layout__brand-logo">{brand.logo}</div> : null}
           {children}
@@ -54,6 +45,18 @@ export function AuthLayout({
           </footer>
         </div>
       </section>
+
+      {split ? (
+        <aside className="auth-layout__brand-panel">
+          <div className="auth-layout__brand-panel-inner">
+            <div className="auth-layout__brand-logo auth-layout__brand-logo--inverse">{brand.logo}</div>
+            <div className="auth-layout__brand-copy">
+              <h2 className="text-heading-1">{brand.splitHeadline ?? dictionary.layout.splitHeadline}</h2>
+              <p className="text-body-lg">{brand.splitDescription ?? dictionary.layout.splitDescription}</p>
+            </div>
+          </div>
+        </aside>
+      ) : null}
     </main>
   );
 }
@@ -66,9 +69,9 @@ export function AuthCard({
   className?: string;
 }) {
   return (
-    <div className={`auth-vessel dark relative w-full max-w-[440px] overflow-hidden rounded-[2.5rem] ${className}`}>
+    <div className={`auth-vessel relative w-full max-w-[440px] overflow-hidden rounded-[2.5rem] ${className}`}>
       <div className="auth-vessel__wash" aria-hidden="true" />
-      <div className="relative z-10 flex flex-col gap-7 p-9 lg:p-10">{children}</div>
+      <div className="auth-vessel__content">{children}</div>
     </div>
   );
 }
@@ -77,8 +80,8 @@ export function AuthHeading({ title, description, eyebrow }: { title: string; de
   return (
     <div className="flex flex-col gap-2">
       {eyebrow ? <span className="eyebrow">{eyebrow}</span> : null}
-      <h1 className="heading-2 text-foreground">{title}</h1>
-      <p className="paragraph-small text-foreground/45">{description}</p>
+      <h1 className="text-heading-1 auth-heading text-foreground">{title}</h1>
+      <p className="text-body auth-paragraph-small text-foreground-muted-accessible">{description}</p>
     </div>
   );
 }
@@ -101,7 +104,7 @@ export function AuthNotice({ children, tone = "error", id }: { children: React.R
       aria-live="polite"
       className={`auth-notice auth-notice--${tone} rounded-xl p-3.5`}
     >
-      <p className="paragraph-mini">{children}</p>
+      <p className="text-meta auth-paragraph-mini">{children}</p>
     </div>
   );
 }

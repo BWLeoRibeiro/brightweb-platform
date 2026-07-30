@@ -154,6 +154,7 @@ export const PLATFORM_STARTER_FILES = [
   "app/(shell)/dashboard/dashboard-live-mount.tsx",
   "app/(shell)/dashboard/page.tsx",
   "app/api/account/route.ts",
+  "app/api/cron/keepalive/route.ts",
   "app/api/invitations/_dependencies.ts",
   "app/api/invitations/[invitationId]/route.ts",
   "app/api/invitations/[invitationId]/accept/route.ts",

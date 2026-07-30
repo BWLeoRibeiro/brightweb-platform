@@ -304,24 +304,29 @@ test("package CSS layer guard allows tokens and flags unsafe class recipes", () 
   assert.deepEqual(violations.map(({ selector }) => selector), [".unsafe"]);
 });
 
-test("every text-ui utility used by ui exists in theme typography", async () => {
-  const files = [...await sourcesAt(uiSourceRoot), ...await sourcesAt(adminUiSourceRoot), ...await sourcesAt(crmUiSourceRoot), ...await sourcesAt(projectsUiSourceRoot), ...await sourcesAt(marketingUiSourceRoot)];
+test("every canonical typography utility used by package UI exists in theme typography", async () => {
+  const files = [...await sourcesAt(uiSourceRoot), ...await sourcesAt(appShellSourceRoot), ...await sourcesAt(adminUiSourceRoot), ...await sourcesAt(crmUiSourceRoot), ...await sourcesAt(projectsUiSourceRoot), ...await sourcesAt(marketingUiSourceRoot)];
   const typography = await readFile(typographyPath, "utf8");
-  const providedUtilities = new Set(Array.from(typography.matchAll(/@utility\s+(text-ui-[a-z0-9-]+)/g), (match) => match[1]));
-  const usedUtilities = new Set(files.flatMap(({ source }) => Array.from(source.matchAll(/(?<!--)\btext-ui-[a-z0-9-]+\b/g), (match) => match[0])));
+  const canonicalRole = /(?<![-\w])text-(?:heading-[1-4]|title|body-lg|body|meta|label|micro|metric(?:-display|-lg)?)(?![-\w])/g;
+  const providedUtilities = new Set(Array.from(typography.matchAll(/@utility\s+(text-(?!ui-)[a-z0-9-]+)/g), (match) => match[1]));
+  const usedUtilities = new Set(files.flatMap(({ source }) => Array.from(source.matchAll(canonicalRole), (match) => match[0])));
   const missing = Array.from(usedUtilities).filter((utility) => !providedUtilities.has(utility)).sort();
   assert.deepEqual(missing, [], `Missing @utility definitions: ${missing.join(", ")}`);
 });
 
-test("every MQ-compatible typography class used by packages exists in the theme aliases", async () => {
-  const files = [...await sourcesAt(uiSourceRoot), ...await sourcesAt(appShellSourceRoot), ...await sourcesAt(adminUiSourceRoot), ...await sourcesAt(crmUiSourceRoot), ...await sourcesAt(projectsUiSourceRoot), ...await sourcesAt(marketingUiSourceRoot)];
-  // Includes the base typography sheet: portal-* moved there because packaged
-  // components consume those classes, so an app on any theme must receive them.
-  // A client theme file must never be load-bearing for package components.
-  const aliases = `${await readFile(mqAliasesPath, "utf8")}\n${await readFile(tokensPath, "utf8")}\n${await readFile(typographyPath, "utf8")}`;
-  const used = new Set(files.flatMap(({ source }) => Array.from(source.matchAll(/\b(?:paragraph|portal)-[a-z0-9-]+\b/g), (match) => match[0])));
-  const missing = Array.from(used).filter((utility) => !aliases.includes(utility)).sort();
-  assert.deepEqual(missing, [], `Missing MQ-compatible typography definitions: ${missing.join(", ")}`);
+test("package UI does not add new legacy or raw named typography classes", async () => {
+  const coreAuthSourceRoot = path.join(repoRoot, "packages", "core-auth", "src");
+  const files = [...await sourcesAt(coreAuthSourceRoot), ...await sourcesAt(uiSourceRoot), ...await sourcesAt(appShellSourceRoot), ...await sourcesAt(adminUiSourceRoot), ...await sourcesAt(crmUiSourceRoot), ...await sourcesAt(projectsUiSourceRoot), ...await sourcesAt(marketingUiSourceRoot), ...await sourcesAt(previewSourceRoot)];
+  const violations = files.flatMap(({ filePath, source }) => {
+    const patterns = [
+      /(?<!--)\btext-ui-[a-z0-9-]+\b/g,
+      /(?<!--)\bportal-(?:title(?:-sm)?|heading|panel-title|subhead|card-title|body|meta|label|micro|metric(?:-display|-xl)?)\b/g,
+      /(?<![-\w])(?:heading-2|paragraph-(?:large|small|mini))(?![-\w])/g,
+      /(?<![-\w])text-(?:xs|sm|base|lg|xl|[2-9]xl)(?![-\w])/g,
+    ];
+    return patterns.flatMap((pattern) => Array.from(source.matchAll(pattern), (match) => `${path.relative(repoRoot, filePath)}:${source.slice(0, match.index).split("\n").length} ${match[0]}`));
+  });
+  assert.deepEqual(violations, [], `Legacy/raw typography must migrate to canonical roles:\n${violations.join("\n")}`);
 });
 
 test("every core-auth component using auth-* classes reaches tokens.css through its imports", async () => {

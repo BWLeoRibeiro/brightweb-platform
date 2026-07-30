@@ -5,6 +5,7 @@ import { hashFile, findWorkspaceRoot, loadModuleCatalog, readAppManifest, writeA
 import { pathExists, runInstall } from "./generator.mjs";
 import { applyMigrationWrites, getModuleMigrations, planMigrationAppends } from "./migrations.mjs";
 import { buildBrightwebAppUpdatePlan } from "./update.mjs";
+import { resolveSafeRelativePath } from "./safe-path.mjs";
 
 const HELP = `Usage: bw upgrade [moduleKey] [options]\n\nOptions:\n  --target-dir <path>          App directory (defaults to cwd)\n  --workspace-root <path>      BrightWeb workspace root\n  --allow-stale-fallback       Use baked-in versions if npm lookup fails\n  --install                    Install changed dependencies\n  --refresh-starters           Refresh unchanged starter files\n  --dry-run                    Print the upgrade plan without writing\n  --help                       Show this help`;
 
@@ -21,7 +22,7 @@ export async function upgradeBrightwebApp(moduleKey, argvOptions = {}, runtimeOp
   const intentional = [];
   for (const [relativePath, record] of Object.entries(appManifest.scaffoldFiles)) {
     if (["owned", "skipped"].includes(record.intent)) intentional.push(relativePath);
-    const filePath = path.join(targetDir, relativePath);
+    const filePath = resolveSafeRelativePath(targetDir, relativePath, "Manifest scaffold file path");
     if (!(await pathExists(filePath))) { missing.push(relativePath); continue; }
     if (await hashFile(filePath) !== record.hash) drifted.push(relativePath);
   }
@@ -60,8 +61,9 @@ export async function upgradeBrightwebApp(moduleKey, argvOptions = {}, runtimeOp
     if (key && appManifest.modules[key]) appManifest.modules[key].version = cleanVersion(update.to) || appManifest.modules[key].version;
   }
   for (const relativePath of plan.starterFilesToRefresh || []) {
-    if (!protectedPaths.has(relativePath) && appManifest.scaffoldFiles[relativePath] && await pathExists(path.join(targetDir, relativePath))) {
-      appManifest.scaffoldFiles[relativePath].hash = await hashFile(path.join(targetDir, relativePath));
+    const targetPath = resolveSafeRelativePath(targetDir, relativePath, "Manifest scaffold file path");
+    if (!protectedPaths.has(relativePath) && appManifest.scaffoldFiles[relativePath] && await pathExists(targetPath)) {
+      appManifest.scaffoldFiles[relativePath].hash = await hashFile(targetPath);
       appManifest.scaffoldFiles[relativePath].status = "current";
     }
   }
