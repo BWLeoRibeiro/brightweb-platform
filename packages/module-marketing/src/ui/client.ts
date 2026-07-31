@@ -4,6 +4,8 @@ import type {
   MarketingCampaignInput,
   MarketingCampaignRecipient,
   MarketingTopic,
+  MarketingTopicInput,
+  MarketingTopicUpdate,
   MarketingSegment,
   MarketingSegmentInput,
   MarketingSegmentPreview,
@@ -260,6 +262,25 @@ export function createMarketingUiClient(
     },
     async listTopics() {
       return parseTopics(await readPayload(await fetcher(endpoint("topics"))));
+    },
+    async createTopic(input: MarketingTopicInput) {
+      return unwrap<MarketingTopic>(
+        await readPayload(await fetcher(endpoint("topics"), json("POST", input))),
+        "topic",
+      );
+    },
+    async updateTopic(topicId: string, input: MarketingTopicUpdate) {
+      return unwrap<MarketingTopic>(
+        await readPayload(
+          await fetcher(endpoint(`topics/${encodeURIComponent(topicId)}`), json("PATCH", input)),
+        ),
+        "topic",
+      );
+    },
+    async reorderTopics(topicIds: string[]) {
+      return parseTopics(
+        await readPayload(await fetcher(endpoint("topics/order"), json("POST", { topicIds }))),
+      );
     },
     async listSegments() {
       return parseSegments(await readPayload(await fetcher(endpoint("segments"))));

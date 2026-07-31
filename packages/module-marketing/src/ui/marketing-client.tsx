@@ -1,6 +1,6 @@
 "use client";
 
-import { BarChart3, CalendarClock, Check, Clock3, Filter, Mail, Plus, RotateCcw, Send, Users, Workflow, X } from "lucide-react";
+import { BarChart3, CalendarClock, Check, Clock3, Filter, Mail, Plus, RotateCcw, Send, Tags, Users, Workflow, X } from "lucide-react";
 import {
   Badge,
   Button,
@@ -25,6 +25,7 @@ import {
   CampaignAnalyticsPanel,
 } from "./analytics-workspace";
 import { WorkflowWorkspace } from "./workflow-workspace";
+import { TopicWorkspace } from "./topic-workspace";
 import type {
   MarketingCampaignAnalytics,
   MarketingOverviewMetrics,
@@ -191,15 +192,38 @@ export function MarketingClient({
   initialWorkflows,
   initialOverview,
   initialCampaignAnalytics,
-  dictionary = defaultMarketingUiDictionary,
+  dictionary: dictionaryOverride = defaultMarketingUiDictionary,
 }: MarketingClientProps) {
+  const dictionary = {
+    ...dictionaryOverride,
+    page: {
+      ...defaultMarketingUiDictionary.page,
+      ...dictionaryOverride.page,
+    },
+    topics: {
+      ...defaultMarketingUiDictionary.topics!,
+      ...dictionaryOverride.topics,
+      fields: {
+        ...defaultMarketingUiDictionary.topics!.fields,
+        ...dictionaryOverride.topics?.fields,
+      },
+      placeholders: {
+        ...defaultMarketingUiDictionary.topics!.placeholders,
+        ...dictionaryOverride.topics?.placeholders,
+      },
+    },
+  } as MarketingUiDictionary & {
+    page: MarketingUiDictionary["page"] & { topicsTab: string };
+    topics: NonNullable<MarketingUiDictionary["topics"]>;
+  };
   const client = useMarketingUiClient();
   const bodyRef = useRef<HTMLTextAreaElement>(null);
   const [campaigns, setCampaigns] = useState(initialCampaigns);
+  const [topics, setTopics] = useState(initialTopics);
   const [segments, setSegments] = useState(initialSegments);
   const [overview, setOverview] = useState(initialOverview);
   const [campaignAnalytics, setCampaignAnalytics] = useState(initialCampaignAnalytics);
-  const [activeView, setActiveView] = useState<"campaigns" | "segments" | "analytics" | "workflows">("campaigns");
+  const [activeView, setActiveView] = useState<"campaigns" | "segments" | "topics" | "analytics" | "workflows">("campaigns");
   const [activeCampaign, setActiveCampaign] = useState<MarketingCampaign | null>(null);
   const [form, setForm] = useState<CampaignForm>(emptyForm);
   const [recipients, setRecipients] = useState<MarketingCampaignRecipient[]>([]);
@@ -209,8 +233,8 @@ export function MarketingClient({
   const [testEmail, setTestEmail] = useState("");
 
   const topicMap = useMemo(
-    () => new Map(initialTopics.map((topic) => [topic.id, topic])),
-    [initialTopics],
+    () => new Map(topics.map((topic) => [topic.id, topic])),
+    [topics],
   );
 
   const replaceCampaign = (campaign: MarketingCampaign) => {
@@ -349,7 +373,9 @@ export function MarketingClient({
                 ? dictionary.segments.title
                 : activeView === "analytics"
                   ? dictionary.analytics.title
-                  : dictionary.workflows.title}
+                  : activeView === "topics"
+                    ? dictionary.topics.title
+                    : dictionary.workflows.title}
           </h1>
           <p>
             {activeView === "campaigns"
@@ -358,7 +384,9 @@ export function MarketingClient({
                 ? dictionary.segments.subtitle
                 : activeView === "analytics"
                   ? dictionary.analytics.subtitle
-                  : dictionary.workflows.subtitle}
+                  : activeView === "topics"
+                    ? dictionary.topics.subtitle
+                    : dictionary.workflows.subtitle}
           </p>
         </div>
         {activeView === "campaigns" ? (
@@ -368,7 +396,7 @@ export function MarketingClient({
         ) : null}
       </header>
 
-      <nav className="flex w-fit gap-1 rounded-xl border bg-muted p-1" aria-label="Marketing">
+      <nav className="flex w-fit flex-wrap gap-1 rounded-xl border bg-muted p-1" aria-label="Marketing">
         <Button
           onClick={() => setActiveView("campaigns")}
           size="sm"
@@ -384,6 +412,14 @@ export function MarketingClient({
         >
           <Filter aria-hidden="true" />
           {dictionary.page.segmentsTab}
+        </Button>
+        <Button
+          onClick={() => setActiveView("topics")}
+          size="sm"
+          variant={activeView === "topics" ? "default" : "ghost"}
+        >
+          <Tags aria-hidden="true" />
+          {dictionary.page.topicsTab}
         </Button>
         <Button
           onClick={() => setActiveView("analytics")}
@@ -460,7 +496,13 @@ export function MarketingClient({
           dictionary={dictionary}
           onSegmentsChange={setSegments}
           segments={segments}
-          topics={initialTopics}
+          topics={topics}
+        />
+      ) : activeView === "topics" ? (
+        <TopicWorkspace
+          dictionary={dictionary}
+          onTopicsChange={setTopics}
+          topics={topics}
         />
       ) : activeView === "analytics" ? (
         <AnalyticsWorkspace
@@ -518,7 +560,7 @@ export function MarketingClient({
                 <Label htmlFor="campaign-topic">{dictionary.editor.fields.topic}</Label>
                 <select className="marketing-select" id="campaign-topic" value={form.topicId} onChange={(event) => setForm((current) => ({ ...current, topicId: event.target.value }))}>
                   <option value="">{dictionary.editor.placeholders.topic}</option>
-                  {initialTopics.map((topic) => <option key={topic.id} value={topic.id}>{topic.label}</option>)}
+                  {topics.filter((topic) => topic.isActive || topic.id === form.topicId).map((topic) => <option key={topic.id} value={topic.id}>{topic.label}</option>)}
                 </select>
               </div>
               <div className="marketing-field marketing-field-wide">

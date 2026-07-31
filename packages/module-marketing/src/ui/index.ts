@@ -2,6 +2,7 @@ export { createMarketingUiClient } from "./client";
 export { MarketingUiProvider, useMarketingUiClient } from "./context";
 export { defaultMarketingUiDictionary } from "./dictionary";
 export { MarketingClient } from "./marketing-client";
+export { TopicWorkspace } from "./topic-workspace";
 export type { MarketingClientProps } from "./marketing-client";
 export { WorkflowWorkspace } from "./workflow-workspace";
 export type { WorkflowWorkspaceProps } from "./workflow-workspace";
@@ -14,6 +15,8 @@ export type {
   MarketingSegmentInput,
   MarketingSegmentPreview,
   MarketingTopic,
+  MarketingTopicInput,
+  MarketingTopicUpdate,
   MarketingUiClient,
   MarketingUiDictionary,
   MarketingUiProviderProps,

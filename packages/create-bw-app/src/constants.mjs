@@ -96,6 +96,8 @@ export const MODULE_STARTER_FILES = {
     "app/api/marketing/segments/preview/route.ts",
     "app/api/marketing/segments/route.ts",
     "app/api/marketing/topics/route.ts",
+  "app/api/marketing/topics/[id]/route.ts",
+  "app/api/marketing/topics/order/route.ts",
     "app/api/marketing/unsubscribe/[token]/route.ts",
     "app/api/marketing/webhooks/resend/route.ts",
     "app/api/marketing/worker/route.ts",

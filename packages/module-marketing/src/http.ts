@@ -4,8 +4,11 @@ import {
   sanitizePublicError,
 } from "@brightweblabs/infra/robustness";
 import type {
+  createTopic,
   listTopics,
+  reorderTopics,
   resolveByUnsubscribeToken,
+  updateTopic,
   unsubscribeAll,
   unsubscribeTopic,
 } from "./server";
@@ -118,6 +121,12 @@ function marketingErrorResponse(error: unknown, context: string) {
   if (message === "Workflow not found.") {
     return json(publicError("WORKFLOW_NOT_FOUND", message), { status: 404 });
   }
+  if (message === "Topic not found.") {
+    return json(publicError("TOPIC_NOT_FOUND", message), { status: 404 });
+  }
+  if (message === "Topic slug already exists.") {
+    return json(publicError("TOPIC_SLUG_CONFLICT", message), { status: 409 });
+  }
   return json(
     sanitizePublicError(
       error,
@@ -176,6 +185,9 @@ export type MarketingCampaignHttpDependencies = {
   webhookSecret: string;
   publicAppUrl?: string | null;
   listTopics: typeof listTopics;
+  reorderTopics?: typeof reorderTopics;
+  createTopic: typeof createTopic;
+  updateTopic: typeof updateTopic;
   listCampaigns: typeof listCampaigns;
   getCampaign: typeof getCampaign;
   createCampaign: typeof createCampaign;
@@ -310,7 +322,69 @@ export function createMarketingCampaignHttpHandlers(
   const topicsGet = withStaff(
     dependencies,
     "marketing.topics.list",
-    async (supabase) => json(await dependencies.listTopics(supabase as never, { activeOnly: true })),
+    async (supabase) => json(await dependencies.listTopics(supabase as never)),
+  );
+  const topicsPost = withStaff(
+    dependencies,
+    "marketing.topics.create",
+    async (supabase, _access, request) => {
+      const payload = await parseJsonObject(request);
+      if (!payload || typeof payload.slug !== "string" || typeof payload.label !== "string") {
+        return json(publicError("INVALID_INPUT", "Topic slug and label are required."), { status: 400 });
+      }
+      return json(await dependencies.createTopic(supabase as never, {
+        slug: payload.slug,
+        label: payload.label,
+        description: typeof payload.description === "string" ? payload.description : null,
+        position: typeof payload.position === "number" ? payload.position : undefined,
+      }), { status: 201 });
+    },
+  );
+  const topicsOrderPost = withStaff(
+    dependencies,
+    "marketing.topics.reorder",
+    async (supabase, _access, request) => {
+      const payload = await parseJsonObject(request);
+      if (!payload || !Array.isArray(payload.topicIds)
+        || !payload.topicIds.every((id) => typeof id === "string" && id.length > 0)) {
+        return json(publicError("INVALID_INPUT", "A valid topic order is required."), { status: 400 });
+      }
+      if (!dependencies.reorderTopics) {
+        return json(publicError("NOT_IMPLEMENTED", "Topic reordering is not available."), { status: 501 });
+      }
+      return json(await dependencies.reorderTopics(supabase as never, payload.topicIds));
+    },
+  );
+  const topicPatch = withStaff(
+    dependencies,
+    "marketing.topics.update",
+    async (supabase, _access, request, context) => {
+      const payload = await parseJsonObject(request);
+      if (!payload) {
+        return json(publicError("INVALID_INPUT", "A topic update is required."), { status: 400 });
+      }
+      const hasUpdate = typeof payload.label === "string"
+        || payload.description === null
+        || typeof payload.description === "string"
+        || typeof payload.isActive === "boolean"
+        || typeof payload.position === "number";
+      if (!hasUpdate) {
+        return json(publicError("INVALID_INPUT", "A valid topic update is required."), { status: 400 });
+      }
+      const result = await dependencies.updateTopic(
+        supabase as never,
+        await campaignId(context),
+        {
+          ...(typeof payload.label === "string" ? { label: payload.label } : {}),
+          ...(payload.description === null || typeof payload.description === "string"
+            ? { description: payload.description }
+            : {}),
+          ...(typeof payload.isActive === "boolean" ? { isActive: payload.isActive } : {}),
+          ...(typeof payload.position === "number" ? { position: payload.position } : {}),
+        },
+      );
+      return json(result);
+    },
   );
   const segmentsGet = withStaff(
     dependencies,
@@ -812,6 +886,9 @@ export function createMarketingCampaignHttpHandlers(
 
   return {
     topicsGet,
+    topicsPost,
+    topicsOrderPost,
+    topicPatch,
     segmentsGet,
     segmentsPost,
     segmentGet,

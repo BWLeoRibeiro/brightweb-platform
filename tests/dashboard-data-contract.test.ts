@@ -19,6 +19,7 @@ import type {
 import {
   buildProjectsDashboardData,
   buildTasksDashboardData,
+  getTasksDashboardData,
 } from "../packages/module-projects/src/dashboard.ts";
 import {
   createProjectsDashboardGetHandler,
@@ -186,4 +187,34 @@ test("Tasks dashboard handler returns assigned task rollups accepted by the real
   assert.equal(parsed.error, null);
   assert.equal(parsed.data?.kpis.total, 1);
   assert.equal(parsed.data?.tasks[0]?.title, "Ship the dashboard");
+});
+
+test("task dashboard approximates only the unfiltered total count", async () => {
+  const countModes: Array<string | undefined> = [];
+  const supabase = {
+    from(table: string) {
+      assert.equal(table, "project_tasks");
+      const result = { data: [], count: 0, error: null };
+      const query = {
+        select(_columns: string, options?: { count?: string }) {
+          if (options?.count) countModes.push(options.count);
+          return query;
+        },
+        neq() { return query; },
+        eq() { return query; },
+        gte() { return query; },
+        lte() { return query; },
+        lt() { return query; },
+        order() { return query; },
+        limit() { return query; },
+        then(resolve: (value: typeof result) => unknown) {
+          return Promise.resolve(resolve(result));
+        },
+      };
+      return query;
+    },
+  };
+
+  await getTasksDashboardData(supabase as never, undefined, new Date(generatedAt));
+  assert.deepEqual(countModes, ["planned", "exact", "exact", "exact"]);
 });

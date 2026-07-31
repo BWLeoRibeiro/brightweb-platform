@@ -107,16 +107,23 @@ export { processResendWebhook } from "./webhooks";
 export type { ResendWebhookResult } from "./webhooks";
 export {
   createMarketingServiceClient,
+  createTopic,
   ensureContactSettings,
   getContactSubscriptions,
   isEmailable,
   isSuppressed,
   listTopics,
+  reorderTopics,
   resolveByUnsubscribeToken,
   setSubscription,
   suppress,
   unsubscribeAll,
   unsubscribeTopic,
+  updateTopic,
+} from "./server";
+export type {
+  CreateMarketingTopicInput,
+  UpdateMarketingTopicInput,
 } from "./server";
 export type {
   ConsentSource,
@@ -132,6 +139,7 @@ export { MarketingPage } from './marketing-page';
 export {
   MarketingClient,
   MarketingUiProvider,
+  TopicWorkspace,
   WorkflowWorkspace,
   createMarketingUiClient,
   defaultMarketingUiDictionary,
