@@ -530,6 +530,24 @@ test("reset recovery query codes still use the PKCE exchange path", async () => 
   });
 });
 
+test("reset recovery preserves a genuine PKCE exchange failure", async () => {
+  const exchangeError = new Error("code has expired");
+
+  await assert.rejects(
+    prepareRecoveryUrl(
+      new URL("https://portal.test/reset-password?code=pkce-123"),
+      {
+        exchangeRecoveryCode: async () => {
+          throw exchangeError;
+        },
+        establishRecoverySession: async () => undefined,
+      },
+      defaultAuthUiDictionary.reset.invalidLink,
+    ),
+    exchangeError,
+  );
+});
+
 test("reset recovery rejects a direct form visit without tokens or a session", async () => {
   const result = await prepareRecoveryUrl(
     new URL("https://portal.test/reset-password"),
