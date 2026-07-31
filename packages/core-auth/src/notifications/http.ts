@@ -24,6 +24,15 @@ type ItemRow = {
   summary: string;
   created_at: string;
   domain: string;
+  event_type?: string;
+  actor_profile_id?: string | null;
+  payload?: unknown;
+};
+
+type NotificationActorRow = {
+  id: string;
+  first_name: string | null;
+  last_name: string | null;
 };
 
 function json(body: unknown, status = 200) {
@@ -48,6 +57,10 @@ function resolveSeenAt(value: unknown, receivedAt: Date) {
   const requested = new Date(value);
   if (!Number.isFinite(requested.getTime()) || requested > fallback) return fallback.toISOString();
   return requested.toISOString();
+}
+
+function actorName(profile: NotificationActorRow) {
+  return [profile.first_name, profile.last_name].filter((part): part is string => Boolean(part?.trim())).join(" ").trim() || null;
 }
 
 async function getSummary(client: SupabaseClient, profileId: string) {
@@ -87,11 +100,32 @@ export function createNotificationsGetHandler(dependencies: NotificationHttpDepe
       if (itemsResult.error) throw new Error(itemsResult.error.message);
 
       const rows = Array.isArray(itemsResult.data) ? itemsResult.data as ItemRow[] : [];
+      const actorIds = Array.from(new Set(rows.map((row) => row.actor_profile_id).filter((id): id is string => typeof id === "string" && id.length > 0)));
+      const actorLabels = new Map<string, string>();
+      if (actorIds.length > 0) {
+        const actorResult = await client
+          .from("profiles")
+          .select("id, first_name, last_name")
+          .in("id", actorIds)
+          .overrideTypes<NotificationActorRow[], { merge: false }>();
+        if (!actorResult.error) {
+          for (const profile of actorResult.data ?? []) {
+            const label = actorName(profile);
+            if (label) actorLabels.set(profile.id, label);
+          }
+        }
+      }
       const items = rows.map((row) => ({
         id: row.id,
         summary: row.summary,
         createdAt: row.created_at,
         domain: row.domain,
+        eventType: row.event_type,
+        actorProfileId: row.actor_profile_id ?? null,
+        actorLabel: row.actor_profile_id ? actorLabels.get(row.actor_profile_id) ?? null : null,
+        payload: row.payload && typeof row.payload === "object" && !Array.isArray(row.payload)
+          ? row.payload as Record<string, unknown>
+          : {},
       }));
       return json({ items, ...summary } satisfies NotificationsResponse);
     } catch (error) {

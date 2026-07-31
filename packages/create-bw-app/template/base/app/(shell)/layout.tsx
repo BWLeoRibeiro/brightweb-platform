@@ -5,7 +5,7 @@ import { ShellLayoutClient, type ShellViewer } from "./shell-layout-client";
 export const dynamic = "force-dynamic";
 
 export default async function ShellLayout({ children }: Readonly<{ children: ReactNode }>) {
-  const { supabase, user, role } = await requireServerPageAccess();
+  const { profileId, supabase, user, role } = await requireServerPageAccess();
   const { data: profile } = await supabase
     .from("profiles")
     .select("first_name, last_name")
@@ -13,6 +13,7 @@ export default async function ShellLayout({ children }: Readonly<{ children: Rea
     .maybeSingle<{ first_name: string | null; last_name: string | null }>();
 
   const viewer: ShellViewer = {
+    profileId,
     email: user.email ?? null,
     firstName: profile?.first_name ?? null,
     lastName: profile?.last_name ?? null,

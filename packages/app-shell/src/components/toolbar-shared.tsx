@@ -1,12 +1,62 @@
 "use client";
 
 import type { LucideIcon } from "lucide-react";
-import { ChevronDown, ListFilter, RotateCcw } from "lucide-react";
+import { ChevronDown, ListFilter, RotateCcw, Search, X } from "lucide-react";
 import { Button } from "@brightweblabs/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@brightweblabs/ui/dropdown-menu";
 import { Input } from "@brightweblabs/ui/input";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@brightweblabs/ui/tooltip";
 import { cn } from "../lib/utils";
+
+export type ToolbarSearchFieldProps = {
+  value: string;
+  onChange: (value: string) => void;
+  placeholder: string;
+  disabled?: boolean;
+  clearLabel?: string;
+  className?: string;
+};
+
+/** Shared responsive toolbar search with an accessible inline clear action. */
+export function ToolbarSearchField({
+  value,
+  onChange,
+  placeholder,
+  disabled = false,
+  clearLabel = "Limpar pesquisa",
+  className,
+}: ToolbarSearchFieldProps) {
+  return (
+    <div className={cn(
+      "relative inline-flex h-9 min-w-[min(var(--toolbar-search-min-width),72vw)] flex-1 items-center gap-2 rounded-[var(--radius-control)] border border-[color:var(--hairline-strong)] bg-[color:var(--elevate-1)] px-3 text-[color:var(--muted-foreground)] sm:min-w-[var(--toolbar-search-min-width)] sm:flex-none",
+      className,
+    )}>
+      <Search className="size-[var(--toolbar-icon-size)] shrink-0" aria-hidden />
+      <Input
+        value={value}
+        disabled={disabled}
+        onChange={(event) => onChange(event.target.value)}
+        placeholder={placeholder}
+        aria-label={placeholder}
+        className={cn(
+          "h-8 min-w-0 flex-1 border-0 bg-transparent px-0 text-body text-[length:var(--text-ui-action)] text-[color:var(--foreground)] shadow-none focus-visible:ring-0",
+          value ? "pr-6" : undefined,
+        )}
+      />
+      {value ? (
+        <button
+          type="button"
+          disabled={disabled}
+          aria-label={clearLabel}
+          className="absolute right-2 inline-flex size-6 items-center justify-center rounded-full text-[color:var(--muted-foreground)] transition-colors hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--foreground)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--ring)] disabled:cursor-not-allowed disabled:opacity-60"
+          onClick={() => onChange("")}
+        >
+          <X className="size-3.5" aria-hidden />
+        </button>
+      ) : null}
+    </div>
+  );
+}
 
 type NewMenuItem = {
   icon?: LucideIcon;
@@ -21,9 +71,10 @@ type ToolbarNewMenuProps = {
   label?: string;
   tooltip: string;
   items: NewMenuItem[];
+  disabled?: boolean;
 };
 
-export function ToolbarNewMenu({ id, icon: Icon, label = "Novo", tooltip, items }: ToolbarNewMenuProps) {
+export function ToolbarNewMenu({ id, icon: Icon, label = "Novo", tooltip, items, disabled = false }: ToolbarNewMenuProps) {
   return (
     <Tooltip>
       <DropdownMenu>
@@ -33,6 +84,7 @@ export function ToolbarNewMenu({ id, icon: Icon, label = "Novo", tooltip, items 
               type="button"
               variant="brand"
               id={id}
+              disabled={disabled}
               className="h-9 px-3 text-body text-[length:var(--text-ui-action)] shadow-[var(--shadow-toolbar-control)]"
             >
               <Icon className="size-3.5" />

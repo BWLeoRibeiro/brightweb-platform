@@ -78,7 +78,7 @@ export function AccountMenu({
               <>
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-body text-[length:var(--text-ui-action)] font-bold leading-tight text-[color:var(--foreground)]" title={displayName ?? undefined}>{displayName}</span>
-                  <span className="block truncate text-label leading-tight text-[color:var(--muted-foreground)]" title={secondaryLabel}>{secondaryLabel}</span>
+                  <span className="block truncate text-meta text-[color:var(--muted-foreground)]" title={secondaryLabel}>{secondaryLabel}</span>
                 </span>
                 <ChevronDown className="size-4 shrink-0 text-foreground/45" />
               </>

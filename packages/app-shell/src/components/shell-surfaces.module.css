@@ -24,7 +24,7 @@
 .desktopContent { display: flex; min-width: 0; min-height: 100vh; flex-direction: column; }
 
 .headerBar {
-  display: none;
+  display: block;
   position: sticky;
   top: var(--shell-frame-offset);
   z-index: 20;
@@ -157,6 +157,7 @@
 .navbarTitle h1 { margin: 0; font-size: var(--text-ui-shell-title); font-weight: var(--font-weight-heavy); line-height: var(--type-leading-124); letter-spacing: var(--type-tracking-n025); white-space: nowrap; color: var(--shell-navbar-fg); }
 .navbarCount { font-size: var(--text-meta); font-weight: var(--font-weight-bold); color: var(--shell-navbar-muted); font-variant-numeric: tabular-nums; }
 .navbarSpacer { flex: 1; }
+.navbarControls { display: flex; min-width: 0; align-items: center; gap: var(--space-xs); }
 .navbarDivider { width: 1px; height: var(--shell-header-divider-height); background: var(--shell-navbar-hairline); flex-shrink: 0; }
 .navbarUtility { display: inline-flex; align-items: center; gap: var(--space-xs); }
 .navbarCrumbs { display: inline-flex; align-items: center; gap: var(--space-xs); }
@@ -166,11 +167,24 @@
 .navbarCrumbLink:hover { border-color: var(--accent); color: var(--foreground); }
 .navbarContextAction { display: inline-flex; height: var(--toolbar-chip-height); align-items: center; gap: var(--space-xs); border: 1px solid var(--shell-surface-border); border-radius: var(--radius-control); background: var(--surface-button-soft); padding: 0 var(--space-sm); color: var(--foreground); font-size: var(--text-ui-action); font-weight: var(--font-weight-bold); cursor: pointer; }
 .navbarContextAction:hover { border-color: var(--border-button-soft-hover); background: var(--surface-button-soft-hover); }
+.navbarContextAction:focus-visible, .navbarCrumbLink:focus-visible, .navbarIconButton:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+.navbarContextAction:disabled, .navbarCrumbLink:disabled { cursor: not-allowed; opacity: 0.6; }
 .navbarContextAction svg { width: var(--toolbar-icon-size); height: var(--toolbar-icon-size); }
 .navbarIconButton { position: relative; display: inline-flex; width: var(--toolbar-chip-height); height: var(--toolbar-chip-height); align-items: center; justify-content: center; border: 1px solid transparent; border-radius: 999px; background: transparent; color: var(--shell-control-muted); cursor: pointer; }
 .navbarIconButton:hover { border-color: var(--shell-surface-border); background: var(--shell-surface-hover); color: var(--foreground); }
 .navbarIconButton svg { width: var(--toolbar-icon-size); height: var(--toolbar-icon-size); }
 .navbarBellBadge { position: absolute; right: -0.25rem; top: -0.25rem; display: inline-flex; min-width: 1.125rem; height: 1.125rem; align-items: center; justify-content: center; border: 2px solid var(--card); border-radius: 999px; background: var(--badge-count-bg); padding-inline: var(--space-2xs); color: var(--badge-count-fg); font-size: var(--text-label); font-weight: var(--font-weight-heavy); line-height: var(--type-leading-none); }
+
+@media (max-width: 1023px) {
+  .headerBar { top: 0; margin-bottom: 0; padding: var(--space-sm) var(--space-md) 0; }
+  .navbarBar { flex-wrap: wrap; align-items: center; border: 1px solid var(--shell-navbar-hairline); background: var(--card); box-shadow: var(--shell-shadow); }
+  .navbarTitle { min-width: 0; }
+  .navbarTitle h1 { overflow: hidden; text-overflow: ellipsis; }
+  .navbarControls { order: 10; width: 100%; overflow-x: auto; overscroll-behavior-inline: contain; padding-bottom: var(--space-2xs); scrollbar-width: thin; }
+  .navbarCrumbs { order: 8; }
+  .navbarUtility { flex-shrink: 0; }
+  .navbarDivider { margin-left: auto; }
+}
 
 @media (min-width: 1024px) {
   .shellDesktopFrame { display: grid; grid-template-columns: var(--shell-sidebar-width) minmax(0, 1fr); column-gap: var(--space-md); align-items: start; padding-left: var(--shell-frame-offset); }

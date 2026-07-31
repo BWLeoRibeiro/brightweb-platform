@@ -1,4 +1,8 @@
-import type { createServerSupabase } from "@brightweblabs/infra/server";
+import {
+  createServiceRoleClient,
+  type createServerSupabase,
+} from "@brightweblabs/infra/server";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { validateBoundedUuidBatch } from "@brightweblabs/infra/robustness";
 import type { AdminManagedRole } from "./users";
 
@@ -31,6 +35,8 @@ type ApplyAdminRoleChangesParams = {
   profileIds: string[];
   newRole: AdminManagedRole;
   reason: string;
+  actorProfileId?: string | null;
+  activityClient?: SupabaseClient | null;
 };
 
 export async function applyAdminRoleChanges({
@@ -38,6 +44,8 @@ export async function applyAdminRoleChanges({
   profileIds,
   newRole,
   reason,
+  actorProfileId = null,
+  activityClient,
 }: ApplyAdminRoleChangesParams): Promise<AdminRoleChangeResult> {
   const batch = validateBoundedUuidBatch(profileIds);
   if (!batch.ok) throw new Error(batch.code);
@@ -80,7 +88,7 @@ export async function applyAdminRoleChanges({
     });
   }
 
-  return {
+  const result = {
     changed,
     skipped,
     summary: {
@@ -89,4 +97,32 @@ export async function applyAdminRoleChanges({
       skipped: skipped.length,
     },
   };
+
+  if (changed.length > 0) {
+    try {
+      const resolvedActivityClient = activityClient === null
+        ? null
+        : activityClient ?? createServiceRoleClient();
+      if (resolvedActivityClient) {
+        const { error } = await resolvedActivityClient.rpc("log_app_activity_event", {
+          p_domain: "admin",
+          p_event_type: "admin_user_roles_changed",
+          p_entity_table: "user_role_assignments",
+          p_entity_id: null,
+          p_summary: `Função atualizada para ${changed.length} utilizador${changed.length === 1 ? "" : "es"}.`,
+          p_payload: {
+            changed_profile_ids: changed.map((change) => change.profileId),
+            new_role: newRole,
+            reason,
+          },
+          p_actor_profile_id: actorProfileId,
+        });
+        if (error) console.error("Error logging admin role-change event:", error);
+      }
+    } catch (error) {
+      console.error("Error logging admin role-change event:", error);
+    }
+  }
+
+  return result;
 }

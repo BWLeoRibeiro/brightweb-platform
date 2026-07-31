@@ -1082,6 +1082,14 @@ test("CRM handler helpers parse params and return JSON envelopes", async () => {
       sort: "date_desc",
     },
   );
+  assert.equal(
+    parseCrmContactsRequest("https://example.com/api/crm/contacts?sort=status_grouped").sort,
+    "status_grouped",
+  );
+  assert.equal(
+    parseCrmContactsRequest("https://example.com/api/crm/contacts?sort=source_grouped").sort,
+    "source_grouped",
+  );
 
   assert.deepEqual(
     parseCrmOrganizationsRequest("https://example.com/api/crm/organizations?page=3&pageSize=999&search= bright "),

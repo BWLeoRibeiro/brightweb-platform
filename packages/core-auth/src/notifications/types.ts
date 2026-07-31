@@ -3,6 +3,10 @@ export type NotificationItem = {
   summary: string;
   createdAt: string;
   domain: string;
+  eventType?: string;
+  actorProfileId?: string | null;
+  actorLabel?: string | null;
+  payload?: Record<string, unknown>;
 };
 
 export type NotificationsResponse = {

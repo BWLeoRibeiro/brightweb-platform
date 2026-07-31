@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import test from "node:test";
-import { isValidElement, type ReactNode } from "react";
+import { createElement as h, isValidElement, type ReactNode } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 import {
   applyShellRegistrationOverrides,
   buildClientAppShellRegistration,
@@ -10,13 +12,21 @@ import {
   resolveShellToolbarSurface,
 } from "../packages/app-shell/src/config.ts";
 import { AppHeader, AppHeaderToolbarActionButton, type AppHeaderToolbarActionButtonProps } from "../packages/app-shell/src/components/app-header.tsx";
-import { AlertsMenu } from "../packages/app-shell/src/components/alerts-menu.tsx";
+import { AlertsMenu, AlertsMenuContent } from "../packages/app-shell/src/components/alerts-menu.tsx";
 import { triggerShellToolbarAction } from "../packages/app-shell/src/lib/shell-actions.tsx";
 import { ShellActionRegistry } from "../packages/app-shell/src/lib/shell-action-registry.ts";
 import { DesktopSidebar } from "../packages/app-shell/src/components/desktop-sidebar.tsx";
 import { MobileNav } from "../packages/app-shell/src/components/mobile-nav.tsx";
 import { MobileNavPill, SidebarSectionToggle } from "../packages/app-shell/src/components/nav-primitives.tsx";
 import { mergeDashboardRefreshEventDetails, normalizeDashboardRefreshSections } from "../packages/app-shell/src/dashboard/events.ts";
+import {
+  getProjectRouteContext,
+  getRealtimeProjectId,
+  getRealtimeProjectRoutePayloads,
+  isRealtimeProjectAccessRemoved,
+  isRealtimeProjectDeleted,
+} from "../packages/app-shell/src/realtime.tsx";
+import type { AppActivityRealtimePayload } from "../packages/infra/src/realtime.ts";
 import type {
   NavGroupConfig,
   ShellBrand,
@@ -55,6 +65,116 @@ const testShellBrand = {
   darkLogo: { src: "/dark.svg", width: 120, height: 32 },
 } satisfies ShellBrand;
 
+function realtimePayload(
+  eventType: string,
+  payload: Record<string, unknown> = {},
+): AppActivityRealtimePayload {
+  return {
+    commit_timestamp: "2026-07-31T12:00:00.000Z",
+    errors: null,
+    eventType: "INSERT",
+    new: {
+      id: "event-1",
+      created_at: "2026-07-31T12:00:00.000Z",
+      domain: "projects",
+      event_type: eventType,
+      entity_table: "projects",
+      entity_id: "project-1",
+      actor_profile_id: "profile-1",
+      summary: "Project changed",
+      payload,
+    },
+    old: {},
+    schema: "public",
+    table: "app_activity_events",
+  };
+}
+
+test("realtime routing covers staff and account project surfaces", () => {
+  assert.deepEqual(getProjectRouteContext("/projetos"), {
+    baseHref: "/projetos",
+    projectId: null,
+    surface: "portfolio",
+  });
+  assert.deepEqual(getProjectRouteContext("/projects/project-1/tasks"), {
+    baseHref: "/projects",
+    projectId: "project-1",
+    surface: "detail",
+  });
+  assert.deepEqual(getProjectRouteContext("/account/projetos/project-1"), {
+    baseHref: "/account/projetos",
+    projectId: "project-1",
+    surface: "detail",
+  });
+  assert.equal(getProjectRouteContext("/crm"), null);
+});
+
+test("realtime project events preserve project and access-loss semantics", () => {
+  const update = realtimePayload("task_updated", { project_id: "project-2" });
+  assert.equal(getRealtimeProjectId(update), "project-2");
+  assert.equal(isRealtimeProjectDeleted(update), false);
+
+  const deleted = realtimePayload("projects.project.deleted", { project_id: "project-1" });
+  assert.equal(isRealtimeProjectDeleted(deleted), true);
+
+  const removed = realtimePayload("member_removed", { profile_id: "profile-2" });
+  assert.equal(isRealtimeProjectAccessRemoved(removed, "profile-2"), true);
+  assert.equal(isRealtimeProjectAccessRemoved(removed, "profile-3"), false);
+
+  const synced = realtimePayload("project_members_synced", {
+    removed_profile_ids: ["profile-3"],
+  });
+  assert.equal(isRealtimeProjectAccessRemoved(synced, "profile-3"), true);
+
+  const otherProject = realtimePayload("task_updated", { project_id: "project-9" });
+  assert.deepEqual(
+    getRealtimeProjectRoutePayloads([update, otherProject, removed], "project-2"),
+    [update],
+  );
+});
+
+test("shell realtime retains MQ notification and surface-refresh parity", () => {
+  const source = readFileSync(
+    new URL("../packages/app-shell/src/realtime.tsx", import.meta.url),
+    "utf8",
+  );
+  for (const pattern of [
+    /NOTIFICATIONS_REALTIME_REFRESH_EVENT/,
+    /payload\.new\.domain === "crm"/,
+    /CRM_REALTIME_REFRESH_EVENT/,
+    /payload\.new\.domain === "admin"/,
+    /ADMIN_REALTIME_REFRESH_EVENT/,
+    /payload\.new\.domain === "projects"/,
+    /PROJECTS_REALTIME_REFRESH_EVENT/,
+    /DASHBOARD_EVENTS\.refresh/,
+    /router\.refresh\(\)/,
+    /router\.replace\(route\.baseHref\)/,
+    /APP_ACTIVITY_REALTIME_EVENT/,
+  ]) {
+    assert.match(source, pattern);
+  }
+
+  const notificationsSource = readFileSync(
+    new URL("../packages/app-shell/src/use-shell-notifications.ts", import.meta.url),
+    "utf8",
+  );
+  assert.doesNotMatch(notificationsSource, /\.channel\(/);
+  assert.match(notificationsSource, /NOTIFICATIONS_REALTIME_REFRESH_EVENT/);
+  assert.match(notificationsSource, /summaryRefreshQueuedRef/);
+  assert.match(notificationsSource, /itemsRefreshQueuedRef/);
+});
+
+test("lazy project creation surfaces register authoritative shell actions before mounting", () => {
+  const source = readFileSync(
+    new URL("../packages/module-projects/src/ui/projects-portfolio/projects-portfolio-modals.tsx", import.meta.url),
+    "utf8",
+  );
+
+  assert.match(source, /useShellAction\(PROJECTS_EVENTS\.openNewProject/);
+  assert.match(source, /useShellAction\(PROJECTS_EVENTS\.openNewTask/);
+  assert.doesNotMatch(source, /useWindowEventBridge/);
+});
+
 test("matches exact and dynamic shell paths", () => {
   assert.equal(matchesShellPath("/projetos", { exact: ["/projetos"] }), true);
   assert.equal(matchesShellPath("/projetos/123/tarefas", { exact: ["/projetos/[id]/tarefas"] }), true);
@@ -91,6 +211,18 @@ test("resolves the MQ portfolio, project detail, and task-board overlap", () => 
   assert.equal(resolveShellToolbarSurface("/projetos/42/tarefas", routes), "project-board");
 });
 
+test("resolves English project task boards without leaking collection controls", () => {
+  const routes: ShellToolbarRouteConfig[] = [
+    { surface: "project-board", match: { includes: ["/tarefas", "/tasks", "/quadro"] } },
+    { surface: "project-detail", match: { prefixes: ["/projects/"] } },
+    { surface: "projects", match: { exact: ["/projects"] } },
+  ];
+
+  assert.equal(resolveShellToolbarSurface("/projects", routes), "projects");
+  assert.equal(resolveShellToolbarSurface("/projects/42", routes), "project-detail");
+  assert.equal(resolveShellToolbarSurface("/projects/42/tasks", routes), "project-board");
+});
+
 test("AppHeader renders and dispatches unplaced toolbar actions without a title", () => {
   const dispatched: string[] = [];
   const actions: ShellContextualAction[] = [
@@ -124,6 +256,35 @@ test("AppHeader mounts notifications in its header utility slot", () => {
 
   assert.equal(menus.length, 1);
   assert.equal(menus[0]?.unreadCount, 2);
+});
+
+test("notification menu exposes stable loading, error, empty, unread, and actor states", () => {
+  const loading = renderToStaticMarkup(h(AlertsMenuContent, { notifications: [], loading: true, unreadCount: 0 }));
+  assert.match(loading, /aria-busy="true"/);
+  assert.match(loading, /A carregar alertas/);
+
+  const error = renderToStaticMarkup(h(AlertsMenuContent, { notifications: [], loading: false, unreadCount: 0, error: "Falha ao carregar" }));
+  assert.match(error, /role="alert"/);
+  assert.match(error, /Falha ao carregar/);
+
+  const empty = renderToStaticMarkup(h(AlertsMenuContent, { notifications: [], loading: false, unreadCount: 0 }));
+  assert.match(empty, /Sem alertas novos/);
+  assert.match(empty, /Está tudo em dia/);
+
+  const unread = renderToStaticMarkup(h(AlertsMenuContent, {
+    loading: false,
+    unreadCount: 12,
+    notifications: [{
+      id: "event-1",
+      summary: "criou um contacto",
+      createdAt: "2026-07-31T10:00:00.000Z",
+      domain: "crm",
+      actorLabel: "Grace Hopper",
+    }],
+  }));
+  assert.match(unread, />9\+ novas</);
+  assert.match(unread, /Grace Hopper/);
+  assert.match(unread, />CRM</);
 });
 
 test("toolbar actions invoke registered shell action handlers instead of the window-event fallback", () => {

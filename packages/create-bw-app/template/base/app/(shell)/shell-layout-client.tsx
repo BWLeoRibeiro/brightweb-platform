@@ -8,6 +8,7 @@ import {
   DesktopSidebar,
   MobileNav,
   ShellActionsProvider,
+  ShellRealtimeBridge,
   computeInitials,
   isShellNavItemActive,
   useShellAction,
@@ -24,6 +25,7 @@ import { getStarterShellConfig } from "../../config/shell";
 import "@brightweblabs/app-shell/dashboard.css";
 
 export type ShellViewer = {
+  profileId: string | null;
   email: string | null;
   firstName: string | null;
   lastName: string | null;
@@ -32,18 +34,12 @@ export type ShellViewer = {
 };
 
 const authClient = createAuthUiClient();
-const toolbarWindowEventByAction: Record<string, string> = {
-  "projects-refresh": "projects:refresh",
-  "projects-new-menu": "projects:open-new-project",
-  "crm-create-menu": "brightweb:crm:create-contact",
-};
-
 export function ShellLayoutClient({
   children,
   viewer,
 }: Readonly<{ children: ReactNode; viewer: ShellViewer }>) {
   return (
-    <ShellActionsProvider aliases={toolbarWindowEventByAction}>
+    <ShellActionsProvider>
       <ShellLayoutInner viewer={viewer}>{children}</ShellLayoutInner>
     </ShellActionsProvider>
   );
@@ -89,7 +85,7 @@ function ShellLayoutInner({
     viewer.email ||
     "Conta";
   const projectsBaseHref = pathname.startsWith("/projects") ? "/projects" : "/projetos";
-  const toolbarControls = getModuleToolbarControls(pathname, projectsBaseHref);
+  const toolbarControls = getModuleToolbarControls(pathname, toolbarRoutes);
 
   const dispatchShellAction = useShellActionDispatch();
   useShellAction("projects-back-to-portfolio", () => {
@@ -176,6 +172,7 @@ function ShellLayoutInner({
         />
       }
     >
+      <ShellRealtimeBridge viewer={viewer} />
       {children}
       {isAdminSurface || pathname === "/account" ? <Toaster /> : null}
     </AppShellFrame>

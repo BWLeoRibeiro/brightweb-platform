@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import test from "node:test";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import {
@@ -6,6 +7,58 @@ import {
   createNotificationsPostHandler,
   resolveNotificationSeenAt,
 } from "../packages/core-auth/src/notifications/http.ts";
+
+test("notification migrations keep recent items after acknowledgement and preserve audience boundaries", () => {
+  const coreMigration = readFileSync(
+    new URL(
+      "../packages/create-bw-app/template/supabase/modules/core/migrations/20260731120000_core_notifications.sql",
+      import.meta.url,
+    ),
+    "utf8",
+  );
+  assert.doesNotMatch(coreMigration, /user_role_assignments/);
+
+  const realtimeMigration = readFileSync(
+    new URL(
+      "../packages/create-bw-app/template/supabase/modules/core/migrations/20260731122000_core_realtime_activity.sql",
+      import.meta.url,
+    ),
+    "utf8",
+  );
+  const realtimeItemsFunction = realtimeMigration.match(
+    /CREATE OR REPLACE FUNCTION public\.current_notification_items[\s\S]+?REVOKE ALL ON FUNCTION public\.current_notification_items/,
+  )?.[0];
+  assert.ok(realtimeItemsFunction);
+  assert.doesNotMatch(realtimeItemsFunction, /alerts_seen_at/);
+  assert.match(
+    realtimeMigration,
+    /DROP FUNCTION IF EXISTS public\.current_notification_items\(uuid, integer\);[\s\S]+CREATE OR REPLACE FUNCTION public\.current_notification_items/,
+  );
+
+  const adminMigration = readFileSync(
+    new URL(
+      "../packages/create-bw-app/template/supabase/modules/admin/migrations/20260731122500_admin_activity_visibility.sql",
+      import.meta.url,
+    ),
+    "utf8",
+  );
+  assert.match(adminMigration, /IF p_domain = 'admin' THEN\s+RETURN v_role = 'admin'/);
+
+  const projectsMigration = readFileSync(
+    new URL(
+      "../packages/create-bw-app/template/supabase/modules/projects/migrations/20260731123000_project_realtime_visibility.sql",
+      import.meta.url,
+    ),
+    "utf8",
+  );
+  assert.match(projectsMigration, /IF v_role = 'admin' THEN\s+RETURN true/);
+  assert.doesNotMatch(
+    projectsMigration,
+    /IF v_role = ANY \(ARRAY\['staff', 'admin'\]\) THEN\s+RETURN true/,
+  );
+  assert.match(projectsMigration, /member\.role = 'admin'/);
+  assert.match(projectsMigration, /capture_removed_project_member_realtime_audience/);
+});
 
 test("notification seen timestamps preserve click time and clamp future values", () => {
   const receivedAt = new Date("2026-07-31T12:00:00.000Z");
@@ -38,10 +91,28 @@ test("notification GET loads summary and unread items in parallel", async () => 
             id: "event-1",
             created_at: "2026-07-31T11:00:00.000Z",
             domain: "crm",
+            event_type: "crm_contact_created",
+            actor_profile_id: "profile-2",
             summary: "Contacto criado",
+            payload: { contact_name: "Ada Lovelace" },
           }],
           error: null,
         }),
+      };
+    },
+    from(table: string) {
+      assert.equal(table, "profiles");
+      return {
+        select() { return this; },
+        in(_column: string, ids: string[]) {
+          assert.deepEqual(ids, ["profile-2"]);
+          return {
+            overrideTypes: async () => ({
+              data: [{ id: "profile-2", first_name: "Grace", last_name: "Hopper" }],
+              error: null,
+            }),
+          };
+        },
       };
     },
   } as unknown as SupabaseClient;
@@ -57,7 +128,11 @@ test("notification GET loads summary and unread items in parallel", async () => 
       id: "event-1",
       createdAt: "2026-07-31T11:00:00.000Z",
       domain: "crm",
+      eventType: "crm_contact_created",
+      actorProfileId: "profile-2",
+      actorLabel: "Grace Hopper",
       summary: "Contacto criado",
+      payload: { contact_name: "Ada Lovelace" },
     }],
     unreadCount: 2,
     seenAt: "2026-07-31T10:00:00.000Z",

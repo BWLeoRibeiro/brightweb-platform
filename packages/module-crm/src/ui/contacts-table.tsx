@@ -161,6 +161,8 @@ export function CrmContactsTable({
           <option value="date_desc">{dictionary.table.sortNewest}</option>
           <option value="name">{dictionary.table.sortName}</option>
           <option value="company">{dictionary.table.sortCompany}</option>
+          <option value="status_grouped">{dictionary.table.sortStatusGrouped ?? dictionary.toolbar.status}</option>
+          <option value="source_grouped">{dictionary.table.sortSourceGrouped ?? "Origem (agrupado A → Z)"}</option>
         </select>
         {selectedIds.length > 0 ? (
           <div className="ml-auto flex items-center gap-3 rounded-[var(--radius-card)] border border-hairline bg-muted px-3 py-2">

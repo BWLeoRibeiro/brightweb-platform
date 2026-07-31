@@ -43,6 +43,7 @@ test("preview mounts the live packaged admin page and routes", async () => {
   const overview = await read("apps/platform-preview/app/(shell)/admin/page.tsx");
   const users = await read("apps/platform-preview/app/(shell)/admin/users/page.tsx");
   const layout = await read("apps/platform-preview/app/(shell)/shell-layout-client.tsx");
+  const toolbarConfig = await read("apps/platform-preview/config/module-toolbar-controls.tsx");
   const usersRoute = await read("apps/platform-preview/app/api/admin/users/route.ts");
   const invitationsRoute = await read("apps/platform-preview/app/api/admin/users/invitations/route.ts");
   const revokeRoute = await read("apps/platform-preview/app/api/admin/users/invitations/[invitationId]/route.ts");
@@ -54,5 +55,7 @@ test("preview mounts the live packaged admin page and routes", async () => {
   assert.match(invitationsRoute, /handleAdminUserInvitationsPostRequest/);
   assert.match(revokeRoute, /handleAdminUserInvitationDeleteRequest/);
   assert.match(layout, /AppShellFrame/);
-  assert.match(layout, /AdminToolbarControls/);
+  assert.match(layout, /getModuleToolbarControls\(pathname, toolbarRoutes\)/);
+  assert.match(toolbarConfig, /AdminToolbarControls/);
+  assert.match(toolbarConfig, /"admin-users"/);
 });

@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Filter, Search } from "lucide-react";
-import { useShellActionDispatch, useShellActionsReady } from "@brightweblabs/app-shell";
-import { Button, Input, Popover, PopoverContent, PopoverTrigger } from "@brightweblabs/ui";
+import { Filter } from "lucide-react";
+import { ToolbarSearchField, useShellActionDispatch, useShellActionsReady } from "@brightweblabs/app-shell";
+import { Button, Popover, PopoverContent, PopoverTrigger } from "@brightweblabs/ui";
 import {
   ADMIN_EVENTS,
   type AdminStateEventDetail,
@@ -47,22 +47,16 @@ export function AdminToolbarControls({ dictionary = defaultAdminUiDictionary }: 
   };
 
   return (
-    <div className="flex flex-wrap items-center gap-2">
-      <label className="inline-flex h-9 min-w-[var(--toolbar-search-min-width)] items-center gap-2 rounded-[var(--radius-control)] border border-[color:var(--hairline-strong)] bg-[color:var(--elevate-1)] px-3 text-[color:var(--muted-foreground)]">
-        <Search className="size-[var(--toolbar-icon-size)] shrink-0" aria-hidden />
-        <Input
-          value={search}
-          disabled={!filtersReady}
-          onChange={(event) => {
-            const value = event.target.value;
-            setSearch(value);
-            dispatchShellAction(ADMIN_EVENTS.setSearch, { query: value });
-          }}
-          placeholder={dictionary.toolbar.searchPlaceholder}
-          aria-label={dictionary.toolbar.searchPlaceholder}
-          className="h-8 w-full border-0 bg-transparent px-0 text-body text-[length:var(--text-ui-action)] text-[color:var(--foreground)] shadow-none focus-visible:ring-0"
-        />
-      </label>
+    <div className="flex min-w-max flex-wrap items-center gap-2">
+      <ToolbarSearchField
+        value={search}
+        disabled={!filtersReady}
+        placeholder={dictionary.toolbar.searchPlaceholder}
+        onChange={(value) => {
+          setSearch(value);
+          dispatchShellAction(ADMIN_EVENTS.setSearch, { query: value });
+        }}
+      />
 
       <Popover open={open} onOpenChange={(next) => next ? begin() : setOpen(false)}>
         <PopoverTrigger asChild>
@@ -70,7 +64,6 @@ export function AdminToolbarControls({ dictionary = defaultAdminUiDictionary }: 
             type="button"
             disabled={!filtersReady}
             className="inline-flex h-9 items-center gap-2 whitespace-nowrap rounded-[var(--radius-control)] border border-[color:var(--hairline-strong)] bg-[color:var(--elevate-1)] px-3 text-body text-[length:var(--text-ui-action)] font-extrabold text-[color:var(--foreground)] transition-colors hover:border-[color:var(--border-strong)] hover:bg-[color:var(--surface-hover)] disabled:cursor-not-allowed disabled:opacity-60"
-            onClick={() => open ? setOpen(false) : begin()}
           >
             <Filter className="size-[var(--toolbar-icon-size)] text-[color:var(--muted-foreground)]" aria-hidden />
             {dictionary.toolbar.filters}
@@ -79,7 +72,7 @@ export function AdminToolbarControls({ dictionary = defaultAdminUiDictionary }: 
             ) : null}
           </button>
         </PopoverTrigger>
-        <PopoverContent align="end" className="w-[var(--toolbar-popover-width)] rounded-[var(--radius-toolbar-popover)] border-[color:var(--hairline)] bg-[color:var(--popover)] p-4 shadow-[var(--shadow-toolbar-popover)]">
+        <PopoverContent align="end" collisionPadding={12} className="w-[min(var(--toolbar-popover-width),calc(100vw-2rem))] rounded-[var(--radius-toolbar-popover)] border-[color:var(--hairline)] bg-[color:var(--popover)] p-4 shadow-[var(--shadow-toolbar-popover)]">
           <div className="mb-3 flex items-center justify-between">
             <span className="text-body text-[length:var(--text-ui-action)] font-extrabold text-[color:var(--foreground)]">
               {dictionary.toolbar.filters}

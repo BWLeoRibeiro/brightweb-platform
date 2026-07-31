@@ -77,6 +77,7 @@ export function parseAdminRoleChangePayload(payload: unknown) {
 type ServerRoleAccess =
   | {
     ok: true;
+    profileId?: string;
     supabase: unknown;
   }
   | {
@@ -163,6 +164,7 @@ export function createAdminUsersRoleChangeHandler(dependencies: AdminHttpDepende
         profileIds: batch.ids,
         newRole,
         reason,
+        ...(access.profileId ? { actorProfileId: access.profileId } : {}),
       });
 
       return json(result);

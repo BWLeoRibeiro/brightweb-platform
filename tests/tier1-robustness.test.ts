@@ -207,6 +207,81 @@ test("Admin role changes reject oversized/invalid batches and sanitize per-ID pr
   }
 });
 
+test("Admin role changes emit the MQ-compatible realtime activity event", async () => {
+  const activityCalls: Array<{ name: string; args: Record<string, unknown> }> = [];
+  const result = await applyAdminRoleChanges({
+    supabase: {
+      rpc: async () => ({
+        data: [{
+          changed: true,
+          old_role_code: "client",
+          new_role_code: "staff",
+          reason: "alterado",
+        }],
+        error: null,
+      }),
+    } as never,
+    profileIds: [uuid(1)],
+    newRole: "staff",
+    reason: "coverage",
+    actorProfileId: uuid(99),
+    activityClient: {
+      rpc: async (name: string, args: Record<string, unknown>) => {
+        activityCalls.push({ name, args });
+        return { data: null, error: null };
+      },
+    } as never,
+  });
+
+  assert.equal(result.summary.changed, 1);
+  assert.equal(activityCalls.length, 1);
+  assert.equal(activityCalls[0]?.name, "log_app_activity_event");
+  assert.deepEqual(activityCalls[0]?.args, {
+    p_domain: "admin",
+    p_event_type: "admin_user_roles_changed",
+    p_entity_table: "user_role_assignments",
+    p_entity_id: null,
+    p_summary: "Função atualizada para 1 utilizador.",
+    p_payload: {
+      changed_profile_ids: [uuid(1)],
+      new_role: "staff",
+      reason: "coverage",
+    },
+    p_actor_profile_id: uuid(99),
+  });
+});
+
+test("Admin role changes remain successful when activity logging is unavailable", async () => {
+  const originalError = console.error;
+  console.error = () => {};
+  try {
+    const result = await applyAdminRoleChanges({
+      supabase: {
+        rpc: async () => ({
+          data: [{
+            changed: true,
+            old_role_code: "client",
+            new_role_code: "staff",
+            reason: "alterado",
+          }],
+          error: null,
+        }),
+      } as never,
+      profileIds: [uuid(1)],
+      newRole: "staff",
+      reason: "coverage",
+      activityClient: {
+        rpc: async () => {
+          throw new Error("activity service unavailable");
+        },
+      } as never,
+    });
+    assert.equal(result.summary.changed, 1);
+  } finally {
+    console.error = originalError;
+  }
+});
+
 test("CRM timeline request limits and timestamps are bounded before data access", async () => {
   const parsed = parseCrmTimelineRequest(
     "https://example.test/api/crm/timeline?limit=999999&since=not-a-date",
