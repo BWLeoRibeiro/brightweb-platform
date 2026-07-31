@@ -1,5 +1,11 @@
 # @brightweblabs/infra
 
+## 0.4.1
+
+### Patch Changes
+
+- 14c7881: Keep password-recovery code exchange authoritative in the reset page by disabling Supabase's competing automatic browser exchange, preventing false expired-link messages without accepting unrelated signed-in sessions.
+
 ## 0.4.0
 
 ### Minor Changes
