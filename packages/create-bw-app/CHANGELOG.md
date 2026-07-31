@@ -1,5 +1,38 @@
 # create-bw-app
 
+## 0.22.1
+
+### Patch Changes
+
+- Drop and recreate the notification-items function when upgrading its table return shape so generated database migrations apply cleanly.
+
+## 0.22.0
+
+### Minor Changes
+
+- a9508ef: Add the shared activity-notification inbox, authenticated notification handlers,
+  and default shell bell wiring for scaffolded platform applications.
+- Add an authenticated Supabase Realtime activity stream with MQ-compatible notification and refresh coverage across the notification inbox, CRM, Admin, Dashboard, Projects portfolio/detail/board/account views, and project activity.
+
+  Publish `app_activity_events` with domain-aware RLS, retain removed/deleted project audiences without broadening the canonical project ACL, and emit missing Admin role-change events so every supported mutation invalidates the matching live surfaces.
+
+- 3d52715: Redesign the shared invitation and recovery journeys for a more structured professional-services portal experience.
+
+  Add reusable, localizable password-strength APIs; responsive auth layouts and state primitives; distinct invitation loading, success, invalid, expired, accepted, revoked, and acceptance-error states; and invalid recovery-link handling.
+
+  Add kind-aware authenticated invitation acceptance, including admin-role invitations, and scaffold the required dependency for new BrightWeb applications.
+
+  Improve admin invitation creation and management with visible form guidance, inline delivery feedback, retryable loading errors, responsive mobile cards, expiry cues, and confirmed revocation.
+
+  Upgrade the default admin invitation email with a robust responsive layout, role context, expiry information, and a plain-text fallback.
+
+- Add reusable, responsive module top-bar composition with registry-gated CRM,
+  Projects, and Admin controls, full CRM sorting parity, mobile access to route
+  actions and notifications, and actor-aware notification inbox details.
+
+  Generate the same route-driven toolbar integration for new and updated apps,
+  without putting module behavior in application shell layouts.
+
 ## 0.20.0
 
 ### Minor Changes

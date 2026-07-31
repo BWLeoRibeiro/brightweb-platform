@@ -1,5 +1,36 @@
 # @brightweblabs/app-shell
 
+## 0.9.1
+
+### Patch Changes
+
+- Standardize account and sheet typography around natural-case secondary data, clearer panel titles, restrained structural labels, and reusable sentence-case field labels across platform modules.
+
+## 0.9.0
+
+### Minor Changes
+
+- a9508ef: Add the shared activity-notification inbox, authenticated notification handlers,
+  and default shell bell wiring for scaffolded platform applications.
+- Add an authenticated Supabase Realtime activity stream with MQ-compatible notification and refresh coverage across the notification inbox, CRM, Admin, Dashboard, Projects portfolio/detail/board/account views, and project activity.
+
+  Publish `app_activity_events` with domain-aware RLS, retain removed/deleted project audiences without broadening the canonical project ACL, and emit missing Admin role-change events so every supported mutation invalidates the matching live surfaces.
+
+- Add reusable, responsive module top-bar composition with registry-gated CRM,
+  Projects, and Admin controls, full CRM sorting parity, mobile access to route
+  actions and notifications, and actor-aware notification inbox details.
+
+  Generate the same route-driven toolbar integration for new and updated apps,
+  without putting module behavior in application shell layouts.
+
+### Patch Changes
+
+- Updated dependencies [14c7881]
+- Updated dependencies
+- Updated dependencies [3d52715]
+  - @brightweblabs/infra@0.5.0
+  - @brightweblabs/ui@1.4.0
+
 ## 0.8.0
 
 ### Minor Changes

@@ -1,5 +1,26 @@
 # @brightweblabs/module-orgs
 
+## 0.3.14
+
+### Patch Changes
+
+- Updated dependencies
+  - @brightweblabs/app-shell@0.9.1
+
+## 0.3.13
+
+### Patch Changes
+
+- Updated dependencies [14c7881]
+- Updated dependencies [a9508ef]
+- Updated dependencies
+- Updated dependencies [3d52715]
+- Updated dependencies
+- Updated dependencies [a475672]
+  - @brightweblabs/core-auth@0.9.0
+  - @brightweblabs/infra@0.5.0
+  - @brightweblabs/app-shell@0.9.0
+
 ## 0.3.11
 
 ### Patch Changes

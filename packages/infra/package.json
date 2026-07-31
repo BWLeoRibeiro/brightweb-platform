@@ -1,7 +1,7 @@
 {
   "name": "@brightweblabs/infra",
   "private": false,
-  "version": "0.4.0",
+  "version": "0.5.0",
   "main": "./src/server.ts",
   "types": "./src/server.ts",
   "files": [
@@ -18,6 +18,7 @@
   "exports": {
     ".": "./src/server.ts",
     "./client": "./src/client.ts",
+    "./realtime": "./src/realtime.ts",
     "./robustness": "./src/robustness.ts",
     "./server": "./src/server.ts"
   },
