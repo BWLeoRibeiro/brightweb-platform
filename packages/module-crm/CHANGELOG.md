@@ -1,5 +1,16 @@
 # @brightweblabs/module-crm
 
+## 0.13.2
+
+### Patch Changes
+
+- 9547657: Show the pointer cursor consistently for enabled shared buttons and module toolbar controls.
+- Updated dependencies [9547657]
+  - @brightweblabs/ui@1.4.3
+  - @brightweblabs/app-shell@0.10.2
+  - @brightweblabs/core-auth@0.9.4
+  - @brightweblabs/module-orgs@0.3.19
+
 ## 0.13.1
 
 ### Patch Changes

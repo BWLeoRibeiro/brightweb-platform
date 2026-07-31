@@ -1,5 +1,13 @@
 # @brightweblabs/app-shell
 
+## 0.10.2
+
+### Patch Changes
+
+- 9547657: Show the pointer cursor consistently for enabled shared buttons and module toolbar controls.
+- Updated dependencies [9547657]
+  - @brightweblabs/ui@1.4.3
+
 ## 0.10.1
 
 ### Patch Changes
