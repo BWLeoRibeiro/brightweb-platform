@@ -1,5 +1,14 @@
 # @brightweblabs/module-crm
 
+## 0.11.2
+
+### Patch Changes
+
+- 6bba363: Normalize account-menu and CRM sheet typography so secondary account text uses natural casing and shared sheet headings, labels, and status controls follow the platform type scale.
+- Updated dependencies [6bba363]
+  - @brightweblabs/app-shell@0.9.2
+  - @brightweblabs/module-orgs@0.3.15
+
 ## 0.11.1
 
 ### Patch Changes
