@@ -12,3 +12,9 @@ export {
   type AccountUiClient,
   type AccountUiDictionary,
 } from "./ui/account";
+export {
+  handleNotificationsGetRequest,
+  handleNotificationsPostRequest,
+  type NotificationItem,
+  type NotificationsResponse,
+} from "./notifications";

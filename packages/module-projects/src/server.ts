@@ -1075,12 +1075,45 @@ export async function updateProject(supabase: SupabaseClient, projectId: string,
 export async function deleteProject(supabase: SupabaseClient, projectId: string, actorProfileId: string | null) {
   const { data: project, error: projectError } = await supabase
     .from("projects")
-    .select("id, name, organization_id")
+    .select("id, name, organization_id, owner_profile_id")
     .eq("id", projectId)
-    .maybeSingle<{ id: string; name: string; organization_id: string | null }>();
+    .maybeSingle<{
+      id: string;
+      name: string;
+      organization_id: string | null;
+      owner_profile_id: string | null;
+    }>();
 
   if (projectError) throw new Error(projectError.message);
   if (!project?.id) throw new Error("Projeto não encontrado.");
+
+  const [
+    { data: projectMembers, error: projectMembersError },
+    { data: organizationMembers, error: organizationMembersError },
+  ] = await Promise.all([
+    supabase
+      .from("project_members")
+      .select("profile_id")
+      .eq("project_id", projectId),
+    project.organization_id
+      ? supabase
+        .from("organization_members")
+        .select("profile_id")
+        .eq("organization_id", project.organization_id)
+        .eq("role", "admin")
+      : Promise.resolve({
+        data: [] as Array<{ profile_id: string | null }>,
+        error: null,
+      }),
+  ]);
+  if (projectMembersError) throw new Error(projectMembersError.message);
+  if (organizationMembersError) throw new Error(organizationMembersError.message);
+
+  const visibleProfileIds = Array.from(new Set([
+    project.owner_profile_id,
+    ...(projectMembers ?? []).map((member) => member.profile_id),
+    ...(organizationMembers ?? []).map((member) => member.profile_id),
+  ].filter((profileId): profileId is string => typeof profileId === "string" && profileId.length > 0)));
 
   const { error: deleteError } = await supabase
     .from("projects")
@@ -1100,6 +1133,7 @@ export async function deleteProject(supabase: SupabaseClient, projectId: string,
       project_name: project.name,
       organization_id: project.organization_id,
       deleted_by_profile_id: actorProfileId,
+      visible_profile_ids: visibleProfileIds,
     },
   });
 }

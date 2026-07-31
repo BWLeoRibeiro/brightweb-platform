@@ -102,6 +102,8 @@ export type CrmUiDictionary = {
     sortNewest: string;
     sortName: string;
     sortCompany: string;
+    sortStatusGrouped?: string;
+    sortSourceGrouped?: string;
     selectAll: string;
     selectAllShort: string;
     selectContact: (name: string) => string;

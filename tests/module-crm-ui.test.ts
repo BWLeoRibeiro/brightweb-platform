@@ -4,6 +4,7 @@ import { join } from "node:path";
 import test from "node:test";
 import { createElement as h } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
+import { ShellActionsProvider } from "../packages/app-shell/src/lib/shell-actions.tsx";
 
 import type { CrmContact, CrmContactsListResult, CrmStatusLog } from "../packages/module-crm/src/data.ts";
 import { crmModuleRegistration } from "../packages/module-crm/src/registration.ts";
@@ -91,6 +92,21 @@ test("CRM contact and organization details use right-side sheets instead of cent
   assert.match(organizationSource, /SheetSection/);
 });
 
+test("CRM sheets consume the canonical natural-case typography recipes", () => {
+  const contactSource = readFileSync(join(process.cwd(), "packages/module-crm/src/ui/contact-dialog.tsx"), "utf8");
+  const organizationSource = readFileSync(join(process.cwd(), "packages/module-crm/src/ui/organization-sheet.tsx"), "utf8");
+  const appSheetSource = readFileSync(join(process.cwd(), "packages/app-shell/src/components/app-sheet.tsx"), "utf8");
+  const accountMenuSource = readFileSync(join(process.cwd(), "packages/app-shell/src/components/account-menu.tsx"), "utf8");
+
+  assert.match(contactSource, /sheetFieldLabelClassName/);
+  assert.match(organizationSource, /sheetFieldLabelClassName/);
+  assert.doesNotMatch(contactSource, /text-micro uppercase tracking-wider/);
+  assert.doesNotMatch(organizationSource, /text-micro uppercase tracking-wider/);
+  assert.match(appSheetSource, /normal-case tracking-normal/);
+  assert.match(appSheetSource, /text-heading-4/);
+  assert.match(accountMenuSource, /block truncate text-meta/);
+});
+
 test("CRM contact and organization fields have stable accessible-name associations", () => {
   const contactSource = readFileSync(join(process.cwd(), "packages/module-crm/src/ui/contact-dialog.tsx"), "utf8");
   const organizationSource = readFileSync(join(process.cwd(), "packages/module-crm/src/ui/organization-sheet.tsx"), "utf8");
@@ -108,10 +124,20 @@ test("CRM contact and organization fields have stable accessible-name associatio
 });
 
 test("CRM shell toolbar controls are exported as independent surfaces", () => {
-  assert.match(renderToStaticMarkup(h(CrmToolbarSearchChip, { value: "", onChange: () => {} })), /Pesquisar contactos/);
+  assert.match(renderToStaticMarkup(h(CrmToolbarSearchChip, { value: "", onChange: () => {} })), /Procurar contactos/);
   assert.match(renderToStaticMarkup(h(CrmToolbarFiltersPill, { status: null, sort: "date_desc", onApply: () => {} })), /Filtros/);
-  assert.match(renderToStaticMarkup(h(CrmToolbarCreateMenu)), /Criar/);
+  const createMenu = renderToStaticMarkup(h(ShellActionsProvider, null, h(CrmToolbarCreateMenu)));
+  assert.match(createMenu, /Criar/);
+  assert.match(createMenu, /disabled=""/);
   assert.deepEqual(crmModuleRegistration.toolbarActions?.crm?.map((item) => item.action), ["crm-search", "crm-filters", "crm-create-menu"]);
+  const toolbarSource = readFileSync(join(process.cwd(), "packages/module-crm/src/ui/toolbar-controls.tsx"), "utf8");
+  assert.match(toolbarSource, /status_grouped/);
+  assert.match(toolbarSource, /source_grouped/);
+  assert.match(toolbarSource, /useShellActionsReady/);
+  assert.match(toolbarSource, /createContactReady/);
+  assert.match(toolbarSource, /createOrganizationReady/);
+  assert.match(toolbarSource, /disabled=\{!createContactReady \|\| !createOrganizationReady\}/);
+  assert.equal(defaultCrmUiDictionary.table.searchPlaceholder, "Procurar contactos…");
 });
 
 test("CRM UI dictionary overrides every rendered label source", () => {

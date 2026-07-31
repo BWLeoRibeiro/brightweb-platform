@@ -144,9 +144,9 @@ export function AuthNotice({
       id={id}
       role={tone === "error" ? "alert" : "status"}
       aria-live="polite"
-      className={`auth-notice auth-notice--${tone} rounded-xl p-3.5`}
+      className={`auth-notice auth-notice--${tone}`}
     >
-      <p className="text-meta auth-paragraph-mini">{children}</p>
+      <div className="text-meta auth-paragraph-mini">{children}</div>
     </div>
   );
 }

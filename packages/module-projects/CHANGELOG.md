@@ -1,14 +1,46 @@
 # @brightweblabs/module-projects
 
-## 0.9.3
+## 0.10.2
 
 ### Patch Changes
 
+- Updated dependencies
+  - @brightweblabs/app-shell@0.9.1
+
+## 0.10.1
+
+### Patch Changes
+
+- Register lazy project creation workflows with the shell action registry so collection actions become ready before their sheets are mounted.
+
+## 0.10.0
+
+### Minor Changes
+
+- Add an authenticated Supabase Realtime activity stream with MQ-compatible notification and refresh coverage across the notification inbox, CRM, Admin, Dashboard, Projects portfolio/detail/board/account views, and project activity.
+
+  Publish `app_activity_events` with domain-aware RLS, retain removed/deleted project audiences without broadening the canonical project ACL, and emit missing Admin role-change events so every supported mutation invalidates the matching live surfaces.
+
+- Add reusable, responsive module top-bar composition with registry-gated CRM,
+  Projects, and Admin controls, full CRM sorting parity, mobile access to route
+  actions and notifications, and actor-aware notification inbox details.
+
+  Generate the same route-driven toolbar integration for new and updated apps,
+  without putting module behavior in application shell layouts.
+
+### Patch Changes
+
+- Updated dependencies [14c7881]
+- Updated dependencies [a9508ef]
+- Updated dependencies
 - Updated dependencies [3d52715]
-  - @brightweblabs/ui@1.3.0
-  - @brightweblabs/core-auth@0.8.0
-  - @brightweblabs/theme@0.6.0
-  - @brightweblabs/app-shell@0.8.1
+- Updated dependencies
+- Updated dependencies [a475672]
+  - @brightweblabs/core-auth@0.9.0
+  - @brightweblabs/infra@0.5.0
+  - @brightweblabs/app-shell@0.9.0
+  - @brightweblabs/ui@1.4.0
+  - @brightweblabs/theme@0.7.0
 
 ## 0.9.2
 

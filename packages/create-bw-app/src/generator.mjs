@@ -1021,33 +1021,39 @@ export function createShellConfig(selectedModules) {
 
 export function createModuleToolbarControlsConfig(selectedModules) {
   const imports = [];
-  const branches = [];
+  const entries = [];
 
   if (selectedModules.includes("admin")) {
     imports.push('import { AdminToolbarControls } from "@brightweblabs/module-admin/ui";');
-    branches.push('  if (pathname === "/admin/users") return <AdminToolbarControls />;');
+    entries.push('  "admin-users": () => <AdminToolbarControls />,');
   }
   if (selectedModules.includes("crm")) {
     imports.push('import { CrmToolbarControls } from "@brightweblabs/module-crm/ui";');
-    branches.push('  if (pathname === "/crm") return <CrmToolbarControls />;');
+    entries.push('  crm: () => <CrmToolbarControls />,');
   }
   if (selectedModules.includes("projects")) {
     imports.push('import { ProjectsToolbarControls } from "@brightweblabs/module-projects/ui";');
-    branches.push('  if (pathname === projectsBaseHref) return <ProjectsToolbarControls />;');
+    entries.push('  projects: () => <ProjectsToolbarControls />,');
   }
 
   return [
     '"use client";',
     "",
+    'import type { ReactNode } from "react";',
+    'import { resolveShellToolbarSurface, type ShellToolbarRouteConfig, type ShellToolbarSurface } from "@brightweblabs/app-shell";',
     "// MANAGED BY BRIGHTWEB — regenerated when modules are added, removed, or updated.",
     ...imports,
-    imports.length > 0 ? "" : null,
-    "export function getModuleToolbarControls(pathname: string, projectsBaseHref: string) {",
-    ...branches,
-    "  return null;",
+    "",
+    "const toolbarControlBySurface: Partial<Record<ShellToolbarSurface, () => ReactNode>> = {",
+    ...entries,
+    "};",
+    "",
+    "export function getModuleToolbarControls(pathname: string, toolbarRoutes: ShellToolbarRouteConfig[]) {",
+    "  const surface = resolveShellToolbarSurface(pathname, toolbarRoutes);",
+    "  return surface ? toolbarControlBySurface[surface]?.() ?? null : null;",
     "}",
     "",
-  ].filter((line) => line !== null).join("\n");
+  ].join("\n");
 }
 
 function createOrganizationRoute(methods, enabled) {

@@ -162,6 +162,7 @@ export function CrmDashboard({ client: providedClient, initialData, dictionary =
 
   useShellAction(CRM_UI_EVENTS.createContact, () => { setEditingContact(null); setContactDialogOpen(true); });
   useShellAction(CRM_UI_EVENTS.createOrganization, () => createOrganization());
+  useShellAction(CRM_UI_EVENTS.refresh, () => { void refresh(); });
   useShellAction<{ search?: string } | undefined>(CRM_UI_EVENTS.setSearch, (detail) => setParams((current) => ({ ...current, search: detail?.search ?? "", page: 1 })));
   useShellAction<{ status?: CrmContactStatus | null } | undefined>(CRM_UI_EVENTS.selectSegment, (detail) => setParams((current) => ({ ...current, status: detail?.status ?? null, page: 1 })));
   useShellAction<{ sort?: CrmContactsListParams["sort"] } | undefined>(CRM_UI_EVENTS.setSort, (detail) => setParams((current) => ({ ...current, sort: detail?.sort ?? "date_desc", page: 1 })));

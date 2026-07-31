@@ -99,7 +99,7 @@ export function AppHeader({ children, className, kicker, title, count, trailing,
         </div>
       ) : null}
       <div className={styles.navbarSpacer} />
-      {children}
+      {children ? <div className={styles.navbarControls}>{children}</div> : null}
       {resolvedBreadcrumbs.length > 0 ? <nav className={styles.navbarCrumbs} aria-label="Breadcrumb">{resolvedBreadcrumbs.map((crumb, index) => <span key={`${crumb.label}-${index}`} className={styles.navbarCrumb}>{index > 0 ? <span className={styles.navbarCrumbSeparator}>/</span> : null}{crumb.href ? <Link href={crumb.href} className={styles.navbarCrumbLink}><span aria-hidden>‹</span>{crumb.label}</Link> : <AppHeaderBreadcrumbActionButton crumb={crumb} backActions={backActions} onToolbarAction={onToolbarAction} />}</span>)}</nav> : null}
       {contextualActions.map((action) => <AppHeaderToolbarActionButton key={action.action ?? action.label} action={action} onToolbarAction={onToolbarAction} />)}
       {renderedPrimaryActions.map((action) => <AppHeaderToolbarActionButton key={action.action ?? action.label} action={action} onToolbarAction={onToolbarAction} />)}

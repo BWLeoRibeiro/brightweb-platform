@@ -58,7 +58,7 @@ export function parseCrmContactsRequest(request: Request | URL | string) {
     status: url.searchParams.get("status")?.trim() || null,
     organizationId: url.searchParams.get("organizationId")?.trim() || null,
     ownerProfileId: url.searchParams.get("ownerProfileId")?.trim() || null,
-    sort: (["date_desc", "name", "company"] as const).find((sort) => sort === url.searchParams.get("sort")) ?? "date_desc",
+    sort: (["date_desc", "name", "company", "status_grouped", "source_grouped"] as const).find((sort) => sort === url.searchParams.get("sort")) ?? "date_desc",
   };
 }
 

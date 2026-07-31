@@ -8,26 +8,27 @@ import {
   DesktopSidebar,
   MobileNav,
   ShellActionsProvider,
+  ShellRealtimeBridge,
   computeInitials,
   isShellNavItemActive,
   useShellAction,
   useShellActionDispatch,
+  useShellNotifications,
   useShellNavState,
   type ShellContextualAction,
   type ShellNavStateGroup,
 } from "@brightweblabs/app-shell";
 import { createAuthUiClient } from "@brightweblabs/core-auth/ui";
 import "@brightweblabs/app-shell/dashboard.css";
-import { AdminToolbarControls } from "@brightweblabs/module-admin/ui";
-import { CrmToolbarControls } from "@brightweblabs/module-crm/ui";
 import "@brightweblabs/module-crm/tokens.css";
-import { ProjectsToolbarControls } from "@brightweblabs/module-projects/ui";
 import "@brightweblabs/module-projects/tokens.css";
 import { Toaster } from "@brightweblabs/ui";
 
+import { getModuleToolbarControls } from "../../config/module-toolbar-controls";
 import { getStarterShellConfig } from "../../config/shell";
 
 export type ShellViewer = {
+  profileId: string | null;
   email: string | null;
   firstName: string | null;
   lastName: string | null;
@@ -36,18 +37,12 @@ export type ShellViewer = {
 };
 
 const authClient = createAuthUiClient();
-const toolbarWindowEventByAction: Record<string, string> = {
-  "projects-refresh": "projects:refresh",
-  "projects-new-menu": "projects:open-new-project",
-  "crm-create-menu": "brightweb:crm:create-contact",
-};
-
 export function PreviewShellLayoutClient({
   children,
   viewer,
 }: Readonly<{ children: ReactNode; viewer: ShellViewer }>) {
   return (
-    <ShellActionsProvider aliases={toolbarWindowEventByAction}>
+    <ShellActionsProvider>
       <PreviewShellLayoutInner viewer={viewer}>{children}</PreviewShellLayoutInner>
     </ShellActionsProvider>
   );
@@ -76,6 +71,7 @@ function PreviewShellLayoutInner({
     toggleGroup,
     toggleSidebar,
   } = useShellNavState({ pathname, groups: shellGroups });
+  const notifications = useShellNotifications({ enabled: viewer.isStaff });
   const isAdminSurface = pathname === "/admin" || pathname.startsWith("/admin/");
   const usesToasts = isAdminSurface || pathname === "/account";
   const shellNavItems = [
@@ -96,13 +92,7 @@ function PreviewShellLayoutInner({
     || viewer.email
     || "Conta";
   const projectsBaseHref = pathname.startsWith("/projects") ? "/projects" : "/projetos";
-  const toolbarControls = pathname === "/crm"
-    ? <CrmToolbarControls />
-    : pathname === "/projects"
-      ? <ProjectsToolbarControls />
-      : pathname === "/admin/users"
-        ? <AdminToolbarControls />
-        : null;
+  const toolbarControls = getModuleToolbarControls(pathname, toolbarRoutes);
 
   const dispatchShellAction = useShellActionDispatch();
   useShellAction("projects-back-to-portfolio", () => {
@@ -166,7 +156,7 @@ function PreviewShellLayoutInner({
           toolbarRoutes={toolbarRoutes}
           toolbarActions={toolbarActions}
           onToolbarAction={handleToolbarAction}
-          notifications={{}}
+          notifications={viewer.isStaff ? notifications : undefined}
         >
           {toolbarControls}
         </AppHeader>
@@ -184,6 +174,7 @@ function PreviewShellLayoutInner({
         />
       }
     >
+      <ShellRealtimeBridge viewer={viewer} />
       {children}
       {usesToasts ? <Toaster /> : null}
     </AppShellFrame>

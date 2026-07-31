@@ -11,7 +11,7 @@ export function createProjectsModuleRegistration(baseHref = "/projetos"): ShellM
   placement: "primary",
   navItems: [{ href: baseHref, label: "Projetos", icon: BriefcaseBusiness }],
   toolbarRoutes: [
-    { surface: "project-board", match: { includes: ["/tarefas", "/quadro"] } },
+    { surface: "project-board", match: { includes: ["/tarefas", "/tasks", "/quadro"] } },
     { surface: "project-detail", match: { prefixes: [`${baseHref}/`] } },
     { surface: "projects", match: { exact: [baseHref] } },
   ],

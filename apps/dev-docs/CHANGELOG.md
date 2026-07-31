@@ -5,7 +5,7 @@
 ### Patch Changes
 
 - Updated dependencies [3d52715]
-  - @brightweblabs/ui@1.3.0
+  - @brightweblabs/ui@1.4.0
 
 ## 0.0.7
 

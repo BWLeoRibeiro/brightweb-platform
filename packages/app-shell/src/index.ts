@@ -3,6 +3,22 @@ export type { AppHeaderProps } from "./components/app-header";
 export type { AppHeaderBreadcrumb } from "./components/app-header";
 export { AlertsMenu } from "./components/alerts-menu";
 export type { AlertsMenuProps, ShellNotification } from "./components/alerts-menu";
+export { useShellNotifications } from "./use-shell-notifications";
+export type { UseShellNotificationsOptions } from "./use-shell-notifications";
+export {
+  ADMIN_REALTIME_REFRESH_EVENT,
+  APP_ACTIVITY_REALTIME_EVENT,
+  CRM_REALTIME_REFRESH_EVENT,
+  NOTIFICATIONS_REALTIME_REFRESH_EVENT,
+  PROJECTS_REALTIME_REFRESH_EVENT,
+  ShellRealtimeBridge,
+  getProjectRouteContext,
+  getRealtimeProjectId,
+  getRealtimeProjectRoutePayloads,
+  isRealtimeProjectAccessRemoved,
+  isRealtimeProjectDeleted,
+} from "./realtime";
+export type { ShellRealtimeBridgeProps, ShellRealtimeViewer } from "./realtime";
 export {
   AppSheetBody,
   AppSheetFooter,
@@ -62,7 +78,9 @@ export {
   ToolbarFilterToggle,
   ToolbarNewMenu,
   ToolbarSearchRefreshPill,
+  ToolbarSearchField,
 } from "./components/toolbar-shared";
+export type { ToolbarSearchFieldProps } from "./components/toolbar-shared";
 export type {
   AccountMenuProps,
   BuiltClientAppShellRegistration,

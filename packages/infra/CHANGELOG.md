@@ -1,5 +1,17 @@
 # @brightweblabs/infra
 
+## 0.5.0
+
+### Minor Changes
+
+- Add an authenticated Supabase Realtime activity stream with MQ-compatible notification and refresh coverage across the notification inbox, CRM, Admin, Dashboard, Projects portfolio/detail/board/account views, and project activity.
+
+  Publish `app_activity_events` with domain-aware RLS, retain removed/deleted project audiences without broadening the canonical project ACL, and emit missing Admin role-change events so every supported mutation invalidates the matching live surfaces.
+
+### Patch Changes
+
+- 14c7881: Keep password-recovery code exchange authoritative in the reset page by disabling Supabase's competing automatic browser exchange, preventing false expired-link messages without accepting unrelated signed-in sessions.
+
 ## 0.4.0
 
 ### Minor Changes

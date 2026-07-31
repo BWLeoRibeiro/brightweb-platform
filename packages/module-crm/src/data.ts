@@ -120,7 +120,7 @@ export type CrmContactsListParams = {
   sort?: CrmContactSort;
 };
 
-export type CrmContactSort = "date_desc" | "name" | "company";
+export type CrmContactSort = "date_desc" | "name" | "company" | "status_grouped" | "source_grouped";
 
 export type CrmContactsListResult = {
   items: CrmContact[];
@@ -247,6 +247,10 @@ export async function listCrmContacts(
     query = query.order("first_name", { ascending: true }).order("last_name", { ascending: true });
   } else if (params.sort === "company") {
     query = query.order("name", { ascending: true, foreignTable: "organizations" });
+  } else if (params.sort === "status_grouped") {
+    query = query.order("status", { ascending: true }).order("updated_at", { ascending: false });
+  } else if (params.sort === "source_grouped") {
+    query = query.order("source", { ascending: true, nullsFirst: false }).order("updated_at", { ascending: false });
   } else {
     query = query.order("updated_at", { ascending: false });
   }

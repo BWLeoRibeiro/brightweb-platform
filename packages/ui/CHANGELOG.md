@@ -1,6 +1,6 @@
 # @brightweblabs/ui
 
-## 1.3.0
+## 1.4.0
 
 ### Minor Changes
 
@@ -17,7 +17,7 @@
 ### Patch Changes
 
 - Updated dependencies [3d52715]
-  - @brightweblabs/theme@0.6.0
+  - @brightweblabs/theme@0.7.0
 
 ## 1.2.0
 

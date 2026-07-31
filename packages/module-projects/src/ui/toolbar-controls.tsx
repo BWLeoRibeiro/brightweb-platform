@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { Filter, Plus, Search } from "lucide-react";
-import { useShellActionDispatch, useShellActionReady, useShellActionsReady } from "@brightweblabs/app-shell";
-import { Input } from "@brightweblabs/ui";
+import { useEffect, useState } from "react";
+import { Filter, Plus } from "lucide-react";
+import { ToolbarSearchField, useShellActionDispatch, useShellActionReady, useShellActionsReady } from "@brightweblabs/app-shell";
+import { Popover, PopoverContent, PopoverTrigger } from "@brightweblabs/ui";
 import { useProjectsUiDictionary } from "./context";
 import {
   PROJECTS_EVENTS,
@@ -45,7 +45,6 @@ export function ProjectsToolbarControls() {
   const [open, setOpen] = useState(false);
   const [draftStatus, setDraftStatus] = useState<ProjectsStatusFilter>(status);
   const [draftHealth, setDraftHealth] = useState<ProjectsHealthFilter>(health);
-  const wrapRef = useRef<HTMLDivElement | null>(null);
   const activeCount = (status !== "all" ? 1 : 0) + (health !== "all" ? 1 : 0);
 
   useEffect(() => {
@@ -59,15 +58,6 @@ export function ProjectsToolbarControls() {
     return () => window.removeEventListener(PROJECTS_EVENTS.state, handleState);
   }, []);
 
-  useEffect(() => {
-    if (!open) return;
-    const handleDocumentClick = (event: MouseEvent) => {
-      if (wrapRef.current && !wrapRef.current.contains(event.target as Node)) setOpen(false);
-    };
-    document.addEventListener("click", handleDocumentClick);
-    return () => document.removeEventListener("click", handleDocumentClick);
-  }, [open]);
-
   function openPopover() {
     setDraftStatus(status);
     setDraftHealth(health);
@@ -75,24 +65,19 @@ export function ProjectsToolbarControls() {
   }
 
   return (
-    <div className="flex min-w-0 items-center gap-2">
-      <label className="inline-flex h-9 min-w-[var(--toolbar-search-min-width)] items-center gap-2 rounded-[var(--radius-control)] border border-[color:var(--hairline-strong)] bg-[color:var(--elevate-1)] px-3 text-[color:var(--muted-foreground)]">
-        <Search className="size-[var(--toolbar-icon-size)] shrink-0" aria-hidden />
-        <Input
-          value={search}
-          disabled={!filtersReady}
-          onChange={(event) => {
-            const query = event.target.value;
-            setSearch(query);
-            dispatchShellAction(PROJECTS_EVENTS.setSearch, { query });
-          }}
-          placeholder={dictionary.toolbar.searchPlaceholder}
-          aria-label={dictionary.toolbar.searchPlaceholder}
-          className="h-8 w-full border-0 bg-transparent px-0 text-body text-[length:var(--text-ui-action)] text-[color:var(--foreground)] shadow-none focus-visible:ring-0"
-        />
-      </label>
+    <div className="flex min-w-max items-center gap-2">
+      <ToolbarSearchField
+        value={search}
+        disabled={!filtersReady}
+        placeholder={dictionary.toolbar.searchPlaceholder}
+        onChange={(query) => {
+          setSearch(query);
+          dispatchShellAction(PROJECTS_EVENTS.setSearch, { query });
+        }}
+      />
 
-      <div className="relative" ref={wrapRef}>
+      <Popover open={open} onOpenChange={(next) => next ? openPopover() : setOpen(false)}>
+        <PopoverTrigger asChild>
         <button
           type="button"
           disabled={!filtersReady}
@@ -101,18 +86,14 @@ export function ProjectsToolbarControls() {
             "border-[color:var(--hairline-strong)] bg-[color:var(--elevate-1)] text-[color:var(--foreground)] hover:border-[color:var(--border-strong)] hover:bg-[color:var(--surface-hover)] disabled:cursor-not-allowed disabled:opacity-60",
             activeCount > 0 && "border-[color:var(--border-selection)] bg-[color:var(--surface-selection)]",
           )}
-          onClick={(event) => {
-            event.stopPropagation();
-            open ? setOpen(false) : openPopover();
-          }}
         >
           <Filter className={cn("size-[var(--toolbar-icon-size)]", activeCount > 0 ? "text-[color:var(--accent)]" : "text-[color:var(--muted-foreground)]")} aria-hidden />
           {dictionary.toolbar.filters}
           {activeCount > 0 ? <span className="inline-flex size-5 items-center justify-center rounded-full bg-[color:var(--project-ui-color-77)] text-micro text-[color:var(--project-ui-color-78)]">{activeCount}</span> : null}
         </button>
+        </PopoverTrigger>
 
-        {open ? (
-          <div className="absolute right-0 top-[calc(100%+0.5rem)] z-[60] w-[var(--toolbar-popover-width)] rounded-[var(--radius-toolbar-popover)] border border-[color:var(--border-strong)] bg-[color:var(--popover)] p-4 shadow-[var(--shadow-toolbar-popover)]" onClick={(event) => event.stopPropagation()}>
+        <PopoverContent align="end" collisionPadding={12} className="w-[min(var(--toolbar-popover-width),calc(100vw-2rem))] rounded-[var(--radius-toolbar-popover)] border border-[color:var(--border-strong)] bg-[color:var(--popover)] p-4 shadow-[var(--shadow-toolbar-popover)]">
             <div className="mb-3 flex items-center justify-between">
               <span className="text-body text-[length:var(--text-ui-action)] font-extrabold text-[color:var(--foreground)]">{dictionary.toolbar.filters}</span>
               <button type="button" className="p-0 text-meta font-bold text-[color:var(--muted-foreground)] underline-offset-2 hover:text-[color:var(--foreground)] hover:underline" onClick={() => { setDraftStatus("all"); setDraftHealth("all"); }}>{dictionary.toolbar.clear}</button>
@@ -137,9 +118,8 @@ export function ProjectsToolbarControls() {
             <div className="mt-4">
               <button type="button" className={cn(controlClassName, "w-full justify-center border-transparent bg-[color:var(--accent)] text-[color:var(--accent-foreground)] shadow-[var(--shadow-toolbar-control)]")} onClick={() => { setStatus(draftStatus); setHealth(draftHealth); dispatchShellAction(PROJECTS_EVENTS.setStatus, { status: draftStatus }); dispatchShellAction(PROJECTS_EVENTS.setHealth, { health: draftHealth }); setOpen(false); }}>{dictionary.toolbar.apply}</button>
             </div>
-          </div>
-        ) : null}
-      </div>
+        </PopoverContent>
+      </Popover>
 
       <button type="button" className={cn(controlClassName, "border-transparent bg-[color:var(--accent)] text-[color:var(--accent-foreground)] shadow-[var(--shadow-toolbar-control)] disabled:cursor-not-allowed disabled:opacity-60")} disabled={!newProjectReady} onClick={() => dispatchShellAction(PROJECTS_EVENTS.openNewProject)}>
         <Plus className="size-[var(--toolbar-icon-size)]" aria-hidden />

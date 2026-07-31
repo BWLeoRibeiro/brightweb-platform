@@ -2,6 +2,11 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Clock3, RefreshCw } from "lucide-react";
+import {
+  APP_ACTIVITY_REALTIME_EVENT,
+  getRealtimeProjectId,
+} from "@brightweblabs/app-shell";
+import type { AppActivityRealtimePayload } from "@brightweblabs/infra/realtime";
 import { ProjectRecentActivity } from "./project-recent-activity";
 import { ProjectSurfaceCard, ProjectSurfaceSectionHeader } from "./shared/project-surface-card";
 import { Button } from "@brightweblabs/ui";
@@ -21,6 +26,7 @@ export function ProjectActivityCard({ projectId, initialActivity, initialActivit
   // When the server load failed, ignore the empty placeholder and try a client-side fetch instead.
   const hasInitialActivity = initialActivity !== undefined && !initialActivityError;
   const cardRef = useRef<HTMLDivElement | null>(null);
+  const requestGenerationRef = useRef(0);
   const [activity, setActivity] = useState<ProjectActivityItem[]>(initialActivity ?? []);
   const [isLoading, setLoading] = useState(!hasInitialActivity);
   const [shouldLoad, setShouldLoad] = useState(hasInitialActivity);
@@ -69,6 +75,7 @@ export function ProjectActivityCard({ projectId, initialActivity, initialActivit
 
   useEffect(() => {
     if (hasInitialActivity || !shouldLoad) return;
+    const generation = ++requestGenerationRef.current;
     let isCurrent = true;
     setLoading(true);
     setHasError(false);
@@ -76,10 +83,10 @@ export function ProjectActivityCard({ projectId, initialActivity, initialActivit
     void (async () => {
       try {
         const nextActivity = await client.listProjectActivity(projectId);
-        if (!isCurrent) return;
+        if (!isCurrent || generation !== requestGenerationRef.current) return;
         setActivity(nextActivity);
       } catch (error) {
-        if (!isCurrent) return;
+        if (!isCurrent || generation !== requestGenerationRef.current) return;
         console.warn("Project activity unavailable:", error);
         setHasError(true);
       } finally {
@@ -91,6 +98,36 @@ export function ProjectActivityCard({ projectId, initialActivity, initialActivit
       isCurrent = false;
     };
   }, [client, hasInitialActivity, projectId, shouldLoad, reloadKey]);
+
+  useEffect(() => {
+    let isCurrent = true;
+    const handleRealtimeActivity = (event: Event) => {
+      const payload = (event as CustomEvent<AppActivityRealtimePayload>).detail;
+      if (!payload || getRealtimeProjectId(payload) !== projectId) return;
+      const generation = ++requestGenerationRef.current;
+      setLoading(true);
+      void client.listProjectActivity(projectId)
+        .then((nextActivity) => {
+          if (!isCurrent || generation !== requestGenerationRef.current) return;
+          setActivity(nextActivity);
+          setHasError(false);
+        })
+        .catch((error) => {
+          if (!isCurrent || generation !== requestGenerationRef.current) return;
+          console.warn("Project activity realtime refresh failed:", error);
+          setHasError(true);
+        })
+        .finally(() => {
+          if (isCurrent && generation === requestGenerationRef.current) setLoading(false);
+        });
+    };
+    window.addEventListener(APP_ACTIVITY_REALTIME_EVENT, handleRealtimeActivity);
+    return () => {
+      isCurrent = false;
+      requestGenerationRef.current += 1;
+      window.removeEventListener(APP_ACTIVITY_REALTIME_EVENT, handleRealtimeActivity);
+    };
+  }, [client, projectId]);
 
   return (
     <div ref={cardRef} className="self-start">

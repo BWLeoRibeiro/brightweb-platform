@@ -3,7 +3,11 @@ import { resolveSupabasePublicEnv } from "./supabase-env";
 
 export const createClient = () => {
   const { supabaseUrl, supabasePublishableKey } = resolveSupabasePublicEnv();
-  return createBrowserClient(supabaseUrl, supabasePublishableKey);
+  return createBrowserClient(supabaseUrl, supabasePublishableKey, {
+    auth: {
+      detectSessionInUrl: false,
+    },
+  });
 };
 
 export const createBrowserSupabaseClient = createClient;

@@ -420,6 +420,11 @@
   margin-top: auto;
 }
 
+.auth-notice {
+  padding: 0.875rem;
+  border-radius: var(--radius-xl);
+}
+
 .auth-notice--error {
   border: 1px solid var(--auth-error-border);
   background: var(--auth-error-surface);

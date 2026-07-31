@@ -172,6 +172,9 @@ importers:
 
   packages/app-shell:
     dependencies:
+      '@brightweblabs/infra':
+        specifier: workspace:*
+        version: link:../infra
       '@brightweblabs/ui':
         specifier: workspace:*
         version: link:../ui

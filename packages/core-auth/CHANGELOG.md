@@ -1,9 +1,11 @@
 # @brightweblabs/core-auth
 
-## 0.8.0
+## 0.9.0
 
 ### Minor Changes
 
+- a9508ef: Add the shared activity-notification inbox, authenticated notification handlers,
+  and default shell bell wiring for scaffolded platform applications.
 - 3d52715: Redesign the shared invitation and recovery journeys for a more structured professional-services portal experience.
 
   Add reusable, localizable password-strength APIs; responsive auth layouts and state primitives; distinct invitation loading, success, invalid, expired, accepted, revoked, and acceptance-error states; and invalid recovery-link handling.
@@ -14,10 +16,22 @@
 
   Upgrade the default admin invitation email with a robust responsive layout, role context, expiry information, and a plain-text fallback.
 
+- Add reusable, responsive module top-bar composition with registry-gated CRM,
+  Projects, and Admin controls, full CRM sorting parity, mobile access to route
+  actions and notifications, and actor-aware notification inbox details.
+
+  Generate the same route-driven toolbar integration for new and updated apps,
+  without putting module behavior in application shell layouts.
+
 ### Patch Changes
 
+- 14c7881: Keep password-recovery code exchange authoritative in the reset page by disabling Supabase's competing automatic browser exchange, preventing false expired-link messages without accepting unrelated signed-in sessions.
+- a475672: Keep auth notice padding and corner geometry in the shared component stylesheet, route the remaining account-profile load error through the shared notice, and support rich notice content with valid markup so error and status messages render consistently in every BrightWeb portal.
+- Updated dependencies [14c7881]
+- Updated dependencies
 - Updated dependencies [3d52715]
-  - @brightweblabs/ui@1.3.0
+  - @brightweblabs/infra@0.5.0
+  - @brightweblabs/ui@1.4.0
 
 ## 0.7.3
 

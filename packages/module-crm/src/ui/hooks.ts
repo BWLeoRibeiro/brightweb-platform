@@ -12,6 +12,7 @@ export const CRM_UI_EVENTS = {
   createOrganization: "brightweb:crm:create-organization",
   openOrganizations: "brightweb:crm:open-organizations",
   openTimeline: "brightweb:crm:open-timeline",
+  refresh: "brightweb:crm:refresh",
   selectSegment: "brightweb:crm:select-segment",
   setSearch: "brightweb:crm:set-search",
   setSort: "brightweb:crm:set-sort",

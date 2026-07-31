@@ -404,7 +404,7 @@ test("platform scaffolds pin mapped Vercel regions and leave a valid commented f
   );
 });
 
-test("scaffolded shell derives its title from active registration nav and dispatches create actions", async (t) => {
+test("scaffolded shell derives its title and resolves registered module controls", async (t) => {
   const { root, targetDir } = await scaffold(["crm", "projects"]);
   t.after(() => fs.rm(root, { recursive: true, force: true }));
   const shellLayout = await fs.readFile(
@@ -415,8 +415,9 @@ test("scaffolded shell derives its title from active registration nav and dispat
   assert.match(shellLayout, /const activeNavItem = shellNavItems\.reduce/);
   assert.match(shellLayout, /title=\{activeNavItem\?\.label\}/);
   assert.match(shellLayout, /onToolbarAction=\{handleToolbarAction\}/);
-  assert.match(shellLayout, /"projects-new-menu": "projects:open-new-project"/);
-  assert.match(shellLayout, /"crm-create-menu": "brightweb:crm:create-contact"/);
+  assert.match(shellLayout, /<ShellActionsProvider>/);
+  assert.match(shellLayout, /useShellAction\("projects-back-to-portfolio"/);
+  assert.doesNotMatch(shellLayout, /toolbarWindowEventByAction|window\.dispatchEvent/);
   assert.match(shellLayout, /getModuleToolbarControls/);
   assert.doesNotMatch(shellLayout, /@brightweblabs\/module-(admin|crm|projects)/);
 
@@ -426,6 +427,9 @@ test("scaffolded shell derives its title from active registration nav and dispat
   );
   assert.match(toolbarControls, /CrmToolbarControls/);
   assert.match(toolbarControls, /ProjectsToolbarControls/);
+  assert.match(toolbarControls, /resolveShellToolbarSurface\(pathname, toolbarRoutes\)/);
+  assert.match(toolbarControls, /crm: \(\) => <CrmToolbarControls/);
+  assert.match(toolbarControls, /projects: \(\) => <ProjectsToolbarControls/);
   assert.doesNotMatch(toolbarControls, /AdminToolbarControls/);
 });
 
@@ -717,7 +721,7 @@ test("bw add projects resolves orgs, writes overlays, migrations, and manifest s
   const release = await readJson(path.join(REPO_ROOT, "brightweb-release.json"));
   assert.equal(updated.modules.orgs.version, release.packages["@brightweblabs/module-orgs"]);
   assert.equal(updated.modules.projects.version, release.packages["@brightweblabs/module-projects"]);
-  assert.equal(updated.migrationCursor.projects, "20260421201528_portal_read_indexes.sql");
+  assert.equal(updated.migrationCursor.projects, "20260731123000_project_realtime_visibility.sql");
   assert.match(await fs.readFile(path.join(targetDir, "app", "globals.css"), "utf8"), /@source "\.\.\/node_modules\/@brightweblabs\/module-projects\/src";/);
   assert.match(
     await fs.readFile(path.join(targetDir, "config", "module-toolbar-controls.tsx"), "utf8"),

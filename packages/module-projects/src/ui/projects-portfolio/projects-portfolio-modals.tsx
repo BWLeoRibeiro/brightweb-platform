@@ -2,9 +2,9 @@
 
 import { useState } from "react";
 import dynamic from "next/dynamic";
+import { useShellAction } from "@brightweblabs/app-shell";
 import { PROJECTS_EVENTS } from "../events";
 import type { OrganizationOption } from "./types";
-import { useWindowEventBridge } from "../window-events";
 
 type ProjectOption = { id: string; name: string; organizationName?: string };
 
@@ -26,9 +26,9 @@ const CreateProjectTaskSheetDynamic = dynamic(
 function CreateProjectSheetLazy({ organizations }: { organizations: OrganizationOption[] }) {
   const [shouldMount, setShouldMount] = useState(false);
 
-  useWindowEventBridge(PROJECTS_EVENTS.openNewProject, () => {
+  useShellAction(PROJECTS_EVENTS.openNewProject, () => {
     setShouldMount(true);
-  }, { custom: false });
+  });
 
   return shouldMount ? <CreateProjectSheetDynamic organizations={organizations} initialOpen /> : null;
 }
@@ -36,9 +36,9 @@ function CreateProjectSheetLazy({ organizations }: { organizations: Organization
 function CreateProjectTaskSheetLazy({ projects }: { projects: ProjectOption[] }) {
   const [shouldMount, setShouldMount] = useState(false);
 
-  useWindowEventBridge(PROJECTS_EVENTS.openNewTask, () => {
+  useShellAction(PROJECTS_EVENTS.openNewTask, () => {
     setShouldMount(true);
-  }, { custom: false });
+  });
 
   return shouldMount ? <CreateProjectTaskSheetDynamic projects={projects} initialOpen /> : null;
 }

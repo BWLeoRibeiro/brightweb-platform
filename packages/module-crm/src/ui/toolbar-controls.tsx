@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Building2, Filter, Plus, Search, UserPlus } from "lucide-react";
-import { ToolbarNewMenu, useShellActionDispatch, useShellActionReady, useShellActionsReady } from "@brightweblabs/app-shell";
-import { Button, Input, Popover, PopoverContent, PopoverTrigger, TooltipProvider } from "@brightweblabs/ui";
+import { Building2, Filter, Plus, UserPlus } from "lucide-react";
+import { ToolbarNewMenu, ToolbarSearchField, useShellActionDispatch, useShellActionReady, useShellActionsReady } from "@brightweblabs/app-shell";
+import { Button, Popover, PopoverContent, PopoverTrigger, TooltipProvider } from "@brightweblabs/ui";
 
 import type { CrmContactSort } from "../data";
 import { defaultCrmUiDictionary, resolveCrmStages } from "./dictionary";
@@ -24,12 +24,7 @@ export type CrmToolbarSearchChipProps = {
 };
 
 export function CrmToolbarSearchChip({ value, onChange, disabled, dictionary = defaultCrmUiDictionary }: CrmToolbarSearchChipProps) {
-  return (
-    <label className="inline-flex h-9 min-w-[var(--toolbar-search-min-width)] items-center gap-2 rounded-[var(--radius-control)] border border-[color:var(--hairline-strong)] bg-[color:var(--elevate-1)] px-3 text-[color:var(--muted-foreground)]">
-      <Search className="size-[var(--toolbar-icon-size)] shrink-0" aria-hidden />
-      <Input value={value} onChange={(event) => onChange(event.target.value)} disabled={disabled} placeholder={dictionary.table.searchPlaceholder} aria-label={dictionary.table.searchPlaceholder} className="h-8 w-full border-0 bg-transparent px-0 text-body text-[length:var(--text-ui-action)] text-[color:var(--foreground)] shadow-none focus-visible:ring-0" />
-    </label>
-  );
+  return <ToolbarSearchField value={value} onChange={onChange} disabled={disabled} placeholder={dictionary.table.searchPlaceholder} />;
 }
 
 export type CrmToolbarFiltersPillProps = {
@@ -52,13 +47,13 @@ export function CrmToolbarFiltersPill({ status, sort, stages, dictionary = defau
   return (
     <Popover open={open} onOpenChange={(next) => next ? begin() : setOpen(false)}>
       <PopoverTrigger asChild>
-        <button type="button" disabled={disabled} className="inline-flex h-9 items-center gap-2 whitespace-nowrap rounded-[var(--radius-control)] border border-[color:var(--hairline-strong)] bg-[color:var(--elevate-1)] px-3 text-body text-[length:var(--text-ui-action)] font-extrabold text-[color:var(--foreground)] transition-colors hover:border-[color:var(--border-strong)] hover:bg-[color:var(--surface-hover)] disabled:cursor-not-allowed disabled:opacity-60" onClick={() => open ? setOpen(false) : begin()}>
+        <button type="button" disabled={disabled} className="inline-flex h-9 items-center gap-2 whitespace-nowrap rounded-[var(--radius-control)] border border-[color:var(--hairline-strong)] bg-[color:var(--elevate-1)] px-3 text-body text-[length:var(--text-ui-action)] font-extrabold text-[color:var(--foreground)] transition-colors hover:border-[color:var(--border-strong)] hover:bg-[color:var(--surface-hover)] disabled:cursor-not-allowed disabled:opacity-60">
           <Filter className="size-[var(--toolbar-icon-size)] text-[color:var(--muted-foreground)]" aria-hidden />
           {dictionary.toolbar.filters}
           {activeCount > 0 ? <span className="inline-flex size-5 items-center justify-center rounded-full bg-[color:var(--surface-button-brand)] text-micro text-accent-foreground">{activeCount}</span> : null}
         </button>
       </PopoverTrigger>
-      <PopoverContent align="end" className="w-[var(--toolbar-popover-width)] rounded-[var(--radius-toolbar-popover)] border-[color:var(--hairline)] bg-[color:var(--popover)] p-4 shadow-[var(--shadow-toolbar-popover)]">
+      <PopoverContent align="end" collisionPadding={12} className="w-[min(var(--toolbar-popover-width),calc(100vw-2rem))] rounded-[var(--radius-toolbar-popover)] border-[color:var(--hairline)] bg-[color:var(--popover)] p-4 shadow-[var(--shadow-toolbar-popover)]">
         <div className="mb-3 flex items-center justify-between">
           <span className="text-body text-[length:var(--text-ui-action)] font-extrabold text-[color:var(--foreground)]">{dictionary.toolbar.filters}</span>
           <button type="button" className="p-0 text-meta font-bold text-[color:var(--muted-foreground)] underline-offset-2 hover:text-[color:var(--foreground)] hover:underline" onClick={() => { setDraftStatus(null); setDraftSort("date_desc"); }}>{dictionary.toolbar.clear}</button>
@@ -79,6 +74,8 @@ export function CrmToolbarFiltersPill({ status, sort, stages, dictionary = defau
                 ["date_desc", dictionary.table.sortNewest],
                 ["name", dictionary.table.sortName],
                 ["company", dictionary.table.sortCompany],
+                ["status_grouped", dictionary.table.sortStatusGrouped ?? dictionary.toolbar.status],
+                ["source_grouped", dictionary.table.sortSourceGrouped ?? "Origem (agrupado A → Z)"],
               ] as const).map(([value, label]) => <button key={value} type="button" className={`inline-flex h-[var(--toolbar-chip-height)] items-center rounded-full border px-3 text-meta text-[length:var(--text-ui-chip)] font-semibold ${draftSort === value ? "border-[color:var(--border-selection)] bg-[color:var(--surface-selection)] text-[color:var(--foreground)]" : "border-[color:var(--hairline)] bg-[color:var(--elevate-1)] text-[color:var(--foreground)]"}`} onClick={() => setDraftSort(value)}>{label}</button>)}
             </div>
           </div>
@@ -95,7 +92,7 @@ export function CrmToolbarCreateMenu({ dictionary = defaultCrmUiDictionary }: Cr
   const dispatchShellAction = useShellActionDispatch();
   const createContactReady = useShellActionReady(CRM_UI_EVENTS.createContact);
   const createOrganizationReady = useShellActionReady(CRM_UI_EVENTS.createOrganization);
-  return <TooltipProvider><ToolbarNewMenu id="crm-create-menu" icon={Plus} label={dictionary.toolbar.create} tooltip={dictionary.toolbar.create} items={[
+  return <TooltipProvider><ToolbarNewMenu id="crm-create-menu" icon={Plus} label={dictionary.toolbar.create} tooltip={dictionary.toolbar.create} disabled={!createContactReady || !createOrganizationReady} items={[
     { icon: UserPlus, label: dictionary.toolbar.newContact, disabled: !createContactReady, onSelect: () => dispatchShellAction(CRM_UI_EVENTS.createContact) },
     { icon: Building2, label: dictionary.toolbar.newOrganization, disabled: !createOrganizationReady, onSelect: () => dispatchShellAction(CRM_UI_EVENTS.createOrganization) },
   ]} /></TooltipProvider>;
@@ -117,7 +114,7 @@ export function CrmToolbarControls({ dictionary = defaultCrmUiDictionary, stages
     return () => window.removeEventListener(CRM_UI_EVENTS.state, handleState);
   }, []);
   return (
-    <div className="flex flex-wrap items-center gap-2">
+    <div className="flex min-w-max flex-wrap items-center gap-2">
       <CrmToolbarSearchChip value={state.search} disabled={!filtersReady} dictionary={dictionary} onChange={(search) => { setState((current) => ({ ...current, search })); dispatchShellAction(CRM_UI_EVENTS.setSearch, { search }); }} />
       <CrmToolbarFiltersPill status={state.status} sort={state.sort} disabled={!filtersReady} stages={stages} dictionary={dictionary} onApply={(status, sort) => { setState((current) => ({ ...current, status, sort })); dispatchShellAction(CRM_UI_EVENTS.selectSegment, { status }); dispatchShellAction(CRM_UI_EVENTS.setSort, { sort }); }} />
       <CrmToolbarCreateMenu dictionary={dictionary} />

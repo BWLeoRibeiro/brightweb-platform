@@ -10,8 +10,8 @@ export const sheetFooterClassName = "border-t border-[color:var(--border)] px-5 
 export const sheetHeaderEditingClassName = "border-b-[color:var(--sheet-edit-border)] bg-[image:var(--sheet-edit-header-surface)]";
 export const sheetSectionClassName = "overflow-hidden rounded-[var(--radius-card)] border border-[color:var(--border)] bg-[color:var(--project-surface-secondary)]";
 export const sheetSectionHeaderClassName = "border-b border-[color:var(--border)] bg-[color:var(--card)] px-4 py-2.5";
-export const sheetSectionTitleClassName = "text-label font-semibold uppercase tracking-widest text-[color:var(--muted-foreground)]";
-export const sheetFieldLabelClassName = "text-micro text-[length:var(--text-ui-fine)] font-semibold uppercase tracking-[var(--type-tracking-180)] text-[color:var(--muted-foreground)]";
+export const sheetSectionTitleClassName = "text-label font-semibold uppercase tracking-[var(--type-tracking-080)] text-[color:var(--muted-foreground)]";
+export const sheetFieldLabelClassName = "text-[length:var(--text-ui-action)] font-semibold leading-[var(--type-leading-130)] normal-case tracking-normal text-[color:var(--foreground-muted-accessible)]";
 export const sheetSectionEditingClassName = "border-[color:var(--sheet-edit-border)] bg-[color:var(--sheet-edit-surface)]";
 export const sheetSectionHeaderEditingClassName = "border-b-[color:var(--sheet-edit-border)] bg-[color:var(--sheet-edit-header)]";
 export const sheetViewControlClassName = "h-7 appearance-none border-0 bg-transparent p-0 text-body shadow-none focus-visible:ring-0 disabled:cursor-default disabled:opacity-100";
@@ -33,12 +33,12 @@ export type AppSheetHeaderProps = {
 export function AppSheetHeader({ icon: Icon, leading, eyebrow, title, description, aside, editing, className }: AppSheetHeaderProps) {
   return (
     <SheetHeader className={cn(sheetHeaderClassName, editing && sheetHeaderEditingClassName, className)}>
-      {eyebrow ? <p className="mb-3 text-left text-micro text-[length:var(--text-ui-fine)] font-semibold uppercase tracking-[var(--type-tracking-160)] text-[color:var(--muted-foreground)]">{eyebrow}</p> : null}
+      {eyebrow ? <p className="mb-3 text-left text-micro text-[length:var(--text-ui-fine)] font-semibold uppercase tracking-[var(--type-tracking-080)] text-[color:var(--muted-foreground)]">{eyebrow}</p> : null}
       <div className="flex items-center gap-3.5">
         {leading ?? (Icon ? <div className="flex size-12 shrink-0 items-center justify-center rounded-2xl border border-primary/20 bg-primary/10 shadow-sm"><Icon className="size-5 text-primary" /></div> : null)}
         <div className="min-w-0 flex-1">
-          <SheetTitle className="text-title text-foreground truncate leading-tight">{title}</SheetTitle>
-          {description ? <SheetDescription className="text-meta text-muted-foreground mt-0.5">{description}</SheetDescription> : null}
+          <SheetTitle className="truncate text-heading-4 font-bold leading-[var(--type-leading-120)] tracking-[var(--type-tracking-n020)] text-foreground">{title}</SheetTitle>
+          {description ? <SheetDescription className="mt-0.5 text-body leading-normal tracking-normal text-muted-foreground">{description}</SheetDescription> : null}
         </div>
         {aside ? <div className="shrink-0">{aside}</div> : null}
       </div>
