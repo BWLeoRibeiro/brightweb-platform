@@ -11,7 +11,11 @@ import { listAdminUsers } from "../packages/module-admin/src/users-data.ts";
 import {
   getProjectPortfolioStats,
   listProjects,
+  PROJECT_HEALTH_STATES,
 } from "../packages/module-projects/src/data.ts";
+import {
+  parseProjectsListRequest,
+} from "../packages/module-projects/src/http.ts";
 import {
   listOrgAdminProjectsByProfile,
   listProjects as listProjectsFromServer,
@@ -41,11 +45,13 @@ type SelectOptions = { count?: string; head?: boolean };
 type SelectSpy = (context: { table: string; columns: string; options?: SelectOptions }) => void;
 type RangeSpy = (context: { table: string; from: number; to: number }) => void;
 type OrderSpy = (context: { table: string; field: string; ascending: boolean }) => void;
+type OrSpy = (context: { table: string; referencedTable?: string }) => void;
 type FakeSupabaseOptions = {
   selectErrorFactory?: SelectErrorFactory;
   selectSpy?: SelectSpy;
   rangeSpy?: RangeSpy;
   orderSpy?: OrderSpy;
+  orSpy?: OrSpy;
   defaultSelectLimit?: number;
 };
 
@@ -154,9 +160,11 @@ class FakeQuery {
     return this;
   }
 
-  or(expression: string, options?: { foreignTable?: string }) {
+  or(expression: string, options?: { foreignTable?: string; referencedTable?: string }) {
+    const referencedTable = options?.referencedTable ?? options?.foreignTable;
+    this.options.orSpy?.({ table: this.table, referencedTable });
     const clauses = expression.split(",").map((clause) => clause.trim()).filter(Boolean);
-    this.filters.push((row) => clauses.some((clause) => evaluateClause(row, clause, options?.foreignTable)));
+    this.filters.push((row) => clauses.some((clause) => evaluateClause(row, clause, referencedTable)));
     return this;
   }
 
@@ -220,12 +228,14 @@ function patternToNeedle(pattern: string) {
   return pattern.replaceAll("%", "").toLowerCase();
 }
 
-function evaluateClause(row: Row, clause: string, foreignTable?: string) {
+function evaluateClause(row: Row, clause: string, referencedTable?: string) {
   const match = clause.match(/^([A-Za-z0-9_]+)\.(ilike|eq)\.(.+)$/);
   if (!match) return false;
 
   const [, field, operator, rawValue] = match;
-  const target = foreignTable === "profiles" ? normalizeProfile(getFieldValue(row, "profile")) : row;
+  const target = referencedTable === "profiles" || referencedTable === "profile"
+    ? normalizeProfile(getFieldValue(row, "profile"))
+    : row;
   const value = getFieldValue(target ?? row, field);
 
   if (operator === "eq") {
@@ -250,7 +260,7 @@ function compareValues(left: unknown, right: unknown, ascending: boolean) {
   return String(left).localeCompare(String(right)) * direction;
 }
 
-function createAdminSupabase() {
+function createAdminSupabase(options: { selectColumnsLog?: string[]; referencedTablesLog?: string[] } = {}) {
   return new FakeSupabase({
     user_role_assignments: [
       {
@@ -293,6 +303,15 @@ function createAdminSupabase() {
         },
       },
     ],
+  }, {
+    selectSpy: ({ table, columns }) => {
+      if (table === "user_role_assignments") options.selectColumnsLog?.push(columns);
+    },
+    orSpy: ({ table, referencedTable }) => {
+      if (table === "user_role_assignments" && referencedTable) {
+        options.referencedTablesLog?.push(referencedTable);
+      }
+    },
   });
 }
 
@@ -572,6 +591,7 @@ function createCrmSupabase() {
 
 type CreateProjectsSupabaseOptions = {
   aggregateReadErrorTable?: "project_task_stats" | "project_milestones";
+  simulateMissingTaskStatsView?: boolean;
   includePhoneData?: boolean;
   simulateMissingProfilesPhone?: boolean;
   projectSelectColumnsLog?: string[];
@@ -679,6 +699,24 @@ function createProjectsSupabase(options: CreateProjectsSupabaseOptions = {}) {
         organizations: [{ name: "Archive Org", primary_contact: [] }],
         owner: [owner3],
       },
+      {
+        id: "project-5",
+        organization_id: "org-5",
+        name: "Canceled Archive",
+        code: "CAN",
+        status: "canceled",
+        health: "off_track",
+        owner_profile_id: "owner-3",
+        activated_at: iso(today),
+        target_date: iso(inTenDays),
+        completed_at: null,
+        cancellation_reason: "Canceled by agreement",
+        summary: "Canceled",
+        created_at: "2026-01-05T12:00:00.000Z",
+        updated_at: "2026-03-06T12:00:00.000Z",
+        organizations: [{ name: "Archive Org", primary_contact: [] }],
+        owner: [owner3],
+      },
     ],
     project_tasks: [
       { id: "task-1", project_id: "project-1", status: "todo", due_date: iso(yesterday) },
@@ -700,6 +738,9 @@ function createProjectsSupabase(options: CreateProjectsSupabaseOptions = {}) {
     ],
   }, {
     selectErrorFactory: ({ table, columns }) => {
+      if (table === "project_task_stats" && options.simulateMissingTaskStatsView) {
+        return { message: "Could not find the table 'public.project_task_stats' in the schema cache" };
+      }
       if (table === options.aggregateReadErrorTable) {
         return { message: `${table} provider unavailable` };
       }
@@ -717,8 +758,10 @@ function createProjectsSupabase(options: CreateProjectsSupabaseOptions = {}) {
 }
 
 test("listAdminUsers applies search, role filtering, and pagination", async () => {
+  const selectColumnsLog: string[] = [];
+  const referencedTablesLog: string[] = [];
   const result = await listAdminUsers({
-    supabase: createAdminSupabase() as never,
+    supabase: createAdminSupabase({ selectColumnsLog, referencedTablesLog }) as never,
     search: "ana",
     roleFilter: "admin",
     page: 1,
@@ -729,6 +772,12 @@ test("listAdminUsers applies search, role filtering, and pagination", async () =
   assert.equal(result.data[0]?.profileId, "profile-1");
   assert.equal(result.pagination.total, 1);
   assert.equal(result.pagination.totalPages, 1);
+  assert.match(
+    selectColumnsLog[0] ?? "",
+    /profile:profiles!user_role_assignments_profile_id_fkey!inner\(/,
+    "profile search must inner-join before exact count and pagination",
+  );
+  assert.deepEqual(referencedTablesLog, ["profile"], "profile search must target the embedded relation alias");
 });
 
 test("admin handler helpers parse requests and return JSON envelopes", async () => {
@@ -749,6 +798,8 @@ test("admin handler helpers parse requests and return JSON envelopes", async () 
   });
   const getResponse = await getHandler(new Request("https://example.com/api/admin/users?page=2"));
   assert.equal(getResponse.status, 200);
+  assert.match(getResponse.headers.get("server-timing") ?? "", /db;dur=\d+\.\d, app;dur=\d+\.\d/);
+  assert.ok(Number(getResponse.headers.get("content-length")) > 0);
   assert.deepEqual(await getResponse.json(), {
     data: [],
     pagination: { page: 2, pageSize: 10, total: 0, totalPages: 1 },
@@ -780,6 +831,7 @@ test("admin handler helpers parse requests and return JSON envelopes", async () 
 
 test("listProjects and getProjectPortfolioStats preserve stable project behavior", async () => {
   const supabase = createProjectsSupabase();
+  const timingPhases: string[] = [];
   const stats = await getProjectPortfolioStats(supabase as never);
   assert.deepEqual(stats, {
     total: 3,
@@ -794,7 +846,7 @@ test("listProjects and getProjectPortfolioStats preserve stable project behavior
     page: 1,
     pageSize: 10,
     dueWindow: "all",
-  });
+  }, { onTiming: (metric) => timingPhases.push(metric.phase) });
 
   assert.equal(result.total, 1);
   assert.equal(result.items.length, 1);
@@ -803,7 +855,52 @@ test("listProjects and getProjectPortfolioStats preserve stable project behavior
   assert.equal(result.items[0]?.ownerPhone, "911");
   assert.deepEqual(result.items[0]?.taskStats, { total: 3, done: 1, overdue: 1, blocked: 1 });
   assert.deepEqual(result.items[0]?.milestoneStats, { total: 2, achieved: 1, delayed: 1 });
-  assert.equal(result.items[0]?.health, "at_risk");
+  assert.equal(result.items[0]?.health, "on_track");
+  assert.deepEqual(timingPhases, ["query", "enrichment"]);
+});
+
+test("Projects distinguishes an absent status from the explicit all filter", async () => {
+  assert.equal(parseProjectsListRequest("https://example.com/api/projects").status, undefined);
+  assert.equal(parseProjectsListRequest("https://example.com/api/projects?status=all").status, "all");
+  assert.equal(parseProjectsListRequest("https://example.com/api/projects?status=completed").status, "completed");
+
+  for (const read of [listProjects, listProjectsFromServer]) {
+    const open = await read(createProjectsSupabase() as never, { page: 1, pageSize: 10 });
+    const all = await read(createProjectsSupabase() as never, { page: 1, pageSize: 10, status: "all" });
+
+    assert.equal(open.total, 3, "an absent status keeps the default open portfolio");
+    assert.deepEqual(open.items.map((project) => project.status).sort(), ["active", "active", "planned"]);
+    assert.equal(all.total, 5, "explicit all includes completed and canceled projects");
+    assert.deepEqual(all.items.map((project) => project.status).sort(), [
+      "active",
+      "active",
+      "canceled",
+      "completed",
+      "planned",
+    ]);
+  }
+});
+
+test("Projects collection health filters preserve deadline-derived off-track behavior", async () => {
+  const expectedIds = {
+    on_track: ["project-1", "project-2", "project-4"],
+    at_risk: ["project-3"],
+    off_track: ["project-3"],
+  } as const;
+
+  for (const read of [listProjects, listProjectsFromServer]) {
+    for (const health of PROJECT_HEALTH_STATES) {
+      const result = await read(createProjectsSupabase() as never, {
+        status: "all",
+        health,
+        page: 1,
+        pageSize: 10,
+      });
+
+      assert.deepEqual(result.items.map((project) => project.id).sort(), [...expectedIds[health]].sort());
+      assert.equal(result.total, expectedIds[health].length);
+    }
+  }
 });
 
 test("listProjects retries without profile phone when schema does not include profiles.phone", async () => {
@@ -857,6 +954,21 @@ test("project aggregate enrichment propagates task and milestone provider errors
         `${reader.name} must propagate ${table} errors`,
       );
     }
+  }
+});
+
+test("project readers fall back to paginated task aggregation before the task-stats migration is applied", async () => {
+  const aggregateReaders = [
+    (supabase: FakeSupabase) => listProjects(supabase as never, { page: 1, pageSize: 10 }),
+    (supabase: FakeSupabase) => listProjectsFromServer(supabase as never, { page: 1, pageSize: 10 }),
+    (supabase: FakeSupabase) => listOrgAdminProjectsByProfile(supabase as never, "profile-admin"),
+  ];
+
+  for (const read of aggregateReaders) {
+    const result = await read(createProjectsSupabase({ simulateMissingTaskStatsView: true }));
+    const items = Array.isArray(result) ? result : result.items;
+    const project = items.find((item) => item.id === "project-1");
+    assert.deepEqual(project?.taskStats, { total: 3, done: 1, overdue: 1, blocked: 1 });
   }
 });
 
@@ -993,6 +1105,13 @@ test("CRM stable helpers return filtered, paginated, and summarized results", as
       won: 0,
       lost: 0,
     },
+    activity: {
+      qualifiedLast30Days: 0,
+      wonLast30Days: 0,
+      newLast7Days: 0,
+      newLast30Days: 0,
+      newLastYear: 3,
+    },
   });
 
   const owners = await listCrmOwnerOptions(supabase as never);
@@ -1064,6 +1183,13 @@ test("CRM status stats use head count queries so totals are not capped at 1000 r
       won: 0,
       lost: 0,
     },
+    activity: {
+      qualifiedLast30Days: 0,
+      wonLast30Days: 0,
+      newLast7Days: 0,
+      newLast30Days: 0,
+      newLastYear: 0,
+    },
   });
   assert.equal(selectCalls.some((call) => call.table === "crm_contacts" && call.columns === "status"), false);
   assert.equal(
@@ -1074,6 +1200,48 @@ test("CRM status stats use head count queries so totals are not capped at 1000 r
     selectCalls.every((call) => call.table !== "crm_contacts" || call.options?.count === "exact"),
     true,
   );
+});
+
+test("CRM uses aggregate and joined-search RPCs when collection migrations are available", async () => {
+  const calls: Array<{ name: string; params?: Record<string, unknown> }> = [];
+  const supabase = {
+    async rpc(name: string, params?: Record<string, unknown>) {
+      calls.push({ name, params });
+      if (name === "get_crm_contact_stats") return { data: [{
+        total_count: 9,
+        lead_count: 1,
+        qualified_count: 2,
+        proposal_count: 3,
+        won_count: 2,
+        lost_count: 1,
+        qualified_last_30_days: 4,
+        won_last_30_days: 2,
+        new_last_7_days: 3,
+        new_last_30_days: 6,
+        new_last_year: 9,
+      }], error: null };
+      return { data: [{
+        id: "00000000-0000-0000-0000-000000000001",
+        contact_id: "00000000-0000-0000-0000-000000000002",
+        previous_status: "lead",
+        new_status: "qualified",
+        reason: null,
+        changed_at: "2026-07-30T10:00:00.000Z",
+        changed_by_user_id: null,
+        changed_by_label: null,
+        contact_label: "Ana Silva",
+      }], error: null };
+    },
+  };
+
+  const stats = await getCrmContactStatusStats(supabase as never);
+  const timeline = await listCrmStatusTimeline(supabase as never, { search: "Ana", limit: 25 });
+  assert.equal(stats.total, 9);
+  assert.equal(stats.activity?.newLast30Days, 6);
+  assert.equal(timeline[0]?.contact_label, "Ana Silva");
+  assert.deepEqual(calls.map((call) => call.name), ["get_crm_contact_stats", "search_crm_status_timeline"]);
+  assert.equal(calls[1]?.params?.p_search, "Ana");
+  assert.equal(calls[1]?.params?.p_limit, 25);
 });
 
 test("CRM handler helpers parse params and return JSON envelopes", async () => {
@@ -1118,6 +1286,8 @@ test("CRM handler helpers parse params and return JSON envelopes", async () => {
     new Request("https://example.com/api/crm/contacts?page=2&pageSize=25&search=ana&status=lead"),
   );
   assert.equal(contactsResponse.status, 200);
+  assert.match(contactsResponse.headers.get("server-timing") ?? "", /db;dur=\d+\.\d, app;dur=\d+\.\d/);
+  assert.ok(Number(contactsResponse.headers.get("content-length")) > 0);
   assert.deepEqual(receivedContactsParams, {
     page: 2,
     pageSize: 25,

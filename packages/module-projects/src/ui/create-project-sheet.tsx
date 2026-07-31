@@ -1,7 +1,7 @@
 "use client";
 
 import { useProjectsUiClient, useProjectsUiDictionary } from "./context";
-import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { Building2, FolderKanban, Loader2, Plus, Save, Users2 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -71,8 +71,8 @@ export function CreateProjectSheet({ organizations, initialOpen = false }: Creat
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isCreatingOrganization, setIsCreatingOrganization] = useState(false);
   const [organizationOptions, setOrganizationOptions] = useState<OrganizationOption[]>(organizations);
-  const [hasLoadedOrganizations, setHasLoadedOrganizations] = useState(organizations.length > 0);
-  const [isLoadingOrganizations, setLoadingOrganizations] = useState(false);
+  const [organizationsLoadState, setOrganizationsLoadState] = useState<"idle" | "pending" | "fulfilled" | "rejected">(organizations.length > 0 ? "fulfilled" : "idle");
+  const organizationsRequestRef = useRef<AbortController | null>(null);
 
   const projectForm = useProjectFormState(organizationOptions);
   const organizationCreation = useOrganizationCreationState();
@@ -80,6 +80,7 @@ export function CreateProjectSheet({ organizations, initialOpen = false }: Creat
   const { resetOrganizationForm, setOrganizationSheetOpen } = organizationCreation;
 
   const hasOrganizations = organizationOptions.length > 0;
+  const isLoadingOrganizations = organizationsLoadState === "pending";
 
   const [isProjectDiscardDialogOpen, setProjectDiscardDialogOpen] = useState(false);
   const [isOrganizationDiscardDialogOpen, setOrganizationDiscardDialogOpen] = useState(false);
@@ -156,44 +157,41 @@ export function CreateProjectSheet({ organizations, initialOpen = false }: Creat
   });
 
   const loadOrganizations = useCallback(async () => {
-    if (hasLoadedOrganizations || isLoadingOrganizations) return;
+    if (organizationsLoadState !== "idle") return;
 
-    setLoadingOrganizations(true);
+    organizationsRequestRef.current?.abort();
+    const controller = new AbortController();
+    organizationsRequestRef.current = controller;
+    setOrganizationsLoadState("pending");
     try {
-      const response = await client.requestRaw("/api/projects/organizations", { cache: "no-store" });
-      const payload = await response.json().catch(() => null);
-      if (!response.ok) {
-        const message = typeof payload?.error === "string" ? payload.error : dictionary.projectCreate.loadOrganizationsError;
-        throw new Error(message);
-      }
-
-      const nextOrganizations = Array.isArray(payload?.data?.organizations)
-        ? payload.data.organizations.flatMap((organization: unknown): OrganizationOption[] => {
-          if (!organization || typeof organization !== "object") return [];
-          const record = organization as Record<string, unknown>;
-          const id = typeof record.id === "string" ? record.id : "";
-          const name = typeof record.name === "string" ? record.name : "";
-          return id && name ? [{ id, name }] : [];
-        })
-        : [];
+      const nextOrganizations = await client.listOrganizations({ signal: controller.signal });
+      if (organizationsRequestRef.current !== controller) return;
 
       setOrganizationOptions(nextOrganizations);
       if (!projectForm.organizationId && nextOrganizations[0]?.id) {
         projectForm.setOrganizationId(nextOrganizations[0].id);
       }
-      setHasLoadedOrganizations(true);
+      setOrganizationsLoadState("fulfilled");
     } catch (error) {
-      setHasLoadedOrganizations(true);
+      if (error instanceof Error && error.name === "AbortError") return;
+      setOrganizationsLoadState("rejected");
       toast.error(error instanceof Error ? error.message : dictionary.projectCreate.loadOrganizationsError);
     } finally {
-      setLoadingOrganizations(false);
+      if (organizationsRequestRef.current === controller) organizationsRequestRef.current = null;
     }
-  }, [hasLoadedOrganizations, isLoadingOrganizations, projectForm]);
+  }, [client, dictionary.projectCreate.loadOrganizationsError, organizationsLoadState, projectForm]);
+
+  useEffect(() => () => organizationsRequestRef.current?.abort(), []);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      organizationsRequestRef.current?.abort();
+      organizationsRequestRef.current = null;
+      if (organizationsLoadState === "pending" || organizationsLoadState === "rejected") setOrganizationsLoadState("idle");
+      return;
+    }
     void loadOrganizations();
-  }, [loadOrganizations, open]);
+  }, [loadOrganizations, open, organizationsLoadState]);
 
   useEffect(() => {
     if (open) return;
@@ -430,7 +428,11 @@ export function CreateProjectSheet({ organizations, initialOpen = false }: Creat
                         required
                         disabled={!hasOrganizations || isLoadingOrganizations}
                       >
-                        {hasOrganizations ? (
+                        {isLoadingOrganizations ? (
+                          <option value="">{dictionary.projectCreate.loadingOrganizations}</option>
+                        ) : organizationsLoadState === "rejected" ? (
+                          <option value="">{dictionary.projectCreate.loadOrganizationsError}</option>
+                        ) : hasOrganizations ? (
                           organizationOptions.map((organization) => (
                             <option key={organization.id} value={organization.id}>
                               {organization.name}
@@ -453,6 +455,8 @@ export function CreateProjectSheet({ organizations, initialOpen = false }: Creat
                     </div>
                     {isLoadingOrganizations ? (
                       <p className="mt-1 text-micro text-foreground/55">{dictionary.projectCreate.loadingOrganizations}</p>
+                    ) : organizationsLoadState === "rejected" ? (
+                      <p role="alert" className="mt-1 text-micro text-destructive">{dictionary.projectCreate.loadOrganizationsError}</p>
                     ) : !hasOrganizations ? (
                       <p className="mt-1 text-micro text-foreground/55">{dictionary.projectCreate.createOrganizationToContinue}</p>
                     ) : null}

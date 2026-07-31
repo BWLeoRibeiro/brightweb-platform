@@ -1,6 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  createLatestRequestController,
+  isAbortError,
+  observedFetch,
+  type UiRequestMetricObserver,
+} from "@brightweblabs/infra/request-observability";
 import type { AlertsMenuProps, ShellNotification } from "./components/alerts-menu";
 import { NOTIFICATIONS_REALTIME_REFRESH_EVENT } from "./realtime";
 
@@ -14,6 +20,7 @@ export type UseShellNotificationsOptions = {
   enabled?: boolean;
   endpoint?: string;
   refreshIntervalMs?: number;
+  requestObserver?: UiRequestMetricObserver;
 };
 
 function parsePayload(value: unknown): NotificationsPayload | null {
@@ -43,6 +50,7 @@ export function useShellNotifications({
   enabled = true,
   endpoint = "/api/notifications",
   refreshIntervalMs = 30_000,
+  requestObserver,
 }: UseShellNotificationsOptions = {}): AlertsMenuProps {
   const [notifications, setNotifications] = useState<ShellNotification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -51,12 +59,17 @@ export function useShellNotifications({
   const [error, setError] = useState<string | null>(null);
   const loadedRef = useRef(false);
   const openRef = useRef(false);
+  const requestObserverRef = useRef(requestObserver);
+  requestObserverRef.current = requestObserver;
   const itemsRequestRef = useRef<Promise<void> | null>(null);
   const summaryRequestRef = useRef<Promise<void> | null>(null);
   const acknowledgementRef = useRef<Promise<void> | null>(null);
-  const unreadBeforeOpenRef = useRef(0);
+  const pendingAcknowledgementRef = useRef<string | null>(null);
+  const configurationGenerationRef = useRef(0);
   const itemsRefreshQueuedRef = useRef(false);
   const summaryRefreshQueuedRef = useRef(false);
+  const itemsControllerRef = useRef(createLatestRequestController());
+  const summaryControllerRef = useRef(createLatestRequestController());
 
   const loadSummary = useCallback((force = false) => {
     if (!enabled) return Promise.resolve();
@@ -65,16 +78,23 @@ export function useShellNotifications({
       return summaryRequestRef.current;
     }
 
-    const request = fetch(`${endpoint}?limit=0`, { cache: "no-store" })
+    const latest = summaryControllerRef.current.begin();
+    let request: Promise<void>;
+    request = observedFetch(fetch, `${endpoint}?limit=0`, {
+      cache: "no-store",
+      signal: latest.signal,
+    }, { domain: "notifications", operation: "summary.load", observer: requestObserverRef.current })
       .then(async (response) => {
         const payload = parsePayload(await response.json().catch(() => null));
-        if (response.ok && payload) {
-          setUnreadCount(payload.unreadCount);
+        if (latest.isCurrent() && response.ok && payload) {
+          setUnreadCount(openRef.current ? 0 : payload.unreadCount);
           setSeenAt(payload.seenAt);
         }
       })
       .catch(() => undefined)
       .finally(() => {
+        latest.finish();
+        if (summaryRequestRef.current !== request) return;
         summaryRequestRef.current = null;
         if (summaryRefreshQueuedRef.current) {
           summaryRefreshQueuedRef.current = false;
@@ -94,23 +114,33 @@ export function useShellNotifications({
     if (loadedRef.current && !force) return;
     setLoading(true);
     setError(null);
-    const request = fetch(`${endpoint}?limit=8`, { cache: "no-store" })
+    const latest = itemsControllerRef.current.begin();
+    let request: Promise<void>;
+    request = observedFetch(fetch, `${endpoint}?limit=8`, {
+      cache: "no-store",
+      signal: latest.signal,
+    }, { domain: "notifications", operation: "items.load", observer: requestObserverRef.current })
       .then(async (response) => {
         const raw = await response.json().catch(() => null);
         const payload = parsePayload(raw);
         if (!response.ok || !payload) throw new Error("Não foi possível carregar as notificações.");
+        if (!latest.isCurrent()) return;
         loadedRef.current = true;
         setNotifications(payload.items);
-        setUnreadCount(payload.unreadCount);
+        setUnreadCount(openRef.current ? 0 : payload.unreadCount);
         setSeenAt(payload.seenAt);
       })
       .catch((reason) => {
+        if (isAbortError(reason) || !latest.isCurrent()) return;
         setNotifications([]);
         setError(reason instanceof Error ? reason.message : "Não foi possível carregar as notificações.");
       })
       .finally(() => {
+        const wasCurrent = latest.isCurrent();
+        latest.finish();
+        if (itemsRequestRef.current !== request) return;
         itemsRequestRef.current = null;
-        setLoading(false);
+        if (wasCurrent) setLoading(false);
         if (itemsRefreshQueuedRef.current) {
           itemsRefreshQueuedRef.current = false;
           loadedRef.current = false;
@@ -121,42 +151,84 @@ export function useShellNotifications({
   }, [enabled, endpoint]);
 
   const acknowledge = useCallback(() => {
-    if (!enabled || acknowledgementRef.current) return;
-    const previousCount = unreadBeforeOpenRef.current;
-    const seenBefore = new Date().toISOString();
+    if (!enabled) return;
     setUnreadCount(0);
-    const request = fetch(endpoint, {
-      method: "POST",
-      keepalive: true,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ seenBefore }),
-    })
-      .then((response) => {
-        if (!response.ok) throw new Error("acknowledgement failed");
-      })
-      .then(() => loadSummary(true))
-      .catch(() => setUnreadCount((current) => current === 0 ? previousCount : current))
-      .finally(() => {
-        acknowledgementRef.current = null;
-      });
-    acknowledgementRef.current = request;
+    pendingAcknowledgementRef.current = new Date().toISOString();
+    if (acknowledgementRef.current) return;
+
+    function flushAcknowledgement() {
+      const seenBefore = pendingAcknowledgementRef.current;
+      if (!seenBefore) return;
+      pendingAcknowledgementRef.current = null;
+      const configurationGeneration = configurationGenerationRef.current;
+      let request: Promise<void>;
+      request = observedFetch(fetch, endpoint, {
+        method: "POST",
+        keepalive: true,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ seenBefore }),
+      }, { domain: "notifications", operation: "acknowledge", observer: requestObserverRef.current })
+        .then((response) => {
+          if (!response.ok) throw new Error("acknowledgement failed");
+        })
+        .catch(() => undefined)
+        .then(() => {
+          if (configurationGeneration !== configurationGenerationRef.current) return;
+          return loadSummary(true);
+        })
+        .finally(() => {
+          if (acknowledgementRef.current !== request) return;
+          acknowledgementRef.current = null;
+          if (
+            pendingAcknowledgementRef.current
+            && configurationGeneration === configurationGenerationRef.current
+          ) flushAcknowledgement();
+        });
+      acknowledgementRef.current = request;
+    }
+
+    flushAcknowledgement();
   }, [enabled, endpoint, loadSummary]);
 
   const handleOpenChange = useCallback((open: boolean) => {
     openRef.current = open;
     if (open) {
-      unreadBeforeOpenRef.current = unreadCount;
       setUnreadCount(0);
       loadNotifications();
       return;
     }
+    itemsRefreshQueuedRef.current = false;
+    itemsControllerRef.current.abort();
+    itemsRequestRef.current = null;
+    setLoading(false);
     acknowledge();
     loadedRef.current = false;
-  }, [acknowledge, loadNotifications, unreadCount]);
+  }, [acknowledge, loadNotifications]);
 
   useEffect(() => {
-    if (!enabled) return;
+    const configurationGeneration = ++configurationGenerationRef.current;
+    if (!enabled) {
+      openRef.current = false;
+      loadedRef.current = false;
+      itemsRefreshQueuedRef.current = false;
+      summaryRefreshQueuedRef.current = false;
+      itemsControllerRef.current.abort();
+      summaryControllerRef.current.abort();
+      itemsRequestRef.current = null;
+      summaryRequestRef.current = null;
+      acknowledgementRef.current = null;
+      pendingAcknowledgementRef.current = null;
+      setNotifications([]);
+      setUnreadCount(0);
+      setSeenAt(null);
+      setLoading(false);
+      setError(null);
+      return () => {
+        if (configurationGenerationRef.current === configurationGeneration) configurationGenerationRef.current += 1;
+      };
+    }
     void loadSummary();
+    if (openRef.current) loadNotifications(true);
     const interval = window.setInterval(loadSummary, refreshIntervalMs);
     const handleFocus = () => void loadSummary();
     const handleRealtimeRefresh = () => {
@@ -170,6 +242,16 @@ export function useShellNotifications({
       window.clearInterval(interval);
       window.removeEventListener("focus", handleFocus);
       window.removeEventListener(NOTIFICATIONS_REALTIME_REFRESH_EVENT, handleRealtimeRefresh);
+      itemsRefreshQueuedRef.current = false;
+      summaryRefreshQueuedRef.current = false;
+      loadedRef.current = false;
+      itemsControllerRef.current.abort();
+      summaryControllerRef.current.abort();
+      itemsRequestRef.current = null;
+      summaryRequestRef.current = null;
+      acknowledgementRef.current = null;
+      pendingAcknowledgementRef.current = null;
+      if (configurationGenerationRef.current === configurationGeneration) configurationGenerationRef.current += 1;
     };
   }, [enabled, loadNotifications, loadSummary, refreshIntervalMs]);
 

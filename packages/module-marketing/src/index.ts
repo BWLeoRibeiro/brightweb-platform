@@ -18,6 +18,7 @@ export {
   getCampaign,
   listCampaignRecipients,
   listCampaigns,
+  queryCampaigns,
   retryCampaignFailures,
   scheduleCampaign,
   sendCampaignNow,
@@ -28,6 +29,8 @@ export type {
   CampaignStatus,
   CreateCampaignInput,
   MarketingCampaign,
+  MarketingCampaignListParams,
+  MarketingCampaignListResult,
   UpdateCampaignInput,
 } from "./campaigns";
 export {
@@ -50,6 +53,7 @@ export {
   deleteSegment,
   getSegment,
   listSegments,
+  querySegments,
   previewSegment,
   resolveSegmentContacts,
   updateSegment,
@@ -57,6 +61,8 @@ export {
 export type {
   CreateSegmentInput,
   MarketingSegment,
+  MarketingSegmentListParams,
+  MarketingSegmentListResult,
   MarketingSegmentRule,
   SegmentContact,
   UpdateSegmentInput,
@@ -86,6 +92,7 @@ export {
   getWorkflow,
   listWorkflowRuns,
   listWorkflows,
+  queryWorkflows,
   pauseWorkflow,
   processDueWorkflowRuns,
   scanActivityTriggers,
@@ -95,6 +102,8 @@ export {
 export type {
   CreateWorkflowInput,
   MarketingWorkflow,
+  MarketingWorkflowListParams,
+  MarketingWorkflowListResult,
   MarketingWorkflowNode,
   MarketingWorkflowWithNodes,
   UpdateWorkflowInput,

@@ -8,15 +8,17 @@ import { useProjectsUiDictionary } from "../context";
 type ProjectsPortfolioListProps = {
   data: ListProjectsPayload;
   hasActiveFilters: boolean;
+  isLoading?: boolean;
 };
 
 export function ProjectsPortfolioList({
   data,
   hasActiveFilters,
+  isLoading = false,
 }: ProjectsPortfolioListProps) {
   const dictionary = useProjectsUiDictionary();
   return (
-    <div>
+    <div aria-busy={isLoading} className={`transition-opacity duration-150 motion-reduce:transition-none ${isLoading && data.items.length > 0 ? "opacity-60" : ""}`}>
       {data.items.length === 0 ? (
         <div className="flex flex-col items-center justify-center gap-sm px-6 py-14 text-center">
           <div className="flex size-11 items-center justify-center rounded-full bg-[color:var(--muted)]">
@@ -24,10 +26,12 @@ export function ProjectsPortfolioList({
           </div>
           <div>
             <p className="text-body font-semibold text-[color:var(--muted-foreground)]">
-              {hasActiveFilters ? dictionary.portfolio.filteredEmptyTitle : dictionary.portfolio.emptyTitle}
+              {isLoading ? dictionary.portfolio.loading : hasActiveFilters ? dictionary.portfolio.filteredEmptyTitle : dictionary.portfolio.emptyTitle}
             </p>
             <p className="mt-1 text-meta text-[color:var(--muted-foreground)]">
-              {hasActiveFilters
+              {isLoading
+                ? dictionary.portfolio.loading
+                : hasActiveFilters
                 ? dictionary.portfolio.filteredEmptyHint
                 : dictionary.portfolio.emptyHint}
             </p>

@@ -1,10 +1,17 @@
 # create-bw-app
 
+## 0.23.0
+
+### Minor Changes
+
+- Standardize faster cancellable, observable latest-request behavior across collection surfaces; add authoritative CRM organization and joined timeline search plus aggregate dashboard metrics; add paginated Marketing search, filters, create actions, toolbar registration, and lazy analytics loading; preserve useful rows while requests refresh; and scaffold database indexes for contains-search and common filters.
+
 ## 0.22.2
 
 ### Patch Changes
 
 - 2312a99: Add staff-facing consent-topic creation, editing, activation, and ordering with scaffolded API routes. Aggregate project task counters in a security-invoker database view and use a planned count for the unfiltered task-dashboard total to keep portfolio and dashboard reads scalable.
+- Update generated platform applications to use the compatible BrightWeb request-performance release set.
 
 ## 0.22.1
 

@@ -17,6 +17,21 @@ export type CampaignStatus =
   | "canceled"
   | "failed";
 
+export type MarketingCampaignListParams = {
+  page?: number;
+  pageSize?: number;
+  search?: string;
+  status?: CampaignStatus | null;
+};
+
+export type MarketingCampaignListResult = {
+  items: MarketingCampaign[];
+  page: number;
+  pageSize: number;
+  total: number;
+  totalPages: number;
+};
+
 export type MarketingCampaign = {
   id: string;
   name: string;
@@ -190,6 +205,33 @@ export async function listCampaigns(supabase: unknown): Promise<MarketingCampaig
     .order("created_at", { ascending: false });
   throwIfError(error);
   return ((data ?? []) as CampaignRow[]).map(fromRow);
+}
+
+export async function queryCampaigns(
+  supabase: unknown,
+  params: MarketingCampaignListParams = {},
+): Promise<MarketingCampaignListResult> {
+  const page = Math.max(1, Math.floor(params.page ?? 1));
+  const pageSize = Math.min(100, Math.max(1, Math.floor(params.pageSize ?? 20)));
+  const from = (page - 1) * pageSize;
+  let query = db(supabase)
+    .from("marketing_campaigns")
+    .select(CAMPAIGN_COLUMNS, { count: "exact" })
+    .order("created_at", { ascending: false })
+    .range(from, from + pageSize - 1);
+  if (params.status) query = query.eq("status", params.status);
+  const search = params.search?.trim().toLowerCase().replace(/[%_,()\"]/g, "");
+  if (search) query = query.or(`name.ilike.%${search}%,subject.ilike.%${search}%`);
+  const { data, error, count } = await query;
+  throwIfError(error);
+  const total = count ?? 0;
+  return {
+    items: ((data ?? []) as CampaignRow[]).map(fromRow),
+    page,
+    pageSize,
+    total,
+    totalPages: Math.max(1, Math.ceil(total / pageSize)),
+  };
 }
 
 export async function getCampaign(

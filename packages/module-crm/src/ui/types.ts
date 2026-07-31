@@ -1,10 +1,13 @@
 import type { ReactNode } from "react";
+import type { UiRequestMetricObserver } from "@brightweblabs/infra/request-observability";
 
 import type {
   CrmContact,
   CrmContactStatusStats,
   CrmContactsListParams,
   CrmContactsListResult,
+  CrmOrganizationsListParams,
+  CrmOrganizationsListResult,
   CrmOwnerOption,
   CrmReportData,
   CrmStatusLog,
@@ -298,18 +301,24 @@ export type CrmDashboardData = {
 };
 
 export type CrmUiClient = {
-  listContacts: (params?: CrmContactsListParams) => Promise<CrmContactsListResult>;
-  getStats: () => Promise<CrmContactStatusStats>;
-  listOwners: () => Promise<CrmOwnerOption[]>;
-  listOrganizations: () => Promise<CrmOrganization[]>;
+  listContacts: (params?: CrmContactsListParams, options?: { signal?: AbortSignal }) => Promise<CrmContactsListResult>;
+  getStats: (options?: { signal?: AbortSignal }) => Promise<CrmContactStatusStats>;
+  listOwners: (options?: { signal?: AbortSignal }) => Promise<CrmOwnerOption[]>;
+  listOrganizations: (options?: { signal?: AbortSignal }) => Promise<CrmOrganization[]>;
+  queryOrganizations?: (params?: CrmOrganizationsListParams, options?: { signal?: AbortSignal }) => Promise<CrmOrganizationsListResult>;
   createOrganization: (input: CrmOrganizationWriteInput) => Promise<CrmOrganization>;
   updateOrganization: (organizationId: string, input: CrmOrganizationWriteInput) => Promise<CrmOrganization>;
-  listTimeline: (contactId?: string) => Promise<CrmStatusLog[]>;
-  getReport: () => Promise<CrmReportData>;
+  listTimeline: (contactId?: string, options?: { signal?: AbortSignal }) => Promise<CrmStatusLog[]>;
+  queryTimeline?: (params?: { contactId?: string; search?: string; limit?: number }, options?: { signal?: AbortSignal }) => Promise<CrmStatusLog[]>;
+  getReport: (options?: { signal?: AbortSignal }) => Promise<CrmReportData>;
   createContact: (input: CrmContactFormInput) => Promise<CrmContact>;
   updateContact: (contactId: string, input: CrmContactFormInput) => Promise<CrmContact>;
   setStatus: (contactIds: string[], status: CrmContactStatus, reason?: string | null) => Promise<void>;
   deleteContacts: (contactIds: string[]) => Promise<void>;
+};
+
+export type CrmUiClientOptions = {
+  onRequestMetric?: UiRequestMetricObserver;
 };
 
 export type CrmDashboardSlots = {

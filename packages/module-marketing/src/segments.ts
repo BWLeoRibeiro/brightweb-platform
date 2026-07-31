@@ -26,6 +26,15 @@ export type MarketingSegment = {
   updatedAt: string;
 };
 
+export type MarketingSegmentListParams = { page?: number; pageSize?: number; search?: string };
+export type MarketingSegmentListResult = {
+  items: MarketingSegment[];
+  page: number;
+  pageSize: number;
+  total: number;
+  totalPages: number;
+};
+
 export type SegmentContact = {
   id: string;
   email: string;
@@ -168,6 +177,32 @@ export async function listSegments(supabase: unknown): Promise<MarketingSegment[
     .order("created_at", { ascending: false });
   throwIfError(error);
   return ((data ?? []) as SegmentRow[]).map(fromRow);
+}
+
+export async function querySegments(
+  supabase: unknown,
+  params: MarketingSegmentListParams = {},
+): Promise<MarketingSegmentListResult> {
+  const page = Math.max(1, Math.floor(params.page ?? 1));
+  const pageSize = Math.min(100, Math.max(1, Math.floor(params.pageSize ?? 20)));
+  const from = (page - 1) * pageSize;
+  let query = db(supabase)
+    .from("marketing_segments")
+    .select(SEGMENT_COLUMNS, { count: "exact" })
+    .order("created_at", { ascending: false })
+    .range(from, from + pageSize - 1);
+  const search = params.search?.trim().toLowerCase().replace(/[%_,()\"]/g, "");
+  if (search) query = query.or(`name.ilike.%${search}%,description.ilike.%${search}%`);
+  const { data, error, count } = await query;
+  throwIfError(error);
+  const total = count ?? 0;
+  return {
+    items: ((data ?? []) as SegmentRow[]).map(fromRow),
+    page,
+    pageSize,
+    total,
+    totalPages: Math.max(1, Math.ceil(total / pageSize)),
+  };
 }
 
 export async function getSegment(

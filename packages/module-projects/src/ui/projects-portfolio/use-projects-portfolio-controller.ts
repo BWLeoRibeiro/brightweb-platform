@@ -29,23 +29,28 @@ export function useProjectsPortfolioController(
   const [data, setData] = useState(initialData);
   const [page, setPage] = useState(Math.max(1, initialData.page || 1));
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [status, setStatus] = useState<ProjectsStatusFilter>("all");
   const [health, setHealth] = useState<ProjectsHealthFilter>("all");
   const [isLoading, setIsLoading] = useState(loadOnMount);
   const [lastUpdatedAt, setLastUpdatedAt] = useState<string | null>(initialUpdatedAt);
   const requestAbortRef = useRef<AbortController | null>(null);
+  const searchDebouncePendingRef = useRef(false);
   const hasMountedRef = useRef(false);
   const hasActiveFilters = Boolean(search.trim()) || status !== "all" || health !== "all";
   const totalPages = Math.max(1, Math.ceil(data.total / PAGE_SIZE));
 
-  const loadProjects = useCallback(async () => {
+  const loadProjects = useCallback(async (searchOverride?: string) => {
     requestAbortRef.current?.abort();
     const controller = new AbortController();
     requestAbortRef.current = controller;
 
     setIsLoading(true);
     try {
-      const next = await client.listProjects({ page, pageSize: PAGE_SIZE, dueWindow: "all", search: search.trim() || undefined, status: status === "all" ? null : status, health: health === "all" ? null : health });
+      const next = await client.listProjects(
+        { page, pageSize: PAGE_SIZE, dueWindow: "all", search: (searchOverride ?? debouncedSearch) || undefined, status, health: health === "all" ? null : health },
+        { signal: controller.signal },
+      );
       if (requestAbortRef.current !== controller) return false;
       setData(next);
       setLastUpdatedAt(new Date().toISOString());
@@ -61,7 +66,7 @@ export function useProjectsPortfolioController(
       setIsLoading(false);
       dispatchProjectsEvent(PROJECTS_EVENTS.refreshComplete);
     }
-  }, [client, dictionary.portfolio.refreshError, health, page, search, status]);
+  }, [client, debouncedSearch, dictionary.portfolio.refreshError, health, page, status]);
 
   useEffect(() => {
     return () => {
@@ -78,24 +83,46 @@ export function useProjectsPortfolioController(
   }, []);
 
   useEffect(() => {
+    const normalizedSearch = search.trim();
+    if (normalizedSearch === debouncedSearch) {
+      if (searchDebouncePendingRef.current) {
+        searchDebouncePendingRef.current = false;
+        setIsLoading(false);
+      }
+      return;
+    }
+    requestAbortRef.current?.abort();
+    requestAbortRef.current = null;
+    setIsLoading(true);
+    if (!normalizedSearch) {
+      searchDebouncePendingRef.current = false;
+      setDebouncedSearch("");
+      return;
+    }
+    searchDebouncePendingRef.current = true;
+    const timer = window.setTimeout(() => {
+      searchDebouncePendingRef.current = false;
+      setDebouncedSearch(normalizedSearch);
+    }, 180);
+    return () => window.clearTimeout(timer);
+  }, [debouncedSearch, search]);
+
+  useEffect(() => {
     if (!hasMountedRef.current) {
       hasMountedRef.current = true;
       if (!loadOnMount) return;
     }
 
-    const timer = window.setTimeout(() => {
-      void loadProjects();
-    }, 250);
-    return () => window.clearTimeout(timer);
+    void loadProjects();
   }, [loadOnMount, loadProjects]);
 
   const refreshProjects = useCallback((detail?: ProjectsRefreshEventDetail) => {
-    void loadProjects().then((refreshed) => {
+    void loadProjects(search.trim()).then((refreshed) => {
       if (refreshed && detail?.source !== "realtime") {
         toast.success(dictionary.portfolio.refreshSuccess);
       }
     });
-  }, [dictionary.portfolio.refreshSuccess, loadProjects]);
+  }, [dictionary.portfolio.refreshSuccess, loadProjects, search]);
 
   const handleSetSearch = useCallback((query: string) => {
     setSearch(query);
@@ -103,14 +130,16 @@ export function useProjectsPortfolioController(
   }, []);
 
   const handleSetStatus = useCallback((nextStatus: ProjectsStatusFilter) => {
+    setDebouncedSearch(search.trim());
     setStatus(nextStatus);
     setPage(1);
-  }, []);
+  }, [search]);
 
   const handleSetHealth = useCallback((nextHealth: ProjectsHealthFilter) => {
+    setDebouncedSearch(search.trim());
     setHealth(nextHealth);
     setPage(1);
-  }, []);
+  }, [search]);
 
   return {
     data,

@@ -37,7 +37,10 @@ export async function upgradeBrightwebApp(moduleKey, argvOptions = {}, runtimeOp
     const key = Object.keys(catalog).find((candidate) => catalog[candidate].packageName === update.packageName);
     if (key) catalog[key].version = cleanVersion(update.to) || catalog[key].version;
   }
-  const moduleKeys = moduleKey ? [moduleKey] : Object.keys(appManifest.modules);
+  const installedMigrationKeys = Object.keys(appManifest.migrationCursor ?? {}).filter((key) => catalog[key]);
+  const moduleKeys = moduleKey
+    ? [moduleKey]
+    : Array.from(new Set([...installedMigrationKeys, ...Object.keys(appManifest.modules)]));
   const uncursored = [];
   for (const key of moduleKeys) {
     if (appManifest.migrationCursor?.[key] == null && (await getModuleMigrations(key, catalog[key])).length > 0) uncursored.push(key);

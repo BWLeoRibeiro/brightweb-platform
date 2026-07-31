@@ -5,6 +5,26 @@
 ### Minor Changes
 
 - 2312a99: Add staff-facing consent-topic creation, editing, activation, and ordering with scaffolded API routes. Aggregate project task counters in a security-invoker database view and use a planned count for the unfiltered task-dashboard total to keep portfolio and dashboard reads scalable.
+- Standardize faster cancellable, observable latest-request behavior across collection surfaces; add authoritative CRM organization and joined timeline search plus aggregate dashboard metrics; add paginated Marketing search, filters, create actions, toolbar registration, and lazy analytics loading; preserve useful rows while requests refresh; and scaffold database indexes for contains-search and common filters.
+
+### Patch Changes
+
+- Keep campaign recipients, workflow runs, and segment previews in explicit loading or unavailable states until their requests resolve, instead of flashing final empty states.
+- Updated dependencies
+  - @brightweblabs/infra@0.7.0
+  - @brightweblabs/app-shell@0.10.0
+  - @brightweblabs/core-auth@0.9.2
+
+## 0.2.15
+
+### Patch Changes
+
+- Updated dependencies
+- Updated dependencies [f12ce99]
+  - @brightweblabs/infra@0.6.0
+  - @brightweblabs/ui@1.4.1
+  - @brightweblabs/app-shell@0.9.3
+  - @brightweblabs/core-auth@0.9.1
 
 ## 0.2.14
 

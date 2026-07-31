@@ -1,5 +1,13 @@
 # @brightweblabs/ui
 
+## 1.4.1
+
+### Patch Changes
+
+- f12ce99: Pair brand button surfaces with a dedicated foreground token so client accent palettes retain readable action labels.
+- Updated dependencies [f12ce99]
+  - @brightweblabs/theme@0.7.1
+
 ## 1.4.0
 
 ### Minor Changes

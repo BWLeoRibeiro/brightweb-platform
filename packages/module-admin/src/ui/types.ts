@@ -1,4 +1,5 @@
 import type { AdminManagedRole, AdminUsersListResult } from "../users";
+import type { UiRequestMetricObserver } from "@brightweblabs/infra/request-observability";
 
 export type AdminInviteRole = Extract<AdminManagedRole, "staff" | "admin">;
 export type AdminUsersView = "users" | "invites";
@@ -31,11 +32,15 @@ export type AdminRoleChangeSummary = {
 };
 
 export type AdminUiClient = {
-  listUsers(params: AdminUsersListParams): Promise<AdminUsersListResult>;
+  listUsers(params: AdminUsersListParams, options?: { signal?: AbortSignal }): Promise<AdminUsersListResult>;
   listInvitations(): Promise<AdminUserInvitation[]>;
   inviteUser(input: { email: string; role: AdminInviteRole }): Promise<AdminUserInvitation>;
   revokeInvitation(invitationId: string): Promise<void>;
   changeRoles(input: AdminRoleChangeInput): Promise<AdminRoleChangeSummary>;
+};
+
+export type AdminUiClientOptions = {
+  onRequestMetric?: UiRequestMetricObserver;
 };
 
 export type AdminUiDictionary = {

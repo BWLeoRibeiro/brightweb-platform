@@ -101,10 +101,10 @@ export type DashboardDataClient = {
   /**
    * Optional aggregate optimization. Section clients remain the source of truth.
    */
-  getOverview?: () => Promise<unknown>;
-  getProjects: () => Promise<unknown>;
-  getCrm: () => Promise<unknown>;
-  getTasks: () => Promise<unknown>;
+  getOverview?: (options?: { signal?: AbortSignal }) => Promise<unknown>;
+  getProjects: (options?: { signal?: AbortSignal }) => Promise<unknown>;
+  getCrm: (options?: { signal?: AbortSignal }) => Promise<unknown>;
+  getTasks: (options?: { signal?: AbortSignal }) => Promise<unknown>;
 };
 
 export type DashboardSection = "projects" | "crm" | "tasks";

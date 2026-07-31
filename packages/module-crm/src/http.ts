@@ -19,6 +19,7 @@ import {
   sanitizePublicError,
   validateBoundedUuidBatch,
 } from "@brightweblabs/infra/robustness";
+import { appendServerTiming, elapsedMs, requestStartedAt } from "@brightweblabs/infra/request-observability";
 import {
   bulkSetCrmContactStatus,
   createCrmContact,
@@ -30,12 +31,13 @@ import {
 } from "./server";
 
 export function json(body: unknown, init?: ResponseInit) {
-  return new Response(JSON.stringify(body), {
+  const payload = JSON.stringify(body);
+  const headers = new Headers(init?.headers);
+  headers.set("content-type", "application/json; charset=utf-8");
+  headers.set("content-length", String(new TextEncoder().encode(payload).byteLength));
+  return new Response(payload, {
     ...init,
-    headers: {
-      "content-type": "application/json; charset=utf-8",
-      ...(init?.headers ?? {}),
-    },
+    headers,
   });
 }
 
@@ -68,6 +70,7 @@ export function parseCrmTimelineRequest(request: Request | URL | string) {
   const sinceDate = sinceValue ? new Date(sinceValue) : null;
   return {
     contactId: url.searchParams.get("contactId")?.trim() || undefined,
+    search: url.searchParams.get("search")?.trim() || undefined,
     limit: Math.min(
       parsePositiveInteger(url.searchParams.get("limit"), CRM_STATUS_TIMELINE_DEFAULT_LIMIT),
       CRM_STATUS_TIMELINE_MAX_LIMIT,
@@ -219,15 +222,21 @@ function withUserAccess(
   action: (supabase: unknown, request: Request) => Promise<Response>,
 ) {
   return async (request: Request) => {
+    const startedAt = requestStartedAt();
     const access = await dependencies.getAccess();
     if (!access.ok) {
-      return json(publicError("ACCESS_DENIED", access.error), { status: access.status });
+      return appendServerTiming(json(publicError("ACCESS_DENIED", access.error), { status: access.status }), [
+        { name: "app", durationMs: elapsedMs(startedAt) },
+      ]);
     }
 
     try {
-      return await action(access.supabase, request);
+      const response = await action(access.supabase, request);
+      return appendServerTiming(response, [{ name: "app", durationMs: elapsedMs(startedAt) }]);
     } catch (error) {
-      return crmErrorResponse(error, "crm.read");
+      return appendServerTiming(crmErrorResponse(error, "crm.read"), [
+        { name: "app", durationMs: elapsedMs(startedAt) },
+      ]);
     }
   };
 }
@@ -235,16 +244,18 @@ function withUserAccess(
 export function createCrmContactsGetHandler(dependencies: CrmHttpDependencies) {
   return withUserAccess(dependencies, async (supabase, request) => {
     const params = parseCrmContactsRequest(request);
+    const queryStartedAt = requestStartedAt();
     const result = await dependencies.listContacts(supabase as never, params);
-    return json(result);
+    return appendServerTiming(json(result), [{ name: "db", durationMs: elapsedMs(queryStartedAt) }]);
   });
 }
 
 export function createCrmOrganizationsGetHandler(dependencies: CrmHttpDependencies) {
   return withUserAccess(dependencies, async (supabase, request) => {
     const params = parseCrmOrganizationsRequest(request);
+    const queryStartedAt = requestStartedAt();
     const result = await dependencies.listOrganizations(supabase as never, params);
-    return json(result);
+    return appendServerTiming(json(result), [{ name: "db", durationMs: elapsedMs(queryStartedAt) }]);
   });
 }
 
@@ -270,8 +281,9 @@ export function createCrmOwnersGetHandler(dependencies: CrmHttpDependencies) {
 
 export function createCrmTimelineGetHandler(dependencies: CrmHttpDependencies) {
   return withUserAccess(dependencies, async (supabase, request) => {
+    const queryStartedAt = requestStartedAt();
     const result = await dependencies.listTimeline(supabase as never, parseCrmTimelineRequest(request));
-    return json(result);
+    return appendServerTiming(json(result), [{ name: "db", durationMs: elapsedMs(queryStartedAt) }]);
   });
 }
 

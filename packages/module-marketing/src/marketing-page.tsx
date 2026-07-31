@@ -1,16 +1,11 @@
 import { requireServerPageRoleAccess } from "@brightweblabs/core-auth/server";
 import { createServiceRoleClient } from "@brightweblabs/infra/server";
-import { listCampaigns } from "./campaigns";
+import { queryCampaigns } from "./campaigns";
 import { listTopics } from "./server";
-import { listSegments } from "./segments";
+import { querySegments } from "./segments";
+import { getMarketingOverview } from "./analytics";
 import {
-  getCampaignAnalytics,
-  getMarketingOverview,
-} from "./analytics";
-import {
-  getWorkflow,
-  listWorkflowRuns,
-  listWorkflows,
+  queryWorkflows,
 } from "./workflows";
 import { MarketingUiProvider } from "./ui/context";
 import { MarketingClient } from "./ui/marketing-client";
@@ -32,40 +27,22 @@ export async function MarketingPage() {
       "Marketing requires a Supabase service-role key. Set SUPABASE_SECRET_DEFAULT_KEY for this app.",
     );
   }
-  const [campaigns, topics, segments, overview, workflowRows] = await Promise.all([
-    listCampaigns(supabase),
+  const [campaignPage, topics, segmentPage, overview, workflowPage] = await Promise.all([
+    queryCampaigns(supabase, { page: 1, pageSize: 20 }),
     listTopics(supabase),
-    listSegments(supabase),
+    querySegments(supabase, { page: 1, pageSize: 20 }),
     getMarketingOverview(supabase),
-    listWorkflows(supabase),
+    queryWorkflows(supabase, { page: 1, pageSize: 20 }),
   ]);
-  const [campaignAnalytics, workflows] = await Promise.all([
-    Promise.all(campaigns.map(async (campaign) => [
-      campaign.id,
-      await getCampaignAnalytics(supabase, campaign.id),
-    ] as const)).then(Object.fromEntries),
-    Promise.all(workflowRows.map(async (workflow) => {
-      const [detail, runs] = await Promise.all([
-        getWorkflow(supabase, workflow.id),
-        listWorkflowRuns(supabase, workflow.id),
-      ]);
-      const nodes = detail?.nodes ?? [];
-      return {
-        ...workflow,
-        nodes: nodes.map((node) => ({
-          id: node.id,
-          workflowId: node.workflowId,
-          type: node.nodeType,
-          position: node.position,
-          config: node.config,
-          createdAt: node.createdAt,
-          updatedAt: node.updatedAt,
-        })),
-        nodeCount: nodes.length,
-        runCount: runs.length,
-      };
-    })),
-  ]);
+  const campaigns = campaignPage.items;
+  const segments = segmentPage.items;
+  const workflows = workflowPage.items.map((workflow) => ({
+    ...workflow,
+    nodes: [],
+    nodeCount: 0,
+    runCount: 0,
+    countsKnown: false,
+  }));
 
   return (
     <MarketingUiProvider>
@@ -75,7 +52,12 @@ export async function MarketingPage() {
         initialSegments={segments}
         initialWorkflows={workflows}
         initialOverview={overview}
-        initialCampaignAnalytics={campaignAnalytics}
+        initialCampaignAnalytics={{}}
+        initialCollectionPages={{
+          campaigns: { total: campaignPage.total, totalPages: campaignPage.totalPages },
+          segments: { total: segmentPage.total, totalPages: segmentPage.totalPages },
+          workflows: { total: workflowPage.total, totalPages: workflowPage.totalPages },
+        }}
       />
     </MarketingUiProvider>
   );

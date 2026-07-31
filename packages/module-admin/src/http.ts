@@ -17,14 +17,16 @@ import {
   sanitizePublicError,
   validateBoundedUuidBatch,
 } from "@brightweblabs/infra/robustness";
+import { appendServerTiming, elapsedMs, requestStartedAt } from "@brightweblabs/infra/request-observability";
 
 export function json(body: unknown, init?: ResponseInit) {
-  return new Response(JSON.stringify(body), {
+  const payload = JSON.stringify(body);
+  const headers = new Headers(init?.headers);
+  headers.set("content-type", "application/json; charset=utf-8");
+  headers.set("content-length", String(new TextEncoder().encode(payload).byteLength));
+  return new Response(payload, {
     ...init,
-    headers: {
-      "content-type": "application/json; charset=utf-8",
-      ...(init?.headers ?? {}),
-    },
+    headers,
   });
 }
 
@@ -94,14 +96,18 @@ type AdminHttpDependencies = {
 
 export function createAdminUsersGetHandler(dependencies: AdminHttpDependencies) {
   return async function handleAdminUsersGetRequest(request: Request): Promise<Response> {
+    const startedAt = requestStartedAt();
     const access = await dependencies.getAccess();
     if (!access.ok) {
-      return json(publicError("ACCESS_DENIED", access.error), { status: access.status });
+      return appendServerTiming(json(publicError("ACCESS_DENIED", access.error), { status: access.status }), [
+        { name: "app", durationMs: elapsedMs(startedAt) },
+      ]);
     }
 
     const { page, pageSize, search, roleFilter } = parseAdminUsersListRequest(request);
 
     try {
+      const queryStartedAt = requestStartedAt();
       const result = await dependencies.listUsers({
         supabase: access.supabase as never,
         search,
@@ -110,12 +116,15 @@ export function createAdminUsersGetHandler(dependencies: AdminHttpDependencies) 
         pageSize,
       });
 
-      return json(result);
+      return appendServerTiming(json(result), [
+        { name: "db", durationMs: elapsedMs(queryStartedAt) },
+        { name: "app", durationMs: elapsedMs(startedAt) },
+      ]);
     } catch (error) {
-      return json(
+      return appendServerTiming(json(
         sanitizePublicError(error, {}, "Não foi possível carregar utilizadores admin.", "admin.users.list"),
         { status: 500 },
-      );
+      ), [{ name: "app", durationMs: elapsedMs(startedAt) }]);
     }
   };
 }

@@ -14,6 +14,21 @@ export type MarketingCampaignStatus =
   | "canceled"
   | "failed";
 
+export type MarketingCollectionResult<T> = {
+  items: T[];
+  page: number;
+  pageSize: number;
+  total: number;
+  totalPages: number;
+};
+
+export type MarketingCollectionQuery<TStatus extends string = never> = {
+  page?: number;
+  pageSize?: number;
+  search?: string;
+  status?: TStatus | null;
+};
+
 export type MarketingTopic = {
   id: string;
   slug: string;
@@ -140,6 +155,7 @@ export type MarketingWorkflow = {
   nodes: MarketingWorkflowNode[];
   nodeCount: number;
   runCount: number;
+  countsKnown?: boolean;
   createdAt: string;
   updatedAt: string;
 };
@@ -165,8 +181,9 @@ export type MarketingWorkflowRun = {
 };
 
 export type MarketingUiClient = {
-  listCampaigns(): Promise<MarketingCampaign[]>;
-  getCampaign(campaignId: string): Promise<MarketingCampaign>;
+  listCampaigns(options?: MarketingRequestOptions): Promise<MarketingCampaign[]>;
+  queryCampaigns?(query?: MarketingCollectionQuery<MarketingCampaignStatus>, options?: MarketingRequestOptions): Promise<MarketingCollectionResult<MarketingCampaign>>;
+  getCampaign(campaignId: string, options?: MarketingRequestOptions): Promise<MarketingCampaign>;
   createCampaign(input: MarketingCampaignInput): Promise<MarketingCampaign>;
   updateCampaign(campaignId: string, input: Partial<MarketingCampaignInput>): Promise<MarketingCampaign>;
   deleteCampaign(campaignId: string): Promise<void>;
@@ -175,30 +192,34 @@ export type MarketingUiClient = {
   cancelCampaign(campaignId: string): Promise<MarketingCampaign>;
   retryCampaign(campaignId: string): Promise<MarketingCampaign>;
   sendTest(campaignId: string, email: string): Promise<void>;
-  listRecipients(campaignId: string): Promise<MarketingCampaignRecipient[]>;
-  listTopics(): Promise<MarketingTopic[]>;
+  listRecipients(campaignId: string, options?: MarketingRequestOptions): Promise<MarketingCampaignRecipient[]>;
+  listTopics(options?: MarketingRequestOptions): Promise<MarketingTopic[]>;
   createTopic(input: MarketingTopicInput): Promise<MarketingTopic>;
   updateTopic(topicId: string, input: MarketingTopicUpdate): Promise<MarketingTopic>;
   reorderTopics?(topicIds: string[]): Promise<MarketingTopic[]>;
-  listSegments(): Promise<MarketingSegment[]>;
-  getSegment(segmentId: string): Promise<MarketingSegment>;
+  listSegments(options?: MarketingRequestOptions): Promise<MarketingSegment[]>;
+  querySegments?(query?: MarketingCollectionQuery, options?: MarketingRequestOptions): Promise<MarketingCollectionResult<MarketingSegment>>;
+  getSegment(segmentId: string, options?: MarketingRequestOptions): Promise<MarketingSegment>;
   createSegment(input: MarketingSegmentInput): Promise<MarketingSegment>;
   updateSegment(segmentId: string, input: Partial<MarketingSegmentInput>): Promise<MarketingSegment>;
   deleteSegment(segmentId: string): Promise<void>;
-  previewSegment(rule: MarketingSegmentRule, limit?: number, segmentId?: string): Promise<MarketingSegmentPreview>;
-  getOverview(sinceDays?: number): Promise<MarketingOverviewMetrics>;
-  getCampaignAnalytics(campaignId: string): Promise<MarketingCampaignAnalytics>;
-  getSegmentAnalytics(segmentId: string): Promise<MarketingSegmentAnalytics>;
-  listWorkflows(): Promise<MarketingWorkflow[]>;
-  getWorkflow(workflowId: string): Promise<MarketingWorkflow>;
+  previewSegment(rule: MarketingSegmentRule, limit?: number, segmentId?: string, options?: MarketingRequestOptions): Promise<MarketingSegmentPreview>;
+  getOverview(sinceDays?: number, options?: MarketingRequestOptions): Promise<MarketingOverviewMetrics>;
+  getCampaignAnalytics(campaignId: string, options?: MarketingRequestOptions): Promise<MarketingCampaignAnalytics>;
+  getSegmentAnalytics(segmentId: string, options?: MarketingRequestOptions): Promise<MarketingSegmentAnalytics>;
+  listWorkflows(options?: MarketingRequestOptions): Promise<MarketingWorkflow[]>;
+  queryWorkflows?(query?: MarketingCollectionQuery<MarketingWorkflowStatus>, options?: MarketingRequestOptions): Promise<MarketingCollectionResult<MarketingWorkflow>>;
+  getWorkflow(workflowId: string, options?: MarketingRequestOptions): Promise<MarketingWorkflow>;
   createWorkflow(input: MarketingWorkflowInput): Promise<MarketingWorkflow>;
   updateWorkflow(workflowId: string, input: Partial<MarketingWorkflowInput>): Promise<MarketingWorkflow>;
   deleteWorkflow(workflowId: string): Promise<void>;
   activateWorkflow(workflowId: string): Promise<MarketingWorkflow>;
   pauseWorkflow(workflowId: string): Promise<MarketingWorkflow>;
   saveWorkflowNodes(workflowId: string, nodes: MarketingWorkflowNodeInput[]): Promise<MarketingWorkflowNode[]>;
-  listWorkflowRuns(workflowId: string): Promise<MarketingWorkflowRun[]>;
+  listWorkflowRuns(workflowId: string, options?: MarketingRequestOptions): Promise<MarketingWorkflowRun[]>;
 };
+
+export type MarketingRequestOptions = { signal?: AbortSignal };
 
 export type MarketingUiDictionary = {
   locale: "pt-PT";

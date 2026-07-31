@@ -34,6 +34,7 @@ export function ProjectsPortfolioRoot({
         <ProjectsPortfolioList
           data={controller.data}
           hasActiveFilters={controller.hasActiveFilters}
+          isLoading={controller.isLoading}
         />
         <ProjectsPortfolioPagination
           page={controller.page}
