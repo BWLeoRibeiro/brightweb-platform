@@ -31,6 +31,9 @@ const topic = {
   label: "News",
   description: null,
   isActive: true,
+  position: 0,
+  createdAt: "2026-07-26T10:00:00.000Z",
+  updatedAt: "2026-07-26T10:00:00.000Z",
 };
 
 const segment = {
@@ -105,6 +108,14 @@ test("marketing UI client methods match the exported HTTP handler contract", asy
     webhookSecret: "webhook-secret",
     publicAppUrl: "https://example.test",
     listTopics: async () => [topic],
+    createTopic: async (_client: unknown, input: unknown) => {
+      dependencyCalls.push(["createTopic", input]);
+      return topic;
+    },
+    updateTopic: async (_client: unknown, id: string, input: unknown) => {
+      dependencyCalls.push(["updateTopic", { id, input }]);
+      return topic;
+    },
     listCampaigns: async () => [campaign],
     getCampaign: async (_client: unknown, id: string) => {
       dependencyCalls.push(["getCampaign", id]);
@@ -260,6 +271,10 @@ test("marketing UI client methods match the exported HTTP handler contract", asy
     const context = { params: { id } };
 
     if (method === "GET" && route === "topics") return handlers.topicsGet(request);
+    if (method === "POST" && route === "topics") return handlers.topicsPost(request);
+    if (parts[0] === "topics" && parts.length === 2 && method === "PATCH") {
+      return handlers.topicPatch(request, context);
+    }
     if (route === "campaigns" && method === "GET") return handlers.campaignsGet(request);
     if (route === "campaigns" && method === "POST") return handlers.campaignsPost(request);
     if (parts[0] === "campaigns" && parts.length === 2 && method === "GET") {
@@ -367,6 +382,8 @@ test("marketing UI client methods match the exported HTTP handler contract", asy
   await client.sendTest(campaign.id, "test@example.com");
   assert.equal((await client.listRecipients(campaign.id))[0]?.contactId, "contact-1");
   assert.equal((await client.listTopics())[0]?.id, topic.id);
+  assert.equal((await client.createTopic({ slug: "news", label: "News" })).id, topic.id);
+  assert.equal((await client.updateTopic(topic.id, { label: "Notícias" })).id, topic.id);
   assert.equal((await client.listSegments())[0]?.id, segment.id);
   assert.equal((await client.getSegment(segment.id)).id, segment.id);
   assert.equal((await client.createSegment(segmentInput)).id, segment.id);
@@ -413,6 +430,8 @@ test("marketing UI client methods match the exported HTTP handler contract", asy
     "POST /campaigns/campaign%2F1/test",
     "GET /campaigns/campaign%2F1/recipients",
     "GET /topics",
+    "POST /topics",
+    "PATCH /topics/topic-1",
     "GET /segments",
     "GET /segments/segment%2F1",
     "POST /segments",

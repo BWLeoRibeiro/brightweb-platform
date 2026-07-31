@@ -571,7 +571,7 @@ function createCrmSupabase() {
 }
 
 type CreateProjectsSupabaseOptions = {
-  aggregateReadErrorTable?: "project_tasks" | "project_milestones";
+  aggregateReadErrorTable?: "project_task_stats" | "project_milestones";
   includePhoneData?: boolean;
   simulateMissingProfilesPhone?: boolean;
   projectSelectColumnsLog?: string[];
@@ -685,6 +685,10 @@ function createProjectsSupabase(options: CreateProjectsSupabaseOptions = {}) {
       { id: "task-2", project_id: "project-1", status: "blocked", due_date: iso(inThreeDays) },
       { id: "task-3", project_id: "project-1", status: "done", due_date: iso(today) },
       { id: "task-4", project_id: "project-3", status: "todo", due_date: iso(yesterday) },
+    ],
+    project_task_stats: [
+      { project_id: "project-1", total: 3, done: 1, overdue: 1, blocked: 1 },
+      { project_id: "project-3", total: 1, done: 0, overdue: 1, blocked: 0 },
     ],
     project_milestones: [
       { id: "milestone-1", project_id: "project-1", status: "achieved" },
@@ -846,7 +850,7 @@ test("project aggregate enrichment propagates task and milestone provider errors
   ];
 
   for (const reader of aggregateReaders) {
-    for (const table of ["project_tasks", "project_milestones"] as const) {
+    for (const table of ["project_task_stats", "project_milestones"] as const) {
       await assert.rejects(
         reader.run(createProjectsSupabase({ aggregateReadErrorTable: table })),
         new RegExp(`${table} provider unavailable`),
@@ -856,7 +860,7 @@ test("project aggregate enrichment propagates task and milestone provider errors
   }
 });
 
-test("every Projects enrichment reader orders paginated task and milestone rows by primary key", async () => {
+test("every Projects enrichment reader orders paginated milestone rows by primary key", async () => {
   const aggregateReaders = [
     (supabase: FakeSupabase) => listProjects(supabase as never, { page: 1, pageSize: 10 }),
     (supabase: FakeSupabase) => listProjectsFromServer(supabase as never, { page: 1, pageSize: 10 }),
@@ -867,17 +871,16 @@ test("every Projects enrichment reader orders paginated task and milestone rows 
     const enrichmentOrders: Array<{ table: string; field: string; ascending: boolean }> = [];
     await read(createProjectsSupabase({
       orderSpy: (order) => {
-        if (["project_tasks", "project_milestones"].includes(order.table)) enrichmentOrders.push(order);
+        if (order.table === "project_milestones") enrichmentOrders.push(order);
       },
     }));
     assert.deepEqual(enrichmentOrders, [
-      { table: "project_tasks", field: "id", ascending: true },
       { table: "project_milestones", field: "id", ascending: true },
     ]);
   }
 });
 
-test("listProjects deterministically pages shuffled task and milestone enrichment without gaps or duplicates", async () => {
+test("listProjects reads grouped task stats and pages milestone enrichment without gaps or duplicates", async () => {
   const pageTwoTaskCount = 7;
   const pageTwoMilestoneCount = 5;
   const shuffle = <T>(rows: T[]) => [...rows.filter((_, index) => index % 2 === 1).reverse(), ...rows.filter((_, index) => index % 2 === 0).reverse()];
@@ -917,6 +920,13 @@ test("listProjects deterministically pages shuffled task and milestone enrichmen
       },
     ],
     project_tasks: taskRows,
+    project_task_stats: [{
+      project_id: "project-1",
+      total: 1000 + pageTwoTaskCount,
+      done: pageTwoTaskCount,
+      overdue: 0,
+      blocked: 0,
+    }],
     project_milestones: milestoneRows,
   }, {
     // Mirror PostgREST's implicit 1000-row cap so an unpaged query would truncate.
@@ -941,10 +951,7 @@ test("listProjects deterministically pages shuffled task and milestone enrichmen
     achieved: 1000,
     delayed: pageTwoMilestoneCount,
   });
-  assert.deepEqual(taskRangeCalls, [
-    { from: 0, to: 999 },
-    { from: 1000, to: 1999 },
-  ]);
+  assert.deepEqual(taskRangeCalls, []);
   assert.deepEqual(milestoneRangeCalls, [
     { from: 0, to: 999 },
     { from: 1000, to: 1999 },

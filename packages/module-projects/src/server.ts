@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createServiceRoleClient } from "@brightweblabs/infra/server";
-import { fetchAllRows } from "./data";
+import { fetchAllRows, getProjectTaskStats } from "./data";
 import {
   type CreateProjectInput,
   type CreateProjectOrganizationInput,
@@ -136,6 +136,9 @@ export function isProjectsSchemaMissingError(error: unknown): boolean {
     || message.includes("relation \"public.projects\" does not exist")
     || message.includes("relation \"project_tasks\" does not exist")
     || message.includes("relation \"public.project_tasks\" does not exist")
+    || message.includes("could not find the table 'public.project_task_stats' in the schema cache")
+    || message.includes("relation \"project_task_stats\" does not exist")
+    || message.includes("relation \"public.project_task_stats\" does not exist")
     || message.includes("column projects.cancellation_reason does not exist")
   );
 }
@@ -423,32 +426,16 @@ export async function listProjects(
     const ids = items.map((item) => item.id);
 
     const [
-      { data: taskRows, error: taskRowsError },
+      statsByProject,
       { data: milestoneRows, error: milestoneRowsError },
     ] = await Promise.all([
-      fetchAllRows((from, to) =>
-        supabase.from("project_tasks").select("project_id, status, due_date").in("project_id", ids).order("id", { ascending: true }).range(from, to),
-      ),
+      getProjectTaskStats(supabase, ids),
       fetchAllRows((from, to) =>
         supabase.from("project_milestones").select("project_id, status").in("project_id", ids).order("id", { ascending: true }).range(from, to),
       ),
     ]);
 
-    const enrichmentError = taskRowsError ?? milestoneRowsError;
-    if (enrichmentError) throw new Error(enrichmentError.message);
-
-    const today = new Date().toISOString().slice(0, 10);
-    const statsByProject = new Map<string, ProjectListItem["taskStats"]>();
-    for (const row of taskRows ?? []) {
-      const projectId = typeof row.project_id === "string" ? row.project_id : "";
-      if (!projectId) continue;
-      const current = statsByProject.get(projectId) ?? { total: 0, done: 0, overdue: 0, blocked: 0 };
-      current.total += 1;
-      if (row.status === "done") current.done += 1;
-      if (row.status === "blocked") current.blocked += 1;
-      if (typeof row.due_date === "string" && row.due_date < today && row.status !== "done") current.overdue += 1;
-      statsByProject.set(projectId, current);
-    }
+    if (milestoneRowsError) throw new Error(milestoneRowsError.message);
 
     const milestoneStatsByProject = new Map<string, ProjectListItem["milestoneStats"]>();
     for (const row of milestoneRows ?? []) {
@@ -582,32 +569,16 @@ export async function listOrgAdminProjectsByProfile(
     const ids = items.map((item) => item.id);
 
     const [
-      { data: taskRows, error: taskRowsError },
+      statsByProject,
       { data: milestoneRows, error: milestoneRowsError },
     ] = await Promise.all([
-      fetchAllRows((from, to) =>
-        supabase.from("project_tasks").select("project_id, status, due_date").in("project_id", ids).order("id", { ascending: true }).range(from, to),
-      ),
+      getProjectTaskStats(supabase, ids),
       fetchAllRows((from, to) =>
         supabase.from("project_milestones").select("project_id, status").in("project_id", ids).order("id", { ascending: true }).range(from, to),
       ),
     ]);
 
-    const enrichmentError = taskRowsError ?? milestoneRowsError;
-    if (enrichmentError) throw new Error(enrichmentError.message);
-
-    const today = new Date().toISOString().slice(0, 10);
-    const statsByProject = new Map<string, ProjectListItem["taskStats"]>();
-    for (const row of taskRows ?? []) {
-      const projectId = typeof row.project_id === "string" ? row.project_id : "";
-      if (!projectId) continue;
-      const current = statsByProject.get(projectId) ?? { total: 0, done: 0, overdue: 0, blocked: 0 };
-      current.total += 1;
-      if (row.status === "done") current.done += 1;
-      if (row.status === "blocked") current.blocked += 1;
-      if (typeof row.due_date === "string" && row.due_date < today && row.status !== "done") current.overdue += 1;
-      statsByProject.set(projectId, current);
-    }
+    if (milestoneRowsError) throw new Error(milestoneRowsError.message);
 
     const milestoneStatsByProject = new Map<string, ProjectListItem["milestoneStats"]>();
     for (const row of milestoneRows ?? []) {

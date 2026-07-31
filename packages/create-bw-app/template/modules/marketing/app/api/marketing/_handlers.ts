@@ -58,6 +58,15 @@ export function marketingSegmentsPost(request: Request) {
 export function marketingTopicsGet(request: Request) {
   return handlers.topicsGet(request);
 }
+export function marketingTopicsPost(request: Request) {
+  return handlers.topicsPost(request);
+}
+export function marketingTopicsOrderPost(request: Request) {
+  return handlers.topicsOrderPost(request);
+}
+export function marketingTopicPatch(request: Request, context: IdRouteContext) {
+  return handlers.topicPatch(request, context);
+}
 export function marketingWebhookPost(request: Request) {
   return handlers.webhookPost(request);
 }

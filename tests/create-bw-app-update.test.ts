@@ -354,7 +354,7 @@ test("projects scaffolding resolves organizations without CRM", async (t) => {
 
   const migrations = (await fs.readdir(path.join(targetDir, "supabase", "migrations")))
     .filter((fileName) => fileName.endsWith(".sql"));
-  assert.deepEqual(migrations.slice(0, 14), [
+  assert.deepEqual(migrations.slice(0, 15), [
     "0001_core__20260316090000_core_v1.sql",
     "0002_core__20260726180000_enable_rate_limit_counters_rls.sql",
     "0003_core__20260731120000_core_notifications.sql",
@@ -369,6 +369,7 @@ test("projects scaffolding resolves organizations without CRM", async (t) => {
     "0012_projects__20260421201528_portal_read_indexes.sql",
     "0013_projects__20260731121000_project_notification_audiences.sql",
     "0014_projects__20260731123000_project_realtime_visibility.sql",
+    "0015_projects__20260731124000_project_task_stats.sql",
   ]);
   assert.equal(migrations.some((fileName) => fileName.includes("_crm__")), false);
 

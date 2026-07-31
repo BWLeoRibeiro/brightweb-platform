@@ -20,6 +20,22 @@ export type MarketingTopic = {
   label: string;
   description: string | null;
   isActive: boolean;
+  position: number;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type MarketingTopicInput = {
+  slug: string;
+  label: string;
+  description?: string | null;
+  position?: number;
+};
+
+export type MarketingTopicUpdate = Partial<
+  Pick<MarketingTopicInput, "label" | "description" | "position">
+> & {
+  isActive?: boolean;
 };
 
 export type MarketingCampaign = {
@@ -161,6 +177,9 @@ export type MarketingUiClient = {
   sendTest(campaignId: string, email: string): Promise<void>;
   listRecipients(campaignId: string): Promise<MarketingCampaignRecipient[]>;
   listTopics(): Promise<MarketingTopic[]>;
+  createTopic(input: MarketingTopicInput): Promise<MarketingTopic>;
+  updateTopic(topicId: string, input: MarketingTopicUpdate): Promise<MarketingTopic>;
+  reorderTopics?(topicIds: string[]): Promise<MarketingTopic[]>;
   listSegments(): Promise<MarketingSegment[]>;
   getSegment(segmentId: string): Promise<MarketingSegment>;
   createSegment(input: MarketingSegmentInput): Promise<MarketingSegment>;
@@ -276,6 +295,36 @@ export type MarketingUiDictionary = {
     campaignsTab: string;
     segmentsTab: string;
     analyticsTab: string;
+    topicsTab?: string;
+  };
+  topics?: {
+    eyebrow: string;
+    title: string;
+    subtitle: string;
+    newTopic: string;
+    emptyTitle: string;
+    emptyDescription: string;
+    fields: {
+      label: string;
+      slug: string;
+      description: string;
+    };
+    placeholders: {
+      label: string;
+      slug: string;
+      description: string;
+    };
+    active: string;
+    inactive: string;
+    activate: string;
+    deactivate: string;
+    edit: string;
+    moveUp: string;
+    moveDown: string;
+    save: string;
+    cancel: string;
+    created: string;
+    saved: string;
   };
   analytics: {
     eyebrow: string;

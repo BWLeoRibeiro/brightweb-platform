@@ -147,7 +147,7 @@ function activeAssignedTasksQuery(
   supabase: SupabaseClient,
   profileId: string | undefined,
   columns: string,
-  options?: { count: "exact"; head: true },
+  options?: { count: "exact" | "planned"; head: true },
 ) {
   let query = supabase
     .from("project_tasks")
@@ -211,7 +211,7 @@ export async function getTasksDashboardData(
     .order("due_date", { ascending: true, nullsFirst: false })
     .order("updated_at", { ascending: false })
     .limit(DASHBOARD_TASK_LIMIT);
-  const totalQuery = activeAssignedTasksQuery(supabase, profileId, "id", { count: "exact", head: true });
+  const totalQuery = activeAssignedTasksQuery(supabase, profileId, "id", { count: "planned", head: true });
   const dueThisWeekQuery = activeAssignedTasksQuery(supabase, profileId, "id", { count: "exact", head: true })
     .gte("due_date", today)
     .lte("due_date", next7Days);

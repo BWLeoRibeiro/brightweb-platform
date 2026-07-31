@@ -46,11 +46,14 @@ import {
   upsertWorkflowNodes,
 } from "./workflows";
 import {
+  createTopic,
   createMarketingServiceClient,
   listTopics,
+  reorderTopics,
   resolveByUnsubscribeToken,
   unsubscribeAll,
   unsubscribeTopic,
+  updateTopic,
 } from "./server";
 
 const marketingDependencies = {
@@ -86,6 +89,9 @@ export function createMarketingCampaignHandlers(
     publicAppUrl: config.publicAppUrl,
     logger: config.logger,
     listTopics,
+    reorderTopics,
+    createTopic,
+    updateTopic,
     listCampaigns,
     getCampaign,
     createCampaign,
