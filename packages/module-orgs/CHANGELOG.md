@@ -1,5 +1,12 @@
 # @brightweblabs/module-orgs
 
+## 0.3.16
+
+### Patch Changes
+
+- @brightweblabs/app-shell@0.9.3
+- @brightweblabs/core-auth@0.9.1
+
 ## 0.3.15
 
 ### Patch Changes
