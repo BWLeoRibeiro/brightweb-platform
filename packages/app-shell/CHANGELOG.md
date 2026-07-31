@@ -1,5 +1,12 @@
 # @brightweblabs/app-shell
 
+## 0.10.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @brightweblabs/ui@1.4.2
+
 ## 0.10.0
 
 ### Minor Changes

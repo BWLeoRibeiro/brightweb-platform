@@ -59,9 +59,8 @@ export async function upgradeBrightwebApp(moduleKey, argvOptions = {}, runtimeOp
   }
   await applyMigrationWrites(migrationPlan.writes);
   appManifest.migrationCursor = migrationPlan.nextCursor;
-  for (const update of plan.packageUpdates) {
-    const key = Object.keys(catalog).find((candidate) => catalog[candidate].packageName === update.packageName);
-    if (key && appManifest.modules[key]) appManifest.modules[key].version = cleanVersion(update.to) || appManifest.modules[key].version;
+  for (const [key, entry] of Object.entries(appManifest.modules)) {
+    if (catalog[key]?.packageRoot) entry.version = catalog[key].version;
   }
   for (const relativePath of plan.starterFilesToRefresh || []) {
     const targetPath = resolveSafeRelativePath(targetDir, relativePath, "Manifest scaffold file path");

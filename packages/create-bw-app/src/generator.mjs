@@ -1031,8 +1031,9 @@ export function createModuleToolbarControlsConfig(selectedModules) {
     entries.push('  crm: () => <CrmToolbarControls />,');
   }
   if (selectedModules.includes("projects")) {
-    imports.push('import { ProjectsToolbarControls } from "@brightweblabs/module-projects/ui";');
+    imports.push('import { ProjectBoardToolbarControls, ProjectsToolbarControls } from "@brightweblabs/module-projects/ui";');
     entries.push('  projects: () => <ProjectsToolbarControls />,');
+    entries.push('  "project-board": () => <ProjectBoardToolbarControls />,');
   }
   if (selectedModules.includes("marketing")) {
     imports.push('import { MarketingToolbarControls } from "@brightweblabs/module-marketing/ui";');

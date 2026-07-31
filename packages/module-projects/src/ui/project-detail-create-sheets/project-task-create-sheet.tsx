@@ -6,6 +6,7 @@ import { format } from "date-fns";
 import { CalendarIcon, ListChecks, Save } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { useShellAction } from "@brightweblabs/app-shell";
 import {
   sheetBodyClassName,
   sheetFooterClassName,
@@ -22,7 +23,6 @@ import { Input } from "@brightweblabs/ui";
 import { Popover, PopoverContent, PopoverTrigger } from "@brightweblabs/ui";
 import { Sheet, SheetContent, SheetFooter } from "@brightweblabs/ui";
 import { cn } from "../utils";
-import { useWindowEventBridge } from "../window-events";
 
 
 type ProjectTaskCreateSheetProps = {
@@ -75,9 +75,9 @@ export function ProjectTaskCreateSheet({
     ));
   }, [members]);
 
-  useWindowEventBridge(PROJECTS_EVENTS.openNewTask, () => {
+  useShellAction(PROJECTS_EVENTS.openNewTask, () => {
     setOpen(true);
-  }, { custom: false });
+  });
 
   const resetForm = () => {
     setTitle("");

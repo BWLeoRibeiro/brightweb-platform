@@ -4,12 +4,13 @@ import type { ReactNode } from "react";
 import { resolveShellToolbarSurface, type ShellToolbarRouteConfig, type ShellToolbarSurface } from "@brightweblabs/app-shell";
 import { AdminToolbarControls } from "@brightweblabs/module-admin/ui";
 import { CrmToolbarControls } from "@brightweblabs/module-crm/ui";
-import { ProjectsToolbarControls } from "@brightweblabs/module-projects/ui";
+import { ProjectBoardToolbarControls, ProjectsToolbarControls } from "@brightweblabs/module-projects/ui";
 
 const toolbarControlBySurface: Partial<Record<ShellToolbarSurface, () => ReactNode>> = {
   "admin-users": () => <AdminToolbarControls />,
   crm: () => <CrmToolbarControls />,
   projects: () => <ProjectsToolbarControls />,
+  "project-board": () => <ProjectBoardToolbarControls />,
 };
 
 export function getModuleToolbarControls(pathname: string, toolbarRoutes: ShellToolbarRouteConfig[]) {

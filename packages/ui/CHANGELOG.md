@@ -1,5 +1,11 @@
 # @brightweblabs/ui
 
+## 1.4.2
+
+### Patch Changes
+
+- Keep the branded button foreground token from being removed when consumers add toolbar typography utilities.
+
 ## 1.4.1
 
 ### Patch Changes

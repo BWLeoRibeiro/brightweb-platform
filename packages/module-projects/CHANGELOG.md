@@ -1,5 +1,20 @@
 # @brightweblabs/module-projects
 
+## 0.12.3
+
+### Patch Changes
+
+- Mount project-board toolbar controls in generated apps and gate milestone and task actions on authoritative page readiness.
+
+## 0.12.2
+
+### Patch Changes
+
+- Updated dependencies
+  - @brightweblabs/ui@1.4.2
+  - @brightweblabs/app-shell@0.10.1
+  - @brightweblabs/core-auth@0.9.3
+
 ## 0.12.1
 
 ### Patch Changes

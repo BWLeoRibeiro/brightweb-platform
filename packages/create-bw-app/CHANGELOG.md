@@ -1,5 +1,23 @@
 # create-bw-app
 
+## 0.23.3
+
+### Patch Changes
+
+- Keep installed module versions in the BrightWeb app manifest synchronized when `bw upgrade` finds package dependencies already current.
+
+## 0.23.2
+
+### Patch Changes
+
+- Mount project-board toolbar controls in generated apps and gate milestone and task actions on authoritative page readiness.
+
+## 0.23.1
+
+### Patch Changes
+
+- 623a114: Include core migrations during full `bw upgrade` runs even though core is represented by the migration cursor rather than the optional module map.
+
 ## 0.23.0
 
 ### Minor Changes

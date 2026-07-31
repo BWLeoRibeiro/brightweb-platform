@@ -428,6 +428,20 @@ test("Projects package UI contains the literal list/detail translation and no ra
   for (const symbol of ["ProjectsPage", "ProjectDetailPage", "ProjectsToolbarControls", "ProjectDetailDataProvider", "ProjectBoardKanban", "ProjectTasksPage", "ProjectBoardLoading"]) assert.match(readFileSync(join(root, "index.ts"), "utf8"), new RegExp(symbol.replace("ProjectsToolbarControls", "toolbar-controls").replace("ProjectDetailDataProvider", "project-detail-data-provider").replace("ProjectsPage", "projects-page").replace("ProjectDetailPage", "project-detail-page").replace("ProjectBoardKanban", "project-board-kanban").replace("ProjectTasksPage", "project-tasks-page").replace("ProjectBoardLoading", "project-board-loading")));
 });
 
+test("Projects board toolbar waits for authoritative page actions", () => {
+  const root = join(process.cwd(), "packages/module-projects/src/ui");
+  const toolbar = readFileSync(join(root, "project-board-toolbar-controls.tsx"), "utf8");
+  const milestoneHook = readFileSync(join(root, "hooks/use-project-board-milestone-events.ts"), "utf8");
+  const taskMount = readFileSync(join(root, "project-detail-create-sheets/project-detail-create-sheets-mount.tsx"), "utf8");
+
+  assert.match(toolbar, /useShellActionReady\(PROJECTS_EVENTS\.setBoardMilestone\)/);
+  assert.match(toolbar, /useShellActionReady\(PROJECTS_EVENTS\.openNewTask\)/);
+  assert.match(toolbar, /disabled=\{!milestoneActionReady\}/);
+  assert.match(toolbar, /disabled=\{!newTaskActionReady\}/);
+  assert.match(milestoneHook, /useShellAction<ProjectsBoardSetMilestoneDetail>\(PROJECTS_EVENTS\.setBoardMilestone/);
+  assert.match(taskMount, /useShellAction\(PROJECTS_EVENTS\.openNewTask/);
+});
+
 test("Projects UI barrel exposes only the supported documented component families", () => {
   const barrel = readFileSync(join(process.cwd(), "packages/module-projects/src/ui/index.ts"), "utf8");
   const ledger = readFileSync(join(process.cwd(), "docs/ui-components.md"), "utf8");

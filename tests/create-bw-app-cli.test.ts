@@ -427,9 +427,11 @@ test("scaffolded shell derives its title and resolves registered module controls
   );
   assert.match(toolbarControls, /CrmToolbarControls/);
   assert.match(toolbarControls, /ProjectsToolbarControls/);
+  assert.match(toolbarControls, /ProjectBoardToolbarControls/);
   assert.match(toolbarControls, /resolveShellToolbarSurface\(pathname, toolbarRoutes\)/);
   assert.match(toolbarControls, /crm: \(\) => <CrmToolbarControls/);
   assert.match(toolbarControls, /projects: \(\) => <ProjectsToolbarControls/);
+  assert.match(toolbarControls, /"project-board": \(\) => <ProjectBoardToolbarControls/);
   assert.doesNotMatch(toolbarControls, /AdminToolbarControls/);
 });
 
@@ -763,6 +765,7 @@ test("bw upgrade appends only unapplied migrations and preserves drifted scaffol
   const manifestPath = path.join(targetDir, ".brightweb", "app-manifest.json");
   const manifest = await readJson(manifestPath);
   manifest.migrationCursor.crm = "20260316092000_crm_v1.sql";
+  manifest.modules.crm.version = "0.0.1";
   await writeJson(manifestPath, manifest);
   const migrationsDir = path.join(targetDir, "supabase", "migrations");
   for (const name of await fs.readdir(migrationsDir)) {
@@ -782,6 +785,8 @@ test("bw upgrade appends only unapplied migrations and preserves drifted scaffol
   assert.match(await fs.readFile(starterPath, "utf8"), /app-owned drift/);
   const appended = await fs.readFile(result.migrationPlan.writes[0].targetPath, "utf8");
   const release = await readJson(path.join(REPO_ROOT, "brightweb-release.json"));
+  const upgradedManifest = await readJson(manifestPath);
+  assert.equal(upgradedManifest.modules.crm.version, release.packages["@brightweblabs/module-crm"]);
   assert.match(appended, new RegExp(`^-- bw-module: crm@${release.packages["@brightweblabs/module-crm"].replaceAll(".", "\\.")} 20260316092010_crm_org_integration\\.sql`));
 });
 

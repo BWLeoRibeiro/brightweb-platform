@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import dynamic from "next/dynamic";
+import { useShellAction } from "@brightweblabs/app-shell";
 import { PROJECTS_EVENTS } from "../events";
 import { useOptionalProjectDetailData } from "../project-detail-data-provider";
 import { useWindowEventBridge } from "../window-events";
@@ -53,9 +54,9 @@ function ProjectTaskCreateSheetLazy({
 }) {
   const [shouldMount, setShouldMount] = useState(false);
 
-  useWindowEventBridge(PROJECTS_EVENTS.openNewTask, () => {
+  useShellAction(PROJECTS_EVENTS.openNewTask, () => {
     setShouldMount(true);
-  }, { custom: false });
+  });
 
   return shouldMount ? (
     <ProjectTaskCreateSheetDynamic
