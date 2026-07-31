@@ -47,7 +47,7 @@ export function CrmToolbarFiltersPill({ status, sort, stages, dictionary = defau
   return (
     <Popover open={open} onOpenChange={(next) => next ? begin() : setOpen(false)}>
       <PopoverTrigger asChild>
-        <button type="button" disabled={disabled} className="inline-flex h-9 items-center gap-2 whitespace-nowrap rounded-[var(--radius-control)] border border-[color:var(--hairline-strong)] bg-[color:var(--elevate-1)] px-3 text-body text-[length:var(--text-ui-action)] font-extrabold text-[color:var(--foreground)] transition-colors hover:border-[color:var(--border-strong)] hover:bg-[color:var(--surface-hover)] disabled:cursor-not-allowed disabled:opacity-60">
+        <button type="button" disabled={disabled} className="inline-flex h-9 cursor-pointer items-center gap-2 whitespace-nowrap rounded-[var(--radius-control)] border border-[color:var(--hairline-strong)] bg-[color:var(--elevate-1)] px-3 text-body text-[length:var(--text-ui-action)] font-extrabold text-[color:var(--foreground)] transition-colors hover:border-[color:var(--border-strong)] hover:bg-[color:var(--surface-hover)] disabled:cursor-not-allowed disabled:opacity-60">
           <Filter className="size-[var(--toolbar-icon-size)] text-[color:var(--muted-foreground)]" aria-hidden />
           {dictionary.toolbar.filters}
           {activeCount > 0 ? <span className="inline-flex size-5 items-center justify-center rounded-full bg-[color:var(--surface-button-brand)] text-micro text-accent-foreground">{activeCount}</span> : null}
@@ -56,14 +56,14 @@ export function CrmToolbarFiltersPill({ status, sort, stages, dictionary = defau
       <PopoverContent align="end" collisionPadding={12} className="w-[min(var(--toolbar-popover-width),calc(100vw-2rem))] rounded-[var(--radius-toolbar-popover)] border-[color:var(--hairline)] bg-[color:var(--popover)] p-4 shadow-[var(--shadow-toolbar-popover)]">
         <div className="mb-3 flex items-center justify-between">
           <span className="text-body text-[length:var(--text-ui-action)] font-extrabold text-[color:var(--foreground)]">{dictionary.toolbar.filters}</span>
-          <button type="button" className="p-0 text-meta font-bold text-[color:var(--muted-foreground)] underline-offset-2 hover:text-[color:var(--foreground)] hover:underline" onClick={() => { setDraftStatus(null); setDraftSort("date_desc"); }}>{dictionary.toolbar.clear}</button>
+          <button type="button" className="cursor-pointer p-0 text-meta font-bold text-[color:var(--muted-foreground)] underline-offset-2 hover:text-[color:var(--foreground)] hover:underline" onClick={() => { setDraftStatus(null); setDraftSort("date_desc"); }}>{dictionary.toolbar.clear}</button>
         </div>
         <div className="grid gap-3">
           <div>
             <span className="mb-2 block text-micro font-extrabold uppercase tracking-[var(--type-tracking-100)] text-[color:var(--muted-foreground)]">{dictionary.toolbar.status}</span>
             <div className="flex flex-wrap gap-2">
               {[{ value: null, label: dictionary.table.allSegments }, ...resolvedStages.map((stage) => ({ value: stage.value, label: stage.label }))].map((option) => (
-                <button key={option.value ?? "all"} type="button" className={`inline-flex h-[var(--toolbar-chip-height)] items-center rounded-full border px-3 text-meta text-[length:var(--text-ui-chip)] font-semibold ${draftStatus === option.value ? "border-[color:var(--border-selection)] bg-[color:var(--surface-selection)] text-[color:var(--foreground)]" : "border-[color:var(--hairline)] bg-[color:var(--elevate-1)] text-[color:var(--foreground)]"}`} onClick={() => setDraftStatus(option.value)}>{option.label}</button>
+                <button key={option.value ?? "all"} type="button" className={`inline-flex h-[var(--toolbar-chip-height)] cursor-pointer items-center rounded-full border px-3 text-meta text-[length:var(--text-ui-chip)] font-semibold ${draftStatus === option.value ? "border-[color:var(--border-selection)] bg-[color:var(--surface-selection)] text-[color:var(--foreground)]" : "border-[color:var(--hairline)] bg-[color:var(--elevate-1)] text-[color:var(--foreground)]"}`} onClick={() => setDraftStatus(option.value)}>{option.label}</button>
               ))}
             </div>
           </div>
@@ -76,7 +76,7 @@ export function CrmToolbarFiltersPill({ status, sort, stages, dictionary = defau
                 ["company", dictionary.table.sortCompany],
                 ["status_grouped", dictionary.table.sortStatusGrouped ?? dictionary.toolbar.status],
                 ["source_grouped", dictionary.table.sortSourceGrouped ?? "Origem (agrupado A → Z)"],
-              ] as const).map(([value, label]) => <button key={value} type="button" className={`inline-flex h-[var(--toolbar-chip-height)] items-center rounded-full border px-3 text-meta text-[length:var(--text-ui-chip)] font-semibold ${draftSort === value ? "border-[color:var(--border-selection)] bg-[color:var(--surface-selection)] text-[color:var(--foreground)]" : "border-[color:var(--hairline)] bg-[color:var(--elevate-1)] text-[color:var(--foreground)]"}`} onClick={() => setDraftSort(value)}>{label}</button>)}
+              ] as const).map(([value, label]) => <button key={value} type="button" className={`inline-flex h-[var(--toolbar-chip-height)] cursor-pointer items-center rounded-full border px-3 text-meta text-[length:var(--text-ui-chip)] font-semibold ${draftSort === value ? "border-[color:var(--border-selection)] bg-[color:var(--surface-selection)] text-[color:var(--foreground)]" : "border-[color:var(--hairline)] bg-[color:var(--elevate-1)] text-[color:var(--foreground)]"}`} onClick={() => setDraftSort(value)}>{label}</button>)}
             </div>
           </div>
         </div>

@@ -63,7 +63,7 @@ export function AdminToolbarControls({ dictionary = defaultAdminUiDictionary }: 
           <button
             type="button"
             disabled={!filtersReady}
-            className="inline-flex h-9 items-center gap-2 whitespace-nowrap rounded-[var(--radius-control)] border border-[color:var(--hairline-strong)] bg-[color:var(--elevate-1)] px-3 text-body text-[length:var(--text-ui-action)] font-extrabold text-[color:var(--foreground)] transition-colors hover:border-[color:var(--border-strong)] hover:bg-[color:var(--surface-hover)] disabled:cursor-not-allowed disabled:opacity-60"
+            className="inline-flex h-9 cursor-pointer items-center gap-2 whitespace-nowrap rounded-[var(--radius-control)] border border-[color:var(--hairline-strong)] bg-[color:var(--elevate-1)] px-3 text-body text-[length:var(--text-ui-action)] font-extrabold text-[color:var(--foreground)] transition-colors hover:border-[color:var(--border-strong)] hover:bg-[color:var(--surface-hover)] disabled:cursor-not-allowed disabled:opacity-60"
           >
             <Filter className="size-[var(--toolbar-icon-size)] text-[color:var(--muted-foreground)]" aria-hidden />
             {dictionary.toolbar.filters}
@@ -79,7 +79,7 @@ export function AdminToolbarControls({ dictionary = defaultAdminUiDictionary }: 
             </span>
             <button
               type="button"
-              className="p-0 text-meta font-bold text-[color:var(--muted-foreground)] hover:text-[color:var(--accent)]"
+              className="cursor-pointer p-0 text-meta font-bold text-[color:var(--muted-foreground)] hover:text-[color:var(--accent)]"
               onClick={() => setDraftRole("all")}
             >
               {dictionary.toolbar.clear}
@@ -93,7 +93,7 @@ export function AdminToolbarControls({ dictionary = defaultAdminUiDictionary }: 
               <button
                 key={role}
                 type="button"
-                className={`inline-flex h-[var(--toolbar-chip-height)] items-center rounded-full border px-3 text-meta text-[length:var(--text-ui-chip)] font-semibold ${
+                className={`inline-flex h-[var(--toolbar-chip-height)] cursor-pointer items-center rounded-full border px-3 text-meta text-[length:var(--text-ui-chip)] font-semibold ${
                   draftRole === role
                     ? "border-[color:var(--border-selection)] bg-[color:var(--surface-selection)] text-[color:var(--foreground)]"
                     : "border-[color:var(--hairline)] bg-[color:var(--elevate-1)] text-[color:var(--foreground)]"

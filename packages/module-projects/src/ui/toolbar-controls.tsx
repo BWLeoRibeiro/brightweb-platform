@@ -28,7 +28,7 @@ const HEALTH_SWATCHES: Partial<Record<ProjectsHealthFilter, string>> = {
   off_track: "var(--project-risk-overdue)",
 };
 
-const controlClassName = "relative inline-flex h-9 items-center gap-2 whitespace-nowrap rounded-[var(--radius-control)] border px-3 text-body text-[length:var(--text-ui-action)] font-extrabold";
+const controlClassName = "relative inline-flex h-9 cursor-pointer items-center gap-2 whitespace-nowrap rounded-[var(--radius-control)] border px-3 text-body text-[length:var(--text-ui-action)] font-extrabold";
 
 export function ProjectsToolbarControls() {
   const dictionary = useProjectsUiDictionary();
@@ -96,21 +96,21 @@ export function ProjectsToolbarControls() {
         <PopoverContent align="end" collisionPadding={12} className="w-[min(var(--toolbar-popover-width),calc(100vw-2rem))] rounded-[var(--radius-toolbar-popover)] border border-[color:var(--border-strong)] bg-[color:var(--popover)] p-4 shadow-[var(--shadow-toolbar-popover)]">
             <div className="mb-3 flex items-center justify-between">
               <span className="text-body text-[length:var(--text-ui-action)] font-extrabold text-[color:var(--foreground)]">{dictionary.toolbar.filters}</span>
-              <button type="button" className="p-0 text-meta font-bold text-[color:var(--muted-foreground)] underline-offset-2 hover:text-[color:var(--foreground)] hover:underline" onClick={() => { setDraftStatus("all"); setDraftHealth("all"); }}>{dictionary.toolbar.clear}</button>
+              <button type="button" className="cursor-pointer p-0 text-meta font-bold text-[color:var(--muted-foreground)] underline-offset-2 hover:text-[color:var(--foreground)] hover:underline" onClick={() => { setDraftStatus("all"); setDraftHealth("all"); }}>{dictionary.toolbar.clear}</button>
             </div>
 
             <div className="grid gap-3">
               <div>
                 <span className="mb-2 block text-micro font-extrabold uppercase tracking-[var(--type-tracking-100)] text-[color:var(--muted-foreground)]">{dictionary.toolbar.status}</span>
                 <div className="flex flex-wrap gap-2">
-                  {STATUS_KEYS.map((key) => <button key={key} type="button" className={cn("inline-flex h-[var(--toolbar-chip-height)] items-center gap-2 rounded-full border px-3 text-meta text-[length:var(--text-ui-chip)] font-semibold text-[color:var(--foreground)]", draftStatus === key ? "border-[color:var(--border-selection)] bg-[color:var(--surface-selection)]" : "border-[color:var(--hairline)] bg-[color:var(--elevate-1)]")} onClick={() => setDraftStatus(key)}>{STATUS_SWATCHES[key] ? <span className="size-[7px] rounded-full" style={{ background: STATUS_SWATCHES[key] }} /> : null}{key === "all" ? dictionary.toolbar.allStatuses : dictionary.status[key]}</button>)}
+                  {STATUS_KEYS.map((key) => <button key={key} type="button" className={cn("inline-flex h-[var(--toolbar-chip-height)] cursor-pointer items-center gap-2 rounded-full border px-3 text-meta text-[length:var(--text-ui-chip)] font-semibold text-[color:var(--foreground)]", draftStatus === key ? "border-[color:var(--border-selection)] bg-[color:var(--surface-selection)]" : "border-[color:var(--hairline)] bg-[color:var(--elevate-1)]")} onClick={() => setDraftStatus(key)}>{STATUS_SWATCHES[key] ? <span className="size-[7px] rounded-full" style={{ background: STATUS_SWATCHES[key] }} /> : null}{key === "all" ? dictionary.toolbar.allStatuses : dictionary.status[key]}</button>)}
                 </div>
               </div>
 
               <div>
                 <span className="mb-2 block text-micro font-extrabold uppercase tracking-[var(--type-tracking-100)] text-[color:var(--muted-foreground)]">{dictionary.toolbar.health}</span>
                 <div className="flex flex-wrap gap-2">
-                  {HEALTH_KEYS.map((key) => <button key={key} type="button" className={cn("inline-flex h-[var(--toolbar-chip-height)] items-center gap-2 rounded-full border px-3 text-meta text-[length:var(--text-ui-chip)] font-semibold text-[color:var(--foreground)]", draftHealth === key ? "border-[color:var(--border-selection)] bg-[color:var(--surface-selection)]" : "border-[color:var(--hairline)] bg-[color:var(--elevate-1)]")} onClick={() => setDraftHealth(key)}>{HEALTH_SWATCHES[key] ? <span className="size-[7px] rounded-full" style={{ background: HEALTH_SWATCHES[key] }} /> : null}{key === "all" ? dictionary.toolbar.allHealth : dictionary.status[key]}</button>)}
+                  {HEALTH_KEYS.map((key) => <button key={key} type="button" className={cn("inline-flex h-[var(--toolbar-chip-height)] cursor-pointer items-center gap-2 rounded-full border px-3 text-meta text-[length:var(--text-ui-chip)] font-semibold text-[color:var(--foreground)]", draftHealth === key ? "border-[color:var(--border-selection)] bg-[color:var(--surface-selection)]" : "border-[color:var(--hairline)] bg-[color:var(--elevate-1)]")} onClick={() => setDraftHealth(key)}>{HEALTH_SWATCHES[key] ? <span className="size-[7px] rounded-full" style={{ background: HEALTH_SWATCHES[key] }} /> : null}{key === "all" ? dictionary.toolbar.allHealth : dictionary.status[key]}</button>)}
                 </div>
               </div>
             </div>
