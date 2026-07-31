@@ -1,5 +1,11 @@
 # @brightweblabs/app-shell
 
+## 0.9.2
+
+### Patch Changes
+
+- 6bba363: Normalize account-menu and CRM sheet typography so secondary account text uses natural casing and shared sheet headings, labels, and status controls follow the platform type scale.
+
 ## 0.9.1
 
 ### Patch Changes
