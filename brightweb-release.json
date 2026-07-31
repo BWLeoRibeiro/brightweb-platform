@@ -6,11 +6,11 @@
     "@brightweblabs/infra": "0.5.0",
     "@brightweblabs/module-admin": "0.7.2",
     "@brightweblabs/module-crm": "0.11.2",
-    "@brightweblabs/module-marketing": "0.2.14",
+    "@brightweblabs/module-marketing": "0.3.0",
     "@brightweblabs/module-orgs": "0.3.15",
-    "@brightweblabs/module-projects": "0.10.3",
+    "@brightweblabs/module-projects": "0.10.4",
     "@brightweblabs/theme": "0.7.0",
     "@brightweblabs/ui": "1.4.0",
-    "create-bw-app": "0.22.1"
+    "create-bw-app": "0.22.2"
   }
 }
