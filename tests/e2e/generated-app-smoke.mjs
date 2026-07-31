@@ -308,12 +308,12 @@ async function main() {
     // Markers must exist in the SSR payload (client components render their
     // initial state on the server): the viewer's name comes from the stub's
     // profiles table via the shell layout, "Website Redesign" is a fixture
-    // project server-rendered by ProjectsServerMount, and "Relatório CRM"
-    // comes from the CRM dashboard dictionary.
+    // project server-rendered by ProjectsServerMount, and "A carregar contactos"
+    // is the deliberate CRM collection loading state rendered before hydration.
     const pageChecks = [
       { pathname: "/dashboard", marker: "Ana Silva" },
       { pathname: "/projetos", marker: "Website Redesign" },
-      { pathname: "/crm", marker: "Relatório CRM" },
+      { pathname: "/crm", marker: "A carregar contactos" },
       { pathname: "/admin/users", marker: "Administração" },
       { pathname: "/marketing", marker: "Campanhas" },
     ];
