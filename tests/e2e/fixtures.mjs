@@ -171,6 +171,12 @@ const projectTasks = [
   }),
 ];
 
+const projectTaskStats = [
+  { project_id: PROJECT_OVERDUE_ID, total: 3, done: 0, overdue: 1, blocked: 1 },
+  { project_id: PROJECT_ACTIVE_ID, total: 1, done: 1, overdue: 0, blocked: 0 },
+  { project_id: PROJECT_PLANNED_ID, total: 0, done: 0, overdue: 0, blocked: 0 },
+];
+
 const projectMilestones = [
   {
     id: "66666666-6666-4666-8666-666666666601",
@@ -335,6 +341,7 @@ export const tables = {
   organizations: [organizationRow],
   projects,
   project_tasks: projectTasks,
+  project_task_stats: projectTaskStats,
   project_milestones: projectMilestones,
   project_members: [],
   organization_members: [],
