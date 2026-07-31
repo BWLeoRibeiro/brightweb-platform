@@ -13,7 +13,7 @@ const buttonVariants = cva(
         destructive:
           "bg-destructive text-destructive-foreground hover:brightness-[1.05]",
         brand:
-          "bg-[color:var(--surface-button-brand)] text-[color:var(--accent-foreground)] !font-extrabold shadow-[var(--shadow-accent-control)] hover:brightness-[1.05]",
+          "bg-[color:var(--surface-button-brand)] text-[color:var(--foreground-button-brand)] !font-extrabold shadow-[var(--shadow-accent-control)] hover:brightness-[1.05]",
         soft:
           "border border-[color:var(--border)] bg-[color:var(--surface-button-soft)] text-foreground hover:border-[color:var(--border-button-soft-hover)] hover:bg-[color:var(--surface-button-soft-hover)]",
         outline:

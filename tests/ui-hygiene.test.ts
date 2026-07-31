@@ -151,6 +151,16 @@ test("shared buttons transition explicit properties and respect reduced motion",
   assert.match(source, /motion-reduce:transition-none/);
 });
 
+test("brand buttons use the foreground paired with their brand surface", async () => {
+  const source = await readFile(path.join(uiSourceRoot, "components/button-variants.ts"), "utf8");
+  const brandVariant = source.match(/brand:\s*\n?\s*"([^"]+)"/)?.[1];
+
+  assert.ok(brandVariant);
+  assert.match(brandVariant, /bg-\[color:var\(--surface-button-brand\)\]/);
+  assert.match(brandVariant, /text-\[color:var\(--foreground-button-brand\)\]/);
+  assert.doesNotMatch(brandVariant, /accent-foreground/);
+});
+
 test("segmented controls expose selection, visible focus, and reduced Framer motion", async () => {
   const dashboard = await readFile(path.join(appShellSourceRoot, "dashboard/dashboard-client.tsx"), "utf8");
   const admin = await readFile(path.join(adminUiSourceRoot, "admin-users.tsx"), "utf8");

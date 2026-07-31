@@ -69,7 +69,7 @@ const tokenizedVisualContract = [
   "--text-ui-report-title-lg", "--text-ui-calendar", "--text-ui-report-metric",
   "--radius-swatch", "--radius-pill", "--radius-scrollbar", "--surface-overlay", "--surface-overlay-strong", "--surface-tooltip", "--surface-badge-tint",
   "--surface-button-soft", "--surface-button-soft-hover", "--border-button-soft-hover",
-  "--surface-button-brand", "--foreground-accent-link",
+  "--surface-button-brand", "--foreground-button-brand", "--foreground-accent-link",
   "--surface-selection", "--border-selection", "--surface-pagination-active", "--border-pagination-active",
   "--surface-danger-subtle", "--surface-account-team", "--surface-account-client", "--surface-account",
   "--surface-account-hover", "--account-presence", "--account-presence-size", "--row-hover-sweep",
@@ -290,6 +290,8 @@ test("tokenized package visuals have defaults and live consumers", async () => {
     await visit(root);
     return files.join("\n");
   }))).join("\n");
+
+  assert.match(tokensCss, /--foreground-button-brand:\s*var\(--accent-foreground\);/);
 
   for (const token of tokenizedVisualContract) {
     assert.ok(defaults.has(token), `${token} must have a neutral default in tokens.css`);
