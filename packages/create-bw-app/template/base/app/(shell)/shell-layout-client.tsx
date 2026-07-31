@@ -12,6 +12,7 @@ import {
   isShellNavItemActive,
   useShellAction,
   useShellActionDispatch,
+  useShellNotifications,
   useShellNavState,
   type ShellContextualAction,
   type ShellNavStateGroup,
@@ -67,6 +68,7 @@ function ShellLayoutInner({
   );
   const { isSidebarCollapsed, isGroupOpen, toggleGroup, toggleSidebar } =
     useShellNavState({ pathname, groups: shellGroups });
+  const notifications = useShellNotifications({ enabled: viewer.isStaff });
   const isAdminSurface = pathname === "/admin" || pathname.startsWith("/admin/");
   const shellNavItems = [
     ...config.primaryNav,
@@ -156,7 +158,7 @@ function ShellLayoutInner({
           toolbarRoutes={toolbarRoutes}
           toolbarActions={toolbarActions}
           onToolbarAction={handleToolbarAction}
-          notifications={{}}
+          notifications={viewer.isStaff ? notifications : undefined}
         >
           {toolbarControls}
         </AppHeader>

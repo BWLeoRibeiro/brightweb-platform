@@ -3,6 +3,8 @@ export type { AppHeaderProps } from "./components/app-header";
 export type { AppHeaderBreadcrumb } from "./components/app-header";
 export { AlertsMenu } from "./components/alerts-menu";
 export type { AlertsMenuProps, ShellNotification } from "./components/alerts-menu";
+export { useShellNotifications } from "./use-shell-notifications";
+export type { UseShellNotificationsOptions } from "./use-shell-notifications";
 export {
   AppSheetBody,
   AppSheetFooter,

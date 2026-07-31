@@ -10,6 +10,7 @@ import {
   resolveShellToolbarSurface,
 } from "../packages/app-shell/src/config.ts";
 import { AppHeader, AppHeaderToolbarActionButton, type AppHeaderToolbarActionButtonProps } from "../packages/app-shell/src/components/app-header.tsx";
+import { AlertsMenu } from "../packages/app-shell/src/components/alerts-menu.tsx";
 import { triggerShellToolbarAction } from "../packages/app-shell/src/lib/shell-actions.tsx";
 import { ShellActionRegistry } from "../packages/app-shell/src/lib/shell-action-registry.ts";
 import { DesktopSidebar } from "../packages/app-shell/src/components/desktop-sidebar.tsx";
@@ -109,6 +110,20 @@ test("AppHeader renders and dispatches unplaced toolbar actions without a title"
   // Without a shell action registry the buttons fall back to onToolbarAction.
   for (const props of buttons) triggerShellToolbarAction(null, props.action, props.onToolbarAction);
   assert.deepEqual(dispatched, ["projects-refresh", "projects-new-menu"]);
+});
+
+test("AppHeader mounts notifications in its header utility slot", () => {
+  const header = AppHeader({
+    title: "Dashboard",
+    notifications: {
+      unreadCount: 2,
+      notifications: [],
+    },
+  });
+  const menus = collectElementProps(header, AlertsMenu);
+
+  assert.equal(menus.length, 1);
+  assert.equal(menus[0]?.unreadCount, 2);
 });
 
 test("toolbar actions invoke registered shell action handlers instead of the window-event fallback", () => {

@@ -717,7 +717,7 @@ test("bw add projects resolves orgs, writes overlays, migrations, and manifest s
   const release = await readJson(path.join(REPO_ROOT, "brightweb-release.json"));
   assert.equal(updated.modules.orgs.version, release.packages["@brightweblabs/module-orgs"]);
   assert.equal(updated.modules.projects.version, release.packages["@brightweblabs/module-projects"]);
-  assert.equal(updated.migrationCursor.projects, "20260421201528_portal_read_indexes.sql");
+  assert.equal(updated.migrationCursor.projects, "20260731121000_project_notification_audiences.sql");
   assert.match(await fs.readFile(path.join(targetDir, "app", "globals.css"), "utf8"), /@source "\.\.\/node_modules\/@brightweblabs\/module-projects\/src";/);
   assert.match(
     await fs.readFile(path.join(targetDir, "config", "module-toolbar-controls.tsx"), "utf8"),

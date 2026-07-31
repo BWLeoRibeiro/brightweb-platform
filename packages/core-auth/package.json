@@ -19,6 +19,7 @@
     "./account": "./src/account/index.ts",
     "./account-page": "./src/account-page.tsx",
     "./client": "./src/client.ts",
+    "./notifications": "./src/notifications/index.ts",
     "./routes": "./src/routes.ts",
     "./server": "./src/server.ts",
     "./shared": "./src/shared.ts",
