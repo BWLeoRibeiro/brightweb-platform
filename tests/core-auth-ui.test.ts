@@ -198,6 +198,26 @@ test("auth layout owns keyboard navigation, heading order, and card geometry", a
   assert.match(tokens, /@media \(min-width: 64rem\)[\s\S]*?\.auth-name-grid\s*{[\s\S]*?repeat\(2/);
 });
 
+test("auth notices own their inset spacing without consumer Tailwind scanning", async () => {
+  const layout = await read("src/ui/auth-layout.tsx");
+  const tokens = await read("tokens.css");
+  const accountPage = await read("src/account-page.tsx");
+  const noticeConsumers = await Promise.all([
+    "src/ui/forgot-password-page.tsx",
+    "src/ui/invite-page.tsx",
+    "src/ui/login-page.tsx",
+    "src/ui/reset-password-page.tsx",
+  ].map(read));
+
+  assert.match(tokens, /\.auth-notice\s*{[\s\S]*?padding:\s*0\.875rem/);
+  assert.match(tokens, /\.auth-notice\s*{[\s\S]*?border-radius:\s*var\(--radius-xl\)/);
+  assert.doesNotMatch(layout, /className=\{`auth-notice[^`]*\b(?:p-3\.5|rounded-xl)\b/);
+  assert.match(layout, /className="text-meta auth-paragraph-mini">\{children\}<\/div>/);
+  assert.match(accountPage, /<AuthNotice>\{defaultAccountUiDictionary\.profile\.loadError\}<\/AuthNotice>/);
+  assert.doesNotMatch(accountPage, /border-destructive|bg-destructive|text-destructive/);
+  for (const consumer of noticeConsumers) assert.match(consumer, /<AuthNotice/);
+});
+
 test("auth form controls expose stable submission and autofill semantics", async () => {
   const expectations = new Map([
     ["src/ui/login-page.tsx", [/name="email"/, /autoComplete="email"/, /name="password"/, /autoComplete="current-password"/]],
