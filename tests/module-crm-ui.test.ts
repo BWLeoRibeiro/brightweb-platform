@@ -12,11 +12,13 @@ import {
   CrmContactDialog,
   CrmContactsTable,
   CrmDashboard,
+  CrmDashboardSidebar,
   CrmDeleteDialog,
   CrmFunnelStats,
   CrmOrganizationsBrowser,
   CrmOrganizationSheet,
   CrmReport,
+  CrmReportBanner,
   CrmReportPage,
   CrmStatusDialog,
   CrmTimeline,
@@ -81,6 +83,81 @@ test("CRM dashboard follows the MQ table, right rail, and report hero compositio
   assert.ok(html.indexOf("Ada Lovelace") < html.indexOf("Relatório do CRM"));
 });
 
+test("CRM summary consumers render pending state instead of transient empty UI", () => {
+  const html = renderToStaticMarkup(h(CrmDashboard, { initialData: { contacts } }));
+  assert.match(html, /aria-busy="true"/);
+  assert.match(html, new RegExp(defaultCrmUiDictionary.report.loading));
+  assert.doesNotMatch(html, new RegExp(defaultCrmUiDictionary.timeline.emptyHint));
+  assert.doesNotMatch(html, new RegExp(defaultCrmUiDictionary.organizations.emptyTitle));
+});
+
+test("CRM summary consumers render empty UI only for fulfilled empty resources", () => {
+  const html = renderToStaticMarkup(h(CrmDashboard, { initialData: { contacts, stats: { total: 0, byStatus: {} }, owners: [], organizations: [], timeline: [] } }));
+  assert.match(html, new RegExp(defaultCrmUiDictionary.timeline.emptyHint));
+  assert.match(html, new RegExp(defaultCrmUiDictionary.organizations.emptyTitle));
+  assert.match(html, /Relatório do CRM/);
+  assert.doesNotMatch(html, new RegExp(defaultCrmUiDictionary.report.loading));
+});
+
+test("CRM partial initial data resolves supplied empty resources and keeps only missing resources pending", () => {
+  const html = renderToStaticMarkup(h(CrmDashboard, { initialData: { contacts, organizations: [] } }));
+  assert.match(html, new RegExp(defaultCrmUiDictionary.organizations.emptyTitle));
+  assert.doesNotMatch(html, new RegExp(defaultCrmUiDictionary.timeline.emptyHint));
+  assert.match(html, new RegExp(defaultCrmUiDictionary.report.loading));
+});
+
+test("CRM retained summary content stays visible during refresh", () => {
+  const organization = { id: "org-1", name: "Analytical Engines" };
+  const html = renderToStaticMarkup(h(CrmDashboardSidebar, {
+    timelineEntries: timeline,
+    organizations: [organization],
+    contactsByOrganization: new Map([[organization.id, 1]]),
+    isRefreshing: true,
+    isLoadingOrganizations: true,
+    onOpenTimeline: () => {},
+    onOpenOrganizations: () => {},
+    onOpenOrganization: () => {},
+  }));
+  assert.match(html, /New enquiry/);
+  assert.match(html, /Analytical Engines/);
+  assert.doesNotMatch(html, new RegExp(defaultCrmUiDictionary.timeline.emptyHint));
+  assert.doesNotMatch(html, new RegExp(defaultCrmUiDictionary.organizations.emptyTitle));
+
+  const reportHtml = renderToStaticMarkup(h(CrmReportBanner, {
+    summary: { qualifiedLast30Days: 2, wonLast30Days: 1, newLast7Days: 3, newLast30Days: 4, newLastYear: 5 },
+    href: "/crm/report",
+  }));
+  assert.match(reportHtml, />2</);
+  assert.match(reportHtml, />5</);
+});
+
+test("CRM rejected summary resources render unavailable UI rather than empty UI", () => {
+  const html = renderToStaticMarkup(h(CrmDashboardSidebar, {
+    timelineEntries: [],
+    organizations: [],
+    contactsByOrganization: new Map(),
+    isRefreshing: false,
+    isLoadingOrganizations: false,
+    timelineUnavailable: true,
+    organizationsUnavailable: true,
+    onOpenTimeline: () => {},
+    onOpenOrganizations: () => {},
+    onOpenOrganization: () => {},
+  }));
+  assert.match(html, /role="alert"/);
+  assert.match(html, new RegExp(defaultCrmUiDictionary.dashboard.loadError));
+  assert.doesNotMatch(html, new RegExp(defaultCrmUiDictionary.timeline.emptyHint));
+  assert.doesNotMatch(html, new RegExp(defaultCrmUiDictionary.organizations.emptyTitle));
+});
+
+test("CRM summary requests cannot let stale generations clear newer pending state", () => {
+  const source = readFileSync(join(process.cwd(), "packages/module-crm/src/ui/dashboard.tsx"), "utf8");
+  assert.match(source, /const generation = \+\+summaryRequestGeneration\.current;[\s\S]*setSummaryResourceStates\([\s\S]*Promise\.all/);
+  assert.match(source, /if \(generation !== summaryRequestGeneration\.current\) return;[\s\S]*status: "fulfilled"/);
+  assert.match(source, /status: "rejected", hasData: current\[key\]\.hasData/);
+  assert.match(source, /status === "pending" && !summaryResourceStates\.timeline\.hasData/);
+});
+
 test("CRM contact and organization details use right-side sheets instead of centered dialogs", () => {
   const contactSource = readFileSync(join(process.cwd(), "packages/module-crm/src/ui/contact-dialog.tsx"), "utf8");
   const organizationSource = readFileSync(join(process.cwd(), "packages/module-crm/src/ui/organization-sheet.tsx"), "utf8");
@@ -138,6 +215,16 @@ test("CRM shell toolbar controls are exported as independent surfaces", () => {
   assert.match(toolbarSource, /createOrganizationReady/);
   assert.match(toolbarSource, /disabled=\{!createContactReady \|\| !createOrganizationReady\}/);
   assert.equal(defaultCrmUiDictionary.table.searchPlaceholder, "Procurar contactos…");
+});
+
+test("CRM list requests debounce only search and expose pending state immediately", () => {
+  const dashboardSource = readFileSync(join(process.cwd(), "packages/module-crm/src/ui/dashboard.tsx"), "utf8");
+  const clientSource = readFileSync(join(process.cwd(), "packages/module-crm/src/ui/client.ts"), "utf8");
+  const tableSource = readFileSync(join(process.cwd(), "packages/module-crm/src/ui/contacts-table.tsx"), "utf8");
+  assert.match(dashboardSource, /setLoading\(true\)[\s\S]*window\.setTimeout\(\(\) => \{[\s\S]*setDebouncedSearch/);
+  assert.match(dashboardSource, /contactsRequestAbort\.current\?\.abort\(\)/);
+  assert.match(clientSource, /signal: requestOptions\.signal/);
+  assert.match(tableSource, /aria-busy=\{loading\}/);
 });
 
 test("CRM UI dictionary overrides every rendered label source", () => {

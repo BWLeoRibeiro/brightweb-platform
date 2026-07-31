@@ -366,6 +366,8 @@ export async function listProjects(
   const pageSize = params.pageSize ?? 20;
   const from = (page - 1) * pageSize;
   const to = from + pageSize - 1;
+  const today = new Date();
+  const todayDate = today.toISOString().slice(0, 10);
 
   const runProjectsListQuery = (columns: string) => {
     let query = supabase
@@ -374,13 +376,16 @@ export async function listProjects(
       .order("updated_at", { ascending: false })
       .range(from, to);
 
-    if (!params.status) query = query.not("status", "in", "(completed,canceled)");
-    if (params.status) query = query.eq("status", params.status);
+    if (params.status === undefined || params.status === null) {
+      query = query.not("status", "in", "(completed,canceled)");
+    } else if (params.status !== "all") {
+      query = query.eq("status", params.status);
+    }
     if (params.health === "at_risk") {
       query = query.or("health.eq.at_risk,status.eq.blocked");
     } else if (params.health === "off_track") {
       query = query
-        .lt("target_date", new Date().toISOString().slice(0, 10))
+        .lt("target_date", todayDate)
         .not("status", "in", "(completed,canceled)");
     } else if (params.health) {
       query = query.eq("health", params.health);
@@ -395,7 +400,7 @@ export async function listProjects(
 
     if (params.dueWindow === "overdue") {
       query = query
-        .lt("target_date", new Date().toISOString().slice(0, 10))
+        .lt("target_date", todayDate)
         .not("status", "in", "(completed,canceled)");
     }
 
@@ -451,7 +456,6 @@ export async function listProjects(
     items.forEach((item) => {
       item.taskStats = statsByProject.get(item.id) ?? item.taskStats;
       item.milestoneStats = milestoneStatsByProject.get(item.id) ?? item.milestoneStats;
-      item.health = deriveProjectHealth(item);
     });
   }
 

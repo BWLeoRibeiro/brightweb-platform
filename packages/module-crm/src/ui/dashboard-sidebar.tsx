@@ -17,6 +17,8 @@ export type CrmDashboardSidebarProps = {
   contactsByOrganization: ReadonlyMap<string, number>;
   isRefreshing: boolean;
   isLoadingOrganizations: boolean;
+  timelineUnavailable?: boolean;
+  organizationsUnavailable?: boolean;
   dictionary?: CrmUiDictionary;
   onOpenTimeline: () => void;
   onOpenOrganizations: () => void;
@@ -29,6 +31,8 @@ export function CrmDashboardSidebar({
   contactsByOrganization,
   isRefreshing,
   isLoadingOrganizations,
+  timelineUnavailable = false,
+  organizationsUnavailable = false,
   dictionary = defaultCrmUiDictionary,
   onOpenTimeline,
   onOpenOrganizations,
@@ -36,7 +40,7 @@ export function CrmDashboardSidebar({
 }: CrmDashboardSidebarProps) {
   return (
     <div className="min-w-0 space-y-[var(--crm-sidebar-gap)] self-start md:col-span-1">
-      <SurfaceCard className={`${CRM_SIDEBAR_SURFACE} self-start p-0`}>
+      <SurfaceCard aria-busy={isRefreshing} className={`${CRM_SIDEBAR_SURFACE} self-start p-0`}>
         <div className="px-4 pb-2 pt-4">
           <SectionHeading
             icon={Clock}
@@ -63,7 +67,8 @@ export function CrmDashboardSidebar({
               ))}
             </div>
           ) : null}
-          {!isRefreshing && timelineEntries.length === 0 ? <p className="text-meta text-[color:var(--muted-foreground)]">{dictionary.timeline.emptyHint}</p> : null}
+          {timelineUnavailable && timelineEntries.length === 0 ? <p role="alert" className="min-h-12 text-meta text-destructive">{dictionary.dashboard.loadError}</p> : null}
+          {!isRefreshing && !timelineUnavailable && timelineEntries.length === 0 ? <p className="text-meta text-[color:var(--muted-foreground)]">{dictionary.timeline.emptyHint}</p> : null}
           <ol className="flex flex-col pl-[var(--timeline-list-inset)]">
             {timelineEntries.slice(0, 3).map((entry, index, list) => (
               <CrmActivityCard key={entry.id} item={entry} isLast={index === list.length - 1} locale={dictionary.locale} dictionary={dictionary.activity} systemActor={dictionary.timeline.systemActor} />
@@ -72,7 +77,7 @@ export function CrmDashboardSidebar({
         </div>
       </SurfaceCard>
 
-      <SurfaceCard className={`${CRM_SIDEBAR_SURFACE} self-start p-0`}>
+      <SurfaceCard aria-busy={isLoadingOrganizations} className={`${CRM_SIDEBAR_SURFACE} self-start p-0`}>
         <div className="px-4 pb-2 pt-4">
           <SectionHeading
             icon={Building2}
@@ -118,7 +123,8 @@ export function CrmDashboardSidebar({
           {isLoadingOrganizations && organizations.length === 0 ? (
             <div className="space-y-2 px-2.5 py-2">{[0, 1, 2, 3].map((index) => <Skeleton key={index} className="h-10 w-full rounded-[var(--radius-card)]" />)}</div>
           ) : null}
-          {!isLoadingOrganizations && organizations.length === 0 ? <p className="px-2.5 py-4 text-micro text-muted-foreground">{dictionary.organizations.emptyTitle}</p> : null}
+          {organizationsUnavailable && organizations.length === 0 ? <p role="alert" className="min-h-10 px-2.5 py-4 text-micro text-destructive">{dictionary.dashboard.loadError}</p> : null}
+          {!isLoadingOrganizations && !organizationsUnavailable && organizations.length === 0 ? <p className="px-2.5 py-4 text-micro text-muted-foreground">{dictionary.organizations.emptyTitle}</p> : null}
         </div>
       </SurfaceCard>
     </div>

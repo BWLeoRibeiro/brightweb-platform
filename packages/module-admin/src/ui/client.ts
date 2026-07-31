@@ -1,5 +1,6 @@
-import type { AdminUiClient } from "./types";
+import type { AdminUiClient, AdminUiClientOptions } from "./types";
 import { readPublicError } from "@brightweblabs/infra/robustness";
+import { observedFetch } from "@brightweblabs/infra/request-observability";
 import {
   parseAdminInvitationDeleteResponse,
   parseAdminInvitationsResponse,
@@ -14,18 +15,23 @@ async function readPayload(response: Response): Promise<unknown> {
   return payload;
 }
 
-export function createAdminUiClient(basePath = "/api/admin/users", fetcher: typeof fetch = fetch): AdminUiClient {
+export function createAdminUiClient(basePath = "/api/admin/users", fetcher: typeof fetch = fetch, options: AdminUiClientOptions = {}): AdminUiClient {
   const root = basePath.replace(/\/$/, "");
 
   return {
-    async listUsers(params) {
+    async listUsers(params, requestOptions = {}) {
       const query = new URLSearchParams({
         page: String(params.page),
         pageSize: String(params.pageSize),
       });
       if (params.search) query.set("search", params.search);
       if (params.role) query.set("role", params.role);
-      return parseAdminUsersResponse(await readPayload(await fetcher(`${root}?${query.toString()}`)));
+      return parseAdminUsersResponse(await readPayload(await observedFetch(
+        fetcher,
+        `${root}?${query.toString()}`,
+        { signal: requestOptions.signal },
+        { domain: "admin", operation: "users.list", observer: options.onRequestMetric },
+      )));
     },
     async listInvitations() {
       return parseAdminInvitationsResponse(await readPayload(await fetcher(`${root}/invitations`)));

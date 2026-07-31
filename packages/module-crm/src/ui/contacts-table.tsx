@@ -133,7 +133,7 @@ export function CrmContactsTable({
   };
 
   return (
-    <SurfaceCard className={`${CRM_TABLE_SURFACE} scroll-mt-28 flex h-[calc(100dvh-var(--crm-table-viewport-offset))] min-h-[var(--crm-table-min-height)] min-w-0 w-full max-w-full flex-col overflow-hidden p-0`}>
+    <SurfaceCard aria-busy={loading} className={`${CRM_TABLE_SURFACE} scroll-mt-28 flex h-[calc(100dvh-var(--crm-table-viewport-offset))] min-h-[var(--crm-table-min-height)] min-w-0 w-full max-w-full flex-col overflow-hidden p-0 transition-opacity duration-150 motion-reduce:transition-none ${loading && data.items.length > 0 ? "opacity-60" : ""}`}>
       {showToolbar ? <div className="flex flex-wrap items-center gap-3 border-b border-hairline p-4">
         <SearchField
           value={params.search ?? ""}

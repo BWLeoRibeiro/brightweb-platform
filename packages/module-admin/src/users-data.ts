@@ -53,7 +53,7 @@ export async function listAdminUsers({
   let query = supabase
     .from("user_role_assignments")
     .select(
-      "profile_id, role_code, assigned_at, profile:profiles!user_role_assignments_profile_id_fkey(id, email, first_name, last_name, created_at, updated_at)",
+      "profile_id, role_code, assigned_at, profile:profiles!user_role_assignments_profile_id_fkey!inner(id, email, first_name, last_name, created_at, updated_at)",
       { count: "exact" },
     )
     .order("assigned_at", { ascending: false })
@@ -67,7 +67,7 @@ export async function listAdminUsers({
     const escapedSearch = normalizedSearch.replace(/[%_,()"]/g, "");
     const filter = `%${escapedSearch}%`;
     query = query.or(`email.ilike.${filter},first_name.ilike.${filter},last_name.ilike.${filter}`, {
-      foreignTable: "profiles",
+      referencedTable: "profile",
     });
   }
 

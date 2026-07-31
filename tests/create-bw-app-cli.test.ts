@@ -427,9 +427,11 @@ test("scaffolded shell derives its title and resolves registered module controls
   );
   assert.match(toolbarControls, /CrmToolbarControls/);
   assert.match(toolbarControls, /ProjectsToolbarControls/);
+  assert.match(toolbarControls, /ProjectBoardToolbarControls/);
   assert.match(toolbarControls, /resolveShellToolbarSurface\(pathname, toolbarRoutes\)/);
   assert.match(toolbarControls, /crm: \(\) => <CrmToolbarControls/);
   assert.match(toolbarControls, /projects: \(\) => <ProjectsToolbarControls/);
+  assert.match(toolbarControls, /"project-board": \(\) => <ProjectBoardToolbarControls/);
   assert.doesNotMatch(toolbarControls, /AdminToolbarControls/);
 });
 
@@ -548,6 +550,14 @@ test("marketing scaffolds its full thin surface and auto-enables CRM plus Organi
   assert.match(shellConfig, /orgsModuleRegistration/);
   assert.match(shellConfig, /crmModuleRegistration/);
   assert.match(shellConfig, /marketingModuleRegistration/);
+  const toolbarConfig = await fs.readFile(path.join(targetDir, "config", "module-toolbar-controls.tsx"), "utf8");
+  assert.match(toolbarConfig, /MarketingToolbarControls/);
+  assert.match(toolbarConfig, /marketing:\s*\(\)\s*=>\s*<MarketingToolbarControls/);
+  assert.equal(
+    (await fs.readdir(path.join(targetDir, "supabase", "migrations")))
+      .some((name) => name.includes("_marketing__20260731130400_marketing_collection_indexes.sql")),
+    true,
+  );
 
   const envFile = await fs.readFile(path.join(targetDir, ".env.local"), "utf8");
   for (const variableName of [
@@ -721,7 +731,7 @@ test("bw add projects resolves orgs, writes overlays, migrations, and manifest s
   const release = await readJson(path.join(REPO_ROOT, "brightweb-release.json"));
   assert.equal(updated.modules.orgs.version, release.packages["@brightweblabs/module-orgs"]);
   assert.equal(updated.modules.projects.version, release.packages["@brightweblabs/module-projects"]);
-  assert.equal(updated.migrationCursor.projects, "20260731124000_project_task_stats.sql");
+  assert.equal(updated.migrationCursor.projects, "20260731130300_project_collection_indexes.sql");
   assert.match(await fs.readFile(path.join(targetDir, "app", "globals.css"), "utf8"), /@source "\.\.\/node_modules\/@brightweblabs\/module-projects\/src";/);
   assert.match(
     await fs.readFile(path.join(targetDir, "config", "module-toolbar-controls.tsx"), "utf8"),
@@ -730,6 +740,10 @@ test("bw add projects resolves orgs, writes overlays, migrations, and manifest s
   await assert.rejects(fs.access(path.join(targetDir, "app", "playground", "projects", "page.tsx")));
   const migrations = await fs.readdir(path.join(targetDir, "supabase", "migrations"));
   assert.ok(migrations.some((name) => name.includes("_projects__20260316093000_projects_v1.sql")));
+  assert.ok(migrations.some((name) => name.includes("_projects__20260731121000_project_notification_audiences.sql")));
+  assert.ok(migrations.some((name) => name.includes("_projects__20260731123000_project_realtime_visibility.sql")));
+  assert.ok(migrations.some((name) => name.includes("_projects__20260731124000_project_task_stats.sql")));
+  assert.ok(migrations.some((name) => name.includes("_projects__20260731130300_project_collection_indexes.sql")));
   const doctor = await doctorBrightwebApp({ targetDir }, { workspaceRoot: REPO_ROOT });
   assert.equal(doctor.ok, true);
   assert.equal(doctor.checks.find((entry: { id: string }) => entry.id === "scaffold")?.status, "PASS");
@@ -751,6 +765,7 @@ test("bw upgrade appends only unapplied migrations and preserves drifted scaffol
   const manifestPath = path.join(targetDir, ".brightweb", "app-manifest.json");
   const manifest = await readJson(manifestPath);
   manifest.migrationCursor.crm = "20260316092000_crm_v1.sql";
+  manifest.modules.crm.version = "0.0.1";
   await writeJson(manifestPath, manifest);
   const migrationsDir = path.join(targetDir, "supabase", "migrations");
   for (const name of await fs.readdir(migrationsDir)) {
@@ -758,18 +773,42 @@ test("bw upgrade appends only unapplied migrations and preserves drifted scaffol
       name.includes("_crm__20260316092010_")
       || name.includes("_crm__20260421201523_")
       || name.includes("_crm__20260724120000_")
+      || name.includes("_crm__20260731130200_")
     ) await fs.rm(path.join(migrationsDir, name));
   }
   const starterPath = path.join(targetDir, "app", "(shell)", "crm", "page.tsx");
   await fs.appendFile(starterPath, "\n// app-owned drift\n");
 
   const result = await upgradeBrightwebApp("crm", { targetDir, refreshStarters: true }, { workspaceRoot: REPO_ROOT, fetchImpl: mockNpmFetch });
-  assert.equal(result.migrationPlan.writes.length, 3);
+  assert.equal(result.migrationPlan.writes.length, 4);
   assert.ok(result.drifted.includes("app/(shell)/crm/page.tsx"));
   assert.match(await fs.readFile(starterPath, "utf8"), /app-owned drift/);
   const appended = await fs.readFile(result.migrationPlan.writes[0].targetPath, "utf8");
   const release = await readJson(path.join(REPO_ROOT, "brightweb-release.json"));
+  const upgradedManifest = await readJson(manifestPath);
+  assert.equal(upgradedManifest.modules.crm.version, release.packages["@brightweblabs/module-crm"]);
   assert.match(appended, new RegExp(`^-- bw-module: crm@${release.packages["@brightweblabs/module-crm"].replaceAll(".", "\\.")} 20260316092010_crm_org_integration\\.sql`));
+});
+
+test("full bw upgrade includes core migrations recorded outside the optional module map", async (t) => {
+  const { root, targetDir } = await scaffold(["crm"]);
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+  const manifestPath = path.join(targetDir, ".brightweb", "app-manifest.json");
+  const manifest = await readJson(manifestPath);
+  manifest.migrationCursor.core = "20260731122000_core_realtime_activity.sql";
+  await writeJson(manifestPath, manifest);
+
+  const migrationsDir = path.join(targetDir, "supabase", "migrations");
+  for (const name of await fs.readdir(migrationsDir)) {
+    if (name.includes("_core__20260731130000_profile_search_indexes.sql")) {
+      await fs.rm(path.join(migrationsDir, name));
+    }
+  }
+
+  const result = await upgradeBrightwebApp(undefined, { targetDir }, { workspaceRoot: REPO_ROOT, fetchImpl: mockNpmFetch });
+  assert.ok(result.migrationPlan.writes.some((entry) => entry.moduleKey === "core"));
+  const updated = await readJson(manifestPath);
+  assert.equal(updated.migrationCursor.core, "20260731130000_profile_search_indexes.sql");
 });
 
 test("bw upgrade never refreshes an owned scaffold file", async (t) => {

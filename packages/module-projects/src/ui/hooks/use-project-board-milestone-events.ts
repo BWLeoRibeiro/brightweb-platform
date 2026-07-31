@@ -1,7 +1,7 @@
 import { useEffect } from "react";
+import { useShellAction } from "@brightweblabs/app-shell";
 import { PROJECTS_EVENTS, dispatchProjectsCustomEvent, type ProjectsBoardMilestoneStateDetail, type ProjectsBoardSetMilestoneDetail } from "../events";
 import type { ProjectMilestone } from "../../types";
-import { useWindowEventBridge } from "../window-events";
 
 type MilestoneFilterValue = "all" | "__none__" | string;
 
@@ -11,7 +11,7 @@ export function useProjectBoardMilestoneEvents({ milestones, milestoneFilter, on
     dispatchProjectsCustomEvent(PROJECTS_EVENTS.boardMilestoneState, detail);
   }, [milestoneFilter, milestones]);
 
-  useWindowEventBridge<ProjectsBoardSetMilestoneDetail>(PROJECTS_EVENTS.setBoardMilestone, (detail) => {
+  useShellAction<ProjectsBoardSetMilestoneDetail>(PROJECTS_EVENTS.setBoardMilestone, (detail) => {
     const nextMilestone = detail?.milestoneId;
     if (nextMilestone === "all" || nextMilestone === "__none__" || (typeof nextMilestone === "string" && milestones.some((milestone) => milestone.id === nextMilestone))) onSetMilestoneFilter(nextMilestone);
     else onSetMilestoneFilter("all");

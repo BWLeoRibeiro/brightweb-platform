@@ -54,6 +54,13 @@ export type CrmStatusLog = {
 export type CrmContactStatusStats = {
   total: number;
   byStatus: Record<string, number>;
+  activity?: {
+    qualifiedLast30Days: number;
+    wonLast30Days: number;
+    newLast7Days: number;
+    newLast30Days: number;
+    newLastYear: number;
+  };
 };
 
 export type CrmReportData = {
@@ -106,6 +113,7 @@ export type CrmStatusTimelineParams = {
   since?: Date | string;
   limit?: number;
   contactId?: string;
+  search?: string;
 };
 
 export type CrmStatusTimelineData = CrmStatusLog[];
@@ -296,27 +304,67 @@ export async function listCrmContacts(
 export async function getCrmContactStatusStats(
   supabase: SupabaseClient,
 ): Promise<CrmContactStatusStats> {
-  const [totalResult, ...statusResults] = await Promise.all([
-    supabase.from("crm_contacts").select("id", { count: "exact", head: true }),
-    ...CRM_CONTACT_STATUSES.map((status) =>
-      supabase
-        .from("crm_contacts")
-        .select("id", { count: "exact", head: true })
-        .eq("status", status),
-    ),
-  ]);
-
-  const aggregateError = [totalResult, ...statusResults].find((result) => result.error)?.error;
-  if (aggregateError) {
-    throw new Error(aggregateError.message);
+  if (typeof supabase.rpc === "function") {
+    const { data, error } = await supabase.rpc("get_crm_contact_stats");
+    if (!error) {
+      const row = Array.isArray(data) ? data[0] : data;
+      if (!row || typeof row !== "object") {
+        return { total: 0, byStatus: {}, activity: { qualifiedLast30Days: 0, wonLast30Days: 0, newLast7Days: 0, newLast30Days: 0, newLastYear: 0 } };
+      }
+      const value = row as Record<string, unknown>;
+      return {
+        total: Number(value.total_count ?? 0),
+        byStatus: {
+          lead: Number(value.lead_count ?? 0),
+          qualified: Number(value.qualified_count ?? 0),
+          proposal: Number(value.proposal_count ?? 0),
+          won: Number(value.won_count ?? 0),
+          lost: Number(value.lost_count ?? 0),
+        },
+        activity: {
+          qualifiedLast30Days: Number(value.qualified_last_30_days ?? 0),
+          wonLast30Days: Number(value.won_last_30_days ?? 0),
+          newLast7Days: Number(value.new_last_7_days ?? 0),
+          newLast30Days: Number(value.new_last_30_days ?? 0),
+          newLastYear: Number(value.new_last_year ?? 0),
+        },
+      };
+    }
+    if (error.code !== "42883" && error.code !== "PGRST202") {
+      throw new Error(error.message);
+    }
   }
 
+  // Compatibility path for applications that upgraded the package before
+  // applying the accompanying database migration.
+  const now = Date.now();
+  const since = (days: number) => new Date(now - days * 86_400_000).toISOString();
+  const [totalResult, ...remainingResults] = await Promise.all([
+    supabase.from("crm_contacts").select("id", { count: "exact", head: true }),
+    ...CRM_CONTACT_STATUSES.map((status) => supabase.from("crm_contacts").select("id", { count: "exact", head: true }).eq("status", status)),
+    supabase.from("crm_status_log").select("id", { count: "exact", head: true }).eq("new_status", "qualified").gte("changed_at", since(30)),
+    supabase.from("crm_status_log").select("id", { count: "exact", head: true }).eq("new_status", "won").gte("changed_at", since(30)),
+    supabase.from("crm_contacts").select("id", { count: "exact", head: true }).gte("created_at", since(7)),
+    supabase.from("crm_contacts").select("id", { count: "exact", head: true }).gte("created_at", since(30)),
+    supabase.from("crm_contacts").select("id", { count: "exact", head: true }).gte("created_at", since(365)),
+  ]);
+  const statusResults = remainingResults.slice(0, CRM_CONTACT_STATUSES.length);
+  const activityResults = remainingResults.slice(CRM_CONTACT_STATUSES.length);
+  const aggregateError = [totalResult, ...remainingResults].find((result) => result.error)?.error;
+  if (aggregateError) throw new Error(aggregateError.message);
   return {
     total: totalResult.count ?? 0,
     byStatus: CRM_CONTACT_STATUSES.reduce<Record<string, number>>((acc, status, index) => {
       acc[status] = statusResults[index]?.count ?? 0;
       return acc;
     }, {}),
+    activity: {
+      qualifiedLast30Days: activityResults[0]?.count ?? 0,
+      wonLast30Days: activityResults[1]?.count ?? 0,
+      newLast7Days: activityResults[2]?.count ?? 0,
+      newLast30Days: activityResults[3]?.count ?? 0,
+      newLastYear: activityResults[4]?.count ?? 0,
+    },
   };
 }
 
@@ -381,6 +429,28 @@ export async function listCrmStatusTimeline(
 ): Promise<CrmStatusTimelineData> {
   const limit = normalizeLimit(params.limit, CRM_STATUS_TIMELINE_DEFAULT_LIMIT, CRM_STATUS_TIMELINE_MAX_LIMIT);
   const since = normalizeSince(params.since);
+  const search = params.search?.trim();
+  let useLegacySearch = false;
+  if (search && typeof supabase.rpc === "function") {
+    const { data, error } = await supabase.rpc("search_crm_status_timeline", {
+      p_search: search,
+      p_since: since,
+      p_contact_id: params.contactId?.trim() || null,
+      p_limit: limit,
+    });
+    if (!error) {
+      return ((data ?? []) as CrmStatusLog[]).map((entry) => ({
+        ...entry,
+        changed_by_label: entry.changed_by_label ?? null,
+        contact_label: entry.contact_label || "Contacto",
+      }));
+    }
+    if (error.code !== "42883" && error.code !== "PGRST202") throw new Error(error.message);
+    useLegacySearch = true;
+  } else if (search) {
+    useLegacySearch = true;
+  }
+
   let query = supabase
     .from("crm_status_log")
     .select("id, contact_id, previous_status, new_status, reason, changed_at, changed_by_user_id")
@@ -388,6 +458,9 @@ export async function listCrmStatusTimeline(
     .order("changed_at", { ascending: false });
 
   if (params.contactId?.trim()) query = query.eq("contact_id", params.contactId.trim());
+  if (useLegacySearch && search) {
+    throw new Error("CRM_TIMELINE_SEARCH_MIGRATION_REQUIRED");
+  }
   const { data, error } = await query.limit(limit);
 
   if (error) {

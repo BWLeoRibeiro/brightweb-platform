@@ -102,39 +102,67 @@ export function AdminUsersClient({
   const didRunInitialFetchRef = useRef(false);
   const didLoadInvitationsRef = useRef(false);
   const usersRequestGenerationRef = useRef(0);
+  const usersRequestAbortRef = useRef<AbortController | null>(null);
+  const searchDebouncePendingRef = useRef(false);
   const invitationsRequestGenerationRef = useRef(0);
 
   useEffect(() => {
-    const timeout = window.setTimeout(() => { setDebouncedSearch(search.trim()); setPage(1); }, 180);
+    const normalizedSearch = search.trim();
+    if (normalizedSearch === debouncedSearch) {
+      if (searchDebouncePendingRef.current) {
+        searchDebouncePendingRef.current = false;
+        setLoading(false);
+      }
+      return;
+    }
+    usersRequestAbortRef.current?.abort();
+    usersRequestAbortRef.current = null;
+    usersRequestGenerationRef.current += 1;
+    setLoading(true);
+    setPage(1);
+    if (!normalizedSearch) {
+      searchDebouncePendingRef.current = false;
+      setDebouncedSearch("");
+      return;
+    }
+    searchDebouncePendingRef.current = true;
+    const timeout = window.setTimeout(() => {
+      searchDebouncePendingRef.current = false;
+      setDebouncedSearch(normalizedSearch);
+    }, 180);
     return () => window.clearTimeout(timeout);
-  }, [search]);
+  }, [debouncedSearch, search]);
 
   const loadUsers = useCallback(async () => {
+    usersRequestAbortRef.current?.abort();
+    const controller = new AbortController();
+    usersRequestAbortRef.current = controller;
     const generation = ++usersRequestGenerationRef.current;
     setLoading(true);
     try {
       const payload = await client.listUsers({
         page, pageSize, search: debouncedSearch || undefined, role: roleFilter === "all" ? null : roleFilter,
-      });
+      }, { signal: controller.signal });
       if (generation === usersRequestGenerationRef.current) {
         setRows(payload.data);
         setTotal(payload.pagination.total);
         setSelectedIds((current) => current.filter((id) => payload.data.some((row) => row.profileId === id)));
       }
     } catch (error) {
+      if (error instanceof Error && error.name === "AbortError") return;
       if (generation === usersRequestGenerationRef.current) {
         toast.error(error instanceof Error ? error.message : dictionary.users.loadError);
-        setRows([]);
-        setTotal(0);
-        setSelectedIds([]);
       }
     } finally {
+      if (usersRequestAbortRef.current === controller) usersRequestAbortRef.current = null;
       if (generation === usersRequestGenerationRef.current) {
         setLoading(false);
         dispatchAdminEvent(ADMIN_EVENTS.refreshComplete);
       }
     }
   }, [client, debouncedSearch, dictionary.users.loadError, page, pageSize, roleFilter]);
+
+  useEffect(() => () => usersRequestAbortRef.current?.abort(), []);
 
   const loadInvitations = useCallback(async ({ force = false }: { force?: boolean } = {}) => {
     if (didLoadInvitationsRef.current && !force) return;
@@ -191,6 +219,7 @@ export function AdminUsersClient({
 
   useShellAction<AdminSetSearchEventDetail | undefined>(ADMIN_EVENTS.setSearch, (detail) => setSearch(detail?.query ?? ""));
   useShellAction<AdminSetRoleFilterEventDetail | undefined>(ADMIN_EVENTS.setRoleFilter, (detail) => {
+    setDebouncedSearch(search.trim());
     setRoleFilter(detail?.role ?? "all");
     setPage(1);
   });

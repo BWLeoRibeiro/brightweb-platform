@@ -284,10 +284,11 @@ test("Admin role changes remain successful when activity logging is unavailable"
 
 test("CRM timeline request limits and timestamps are bounded before data access", async () => {
   const parsed = parseCrmTimelineRequest(
-    "https://example.test/api/crm/timeline?limit=999999&since=not-a-date",
+    "https://example.test/api/crm/timeline?limit=999999&since=not-a-date&search=Rita",
   );
   assert.equal(parsed.limit, 100);
   assert.equal(parsed.since, undefined);
+  assert.equal(parsed.search, "Rita");
 
   let receivedSince = "";
   let receivedLimit = 0;

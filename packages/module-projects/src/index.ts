@@ -168,7 +168,7 @@ export async function getProjectsPortfolioPageData(): Promise<ProjectsPortfolioP
   try {
     [portfolioStats, result] = await Promise.all([
       getProjectPortfolioStats(supabase),
-      listProjects(supabase, { page: 1, pageSize: 9, dueWindow: "all" }),
+      listProjects(supabase, { page: 1, pageSize: 9, dueWindow: "all", status: "all" }),
     ]);
   } catch (error) {
     if (isProjectsSchemaMissingError(error)) {

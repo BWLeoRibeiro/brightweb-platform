@@ -1,6 +1,6 @@
 "use client";
 
-import { Megaphone, Send } from "lucide-react";
+import { Filter, Megaphone, Plus, Search, Send } from "lucide-react";
 import type { ShellContextualAction, ShellModuleRegistration } from "@brightweblabs/app-shell";
 
 export const marketingModuleRegistration: ShellModuleRegistration<ShellContextualAction> = {
@@ -15,4 +15,12 @@ export const marketingModuleRegistration: ShellModuleRegistration<ShellContextua
       ],
     },
   ],
+  toolbarRoutes: [{ surface: "marketing", match: { exact: ["/marketing"] } }],
+  toolbarActions: {
+    marketing: [
+      { label: "Procurar marketing", icon: Search, action: "marketing:set-search" },
+      { label: "Filtros", icon: Filter, action: "marketing:set-status-filter" },
+      { label: "Criar", icon: Plus, action: "marketing:create" },
+    ],
+  },
 };

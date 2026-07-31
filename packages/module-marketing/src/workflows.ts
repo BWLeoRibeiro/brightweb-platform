@@ -34,6 +34,20 @@ export type MarketingWorkflow = {
   updatedAt: string;
 };
 
+export type MarketingWorkflowListParams = {
+  page?: number;
+  pageSize?: number;
+  search?: string;
+  status?: WorkflowStatus | null;
+};
+export type MarketingWorkflowListResult = {
+  items: MarketingWorkflow[];
+  page: number;
+  pageSize: number;
+  total: number;
+  totalPages: number;
+};
+
 export type MarketingWorkflowNode = {
   id: string;
   workflowId: string;
@@ -150,6 +164,33 @@ export async function listWorkflows(supabase: unknown) {
     .order("created_at", { ascending: false });
   throwIfError(result.error);
   return ((result.data ?? []) as WorkflowRow[]).map(workflowFromRow);
+}
+
+export async function queryWorkflows(
+  supabase: unknown,
+  params: MarketingWorkflowListParams = {},
+): Promise<MarketingWorkflowListResult> {
+  const page = Math.max(1, Math.floor(params.page ?? 1));
+  const pageSize = Math.min(100, Math.max(1, Math.floor(params.pageSize ?? 20)));
+  const from = (page - 1) * pageSize;
+  let query = db(supabase)
+    .from("marketing_workflows")
+    .select("*", { count: "exact" })
+    .order("created_at", { ascending: false })
+    .range(from, from + pageSize - 1);
+  if (params.status) query = query.eq("status", params.status);
+  const search = params.search?.trim().toLowerCase().replace(/[%_,()\"]/g, "");
+  if (search) query = query.or(`name.ilike.%${search}%,description.ilike.%${search}%`);
+  const { data, error, count } = await query;
+  throwIfError(error);
+  const total = count ?? 0;
+  return {
+    items: ((data ?? []) as WorkflowRow[]).map(workflowFromRow),
+    page,
+    pageSize,
+    total,
+    totalPages: Math.max(1, Math.ceil(total / pageSize)),
+  };
 }
 
 export async function getWorkflow(

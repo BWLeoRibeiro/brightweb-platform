@@ -157,7 +157,7 @@ test("brand buttons use the foreground paired with their brand surface", async (
 
   assert.ok(brandVariant);
   assert.match(brandVariant, /bg-\[color:var\(--surface-button-brand\)\]/);
-  assert.match(brandVariant, /text-\[color:var\(--foreground-button-brand\)\]/);
+  assert.match(brandVariant, /!text-\[color:var\(--foreground-button-brand\)\]/);
   assert.doesNotMatch(brandVariant, /accent-foreground/);
 });
 

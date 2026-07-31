@@ -1,4 +1,6 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import test from "node:test";
 
 import { createMarketingCampaignHttpHandlers } from "../packages/module-marketing/src/http.ts";
@@ -92,6 +94,46 @@ const queue = {
   suppressed: 0,
   skipped: 0,
 };
+
+test("marketing editors distinguish pending, unavailable, and fulfilled-empty collections", () => {
+  const campaignSource = readFileSync(join(process.cwd(), "packages/module-marketing/src/ui/marketing-client.tsx"), "utf8");
+  const workflowSource = readFileSync(join(process.cwd(), "packages/module-marketing/src/ui/workflow-workspace.tsx"), "utf8");
+  const segmentSource = readFileSync(join(process.cwd(), "packages/module-marketing/src/ui/segment-workspace.tsx"), "utf8");
+
+  assert.match(campaignSource, /setRecipientsLoadState\("pending"\)[\s\S]*setEditorOpen\(true\)/);
+  assert.match(campaignSource, /loadState === "pending"[\s\S]*loadState === "rejected"[\s\S]*recipients\.length === 0/);
+  assert.match(campaignSource, /generation !== campaignLoadGeneration\.current/);
+
+  assert.match(workflowSource, /setRunsLoadState\("pending"\)[\s\S]*setOpen\(true\)/);
+  assert.match(workflowSource, /runsLoadState === "pending"[\s\S]*runsLoadState === "rejected"[\s\S]*runs\.length === 0/);
+  assert.match(workflowSource, /generation !== workflowLoadGeneration\.current/);
+
+  assert.match(segmentSource, /setPreviewLoadState\("pending"\)[\s\S]*window\.setTimeout/);
+  assert.match(segmentSource, /previewLoadState === "pending" && !previewHasData[\s\S]*previewLoadState === "rejected" && !previewHasData[\s\S]*preview\.sample\.length === 0/);
+});
+
+test("marketing collection controls use registered actions and authoritative queries", () => {
+  const toolbarSource = readFileSync(join(process.cwd(), "packages/module-marketing/src/ui/toolbar-controls.tsx"), "utf8");
+  const clientSource = readFileSync(join(process.cwd(), "packages/module-marketing/src/ui/marketing-client.tsx"), "utf8");
+  const registrationSource = readFileSync(join(process.cwd(), "packages/module-marketing/src/registration.ts"), "utf8");
+
+  assert.match(
+    clientSource,
+    /initialLoadedViewsRef\.current\.delete\(collectionView\)[\s\S]*setCollectionLoading\(false\);[\s\S]*return;/,
+  );
+
+  assert.match(toolbarSource, /useShellActionsReady/);
+  assert.match(toolbarSource, /disabled=\{!ready\}/);
+  assert.match(toolbarSource, /Procurar campanhas/);
+  assert.match(toolbarSource, /Limpar/);
+  assert.match(toolbarSource, /Aplicar/);
+  assert.match(clientSource, /useShellAction[\s\S]*MARKETING_EVENTS\.setSearch/);
+  assert.match(clientSource, /window\.setTimeout[\s\S]*180/);
+  assert.match(clientSource, /client\.queryCampaigns/);
+  assert.match(clientSource, /client\.querySegments/);
+  assert.match(clientSource, /client\.queryWorkflows/);
+  assert.match(registrationSource, /surface: "marketing"[\s\S]*exact: \["\/marketing"\]/);
+});
 
 test("marketing UI client methods match the exported HTTP handler contract", async () => {
   const dependencyCalls: Array<[string, unknown]> = [];
@@ -371,6 +413,7 @@ test("marketing UI client methods match the exported HTTP handler contract", asy
   };
 
   assert.equal((await client.listCampaigns())[0]?.id, campaign.id);
+  assert.equal((await client.queryCampaigns({ page: 2, pageSize: 20, search: "launch", status: "draft" })).items[0]?.id, campaign.id);
   assert.equal((await client.getCampaign(campaign.id)).id, campaign.id);
   assert.equal((await client.createCampaign(campaignInput)).id, campaign.id);
   assert.equal((await client.updateCampaign(campaign.id, { subject: "Updated" })).id, campaign.id);
@@ -385,6 +428,7 @@ test("marketing UI client methods match the exported HTTP handler contract", asy
   assert.equal((await client.createTopic({ slug: "news", label: "News" })).id, topic.id);
   assert.equal((await client.updateTopic(topic.id, { label: "Notícias" })).id, topic.id);
   assert.equal((await client.listSegments())[0]?.id, segment.id);
+  assert.equal((await client.querySegments({ page: 1, pageSize: 20, search: "readers" })).items[0]?.id, segment.id);
   assert.equal((await client.getSegment(segment.id)).id, segment.id);
   assert.equal((await client.createSegment(segmentInput)).id, segment.id);
   assert.equal((await client.updateSegment(segment.id, { description: "Updated" })).id, segment.id);
@@ -395,6 +439,7 @@ test("marketing UI client methods match the exported HTTP handler contract", asy
   assert.equal((await client.getCampaignAnalytics(campaign.id)).campaignId, campaign.id);
   assert.equal((await client.getSegmentAnalytics(segment.id)).segmentId, segment.id);
   assert.equal((await client.listWorkflows())[0]?.id, workflow.id);
+  assert.equal((await client.queryWorkflows({ page: 1, pageSize: 20, search: "welcome", status: "active" })).items[0]?.id, workflow.id);
   assert.equal((await client.getWorkflow(workflow.id)).id, workflow.id);
   assert.equal((await client.createWorkflow(workflowInput)).id, workflow.id);
   assert.equal((await client.updateWorkflow(workflow.id, { description: "Updated" })).id, workflow.id);
@@ -419,6 +464,7 @@ test("marketing UI client methods match the exported HTTP handler contract", asy
 
   assert.deepEqual(requests, [
     "GET /campaigns",
+    "GET /campaigns?page=2&pageSize=20&search=launch&status=draft",
     "GET /campaigns/campaign%2F1",
     "POST /campaigns",
     "PATCH /campaigns/campaign%2F1",
@@ -433,6 +479,7 @@ test("marketing UI client methods match the exported HTTP handler contract", asy
     "POST /topics",
     "PATCH /topics/topic-1",
     "GET /segments",
+    "GET /segments?page=1&pageSize=20&search=readers",
     "GET /segments/segment%2F1",
     "POST /segments",
     "PATCH /segments/segment%2F1",
@@ -443,6 +490,7 @@ test("marketing UI client methods match the exported HTTP handler contract", asy
     "GET /analytics/campaigns/campaign%2F1",
     "GET /analytics/segments/segment%2F1",
     "GET /workflows",
+    "GET /workflows?page=1&pageSize=20&search=welcome&status=active",
     "GET /workflows/workflow%2F1",
     "POST /workflows",
     "PATCH /workflows/workflow%2F1",

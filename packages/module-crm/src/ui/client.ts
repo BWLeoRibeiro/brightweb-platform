@@ -1,12 +1,14 @@
-import type { CrmContactsListParams } from "../data";
+import type { CrmContactsListParams, CrmOrganizationsListParams } from "../data";
 import type { CrmContactStatus } from "../server";
 import { readPublicError } from "@brightweblabs/infra/robustness";
-import type { CrmContactFormInput, CrmOrganizationWriteInput, CrmUiClient } from "./types";
+import { observedFetch } from "@brightweblabs/infra/request-observability";
+import type { CrmContactFormInput, CrmOrganizationWriteInput, CrmUiClient, CrmUiClientOptions } from "./types";
 import {
   parseCrmContactWriteResponse,
   parseCrmContactsResponse,
   parseCrmDeleteOrStatusResponse,
   parseCrmOrganizationWriteResponse,
+  parseCrmOrganizationsListResponse,
   parseCrmOrganizationsResponse,
   parseCrmOwnersResponse,
   parseCrmReportResponse,
@@ -50,12 +52,13 @@ export function createCrmUiClient(
   basePath = "/api/crm",
   fetcher: typeof fetch = fetch,
   organizationsBasePath = "/api/organizations",
+  options: CrmUiClientOptions = {},
 ): CrmUiClient {
   const endpoint = (path: string) => `${basePath.replace(/\/$/, "")}/${path}`;
   const organizationsRoot = organizationsBasePath.replace(/\/$/, "");
 
   return {
-    async listContacts(params: CrmContactsListParams = {}) {
+    async listContacts(params: CrmContactsListParams = {}, requestOptions = {}) {
       const query = new URLSearchParams();
       if (params.page) query.set("page", String(params.page));
       if (params.pageSize) query.set("pageSize", String(params.pageSize));
@@ -64,18 +67,35 @@ export function createCrmUiClient(
       if (params.organizationId) query.set("organizationId", params.organizationId);
       if (params.ownerProfileId) query.set("ownerProfileId", params.ownerProfileId);
       if (params.sort) query.set("sort", params.sort);
-      return parseCrmContactsResponse(await readPayload(await fetcher(`${endpoint("contacts")}?${query.toString()}`)));
+      return parseCrmContactsResponse(await readPayload(await observedFetch(
+        fetcher,
+        `${endpoint("contacts")}?${query.toString()}`,
+        { signal: requestOptions.signal },
+        { domain: "crm", operation: "contacts.list", observer: options.onRequestMetric },
+      )));
     },
-    async getStats() {
-      return parseCrmStatsResponse(await readPayload(await fetcher(endpoint("stats"))));
+    async getStats(requestOptions = {}) {
+      return parseCrmStatsResponse(await readPayload(await observedFetch(fetcher, endpoint("stats"), { signal: requestOptions.signal }, { domain: "crm", operation: "stats.get", observer: options.onRequestMetric })));
     },
-    async listOwners() {
-      return parseCrmOwnersResponse(await readPayload(await fetcher(endpoint("owners"))));
+    async listOwners(requestOptions = {}) {
+      return parseCrmOwnersResponse(await readPayload(await observedFetch(fetcher, endpoint("owners"), { signal: requestOptions.signal }, { domain: "crm", operation: "owners.list", observer: options.onRequestMetric })));
     },
-    async listOrganizations() {
+    async listOrganizations(requestOptions = {}) {
       return parseCrmOrganizationsResponse(
-        await readPayload(await fetcher(`${endpoint("organizations")}?pageSize=100`)),
+        await readPayload(await observedFetch(fetcher, `${endpoint("organizations")}?pageSize=100`, { signal: requestOptions.signal }, { domain: "crm", operation: "organizations.summary", observer: options.onRequestMetric })),
       );
+    },
+    async queryOrganizations(params: CrmOrganizationsListParams = {}, requestOptions = {}) {
+      const query = new URLSearchParams();
+      if (params.page) query.set("page", String(params.page));
+      if (params.pageSize) query.set("pageSize", String(params.pageSize));
+      if (params.search) query.set("search", params.search);
+      return parseCrmOrganizationsListResponse(await readPayload(await observedFetch(
+        fetcher,
+        `${endpoint("organizations")}?${query.toString()}`,
+        { signal: requestOptions.signal },
+        { domain: "crm", operation: "organizations.list", observer: options.onRequestMetric },
+      )));
     },
     async createOrganization(input) {
       return parseCrmOrganizationWriteResponse(
@@ -95,15 +115,24 @@ export function createCrmUiClient(
         })),
       );
     },
-    async listTimeline(contactId?: string) {
+    async listTimeline(contactId?: string, requestOptions = {}) {
       const query = new URLSearchParams();
       if (contactId) query.set("contactId", contactId);
       return parseCrmTimelineResponse(
-        await readPayload(await fetcher(`${endpoint("timeline")}?${query.toString()}`)),
+        await readPayload(await observedFetch(fetcher, `${endpoint("timeline")}?${query.toString()}`, { signal: requestOptions.signal }, { domain: "crm", operation: "timeline.list", observer: options.onRequestMetric })),
       );
     },
-    async getReport() {
-      return parseCrmReportResponse(await readPayload(await fetcher(endpoint("report"))));
+    async queryTimeline(params = {}, requestOptions = {}) {
+      const query = new URLSearchParams();
+      if (params.contactId) query.set("contactId", params.contactId);
+      if (params.search) query.set("search", params.search);
+      if (params.limit) query.set("limit", String(params.limit));
+      return parseCrmTimelineResponse(
+        await readPayload(await observedFetch(fetcher, `${endpoint("timeline")}?${query.toString()}`, { signal: requestOptions.signal }, { domain: "crm", operation: "timeline.query", observer: options.onRequestMetric })),
+      );
+    },
+    async getReport(requestOptions = {}) {
+      return parseCrmReportResponse(await readPayload(await observedFetch(fetcher, endpoint("report"), { signal: requestOptions.signal }, { domain: "crm", operation: "report.get", observer: options.onRequestMetric })));
     },
     async createContact(input) {
       return parseCrmContactWriteResponse(await readPayload(await fetcher(endpoint("contacts"), {

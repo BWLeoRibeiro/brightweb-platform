@@ -1,5 +1,17 @@
 # @brightweblabs/infra
 
+## 0.7.0
+
+### Minor Changes
+
+- Standardize faster cancellable, observable latest-request behavior across collection surfaces; add authoritative CRM organization and joined timeline search plus aggregate dashboard metrics; add paginated Marketing search, filters, create actions, toolbar registration, and lazy analytics loading; preserve useful rows while requests refresh; and scaffold database indexes for contains-search and common filters.
+
+## 0.6.0
+
+### Minor Changes
+
+- Make collection searches and filters feel immediate across CRM, Projects, and Admin with abortable requests, search-only debouncing, pending feedback, and privacy-safe timing metrics. Filter Admin user searches at the role-assignment level so result counts and pagination include only matching profiles.
+
 ## 0.5.0
 
 ### Minor Changes

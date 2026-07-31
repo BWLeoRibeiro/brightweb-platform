@@ -44,7 +44,7 @@ export type ProjectListItem = {
 
 export type ListProjectsParams = {
   search?: string;
-  status?: ProjectStatus | null;
+  status?: ProjectStatus | "all" | null;
   health?: ProjectHealth | null;
   organizationId?: string | null;
   ownerProfileId?: string | null;
@@ -68,6 +68,11 @@ export type ProjectsListResult = {
   pageSize: number;
 };
 
+export type ProjectsListTiming = {
+  phase: "query" | "enrichment";
+  durationMs: number;
+};
+
 export type ProjectsPortfolioPageData = {
   organizationOptions: {
     id: string;
@@ -78,7 +83,6 @@ export type ProjectsPortfolioPageData = {
   schemaMissing: boolean;
 };
 
-const DAY_IN_MS = 24 * 60 * 60 * 1000;
 const PROJECT_PROFILE_SELECT_COLUMNS = "first_name, last_name, email, phone";
 const PROJECT_PROFILE_SELECT_COLUMNS_NO_PHONE = "first_name, last_name, email";
 
@@ -125,10 +129,17 @@ export function isProjectsSchemaMissingError(error: unknown): boolean {
     || message.includes("relation \"public.projects\" does not exist")
     || message.includes("relation \"project_tasks\" does not exist")
     || message.includes("relation \"public.project_tasks\" does not exist")
-    || message.includes("could not find the table 'public.project_task_stats' in the schema cache")
+    || isProjectTaskStatsMissingError(error)
+    || message.includes("column projects.cancellation_reason does not exist")
+  );
+}
+
+function isProjectTaskStatsMissingError(error: unknown): boolean {
+  const message = getErrorMessage(error);
+  return (
+    message.includes("could not find the table 'public.project_task_stats' in the schema cache")
     || message.includes("relation \"project_task_stats\" does not exist")
     || message.includes("relation \"public.project_task_stats\" does not exist")
-    || message.includes("column projects.cancellation_reason does not exist")
   );
 }
 
@@ -179,34 +190,6 @@ function mapRows<T>(rows: unknown[] | null | undefined, mapper: (row: Record<str
     if (record) mapped.push(mapper(record));
   }
   return mapped;
-}
-
-function daysFromToday(dateLike: string | null): number | null {
-  if (!dateLike) return null;
-  const parsed = new Date(`${dateLike}T00:00:00`);
-  if (Number.isNaN(parsed.getTime())) return null;
-  const now = new Date();
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  return Math.floor((parsed.getTime() - today.getTime()) / DAY_IN_MS);
-}
-
-function deriveProjectHealth(project: Pick<ProjectListItem, "status" | "targetDate" | "taskStats">): ProjectListItem["health"] {
-  if (project.status === "completed") return "on_track";
-  if (project.status === "canceled" || project.status === "blocked") return "off_track";
-
-  const targetInDays = daysFromToday(project.targetDate);
-  if (project.status === "active" && targetInDays !== null && targetInDays < 0) return "off_track";
-
-  if (project.status === "active" && targetInDays !== null && targetInDays <= 7) {
-    const hasBlockedTasks = project.taskStats.blocked > 0;
-    const totalTasks = project.taskStats.total;
-    const notDoneTasks = Math.max(totalTasks - project.taskStats.done, 0);
-    const hasHalfOrMoreTasksNotDone = totalTasks > 0 && notDoneTasks / totalTasks >= 0.5;
-
-    if (hasBlockedTasks || hasHalfOrMoreTasksNotDone) return "at_risk";
-  }
-
-  return "on_track";
 }
 
 function profileLabel(firstName: unknown, lastName: unknown, email: unknown): string | null {
@@ -339,7 +322,32 @@ export async function getProjectTaskStats(
     .from("project_task_stats")
     .select("project_id,total,done,overdue,blocked")
     .in("project_id", projectIds);
-  if (error) throw new Error(error.message);
+  if (error && !isProjectTaskStatsMissingError(error)) throw new Error(error.message);
+  if (error) {
+    const { data: taskRows, error: taskRowsError } = await fetchAllRows((from, to) =>
+      supabase
+        .from("project_tasks")
+        .select("id,project_id,status,due_date")
+        .in("project_id", projectIds)
+        .order("id", { ascending: true })
+        .range(from, to),
+    );
+    if (taskRowsError) throw new Error(taskRowsError.message);
+
+    const today = new Date().toISOString().slice(0, 10);
+    const fallback = new Map<string, ProjectListItem["taskStats"]>();
+    for (const row of taskRows ?? []) {
+      const projectId = typeof row.project_id === "string" ? row.project_id : "";
+      if (!projectId) continue;
+      const current = fallback.get(projectId) ?? { total: 0, done: 0, overdue: 0, blocked: 0 };
+      current.total += 1;
+      if (row.status === "done") current.done += 1;
+      if (row.status === "blocked") current.blocked += 1;
+      if (row.status !== "done" && typeof row.due_date === "string" && row.due_date < today) current.overdue += 1;
+      fallback.set(projectId, current);
+    }
+    return fallback;
+  }
   return new Map(((data ?? []) as ProjectTaskStatsRow[]).map((row) => [
     row.project_id,
     {
@@ -354,11 +362,14 @@ export async function getProjectTaskStats(
 export async function listProjects(
   supabase: SupabaseClient,
   params: ListProjectsParams,
+  options: { onTiming?: (metric: ProjectsListTiming) => void } = {},
 ): Promise<ProjectsListResult> {
   const page = params.page ?? 1;
   const pageSize = params.pageSize ?? 20;
   const from = (page - 1) * pageSize;
   const to = from + pageSize - 1;
+  const today = new Date();
+  const todayDate = today.toISOString().slice(0, 10);
 
   const runProjectsListQuery = (columns: string) => {
     let query = supabase
@@ -367,12 +378,15 @@ export async function listProjects(
       .order("updated_at", { ascending: false })
       .range(from, to);
 
-    if (!params.status) query = query.not("status", "in", "(completed,canceled)");
-    if (params.status) query = query.eq("status", params.status);
+    if (params.status === undefined || params.status === null) {
+      query = query.not("status", "in", "(completed,canceled)");
+    } else if (params.status !== "all") {
+      query = query.eq("status", params.status);
+    }
     if (params.health === "at_risk") {
       query = query.or("health.eq.at_risk,status.eq.blocked");
     } else if (params.health === "off_track") {
-      query = query.lt("target_date", new Date().toISOString().slice(0, 10)).not("status", "in", "(completed,canceled)");
+      query = query.lt("target_date", todayDate).not("status", "in", "(completed,canceled)");
     } else if (params.health) {
       query = query.eq("health", params.health);
     }
@@ -385,7 +399,7 @@ export async function listProjects(
     }
 
     if (params.dueWindow === "overdue") {
-      query = query.lt("target_date", new Date().toISOString().slice(0, 10)).not("status", "in", "(completed,canceled)");
+      query = query.lt("target_date", todayDate).not("status", "in", "(completed,canceled)");
     }
 
     if (params.dueWindow === "next_7_days") {
@@ -405,6 +419,7 @@ export async function listProjects(
     return query;
   };
 
+  const queryStartedAt = performance.now();
   let columns = PROJECT_SELECT_COLUMNS;
   const attemptedColumns = new Set<string>();
   let { data, error, count } = await runProjectsListQuery(columns);
@@ -418,8 +433,10 @@ export async function listProjects(
   }
 
   if (error) throw new Error(error.message);
+  options.onTiming?.({ phase: "query", durationMs: Math.max(0, performance.now() - queryStartedAt) });
 
   const items = mapRows(data, normalizeProjectRow);
+  const enrichmentStartedAt = performance.now();
   if (items.length > 0) {
     const ids = items.map((item) => item.id);
 
@@ -449,9 +466,9 @@ export async function listProjects(
     items.forEach((item) => {
       item.taskStats = statsByProject.get(item.id) ?? item.taskStats;
       item.milestoneStats = milestoneStatsByProject.get(item.id) ?? item.milestoneStats;
-      item.health = deriveProjectHealth(item);
     });
   }
+  options.onTiming?.({ phase: "enrichment", durationMs: Math.max(0, performance.now() - enrichmentStartedAt) });
 
   return {
     items,

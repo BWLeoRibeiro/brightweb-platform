@@ -1,4 +1,5 @@
 import { ArrowUpRight, BarChart3 } from "lucide-react";
+import { Skeleton } from "@brightweblabs/ui";
 
 import { defaultCrmUiDictionary } from "./dictionary";
 import type { CrmUiDictionary } from "./types";
@@ -14,10 +15,12 @@ export type CrmReportBannerSummary = {
 export type CrmReportBannerProps = {
   summary: CrmReportBannerSummary;
   href: string;
+  loading?: boolean;
+  unavailable?: boolean;
   dictionary?: CrmUiDictionary;
 };
 
-export function CrmReportBanner({ summary, href, dictionary = defaultCrmUiDictionary }: CrmReportBannerProps) {
+export function CrmReportBanner({ summary, href, loading = false, unavailable = false, dictionary = defaultCrmUiDictionary }: CrmReportBannerProps) {
   const metrics = [
     { label: dictionary.dashboard.last7Days, value: summary.newLast7Days },
     { label: dictionary.dashboard.last30Days, value: summary.newLast30Days },
@@ -25,7 +28,19 @@ export function CrmReportBanner({ summary, href, dictionary = defaultCrmUiDictio
   ];
 
   return (
-    <section>
+    <section aria-busy={loading}>
+      {loading || unavailable ? (
+        <div className="brand-panel flex min-h-[var(--crm-report-banner-min-height,16rem)] items-center rounded-[var(--radius-panel)] p-6 md:p-7">
+          {loading ? (
+            <div className="grid w-full gap-4" aria-label={dictionary.report.loading}>
+              <Skeleton className="h-4 w-32" />
+              <Skeleton className="h-10 w-72 max-w-full" />
+              <Skeleton className="h-5 w-96 max-w-full" />
+              <div className="grid grid-cols-3 gap-3"><Skeleton className="h-20" /><Skeleton className="h-20" /><Skeleton className="h-20" /></div>
+            </div>
+          ) : <p role="alert" className="text-body text-destructive">{dictionary.dashboard.loadError}</p>}
+        </div>
+      ) : (
       <a href={href} aria-label={dictionary.dashboard.reportAriaLabel} className="brand-panel group relative block overflow-hidden rounded-[var(--radius-panel)] p-6 text-[color:var(--project-hero-foreground)] outline-none transition focus-visible:ring-2 focus-visible:ring-[color:var(--ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--background)] md:p-7">
         <div aria-hidden className="pointer-events-none absolute -right-24 -top-28 h-80 w-80 rounded-full bg-[image:var(--report-hero-glow)] blur-3xl opacity-100 transition-opacity duration-300 group-hover:opacity-100 dark:opacity-40 dark:group-hover:opacity-60" />
         <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-px bg-[image:var(--report-hero-rule)]" />
@@ -58,6 +73,7 @@ export function CrmReportBanner({ summary, href, dictionary = defaultCrmUiDictio
           </div>
         </div>
       </a>
+      )}
     </section>
   );
 }

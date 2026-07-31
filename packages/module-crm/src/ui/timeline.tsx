@@ -11,15 +11,20 @@ import type { CrmUiDictionary } from "./types";
 export type CrmTimelineProps = {
   entries: CrmStatusLog[];
   loading?: boolean;
+  unavailable?: boolean;
   dictionary?: CrmUiDictionary;
   activityDictionary?: CrmActivityDictionary;
   embedded?: boolean;
 };
 
-export function CrmTimeline({ entries, loading = false, dictionary = defaultCrmUiDictionary, activityDictionary = dictionary.activity, embedded = false }: CrmTimelineProps) {
+export function CrmTimeline({ entries, loading = false, unavailable = false, dictionary = defaultCrmUiDictionary, activityDictionary = dictionary.activity, embedded = false }: CrmTimelineProps) {
   if (loading) {
     const content = <div className="grid gap-4" aria-label={dictionary.timeline.title}>{Array.from({ length: 3 }, (_, index) => <Skeleton key={index} className="h-12 w-full" />)}</div>;
     return embedded ? content : <SurfaceCard className="p-5">{content}</SurfaceCard>;
+  }
+  if (unavailable && entries.length === 0) {
+    const content = <p role="alert" className="min-h-36 rounded-[var(--radius-card)] border border-destructive/30 bg-destructive/10 p-4 text-body text-destructive">{dictionary.dashboard.loadError}</p>;
+    return embedded ? content : <SurfaceCard>{content}</SurfaceCard>;
   }
   if (entries.length === 0) {
     const content = <EmptyState icon={Clock3} title={dictionary.timeline.emptyTitle} hint={dictionary.timeline.emptyHint} />;

@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import type { UiRequestMetricObserver } from "@brightweblabs/infra/request-observability";
 import type { ListProjectsParams, ProjectsPortfolioStats } from "../data";
 import type {
   CreateProjectInput, CreateProjectLinkInput, CreateProjectMilestoneInput,
@@ -26,11 +27,11 @@ export type ProjectDetailPermissions = {
 
 export type ProjectsUiClient = {
   requestRaw: (path: string, init?: RequestInit) => Promise<Response>;
-  listProjects: (params?: ListProjectsParams) => Promise<ListProjectsPayload>;
+  listProjects: (params?: ListProjectsParams, options?: { signal?: AbortSignal }) => Promise<ListProjectsPayload>;
   getPortfolioStats: () => Promise<ProjectsPortfolioStats>;
   getProjectDashboard: (projectId: string) => Promise<ProjectDashboardData>;
   listProjectActivity: (projectId: string) => Promise<ProjectActivityItem[]>;
-  listOrganizations: () => Promise<Array<{ id: string; name: string }>>;
+  listOrganizations: (options?: { signal?: AbortSignal }) => Promise<Array<{ id: string; name: string }>>;
   listAssignableProfiles: (projectId: string) => Promise<ProjectAssignableProfile[]>;
   createOrganization: (input: CreateProjectOrganizationInput) => Promise<{ id: string; name: string }>;
   createProject: (input: CreateProjectInput) => Promise<{ id: string; name?: string; ownerProfileId?: string | null }>;
@@ -46,6 +47,10 @@ export type ProjectsUiClient = {
   createLink: (projectId: string, input: CreateProjectLinkInput) => Promise<ProjectDashboardData>;
   updateLink: (projectId: string, linkId: string, input: UpdateProjectLinkInput) => Promise<ProjectLink[]>;
   deleteLink: (projectId: string, linkId: string) => Promise<ProjectLink[]>;
+};
+
+export type ProjectsUiClientOptions = {
+  onRequestMetric?: UiRequestMetricObserver;
 };
 
 type WidenDictionary<T> = T extends string ? string : T extends (...args: infer A) => infer R ? (...args: A) => R : T extends object ? { [K in keyof T]: WidenDictionary<T[K]> } : T;

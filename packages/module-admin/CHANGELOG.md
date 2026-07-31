@@ -1,5 +1,39 @@
 # @brightweblabs/module-admin
 
+## 0.8.2
+
+### Patch Changes
+
+- Updated dependencies
+  - @brightweblabs/ui@1.4.2
+  - @brightweblabs/app-shell@0.10.1
+  - @brightweblabs/core-auth@0.9.3
+
+## 0.8.1
+
+### Patch Changes
+
+- Standardize faster cancellable, observable latest-request behavior across collection surfaces; add authoritative CRM organization and joined timeline search plus aggregate dashboard metrics; add paginated Marketing search, filters, create actions, toolbar registration, and lazy analytics loading; preserve useful rows while requests refresh; and scaffold database indexes for contains-search and common filters.
+- Updated dependencies
+  - @brightweblabs/infra@0.7.0
+  - @brightweblabs/app-shell@0.10.0
+  - @brightweblabs/core-auth@0.9.2
+
+## 0.8.0
+
+### Minor Changes
+
+- Make collection searches and filters feel immediate across CRM, Projects, and Admin with abortable requests, search-only debouncing, pending feedback, and privacy-safe timing metrics. Filter Admin user searches at the role-assignment level so result counts and pagination include only matching profiles.
+
+### Patch Changes
+
+- Updated dependencies
+- Updated dependencies [f12ce99]
+  - @brightweblabs/infra@0.6.0
+  - @brightweblabs/ui@1.4.1
+  - @brightweblabs/app-shell@0.9.3
+  - @brightweblabs/core-auth@0.9.1
+
 ## 0.7.2
 
 ### Patch Changes

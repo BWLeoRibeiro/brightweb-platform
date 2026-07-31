@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { format } from "date-fns";
 import { CalendarIcon, ClipboardList, Save } from "lucide-react";
 import { toast } from "sonner";
+import { useShellAction } from "@brightweblabs/app-shell";
 import { sheetBodyClassName, sheetFooterClassName, sheetShellClassName } from "./constants";
 import { PROJECTS_EVENTS, dispatchProjectsEvent } from "./events";
 import { createTask } from "./project-ui-actions";
@@ -22,7 +23,6 @@ import { Input } from "@brightweblabs/ui";
 import { Popover, PopoverContent, PopoverTrigger } from "@brightweblabs/ui";
 import { Sheet, SheetContent, SheetFooter } from "@brightweblabs/ui";
 import { AppSheetHeader, SheetSection } from "./shared/app-sheet";
-import { useWindowEventBridge } from "./window-events";
 
 
 type ProjectOption = {
@@ -80,9 +80,9 @@ export function CreateProjectTaskSheet({ projects, initialOpen = false }: Create
     setBlockedReason("");
   };
 
-  useWindowEventBridge(PROJECTS_EVENTS.openNewTask, () => {
+  useShellAction(PROJECTS_EVENTS.openNewTask, () => {
     setOpen(true);
-  }, { custom: false });
+  });
 
   useEffect(() => {
     if (!projects.length) {

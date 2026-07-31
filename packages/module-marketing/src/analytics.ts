@@ -60,6 +60,7 @@ export type MarketingAnalyticsEvent = {
 
 type AnalyticsClient = {
   from: (table: string) => any;
+  rpc?: (name: string, params?: Record<string, unknown>) => Promise<{ data: unknown; error?: { code?: string; message?: string } | null }>;
 };
 
 type AnalyticsScope = {
@@ -124,6 +125,53 @@ function emptyQueueBreakdown(): MarketingQueueBreakdown {
 function percentage(numerator: number, denominator: number) {
   if (denominator <= 0) return 0;
   return Number(((numerator / denominator) * 100).toFixed(2));
+}
+
+function aggregateRow(value: unknown): MarketingOverviewMetrics | null {
+  const row = Array.isArray(value) ? value[0] : value;
+  if (!row || typeof row !== "object") return null;
+  const item = row as Record<string, unknown>;
+  const number = (key: string) => Number(item[key] ?? 0);
+  const sent = number("sent_count");
+  const delivered = number("delivered_count");
+  const opened = number("opened_count");
+  const clicked = number("clicked_count");
+  const unsubscribed = number("unsubscribed_count");
+  const bounced = number("bounced_count");
+  const complained = number("complained_count");
+  const engagementBase = delivered || sent;
+  return {
+    sent,
+    delivered,
+    opened,
+    clicked,
+    unsubscribed,
+    bounced,
+    complained,
+    openRate: percentage(opened, engagementBase),
+    clickRate: percentage(clicked, engagementBase),
+    bounceRate: percentage(bounced, sent),
+    unsubRate: percentage(unsubscribed, sent),
+    complaintRate: percentage(complained, sent),
+    rawEventTotals: {
+      sent: number("raw_sent_count"),
+      delivered: number("raw_delivered_count"),
+      opened: number("raw_opened_count"),
+      clicked: number("raw_clicked_count"),
+      unsubscribed: number("raw_unsubscribed_count"),
+      bounced: number("raw_bounced_count"),
+      complained: number("raw_complained_count"),
+    },
+  };
+}
+
+async function readAggregateRpc(supabase: unknown, name: string, params: Record<string, unknown>) {
+  const client = db(supabase);
+  if (typeof client.rpc !== "function") return null;
+  const result = await client.rpc(name, params);
+  if (!result.error) return result.data;
+  if (result.error.code === "42883" || result.error.code === "PGRST202") return null;
+  throw new Error(result.error.message || "Marketing analytics database request failed.");
 }
 
 export function aggregateMarketingMetrics(
@@ -257,6 +305,8 @@ export async function getMarketingOverview(
   const since = typeof sinceDays === "number"
     ? new Date(Date.now() - sinceDays * 24 * 60 * 60 * 1_000).toISOString()
     : undefined;
+  const aggregate = await readAggregateRpc(supabase, "get_marketing_overview_metrics", { p_since: since ?? null });
+  if (aggregate !== null) return aggregateRow(aggregate) ?? emptyMarketingMetrics();
   return getScopedMetrics(supabase, { since });
 }
 
@@ -264,6 +314,24 @@ export async function getCampaignAnalytics(
   supabase: unknown,
   campaignId: string,
 ): Promise<MarketingCampaignAnalytics> {
+  const aggregate = await readAggregateRpc(supabase, "get_marketing_campaign_metrics", { p_campaign_id: campaignId });
+  if (aggregate !== null) {
+    const metrics = aggregateRow(aggregate) ?? emptyMarketingMetrics();
+    const row = (Array.isArray(aggregate) ? aggregate[0] : aggregate) as Record<string, unknown> | null;
+    const count = (key: string) => Number(row?.[key] ?? 0);
+    return {
+      campaignId,
+      ...metrics,
+      queue: {
+        queued: count("queued_count"),
+        sending: count("sending_count"),
+        sent: count("recipient_sent_count"),
+        failed: count("failed_count"),
+        suppressed: count("suppressed_count"),
+        skipped: count("skipped_count"),
+      },
+    };
+  }
   const scope = { campaignId };
   const [metrics, queue] = await Promise.all([
     getScopedMetrics(supabase, scope),

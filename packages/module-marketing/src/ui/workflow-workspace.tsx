@@ -25,8 +25,10 @@ import {
   SheetDescription,
   SheetHeader,
   SheetTitle,
+  Skeleton,
 } from "@brightweblabs/ui";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { createLatestRequestController, isAbortError } from "@brightweblabs/infra/request-observability";
 import { toast } from "sonner";
 import { useMarketingUiClient } from "./context";
 import type {
@@ -195,11 +197,15 @@ function isNodeValid(node: DraftNode) {
 export type WorkflowWorkspaceProps = {
   initialWorkflows: MarketingWorkflow[];
   dictionary: MarketingUiDictionary;
+  createRequest?: number;
+  onMutated?: () => void;
 };
 
 export function WorkflowWorkspace({
   initialWorkflows,
   dictionary,
+  createRequest = 0,
+  onMutated,
 }: WorkflowWorkspaceProps) {
   const client = useMarketingUiClient();
   const [workflows, setWorkflows] = useState(initialWorkflows);
@@ -207,9 +213,16 @@ export function WorkflowWorkspace({
   const [form, setForm] = useState<WorkflowForm>(emptyForm);
   const [nodes, setNodes] = useState<DraftNode[]>([]);
   const [runs, setRuns] = useState<MarketingWorkflowRun[]>([]);
+  const [runsLoadState, setRunsLoadState] = useState<"pending" | "fulfilled" | "rejected">("fulfilled");
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
   const [addType, setAddType] = useState<MarketingWorkflowNodeType>("send_email");
+  const workflowLoadGeneration = useRef(0);
+  const editorGenerationRef = useRef(0);
+  const workflowRequestRef = useRef(createLatestRequestController());
+  const handledCreateRequestRef = useRef(createRequest);
+
+  useEffect(() => setWorkflows(initialWorkflows), [initialWorkflows]);
 
   const triggerLabel = useMemo(() => {
     if (form.triggerType === "contact_subscribed") {
@@ -241,34 +254,65 @@ export function WorkflowWorkspace({
   };
 
   const beginCreate = () => {
+    editorGenerationRef.current += 1;
+    workflowRequestRef.current.abort();
+    workflowLoadGeneration.current += 1;
     setActive(null);
     setForm(emptyForm);
     setNodes([]);
     setRuns([]);
+    setRunsLoadState("fulfilled");
+    setBusy(null);
     setOpen(true);
   };
 
+  useEffect(() => {
+    if (createRequest === handledCreateRequestRef.current) return;
+    handledCreateRequestRef.current = createRequest;
+    beginCreate();
+  }, [createRequest]);
+
   const openWorkflow = async (workflow: MarketingWorkflow) => {
+    editorGenerationRef.current += 1;
+    const latest = workflowRequestRef.current.begin();
+    const generation = ++workflowLoadGeneration.current;
     setActive(workflow);
     setForm(toForm(workflow));
     setNodes(workflow.nodes.map(toDraftNode));
     setRuns([]);
+    setRunsLoadState("pending");
     setOpen(true);
     setBusy("load");
     try {
       const [detail, recentRuns] = await Promise.all([
-        client.getWorkflow(workflow.id),
-        client.listWorkflowRuns(workflow.id),
+        client.getWorkflow(workflow.id, { signal: latest.signal }),
+        client.listWorkflowRuns(workflow.id, { signal: latest.signal }),
       ]);
-      replaceWorkflow(detail);
+      if (!latest.isCurrent() || generation !== workflowLoadGeneration.current) return;
+      replaceWorkflow({ ...detail, runCount: recentRuns.length, countsKnown: true });
       setForm(toForm(detail));
       setNodes(detail.nodes.map(toDraftNode));
       setRuns(recentRuns);
+      setRunsLoadState("fulfilled");
     } catch (error) {
+      if (isAbortError(error) || !latest.isCurrent() || generation !== workflowLoadGeneration.current) return;
+      setRunsLoadState("rejected");
       toast.error(error instanceof Error ? error.message : dictionary.feedback.genericError);
     } finally {
-      setBusy(null);
+      const current = latest.isCurrent();
+      latest.finish();
+      if (current && generation === workflowLoadGeneration.current) setBusy(null);
     }
+  };
+
+  useEffect(() => () => workflowRequestRef.current.abort(), []);
+
+  const handleOpenChange = (nextOpen: boolean) => {
+    if (!nextOpen) {
+      workflowRequestRef.current.abort();
+      editorGenerationRef.current += 1;
+    }
+    setOpen(nextOpen);
   };
 
   const updateNode = (key: string, patch: Partial<DraftNode>) => {
@@ -290,6 +334,7 @@ export function WorkflowWorkspace({
       toast.error(dictionary.feedback.required);
       return;
     }
+    const editorGeneration = editorGenerationRef.current;
     setBusy("save");
     try {
       const saved = active
@@ -299,47 +344,55 @@ export function WorkflowWorkspace({
         saved.id,
         nodes.map((node, index) => toNodeInput(node, index)),
       );
+      if (editorGeneration !== editorGenerationRef.current) return;
       const complete = { ...saved, nodes: savedNodes, nodeCount: savedNodes.length };
       replaceWorkflow(complete);
       setNodes(savedNodes.map(toDraftNode));
+      onMutated?.();
       toast.success(active ? dictionary.workflows.saved : dictionary.workflows.created);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : dictionary.feedback.genericError);
+      if (editorGeneration === editorGenerationRef.current) toast.error(error instanceof Error ? error.message : dictionary.feedback.genericError);
     } finally {
-      setBusy(null);
+      if (editorGeneration === editorGenerationRef.current) setBusy(null);
     }
   };
 
   const runStatusAction = async (action: "activate" | "pause") => {
     if (!active) return;
+    const editorGeneration = editorGenerationRef.current;
     setBusy(action);
     try {
       const updated = action === "activate"
         ? await client.activateWorkflow(active.id)
         : await client.pauseWorkflow(active.id);
+      if (editorGeneration !== editorGenerationRef.current) return;
       replaceWorkflow({ ...updated, nodes: updated.nodes.length ? updated.nodes : active.nodes });
+      onMutated?.();
       toast.success(
         action === "activate" ? dictionary.workflows.activated : dictionary.workflows.paused,
       );
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : dictionary.feedback.genericError);
+      if (editorGeneration === editorGenerationRef.current) toast.error(error instanceof Error ? error.message : dictionary.feedback.genericError);
     } finally {
-      setBusy(null);
+      if (editorGeneration === editorGenerationRef.current) setBusy(null);
     }
   };
 
   const removeWorkflow = async () => {
     if (!active) return;
+    const editorGeneration = editorGenerationRef.current;
     setBusy("delete");
     try {
       await client.deleteWorkflow(active.id);
+      if (editorGeneration !== editorGenerationRef.current) return;
       setWorkflows((current) => current.filter((item) => item.id !== active.id));
       setOpen(false);
+      onMutated?.();
       toast.success(dictionary.workflows.deleted);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : dictionary.feedback.genericError);
+      if (editorGeneration === editorGenerationRef.current) toast.error(error instanceof Error ? error.message : dictionary.feedback.genericError);
     } finally {
-      setBusy(null);
+      if (editorGeneration === editorGenerationRef.current) setBusy(null);
     }
   };
 
@@ -399,8 +452,8 @@ export function WorkflowWorkspace({
                   </Badge>
                 </div>
                 <div className="mt-5 flex gap-4 text-meta text-muted-foreground">
-                  <span>{dictionary.workflows.nodeCount(workflow.nodeCount)}</span>
-                  <span>{dictionary.workflows.runCount(workflow.runCount)}</span>
+                  <span>{workflow.countsKnown === false ? "—" : dictionary.workflows.nodeCount(workflow.nodeCount)}</span>
+                  <span>{workflow.countsKnown === false ? "—" : dictionary.workflows.runCount(workflow.runCount)}</span>
                 </div>
               </button>
             ))}
@@ -408,7 +461,7 @@ export function WorkflowWorkspace({
         )}
       </section>
 
-      <Sheet open={open} onOpenChange={setOpen}>
+      <Sheet open={open} onOpenChange={handleOpenChange}>
         <SheetContent className="w-full overflow-y-auto sm:max-w-[56rem]">
           <SheetHeader>
             <SheetDescription>
@@ -647,7 +700,17 @@ export function WorkflowWorkspace({
                     <h3 className="font-semibold">{dictionary.workflows.runs.title}</h3>
                     <p className="text-body text-muted-foreground">{dictionary.workflows.runs.subtitle}</p>
                   </div>
-                  {runs.length === 0 ? (
+                  {runsLoadState === "pending" ? (
+                    <div className="space-y-2" aria-busy="true" aria-label={dictionary.workflows.runs.title}>
+                      <Skeleton className="h-12 w-full rounded-xl" />
+                      <Skeleton className="h-12 w-full rounded-xl" />
+                      <Skeleton className="h-12 w-full rounded-xl" />
+                    </div>
+                  ) : runsLoadState === "rejected" ? (
+                    <div role="alert" className="rounded-xl border border-destructive/30 bg-destructive/10 p-6 text-center text-body text-destructive">
+                      {dictionary.feedback.genericError}
+                    </div>
+                  ) : runs.length === 0 ? (
                     <div className="rounded-xl border border-dashed p-6 text-center text-body text-muted-foreground">
                       {dictionary.workflows.runs.empty}
                     </div>

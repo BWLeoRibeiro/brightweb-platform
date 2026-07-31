@@ -3,6 +3,7 @@ import {
   publicError,
   sanitizePublicError,
 } from "@brightweblabs/infra/robustness";
+import { appendServerTiming, elapsedMs, requestStartedAt } from "@brightweblabs/infra/request-observability";
 import {
   isMilestoneStatus,
   isProjectHealth,
@@ -57,12 +58,13 @@ import type {
 } from "./types";
 
 export function json(body: unknown, init?: ResponseInit) {
-  return new Response(JSON.stringify(body), {
+  const payload = JSON.stringify(body);
+  const headers = new Headers(init?.headers);
+  headers.set("content-type", "application/json; charset=utf-8");
+  headers.set("content-length", String(new TextEncoder().encode(payload).byteLength));
+  return new Response(payload, {
     ...init,
-    headers: {
-      "content-type": "application/json; charset=utf-8",
-      ...(init?.headers ?? {}),
-    },
+    headers,
   });
 }
 
@@ -124,7 +126,7 @@ export function parseProjectsListRequest(request: Request | URL | string): ListP
     page: parsePositiveInt(url.searchParams.get("page"), 1, 10_000),
     pageSize: parsePositiveInt(url.searchParams.get("pageSize"), 20, 100),
     search: url.searchParams.get("search")?.trim() ?? "",
-    status: isProjectStatus(status) ? status : null,
+    status: status === "all" ? "all" : isProjectStatus(status) ? status : undefined,
     health: isProjectHealth(health) ? health : null,
     organizationId: url.searchParams.get("organizationId")?.trim() || null,
     ownerProfileId: url.searchParams.get("ownerProfileId")?.trim() || null,
@@ -211,15 +213,21 @@ function withUserAccess(
   action: ProjectsAction,
 ) {
   return async (request: Request, context?: ProjectsRequestContext) => {
+    const startedAt = requestStartedAt();
     const access = await dependencies.getAccess();
     if (!access.ok) {
-      return json(publicError("ACCESS_DENIED", access.error), { status: access.status });
+      return appendServerTiming(json(publicError("ACCESS_DENIED", access.error), { status: access.status }), [
+        { name: "app", durationMs: elapsedMs(startedAt) },
+      ]);
     }
 
     try {
-      return await action(access, request, context);
+      const response = await action(access, request, context);
+      return appendServerTiming(response, [{ name: "app", durationMs: elapsedMs(startedAt) }]);
     } catch (error) {
-      return projectsErrorResponse(error, errorContext);
+      return appendServerTiming(projectsErrorResponse(error, errorContext), [
+        { name: "app", durationMs: elapsedMs(startedAt) },
+      ]);
     }
   };
 }
@@ -414,11 +422,16 @@ const linkValidators: Record<(typeof linkFields)[number], FieldValidator> = {
 
 export function createProjectsGetHandler(dependencies: ProjectsHttpDependencies) {
   return withUserAccess(dependencies, "projects.list", async (access, request) => {
+    const timings = new Map<string, number>();
     const result = await dependencies.listProjects(
       access.supabase as never,
       parseProjectsListRequest(request),
+      { onTiming: (metric) => timings.set(metric.phase, metric.durationMs) },
     );
-    return json(result);
+    return appendServerTiming(json(result), [
+      { name: "db", durationMs: timings.get("query") ?? 0 },
+      { name: "enrich", durationMs: timings.get("enrichment") ?? 0 },
+    ]);
   });
 }
 

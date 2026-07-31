@@ -12,7 +12,7 @@ import {
   sheetShellClassName,
   sheetViewControlClassName,
 } from "@brightweblabs/app-shell";
-import { Button, Field, FieldContent, FieldGroup, FieldLabel, Input, PhoneInput, Sheet, SheetContent } from "@brightweblabs/ui";
+import { Button, Field, FieldContent, FieldGroup, FieldLabel, Input, PhoneInput, Sheet, SheetContent, Skeleton } from "@brightweblabs/ui";
 
 import type { CrmContact, CrmOwnerOption } from "../data";
 import { defaultCrmUiDictionary, resolveCrmStages } from "./dictionary";
@@ -29,6 +29,10 @@ export type CrmContactDialogProps = {
   contact?: CrmContact | null;
   organizations?: CrmOrganizationOption[];
   owners?: CrmOwnerOption[];
+  organizationsLoading?: boolean;
+  ownersLoading?: boolean;
+  organizationsUnavailable?: boolean;
+  ownersUnavailable?: boolean;
   dictionary?: CrmUiDictionary;
   stages?: CrmStageConfig[];
   onOpenChange: (open: boolean) => void;
@@ -37,7 +41,7 @@ export type CrmContactDialogProps = {
   onDelete?: (contact: CrmContact) => void;
 };
 
-export function CrmContactDialog({ open, contact, organizations = [], owners = [], dictionary = defaultCrmUiDictionary, stages, onOpenChange, onSubmit, onTimeline, onDelete }: CrmContactDialogProps) {
+export function CrmContactDialog({ open, contact, organizations = [], owners = [], organizationsLoading = false, ownersLoading = false, organizationsUnavailable = false, ownersUnavailable = false, dictionary = defaultCrmUiDictionary, stages, onOpenChange, onSubmit, onTimeline, onDelete }: CrmContactDialogProps) {
   const fieldId = useId();
   const [value, setValue] = useState(() => initialValue(contact));
   const [mode, setMode] = useState<ContactMode>(contact ? "view" : "create");
@@ -91,8 +95,8 @@ export function CrmContactDialog({ open, contact, organizations = [], owners = [
                 </div>
                 <Field className="gap-1.5 px-4 py-2"><FieldLabel htmlFor={`${fieldId}-email`} className={sheetFieldLabelClassName}>{dictionary.contactDialog.fields.email}</FieldLabel><FieldContent><Input id={`${fieldId}-email`} name="email" autoComplete="email" type="email" value={value.email ?? ""} disabled={mode === "view"} onChange={(event) => setValue({ ...value, email: event.target.value })} placeholder={dictionary.contactDialog.placeholders.email} className={controlClassName} /></FieldContent></Field>
                 <Field className="gap-1.5 px-4 py-2"><FieldLabel htmlFor={`${fieldId}-phone`} className={sheetFieldLabelClassName}>{dictionary.contactDialog.fields.phone}</FieldLabel><FieldContent><PhoneInput id={`${fieldId}-phone`} name="phone" autoComplete="tel" value={value.phone ?? ""} disabled={mode === "view"} onChange={(phone) => setValue({ ...value, phone })} className={mode === "view" ? sheetViewControlClassName : "h-9 rounded-lg border border-[color:var(--sheet-edit-control-border)] bg-[color:var(--card)] px-2.5"} /></FieldContent></Field>
-                <Field className="gap-1.5 px-4 py-2"><FieldLabel htmlFor={`${fieldId}-organization`} className={sheetFieldLabelClassName}>{dictionary.contactDialog.fields.organization}</FieldLabel><FieldContent><select id={`${fieldId}-organization`} name="organizationId" value={value.organizationId ?? ""} disabled={mode === "view"} onChange={(event) => setValue({ ...value, organizationId: event.target.value })} className={`${controlClassName} text-foreground outline-none disabled:pointer-events-none`}><option value="">{dictionary.contactDialog.placeholders.organization}</option>{organizations.map((organization) => <option key={organization.id} value={organization.id}>{organization.name ?? organization.id}</option>)}</select></FieldContent></Field>
-                <Field className="gap-1.5 px-4 py-2"><FieldLabel id={`${fieldId}-owner-label`} htmlFor={`${fieldId}-owner`} className={sheetFieldLabelClassName}>{dictionary.contactDialog.fields.owner}</FieldLabel><FieldContent>{mode === "view" ? <p id={`${fieldId}-owner`} aria-labelledby={`${fieldId}-owner-label`} className="text-body text-foreground/75">{ownerLabel}</p> : <select id={`${fieldId}-owner`} name="ownerId" value={value.ownerId ?? ""} onChange={(event) => setValue({ ...value, ownerId: event.target.value })} className={`${sheetEditControlClassName} text-foreground outline-none`}><option value="">{dictionary.contactDialog.placeholders.owner}</option>{owners.map((owner) => <option key={owner.id} value={owner.id}>{owner.label} ({owner.role === "admin" ? "Admin" : "Staff"})</option>)}</select>}</FieldContent></Field>
+                <Field className="gap-1.5 px-4 py-2" aria-busy={organizationsLoading}><FieldLabel htmlFor={`${fieldId}-organization`} className={sheetFieldLabelClassName}>{dictionary.contactDialog.fields.organization}</FieldLabel><FieldContent>{organizationsLoading ? <Skeleton className="h-9 w-full" /> : organizationsUnavailable ? <p role="alert" className="text-meta text-destructive">{dictionary.dashboard.loadError}</p> : <select id={`${fieldId}-organization`} name="organizationId" value={value.organizationId ?? ""} disabled={mode === "view"} onChange={(event) => setValue({ ...value, organizationId: event.target.value })} className={`${controlClassName} text-foreground outline-none disabled:pointer-events-none`}><option value="">{dictionary.contactDialog.placeholders.organization}</option>{organizations.map((organization) => <option key={organization.id} value={organization.id}>{organization.name ?? organization.id}</option>)}</select>}</FieldContent></Field>
+                <Field className="gap-1.5 px-4 py-2" aria-busy={ownersLoading}><FieldLabel id={`${fieldId}-owner-label`} htmlFor={`${fieldId}-owner`} className={sheetFieldLabelClassName}>{dictionary.contactDialog.fields.owner}</FieldLabel><FieldContent>{ownersLoading ? <Skeleton className="h-9 w-full" /> : ownersUnavailable ? <p role="alert" className="text-meta text-destructive">{dictionary.dashboard.loadError}</p> : mode === "view" ? <p id={`${fieldId}-owner`} aria-labelledby={`${fieldId}-owner-label`} className="text-body text-foreground/75">{ownerLabel}</p> : <select id={`${fieldId}-owner`} name="ownerId" value={value.ownerId ?? ""} onChange={(event) => setValue({ ...value, ownerId: event.target.value })} className={`${sheetEditControlClassName} text-foreground outline-none`}><option value="">{dictionary.contactDialog.placeholders.owner}</option>{owners.map((owner) => <option key={owner.id} value={owner.id}>{owner.label} ({owner.role === "admin" ? "Admin" : "Staff"})</option>)}</select>}</FieldContent></Field>
               </FieldGroup>
             </SheetSection>
 

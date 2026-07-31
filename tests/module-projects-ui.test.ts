@@ -30,6 +30,25 @@ import { parseProjectBoardApiError, parseTaskListPayload } from "../packages/mod
 import { parseProjectDashboardPayload, parseProjectLinksPayload, projectDetailDataReducer } from "../packages/module-projects/src/ui/project-detail-data-provider.tsx";
 import { createProjectsModuleRegistration } from "../packages/module-projects/src/registration.ts";
 
+test("Projects portfolio cancels stale requests and debounces only search", () => {
+  const controller = readFileSync(join(process.cwd(), "packages/module-projects/src/ui/projects-portfolio/use-projects-portfolio-controller.ts"), "utf8");
+  const client = readFileSync(join(process.cwd(), "packages/module-projects/src/ui/client.ts"), "utf8");
+  const list = readFileSync(join(process.cwd(), "packages/module-projects/src/ui/projects-portfolio/projects-portfolio-list.tsx"), "utf8");
+  assert.match(controller, /signal: controller\.signal/);
+  assert.match(controller, /setIsLoading\(true\)[\s\S]*window\.setTimeout\(\(\) => \{[\s\S]*setDebouncedSearch/);
+  assert.doesNotMatch(controller, /setTimeout\(\(\) => \{\s*void loadProjects/);
+  assert.match(client, /signal: requestOptions\.signal/);
+  assert.match(list, /aria-busy=\{isLoading\}/);
+});
+
+test("create-project organization choices never present unresolved or failed data as empty", () => {
+  const source = readFileSync(join(process.cwd(), "packages/module-projects/src/ui/create-project-sheet.tsx"), "utf8");
+  assert.match(source, /organizationsLoadState[^\n]*"idle" \| "pending" \| "fulfilled" \| "rejected"/);
+  assert.match(source, /setOrganizationsLoadState\("pending"\)[\s\S]*requestRaw/);
+  assert.match(source, /isLoadingOrganizations \?[\s\S]*loadingOrganizations[\s\S]*organizationsLoadState === "rejected"[\s\S]*loadOrganizationsError[\s\S]*hasOrganizations/);
+  assert.match(source, /role="alert"[\s\S]*loadOrganizationsError/);
+});
+
 const project = { id: "project-1", organizationId: "org-1", organizationName: "MQ", organizationOwnerLabel: null, organizationOwnerEmail: null, organizationOwnerPhone: null, name: "Projeto", code: "MQ-1", status: "active", health: "on_track", ownerProfileId: null, ownerLabel: null, ownerEmail: null, ownerPhone: null, activatedAt: null, targetDate: null, completedAt: null, cancellationReason: null, summary: null, createdAt: "2026-01-01T00:00:00.000Z", updatedAt: "2026-01-01T00:00:00.000Z", taskStats: { total: 0, done: 0, overdue: 0, blocked: 0 }, milestoneStats: { total: 0, achieved: 0, delayed: 0 } } satisfies ProjectDashboardData["project"];
 const link = { id: "link-1", projectId: "project-1", label: "Drive", url: "https://example.com", visibility: "staff", kind: "drive", createdAt: project.createdAt, updatedAt: project.updatedAt } satisfies ProjectLink;
 const dashboard = { project, members: [], milestones: [], tasks: [], links: [link], activity: [] } satisfies ProjectDashboardData;
@@ -407,6 +426,20 @@ test("Projects package UI contains the literal list/detail translation and no ra
   assert.doesNotMatch(source, /#[0-9a-f]{3,8}\b|rgba?\(|color-mix\(/i);
   assert.doesNotMatch(source, /\bfont-medium\b/);
   for (const symbol of ["ProjectsPage", "ProjectDetailPage", "ProjectsToolbarControls", "ProjectDetailDataProvider", "ProjectBoardKanban", "ProjectTasksPage", "ProjectBoardLoading"]) assert.match(readFileSync(join(root, "index.ts"), "utf8"), new RegExp(symbol.replace("ProjectsToolbarControls", "toolbar-controls").replace("ProjectDetailDataProvider", "project-detail-data-provider").replace("ProjectsPage", "projects-page").replace("ProjectDetailPage", "project-detail-page").replace("ProjectBoardKanban", "project-board-kanban").replace("ProjectTasksPage", "project-tasks-page").replace("ProjectBoardLoading", "project-board-loading")));
+});
+
+test("Projects board toolbar waits for authoritative page actions", () => {
+  const root = join(process.cwd(), "packages/module-projects/src/ui");
+  const toolbar = readFileSync(join(root, "project-board-toolbar-controls.tsx"), "utf8");
+  const milestoneHook = readFileSync(join(root, "hooks/use-project-board-milestone-events.ts"), "utf8");
+  const taskMount = readFileSync(join(root, "project-detail-create-sheets/project-detail-create-sheets-mount.tsx"), "utf8");
+
+  assert.match(toolbar, /useShellActionReady\(PROJECTS_EVENTS\.setBoardMilestone\)/);
+  assert.match(toolbar, /useShellActionReady\(PROJECTS_EVENTS\.openNewTask\)/);
+  assert.match(toolbar, /disabled=\{!milestoneActionReady\}/);
+  assert.match(toolbar, /disabled=\{!newTaskActionReady\}/);
+  assert.match(milestoneHook, /useShellAction<ProjectsBoardSetMilestoneDetail>\(PROJECTS_EVENTS\.setBoardMilestone/);
+  assert.match(taskMount, /useShellAction\(PROJECTS_EVENTS\.openNewTask/);
 });
 
 test("Projects UI barrel exposes only the supported documented component families", () => {

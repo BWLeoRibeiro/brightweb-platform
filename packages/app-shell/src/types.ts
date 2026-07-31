@@ -66,6 +66,7 @@ export type ShellToolbarSurface =
   | "crm-report"
   | "admin-users"
   | "admin-marketing"
+  | "marketing"
   | "projects"
   | "project-detail"
   | "project-board"

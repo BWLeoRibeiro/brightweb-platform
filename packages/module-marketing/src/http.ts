@@ -3,6 +3,7 @@ import {
   publicError,
   sanitizePublicError,
 } from "@brightweblabs/infra/robustness";
+import { appendServerTiming, elapsedMs, requestStartedAt } from "@brightweblabs/infra/request-observability";
 import type {
   createTopic,
   listTopics,
@@ -19,6 +20,7 @@ import type {
   getCampaign,
   listCampaignRecipients,
   listCampaigns,
+  queryCampaigns,
   retryCampaignFailures,
   scheduleCampaign,
   sendCampaignNow,
@@ -33,6 +35,7 @@ import type {
   deleteSegment,
   getSegment,
   listSegments,
+  querySegments,
   previewSegment,
   updateSegment,
 } from "./segments";
@@ -49,6 +52,7 @@ import type {
   getWorkflow,
   listWorkflowRuns,
   listWorkflows,
+  queryWorkflows,
   pauseWorkflow,
   updateWorkflow,
   upsertWorkflowNodes,
@@ -189,6 +193,7 @@ export type MarketingCampaignHttpDependencies = {
   createTopic: typeof createTopic;
   updateTopic: typeof updateTopic;
   listCampaigns: typeof listCampaigns;
+  queryCampaigns?: typeof queryCampaigns;
   getCampaign: typeof getCampaign;
   createCampaign: typeof createCampaign;
   updateCampaign: typeof updateCampaign;
@@ -202,6 +207,7 @@ export type MarketingCampaignHttpDependencies = {
   runWorker: typeof runMarketingWorker;
   processWebhook: typeof processResendWebhook;
   listSegments: typeof listSegments;
+  querySegments?: typeof querySegments;
   getSegment: typeof getSegment;
   createSegment: typeof createSegment;
   updateSegment: typeof updateSegment;
@@ -211,6 +217,7 @@ export type MarketingCampaignHttpDependencies = {
   getCampaignAnalytics: typeof getCampaignAnalytics;
   getSegmentAnalytics: typeof getSegmentAnalytics;
   listWorkflows: typeof listWorkflows;
+  queryWorkflows?: typeof queryWorkflows;
   getWorkflow: typeof getWorkflow;
   createWorkflow: typeof createWorkflow;
   updateWorkflow: typeof updateWorkflow;
@@ -238,6 +245,23 @@ async function parseJsonObject(request: Request) {
 
 async function campaignId(context?: CampaignRouteContext) {
   return context ? (await context.params).id : "";
+}
+
+function collectionParams(request: Request) {
+  const searchParams = new URL(request.url).searchParams;
+  const page = Math.max(1, Number.parseInt(searchParams.get("page") ?? "1", 10) || 1);
+  const pageSize = Math.min(100, Math.max(1, Number.parseInt(searchParams.get("pageSize") ?? "20", 10) || 20));
+  return {
+    page,
+    pageSize,
+    search: searchParams.get("search")?.trim() || undefined,
+    status: searchParams.get("status")?.trim() || null,
+  };
+}
+
+function hasCollectionParams(request: Request) {
+  const params = new URL(request.url).searchParams;
+  return ["page", "pageSize", "search", "status"].some((key) => params.has(key));
 }
 
 async function requireStaff(
@@ -268,17 +292,19 @@ function withStaff(
   ) => Promise<Response>,
 ) {
   return async (request: Request, context?: CampaignRouteContext) => {
+    const startedAt = requestStartedAt();
     const access = await requireStaff(dependencies);
-    if (isResponse(access)) return access;
+    if (isResponse(access)) return appendServerTiming(access, [{ name: "app", durationMs: elapsedMs(startedAt) }]);
     try {
-      return await action(
+      const response = await action(
         dependencies.createServiceClient(),
         access,
         request,
         context,
       );
+      return appendServerTiming(response, [{ name: "app", durationMs: elapsedMs(startedAt) }]);
     } catch (error) {
-      return marketingErrorResponse(error, contextName);
+      return appendServerTiming(marketingErrorResponse(error, contextName), [{ name: "app", durationMs: elapsedMs(startedAt) }]);
     }
   };
 }
@@ -389,7 +415,9 @@ export function createMarketingCampaignHttpHandlers(
   const segmentsGet = withStaff(
     dependencies,
     "marketing.segments.list",
-    async (supabase) => json(await dependencies.listSegments(supabase as never)),
+    async (supabase, _access, request) => json(dependencies.querySegments && hasCollectionParams(request)
+      ? await dependencies.querySegments(supabase as never, collectionParams(request))
+      : await dependencies.listSegments(supabase as never)),
   );
   const segmentsPost = withStaff(
     dependencies,
@@ -488,7 +516,9 @@ export function createMarketingCampaignHttpHandlers(
   const campaignsGet = withStaff(
     dependencies,
     "marketing.campaigns.list",
-    async (supabase) => json(await dependencies.listCampaigns(supabase as never)),
+    async (supabase, _access, request) => json(dependencies.queryCampaigns && hasCollectionParams(request)
+      ? await dependencies.queryCampaigns(supabase as never, collectionParams(request) as never)
+      : await dependencies.listCampaigns(supabase as never)),
   );
   const campaignsPost = withStaff(
     dependencies,
@@ -690,7 +720,9 @@ export function createMarketingCampaignHttpHandlers(
   const workflowsGet = withStaff(
     dependencies,
     "marketing.workflows.list",
-    async (supabase) => json(await dependencies.listWorkflows(supabase)),
+    async (supabase, _access, request) => json(dependencies.queryWorkflows && hasCollectionParams(request)
+      ? await dependencies.queryWorkflows(supabase, collectionParams(request) as never)
+      : await dependencies.listWorkflows(supabase)),
   );
   const workflowsPost = withStaff(
     dependencies,
