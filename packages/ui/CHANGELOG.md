@@ -1,5 +1,11 @@
 # @brightweblabs/ui
 
+## 1.4.3
+
+### Patch Changes
+
+- 9547657: Show the pointer cursor consistently for enabled shared buttons and module toolbar controls.
+
 ## 1.4.2
 
 ### Patch Changes
