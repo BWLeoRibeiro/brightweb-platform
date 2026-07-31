@@ -336,7 +336,11 @@ test("infra supabase clients validate env lazily and keep legacy aliases as fall
     supabasePublishableKey: "sb_publishable_legacy",
   });
   assert.equal(envModule.resolveSupabaseServiceRoleKey(), "sb_secret_legacy");
-  assert.doesNotThrow(() => clientModule.createClient());
+  const browserClient = clientModule.createClient();
+  assert.equal(
+    (browserClient.auth as unknown as { detectSessionInUrl: boolean }).detectSessionInUrl,
+    false,
+  );
 });
 
 test("infra resend webhook verifier accepts sha256 signatures and raw secret fallback", async (t) => {

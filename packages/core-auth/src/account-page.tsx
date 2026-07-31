@@ -5,6 +5,7 @@ import { getCurrentAccountProfile, type AccountProfile } from "./account/profile
 import { requireServerPageAccess } from "./server";
 import { AccountClient } from "./ui/account/account-client";
 import { defaultAccountUiDictionary } from "./ui/account/dictionary";
+import { AuthNotice } from "./ui/auth-layout";
 import "../tokens.css";
 
 function getRoleLabel(role: string | null | undefined): string | null {
@@ -109,9 +110,9 @@ export async function AccountPage({ projectsSlot }: { projectsSlot?: ReactNode }
               </h2>
             </div>
             {!accountProfile.ok ? (
-              <p className="mb-4 rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-body text-destructive">
-                {defaultAccountUiDictionary.profile.loadError}
-              </p>
+              <div className="mb-4">
+                <AuthNotice>{defaultAccountUiDictionary.profile.loadError}</AuthNotice>
+              </div>
             ) : null}
             <AccountClient profile={profileData} />
           </article>
