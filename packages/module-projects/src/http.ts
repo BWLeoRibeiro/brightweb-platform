@@ -557,7 +557,7 @@ export function createProjectsDeleteHandler(dependencies: ProjectsHttpDependenci
       id,
       access.profileId ?? null,
     );
-    return new Response(null, { status: 204 });
+    return json({ data: { deletedId: id } });
   });
 }
 

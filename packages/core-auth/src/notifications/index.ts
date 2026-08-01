@@ -1,9 +1,11 @@
 export {
   handleNotificationsGetRequest,
+  handleNotificationsDeleteRequest,
   handleNotificationsPostRequest,
 } from "./handlers";
 export {
   createNotificationsGetHandler,
+  createNotificationsDeleteHandler,
   createNotificationsPostHandler,
   resolveNotificationSeenAt,
   type NotificationHttpDependencies,

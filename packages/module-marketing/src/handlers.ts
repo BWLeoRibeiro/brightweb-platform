@@ -8,6 +8,7 @@ import {
   cancelCampaign,
   createCampaign,
   deleteCampaign,
+  deleteCampaignRecipient,
   getCampaign,
   listCampaignRecipients,
   listCampaigns,
@@ -50,6 +51,7 @@ import {
 } from "./workflows";
 import {
   createTopic,
+  deleteTopic,
   createMarketingServiceClient,
   listTopics,
   reorderTopics,
@@ -94,6 +96,7 @@ export function createMarketingCampaignHandlers(
     listTopics,
     reorderTopics,
     createTopic,
+    deleteTopic,
     updateTopic,
     listCampaigns,
     queryCampaigns,
@@ -101,6 +104,7 @@ export function createMarketingCampaignHandlers(
     createCampaign,
     updateCampaign,
     deleteCampaign,
+    deleteRecipient: deleteCampaignRecipient,
     listRecipients: listCampaignRecipients,
     scheduleCampaign,
     cancelCampaign,

@@ -14,6 +14,7 @@ export {
   cancelCampaign,
   createCampaign,
   deleteCampaign,
+  deleteCampaignRecipient,
   expandCampaignRecipients,
   getCampaign,
   listCampaignRecipients,
@@ -117,6 +118,7 @@ export type { ResendWebhookResult } from "./webhooks";
 export {
   createMarketingServiceClient,
   createTopic,
+  deleteTopic,
   ensureContactSettings,
   getContactSubscriptions,
   isEmailable,

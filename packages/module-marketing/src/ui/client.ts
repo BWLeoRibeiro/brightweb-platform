@@ -285,6 +285,13 @@ export function createMarketingUiClient(
         ),
       );
     },
+    async deleteRecipient(campaignId, recipientId) {
+      await readPayload(await request(
+        `campaigns/${encodeURIComponent(campaignId)}/recipients/${encodeURIComponent(recipientId)}`,
+        "campaigns.recipients.delete",
+        json("DELETE"),
+      ));
+    },
     async listTopics(requestOptions) {
       return parseTopics(await readPayload(await request("topics", "topics.list", undefined, requestOptions)));
     },
@@ -300,6 +307,11 @@ export function createMarketingUiClient(
           await request(`topics/${encodeURIComponent(topicId)}`, "topics.update", json("PATCH", input)),
         ),
         "topic",
+      );
+    },
+    async deleteTopic(topicId: string) {
+      await readPayload(
+        await request(`topics/${encodeURIComponent(topicId)}`, "topics.delete", json("DELETE")),
       );
     },
     async reorderTopics(topicIds: string[]) {

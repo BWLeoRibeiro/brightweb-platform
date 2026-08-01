@@ -4,6 +4,7 @@ import test from "node:test";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import {
   createNotificationsGetHandler,
+  createNotificationsDeleteHandler,
   createNotificationsPostHandler,
   resolveNotificationSeenAt,
 } from "../packages/core-auth/src/notifications/http.ts";
@@ -58,6 +59,73 @@ test("notification migrations keep recent items after acknowledgement and preser
   );
   assert.match(projectsMigration, /member\.role = 'admin'/);
   assert.match(projectsMigration, /capture_removed_project_member_realtime_audience/);
+
+  const dismissalsMigration = readFileSync(
+    new URL(
+      "../packages/create-bw-app/template/supabase/modules/core/migrations/20260801120000_core_notification_dismissals.sql",
+      import.meta.url,
+    ),
+    "utf8",
+  );
+  assert.match(dismissalsMigration, /CREATE TABLE IF NOT EXISTS public\.user_notification_dismissals/);
+  assert.match(dismissalsMigration, /PRIMARY KEY \(profile_id, activity_event_id\)/);
+  assert.match(dismissalsMigration, /NOT EXISTS \([\s\S]*user_notification_dismissals/);
+  assert.match(dismissalsMigration, /dismiss_current_notifications/);
+  assert.match(dismissalsMigration, /IF p_activity_event_id IS NULL THEN/);
+});
+
+test("notification DELETE dismisses only the bounded visible event list", async () => {
+  const calls: Array<[string, Record<string, unknown>]> = [];
+  const client = {
+    async rpc(name: string, params: Record<string, unknown>) {
+      calls.push([name, params]);
+      return { data: 1, error: null };
+    },
+  } as unknown as SupabaseClient;
+  const DELETE = createNotificationsDeleteHandler({
+    getAccess: async () => ({ ok: true, profileId: "profile-1" }),
+    getServiceClient: () => client,
+  });
+  const response = await DELETE(new Request("https://portal.test/api/notifications", {
+    method: "DELETE",
+    body: JSON.stringify({ eventIds: ["event-1", "event-2", "event-1"] }),
+  }));
+  assert.equal(response.status, 200);
+  assert.deepEqual(calls, [
+    ["dismiss_current_notifications", {
+      p_profile_id: "profile-1",
+      p_activity_event_id: "event-1",
+    }],
+    ["dismiss_current_notifications", {
+      p_profile_id: "profile-1",
+      p_activity_event_id: "event-2",
+    }],
+  ]);
+  assert.deepEqual(await response.json(), { data: { dismissed: 2 } });
+});
+
+test("notification DELETE dismisses one visible event for only the authenticated profile", async () => {
+  const calls: Array<[string, Record<string, unknown>]> = [];
+  const client = {
+    async rpc(name: string, params: Record<string, unknown>) {
+      calls.push([name, params]);
+      return { data: 1, error: null };
+    },
+  } as unknown as SupabaseClient;
+  const DELETE = createNotificationsDeleteHandler({
+    getAccess: async () => ({ ok: true, profileId: "profile-1" }),
+    getServiceClient: () => client,
+  });
+  const response = await DELETE(new Request("https://portal.test/api/notifications", {
+    method: "DELETE",
+    body: JSON.stringify({ eventId: "event-1" }),
+  }));
+  assert.equal(response.status, 200);
+  assert.deepEqual(calls, [["dismiss_current_notifications", {
+    p_profile_id: "profile-1",
+    p_activity_event_id: "event-1",
+  }]]);
+  assert.deepEqual(await response.json(), { data: { dismissed: 1 } });
 });
 
 test("notification seen timestamps preserve click time and clamp future values", () => {

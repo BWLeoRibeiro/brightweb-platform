@@ -115,6 +115,34 @@ export function createCrmUiClient(
         })),
       );
     },
+    async deleteOrganization(organizationId) {
+      await readPayload(await fetcher(`${organizationsRoot}/${encodeURIComponent(organizationId)}`, {
+        method: "DELETE",
+      }));
+    },
+    async listOrganizationInvitations(organizationId) {
+      const payload = await readPayload(await fetcher(
+        `${organizationsRoot}/${encodeURIComponent(organizationId)}/invitations`,
+      ));
+      const data = payload && typeof payload === "object" && "data" in payload
+        ? (payload as { data?: unknown }).data
+        : null;
+      const invitations = data && typeof data === "object" && "invitations" in data
+        ? (data as { invitations?: unknown }).invitations
+        : [];
+      return Array.isArray(invitations) ? invitations.flatMap((item) => {
+        if (!item || typeof item !== "object") return [];
+        const record = item as Record<string, unknown>;
+        if (typeof record.id !== "string" || typeof record.email !== "string") return [];
+        return [{ id: record.id, email: record.email, role: record.role === "admin" ? "admin" as const : "member" as const }];
+      }) : [];
+    },
+    async revokeOrganizationInvitation(organizationId, invitationId) {
+      await readPayload(await fetcher(
+        `${organizationsRoot}/${encodeURIComponent(organizationId)}/invitations/${encodeURIComponent(invitationId)}`,
+        { method: "DELETE" },
+      ));
+    },
     async listTimeline(contactId?: string, requestOptions = {}) {
       const query = new URLSearchParams();
       if (contactId) query.set("contactId", contactId);

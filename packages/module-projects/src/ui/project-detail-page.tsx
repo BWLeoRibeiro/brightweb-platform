@@ -17,12 +17,13 @@ import { ProjectLinksCard } from "./project-links-card";
 import type { RoleColor } from "./shared/role-colors";
 import type { ProjectDetailPermissions, ProjectDetailSlots, ProjectsNavigationConfig, ProjectsUiClient, ProjectsUiDictionary } from "./types";
 
-const DEFAULT_PERMISSIONS: ProjectDetailPermissions = { canOpenEditProject: true, canEditProjectItems: true, canCreateProjectLinks: true, canManageProjectLinks: true, canManageMembers: true, canViewOrganization: true };
+const DEFAULT_PERMISSIONS: ProjectDetailPermissions = { canOpenEditProject: true, canEditProjectItems: false, canCreateProjectLinks: false, canManageProjectLinks: false, canManageMembers: false, canViewOrganization: true };
 
 export type ProjectDetailPageProps = {
   client?: ProjectsUiClient;
   initialData: ProjectDashboardData;
   permissions?: Partial<ProjectDetailPermissions>;
+  projectRole?: "admin" | "owner" | "contributor" | "observer";
   memberColorRoles?: Record<string, RoleColor>;
   dictionary?: ProjectsUiDictionary;
   navigation?: Partial<ProjectsNavigationConfig>;
@@ -31,7 +32,7 @@ export type ProjectDetailPageProps = {
 
 function LowerCardFallback() { return <SkeletonCard className="h-64" lines={4} />; }
 
-export function ProjectDetailPage({ client, initialData, permissions, memberColorRoles = {}, dictionary = defaultProjectsUiDictionary, navigation, slots }: ProjectDetailPageProps) {
+export function ProjectDetailPage({ client, initialData, permissions, projectRole = "observer", memberColorRoles = {}, dictionary = defaultProjectsUiDictionary, navigation, slots }: ProjectDetailPageProps) {
   const access = { ...DEFAULT_PERMISSIONS, ...permissions };
   return <ProjectsUiProvider client={client} dictionary={dictionary} navigation={navigation}>
     <ProjectDetailDataProvider initialData={initialData}>
@@ -48,7 +49,7 @@ export function ProjectDetailPage({ client, initialData, permissions, memberColo
         </section>
         {slots?.beforeMetadata}
         <ProjectDetailMetadataStrip />
-        <ProjectEditSheetLazy projectId={initialData.project.id} />
+        <ProjectEditSheetLazy projectId={initialData.project.id} projectRole={projectRole} />
         <ProjectDetailCreateSheetsMount projectId={initialData.project.id} canCreateMilestonesAndTasks={access.canEditProjectItems} canCreateLinks={access.canCreateProjectLinks} />
       </div>
     </ProjectDetailDataProvider>

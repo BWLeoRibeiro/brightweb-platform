@@ -4,6 +4,7 @@ import { isSuppressed } from "./server";
 
 type QueryClient = {
   from: (table: string) => any;
+  rpc: (fn: string, args?: Record<string, unknown>) => any;
 };
 
 const QUERY_PAGE_SIZE = 1_000;
@@ -284,13 +285,12 @@ export async function updateCampaign(
 }
 
 export async function deleteCampaign(supabase: unknown, id: string): Promise<void> {
-  const current = await getCampaign(supabase, id);
-  if (!current) throw new Error("Campaign not found.");
-  if (current.status !== "draft" && current.status !== "canceled") {
-    throw new Error("Only draft or canceled campaigns can be deleted.");
-  }
-  const { error } = await db(supabase).from("marketing_campaigns").delete().eq("id", id);
+  const { data, error } = await db(supabase).rpc("delete_marketing_campaign_safely", {
+    p_campaign_id: id,
+  });
   throwIfError(error);
+  if (data === "not_found") throw new Error("Campaign not found.");
+  if (data !== "deleted") throw new Error("Only draft or canceled campaigns can be deleted.");
 }
 
 export async function scheduleCampaign(
@@ -346,6 +346,21 @@ export async function listCampaignRecipients(supabase: unknown, campaignId: stri
   return data ?? [];
 }
 
+export async function deleteCampaignRecipient(
+  supabase: unknown,
+  campaignId: string,
+  recipientId: string,
+): Promise<void> {
+  const { data, error } = await db(supabase).rpc("delete_marketing_campaign_recipient_safely", {
+    p_campaign_id: campaignId,
+    p_recipient_id: recipientId,
+  });
+  throwIfError(error);
+  if (data === "campaign_not_found") throw new Error("Campaign not found.");
+  if (data === "campaign_locked") throw new Error("Recipients cannot be removed after delivery has started.");
+  if (data !== "deleted") throw new Error("Only queued, suppressed, or skipped recipients can be removed.");
+}
+
 export async function expandCampaignRecipients(
   supabase: unknown,
   campaignId: string,
@@ -364,12 +379,7 @@ export async function expandCampaignRecipients(
   ));
 
   if (contactIds.length === 0) {
-    const countUpdate = await db(supabase)
-      .from("marketing_campaigns")
-      .update({ total_recipients: 0 })
-      .eq("id", campaignId);
-    throwIfError(countUpdate.error);
-    return { total: 0, queued: 0, suppressed: 0 };
+    return { total: campaign.totalRecipients, queued: 0, suppressed: 0 };
   }
 
   let contactRows: Array<{ id: string; email: string }> = [];
@@ -431,11 +441,6 @@ export async function expandCampaignRecipients(
     .eq("campaign_id", campaignId);
   throwIfError(countError);
   const total = count ?? rows.length;
-  const countUpdate = await db(supabase)
-    .from("marketing_campaigns")
-    .update({ total_recipients: total })
-    .eq("id", campaignId);
-  throwIfError(countUpdate.error);
   return {
     total,
     queued: rows.filter((row) => row.status === "queued").length,

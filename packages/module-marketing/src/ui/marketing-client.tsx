@@ -1,6 +1,6 @@
 "use client";
 
-import { BarChart3, CalendarClock, Check, Clock3, Filter, Mail, Plus, RotateCcw, Send, Tags, Users, Workflow, X } from "lucide-react";
+import { BarChart3, CalendarClock, Check, Clock3, Filter, Mail, Plus, RotateCcw, Send, Tags, Trash2, Users, Workflow, X } from "lucide-react";
 import {
   Badge,
   Button,
@@ -157,10 +157,11 @@ function StatusPill({ status, dictionary }: {
   return <Badge variant="outline" className={statusTone[status]}>{dictionary.statuses[status]}</Badge>;
 }
 
-function RecipientPanel({ recipients, loadState, dictionary }: {
+function RecipientPanel({ recipients, loadState, dictionary, onRemove }: {
   recipients: MarketingCampaignRecipient[];
   loadState: "pending" | "fulfilled" | "rejected";
   dictionary: MarketingUiDictionary;
+  onRemove?: (recipient: MarketingCampaignRecipient) => void;
 }) {
   const counts = useMemo(() => {
     const next = { queued: 0, sending: 0, sent: 0, failed: 0, suppressed: 0, skipped: 0 };
@@ -213,6 +214,11 @@ function RecipientPanel({ recipients, loadState, dictionary }: {
               <Badge className={recipientTone[recipient.status]}>
                 {dictionary.recipients.statuses[recipient.status]}
               </Badge>
+              {["queued", "suppressed", "skipped"].includes(recipient.status) && onRemove ? (
+                <Button type="button" size="icon" variant="ghost" className="text-destructive hover:text-destructive" aria-label={`Remover ${recipient.email}`} onClick={() => onRemove(recipient)}>
+                  <Trash2 aria-hidden="true" />
+                </Button>
+              ) : null}
             </div>
           ))}
         </div>
@@ -464,6 +470,36 @@ export function MarketingClient({
       if (editorGeneration === campaignEditorGenerationRef.current) toast.error(error instanceof Error ? error.message : dictionary.feedback.genericError);
     } finally {
       if (editorGeneration === campaignEditorGenerationRef.current) setBusy(null);
+    }
+  };
+
+  const removeCampaign = async () => {
+    if (!activeCampaign || !["draft", "canceled"].includes(activeCampaign.status)) return;
+    if (!window.confirm(`Eliminar definitivamente a campanha “${activeCampaign.name}”?`)) return;
+    const campaignId = activeCampaign.id;
+    setBusy("delete");
+    try {
+      await client.deleteCampaign(campaignId);
+      setCampaigns((current) => current.filter((campaign) => campaign.id !== campaignId));
+      setEditorOpen(false);
+      setActiveCampaign(null);
+      toast.success("Campanha eliminada.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : dictionary.feedback.genericError);
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const removeRecipient = async (recipient: MarketingCampaignRecipient) => {
+    if (!activeCampaign || !window.confirm(`Remover ${recipient.email} desta campanha?`)) return;
+    try {
+      await client.deleteRecipient(activeCampaign.id, recipient.id);
+      setRecipients((current) => current.filter((item) => item.id !== recipient.id));
+      replaceCampaign({ ...activeCampaign, totalRecipients: Math.max(0, activeCampaign.totalRecipients - 1) });
+      toast.success("Destinatário removido.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : dictionary.feedback.genericError);
     }
   };
 
@@ -990,6 +1026,11 @@ export function MarketingClient({
             {activeCampaign ? (
               <>
                 <div className="marketing-secondary-actions">
+                  {["draft", "canceled"].includes(activeCampaign.status) ? (
+                    <Button disabled={busy !== null} onClick={() => void removeCampaign()} variant="destructive">
+                      <Trash2 aria-hidden="true" />Eliminar campanha
+                    </Button>
+                  ) : null}
                   {["draft", "scheduled", "sending"].includes(activeCampaign.status) ? (
                     <Button disabled={busy !== null} onClick={() => void runAction("cancel", (campaign) => client.cancelCampaign(campaign.id), dictionary.feedback.canceled)} variant="outline">
                       <X aria-hidden="true" />{dictionary.editor.cancel}
@@ -1005,7 +1046,12 @@ export function MarketingClient({
                   analytics={campaignAnalytics[activeCampaign.id] ?? null}
                   dictionary={dictionary}
                 />
-                <RecipientPanel recipients={recipients} loadState={recipientsLoadState} dictionary={dictionary} />
+                <RecipientPanel
+                  recipients={recipients}
+                  loadState={recipientsLoadState}
+                  dictionary={dictionary}
+                  onRemove={["draft", "scheduled", "canceled"].includes(activeCampaign.status) ? removeRecipient : undefined}
+                />
               </>
             ) : null}
           </div>

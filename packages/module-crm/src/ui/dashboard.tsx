@@ -239,6 +239,12 @@ export function CrmDashboard({ client: providedClient, initialData, dictionary =
       ? items.map((item) => item.id === current.id ? saved : item)
       : [...items, saved]);
   };
+  const deleteOrganization = async (organization: CrmOrganization) => {
+    await client.deleteOrganization(organization.id);
+    setOrganizations((items) => items.filter((item) => item.id !== organization.id));
+    setEditingOrganization(null);
+    await refresh();
+  };
   const contactsByOrganization = useMemo(() => {
     const counts = new Map<string, number>();
     contacts.items.forEach((contact) => { if (contact.organization_id) counts.set(contact.organization_id, (counts.get(contact.organization_id) ?? 0) + 1); });
@@ -294,7 +300,7 @@ export function CrmDashboard({ client: providedClient, initialData, dictionary =
       <CrmTimelineBrowser open={timelineOpen} entries={timeline} loading={summaryResourceStates.timeline.status === "pending" && !summaryResourceStates.timeline.hasData} unavailable={summaryResourceStates.timeline.status === "rejected" && !summaryResourceStates.timeline.hasData} dictionary={dictionary} onOpenChange={setTimelineOpen} queryTimeline={client.queryTimeline} />
       <CrmTimelineBrowser open={contactTimelineOpen} entries={contactTimeline} loading={timelineLoading} dictionary={dictionary} onOpenChange={setContactTimelineOpen} />
       <CrmOrganizationsBrowser open={organizationsOpen} organizations={organizations} loading={summaryResourceStates.organizations.status === "pending" && !summaryResourceStates.organizations.hasData} unavailable={summaryResourceStates.organizations.status === "rejected" && !summaryResourceStates.organizations.hasData} contactsByOrganization={contactsByOrganization} fields={organizationFields} dictionary={dictionary} onOpenChange={setOrganizationsOpen} onSelect={openOrganization} queryOrganizations={client.queryOrganizations} />
-      <CrmOrganizationSheet open={organizationSheetOpen} organization={editingOrganization} dictionary={dictionary} onOpenChange={setOrganizationSheetOpen} onSubmit={saveOrganization} />
+      <CrmOrganizationSheet open={organizationSheetOpen} organization={editingOrganization} dictionary={dictionary} onOpenChange={setOrganizationSheetOpen} onSubmit={saveOrganization} onDelete={deleteOrganization} listInvitations={client.listOrganizationInvitations} onRevokeInvitation={client.revokeOrganizationInvitation} />
     </div>
   );
 }

@@ -193,9 +193,11 @@ export type MarketingUiClient = {
   retryCampaign(campaignId: string): Promise<MarketingCampaign>;
   sendTest(campaignId: string, email: string): Promise<void>;
   listRecipients(campaignId: string, options?: MarketingRequestOptions): Promise<MarketingCampaignRecipient[]>;
+  deleteRecipient(campaignId: string, recipientId: string): Promise<void>;
   listTopics(options?: MarketingRequestOptions): Promise<MarketingTopic[]>;
   createTopic(input: MarketingTopicInput): Promise<MarketingTopic>;
   updateTopic(topicId: string, input: MarketingTopicUpdate): Promise<MarketingTopic>;
+  deleteTopic(topicId: string): Promise<void>;
   reorderTopics?(topicIds: string[]): Promise<MarketingTopic[]>;
   listSegments(options?: MarketingRequestOptions): Promise<MarketingSegment[]>;
   querySegments?(query?: MarketingCollectionQuery, options?: MarketingRequestOptions): Promise<MarketingCollectionResult<MarketingSegment>>;

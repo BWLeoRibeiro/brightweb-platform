@@ -1206,6 +1206,7 @@ export function createOptionalModuleRouteFiles(selectedModules) {
     ], orgsEnabled),
     "app/api/organizations/[id]/route.ts": createOrganizationRoute([
       { method: "PATCH", handler: "handleOrganizationPatchRequest", context: true },
+      { method: "DELETE", handler: "handleOrganizationDeleteRequest", context: true },
     ], orgsEnabled),
     "app/api/organizations/[id]/invitations/route.ts": createOrganizationRoute([
       { method: "GET", handler: "handleOrganizationInvitationsGetRequest", context: true },

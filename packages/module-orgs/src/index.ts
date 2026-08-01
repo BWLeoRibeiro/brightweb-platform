@@ -2,6 +2,7 @@ export {
   ORGANIZATIONS_DEFAULT_PAGE_SIZE,
   ORGANIZATIONS_MAX_PAGE_SIZE,
   createOrganization,
+  deleteOrganization,
   listOrganizationMembers,
   listOrganizations,
   setOrganizationMemberRole,
@@ -17,6 +18,7 @@ export {
 } from "./data";
 export {
   handleOrganizationInvitationDeleteRequest,
+  handleOrganizationDeleteRequest,
   handleOrganizationInvitationsGetRequest,
   handleOrganizationInvitationsPostRequest,
   handleOrganizationPatchRequest,
