@@ -44,6 +44,9 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Check release state
+        # Changesets' automated version PR has already consumed its changeset.
+        # The remaining checks validate the versioned packages themselves.
+        if: github.head_ref != 'changeset-release/main'
         run: pnpm release:check
 
       - name: Check module manifests
