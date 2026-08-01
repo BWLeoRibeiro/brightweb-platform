@@ -811,6 +811,16 @@ test("bw upgrade installs and tracks deletion routes introduced after the origin
   manifest.scaffoldFiles[notificationRelativePath].hash = await hashFile(notificationPath);
   manifest.scaffoldFiles[notificationRelativePath].status = "current";
   delete manifest.scaffoldFiles[recipientRelativePath];
+
+  const organizationRelativePath = "app/api/organizations/[id]/route.ts";
+  const organizationPath = path.join(targetDir, organizationRelativePath);
+  await fs.writeFile(
+    organizationPath,
+    'export const dynamic = "force-dynamic";\n\nexport async function PATCH() { return new Response(null); }\n',
+    "utf8",
+  );
+  manifest.scaffoldFiles[organizationRelativePath].hash = await hashFile(organizationPath);
+  manifest.scaffoldFiles[organizationRelativePath].status = "current";
   await writeJson(manifestPath, manifest);
 
   const result = await upgradeBrightwebApp(
@@ -823,12 +833,15 @@ test("bw upgrade installs and tracks deletion routes introduced after the origin
   assert.ok(result.plan.starterFilesToRefresh.includes(recipientRelativePath));
   assert.match(await fs.readFile(notificationPath, "utf8"), /handleNotificationsDeleteRequest as DELETE/);
   assert.match(await fs.readFile(path.join(targetDir, recipientRelativePath), "utf8"), /marketingCampaignRecipientDelete as DELETE/);
+  assert.match(await fs.readFile(organizationPath, "utf8"), /handleOrganizationDeleteRequest/);
 
   const upgradedManifest = await readJson(manifestPath);
   assert.equal(upgradedManifest.scaffoldFiles[notificationRelativePath].module, "platform-base");
   assert.equal(upgradedManifest.scaffoldFiles[notificationRelativePath].status, "current");
   assert.equal(upgradedManifest.scaffoldFiles[recipientRelativePath].module, "marketing");
   assert.equal(upgradedManifest.scaffoldFiles[recipientRelativePath].status, "current");
+  assert.equal(upgradedManifest.scaffoldFiles[organizationRelativePath].hash, await hashFile(organizationPath));
+  assert.equal(upgradedManifest.scaffoldFiles[organizationRelativePath].status, "current");
 });
 
 test("full bw upgrade includes core migrations recorded outside the optional module map", async (t) => {

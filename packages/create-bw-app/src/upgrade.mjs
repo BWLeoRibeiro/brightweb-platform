@@ -62,14 +62,17 @@ export async function upgradeBrightwebApp(moduleKey, argvOptions = {}, runtimeOp
   for (const [key, entry] of Object.entries(appManifest.modules)) {
     if (catalog[key]?.packageRoot) entry.version = catalog[key].version;
   }
-  for (const write of plan.fileWrites.filter((entry) => entry.type === "starter")) {
+  for (const write of plan.fileWrites) {
     const relativePath = write.relativePath;
+    const existingRecord = appManifest.scaffoldFiles[relativePath];
+    if (!existingRecord && write.type !== "starter") continue;
     const targetPath = resolveSafeRelativePath(targetDir, relativePath, "Manifest scaffold file path");
-    if (protectedPaths.has(relativePath) || !(await pathExists(targetPath))) continue;
+    if (write.type === "starter" && protectedPaths.has(relativePath)) continue;
+    if (!(await pathExists(targetPath))) continue;
     const hash = await hashFile(targetPath);
-    if (appManifest.scaffoldFiles[relativePath]) {
-      appManifest.scaffoldFiles[relativePath].hash = hash;
-      appManifest.scaffoldFiles[relativePath].status = "current";
+    if (existingRecord) {
+      existingRecord.hash = hash;
+      existingRecord.status = "current";
     } else {
       appManifest.scaffoldFiles[relativePath] = {
         module: write.moduleKey || "platform-base",
