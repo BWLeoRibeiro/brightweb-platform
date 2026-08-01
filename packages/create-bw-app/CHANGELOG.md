@@ -1,5 +1,11 @@
 # create-bw-app
 
+## 0.24.1
+
+### Patch Changes
+
+- 59af9a7: Ensure `bw upgrade --refresh-starters` installs, refreshes, and tracks deletion routes introduced after an application's original scaffold.
+
 ## 0.24.0
 
 ### Minor Changes
