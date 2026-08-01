@@ -1,5 +1,11 @@
 # create-bw-app
 
+## 0.24.0
+
+### Minor Changes
+
+- 9518642: Add lifecycle-safe deletion UI and APIs for projects, organizations, CRM records, marketing resources, recipients, invitations, and per-user notification dismissal. Generated applications now include the required routes, permission wiring, and database migration.
+
 ## 0.23.3
 
 ### Patch Changes
