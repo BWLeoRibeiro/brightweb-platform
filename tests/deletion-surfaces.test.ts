@@ -14,7 +14,9 @@ test("platform packages expose every supported destructive UI surface", () => {
   const organizationSheet = source("packages/module-crm/src/ui/organization-sheet.tsx");
   assert.match(organizationSheet, /Eliminar organização/);
   assert.match(organizationSheet, /Revogar/);
-  assert.match(organizationSheet, /window\.prompt/);
+  assert.match(organizationSheet, /<AlertDialog open=\{deleteDialogOpen\}/);
+  assert.match(organizationSheet, /deleteConfirmation !== organization\.name/);
+  assert.doesNotMatch(organizationSheet, /window\.prompt/);
 
   const campaignEditor = source("packages/module-marketing/src/ui/marketing-client.tsx");
   assert.match(campaignEditor, /Eliminar campanha/);
