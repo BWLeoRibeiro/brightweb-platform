@@ -55,6 +55,10 @@ const MODULE_SELECTED_PLATFORM_FILES = new Set([
   path.join("app", "api", "organizations", "[id]", "invitations", "[invitationId]", "route.ts"),
 ]);
 
+const REFRESHABLE_PLATFORM_STARTER_FILES = new Set([
+  path.join("app", "api", "notifications", "route.ts"),
+]);
+
 function resolveUpdateTargetDirectory(runtimeOptions, argvOptions) {
   if (runtimeOptions.targetDir || argvOptions.targetDir) {
     return path.resolve(runtimeOptions.targetDir || argvOptions.targetDir);
@@ -276,7 +280,7 @@ async function getStarterFileStatus(targetDir, installedModules) {
         sourcePath,
         targetPath,
         status: "missing",
-        refreshable: false,
+        refreshable: REFRESHABLE_PLATFORM_STARTER_FILES.has(relativePath),
       });
       continue;
     }
@@ -307,7 +311,7 @@ async function getStarterFileStatus(targetDir, installedModules) {
       sourcePath,
       targetPath,
       status: sourceContent === targetContent ? "current" : "drifted",
-      refreshable: false,
+      refreshable: REFRESHABLE_PLATFORM_STARTER_FILES.has(relativePath),
     });
   }
 
@@ -586,6 +590,7 @@ export async function buildBrightwebAppUpdatePlan(argvOptions = {}, runtimeOptio
     for (const entry of starterFiles.filter((candidate) =>
       candidate.status !== "current" && (candidate.status === "missing" || candidate.refreshable !== false))) {
       fileWrites.push({
+        moduleKey: entry.moduleKey,
         relativePath: entry.relativePath,
         targetPath: entry.targetPath,
         content: await fs.readFile(entry.sourcePath, "utf8"),
