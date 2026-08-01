@@ -1,5 +1,12 @@
 # @brightweblabs/app-shell
 
+## 0.10.3
+
+### Patch Changes
+
+- 360f518: Remove the elevated shadow from primary header toolbar actions so application navigation bars use a flat, consistent surface.
+  - @brightweblabs/ui@1.4.4
+
 ## 0.10.2
 
 ### Patch Changes
