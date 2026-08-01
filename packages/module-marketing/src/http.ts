@@ -6,6 +6,7 @@ import {
 import { appendServerTiming, elapsedMs, requestStartedAt } from "@brightweblabs/infra/request-observability";
 import type {
   createTopic,
+  deleteTopic,
   listTopics,
   reorderTopics,
   resolveByUnsubscribeToken,
@@ -17,6 +18,7 @@ import type {
   cancelCampaign,
   createCampaign,
   deleteCampaign,
+  deleteCampaignRecipient,
   getCampaign,
   listCampaignRecipients,
   listCampaigns,
@@ -115,6 +117,7 @@ function marketingErrorResponse(error: unknown, context: string) {
     || message.startsWith("A workflow ")
     || message.startsWith("Workflow node ")
     || message.startsWith("This campaign")
+    || message.startsWith("Recipients cannot")
     || message.startsWith("A valid email")
   ) {
     return json(publicError("INVALID_INPUT", message), { status: 400 });
@@ -130,6 +133,9 @@ function marketingErrorResponse(error: unknown, context: string) {
   }
   if (message === "Topic slug already exists.") {
     return json(publicError("TOPIC_SLUG_CONFLICT", message), { status: 409 });
+  }
+  if (message === "Topic is used by campaigns and must be deactivated instead.") {
+    return json(publicError("TOPIC_IN_USE", message), { status: 409 });
   }
   return json(
     sanitizePublicError(
@@ -178,7 +184,7 @@ type ServerUserAccess =
   | { ok: false; status: number; error: string };
 
 type CampaignRouteContext = {
-  params: Promise<{ id: string }> | { id: string };
+  params: Promise<{ id: string; recipientId?: string }> | { id: string; recipientId?: string };
 };
 
 export type MarketingCampaignHttpDependencies = {
@@ -192,12 +198,14 @@ export type MarketingCampaignHttpDependencies = {
   reorderTopics?: typeof reorderTopics;
   createTopic: typeof createTopic;
   updateTopic: typeof updateTopic;
+  deleteTopic: typeof deleteTopic;
   listCampaigns: typeof listCampaigns;
   queryCampaigns?: typeof queryCampaigns;
   getCampaign: typeof getCampaign;
   createCampaign: typeof createCampaign;
   updateCampaign: typeof updateCampaign;
   deleteCampaign: typeof deleteCampaign;
+  deleteRecipient: typeof deleteCampaignRecipient;
   listRecipients: typeof listCampaignRecipients;
   scheduleCampaign: typeof scheduleCampaign;
   cancelCampaign: typeof cancelCampaign;
@@ -412,6 +420,15 @@ export function createMarketingCampaignHttpHandlers(
       return json(result);
     },
   );
+  const topicDelete = withStaff(
+    dependencies,
+    "marketing.topics.delete",
+    async (supabase, _access, _request, context) => {
+      const id = await campaignId(context);
+      await dependencies.deleteTopic(supabase as never, id);
+      return json({ data: { deletedId: id } });
+    },
+  );
   const segmentsGet = withStaff(
     dependencies,
     "marketing.segments.list",
@@ -481,8 +498,9 @@ export function createMarketingCampaignHttpHandlers(
     dependencies,
     "marketing.segments.delete",
     async (supabase, _access, _request, context) => {
-      await dependencies.deleteSegment(supabase as never, await campaignId(context));
-      return new Response(null, { status: 204 });
+      const id = await campaignId(context);
+      await dependencies.deleteSegment(supabase as never, id);
+      return json({ data: { deletedId: id } });
     },
   );
   const segmentPreviewPost = withStaff(
@@ -579,8 +597,9 @@ export function createMarketingCampaignHttpHandlers(
     dependencies,
     "marketing.campaigns.delete",
     async (supabase, _access, _request, context) => {
-      await dependencies.deleteCampaign(supabase as never, await campaignId(context));
-      return new Response(null, { status: 204 });
+      const id = await campaignId(context);
+      await dependencies.deleteCampaign(supabase as never, id);
+      return json({ data: { deletedId: id } });
     },
   );
   const recipientsGet = withStaff(
@@ -589,6 +608,16 @@ export function createMarketingCampaignHttpHandlers(
     async (supabase, _access, _request, context) => json(
       await dependencies.listRecipients(supabase as never, await campaignId(context)),
     ),
+  );
+  const recipientDelete = withStaff(
+    dependencies,
+    "marketing.campaigns.recipients.delete",
+    async (supabase, _access, _request, context) => {
+      const params = await context!.params;
+      if (!params.recipientId) return json(publicError("INVALID_INPUT", "recipientId is required."), { status: 400 });
+      await dependencies.deleteRecipient(supabase as never, params.id, params.recipientId);
+      return json({ data: { deletedId: params.recipientId } });
+    },
   );
   const schedulePost = withStaff(
     dependencies,
@@ -799,8 +828,9 @@ export function createMarketingCampaignHttpHandlers(
     dependencies,
     "marketing.workflows.delete",
     async (supabase, _access, _request, context) => {
-      await dependencies.deleteWorkflow(supabase, await campaignId(context));
-      return new Response(null, { status: 204 });
+      const id = await campaignId(context);
+      await dependencies.deleteWorkflow(supabase, id);
+      return json({ data: { deletedId: id } });
     },
   );
   const workflowActivatePost = withStaff(
@@ -921,6 +951,7 @@ export function createMarketingCampaignHttpHandlers(
     topicsPost,
     topicsOrderPost,
     topicPatch,
+    topicDelete,
     segmentsGet,
     segmentsPost,
     segmentGet,
@@ -933,6 +964,7 @@ export function createMarketingCampaignHttpHandlers(
     campaignPatch,
     campaignDelete,
     recipientsGet,
+    recipientDelete,
     schedulePost,
     cancelPost,
     sendPost,

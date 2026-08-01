@@ -252,11 +252,13 @@ export async function updateSegment(
 }
 
 export async function deleteSegment(supabase: unknown, id: string): Promise<void> {
-  const { error } = await db(supabase)
+  const { data, error } = await db(supabase)
     .from("marketing_segments")
     .delete()
-    .eq("id", id);
+    .eq("id", id)
+    .select("id");
   throwIfError(error);
+  if (!(data ?? []).some((row: { id?: string }) => row.id === id)) throw new Error("Segment not found.");
 }
 
 async function ruleFromInput(

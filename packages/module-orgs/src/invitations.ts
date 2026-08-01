@@ -390,10 +390,12 @@ export async function revokeOrganizationInvitation(
   organizationId: string,
   invitationId: string,
 ): Promise<void> {
-  const { error } = await supabase.from("organization_invitations")
+  const { data, error } = await supabase.from("organization_invitations")
     .update({ status: "revoked", revoked_at: new Date().toISOString() })
-    .eq("id", invitationId).eq("organization_id", organizationId).eq("status", "pending");
+    .eq("id", invitationId).eq("organization_id", organizationId).eq("status", "pending")
+    .select("id");
   if (error) throw new Error(error.message);
+  if (!(data ?? []).some((row) => row.id === invitationId)) throw new Error("Convite pendente não encontrado.");
 }
 
 export async function acceptOrganizationInvitation(

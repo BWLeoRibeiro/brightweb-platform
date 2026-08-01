@@ -184,6 +184,27 @@ export async function updateTopic(
   return topicFromRow(data as TopicRow);
 }
 
+export async function deleteTopic(supabase: unknown, id: string): Promise<void> {
+  const { count, error: campaignError } = await client(supabase)
+    .from("marketing_campaigns")
+    .select("id", { count: "exact", head: true })
+    .eq("topic_id", id);
+  throwIfError(campaignError);
+  if ((count ?? 0) > 0) {
+    throw new Error("Topic is used by campaigns and must be deactivated instead.");
+  }
+  const { data, error } = await client(supabase)
+    .from("marketing_topics")
+    .delete()
+    .eq("id", id)
+    .select("id");
+  if (error?.code === "23503") {
+    throw new Error("Topic is used by campaigns and must be deactivated instead.");
+  }
+  throwIfError(error);
+  if (!(data ?? []).some((row: { id?: string }) => row.id === id)) throw new Error("Topic not found.");
+}
+
 export async function reorderTopics(
   supabase: unknown,
   topicIds: string[],

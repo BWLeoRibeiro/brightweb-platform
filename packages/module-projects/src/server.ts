@@ -1090,12 +1090,14 @@ export async function deleteProject(supabase: SupabaseClient, projectId: string,
     ...(organizationMembers ?? []).map((member) => member.profile_id),
   ].filter((profileId): profileId is string => typeof profileId === "string" && profileId.length > 0)));
 
-  const { error: deleteError } = await supabase
+  const { data: deletedRows, error: deleteError } = await supabase
     .from("projects")
     .delete()
-    .eq("id", projectId);
+    .eq("id", projectId)
+    .select("id");
 
   if (deleteError) throw new Error(deleteError.message);
+  if (!deletedRows?.some((row) => row.id === projectId)) throw new Error("Projeto não encontrado.");
 
   await logProjectActivityEvent({
     eventType: "projects.project.deleted",
@@ -1111,6 +1113,63 @@ export async function deleteProject(supabase: SupabaseClient, projectId: string,
       visible_profile_ids: visibleProfileIds,
     },
   });
+}
+
+export type ProjectAccessRole = "admin" | "owner" | "contributor" | "observer";
+
+export async function getProjectAccess(
+  supabase: SupabaseClient,
+  projectId: string,
+  profileId: string,
+  globalRole: string | null,
+): Promise<{
+  projectRole: ProjectAccessRole;
+  permissions: {
+    canOpenEditProject: boolean;
+    canEditProjectItems: boolean;
+    canCreateProjectLinks: boolean;
+    canManageProjectLinks: boolean;
+    canManageMembers: boolean;
+    canViewOrganization: boolean;
+  };
+}> {
+  const { data: project, error: projectError } = await supabase
+    .from("projects")
+    .select("id, owner_profile_id")
+    .eq("id", projectId)
+    .maybeSingle<{ id: string; owner_profile_id: string | null }>();
+  if (projectError) throw new Error(projectError.message);
+  if (!project) throw new Error("Projeto não encontrado.");
+
+  let projectRole: ProjectAccessRole = "observer";
+  if (globalRole === "admin") {
+    projectRole = "admin";
+  } else if (project.owner_profile_id === profileId) {
+    projectRole = "owner";
+  } else {
+    const { data: membership, error: membershipError } = await supabase
+      .from("project_members")
+      .select("role")
+      .eq("project_id", projectId)
+      .eq("profile_id", profileId)
+      .maybeSingle<{ role: "owner" | "contributor" | "observer" }>();
+    if (membershipError) throw new Error(membershipError.message);
+    if (membership?.role) projectRole = membership.role;
+  }
+
+  const canManageProject = projectRole === "admin" || projectRole === "owner";
+  const canContribute = canManageProject || projectRole === "contributor";
+  return {
+    projectRole,
+    permissions: {
+      canOpenEditProject: true,
+      canEditProjectItems: canContribute,
+      canCreateProjectLinks: canContribute,
+      canManageProjectLinks: canContribute,
+      canManageMembers: canManageProject,
+      canViewOrganization: true,
+    },
+  };
 }
 
 async function nextPosition(supabase: SupabaseClient, table: "project_tasks" | "project_milestones", projectId: string) {
@@ -1257,13 +1316,15 @@ export async function updateProjectMilestone(
 }
 
 export async function deleteProjectMilestone(supabase: SupabaseClient, projectId: string, milestoneId: string) {
-  const { error } = await supabase
+  const { data: deletedRows, error } = await supabase
     .from("project_milestones")
     .delete()
     .eq("id", milestoneId)
-    .eq("project_id", projectId);
+    .eq("project_id", projectId)
+    .select("id");
 
   if (error) throw new Error(error.message);
+  if (!deletedRows?.some((row) => row.id === milestoneId)) throw new Error("Marco não encontrado.");
   await syncProjectHealth(supabase, projectId);
   return listProjectMilestones(supabase, projectId);
 }
@@ -1352,25 +1413,29 @@ export async function updateProjectLink(
 }
 
 export async function deleteProjectTask(supabase: SupabaseClient, projectId: string, taskId: string) {
-  const { error } = await supabase
+  const { data: deletedRows, error } = await supabase
     .from("project_tasks")
     .delete()
     .eq("id", taskId)
-    .eq("project_id", projectId);
+    .eq("project_id", projectId)
+    .select("id");
 
   if (error) throw new Error(error.message);
+  if (!deletedRows?.some((row) => row.id === taskId)) throw new Error("Tarefa não encontrada.");
   await syncProjectHealth(supabase, projectId);
   return listProjectTasks(supabase, projectId);
 }
 
 export async function deleteProjectLink(supabase: SupabaseClient, projectId: string, linkId: string) {
-  const { error } = await supabase
+  const { data: deletedRows, error } = await supabase
     .from("project_links")
     .delete()
     .eq("id", linkId)
-    .eq("project_id", projectId);
+    .eq("project_id", projectId)
+    .select("id");
 
   if (error) throw new Error(error.message);
+  if (!deletedRows?.some((row) => row.id === linkId)) throw new Error("Ligação não encontrada.");
   return listProjectLinks(supabase, projectId);
 }
 
@@ -1556,55 +1621,15 @@ export async function syncProjectMembers(
   }
   const finalMembersToPersist = Array.from(membersByProfile.values());
   const selectedOwnerProfileId = finalMembersToPersist.find((member) => member.role === "owner")?.profile_id ?? null;
-  const ownerNeedsUpdate = (project.owner_profile_id ?? null) !== selectedOwnerProfileId;
-  const { data: existingMembers, error: existingMembersError } = await supabase
-    .from("project_members")
-    .select("profile_id, role")
-    .eq("project_id", projectId);
-
-  if (existingMembersError) throw new Error(existingMembersError.message);
-
-  const existingByProfile = new Map(
-    (existingMembers ?? [])
-      .map((member) => {
-        const profileId = typeof member.profile_id === "string" ? member.profile_id : "";
-        const role = typeof member.role === "string" ? member.role : "";
-        return [profileId, role] as const;
-      })
-      .filter(([profileId]) => profileId.length > 0),
-  );
-  const nextByProfile = new Map(
-    finalMembersToPersist.map((member) => [member.profile_id, member.role] as const),
-  );
-  const membersAreUnchanged =
-    existingByProfile.size === nextByProfile.size
-    && Array.from(nextByProfile.entries()).every(([profileId, role]) => existingByProfile.get(profileId) === role);
-
-  if (membersAreUnchanged && !ownerNeedsUpdate) {
-    return listProjectMembers(supabase, projectId);
-  }
-
-  const { error: clearError } = await supabase
-    .from("project_members")
-    .delete()
-    .eq("project_id", projectId);
-
-  if (clearError) throw new Error(clearError.message);
-
-  if (finalMembersToPersist.length > 0) {
-    const { error: insertError } = await supabase
-      .from("project_members")
-      .insert(finalMembersToPersist);
-    if (insertError) throw new Error(insertError.message);
-  }
-
-  if (ownerNeedsUpdate) {
-    const { error: ownerUpdateError } = await supabase
-      .from("projects")
-      .update({ owner_profile_id: selectedOwnerProfileId })
-      .eq("id", projectId);
-    if (ownerUpdateError) throw new Error(ownerUpdateError.message);
-  }
+  const { error: syncError } = await supabase.rpc("sync_project_members_exact", {
+    p_project_id: projectId,
+    p_members: finalMembersToPersist.map((member) => ({
+      profile_id: member.profile_id,
+      role: member.role,
+    })),
+    p_owner_profile_id: selectedOwnerProfileId,
+  });
+  if (syncError) throw new Error(syncError.message);
 
   return listProjectMembers(supabase, projectId);
 }

@@ -220,6 +220,35 @@ export async function updateOrganization(
   return normalizeOrganization(data as RawOrganization);
 }
 
+export async function deleteOrganization(
+  supabase: SupabaseClient,
+  organizationId: string,
+): Promise<{ id: string; name: string }> {
+  const { count: projectCount, error: projectError } = await supabase
+    .from("projects")
+    .select("id", { count: "exact", head: true })
+    .eq("organization_id", organizationId);
+  if (projectError && projectError.code !== "42P01" && projectError.code !== "PGRST205") {
+    throw new Error(projectError.message);
+  }
+  if ((projectCount ?? 0) > 0) {
+    throw new Error("A organização tem projetos associados. Elimine ou mova esses projetos primeiro.");
+  }
+
+  const { data, error } = await supabase
+    .from("organizations")
+    .delete()
+    .eq("id", organizationId)
+    .select("id, name")
+    .maybeSingle<{ id: string; name: string }>();
+  if (error?.code === "23503") {
+    throw new Error("A organização tem projetos associados. Elimine ou mova esses projetos primeiro.");
+  }
+  if (error) throw new Error(error.message);
+  if (!data) throw new Error("Organização não encontrada.");
+  return data;
+}
+
 export async function listOrganizationMembers(
   supabase: SupabaseClient,
   organizationId: string,

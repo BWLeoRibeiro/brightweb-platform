@@ -731,7 +731,7 @@ test("bw add projects resolves orgs, writes overlays, migrations, and manifest s
   const release = await readJson(path.join(REPO_ROOT, "brightweb-release.json"));
   assert.equal(updated.modules.orgs.version, release.packages["@brightweblabs/module-orgs"]);
   assert.equal(updated.modules.projects.version, release.packages["@brightweblabs/module-projects"]);
-  assert.equal(updated.migrationCursor.projects, "20260731130300_project_collection_indexes.sql");
+  assert.equal(updated.migrationCursor.projects, "20260801122000_project_member_sync.sql");
   assert.match(await fs.readFile(path.join(targetDir, "app", "globals.css"), "utf8"), /@source "\.\.\/node_modules\/@brightweblabs\/module-projects\/src";/);
   assert.match(
     await fs.readFile(path.join(targetDir, "config", "module-toolbar-controls.tsx"), "utf8"),
@@ -744,6 +744,7 @@ test("bw add projects resolves orgs, writes overlays, migrations, and manifest s
   assert.ok(migrations.some((name) => name.includes("_projects__20260731123000_project_realtime_visibility.sql")));
   assert.ok(migrations.some((name) => name.includes("_projects__20260731124000_project_task_stats.sql")));
   assert.ok(migrations.some((name) => name.includes("_projects__20260731130300_project_collection_indexes.sql")));
+  assert.ok(migrations.some((name) => name.includes("_projects__20260801122000_project_member_sync.sql")));
   const doctor = await doctorBrightwebApp({ targetDir }, { workspaceRoot: REPO_ROOT });
   assert.equal(doctor.ok, true);
   assert.equal(doctor.checks.find((entry: { id: string }) => entry.id === "scaffold")?.status, "PASS");
@@ -808,7 +809,7 @@ test("full bw upgrade includes core migrations recorded outside the optional mod
   const result = await upgradeBrightwebApp(undefined, { targetDir }, { workspaceRoot: REPO_ROOT, fetchImpl: mockNpmFetch });
   assert.ok(result.migrationPlan.writes.some((entry) => entry.moduleKey === "core"));
   const updated = await readJson(manifestPath);
-  assert.equal(updated.migrationCursor.core, "20260731130000_profile_search_indexes.sql");
+  assert.equal(updated.migrationCursor.core, "20260801120000_core_notification_dismissals.sql");
 });
 
 test("bw upgrade never refreshes an owned scaffold file", async (t) => {

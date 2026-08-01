@@ -5,7 +5,7 @@ import { useProjectsNavigation } from "./context";
 import { useEffect, useMemo, useState, type MouseEvent } from "react";
 import { format } from "date-fns";
 import { useRouter } from "next/navigation";
-import { CalendarIcon, FolderKanban, Loader2, Save } from "lucide-react";
+import { CalendarIcon, FolderKanban, Save } from "lucide-react";
 import { toast } from "sonner";
 import {
   sheetBodyClassName,
@@ -51,6 +51,7 @@ type ProjectEditInitial = {
 
 type ProjectEditSheetProps = {
   projectId: string;
+  projectRole?: ProjectRole;
   initial?: ProjectEditInitial;
   initialOpen?: boolean;
 };
@@ -93,7 +94,7 @@ function parseIsoDate(value: string): Date | undefined {
 }
 
 export function ProjectEditSheet({
-  projectId, initial: initialProp, initialOpen = false }: ProjectEditSheetProps) {
+  projectId, projectRole = "observer", initial: initialProp, initialOpen = false }: ProjectEditSheetProps) {
   const client = useProjectsUiClient();
   const dictionary = useProjectsUiDictionary();
   const navigation = useProjectsNavigation();
@@ -136,8 +137,7 @@ export function ProjectEditSheet({
     project?.targetDate,
   ]);
   const [open, setOpen] = useState(initialOpen);
-  const [role, setRole] = useState<ProjectRole | null>(null);
-  const [isLoadingRole, setIsLoadingRole] = useState(false);
+  const role = projectRole;
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isDeleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -153,43 +153,6 @@ export function ProjectEditSheet({
     return () => window.removeEventListener(PROJECTS_EVENTS.openEditProject, handleOpen);
   }, []);
 
-  useEffect(() => {
-    if (!open) return;
-    let isMounted = true;
-    const controller = new AbortController();
-
-    const run = async () => {
-      setIsLoadingRole(true);
-      try {
-        const response = await client.requestRaw(`/api/projects/${projectId}/access`, {
-          cache: "no-store",
-          signal: controller.signal,
-        });
-        const payload = await response.json();
-        if (!response.ok) throw new Error(typeof payload?.error === "string" ? payload.error : dictionary.projectEdit.permissionError);
-        if (!isMounted) return;
-        const nextRole = payload?.data?.projectRole;
-        if (nextRole === "admin" || nextRole === "owner" || nextRole === "contributor" || nextRole === "observer") {
-          setRole(nextRole);
-        } else {
-          setRole("observer");
-        }
-      } catch (error) {
-        if (!isMounted) return;
-        setRole("observer");
-        toast.error(error instanceof Error ? error.message : dictionary.projectEdit.validatePermissionError);
-      } finally {
-        if (isMounted) setIsLoadingRole(false);
-      }
-    };
-
-    void run();
-    return () => {
-      isMounted = false;
-      controller.abort();
-    };
-  }, [open, projectId]);
-
   const editableFields = useMemo(() => {
     if (role === "admin" || role === "owner") return allEditableFields;
     if (role === "contributor") return contributorEditableFields;
@@ -198,7 +161,7 @@ export function ProjectEditSheet({
 
   const canEditAnyField = editableFields.length > 0;
   const editing = canEditAnyField;
-  const canDeleteProject = role === "admin";
+  const canDeleteProject = role === "admin" || role === "owner";
   const controlClass = (field: (typeof allEditableFields)[number]) =>
     isFieldEditable(field) ? sheetEditControlClassName : sheetViewControlClassName;
   const textareaClass = (field: (typeof allEditableFields)[number]) =>
@@ -235,7 +198,7 @@ export function ProjectEditSheet({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-      const result = await response.json();
+      const result = await response.json().catch(() => null);
       if (!response.ok) {
         const message = typeof result?.error === "string" ? result.error : dictionary.projectEdit.saveError;
         throw new Error(message);
@@ -283,16 +246,11 @@ export function ProjectEditSheet({
         <AppSheetHeader
           icon={FolderKanban}
           editing={editing}
-          eyebrow={isLoadingRole ? undefined : editing ? dictionary.board.editEyebrow : dictionary.board.viewEyebrow}
+          eyebrow={editing ? dictionary.board.editEyebrow : dictionary.board.viewEyebrow}
           title={<>{dictionary.forms.editProject}</>}
           description={
             <span className="flex items-center gap-1.5">
-              {isLoadingRole ? (
-                <>
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  {dictionary.projectEdit.validating}
-                </>
-              ) : role === "observer" ? (
+              {role === "observer" ? (
                 dictionary.projectEdit.readOnly
               ) : (
                 dictionary.projectEdit.description

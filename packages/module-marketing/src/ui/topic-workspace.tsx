@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronDown, ChevronUp, Pencil, Plus, Tags } from "lucide-react";
+import { ChevronDown, ChevronUp, Pencil, Plus, Tags, Trash2 } from "lucide-react";
 import { Badge, Button, Card, CardContent, Input, Label } from "@brightweblabs/ui";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -93,6 +93,20 @@ export function TopicWorkspace({
       const saved = await client.updateTopic(topic.id, { isActive: !topic.isActive });
       onTopicsChange(topics.map((item) => item.id === saved.id ? saved : item));
       toast.success(dictionary.topics.saved);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : dictionary.feedback.genericError);
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const remove = async (topic: MarketingTopic) => {
+    if (!window.confirm(`Eliminar definitivamente o tópico “${topic.label}”? Se estiver em uso, desative-o.`)) return;
+    setBusy(topic.id);
+    try {
+      await client.deleteTopic(topic.id);
+      onTopicsChange(topics.filter((item) => item.id !== topic.id));
+      toast.success("Tópico eliminado.");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : dictionary.feedback.genericError);
     } finally {
@@ -229,6 +243,16 @@ export function TopicWorkspace({
                     variant="outline"
                   >
                     {topic.isActive ? dictionary.topics.deactivate : dictionary.topics.activate}
+                  </Button>
+                  <Button
+                    aria-label={`Eliminar ${topic.label}`}
+                    disabled={busy !== null}
+                    onClick={() => void remove(topic)}
+                    size="icon"
+                    variant="ghost"
+                    className="text-destructive hover:text-destructive"
+                  >
+                    <Trash2 aria-hidden="true" />
                   </Button>
                 </div>
               </CardContent>

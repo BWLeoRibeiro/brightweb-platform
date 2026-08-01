@@ -205,6 +205,40 @@ export function useShellNotifications({
     loadedRef.current = false;
   }, [acknowledge, loadNotifications]);
 
+  const dismiss = useCallback((notificationId: string) => {
+    setNotifications((current) => current.filter((notification) => notification.id !== notificationId));
+    setUnreadCount((current) => Math.max(0, current - 1));
+    void observedFetch(fetch, endpoint, {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ eventId: notificationId }),
+    }, { domain: "notifications", operation: "dismiss", observer: requestObserverRef.current })
+      .then((response) => { if (!response.ok) throw new Error("dismiss failed"); })
+      .catch(() => { loadedRef.current = false; loadNotifications(true); });
+  }, [endpoint, loadNotifications]);
+
+  const dismissAll = useCallback(() => {
+    const seenAtMs = seenAt ? new Date(seenAt).getTime() : null;
+    const eventIds = notifications
+      .filter((notification) => {
+        if (seenAtMs === null || !Number.isFinite(seenAtMs)) return true;
+        const createdAt = new Date(notification.createdAt).getTime();
+        return !Number.isFinite(createdAt) || createdAt > seenAtMs;
+      })
+      .map((notification) => notification.id);
+    if (eventIds.length === 0) return;
+    const dismissedIds = new Set(eventIds);
+    setNotifications((current) => current.filter((notification) => !dismissedIds.has(notification.id)));
+    setUnreadCount((current) => Math.max(0, current - eventIds.length));
+    void observedFetch(fetch, endpoint, {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ eventIds }),
+    }, { domain: "notifications", operation: "dismiss.all", observer: requestObserverRef.current })
+      .then((response) => { if (!response.ok) throw new Error("dismiss all failed"); })
+      .catch(() => { loadedRef.current = false; loadNotifications(true); });
+  }, [endpoint, loadNotifications, notifications, seenAt]);
+
   useEffect(() => {
     const configurationGeneration = ++configurationGenerationRef.current;
     if (!enabled) {
@@ -263,5 +297,7 @@ export function useShellNotifications({
     error,
     onLoad: loadNotifications,
     onOpenChange: handleOpenChange,
+    onDismiss: dismiss,
+    onDismissAll: dismissAll,
   };
 }

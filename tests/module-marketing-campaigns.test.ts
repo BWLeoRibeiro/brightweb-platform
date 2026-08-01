@@ -231,6 +231,11 @@ class FakeQuery implements PromiseLike<any> {
             ...payload,
           };
           table.push(row);
+          if (this.table === "marketing_campaign_recipients") {
+            const campaign = (this.tables.marketing_campaigns ?? [])
+              .find((item) => item.id === row.campaign_id);
+            if (campaign) campaign.total_recipients = Number(campaign.total_recipients ?? 0) + 1;
+          }
           inserted.push(row);
         }
       }

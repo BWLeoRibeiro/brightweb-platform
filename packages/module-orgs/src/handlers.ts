@@ -1,5 +1,5 @@
 import { requireOrganizationManageAccess, requireOrganizationsStaffAccess } from "./access";
-import { createOrganization, updateOrganization } from "./data";
+import { createOrganization, deleteOrganization, updateOrganization } from "./data";
 import {
   inviteOrganizationMembers,
   logOrganizationActivity,
@@ -9,6 +9,7 @@ import {
 } from "./invitations";
 import {
   createOrganizationInvitationDeleteHandler,
+  createOrganizationDeleteHandler,
   createOrganizationInvitationsHandler,
   createOrganizationPatchHandler,
   createOrganizationsPostHandler,
@@ -19,6 +20,7 @@ const writeDependencies = {
   getManageAccess: requireOrganizationManageAccess,
   createOrganization,
   updateOrganization,
+  deleteOrganization,
   inviteMembers: inviteOrganizationMembers,
   logActivity: logOrganizationActivity,
 };
@@ -34,6 +36,7 @@ const invitationDependencies = {
 
 export const handleOrganizationsPostRequest = createOrganizationsPostHandler(writeDependencies);
 export const handleOrganizationPatchRequest = createOrganizationPatchHandler(writeDependencies);
+export const handleOrganizationDeleteRequest = createOrganizationDeleteHandler(writeDependencies);
 
 const invitationHandlers = createOrganizationInvitationsHandler(invitationDependencies);
 export const handleOrganizationInvitationsGetRequest = invitationHandlers.GET;

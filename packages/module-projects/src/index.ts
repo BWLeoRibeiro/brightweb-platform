@@ -78,6 +78,7 @@ export {
   getProjectPortfolioStats,
   getClientProjectHealth,
   getProjectDashboard,
+  getProjectAccess,
   isProjectsSchemaMissingError,
   listProjectActivity,
   listProjects,
@@ -92,6 +93,7 @@ export {
   updateProjectLink,
   updateProjectMilestone,
   updateProjectTask,
+  type ProjectAccessRole,
 } from "./server";
 export {
   handleProjectsActivityGetRequest,

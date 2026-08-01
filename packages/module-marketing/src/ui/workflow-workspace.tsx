@@ -380,6 +380,8 @@ export function WorkflowWorkspace({
 
   const removeWorkflow = async () => {
     if (!active) return;
+    if (active.status !== "draft") return;
+    if (!window.confirm(`Eliminar definitivamente o fluxo “${active.name}”?`)) return;
     const editorGeneration = editorGenerationRef.current;
     setBusy("delete");
     try {
@@ -596,7 +598,10 @@ export function WorkflowWorkspace({
                             type="button"
                             variant="ghost"
                             size="icon"
-                            onClick={() => setNodes((current) => current.filter((item) => item.key !== node.key))}
+                            onClick={() => {
+                              if (node.id && !window.confirm("Remover este passo guardado do fluxo?")) return;
+                              setNodes((current) => current.filter((item) => item.key !== node.key));
+                            }}
                             aria-label={dictionary.workflows.steps.remove}
                           >
                             <Trash2 className="size-4" />
@@ -780,16 +785,18 @@ export function WorkflowWorkspace({
                         {dictionary.workflows.activate}
                       </Button>
                     )}
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      disabled={busy !== null}
-                      onClick={() => void removeWorkflow()}
-                      className="text-destructive hover:text-destructive"
-                    >
-                      <Trash2 className="size-4" />
-                      {dictionary.workflows.delete}
-                    </Button>
+                    {active.status === "draft" ? (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        disabled={busy !== null}
+                        onClick={() => void removeWorkflow()}
+                        className="text-destructive hover:text-destructive"
+                      >
+                        <Trash2 className="size-4" />
+                        {dictionary.workflows.delete}
+                      </Button>
+                    ) : null}
                   </>
                 ) : null}
               </div>

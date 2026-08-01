@@ -189,6 +189,7 @@ export function SegmentWorkspace({
 
   const remove = async () => {
     if (!active) return;
+    if (!window.confirm(`Eliminar definitivamente o segmento “${active.name}”?`)) return;
     const editorGeneration = editorGenerationRef.current;
     setBusy(true);
     try {

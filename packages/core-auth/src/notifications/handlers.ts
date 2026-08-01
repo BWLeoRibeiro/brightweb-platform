@@ -2,6 +2,7 @@ import { requireServiceRoleClient } from "@brightweblabs/infra/server";
 import { requireServerRoleAccess } from "../server";
 import {
   createNotificationsGetHandler,
+  createNotificationsDeleteHandler,
   createNotificationsPostHandler,
   type NotificationHttpDependencies,
 } from "./http";
@@ -18,3 +19,4 @@ const dependencies: NotificationHttpDependencies = {
 
 export const handleNotificationsGetRequest = createNotificationsGetHandler(dependencies);
 export const handleNotificationsPostRequest = createNotificationsPostHandler(dependencies);
+export const handleNotificationsDeleteRequest = createNotificationsDeleteHandler(dependencies);

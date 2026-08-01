@@ -284,7 +284,10 @@ export function parseCrmBulkWriteResponse(value: unknown): void {
   const summary = record(data.summary, "CRM bulk summary");
   number(summary.requested, "CRM bulk summary");
   number(summary.succeeded, "CRM bulk summary");
-  number(summary.failed, "CRM bulk summary");
+  const failed = number(summary.failed, "CRM bulk summary");
+  if (failed > 0) {
+    throw new Error(`${failed} ${failed === 1 ? "item não foi alterado" : "itens não foram alterados"}. Atualize a lista e tente novamente.`);
+  }
 }
 
 export function parseCrmDeleteOrStatusResponse(value: unknown): void {
