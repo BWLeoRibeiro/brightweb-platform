@@ -1,5 +1,11 @@
 # @brightweblabs/module-crm
 
+## 0.14.1
+
+### Patch Changes
+
+- 5c8ca12: Replace the native organization deletion prompt with an accessible in-app confirmation dialog that requires the exact organization name.
+
 ## 0.14.0
 
 ### Minor Changes
