@@ -1,5 +1,11 @@
 # create-bw-app
 
+## 0.24.2
+
+### Patch Changes
+
+- 9e14f38: Keep scaffold manifest hashes current when `bw upgrade` rewrites generator-managed route files.
+
 ## 0.24.1
 
 ### Patch Changes
