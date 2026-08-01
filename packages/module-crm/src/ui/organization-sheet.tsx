@@ -3,7 +3,22 @@
 import { useEffect, useId, useState, type FormEvent } from "react";
 import { Building2, Pencil, Save, Trash2 } from "lucide-react";
 import { AppSheetBody, AppSheetFooter, AppSheetHeader, SheetSection, sheetEditControlClassName, sheetFieldLabelClassName, sheetShellClassName, sheetViewControlClassName } from "@brightweblabs/app-shell";
-import { Button, Field, FieldContent, FieldGroup, FieldLabel, Input, Sheet, SheetContent } from "@brightweblabs/ui";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  Button,
+  Field,
+  FieldContent,
+  FieldGroup,
+  FieldLabel,
+  Input,
+  Sheet,
+  SheetContent,
+} from "@brightweblabs/ui";
 import type { CrmOrganization, CrmOrganizationWriteInput, CrmUiDictionary } from "./types";
 import { defaultCrmUiDictionary } from "./dictionary";
 
@@ -34,10 +49,13 @@ export function CrmOrganizationSheet({ open, organization, dictionary = defaultC
   const [mode, setMode] = useState<OrganizationMode>(organization ? "view" : "create");
   const [value, setValue] = useState(() => initialValue(organization));
   const [saving, setSaving] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteConfirmation, setDeleteConfirmation] = useState("");
   const [invitations, setInvitations] = useState<Array<{ id: string; email: string; role: "admin" | "member" }>>([]);
   const [operationError, setOperationError] = useState<string | null>(null);
   const editing = mode !== "view";
   const controlClassName = editing ? sheetEditControlClassName : sheetViewControlClassName;
+  const deleteConfirmationTarget = organization?.name && organization.name.trim().length > 0 ? organization.name : organization?.id ?? "";
 
   useEffect(() => {
     if (!open) return;
@@ -45,6 +63,8 @@ export function CrmOrganizationSheet({ open, organization, dictionary = defaultC
     setMode(organization ? "view" : "create");
     setInvitations([]);
     setOperationError(null);
+    setDeleteDialogOpen(false);
+    setDeleteConfirmation("");
   }, [open, organization]);
 
   useEffect(() => {
@@ -65,11 +85,12 @@ export function CrmOrganizationSheet({ open, organization, dictionary = defaultC
 
   const remove = async () => {
     if (!organization || !onDelete || saving) return;
-    const confirmation = window.prompt(`Para eliminar definitivamente “${organization.name}”, escreva o nome da organização:`);
-    if (confirmation !== organization.name) return;
+    if (deleteConfirmation !== deleteConfirmationTarget) return;
+    setOperationError(null);
     setSaving(true);
     try {
       await onDelete(organization);
+      setDeleteDialogOpen(false);
       onOpenChange(false);
     } catch (error) {
       setOperationError(error instanceof Error ? error.message : "Não foi possível eliminar a organização.");
@@ -123,7 +144,7 @@ export function CrmOrganizationSheet({ open, organization, dictionary = defaultC
               <div className="mx-4 rounded-xl border border-destructive/30 bg-destructive/5 p-4">
                 <p className="text-body font-semibold text-destructive">Zona de perigo</p>
                 <p className="mt-1 text-meta text-muted-foreground">A eliminação remove membros e convites, desassocia contactos e é bloqueada enquanto existirem projetos.</p>
-                <Button type="button" variant="destructive" className="mt-3" disabled={saving} onClick={() => void remove()}>
+                <Button type="button" variant="destructive" className="mt-3" disabled={saving} onClick={() => { setOperationError(null); setDeleteConfirmation(""); setDeleteDialogOpen(true); }}>
                   <Trash2 className="mr-2 size-4" />Eliminar organização
                 </Button>
               </div>
@@ -138,6 +159,30 @@ export function CrmOrganizationSheet({ open, organization, dictionary = defaultC
           <AppSheetFooter className={editing ? "flex-row" : undefined}>{mode === "view" ? <Button type="button" className="w-full" onClick={() => setMode("edit")}><Pencil className="mr-2 size-4" />{dictionary.organizations.edit}</Button> : <><Button type="submit" className="flex-1" disabled={saving || !value.name?.trim()}><Save className="mr-2 size-4" />{saving ? dictionary.organizations.saving : dictionary.organizations.save}</Button><Button type="button" variant="outline" className="flex-1" onClick={() => organization ? (setValue(initialValue(organization)), setMode("view")) : onOpenChange(false)}>{dictionary.organizations.cancel}</Button></>}</AppSheetFooter>
         </form>
       </SheetContent>
+      <AlertDialog open={deleteDialogOpen} onOpenChange={(next) => { if (!saving) setDeleteDialogOpen(next); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Eliminar organização?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação é permanente. Para confirmar, escreva exatamente <strong>{deleteConfirmationTarget}</strong>.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <Input
+            aria-label="Nome da organização para confirmar"
+            autoComplete="off"
+            value={deleteConfirmation}
+            onChange={(event) => setDeleteConfirmation(event.target.value)}
+            disabled={saving}
+          />
+          {operationError ? <p role="alert" className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-meta text-destructive">{operationError}</p> : null}
+          <AlertDialogFooter>
+            <Button type="button" variant="outline" disabled={saving} onClick={() => setDeleteDialogOpen(false)}>Cancelar</Button>
+            <Button type="button" variant="destructive" disabled={saving || !organization || deleteConfirmation !== deleteConfirmationTarget} onClick={() => void remove()}>
+              {saving ? "A eliminar…" : "Eliminar definitivamente"}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Sheet>
   );
 }
