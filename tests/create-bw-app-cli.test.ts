@@ -6,7 +6,7 @@ import test from "node:test";
 import { addBrightwebModule } from "../packages/create-bw-app/src/add.mjs";
 import { createFirstAdmin } from "../packages/create-bw-app/src/admin.mjs";
 import { adoptBrightwebApp } from "../packages/create-bw-app/src/adopt.mjs";
-import { loadModuleCatalog, validateAppManifest } from "../packages/create-bw-app/src/app-manifest.mjs";
+import { hashFile, loadModuleCatalog, validateAppManifest } from "../packages/create-bw-app/src/app-manifest.mjs";
 import { runBwCli } from "../packages/create-bw-app/src/bw.mjs";
 import { MODULE_STARTER_FILES, PLATFORM_STARTER_FILES } from "../packages/create-bw-app/src/constants.mjs";
 import { diffBrightwebScaffold } from "../packages/create-bw-app/src/diff.mjs";
@@ -789,6 +789,46 @@ test("bw upgrade appends only unapplied migrations and preserves drifted scaffol
   const upgradedManifest = await readJson(manifestPath);
   assert.equal(upgradedManifest.modules.crm.version, release.packages["@brightweblabs/module-crm"]);
   assert.match(appended, new RegExp(`^-- bw-module: crm@${release.packages["@brightweblabs/module-crm"].replaceAll(".", "\\.")} 20260316092010_crm_org_integration\\.sql`));
+});
+
+test("bw upgrade installs and tracks deletion routes introduced after the original scaffold", async (t) => {
+  const { root, targetDir } = await scaffold(["marketing"]);
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+
+  const notificationRelativePath = "app/api/notifications/route.ts";
+  const notificationPath = path.join(targetDir, notificationRelativePath);
+  await fs.writeFile(
+    notificationPath,
+    'export { handleNotificationsGetRequest as GET, handleNotificationsPostRequest as POST } from "@brightweblabs/core-auth/notifications";\n',
+    "utf8",
+  );
+
+  const recipientRelativePath = "app/api/marketing/campaigns/[id]/recipients/[recipientId]/route.ts";
+  await fs.rm(path.join(targetDir, recipientRelativePath));
+
+  const manifestPath = path.join(targetDir, ".brightweb", "app-manifest.json");
+  const manifest = await readJson(manifestPath);
+  manifest.scaffoldFiles[notificationRelativePath].hash = await hashFile(notificationPath);
+  manifest.scaffoldFiles[notificationRelativePath].status = "current";
+  delete manifest.scaffoldFiles[recipientRelativePath];
+  await writeJson(manifestPath, manifest);
+
+  const result = await upgradeBrightwebApp(
+    undefined,
+    { targetDir, refreshStarters: true },
+    { workspaceRoot: REPO_ROOT, fetchImpl: mockNpmFetch },
+  );
+
+  assert.ok(result.plan.starterFilesToRefresh.includes(notificationRelativePath));
+  assert.ok(result.plan.starterFilesToRefresh.includes(recipientRelativePath));
+  assert.match(await fs.readFile(notificationPath, "utf8"), /handleNotificationsDeleteRequest as DELETE/);
+  assert.match(await fs.readFile(path.join(targetDir, recipientRelativePath), "utf8"), /marketingCampaignRecipientDelete as DELETE/);
+
+  const upgradedManifest = await readJson(manifestPath);
+  assert.equal(upgradedManifest.scaffoldFiles[notificationRelativePath].module, "platform-base");
+  assert.equal(upgradedManifest.scaffoldFiles[notificationRelativePath].status, "current");
+  assert.equal(upgradedManifest.scaffoldFiles[recipientRelativePath].module, "marketing");
+  assert.equal(upgradedManifest.scaffoldFiles[recipientRelativePath].status, "current");
 });
 
 test("full bw upgrade includes core migrations recorded outside the optional module map", async (t) => {
