@@ -1,5 +1,17 @@
 # @brightweblabs/module-marketing
 
+## 0.4.0
+
+### Minor Changes
+
+- 9518642: Add lifecycle-safe deletion UI and APIs for projects, organizations, CRM records, marketing resources, recipients, invitations, and per-user notification dismissal. Generated applications now include the required routes, permission wiring, and database migration.
+
+### Patch Changes
+
+- Updated dependencies [9518642]
+  - @brightweblabs/app-shell@0.11.0
+  - @brightweblabs/core-auth@0.10.0
+
 ## 0.3.3
 
 ### Patch Changes

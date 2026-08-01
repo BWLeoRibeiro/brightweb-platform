@@ -1,5 +1,11 @@
 # @brightweblabs/app-shell
 
+## 0.11.0
+
+### Minor Changes
+
+- 9518642: Add lifecycle-safe deletion UI and APIs for projects, organizations, CRM records, marketing resources, recipients, invitations, and per-user notification dismissal. Generated applications now include the required routes, permission wiring, and database migration.
+
 ## 0.10.3
 
 ### Patch Changes
