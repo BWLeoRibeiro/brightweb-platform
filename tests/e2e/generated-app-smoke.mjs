@@ -414,7 +414,11 @@ async function main() {
     const campaignRead = await authedFetch(`/api/marketing/campaigns/${createdCampaign.id}`);
     assert(campaignRead.status === 200, "Marketing API reads the mutated draft campaign");
     const campaignDelete = await authedFetch(`/api/marketing/campaigns/${createdCampaign.id}`, { method: "DELETE" });
-    assert(campaignDelete.status === 204, "Marketing API deletes the local draft campaign");
+    const campaignDeletePayload = await campaignDelete.json();
+    assert(
+      campaignDelete.status === 200 && campaignDeletePayload.data?.deletedId === createdCampaign.id,
+      "Marketing API deletes the local draft campaign",
+    );
     const deletedCampaignRead = await authedFetch(`/api/marketing/campaigns/${createdCampaign.id}`);
     assert(deletedCampaignRead.status === 404, "deleted Marketing draft is absent on a subsequent read");
 

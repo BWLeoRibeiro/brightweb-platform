@@ -298,6 +298,20 @@ export async function startSupabaseStub({ log = () => {} } = {}) {
         }).catch((error) => sendJson(response, 400, { message: String(error) }));
         return undefined;
       }
+      if (rpcName === "delete_marketing_campaign_safely" && method === "POST") {
+        void readJsonBody(request).then((payload) => {
+          const index = tables.marketing_campaigns.findIndex(
+            (row) => row.id === payload?.p_campaign_id,
+          );
+          if (index < 0) return sendJson(response, 200, "not_found");
+          if (!["draft", "canceled"].includes(tables.marketing_campaigns[index].status)) {
+            return sendJson(response, 200, "invalid_status");
+          }
+          tables.marketing_campaigns.splice(index, 1);
+          return sendJson(response, 200, "deleted");
+        }).catch((error) => sendJson(response, 400, { message: String(error) }));
+        return undefined;
+      }
       if (Object.hasOwn(rpcResults, rpcName)) {
         log(`rest: rpc ${rpcName}`);
         // Drain any request body before responding.
