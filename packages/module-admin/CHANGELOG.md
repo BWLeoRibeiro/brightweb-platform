@@ -1,5 +1,14 @@
 # @brightweblabs/module-admin
 
+## 0.8.4
+
+### Patch Changes
+
+- Updated dependencies [360f518]
+  - @brightweblabs/app-shell@0.10.3
+  - @brightweblabs/ui@1.4.4
+  - @brightweblabs/core-auth@0.9.5
+
 ## 0.8.3
 
 ### Patch Changes

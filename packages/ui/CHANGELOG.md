@@ -1,5 +1,12 @@
 # @brightweblabs/ui
 
+## 1.4.4
+
+### Patch Changes
+
+- Updated dependencies [360f518]
+  - @brightweblabs/theme@0.7.2
+
 ## 1.4.3
 
 ### Patch Changes

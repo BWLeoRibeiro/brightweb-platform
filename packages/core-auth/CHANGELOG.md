@@ -1,5 +1,11 @@
 # @brightweblabs/core-auth
 
+## 0.9.5
+
+### Patch Changes
+
+- @brightweblabs/ui@1.4.4
+
 ## 0.9.4
 
 ### Patch Changes

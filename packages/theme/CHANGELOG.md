@@ -1,5 +1,11 @@
 # @brightweblabs/theme
 
+## 0.7.2
+
+### Patch Changes
+
+- 360f518: Remove the elevated shadow from primary header toolbar actions so application navigation bars use a flat, consistent surface.
+
 ## 0.7.1
 
 ### Patch Changes
