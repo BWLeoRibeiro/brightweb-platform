@@ -55,6 +55,7 @@ export function CrmOrganizationSheet({ open, organization, dictionary = defaultC
   const [operationError, setOperationError] = useState<string | null>(null);
   const editing = mode !== "view";
   const controlClassName = editing ? sheetEditControlClassName : sheetViewControlClassName;
+  const deleteConfirmationTarget = organization?.name && organization.name.trim().length > 0 ? organization.name : organization?.id ?? "";
 
   useEffect(() => {
     if (!open) return;
@@ -84,7 +85,8 @@ export function CrmOrganizationSheet({ open, organization, dictionary = defaultC
 
   const remove = async () => {
     if (!organization || !onDelete || saving) return;
-    if (deleteConfirmation !== organization.name) return;
+    if (deleteConfirmation !== deleteConfirmationTarget) return;
+    setOperationError(null);
     setSaving(true);
     try {
       await onDelete(organization);
@@ -142,7 +144,7 @@ export function CrmOrganizationSheet({ open, organization, dictionary = defaultC
               <div className="mx-4 rounded-xl border border-destructive/30 bg-destructive/5 p-4">
                 <p className="text-body font-semibold text-destructive">Zona de perigo</p>
                 <p className="mt-1 text-meta text-muted-foreground">A eliminação remove membros e convites, desassocia contactos e é bloqueada enquanto existirem projetos.</p>
-                <Button type="button" variant="destructive" className="mt-3" disabled={saving} onClick={() => { setDeleteConfirmation(""); setDeleteDialogOpen(true); }}>
+                <Button type="button" variant="destructive" className="mt-3" disabled={saving} onClick={() => { setOperationError(null); setDeleteConfirmation(""); setDeleteDialogOpen(true); }}>
                   <Trash2 className="mr-2 size-4" />Eliminar organização
                 </Button>
               </div>
@@ -162,7 +164,7 @@ export function CrmOrganizationSheet({ open, organization, dictionary = defaultC
           <AlertDialogHeader>
             <AlertDialogTitle>Eliminar organização?</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta ação é permanente. Para confirmar, escreva exatamente <strong>{organization?.name}</strong>.
+              Esta ação é permanente. Para confirmar, escreva exatamente <strong>{deleteConfirmationTarget}</strong>.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <Input
@@ -172,9 +174,10 @@ export function CrmOrganizationSheet({ open, organization, dictionary = defaultC
             onChange={(event) => setDeleteConfirmation(event.target.value)}
             disabled={saving}
           />
+          {operationError ? <p role="alert" className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-meta text-destructive">{operationError}</p> : null}
           <AlertDialogFooter>
             <Button type="button" variant="outline" disabled={saving} onClick={() => setDeleteDialogOpen(false)}>Cancelar</Button>
-            <Button type="button" variant="destructive" disabled={saving || !organization || deleteConfirmation !== organization.name} onClick={() => void remove()}>
+            <Button type="button" variant="destructive" disabled={saving || !organization || deleteConfirmation !== deleteConfirmationTarget} onClick={() => void remove()}>
               {saving ? "A eliminar…" : "Eliminar definitivamente"}
             </Button>
           </AlertDialogFooter>
