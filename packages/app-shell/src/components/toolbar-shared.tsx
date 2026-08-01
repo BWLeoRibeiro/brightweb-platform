@@ -85,7 +85,7 @@ export function ToolbarNewMenu({ id, icon: Icon, label = "Novo", tooltip, items,
               variant="brand"
               id={id}
               disabled={disabled}
-              className="h-9 px-3 text-body text-[length:var(--text-ui-action)] shadow-[var(--shadow-toolbar-control)]"
+              className="h-9 px-3 text-body text-[length:var(--text-ui-action)] shadow-none"
             >
               <Icon className="size-3.5" />
               {label}

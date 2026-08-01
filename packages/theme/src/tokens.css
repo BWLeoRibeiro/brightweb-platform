@@ -286,7 +286,6 @@
   --toast-info-border: color-mix(in srgb, var(--secondary) 30%, var(--background));
 
   --shadow-accent-control: 0 4px 14px color-mix(in srgb, var(--brand-accent) 26%, transparent);
-  --shadow-toolbar-control: 0 4px 14px rgba(91, 197, 242, 0.26);
   --shadow-toolbar-popover: 0 18px 44px rgba(10, 21, 26, 0.16), 0 2px 10px rgba(10, 21, 26, 0.08);
   --shadow-tooltip: 0 14px 34px var(--elevate-3);
   --shadow-dialog: 0 24px 64px var(--elevate-3);

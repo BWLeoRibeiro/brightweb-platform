@@ -115,7 +115,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 | `--tint-soft-border`, `--tint-soft-bg`, `--tint-soft-hover`, `--tint-hero-border`, `--tint-hero-bg`, `--tint-hero-fg`, `--tint-hero-hover` | Dynamic tint recipes resolved where a component supplies `--tint`. |
 | `--scrollbar-thumb`, `--scrollbar-thumb-hover`, `--scrollbar-size` | Shared scrollbar colour and geometry. |
 | `--toast-success-bg`, `--toast-success-border`, `--toast-warning-bg`, `--toast-warning-text`, `--toast-warning-border`, `--toast-error-bg`, `--toast-error-border`, `--toast-info-bg`, `--toast-info-text`, `--toast-info-border` | Sonner semantic toast palette. |
-| `--shadow-accent-control`, `--shadow-toolbar-control`, `--shadow-toolbar-popover`, `--shadow-tooltip`, `--shadow-dialog`, `--shadow-phone-dropdown` | Component elevation recipes. |
+| `--shadow-accent-control`, `--shadow-toolbar-popover`, `--shadow-tooltip`, `--shadow-dialog`, `--shadow-phone-dropdown` | Component elevation recipes. |
 | `--report-hero-glow`, `--report-hero-rule` | CRM report decorative surfaces. |
 | `--shell-frame-offset`, `--shell-sidebar-width`, `--shell-sidebar-collapsed-width`, `--shell-sidebar-toggle-offset`, `--shell-sidebar-toggle-size`, `--shell-sidebar-toggle-inset`, `--shell-brand-height` | Shell frame and sidebar geometry. |
 | `--shell-nav-item-height`, `--shell-nav-item-collapsed-size`, `--shell-nav-icon-well-size`, `--shell-nav-icon-radius`, `--shell-nav-icon-size`, `--shell-nav-divider-width`, `--shell-nav-child-height`, `--shell-nav-child-enter-offset` | Shell navigation sizing and entry geometry. |

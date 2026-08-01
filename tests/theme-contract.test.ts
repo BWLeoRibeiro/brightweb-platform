@@ -77,7 +77,7 @@ const tokenizedVisualContract = [
   "--scrollbar-thumb-hover", "--toast-success-bg", "--toast-success-border", "--toast-warning-bg",
   "--toast-warning-text", "--toast-warning-border", "--toast-error-bg", "--toast-error-border",
   "--toast-info-bg", "--toast-info-text", "--toast-info-border", "--shadow-accent-control",
-  "--shadow-toolbar-control", "--shadow-toolbar-popover", "--shadow-tooltip", "--shadow-dialog",
+  "--shadow-toolbar-popover", "--shadow-tooltip", "--shadow-dialog",
   "--shadow-phone-dropdown", "--report-hero-glow", "--report-hero-rule", "--shell-frame-offset",
   "--shell-sidebar-width", "--shell-sidebar-collapsed-width", "--shell-sidebar-toggle-offset",
   "--shell-sidebar-toggle-size", "--shell-sidebar-toggle-inset", "--shell-brand-height",

@@ -9,6 +9,11 @@ const toolbarFiles = [
   "packages/module-projects/src/ui/toolbar-controls.tsx",
 ];
 
+const primaryToolbarFiles = [
+  ...toolbarFiles,
+  "packages/module-projects/src/ui/project-board-toolbar-controls.tsx",
+];
+
 test("shared BrightWeb buttons expose the pointer cursor", async () => {
   const variants = await readFile(
     "packages/ui/src/components/button-variants.ts",
@@ -31,5 +36,17 @@ test("module toolbar native buttons preserve the shared pointer affordance", asy
         `${file} has a button without the shared pointer affordance`,
       );
     }
+  }
+});
+
+test("primary toolbar controls do not use the elevated toolbar shadow", async () => {
+  for (const file of primaryToolbarFiles) {
+    const source = await readFile(file, "utf8");
+
+    assert.doesNotMatch(
+      source,
+      /shadow-\[var\(--shadow-toolbar-control\)\]/,
+      `${file} must keep toolbar controls flat`,
+    );
   }
 });

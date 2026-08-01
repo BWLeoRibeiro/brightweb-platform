@@ -116,12 +116,12 @@ export function ProjectsToolbarControls() {
             </div>
 
             <div className="mt-4">
-              <button type="button" className={cn(controlClassName, "w-full justify-center border-transparent bg-[color:var(--accent)] text-[color:var(--accent-foreground)] shadow-[var(--shadow-toolbar-control)]")} onClick={() => { setStatus(draftStatus); setHealth(draftHealth); dispatchShellAction(PROJECTS_EVENTS.setStatus, { status: draftStatus }); dispatchShellAction(PROJECTS_EVENTS.setHealth, { health: draftHealth }); setOpen(false); }}>{dictionary.toolbar.apply}</button>
+              <button type="button" className={cn(controlClassName, "w-full justify-center border-transparent bg-[color:var(--accent)] text-[color:var(--accent-foreground)]")} onClick={() => { setStatus(draftStatus); setHealth(draftHealth); dispatchShellAction(PROJECTS_EVENTS.setStatus, { status: draftStatus }); dispatchShellAction(PROJECTS_EVENTS.setHealth, { health: draftHealth }); setOpen(false); }}>{dictionary.toolbar.apply}</button>
             </div>
         </PopoverContent>
       </Popover>
 
-      <button type="button" className={cn(controlClassName, "border-transparent bg-[color:var(--accent)] text-[color:var(--accent-foreground)] shadow-[var(--shadow-toolbar-control)] disabled:cursor-not-allowed disabled:opacity-60")} disabled={!newProjectReady} onClick={() => dispatchShellAction(PROJECTS_EVENTS.openNewProject)}>
+      <button type="button" className={cn(controlClassName, "border-transparent bg-[color:var(--accent)] text-[color:var(--accent-foreground)] disabled:cursor-not-allowed disabled:opacity-60")} disabled={!newProjectReady} onClick={() => dispatchShellAction(PROJECTS_EVENTS.openNewProject)}>
         <Plus className="size-[var(--toolbar-icon-size)]" aria-hidden />
         {dictionary.toolbar.newProject}
       </button>
