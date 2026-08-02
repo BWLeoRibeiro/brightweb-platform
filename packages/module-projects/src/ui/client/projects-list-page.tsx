@@ -63,7 +63,7 @@ export async function ClientProjectsListPage() {
         {projects.items.length > 0 ? (
           <div className="flex items-stretch gap-0 overflow-hidden rounded-xl border border-border/60 bg-background/40">
             <div className="flex-1 border-r border-border/60 px-4 py-3 text-center">
-              <p className="font-display text-heading-2 font-bold leading-none tabular-nums">
+              <p className="text-kpi text-[length:var(--text-heading-2)] font-bold">
                 {projects.items.length}
               </p>
               <p className="mt-1.5 text-label uppercase tracking-wide text-muted-foreground">
@@ -72,7 +72,7 @@ export async function ClientProjectsListPage() {
             </div>
             <div className="flex-1 border-r border-border/60 px-4 py-3 text-center">
               <p
-                className="font-display text-heading-2 font-bold leading-none tabular-nums"
+                className="text-kpi text-[length:var(--text-heading-2)] font-bold"
                 style={{ color: "var(--project-health-on-track)" }}
               >
                 {activeCount}
@@ -83,7 +83,7 @@ export async function ClientProjectsListPage() {
             </div>
             <div className="flex-1 px-4 py-3 text-center">
               <p
-                className="font-display text-heading-2 font-bold leading-none tabular-nums"
+                className="text-kpi text-[length:var(--text-heading-2)] font-bold"
                 style={{ color: "var(--project-health-on-track)" }}
               >
                 {onTrackCount}

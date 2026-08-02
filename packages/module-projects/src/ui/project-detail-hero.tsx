@@ -168,7 +168,7 @@ function ProjectHeroFactGrid({
       </ProjectHeroFact>
 
       <ProjectHeroFact icon={CalendarDays} label={dictionary.detail.projectDueDate}>
-        <span style={deadlineTone ? { color: deadlineTone } : undefined}>{formatProjectDate(project.targetDate)}</span>
+        <span className="text-data" style={deadlineTone ? { color: deadlineTone } : undefined}>{formatProjectDate(project.targetDate)}</span>
       </ProjectHeroFact>
 
       <ProjectHeroFact
@@ -183,7 +183,7 @@ function ProjectHeroFactGrid({
             className="flex-1 bg-white/15"
             fillClassName={isComplete ? "bg-[color:var(--project-state-active)]" : "bg-[color:var(--accent)]"}
           />
-          <span className="shrink-0 font-mono tabular-nums text-[color:var(--project-hero-foreground)]">
+          <span className="text-data shrink-0 text-[color:var(--project-hero-foreground)]">
             {project.taskStats.done}/{project.taskStats.total}
           </span>
         </span>
@@ -205,7 +205,7 @@ export function ProjectDetailHero({ canOpenEditProject, canViewOrganization }: P
         <div className="flex flex-wrap items-start justify-between gap-5">
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-              <span className="rounded-[var(--radius)] border border-[color:var(--project-hero-border)] bg-white/[0.06] px-1.5 py-0.5 font-mono text-micro font-semibold uppercase tracking-[var(--type-tracking-100)] text-[color:var(--project-hero-muted)]">
+              <span className="text-data rounded-[var(--radius)] border border-[color:var(--project-hero-border)] bg-white/[0.06] px-1.5 py-0.5 text-micro font-semibold uppercase tracking-[var(--type-tracking-100)] text-[color:var(--project-hero-muted)]">
                 {projectReference}
               </span>
               <p className="truncate text-label font-semibold uppercase tracking-[var(--type-tracking-160)] text-[color:var(--project-hero-muted)]">{project.organizationName}</p>

@@ -147,7 +147,7 @@ export function CrmContactsTable({
           value={params.status ?? ""}
           onChange={(event) => updateParams({ status: event.target.value || null, page: 1 })}
           aria-label={dictionary.table.allSegments}
-          className="h-10 rounded-[var(--radius-control)] border border-hairline bg-card px-3 text-meta text-foreground"
+          className="h-10 rounded-[var(--radius-control)] border border-hairline bg-card px-3 text-body text-foreground"
         >
           <option value="">{dictionary.table.allSegments}</option>
           {resolvedStages.map((stage) => <option key={stage.value} value={stage.value}>{stage.label}</option>)}
@@ -156,7 +156,7 @@ export function CrmContactsTable({
           value={params.sort ?? "date_desc"}
           onChange={(event) => updateParams({ sort: event.target.value as CrmContactSort, page: 1 })}
           aria-label={dictionary.table.organizeBy}
-          className="h-10 rounded-[var(--radius-control)] border border-hairline bg-card px-3 text-meta text-foreground"
+          className="h-10 rounded-[var(--radius-control)] border border-hairline bg-card px-3 text-body text-foreground"
         >
           <option value="date_desc">{dictionary.table.sortNewest}</option>
           <option value="name">{dictionary.table.sortName}</option>
@@ -179,7 +179,7 @@ export function CrmContactsTable({
 
       <Table containerClassName="overflow-x-hidden" className={`${data.total === 0 ? "h-full table-fixed" : "table-fixed"} ${CRM_TABLE_DIVIDERS}`}>
         <TableHeader>
-          <TableRow className="border-b border-[color:var(--hairline-strong)] bg-[color:var(--elevate-2)] hover:bg-[color:var(--elevate-2)] [&_th]:align-middle [&_th]:text-micro [&_th]:text-[color:var(--foreground)]">
+          <TableRow className="border-b border-[color:var(--hairline-strong)] bg-[color:var(--elevate-2)] hover:bg-[color:var(--elevate-2)] [&_th]:align-middle [&_th]:text-[color:var(--foreground)]">
             <TableHead className="h-[var(--table-header-height)] w-[5%] px-[var(--table-cell-padding-x)]">
               <Checkbox
                 checked={allSelected}
@@ -212,7 +212,7 @@ export function CrmContactsTable({
                     className="h-3.5 w-3.5 rounded border border-border-strong"
                   />
                 </TableCell>
-                {visibleColumns.map((column) => <TableCell key={column.key} className={`max-w-0 px-[var(--table-cell-padding-x)] py-[var(--table-cell-padding-y)] text-body text-[color:var(--muted-foreground)] ${columnVisibility[column.key] ?? ""} ${column.key === "organization" || column.key === "owner" ? "truncate" : ""}`}>{renderCell(column, contact)}</TableCell>)}
+                {visibleColumns.map((column) => <TableCell key={column.key} className={`max-w-0 px-[var(--table-cell-padding-x)] py-[var(--table-cell-padding-y)] text-body text-[color:var(--muted-foreground)] ${column.key === "updated" ? "text-data" : ""} ${columnVisibility[column.key] ?? ""} ${column.key === "organization" || column.key === "owner" ? "truncate" : ""}`}>{renderCell(column, contact)}</TableCell>)}
                 {renderRowActions ? <TableCell className="px-4 py-2" onClick={(event) => event.stopPropagation()}>{renderRowActions(contact)}</TableCell> : null}
               </TableRow>
             );

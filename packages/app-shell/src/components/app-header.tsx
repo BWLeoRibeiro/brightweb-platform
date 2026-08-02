@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import Link from "next/link";
+import { Button } from "@brightweblabs/ui/button";
 import { cn } from "../lib/utils";
 import { triggerShellToolbarAction, useShellActionReady, useShellActionsRegistry } from "../lib/shell-actions";
 import { resolveShellToolbarSurface } from "../config";
@@ -44,10 +44,10 @@ export function AppHeaderToolbarActionButton({ action, onToolbarAction }: AppHea
   const ready = useShellActionReady(action.action ?? "");
   const enabled = !shellActions || !action.action || ready;
   return (
-    <button type="button" className={styles.navbarContextAction} disabled={!enabled} onClick={() => triggerShellToolbarAction(shellActions, action, onToolbarAction)}>
-      <action.icon aria-hidden />
+    <Button type="button" variant="soft" disabled={!enabled} onClick={() => triggerShellToolbarAction(shellActions, action, onToolbarAction)}>
+      <action.icon data-icon="inline-start" aria-hidden />
       {action.label}
-    </button>
+    </Button>
   );
 }
 
@@ -57,10 +57,10 @@ function AppHeaderBreadcrumbActionButton({ crumb, backActions, onToolbarAction }
   const ready = useShellActionReady(action?.action ?? "");
   const disabled = Boolean(shellActions && action?.action && !ready);
   return (
-    <button type="button" className={styles.navbarCrumbLink} disabled={disabled} onClick={() => { if (action) triggerShellToolbarAction(shellActions, action, onToolbarAction); }}>
+    <Button type="button" variant="outline" className="rounded-full text-[color:var(--shell-navbar-muted)]" disabled={disabled} onClick={() => { if (action) triggerShellToolbarAction(shellActions, action, onToolbarAction); }}>
       <span aria-hidden>‹</span>
       {crumb.label}
-    </button>
+    </Button>
   );
 }
 
@@ -95,12 +95,12 @@ export function AppHeader({ children, className, kicker, title, count, trailing,
             {kicker ? <span className={styles.navbarKicker}>{kicker}</span> : null}
             {title ? <h1>{title}</h1> : null}
           </div>
-          {typeof count === "number" && count > 0 ? <span className={styles.navbarCount}>{count.toLocaleString("pt-PT")}</span> : null}
+          {typeof count === "number" && count > 0 ? <span className={`${styles.navbarCount} text-data`}>{count.toLocaleString("pt-PT")}</span> : null}
         </div>
       ) : null}
       <div className={styles.navbarSpacer} />
       {children ? <div className={styles.navbarControls}>{children}</div> : null}
-      {resolvedBreadcrumbs.length > 0 ? <nav className={styles.navbarCrumbs} aria-label="Breadcrumb">{resolvedBreadcrumbs.map((crumb, index) => <span key={`${crumb.label}-${index}`} className={styles.navbarCrumb}>{index > 0 ? <span className={styles.navbarCrumbSeparator}>/</span> : null}{crumb.href ? <Link href={crumb.href} className={styles.navbarCrumbLink}><span aria-hidden>‹</span>{crumb.label}</Link> : <AppHeaderBreadcrumbActionButton crumb={crumb} backActions={backActions} onToolbarAction={onToolbarAction} />}</span>)}</nav> : null}
+      {resolvedBreadcrumbs.length > 0 ? <nav className={styles.navbarCrumbs} aria-label="Breadcrumb">{resolvedBreadcrumbs.map((crumb, index) => <span key={`${crumb.label}-${index}`} className={styles.navbarCrumb}>{index > 0 ? <span className={styles.navbarCrumbSeparator}>/</span> : null}{crumb.href ? <Button href={crumb.href} variant="outline" className="rounded-full text-[color:var(--shell-navbar-muted)]"><span aria-hidden>‹</span>{crumb.label}</Button> : <AppHeaderBreadcrumbActionButton crumb={crumb} backActions={backActions} onToolbarAction={onToolbarAction} />}</span>)}</nav> : null}
       {contextualActions.map((action) => <AppHeaderToolbarActionButton key={action.action ?? action.label} action={action} onToolbarAction={onToolbarAction} />)}
       {renderedPrimaryActions.map((action) => <AppHeaderToolbarActionButton key={action.action ?? action.label} action={action} onToolbarAction={onToolbarAction} />)}
       {trailing}

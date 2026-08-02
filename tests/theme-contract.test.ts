@@ -165,7 +165,8 @@ test("canonical typography roles expose complete color-independent recipes and c
   const roles = [
     "text-heading-1", "text-heading-2", "text-heading-3", "text-heading-4",
     "text-title", "text-body-lg", "text-body", "text-meta", "text-label",
-    "text-micro", "text-metric", "text-metric-display", "text-metric-lg",
+    "text-micro", "text-kpi", "text-kpi-lg", "text-data-sm",
+    "text-metric", "text-metric-display", "text-metric-lg",
   ] as const;
   const utilities = new Map(Array.from(
     typography.matchAll(/@utility\s+(text-(?!ui-)[a-z0-9-]+)\s*\{([^{}]*)\}/g),
@@ -186,9 +187,16 @@ test("canonical typography roles expose complete color-independent recipes and c
   for (const role of ["text-heading-2", "text-heading-3", "text-heading-4", "text-title"]) {
     assert.match(utilities.get(role)!, /text-wrap:\s*pretty;/);
   }
-  for (const role of ["text-metric", "text-metric-display", "text-metric-lg"]) {
+  for (const role of ["text-kpi", "text-kpi-lg", "text-data", "text-data-sm", "text-metric", "text-metric-display", "text-metric-lg"]) {
     assert.match(utilities.get(role)!, /font-variant-numeric:\s*tabular-nums;/);
   }
+  assert.match(utilities.get("text-kpi")!, /font-family:\s*var\(--font-display\);/);
+  assert.match(utilities.get("text-kpi-lg")!, /font-family:\s*var\(--font-display\);/);
+  assert.match(utilities.get("text-data")!, /font-family:\s*var\(--font-mono\);/);
+  assert.match(utilities.get("text-data-sm")!, /font-family:\s*var\(--font-mono\);/);
+  assert.match(utilities.get("text-metric")!, /font-family:\s*var\(--font-mono\);/);
+  assert.match(utilities.get("text-metric-display")!, /font-family:\s*var\(--font-display\);/);
+  assert.match(utilities.get("text-metric-lg")!, /font-family:\s*var\(--font-display\);/);
 
   const aliases = new Map([
     ["--text-ui-title", "--text-heading-1"],
@@ -277,7 +285,7 @@ test("tokenized package visuals have defaults and live consumers", async () => {
   const tokensCss = await read("src/tokens.css");
   const defaults = customProperties(tokensCss.slice(0, tokensCss.indexOf("/* Dark mode")));
   const packageRoots = ["app-shell", "module-crm", "theme", "ui"];
-  const packageSources = (await Promise.all(packageRoots.map(async (packageName) => {
+  const packageSources = `${(await Promise.all(packageRoots.map(async (packageName) => {
     const root = path.join(repoRoot, "packages", packageName, "src");
     const files: string[] = [];
     async function visit(directory: string) {
@@ -289,7 +297,7 @@ test("tokenized package visuals have defaults and live consumers", async () => {
     }
     await visit(root);
     return files.join("\n");
-  }))).join("\n");
+  }))).join("\n")}\n${await fs.readFile(path.join(repoRoot, "packages/module-admin/tokens.css"), "utf8")}`;
 
   assert.match(tokensCss, /--foreground-button-brand:\s*var\(--accent-foreground\);/);
 

@@ -320,7 +320,7 @@ export function AdminUsersClient({
                 {isHovered ? <motion.span layoutId={prefersReducedMotion ? undefined : "admin-users-tab-hover"} aria-hidden className="admin-tab-hover absolute inset-0 rounded-full" transition={prefersReducedMotion ? { duration: 0 } : { type: "spring", stiffness: 520, damping: 38 }} /> : null}
                 {isActive ? <motion.span layoutId={prefersReducedMotion ? undefined : "admin-users-tab-active"} aria-hidden className="admin-tab-active absolute inset-0 rounded-full" transition={prefersReducedMotion ? { duration: 0 } : { type: "spring", stiffness: 420, damping: 34 }} /> : null}
                 <span className="relative z-10">{view.label}</span>
-                <span className="relative z-10 font-mono text-label opacity-75">{view.count}</span>
+                <span className="text-data-sm relative z-10 font-semibold opacity-75">{view.count}</span>
               </motion.button>
             );
           })}
@@ -368,7 +368,7 @@ export function AdminUsersClient({
                 <h2 className="text-title text-foreground">{dictionary.invitations.pendingTitle}</h2>
                 {inviteLoading ? <p className="mt-1 text-meta text-[color:var(--muted-foreground)]">{dictionary.invitations.updating}</p> : null}
               </div>
-              <span className="text-meta font-mono tabular-nums text-[color:var(--muted-foreground)]">{pendingInvites.length}</span>
+              <span className="text-data-sm text-[color:var(--muted-foreground)]">{pendingInvites.length}</span>
             </div>
 
             {inviteLoadError ? (
@@ -387,11 +387,11 @@ export function AdminUsersClient({
                   ) : pendingInvites.map((invite) => (
                     <article key={invite.id} className="border border-[color:var(--border)] bg-[color:var(--elevate-1)] p-sm">
                       <div className="flex items-start justify-between gap-sm">
-                        <div className="min-w-0"><p className="break-all text-body font-semibold text-[color:var(--foreground)]">{invite.email}</p><p className="mt-1 text-meta text-[color:var(--muted-foreground)]">{dictionary.invitations.columns.created}: {formatAdminDate(invite.createdAt, dictionary.locale)}</p></div>
+                        <div className="min-w-0"><p className="break-all text-body font-semibold text-[color:var(--foreground)]">{invite.email}</p><p className="mt-1 text-meta text-[color:var(--muted-foreground)]">{dictionary.invitations.columns.created}: <span className="text-data-sm">{formatAdminDate(invite.createdAt, dictionary.locale)}</span></p></div>
                         <AdminRolePill role={invite.role} dictionary={dictionary} />
                       </div>
                       <div className="mt-sm flex items-center justify-between gap-sm border-t border-[color:var(--border)] pt-sm">
-                        <span className="inline-flex items-center gap-1.5 text-meta text-[color:var(--muted-foreground)]"><CalendarClock className="size-3.5" />{formatInvitationExpiry(invite.expiresAt, dictionary.locale, dictionary)}</span>
+                        <span className="text-data-sm inline-flex items-center gap-1.5 text-[color:var(--muted-foreground)]"><CalendarClock className="size-3.5" />{formatInvitationExpiry(invite.expiresAt, dictionary.locale, dictionary)}</span>
                         <Button type="button" variant="ghost" size="sm" onClick={() => setPendingRevoke(invite)} disabled={revokingInviteId === invite.id} aria-label={dictionary.invitations.revoke(invite.email)} className="text-[color:var(--muted-foreground)] hover:text-[color:var(--destructive)]"><Trash2 className="size-4" />{dictionary.invitations.confirmRevoke ?? dictionary.invitations.columns.actions}</Button>
                       </div>
                     </article>
@@ -399,7 +399,7 @@ export function AdminUsersClient({
                 </div>
                 <div className="hidden overflow-x-auto md:block">
                   <Table className="min-w-[700px] table-fixed">
-                    <TableHeader><TableRow className="border-b border-[color:var(--hairline-strong)] bg-[color:var(--elevate-2)] hover:bg-[color:var(--elevate-2)] [&_th]:h-9 [&_th]:align-middle [&_th]:text-micro [&_th]:text-[color:var(--foreground)]">
+                    <TableHeader><TableRow className="border-b border-[color:var(--hairline-strong)] bg-[color:var(--elevate-2)] hover:bg-[color:var(--elevate-2)] [&_th]:h-9 [&_th]:align-middle [&_th]:text-[color:var(--foreground)]">
                       <TableHead className="text-label text-muted-foreground w-[34%] px-4">{dictionary.invitations.columns.email}</TableHead>
                       <TableHead className="text-label text-muted-foreground w-[18%] px-4">{dictionary.invitations.columns.role}</TableHead>
                       <TableHead className="text-label text-muted-foreground w-[18%] px-4">{dictionary.invitations.columns.created}</TableHead>
@@ -413,8 +413,8 @@ export function AdminUsersClient({
                         <TableRow key={invite.id} className="admin-row-hover border-[color:var(--border)] [&_td]:py-3">
                           <TableCell className="truncate px-4 text-body font-semibold text-[color:var(--foreground)]">{invite.email}</TableCell>
                           <TableCell className="px-4"><AdminRolePill role={invite.role} dictionary={dictionary} /></TableCell>
-                          <TableCell className="px-4 text-body text-[color:var(--muted-foreground)]">{formatAdminDate(invite.createdAt, dictionary.locale)}</TableCell>
-                          <TableCell className="px-4"><span className="inline-flex items-center gap-1.5 text-body text-[color:var(--muted-foreground)]"><CalendarClock className="size-3.5" />{formatInvitationExpiry(invite.expiresAt, dictionary.locale, dictionary)}</span></TableCell>
+                          <TableCell className="text-data-sm px-4 text-[color:var(--muted-foreground)]">{formatAdminDate(invite.createdAt, dictionary.locale)}</TableCell>
+                          <TableCell className="px-4"><span className="text-data-sm inline-flex items-center gap-1.5 text-[color:var(--muted-foreground)]"><CalendarClock className="size-3.5" />{formatInvitationExpiry(invite.expiresAt, dictionary.locale, dictionary)}</span></TableCell>
                           <TableCell className="px-4 text-right"><Button type="button" variant="ghost" size="icon-sm" onClick={() => setPendingRevoke(invite)} disabled={revokingInviteId === invite.id} aria-label={dictionary.invitations.revoke(invite.email)} className="text-[color:var(--muted-foreground)] hover:text-[color:var(--destructive)]"><Trash2 className="size-4" /></Button></TableCell>
                         </TableRow>
                       ))}
@@ -431,7 +431,7 @@ export function AdminUsersClient({
         <section className="admin-dashboard-reveal admin-table-surface flex h-[calc(100dvh-12rem)] min-h-[560px] flex-col overflow-hidden">
           <div aria-busy={loading} className={`min-h-0 flex-1 overflow-auto transition-opacity duration-150 ${loading && rows.length > 0 ? "opacity-60" : ""}`}>
             <Table className="min-w-[860px] table-fixed">
-              <TableHeader><TableRow className="border-b border-[color:var(--hairline-strong)] bg-[color:var(--elevate-2)] hover:bg-[color:var(--elevate-2)] [&_th]:h-9 [&_th]:align-middle [&_th]:text-micro [&_th]:text-[color:var(--foreground)]">
+              <TableHeader><TableRow className="border-b border-[color:var(--hairline-strong)] bg-[color:var(--elevate-2)] hover:bg-[color:var(--elevate-2)] [&_th]:h-9 [&_th]:align-middle [&_th]:text-[color:var(--foreground)]">
                 <TableHead className="text-label text-muted-foreground w-12 px-4"><Checkbox checked={allOnPageSelected} onChange={(event) => setAllPageSelection(event.target.checked)} aria-label={dictionary.users.selectAll} /></TableHead>
                 <TableHead className="text-label text-muted-foreground w-[22%] px-4">{dictionary.users.columns.name}</TableHead>
                 <TableHead className="text-label text-muted-foreground w-[30%] px-4">{dictionary.users.columns.email}</TableHead>
@@ -450,8 +450,8 @@ export function AdminUsersClient({
                       <TableCell className="px-4"><div className="min-w-0 space-y-0.5"><p className="truncate text-body font-semibold leading-tight text-[color:var(--foreground)]">{row.name}</p><p className="truncate text-meta leading-tight text-[color:var(--muted-foreground)]">{row.profileId}</p></div></TableCell>
                       <TableCell className="truncate px-4 text-body text-[color:var(--muted-foreground)]">{row.email}</TableCell>
                       <TableCell className="px-4"><DropdownMenu><DropdownMenuTrigger asChild><button type="button" id={`admin-user-role-trigger-${row.profileId}`} className="inline-flex items-center rounded-full" aria-label={dictionary.users.changeRole(row.email)}><AdminRolePill role={row.role} dictionary={dictionary} /></button></DropdownMenuTrigger><DropdownMenuContent align="start" className="min-w-44 rounded-[var(--radius-card)] border-[color:var(--hairline)] bg-[color:var(--popover)] p-1.5 text-[color:var(--popover-foreground)]">{roleValues.filter((role) => role !== row.role).map((role) => <DropdownMenuItem key={role} onClick={() => { setPendingRoleAction({ profileIds: [row.profileId], newRole: role, mode: "single" }); setReason(""); }} className="my-0.5 rounded-[var(--radius)]"><AdminRolePill role={role} dictionary={dictionary} /></DropdownMenuItem>)}</DropdownMenuContent></DropdownMenu></TableCell>
-                      <TableCell className="px-4 text-body text-[color:var(--muted-foreground)]">{formatAdminDate(row.createdAt, dictionary.locale)}</TableCell>
-                      <TableCell className="px-4 text-body text-[color:var(--muted-foreground)]">{formatAdminDate(row.updatedAt, dictionary.locale)}</TableCell>
+                      <TableCell className="text-data-sm px-4 text-[color:var(--muted-foreground)]">{formatAdminDate(row.createdAt, dictionary.locale)}</TableCell>
+                      <TableCell className="text-data-sm px-4 text-[color:var(--muted-foreground)]">{formatAdminDate(row.updatedAt, dictionary.locale)}</TableCell>
                     </TableRow>
                   );
                 })}
@@ -465,7 +465,7 @@ export function AdminUsersClient({
       <AlertDialog open={pendingRevoke !== null} onOpenChange={(open) => { if (!open && !revokingInviteId) setPendingRevoke(null); }}>
         <AlertDialogContent className="max-w-[440px] rounded-[var(--radius-panel)]">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-title text-foreground">{dictionary.invitations.confirmRevokeTitle ?? dictionary.invitations.revoke(pendingRevoke?.email ?? "")}</AlertDialogTitle>
+            <AlertDialogTitle>{dictionary.invitations.confirmRevokeTitle ?? dictionary.invitations.revoke(pendingRevoke?.email ?? "")}</AlertDialogTitle>
             <AlertDialogDescription>{dictionary.invitations.confirmRevokeDescription?.(pendingRevoke?.email ?? "") ?? pendingRevoke?.email}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -483,7 +483,7 @@ export function AdminUsersClient({
 
       <AlertDialog open={pendingRoleAction !== null} onOpenChange={(open) => { if (!open && !isSubmitting) { setPendingRoleAction(null); setReason(""); } }}>
         <AlertDialogContent className="max-w-[460px] rounded-[var(--radius-panel)]">
-          <AlertDialogHeader><AlertDialogTitle className="text-title text-foreground">{pendingRoleAction?.mode === "bulk" ? dictionary.roleChange.bulkTitle : dictionary.roleChange.singleTitle}</AlertDialogTitle><AlertDialogDescription>{pendingRoleAction?.mode === "bulk" ? dictionary.roleChange.bulkDescription(pendingLabel, pendingRoleAction.profileIds.length) : dictionary.roleChange.singleDescription(pendingLabel)}</AlertDialogDescription></AlertDialogHeader>
+          <AlertDialogHeader><AlertDialogTitle>{pendingRoleAction?.mode === "bulk" ? dictionary.roleChange.bulkTitle : dictionary.roleChange.singleTitle}</AlertDialogTitle><AlertDialogDescription>{pendingRoleAction?.mode === "bulk" ? dictionary.roleChange.bulkDescription(pendingLabel, pendingRoleAction.profileIds.length) : dictionary.roleChange.singleDescription(pendingLabel)}</AlertDialogDescription></AlertDialogHeader>
           <div className="space-y-2"><label htmlFor="admin-role-reason" className="text-label text-muted-foreground">{dictionary.roleChange.reason}</label><textarea id="admin-role-reason" value={reason} onChange={(event) => setReason(event.target.value)} placeholder={dictionary.roleChange.reasonPlaceholder} className="min-h-[110px] w-full rounded-[var(--radius-card)] border border-[color:var(--border)] bg-[color:var(--project-surface-secondary)] px-3 py-2 text-body text-[color:var(--foreground)] outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--ring)]" disabled={isSubmitting} /></div>
           <AlertDialogFooter><AlertDialogCancel className="rounded-full border-[color:var(--border)] px-4 text-meta" disabled={isSubmitting}>{dictionary.roleChange.cancel}</AlertDialogCancel><AlertDialogAction className="rounded-full border border-[color:var(--accent)] bg-[color:var(--accent)] px-4 text-meta font-semibold text-[color:var(--accent-foreground)]" onClick={(event) => { event.preventDefault(); void submitRoleChange(); }} disabled={isSubmitting}>{isSubmitting ? dictionary.roleChange.applying : dictionary.roleChange.confirm}</AlertDialogAction></AlertDialogFooter>
         </AlertDialogContent>

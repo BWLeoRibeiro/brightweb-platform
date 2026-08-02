@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { createContext, useContext, useEffect, useMemo, useState, type CSSProperties } from "react";
-import { motion, useReducedMotion } from "motion/react";
 import {
   AlertTriangle,
   ArrowUpRight,
@@ -22,6 +21,7 @@ import { defaultDashboardDictionary, type DashboardDictionary } from "./dictiona
 import { DashboardActionLink as PortalActionLink, DashboardSectionHeading as PortalSectionHeading, dashboardCardTitleClassName as CARD_TITLE, dashboardLabelClassName as LABEL, dashboardMonoTabularClassName as MONO } from "./primitives";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@brightweblabs/ui";
 import { cn } from "../lib/utils";
+import { PillTabs } from "../components/pill-tabs";
 
 
 const ProjectComponentsContext = createContext<DashboardProjectComponents | null>(null);
@@ -126,7 +126,7 @@ function HeroMetricMini({ value, label, tone }: { value: number; label: string; 
         {label}
       </span>
       <span
-        className="font-display text-heading-3 text-[length:var(--text-ui-dashboard-card-title)] font-extrabold leading-none tracking-[var(--type-tracking-n030)]"
+        className="text-kpi text-[length:var(--text-ui-dashboard-card-title)] font-extrabold leading-none tracking-[var(--type-tracking-n030)]"
         style={{ color: "var(--project-hero-foreground)" }}
       >
         {value}
@@ -144,7 +144,7 @@ function HeroMetrics({ activeProjects, overdueProjects, newLeads }: { activeProj
         style={{ borderColor: "var(--project-hero-border)", background: "var(--project-hero-surface-raised)" }}
       >
         <span
-          className="font-display text-metric-lg text-[length:var(--text-ui-dashboard-metric)] font-black leading-[var(--type-leading-090)] tracking-[var(--type-tracking-n050)]"
+          className="text-kpi-lg text-[length:var(--text-ui-dashboard-metric)] font-black leading-[var(--type-leading-090)] tracking-[var(--type-tracking-n050)]"
           style={{ color: "var(--accent)" }}
         >
           {activeProjects}
@@ -206,13 +206,13 @@ function WelcomeHeader({
       <div className="relative flex flex-col gap-7 lg:flex-row lg:items-end lg:justify-between">
         <div className="min-w-0 lg:flex-1">
           <p
-            className="inline-flex items-center gap-2 text-label font-semibold uppercase tracking-[var(--type-tracking-160)]"
+            className="inline-flex items-center gap-2 text-meta font-semibold"
             style={{ color: "var(--project-hero-muted)" }}
           >
             <CalendarDays className="h-3.5 w-3.5" style={{ color: "var(--accent)" }} />
-            <span className="capitalize">{dateLabel}</span>
+            <span className="text-data capitalize">{dateLabel}</span>
             <span className="opacity-40">·</span>
-            <span>{time}</span>
+            <span className="text-data">{time}</span>
           </p>
 
           <h1 className="font-display mt-4 text-heading-1 text-[length:var(--text-ui-dashboard-title)] font-extrabold leading-[var(--type-leading-102)] tracking-[var(--type-tracking-n035)] md:text-heading-1 text-[length:var(--text-ui-dashboard-title-lg)]">
@@ -227,7 +227,7 @@ function WelcomeHeader({
             .
           </h1>
 
-          <p className="mt-3 max-w-[32rem] text-title" style={{ color: "var(--project-hero-muted)" }}>
+          <p className="mt-3 max-w-[32rem] text-body-lg" style={{ color: "var(--project-hero-muted)" }}>
             {urgentCount > 0 ? (
               <>
                 <span className="font-semibold" style={{ color: "var(--project-hero-foreground)" }}>
@@ -245,7 +245,7 @@ function WelcomeHeader({
               {errors.map((error) => (
                 <span
                   key={error}
-                  className="dashboard-error inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-label font-semibold"
+                  className="dashboard-error inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-meta font-semibold leading-snug"
                 >
                   <AlertTriangle className="h-3 w-3" />
                   {error}
@@ -264,8 +264,6 @@ function WelcomeHeader({
 
 function TabsRow({ value, onChange, sections }: { value: TabKey; onChange: (v: TabKey) => void; sections: DashboardSection[] }) {
   const dictionary = useDashboardDictionary();
-  const prefersReducedMotion = useReducedMotion();
-  const [hovered, setHovered] = useState<TabKey | null>(null);
   const tabs: { key: TabKey; label: string }[] = [
     { key: "overview", label: dictionary.tabs.overview },
     ...(sections.includes("projects") ? [{ key: "projects" as const, label: dictionary.tabs.projects }] : []),
@@ -273,57 +271,7 @@ function TabsRow({ value, onChange, sections }: { value: TabKey; onChange: (v: T
     ...(sections.includes("tasks") ? [{ key: "tasks" as const, label: dictionary.tabs.tasks }] : []),
   ];
 
-  return (
-    <div
-      className="inline-flex items-center gap-1 rounded-full border border-[color:var(--border)] bg-[color:var(--card)] p-1"
-      onMouseLeave={() => setHovered(null)}
-    >
-      {tabs.map((t) => {
-        const active = t.key === value;
-        const isHovered = hovered === t.key && !active;
-        return (
-          <motion.button
-            key={t.key}
-            type="button"
-            onClick={() => onChange(t.key)}
-            onMouseEnter={() => setHovered(t.key)}
-            onFocus={() => setHovered(t.key)}
-            whileTap={prefersReducedMotion ? undefined : { scale: 0.95 }}
-            transition={prefersReducedMotion ? { duration: 0 } : { type: "spring", stiffness: 500, damping: 32 }}
-            aria-pressed={active}
-            className="relative rounded-full px-4 py-1.5 text-body text-[length:var(--text-ui-action)] font-semibold outline-none transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-[color:var(--ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--background)] motion-reduce:transition-none"
-            style={{
-              color: active
-                ? "var(--accent-foreground)"
-                : isHovered
-                  ? "var(--foreground)"
-                  : "var(--muted-foreground)",
-            }}
-          >
-            {isHovered && (
-              <motion.span
-                layoutId={prefersReducedMotion ? undefined : "dashboard-tab-hover"}
-                aria-hidden
-                className="absolute inset-0 rounded-full"
-                style={{ background: "var(--dashboard-tab-hover)" }}
-                transition={prefersReducedMotion ? { duration: 0 } : { type: "spring", stiffness: 520, damping: 38 }}
-              />
-            )}
-            {active && (
-              <motion.span
-                layoutId={prefersReducedMotion ? undefined : "dashboard-tab-active"}
-                aria-hidden
-                className="absolute inset-0 rounded-full shadow-[var(--dashboard-tab-shadow)]"
-                style={{ background: "var(--accent)" }}
-                transition={prefersReducedMotion ? { duration: 0 } : { type: "spring", stiffness: 420, damping: 34 }}
-              />
-            )}
-            <span className="relative z-10">{t.label}</span>
-          </motion.button>
-        );
-      })}
-    </div>
-  );
+  return <PillTabs ariaLabel="Dashboard" items={tabs.map((tab) => ({ value: tab.key, label: tab.label }))} value={value} onValueChange={onChange} />;
 }
 
 /* ─── Hero cards ─────────────────────────────────────────────────── */
@@ -357,7 +305,7 @@ function KpiBreakdownBar({ items }: { items: KpiBreakdownItem[] }) {
                     <span className="flex items-center gap-2">
                       <span className="h-2 w-2 rounded-[2px]" style={{ background: TONE_COLOR[i.tone] }} />
                       <span className="capitalize">{i.label}</span>
-                      <span className="font-bold tabular-nums">{i.value}</span>
+                      <span className="text-data font-bold">{i.value}</span>
                     </span>
                   </TooltipContent>
                 </Tooltip>
@@ -406,7 +354,7 @@ function ProjectsKpiCard({ projects }: { projects: DashboardProjectsData | null 
         <span className={LABEL}>{dictionary.projects.title}</span>
       </div>
       <div className="mt-4 flex items-baseline gap-2">
-        <span className="text-metric-lg text-foreground">{active}</span>
+        <span className="text-kpi-lg text-foreground">{active}</span>
         <span className="text-body font-semibold text-[color:var(--muted-foreground)]">{dictionary.projects.active}</span>
       </div>
       <KpiBreakdownBar
@@ -446,7 +394,7 @@ function CrmKpiCard({ crm }: { crm: DashboardCrmData | null }) {
         <span className={LABEL}>{dictionary.crm.title}</span>
       </div>
       <div className="mt-4 flex items-baseline gap-2">
-        <span className="text-metric-lg text-foreground">{total}</span>
+        <span className="text-kpi-lg text-foreground">{total}</span>
         <span className="text-body font-semibold text-[color:var(--muted-foreground)]">{dictionary.crm.contacts}</span>
       </div>
       <KpiBreakdownBar
@@ -566,7 +514,7 @@ function TasksTable({
           <Skeleton className="h-[26px] w-16 rounded-full" />
         ) : (
           <span className="inline-flex items-center gap-1.5 rounded-full border border-[color:var(--accent)]/30 bg-[color:var(--accent)]/10 px-2.5 py-1 text-label font-bold text-[color:var(--accent)]">
-            {rows.length} {dictionary.tasks.active}
+            <span className="text-data">{rows.length}</span> {dictionary.tasks.active}
           </span>
         )}
       </header>
@@ -712,7 +660,7 @@ function MilestonesPanel({ items, isLoading = false, className = "" }: { items: 
           className="rounded-full border px-2 py-0.5 text-micro font-bold tracking-widest"
           style={{ borderColor: "var(--project-hero-border)", color: "var(--project-hero-muted)" }}
         >
-          {items.length ? `${items.length}` : dictionary.milestones.emptyBadge}
+          {items.length ? <span className="text-data">{items.length}</span> : dictionary.milestones.emptyBadge}
         </span>
       </div>
       {isLoading && items.length === 0 ? (
@@ -894,7 +842,7 @@ function PeriodTile({
       <span className={LABEL}>{label}</span>
       <div className="relative mt-4 flex items-baseline gap-2">
         <span
-          className="text-metric-display text-foreground"
+          className="text-kpi text-foreground"
           style={accent ? { color: "var(--accent)" } : undefined}
         >
           {isLoading ? "–" : value}
@@ -931,7 +879,7 @@ function ContactCard({ c }: { c: DashboardCrmRecentContact }) {
           <p className="truncate text-meta text-[color:var(--muted-foreground)]">{c.company ?? "—"}</p>
         </div>
       </div>
-      <div className="mt-4 flex items-center justify-between border-t border-[color:var(--border)] pt-3 text-label text-[color:var(--muted-foreground)]">
+      <div className="mt-4 flex items-center justify-between border-t border-[color:var(--border)] pt-3 text-meta text-[color:var(--muted-foreground)]">
         <Tag meta={meta} />
         <span className="inline-flex items-center gap-1.5">
           <CalendarDays className="h-3.5 w-3.5 opacity-70" strokeWidth={1.75} />
@@ -986,8 +934,9 @@ function ClientsView({ crm, isLoading }: { crm: DashboardCrmData | null; isLoadi
       <section className="space-y-3">
         <div className="flex items-end justify-between">
           <h3 className={CARD_TITLE}>{dictionary.clients.recentTitle}</h3>
-          <span className="text-label text-[color:var(--muted-foreground)]">
-            {contacts.length} {contacts.length === 1 ? dictionary.clients.one : dictionary.clients.many}
+          <span className="text-meta text-[color:var(--muted-foreground)]">
+            <span className="text-data font-semibold">{contacts.length}</span>{" "}
+            {contacts.length === 1 ? dictionary.clients.one : dictionary.clients.many}
           </span>
         </div>
         {isLoading && contacts.length === 0 ? (

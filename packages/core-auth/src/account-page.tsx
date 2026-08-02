@@ -105,7 +105,7 @@ export async function AccountPage({ projectsSlot }: { projectsSlot?: ReactNode }
           <article className="rounded-2xl border p-5" style={{ borderColor: "var(--border)", background: "var(--card)" }}>
             <div className="mb-4 flex items-center gap-2">
               <UserCircle2 className="size-3.5 text-muted-foreground" />
-              <h2 className="text-meta font-bold uppercase tracking-widest text-muted-foreground">
+              <h2 className="text-label font-bold text-muted-foreground">
                 {defaultAccountUiDictionary.profile.title}
               </h2>
             </div>
@@ -120,7 +120,7 @@ export async function AccountPage({ projectsSlot }: { projectsSlot?: ReactNode }
           <article className="rounded-2xl border p-5" style={{ borderColor: "var(--border)", background: "var(--card)" }}>
             <div className="mb-4 flex items-center gap-2">
               <KeyRound className="size-3.5 text-muted-foreground" />
-              <h2 className="text-meta font-bold uppercase tracking-widest text-muted-foreground">
+              <h2 className="text-label font-bold text-muted-foreground">
                 {defaultAccountUiDictionary.security.title}
               </h2>
             </div>

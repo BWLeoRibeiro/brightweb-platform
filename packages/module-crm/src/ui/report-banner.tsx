@@ -66,7 +66,7 @@ export function CrmReportBanner({ summary, href, loading = false, unavailable = 
           <div className="grid shrink-0 grid-cols-3 gap-3">
             {metrics.map((metric) => (
               <div key={metric.label} className="flex min-w-[var(--crm-report-metric-min-width)] flex-col justify-center rounded-[var(--radius-card)] border px-4 py-4" style={{ borderColor: "var(--project-hero-border)", background: "var(--project-hero-surface-raised)" }}>
-                <span className="font-display text-metric text-[length:var(--text-ui-report-metric)] font-black leading-[var(--type-leading-090)] tracking-[var(--type-tracking-n050)]" style={{ color: "var(--project-hero-foreground)" }}>{metric.value}</span>
+                <span className="text-kpi text-[length:var(--text-ui-report-metric)] font-black leading-[var(--type-leading-090)] tracking-[var(--type-tracking-n050)]" style={{ color: "var(--project-hero-foreground)" }}>{metric.value}</span>
                 <span className="mt-2 text-label uppercase tracking-[var(--type-tracking-100)]" style={{ color: "var(--project-hero-muted)" }}>{metric.label}</span>
               </div>
             ))}

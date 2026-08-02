@@ -27,10 +27,6 @@
 
   .marketing-hero h1 {
     color: inherit;
-    font-size: var(--text-heading-1);
-    font-weight: var(--font-weight-semibold);
-    letter-spacing: var(--tracking-tight);
-    line-height: var(--leading-tight);
   }
 
   .marketing-hero p:last-child {
@@ -121,8 +117,6 @@
 
   .marketing-campaign-primary strong {
     overflow: hidden;
-    font-size: var(--text-body);
-    font-weight: var(--font-weight-semibold);
     text-overflow: ellipsis;
     white-space: nowrap;
   }
@@ -175,7 +169,6 @@
     display: inline-flex;
     align-items: center;
     gap: var(--space-2xs);
-    font-variant-numeric: tabular-nums;
   }
 
   .marketing-row-count svg {
@@ -427,15 +420,8 @@
     border-bottom: 0;
   }
 
-  .marketing-count strong {
-    font-size: var(--text-heading-3);
-    font-weight: var(--font-weight-semibold);
-    font-variant-numeric: tabular-nums;
-  }
-
   .marketing-count span {
     color: var(--muted-foreground);
-    font-size: var(--text-label);
   }
 
   .marketing-recipient-list {

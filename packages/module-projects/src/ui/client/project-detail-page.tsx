@@ -189,7 +189,7 @@ export async function ClientProjectDetailPage({
 
           <div>
             {project.code ? (
-              <p className="mb-0.5 select-all font-mono text-label text-muted-foreground/60">
+              <p className="text-data mb-0.5 select-all text-micro tracking-normal text-muted-foreground/60">
                 {project.code}
               </p>
             ) : null}
@@ -207,6 +207,7 @@ export async function ClientProjectDetailPage({
             icon={<CalendarDays className="size-4" />}
             label={dictionary.projectDeadline}
             value={formatClientProjectDate(project.targetDate)}
+            valueClassName="text-data"
             accent={overdue ? "var(--project-health-off-track)" : undefined}
             note={overdue ? clientProjectsDictionary.common.delayed : undefined}
           />
@@ -219,6 +220,7 @@ export async function ClientProjectDetailPage({
                 ? `${project.milestoneStats.achieved} / ${project.milestoneStats.total}`
                 : "—"
             }
+            valueClassName="text-data"
             note={
               project.milestoneStats.delayed > 0
                 ? dictionary.delayedMilestones(project.milestoneStats.delayed)
@@ -247,6 +249,7 @@ export async function ClientProjectDetailPage({
                 ? formatClientProjectDate(data.nextMilestone.targetDate)
                 : undefined
             }
+            noteClassName={data.nextMilestone?.targetDate ? "text-data" : undefined}
             accent={
               data.nextMilestone
               && isClientProjectDateOverdue(data.nextMilestone.targetDate)
@@ -371,7 +374,7 @@ export async function ClientProjectDetailPage({
                       <p className="truncate text-body font-semibold leading-none">
                         {member.label}
                       </p>
-                      <p className="mt-0.5 truncate text-label text-muted-foreground">
+                      <p className="mt-0.5 truncate text-meta text-muted-foreground">
                         {getMemberDisplayLabel(member.role, colorRole)}
                         {member.email ? ` · ${member.email}` : ""}
                       </p>
@@ -406,7 +409,7 @@ export async function ClientProjectDetailPage({
 
 function SectionHeading({ icon, children }: { icon: ReactNode; children: ReactNode }) {
   return (
-    <h2 className="flex items-center gap-2 text-body font-semibold uppercase tracking-wide text-muted-foreground">
+    <h2 className="flex items-center gap-2 text-label font-semibold text-muted-foreground">
       {icon}
       {children}
     </h2>
@@ -420,6 +423,8 @@ function StatCard({
   note,
   accent,
   progress,
+  valueClassName = "",
+  noteClassName = "",
 }: {
   icon: ReactNode;
   label: string;
@@ -427,6 +432,8 @@ function StatCard({
   note?: string;
   accent?: string;
   progress?: { pct: number; color: string };
+  valueClassName?: string;
+  noteClassName?: string;
 }) {
   return (
     <div className="space-y-1.5 rounded-xl border border-border/60 bg-background/60 px-3.5 py-3">
@@ -435,7 +442,7 @@ function StatCard({
         {label}
       </div>
       <p
-        className="text-body-lg font-semibold leading-none tabular-nums"
+        className={`text-body-lg font-semibold leading-none ${valueClassName}`}
         style={accent ? { color: accent } : undefined}
       >
         {value}
@@ -450,7 +457,7 @@ function StatCard({
       ) : null}
       {note ? (
         <p
-          className="text-micro leading-none"
+          className={`text-micro leading-none ${noteClassName}`}
           style={
             accent
               ? { color: accent }

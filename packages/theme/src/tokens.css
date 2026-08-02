@@ -196,6 +196,9 @@
   --text-metric: 2.75rem;
   --text-metric-display: var(--text-metric);
   --text-metric-lg: 3.5rem;
+  --text-kpi: var(--text-metric);
+  --text-kpi-lg: var(--text-metric-lg);
+  --text-data-sm: var(--text-meta);
 
   /* Compatibility and contextual scales retain their current rendered sizes. */
   --text-ui-nano: 0.4375rem;

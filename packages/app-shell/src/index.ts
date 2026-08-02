@@ -70,6 +70,8 @@ export type { ShellActionsProviderProps } from "./lib/shell-actions";
 export { ShellActionRegistry } from "./lib/shell-action-registry";
 export type { ShellActionAliases, ShellActionHandler } from "./lib/shell-action-registry";
 export { MobileNav } from "./components/mobile-nav";
+export { PillTabs } from "./components/pill-tabs";
+export type { PillTabItem, PillTabsProps } from "./components/pill-tabs";
 export { ThemeMenu } from "./components/theme-menu";
 export * from "./theme/index";
 export {

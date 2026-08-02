@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { Filter, Plus } from "lucide-react";
 import { ToolbarSearchField, useShellActionDispatch, useShellActionReady, useShellActionsReady } from "@brightweblabs/app-shell";
-import { Popover, PopoverContent, PopoverTrigger } from "@brightweblabs/ui";
+import { Button, Popover, PopoverContent, PopoverTrigger } from "@brightweblabs/ui";
 import { useProjectsUiDictionary } from "./context";
 import {
   PROJECTS_EVENTS,
@@ -27,8 +27,6 @@ const HEALTH_SWATCHES: Partial<Record<ProjectsHealthFilter, string>> = {
   at_risk: "var(--project-risk-at-risk)",
   off_track: "var(--project-risk-overdue)",
 };
-
-const controlClassName = "relative inline-flex h-9 cursor-pointer items-center gap-2 whitespace-nowrap rounded-[var(--radius-control)] border px-3 text-body text-[length:var(--text-ui-action)] font-extrabold";
 
 export function ProjectsToolbarControls() {
   const dictionary = useProjectsUiDictionary();
@@ -78,37 +76,36 @@ export function ProjectsToolbarControls() {
 
       <Popover open={open} onOpenChange={(next) => next ? openPopover() : setOpen(false)}>
         <PopoverTrigger asChild>
-        <button
+        <Button
           type="button"
+          variant="outline"
           disabled={!filtersReady}
           className={cn(
-            controlClassName,
-            "border-[color:var(--hairline-strong)] bg-[color:var(--elevate-1)] text-[color:var(--foreground)] hover:border-[color:var(--border-strong)] hover:bg-[color:var(--surface-hover)] disabled:cursor-not-allowed disabled:opacity-60",
             activeCount > 0 && "border-[color:var(--border-selection)] bg-[color:var(--surface-selection)]",
           )}
         >
-          <Filter className={cn("size-[var(--toolbar-icon-size)]", activeCount > 0 ? "text-[color:var(--accent)]" : "text-[color:var(--muted-foreground)]")} aria-hidden />
+          <Filter data-icon="inline-start" className={cn(activeCount > 0 ? "text-[color:var(--accent)]" : "text-[color:var(--muted-foreground)]")} aria-hidden />
           {dictionary.toolbar.filters}
-          {activeCount > 0 ? <span className="inline-flex size-5 items-center justify-center rounded-full bg-[color:var(--project-ui-color-77)] text-micro text-[color:var(--project-ui-color-78)]">{activeCount}</span> : null}
-        </button>
+          {activeCount > 0 ? <span className="inline-flex size-5 items-center justify-center rounded-full bg-[color:var(--project-ui-color-77)] text-data-sm text-[color:var(--project-ui-color-78)]">{activeCount}</span> : null}
+        </Button>
         </PopoverTrigger>
 
         <PopoverContent align="end" collisionPadding={12} className="w-[min(var(--toolbar-popover-width),calc(100vw-2rem))] rounded-[var(--radius-toolbar-popover)] border border-[color:var(--border-strong)] bg-[color:var(--popover)] p-4 shadow-[var(--shadow-toolbar-popover)]">
             <div className="mb-3 flex items-center justify-between">
               <span className="text-body text-[length:var(--text-ui-action)] font-extrabold text-[color:var(--foreground)]">{dictionary.toolbar.filters}</span>
-              <button type="button" className="cursor-pointer p-0 text-meta font-bold text-[color:var(--muted-foreground)] underline-offset-2 hover:text-[color:var(--foreground)] hover:underline" onClick={() => { setDraftStatus("all"); setDraftHealth("all"); }}>{dictionary.toolbar.clear}</button>
+              <Button type="button" variant="link" size="link" className="text-meta text-[color:var(--muted-foreground)]" onClick={() => { setDraftStatus("all"); setDraftHealth("all"); }}>{dictionary.toolbar.clear}</Button>
             </div>
 
             <div className="grid gap-3">
               <div>
-                <span className="mb-2 block text-micro font-extrabold uppercase tracking-[var(--type-tracking-100)] text-[color:var(--muted-foreground)]">{dictionary.toolbar.status}</span>
+                <span className="mb-2 block text-label text-[color:var(--muted-foreground)]">{dictionary.toolbar.status}</span>
                 <div className="flex flex-wrap gap-2">
                   {STATUS_KEYS.map((key) => <button key={key} type="button" className={cn("inline-flex h-[var(--toolbar-chip-height)] cursor-pointer items-center gap-2 rounded-full border px-3 text-meta text-[length:var(--text-ui-chip)] font-semibold text-[color:var(--foreground)]", draftStatus === key ? "border-[color:var(--border-selection)] bg-[color:var(--surface-selection)]" : "border-[color:var(--hairline)] bg-[color:var(--elevate-1)]")} onClick={() => setDraftStatus(key)}>{STATUS_SWATCHES[key] ? <span className="size-[7px] rounded-full" style={{ background: STATUS_SWATCHES[key] }} /> : null}{key === "all" ? dictionary.toolbar.allStatuses : dictionary.status[key]}</button>)}
                 </div>
               </div>
 
               <div>
-                <span className="mb-2 block text-micro font-extrabold uppercase tracking-[var(--type-tracking-100)] text-[color:var(--muted-foreground)]">{dictionary.toolbar.health}</span>
+                <span className="mb-2 block text-label text-[color:var(--muted-foreground)]">{dictionary.toolbar.health}</span>
                 <div className="flex flex-wrap gap-2">
                   {HEALTH_KEYS.map((key) => <button key={key} type="button" className={cn("inline-flex h-[var(--toolbar-chip-height)] cursor-pointer items-center gap-2 rounded-full border px-3 text-meta text-[length:var(--text-ui-chip)] font-semibold text-[color:var(--foreground)]", draftHealth === key ? "border-[color:var(--border-selection)] bg-[color:var(--surface-selection)]" : "border-[color:var(--hairline)] bg-[color:var(--elevate-1)]")} onClick={() => setDraftHealth(key)}>{HEALTH_SWATCHES[key] ? <span className="size-[7px] rounded-full" style={{ background: HEALTH_SWATCHES[key] }} /> : null}{key === "all" ? dictionary.toolbar.allHealth : dictionary.status[key]}</button>)}
                 </div>
@@ -116,15 +113,15 @@ export function ProjectsToolbarControls() {
             </div>
 
             <div className="mt-4">
-              <button type="button" className={cn(controlClassName, "w-full justify-center border-transparent bg-[color:var(--accent)] text-[color:var(--accent-foreground)]")} onClick={() => { setStatus(draftStatus); setHealth(draftHealth); dispatchShellAction(PROJECTS_EVENTS.setStatus, { status: draftStatus }); dispatchShellAction(PROJECTS_EVENTS.setHealth, { health: draftHealth }); setOpen(false); }}>{dictionary.toolbar.apply}</button>
+              <Button type="button" className="w-full" onClick={() => { setStatus(draftStatus); setHealth(draftHealth); dispatchShellAction(PROJECTS_EVENTS.setStatus, { status: draftStatus }); dispatchShellAction(PROJECTS_EVENTS.setHealth, { health: draftHealth }); setOpen(false); }}>{dictionary.toolbar.apply}</Button>
             </div>
         </PopoverContent>
       </Popover>
 
-      <button type="button" className={cn(controlClassName, "border-transparent bg-[color:var(--accent)] text-[color:var(--accent-foreground)] disabled:cursor-not-allowed disabled:opacity-60")} disabled={!newProjectReady} onClick={() => dispatchShellAction(PROJECTS_EVENTS.openNewProject)}>
-        <Plus className="size-[var(--toolbar-icon-size)]" aria-hidden />
+      <Button type="button" disabled={!newProjectReady} onClick={() => dispatchShellAction(PROJECTS_EVENTS.openNewProject)}>
+        <Plus data-icon="inline-start" aria-hidden />
         {dictionary.toolbar.newProject}
-      </button>
+      </Button>
     </div>
   );
 }

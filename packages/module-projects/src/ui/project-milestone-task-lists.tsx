@@ -453,7 +453,7 @@ export function ProjectMilestonesAndTasksLists({
                             className="w-16 bg-[color:var(--project-ui-color-29)]"
                             fillClassName={isProgressComplete ? "bg-[color:var(--project-state-active)]" : "bg-[color:var(--accent)]"}
                           />
-                          <span className={`${MONO} text-meta text-muted-foreground tabular-nums text-foreground/70`}>{progress.done}/{progress.total}</span>
+                          <span className={`${MONO} text-meta text-muted-foreground text-foreground/70`}>{progress.done}/{progress.total}</span>
                         </span>
                       ) : (
                         <span className="text-micro text-muted-foreground shrink-0 text-foreground-muted-accessible">{dictionary.detail.noTasksLowercase}</span>

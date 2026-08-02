@@ -7,6 +7,8 @@ import test from "node:test";
 
 import { BreadcrumbLink } from "../packages/ui/src/components/breadcrumb.tsx";
 import { PhoneInput } from "../packages/ui/src/components/phone-input.tsx";
+import { cn as appShellCn } from "../packages/app-shell/src/lib/utils.ts";
+import { cn as uiCn } from "../packages/ui/src/lib/utils.ts";
 import { getInitials, getPaginationWindow, getRoleLabel, resolveRoleToken } from "../packages/ui/src/lib/patterns.ts";
 
 const repoRoot = path.resolve(new URL("..", import.meta.url).pathname);
@@ -97,7 +99,15 @@ test("Tier-2 pure helpers clamp pagination and derive neutral labels", () => {
   assert.equal(resolveRoleToken("custom", {}), "--semantic-neutral");
 });
 
-test("ActionButton shares the contrast-safe brand Button variant", async () => {
+test("composite typography roles survive explicit size composition", () => {
+  for (const cn of [appShellCn, uiCn]) {
+    assert.equal(cn("text-body", "text-[length:var(--text-ui-action)]"), "text-body text-[length:var(--text-ui-action)]");
+    assert.equal(cn("text-kpi", "text-[length:var(--text-heading-1)]"), "text-kpi text-[length:var(--text-heading-1)]");
+    assert.equal(cn("text-data", "text-[length:var(--text-meta)]"), "text-data text-[length:var(--text-meta)]");
+  }
+});
+
+test("ActionButton shares the canonical brand Button variant", async () => {
   const source = await readFile(path.join(repoRoot, "packages/ui/src/components/action.tsx"), "utf8");
   assert.match(source, /buttonVariants\(\{\s*variant:\s*"brand"/);
   assert.doesNotMatch(source, /bg-\[color:var\(--brand-accent\)\]/);

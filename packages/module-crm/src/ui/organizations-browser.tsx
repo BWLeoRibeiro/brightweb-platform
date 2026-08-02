@@ -23,6 +23,12 @@ import type { CrmOrganizationsListResult } from "../data";
 
 export const CRM_SHEET_CLASS_NAME = "h-screen w-full gap-0 border-l border-hairline bg-background sm:max-w-[var(--crm-sheet-width)]";
 
+function dataNumerals(value: string) {
+  return value.split(/(\d+(?:[.,]\d+)*)/).map((part, index) =>
+    /^\d/.test(part) ? <span key={`${part}-${index}`} className="text-data">{part}</span> : part,
+  );
+}
+
 export type CrmOrganizationsBrowserProps = {
   open: boolean;
   organizations: CrmOrganization[];
@@ -106,7 +112,7 @@ export function CrmOrganizationsBrowser({ open, organizations, loading = false, 
                       {config.showIndustry ? <p className="mt-1 text-meta text-muted-foreground">{organization.industry ?? dictionary.organizations.unavailable}</p> : null}
                     </div>
                     {!queryOrganizations || contactsByOrganization.has(organization.id) ? (
-                      <Badge variant="outline">{dictionary.organizations.contactCount(contactsByOrganization.get(organization.id) ?? 0)}</Badge>
+                      <Badge variant="outline"><span>{dataNumerals(dictionary.organizations.contactCount(contactsByOrganization.get(organization.id) ?? 0))}</span></Badge>
                     ) : null}
                   </div>
                 </button>

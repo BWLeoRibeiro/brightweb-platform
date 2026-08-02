@@ -151,21 +151,50 @@ test("shared buttons transition explicit properties and respect reduced motion",
   assert.match(source, /motion-reduce:transition-none/);
 });
 
-test("brand buttons use the foreground paired with their brand surface", async () => {
+test("default and brand buttons share the flat Projects action contract", async () => {
   const source = await readFile(path.join(uiSourceRoot, "components/button-variants.ts"), "utf8");
+  const defaultVariant = source.match(/default:\s*\n?\s*"([^"]+)"/)?.[1];
   const brandVariant = source.match(/brand:\s*\n?\s*"([^"]+)"/)?.[1];
 
+  assert.ok(defaultVariant);
   assert.ok(brandVariant);
-  assert.match(brandVariant, /bg-\[color:var\(--surface-button-brand\)\]/);
+  for (const variant of [defaultVariant, brandVariant]) {
+    assert.match(variant, /border-transparent/);
+    assert.match(variant, /bg-\[color:var\(--surface-button-brand\)\]/);
+    assert.doesNotMatch(variant, /shadow/);
+  }
+  assert.match(defaultVariant, /text-\[color:var\(--foreground-button-brand\)\]/);
   assert.match(brandVariant, /!text-\[color:var\(--foreground-button-brand\)\]/);
-  assert.doesNotMatch(brandVariant, /accent-foreground/);
+});
+
+test("standard package toolbar actions use the shared Button primitive", async () => {
+  const relativePaths = [
+    "packages/app-shell/src/components/app-header.tsx",
+    "packages/module-admin/src/ui/toolbar-controls.tsx",
+    "packages/module-crm/src/ui/toolbar-controls.tsx",
+    "packages/module-marketing/src/ui/toolbar-controls.tsx",
+    "packages/module-projects/src/ui/toolbar-controls.tsx",
+  ];
+  const files = await Promise.all(relativePaths.map(async (relativePath) => ({
+    relativePath,
+    source: await readFile(path.join(repoRoot, relativePath), "utf8"),
+  })));
+
+  for (const { relativePath, source } of files) {
+    assert.match(source, /<Button\b/, `${relativePath} must use the shared Button primitive`);
+    assert.doesNotMatch(
+      source,
+      /<button\b[^>]*className=[^>]*(?:bg-\[color:var\(--accent\)\]|font-extrabold)/,
+      `${relativePath} must not recreate standard toolbar action styling on a native button`,
+    );
+  }
 });
 
 test("segmented controls expose selection, visible focus, and reduced Framer motion", async () => {
-  const dashboard = await readFile(path.join(appShellSourceRoot, "dashboard/dashboard-client.tsx"), "utf8");
+  const pillTabs = await readFile(path.join(appShellSourceRoot, "components/pill-tabs.tsx"), "utf8");
   const admin = await readFile(path.join(adminUiSourceRoot, "admin-users.tsx"), "utf8");
 
-  for (const source of [dashboard, admin]) {
+  for (const source of [pillTabs, admin]) {
     assert.match(source, /useReducedMotion\(\)/);
     assert.match(source, /aria-pressed=\{(?:active|isActive)\}/);
     assert.match(source, /focus-visible:ring-2/);
@@ -317,7 +346,7 @@ test("package CSS layer guard allows tokens and flags unsafe class recipes", () 
 test("every canonical typography utility used by package UI exists in theme typography", async () => {
   const files = [...await sourcesAt(uiSourceRoot), ...await sourcesAt(appShellSourceRoot), ...await sourcesAt(adminUiSourceRoot), ...await sourcesAt(crmUiSourceRoot), ...await sourcesAt(projectsUiSourceRoot), ...await sourcesAt(marketingUiSourceRoot)];
   const typography = await readFile(typographyPath, "utf8");
-  const canonicalRole = /(?<![-\w])text-(?:heading-[1-4]|title|body-lg|body|meta|label|micro|metric(?:-display|-lg)?)(?![-\w])/g;
+  const canonicalRole = /(?<![-\w])text-(?:heading-[1-4]|title|body-lg|body|meta|label|micro|kpi(?:-lg)?|data(?:-sm)?|metric(?:-display|-lg)?)(?![-\w])/g;
   const providedUtilities = new Set(Array.from(typography.matchAll(/@utility\s+(text-(?!ui-)[a-z0-9-]+)/g), (match) => match[1]));
   const usedUtilities = new Set(files.flatMap(({ source }) => Array.from(source.matchAll(canonicalRole), (match) => match[0])));
   const missing = Array.from(usedUtilities).filter((utility) => !providedUtilities.has(utility)).sort();
@@ -333,6 +362,7 @@ test("package UI does not add new legacy or raw named typography classes", async
       /(?<!--)\bportal-(?:title(?:-sm)?|heading|panel-title|subhead|card-title|body|meta|label|micro|metric(?:-display|-xl)?)\b/g,
       /(?<![-\w])(?:heading-2|paragraph-(?:large|small|mini))(?![-\w])/g,
       /(?<![-\w])text-(?:xs|sm|base|lg|xl|[2-9]xl)(?![-\w])/g,
+      /(?<![-\w])text-metric(?:-display|-lg)?(?![-\w])/g,
     ];
     return patterns.flatMap((pattern) => Array.from(source.matchAll(pattern), (match) => `${path.relative(repoRoot, filePath)}:${source.slice(0, match.index).split("\n").length} ${match[0]}`));
   });

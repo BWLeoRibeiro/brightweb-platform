@@ -57,11 +57,11 @@ export function ProjectListCard({
 
         <div>
           {project.code ? (
-            <p className="mb-0.5 select-all font-mono text-micro text-muted-foreground/60">
+            <p className="text-data mb-0.5 select-all text-micro text-muted-foreground/60">
               {project.code}
             </p>
           ) : null}
-          <h2 className="text-body-lg font-semibold leading-snug">{project.name}</h2>
+          <h2 className="text-title">{project.name}</h2>
           <p className="mt-0.5 text-meta text-muted-foreground">{project.organizationName}</p>
         </div>
 
@@ -75,7 +75,7 @@ export function ProjectListCard({
             style={overdue ? { color: "var(--project-health-off-track)" } : undefined}
           >
             <CalendarDays className="size-3.5 shrink-0" />
-            {formatClientProjectDate(project.targetDate)}
+            <span className="text-data">{formatClientProjectDate(project.targetDate)}</span>
             {overdue ? <span className="text-micro">({clientProjectsDictionary.common.delayed})</span> : null}
           </span>
 
@@ -109,7 +109,7 @@ export function ProjectListCard({
                 {dictionary.milestoneProgress}
               </span>
               <span
-                className="text-micro font-bold tabular-nums"
+                className="text-data text-micro font-bold"
                 style={{ color: healthVar }}
               >
                 {milestoneProgressPct}%

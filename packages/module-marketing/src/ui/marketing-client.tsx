@@ -1,6 +1,6 @@
 "use client";
 
-import { BarChart3, CalendarClock, Check, Clock3, Filter, Mail, Plus, RotateCcw, Send, Tags, Trash2, Users, Workflow, X } from "lucide-react";
+import { CalendarClock, Check, Clock3, Mail, Plus, RotateCcw, Send, Trash2, Users, X } from "lucide-react";
 import {
   Badge,
   Button,
@@ -19,7 +19,7 @@ import {
 import { toast } from "sonner";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createLatestRequestController, isAbortError } from "@brightweblabs/infra/request-observability";
-import { useShellAction } from "@brightweblabs/app-shell";
+import { PillTabs, useShellAction } from "@brightweblabs/app-shell";
 import { useMarketingUiClient } from "./context";
 import { defaultMarketingUiDictionary } from "./dictionary";
 import { SegmentWorkspace } from "./segment-workspace";
@@ -183,8 +183,8 @@ function RecipientPanel({ recipients, loadState, dictionary, onRemove }: {
         <div className="marketing-count-grid">
           {(Object.keys(counts) as Array<keyof typeof counts>).map((status) => (
             <div className="marketing-count" key={status}>
-              <strong>{counts[status]}</strong>
-              <span>{dictionary.recipients.statuses[status]}</span>
+              <strong className="text-data text-[length:var(--text-heading-3)] font-semibold">{counts[status]}</strong>
+              <span className="text-label">{dictionary.recipients.statuses[status]}</span>
             </div>
           ))}
         </div>
@@ -693,7 +693,7 @@ export function MarketingClient({
       <header className="marketing-hero">
         <div>
           <p className="marketing-kicker">{dictionary.page.eyebrow}</p>
-          <h1>
+          <h1 className="text-heading-1">
             {activeView === "campaigns"
               ? dictionary.page.title
               : activeView === "segments"
@@ -723,48 +723,20 @@ export function MarketingClient({
         ) : null}
       </header>
 
-      <nav className="flex w-fit flex-wrap gap-1 rounded-xl border bg-muted p-1" aria-label="Marketing">
-        <Button
-          onClick={() => setActiveView("campaigns")}
-          size="sm"
-          variant={activeView === "campaigns" ? "default" : "ghost"}
-        >
-          <Mail aria-hidden="true" />
-          {dictionary.page.campaignsTab}
-        </Button>
-        <Button
-          onClick={() => setActiveView("segments")}
-          size="sm"
-          variant={activeView === "segments" ? "default" : "ghost"}
-        >
-          <Filter aria-hidden="true" />
-          {dictionary.page.segmentsTab}
-        </Button>
-        <Button
-          onClick={() => setActiveView("topics")}
-          size="sm"
-          variant={activeView === "topics" ? "default" : "ghost"}
-        >
-          <Tags aria-hidden="true" />
-          {dictionary.page.topicsTab}
-        </Button>
-        <Button
-          onClick={() => setActiveView("analytics")}
-          size="sm"
-          variant={activeView === "analytics" ? "default" : "ghost"}
-        >
-          <BarChart3 aria-hidden="true" />
-          {dictionary.page.analyticsTab}
-        </Button>
-        <Button
-          onClick={() => setActiveView("workflows")}
-          size="sm"
-          variant={activeView === "workflows" ? "default" : "ghost"}
-        >
-          <Workflow aria-hidden="true" />
-          {dictionary.workflows.tab}
-        </Button>
-      </nav>
+      <div className="-m-4 max-w-[calc(100%+2rem)] overflow-x-auto p-4">
+        <PillTabs
+          ariaLabel="Marketing"
+          items={[
+            { value: "campaigns", label: dictionary.page.campaignsTab },
+            { value: "segments", label: dictionary.page.segmentsTab },
+            { value: "topics", label: dictionary.page.topicsTab },
+            { value: "analytics", label: dictionary.page.analyticsTab },
+            { value: "workflows", label: dictionary.workflows.tab },
+          ]}
+          value={activeView}
+          onValueChange={setActiveView}
+        />
+      </div>
 
       {activeView === "campaigns" ? (
       <Card className="marketing-ledger">
@@ -801,16 +773,16 @@ export function MarketingClient({
                       {campaign.status === "sent" ? <Check /> : <Mail />}
                     </span>
                     <span className="min-w-0">
-                      <strong>{campaign.name}</strong>
+                      <strong className="text-title">{campaign.name}</strong>
                       <small>{campaign.subject || dictionary.list.noSubject}</small>
                     </span>
                   </span>
                   <span className="marketing-row-topic">{topicMap.get(campaign.topicId)?.label ?? "—"}</span>
-                  <span className="marketing-row-count">
+                  <span className="marketing-row-count text-data">
                     <Users aria-hidden="true" />
                     {campaign.totalRecipients === 0 ? "—" : `${campaign.sentCount}/${campaign.totalRecipients}`}
                   </span>
-                  <span className="marketing-row-date">{formatDate(campaign.createdAt, dictionary.locale)}</span>
+                  <span className="marketing-row-date text-data">{formatDate(campaign.createdAt, dictionary.locale)}</span>
                   <StatusPill status={campaign.status} dictionary={dictionary} />
                 </button>
               ))}
@@ -859,7 +831,7 @@ export function MarketingClient({
           {analyticsTotalPages > 1 ? (
             <nav className="flex items-center justify-end gap-2" aria-label="Paginação da análise">
               <Button type="button" variant="outline" disabled={analyticsLoading || analyticsPage <= 1} onClick={() => setAnalyticsPage((page) => page - 1)}>Anterior</Button>
-              <span className="text-meta text-muted-foreground">{analyticsPage} / {analyticsTotalPages}</span>
+              <span className="text-data text-meta text-muted-foreground">{analyticsPage} / {analyticsTotalPages}</span>
               <Button type="button" variant="outline" disabled={analyticsLoading || analyticsPage >= analyticsTotalPages} onClick={() => setAnalyticsPage((page) => page + 1)}>Seguinte</Button>
             </nav>
           ) : null}
@@ -886,7 +858,7 @@ export function MarketingClient({
           >
             Anterior
           </Button>
-          <span className="text-meta text-muted-foreground">
+          <span className="text-data text-meta text-muted-foreground">
             {queries[collectionView].page} / {collectionPages[collectionView].totalPages}
           </span>
           <Button

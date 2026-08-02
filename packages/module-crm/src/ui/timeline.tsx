@@ -48,7 +48,7 @@ export function CrmTimeline({ entries, loading = false, unavailable = false, dic
               <span className="relative z-10 mt-[var(--timeline-marker-offset)] size-2.5 shrink-0 rounded-full bg-[color:var(--crm-stage-lead)] ring-2 ring-card" aria-hidden />
               <div className="min-w-0 flex-1">
               <div className="flex items-start justify-between gap-2"><p className="leading-snug"><ActivityMessage segs={segments} /></p>
-              <time className="shrink-0 text-micro" dateTime={entry.changed_at}>{new Intl.DateTimeFormat(dictionary.locale, { dateStyle: "short", timeStyle: "short" }).format(new Date(entry.changed_at))}</time></div>
+              <time className="shrink-0 text-data text-[length:var(--text-micro)] leading-[var(--type-leading-130)]" dateTime={entry.changed_at}>{new Intl.DateTimeFormat(dictionary.locale, { dateStyle: "short", timeStyle: "short" }).format(new Date(entry.changed_at))}</time></div>
               {entry.reason ? <p className="mt-1 text-meta"><span className="font-semibold text-foreground">{dictionary.timeline.reasonLabel}:</span> {entry.reason}</p> : null}
               </div>
             </li>

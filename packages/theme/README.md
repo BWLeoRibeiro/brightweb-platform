@@ -27,13 +27,22 @@ The family contract starts at `--font-body`, `--font-heading`, and `--font-code`
 | `text-meta` | `0.75rem` | Secondary metadata |
 | `text-label` | `0.6875rem` | Uppercase interface label |
 | `text-micro` | `0.625rem` | Dense supporting copy |
-| `text-metric` | `2.75rem` | Monospaced primary metric |
-| `text-metric-display` | `2.75rem` | Display-face primary metric |
-| `text-metric-lg` | `3.5rem` | Large display metric |
+| `text-kpi` | `2.75rem` | Display-face headline KPI |
+| `text-kpi-lg` | `3.5rem` | Large display-face headline KPI |
+| `text-data` | inherited | Structured data: counters, ratios, percentages, dates, and numeric table cells |
+| `text-data-sm` | `0.75rem` | Compact structured data |
 
-Existing recipes remain supported and preserve their rendered values:
+Numeric typography follows one rule: big numbers are display, structured numbers
+are mono, and numbers in sentences inherit their surrounding prose. The legacy
+`text-metric`, `text-metric-display`, and `text-metric-lg` utilities retain their
+existing rendered output for compatibility; new code should use the semantic roles
+above.
 
-| Compatibility utility | Canonical utility |
+Existing recipes remain supported and preserve their rendered values. The table
+below gives the recommended semantic role for new code; it is a migration guide,
+not a claim that every compatibility utility renders identically:
+
+| Compatibility utility | Recommended role |
 | --- | --- |
 | `text-ui-title` | `text-heading-1` |
 | `text-ui-heading` | `text-heading-2` |
@@ -44,9 +53,9 @@ Existing recipes remain supported and preserve their rendered values:
 | `text-ui-meta` | `text-meta` |
 | `text-ui-label` | `text-label` |
 | `text-ui-micro` | `text-micro` |
-| `text-ui-metric` | `text-metric` |
-| `text-ui-metric-display` | `text-metric-display` |
-| `text-ui-metric-xl` | `text-metric-lg` |
+| `text-ui-metric` | `text-kpi` |
+| `text-ui-metric-display` | `text-kpi` |
+| `text-ui-metric-xl` | `text-kpi-lg` |
 
 The matching `portal-*` recipes have the same typography but continue to include their established tone: headings, titles, body, and metrics use `text-foreground`; meta, label, and micro roles use `text-muted-foreground`. `text-ui-title-sm`, shell/report/preview/auth sizes, MQ `heading-2`, and MQ paragraph aliases are contextual rather than exact canonical equivalents. Keep them until their route family is visually migrated and screenshot-checked.
 
@@ -100,7 +109,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 | --- | --- |
 | `--font-body`, `--font-heading`, `--font-code`; `--font-sans`, `--font-display`, `--font-mono` | Root font families and their Tailwind-facing aliases. |
 | `--type-weight-*`, `--type-leading-*`, `--type-tracking-*` | Shared typography weight, rhythm, and tracking primitives. |
-| `--text-heading-*`, `--text-title`, `--text-body*`, `--text-meta`, `--text-label`, `--text-micro`, `--text-metric*`; `--text-ui-*`, `--type-*` | Canonical visual-role typography tokens and compatibility scales. |
+| `--text-heading-*`, `--text-title`, `--text-body*`, `--text-meta`, `--text-label`, `--text-micro`, `--text-kpi*`, `--text-data-sm`; `--text-metric*`, `--text-ui-*`, `--type-*` | Canonical visual-role typography tokens and compatibility scales. |
 | `--foreground-muted-accessible`, `--foreground-inverse-muted`, `--foreground-inverse-subtle` | Contrast-safe secondary and inverse text roles. |
 | `--text-ui-chip`, `--text-ui-action`, `--text-ui-calendar` | Compact control and calendar type sizes. |
 | `--text-ui-shell-title`, `--text-ui-report-title`, `--text-ui-report-title-lg`, `--text-ui-report-metric` | Shell and CRM report display type sizes. |

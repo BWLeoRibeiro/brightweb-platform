@@ -285,7 +285,7 @@ export function ProjectBoardKanban({ canEditItems }: ProjectBoardKanbanProps) {
               >
                 <div className="mb-3 flex items-center justify-between px-1">
                   <div className="flex items-center gap-2"><span className={cn("size-2 shrink-0 rounded-full", column.dotClassName)} /><h2 className={cn("text-label font-semibold uppercase tracking-[var(--type-tracking-080)]", column.headingClassName)}>{column.label}</h2></div>
-                  <span className="inline-flex min-w-[1.5rem] items-center justify-center rounded-full border border-[color:var(--border)] bg-[color:var(--card)] px-1.5 text-label font-semibold tabular-nums text-[color:var(--muted-foreground)]">{columnTasks.length}</span>
+                  <span className="text-data inline-flex min-w-[1.5rem] items-center justify-center rounded-full border border-[color:var(--border)] bg-[color:var(--card)] px-1.5 text-meta font-semibold leading-none text-[color:var(--muted-foreground)]">{columnTasks.length}</span>
                 </div>
                 <div className="flex flex-col gap-2">
                   {columnTasks.length === 0 ? <p className="text-micro text-muted-foreground px-1 py-6 text-center text-foreground/35">{dictionary.board.noTasks}</p> : null}

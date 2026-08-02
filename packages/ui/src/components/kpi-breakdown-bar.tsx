@@ -44,7 +44,7 @@ export function KpiBreakdownBar({ items, toneTokens, className }: KpiBreakdownBa
                   <span className="flex items-center gap-2">
                     <span className="size-2 rounded-[var(--radius-swatch)]" style={tokenStyle(token)} />
                     <span>{item.label}</span>
-                    <span className="font-bold tabular-nums">{item.value}</span>
+                    <span className="text-data font-bold">{item.value}</span>
                   </span>
                 </TooltipContent>
               </Tooltip>
@@ -61,7 +61,7 @@ export function KpiBreakdownBar({ items, toneTokens, className }: KpiBreakdownBa
                 <span className="size-1.5 shrink-0 rounded-[var(--radius-swatch)]" style={token ? tokenStyle(token) : undefined} />
                 <span className="truncate">{item.label}</span>
               </span>
-              <span className="font-mono font-bold tabular-nums text-foreground">{item.value}</span>
+              <span className="text-data font-bold text-foreground">{item.value}</span>
             </div>
           );
         })}

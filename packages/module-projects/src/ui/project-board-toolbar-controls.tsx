@@ -46,7 +46,7 @@ export function ProjectBoardToolbarControls({ canCreateTask = true }: { canCreat
           {options.map((option) => <option key={option.id} value={option.id}>{option.title}</option>)}
         </select>
       </label>
-      {canCreateTask ? <Button type="button" variant="brand" disabled={!newTaskActionReady} className="h-9 px-3 text-body text-[length:var(--text-ui-action)] shadow-none" onClick={() => dispatchShellAction(PROJECTS_EVENTS.openNewTask)}><Plus className="size-[var(--toolbar-icon-size)]" aria-hidden />{dictionary.forms.newTask}</Button> : null}
+      {canCreateTask ? <Button type="button" disabled={!newTaskActionReady} onClick={() => dispatchShellAction(PROJECTS_EVENTS.openNewTask)}><Plus data-icon="inline-start" aria-hidden />{dictionary.forms.newTask}</Button> : null}
     </div>
   );
 }

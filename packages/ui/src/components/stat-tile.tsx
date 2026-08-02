@@ -20,9 +20,9 @@ export type StatValueProps = HTMLAttributes<HTMLParagraphElement> & {
 };
 
 const statValueSizeClasses: Record<NonNullable<StatValueProps["size"]>, string> = {
-  normal: "text-metric",
-  large: "text-metric-lg",
-  display: "text-metric-display",
+  normal: "text-kpi",
+  large: "text-kpi-lg",
+  display: "text-kpi",
 };
 
 export function StatValue({ size = "normal", className, ...props }: StatValueProps) {

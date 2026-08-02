@@ -422,7 +422,7 @@ export function WorkflowWorkspace({
                 <Workflow className="size-5" />
               </div>
               <div>
-                <h3 className="font-semibold">{dictionary.workflows.emptyTitle}</h3>
+                <h3 className="text-title">{dictionary.workflows.emptyTitle}</h3>
                 <p className="mt-1 max-w-[28rem] text-body text-muted-foreground">
                   {dictionary.workflows.emptyDescription}
                 </p>
@@ -444,7 +444,7 @@ export function WorkflowWorkspace({
               >
                 <div className="flex items-start justify-between gap-4">
                   <div className="min-w-0">
-                    <h3 className="truncate font-semibold">{workflow.name}</h3>
+                    <h3 className="truncate text-title">{workflow.name}</h3>
                     <p className="mt-1 truncate text-body text-muted-foreground">
                       {dictionary.workflows.triggers[workflow.triggerType]}
                     </p>
@@ -453,7 +453,7 @@ export function WorkflowWorkspace({
                     {dictionary.workflows.statuses[workflow.status]}
                   </Badge>
                 </div>
-                <div className="mt-5 flex gap-4 text-meta text-muted-foreground">
+                <div className="text-data mt-5 flex gap-4 text-meta text-muted-foreground">
                   <span>{workflow.countsKnown === false ? "—" : dictionary.workflows.nodeCount(workflow.nodeCount)}</span>
                   <span>{workflow.countsKnown === false ? "—" : dictionary.workflows.runCount(workflow.runCount)}</span>
                 </div>
@@ -526,7 +526,7 @@ export function WorkflowWorkspace({
             <section className="space-y-4">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
                 <div>
-                  <h3 className="font-semibold">{dictionary.workflows.steps.title}</h3>
+                  <h3 className="text-heading-4">{dictionary.workflows.steps.title}</h3>
                   <p className="text-body text-muted-foreground">{dictionary.workflows.steps.subtitle}</p>
                 </div>
                 <div className="flex gap-2">
@@ -569,10 +569,10 @@ export function WorkflowWorkspace({
                                 : <Tag className="size-4" />}
                           </div>
                           <div className="min-w-0 flex-1">
-                            <p className="text-meta font-semibold uppercase tracking-wide text-muted-foreground">
+                            <p className="text-label font-semibold text-muted-foreground">
                               {dictionary.workflows.steps.step(index + 1)}
                             </p>
-                            <p className="font-semibold">{dictionary.workflows.steps.types[node.type]}</p>
+                            <p className="text-title">{dictionary.workflows.steps.types[node.type]}</p>
                           </div>
                           <Button
                             type="button"
@@ -702,7 +702,7 @@ export function WorkflowWorkspace({
                 <Separator />
                 <section className="space-y-4">
                   <div>
-                    <h3 className="font-semibold">{dictionary.workflows.runs.title}</h3>
+                    <h3 className="text-heading-4">{dictionary.workflows.runs.title}</h3>
                     <p className="text-body text-muted-foreground">{dictionary.workflows.runs.subtitle}</p>
                   </div>
                   {runsLoadState === "pending" ? (
@@ -734,7 +734,7 @@ export function WorkflowWorkspace({
                           {runs.map((run) => (
                             <tr key={run.id}>
                               <td className="px-4 py-3">
-                                <p className="font-semibold">{run.contactName || run.contactEmail || "—"}</p>
+                                <p className="text-body font-semibold">{run.contactName || run.contactEmail || "—"}</p>
                                 {run.contactName && run.contactEmail ? (
                                   <p className="text-meta text-muted-foreground">{run.contactEmail}</p>
                                 ) : null}
@@ -744,10 +744,10 @@ export function WorkflowWorkspace({
                                   {dictionary.workflows.runs.statuses[run.status]}
                                 </Badge>
                               </td>
-                              <td className="px-4 py-3">
+                              <td className="px-4 py-3 text-data">
                                 {run.currentStep === null ? "—" : run.currentStep + 1}
                               </td>
-                              <td className="px-4 py-3">{formatDateTime(run.nextRunAt, dictionary.locale)}</td>
+                              <td className="px-4 py-3 text-data">{formatDateTime(run.nextRunAt, dictionary.locale)}</td>
                             </tr>
                           ))}
                         </tbody>

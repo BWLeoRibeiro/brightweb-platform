@@ -4,7 +4,7 @@ import { cn } from "../lib/utils";
 
 export const dashboardCardTitleClassName = "text-title text-foreground";
 export const dashboardLabelClassName = "text-label text-muted-foreground";
-export const dashboardMonoTabularClassName = "font-mono tabular-nums";
+export const dashboardMonoTabularClassName = "text-data";
 
 const dashboardActionClassName = "inline-flex shrink-0 items-center gap-1.5 rounded-full border border-[color:var(--foreground-accent-link)]/40 bg-[color:var(--surface-button-brand)]/10 px-3.5 py-1.5 font-[inherit] text-meta font-semibold text-[color:var(--foreground-accent-link)] transition hover:border-[color:var(--surface-button-brand)] hover:bg-[color:var(--surface-button-brand)] hover:text-[color:var(--accent-foreground)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-current [&_svg]:h-3.5 [&_svg]:w-3.5";
 

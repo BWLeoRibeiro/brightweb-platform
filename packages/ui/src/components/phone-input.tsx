@@ -171,7 +171,7 @@ export function PhoneInput({ value, onChange, defaultCountry = "pt", disabled = 
                 )}
               >
                 <span className="text-body leading-none">{flagEmoji(candidate.iso2)}</span>
-                <span className="flex-1 truncate text-label normal-case tracking-normal text-foreground">{candidate.name}</span>
+                <span className="flex-1 truncate text-meta text-foreground">{candidate.name}</span>
                 <span className="shrink-0 text-micro text-foreground-muted-accessible">+{candidate.dialCode}</span>
               </button>
             ))}

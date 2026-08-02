@@ -119,8 +119,8 @@ function AddResultRow({ member, onAdd }: { member: ProjectMemberOption; onAdd: (
 function SectionHeading({ title, count }: { title: string; count?: number }) {
   return (
     <div className="flex items-baseline gap-2 px-0.5">
-      <span className="text-meta font-semibold uppercase tracking-wide text-foreground/70">{title}</span>
-      {typeof count === "number" ? <span className="text-label text-[length:var(--text-label-relaxed)] text-foreground/45">{count}</span> : null}
+      <span className="text-label font-semibold text-foreground/70">{title}</span>
+      {typeof count === "number" ? <span className="text-data text-meta font-semibold leading-none text-foreground/45">{count}</span> : null}
     </div>
   );
 }

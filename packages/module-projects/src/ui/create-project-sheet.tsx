@@ -446,7 +446,7 @@ export function CreateProjectSheet({ organizations, initialOpen = false }: Creat
                         type="button"
                         variant="outline"
                         size="sm"
-                        className="h-9 shrink-0 rounded-lg px-2 text-label"
+                        className="h-9 shrink-0 rounded-lg px-2"
                         onClick={() => organizationCreation.setOrganizationSheetOpen(true)}
                       >
                         <Plus className="mr-1 h-3 w-3" />
@@ -746,7 +746,7 @@ export function CreateProjectSheet({ organizations, initialOpen = false }: Creat
                           ))}
                         </div>
                       )}
-                      <p className="text-label text-foreground/55">
+                      <p className="text-meta text-foreground/55">
                         {dictionary.projectCreate.primaryContactHint}
                       </p>
                   </SheetSection>

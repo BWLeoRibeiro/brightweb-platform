@@ -60,32 +60,34 @@ export function AdminToolbarControls({ dictionary = defaultAdminUiDictionary }: 
 
       <Popover open={open} onOpenChange={(next) => next ? begin() : setOpen(false)}>
         <PopoverTrigger asChild>
-          <button
+          <Button
             type="button"
+            variant="outline"
             disabled={!filtersReady}
-            className="inline-flex h-9 cursor-pointer items-center gap-2 whitespace-nowrap rounded-[var(--radius-control)] border border-[color:var(--hairline-strong)] bg-[color:var(--elevate-1)] px-3 text-body text-[length:var(--text-ui-action)] font-extrabold text-[color:var(--foreground)] transition-colors hover:border-[color:var(--border-strong)] hover:bg-[color:var(--surface-hover)] disabled:cursor-not-allowed disabled:opacity-60"
           >
-            <Filter className="size-[var(--toolbar-icon-size)] text-[color:var(--muted-foreground)]" aria-hidden />
+            <Filter data-icon="inline-start" className="text-[color:var(--muted-foreground)]" aria-hidden />
             {dictionary.toolbar.filters}
             {roleFilter !== "all" ? (
-              <span className="inline-flex size-5 items-center justify-center rounded-full bg-accent text-micro text-accent-foreground">1</span>
+              <span className="text-data-sm inline-flex size-5 items-center justify-center rounded-full bg-accent text-accent-foreground">1</span>
             ) : null}
-          </button>
+          </Button>
         </PopoverTrigger>
         <PopoverContent align="end" collisionPadding={12} className="w-[min(var(--toolbar-popover-width),calc(100vw-2rem))] rounded-[var(--radius-toolbar-popover)] border-[color:var(--hairline)] bg-[color:var(--popover)] p-4 shadow-[var(--shadow-toolbar-popover)]">
           <div className="mb-3 flex items-center justify-between">
             <span className="text-body text-[length:var(--text-ui-action)] font-extrabold text-[color:var(--foreground)]">
               {dictionary.toolbar.filters}
             </span>
-            <button
+            <Button
               type="button"
-              className="cursor-pointer p-0 text-meta font-bold text-[color:var(--muted-foreground)] hover:text-[color:var(--accent)]"
+              variant="link"
+              size="link"
+              className="text-meta text-[color:var(--muted-foreground)]"
               onClick={() => setDraftRole("all")}
             >
               {dictionary.toolbar.clear}
-            </button>
+            </Button>
           </div>
-          <span className="mb-2 block text-micro font-extrabold uppercase tracking-[var(--type-tracking-100)] text-[color:var(--muted-foreground)]">
+          <span className="mb-2 block text-label text-[color:var(--muted-foreground)]">
             {dictionary.toolbar.role}
           </span>
           <div className="flex flex-wrap gap-2">
@@ -107,7 +109,7 @@ export function AdminToolbarControls({ dictionary = defaultAdminUiDictionary }: 
           <div className="mt-4">
             <Button
               type="button"
-              className="h-9 w-full rounded-[var(--radius-control)] bg-[color:var(--accent)] text-body text-[length:var(--text-ui-action)] font-extrabold text-[color:var(--accent-foreground)]"
+              className="w-full"
               onClick={() => {
                 setRoleFilter(draftRole);
                 dispatchShellAction(ADMIN_EVENTS.setRoleFilter, { role: draftRole });

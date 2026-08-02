@@ -138,7 +138,7 @@ export function TopicWorkspace({
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <p className="marketing-kicker">{dictionary.topics.eyebrow}</p>
-          <h2 className="mt-1 text-title" id="marketing-topics-title">{dictionary.topics.title}</h2>
+          <h2 className="mt-1 text-heading-3" id="marketing-topics-title">{dictionary.topics.title}</h2>
           <p className="mt-1 max-w-[42rem] text-body text-muted-foreground">{dictionary.topics.subtitle}</p>
         </div>
         <Button onClick={beginCreate}>

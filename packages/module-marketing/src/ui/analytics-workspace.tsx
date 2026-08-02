@@ -78,7 +78,7 @@ export function CampaignAnalyticsPanel({
       <div className="grid grid-cols-2 overflow-hidden rounded-xl border md:grid-cols-4">
         {values.map(([label, value]) => (
           <StatTile className="border-b border-r p-4 last:border-r-0 md:border-b-0" key={label} label={label}>
-            <StatValue>{value}</StatValue>
+            <StatValue className="text-data">{value}</StatValue>
           </StatTile>
         ))}
       </div>
@@ -215,18 +215,18 @@ export function AnalyticsWorkspace({
                   {rows.map(({ campaign, analytics }) => (
                     <tr className="transition-colors hover:bg-muted/40" key={campaign.id}>
                       <td className="px-6 py-4">
-                        <p className="font-semibold">{campaign.name}</p>
+                        <p className="text-body font-semibold">{campaign.name}</p>
                         <p className="mt-0.5 max-w-64 truncate text-meta text-muted-foreground">
                           {campaign.subject}
                         </p>
                       </td>
-                      <td className="px-4 py-4 tabular-nums">
+                      <td className="px-4 py-4 text-data">
                         {formatRate(deliveryRate(analytics), dictionary.locale)}
                       </td>
-                      <td className="px-4 py-4 tabular-nums">
+                      <td className="px-4 py-4 text-data">
                         {formatRate(analytics.openRate, dictionary.locale)}
                       </td>
-                      <td className="px-4 py-4 tabular-nums">
+                      <td className="px-4 py-4 text-data">
                         {formatRate(analytics.clickRate, dictionary.locale)}
                       </td>
                       <td className="px-4 py-4">

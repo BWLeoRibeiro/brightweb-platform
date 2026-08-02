@@ -249,16 +249,16 @@ export function SegmentWorkspace({
                       <Filter />
                     </span>
                     <span className="min-w-0">
-                      <strong>{segment.name}</strong>
+                      <strong className="text-title">{segment.name}</strong>
                       <small>{segment.description || dictionary.segments.anyTopicHint}</small>
                     </span>
                   </span>
-                  <span className="marketing-row-topic">
+                  <span className="marketing-row-topic text-data">
                     {segment.rule.topicIds?.length
                       ? dictionary.segments.topicCount(segment.rule.topicIds.length)
                       : dictionary.segments.engagementTypes.any}
                   </span>
-                  <span className="marketing-row-date">
+                  <span className="marketing-row-date text-data">
                     {new Intl.DateTimeFormat(dictionary.locale).format(
                       new Date(segment.updatedAt),
                     )}
@@ -445,7 +445,7 @@ export function SegmentWorkspace({
                         : `${preview.count} ${dictionary.segments.previewCount}`}
                   </p>
                 </div>
-                <Badge variant="outline">
+                <Badge variant="outline" className="text-data-sm">
                   <Users aria-hidden="true" className="mr-1 size-3.5" />
                   {(previewLoadState === "pending" || previewLoadState === "rejected") && !previewHasData ? "—" : preview.count}
                 </Badge>
