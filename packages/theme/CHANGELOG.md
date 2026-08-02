@@ -1,5 +1,12 @@
 # @brightweblabs/theme
 
+## 0.7.3
+
+### Patch Changes
+
+- 05e0902: Add semantic KPI and structured-data typography roles, then align headings,
+  labels, metadata, controls, and numeric values with their intended shared roles.
+
 ## 0.7.2
 
 ### Patch Changes

@@ -1,5 +1,16 @@
 # @brightweblabs/app-shell
 
+## 0.11.1
+
+### Patch Changes
+
+- 05e0902: Standardize platform actions on the flat Projects button treatment and migrate shell and module toolbars to the shared Button primitive.
+- 05e0902: Add semantic KPI and structured-data typography roles, then align headings,
+  labels, metadata, controls, and numeric values with their intended shared roles.
+- Updated dependencies [05e0902]
+- Updated dependencies [05e0902]
+  - @brightweblabs/ui@1.4.5
+
 ## 0.11.0
 
 ### Minor Changes
