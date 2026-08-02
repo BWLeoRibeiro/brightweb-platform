@@ -108,9 +108,11 @@ test("CRM partial initial data resolves supplied empty resources and keeps only 
 
 test("CRM retained summary content stays visible during refresh", () => {
   const organization = { id: "org-1", name: "Analytical Engines" };
+  const otherOrganization = { id: "org-2", name: "Difference Engines" };
+  const olderTimelineEntry = { ...timeline[0], id: "log-2", reason: "Older activity", changed_at: "2026-07-17T14:30:00.000Z" };
   const html = renderToStaticMarkup(h(CrmDashboardSidebar, {
-    timelineEntries: timeline,
-    organizations: [organization],
+    timelineEntries: [...timeline, olderTimelineEntry],
+    organizations: [organization, otherOrganization],
     contactsByOrganization: new Map([[organization.id, 1]]),
     isRefreshing: true,
     isLoadingOrganizations: true,
@@ -120,6 +122,10 @@ test("CRM retained summary content stays visible during refresh", () => {
   }));
   assert.match(html, /New enquiry/);
   assert.match(html, /Analytical Engines/);
+  assert.match(html, /aria-label="2 Timeline"/);
+  assert.match(html, /aria-label="2 Organizações"/);
+  assert.doesNotMatch(html, /Older activity/);
+  assert.doesNotMatch(html, /Difference Engines/);
   assert.doesNotMatch(html, new RegExp(defaultCrmUiDictionary.timeline.emptyHint));
   assert.doesNotMatch(html, new RegExp(defaultCrmUiDictionary.organizations.emptyTitle));
 
