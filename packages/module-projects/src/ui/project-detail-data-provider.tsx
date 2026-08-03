@@ -214,6 +214,7 @@ function parseProjectDashboardData(value: unknown): ProjectDashboardData | null 
     tasks: value.tasks,
     links: value.links,
     activity: value.activity,
+    ...(isNumber(value.activityTotal) ? { activityTotal: value.activityTotal } : {}),
   };
 }
 

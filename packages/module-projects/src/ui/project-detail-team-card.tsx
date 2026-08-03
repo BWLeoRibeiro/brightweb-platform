@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { ProjectSurfaceCard, ProjectSurfaceSectionHeader } from "./shared/project-surface-card";
 import { ContactActionButtons } from "./shared/contact-action-buttons";
 import { ProjectOwnerAvatar } from "./shared/project-owner-avatar";
@@ -10,6 +11,14 @@ import { ProjectMembersEditSheetLazy } from "./project-lazy-panels";
 import { useProjectDetailData } from "./project-detail-data-provider";
 import { memberRoleToColorFallback, type AvatarRoleColor, type RoleColor } from "./shared/role-colors";
 import { useProjectsUiDictionary } from "./context";
+import { AppSheetHeader } from "./shared/app-sheet";
+import { sheetBodyClassName, sheetShellClassName } from "./constants";
+import { Sheet, SheetContent } from "@brightweblabs/ui";
+import {
+  CompactCollectionHeaderActions,
+  compactCollectionRevealClassName,
+} from "./shared/compact-collection";
+import { getCompactCollectionPreview } from "./shared/compact-collection-model";
 
 type ProjectDetailTeamCardProps = {
   canManageMembers: boolean;
@@ -23,6 +32,7 @@ const CONTACT_ICON_LINK_CLASS =
 export function ProjectDetailTeamCard({ canManageMembers, memberColorRoles }: ProjectDetailTeamCardProps) {
   const { project, members } = useProjectDetailData();
   const dictionary = useProjectsUiDictionary();
+  const [isAllTeamOpen, setAllTeamOpen] = useState(false);
   const colorRoleFor = (profileId: string, role: string): RoleColor => {
     const resolved = (memberColorRoles[profileId] ?? memberRoleToColorFallback(role)) as AvatarRoleColor;
     return resolved === "accent" ? "team" : resolved;
@@ -36,71 +46,87 @@ export function ProjectDetailTeamCard({ canManageMembers, memberColorRoles }: Pr
     return a.label.localeCompare(b.label, "pt-PT", { sensitivity: "base" });
   });
 
+  const renderMembers = (items: typeof sortedMembers) => items.map((member) => {
+    const contactCount = (member.email ? 1 : 0) + (member.phone ? 1 : 0);
+    const padHoverClass =
+      contactCount >= 2
+        ? "group-focus-within:pr-[5.25rem] group-hover:pr-[5.25rem]"
+        : contactCount === 1
+          ? "group-focus-within:pr-[2.75rem] group-hover:pr-[2.75rem]"
+          : "";
+    const contactText = member.email ?? member.phone;
+    const colorRole = colorRoleFor(member.profileId, member.role);
+
+    return (
+      <li
+        key={member.id}
+        className="group relative flex min-h-[3.25rem] items-center gap-3 border-t border-[color:var(--border)] px-3 py-1.5 transition-colors first:border-t-0 hover:bg-[color:var(--project-ui-color-09)]"
+      >
+        <ProjectOwnerAvatar label={member.label} size="md" roleColor={colorRole} />
+        <div className={`min-w-0 flex-1 py-0.5 ${padHoverClass}`}>
+          <div className="flex min-w-0 items-center gap-2">
+            <p className="text-body text-foreground min-w-0 flex-1 truncate font-semibold leading-snug">{member.label}</p>
+            <MemberRoleBadge role={member.role} colorRole={colorRole} />
+          </div>
+          {contactText ? (
+            <div className="text-meta text-muted-foreground mt-0.5 truncate">{contactText}</div>
+          ) : null}
+        </div>
+        {contactCount > 0 ? (
+          <div className="pointer-events-none absolute right-3 top-1/2 z-10 flex -translate-y-1/2 items-center gap-0.5 opacity-0 transition-opacity duration-200 motion-reduce:transition-none group-focus-within:opacity-100 group-hover:opacity-100">
+            <ContactActionButtons
+              label={member.label}
+              email={member.email}
+              phone={member.phone}
+              projectName={project.name}
+              projectReference={project.code ?? project.id}
+              linkClassName={CONTACT_ICON_LINK_CLASS}
+              iconClassName="size-4"
+            />
+          </div>
+        ) : null}
+      </li>
+    );
+  });
+
   return (
     <ProjectSurfaceCard className="self-start">
       <ProjectSurfaceSectionHeader
         icon={Users}
         title={dictionary.detail.allocatedTeam}
         subtitle={dictionary.detail.allocatedTeamSubtitle}
-        rightSlot={
-          canManageMembers ? (
+        rightSlot={<CompactCollectionHeaderActions total={sortedMembers.length} collectionLabel={dictionary.detail.allocatedTeam} expandLabel={dictionary.team.viewAll} onExpand={() => setAllTeamOpen(true)}>
+          {canManageMembers ? (
             <ProjectMembersEditSheetLazy
               projectId={project.id}
               initialMembers={members.map((member) => ({ profileId: member.profileId, role: member.role }))}
             />
-          ) : null
-        }
+          ) : null}
+        </CompactCollectionHeaderActions>}
       />
       {sortedMembers.length === 0 ? (
         <div className="mt-4">
           <SectionEmptyState message={dictionary.detail.noAllocatedMembers} icon={Users} />
         </div>
       ) : (
-        <ul className="portal-scroll mt-4 h-[17.75rem] rounded-[var(--radius-card)] border border-[color:var(--border)]">
-          {sortedMembers.map((member) => {
-            const contactCount = (member.email ? 1 : 0) + (member.phone ? 1 : 0);
-            const padHoverClass =
-              contactCount >= 2
-                ? "group-focus-within:pr-[5.25rem] group-hover:pr-[5.25rem]"
-                : contactCount === 1
-                  ? "group-focus-within:pr-[2.75rem] group-hover:pr-[2.75rem]"
-                  : "";
-            const contactText = member.email ?? member.phone;
-            const colorRole = colorRoleFor(member.profileId, member.role);
-
-            return (
-              <li
-                key={member.id}
-                className="group relative flex min-h-[3.25rem] items-center gap-3 border-t border-[color:var(--border)] px-3 py-1.5 transition-colors first:border-t-0 hover:bg-[color:var(--project-ui-color-09)]"
-              >
-                <ProjectOwnerAvatar label={member.label} size="md" roleColor={colorRole} />
-                <div className={`min-w-0 flex-1 py-0.5 transition-[padding] duration-200 ${padHoverClass}`}>
-                  <div className="flex min-w-0 items-center gap-2">
-                    <p className="text-body text-foreground min-w-0 flex-1 truncate font-semibold leading-snug">{member.label}</p>
-                    <MemberRoleBadge role={member.role} colorRole={colorRole} />
-                  </div>
-                  {contactText ? (
-                    <div className="text-meta text-muted-foreground mt-0.5 truncate">{contactText}</div>
-                  ) : null}
-                </div>
-                {contactCount > 0 ? (
-                  <div className="pointer-events-none absolute right-3 top-1/2 z-10 flex -translate-y-1/2 items-center gap-0.5 opacity-0 transition-opacity duration-200 group-focus-within:opacity-100 group-hover:opacity-100">
-                    <ContactActionButtons
-                      label={member.label}
-                      email={member.email}
-                      phone={member.phone}
-                      projectName={project.name}
-                      projectReference={project.code ?? project.id}
-                      linkClassName={CONTACT_ICON_LINK_CLASS}
-                      iconClassName="size-4"
-                    />
-                  </div>
-                ) : null}
-              </li>
-            );
-          })}
+        <ul className={`${compactCollectionRevealClassName} mt-4 overflow-hidden rounded-[var(--radius-card)] border border-[color:var(--border)]`}>
+          {renderMembers(getCompactCollectionPreview(sortedMembers))}
         </ul>
       )}
+      <Sheet open={isAllTeamOpen} onOpenChange={setAllTeamOpen}>
+        <SheetContent className={sheetShellClassName}>
+          <AppSheetHeader
+            icon={Users}
+            title={<>{dictionary.detail.allocatedTeam}</>}
+            description={<>{dictionary.team.fullDescription}</>}
+          />
+          <div className={sheetBodyClassName}>
+            <ul className="overflow-hidden rounded-[var(--radius-card)] border border-[color:var(--border)]">
+              {renderMembers(sortedMembers)}
+            </ul>
+          </div>
+        </SheetContent>
+      </Sheet>
     </ProjectSurfaceCard>
   );
 }

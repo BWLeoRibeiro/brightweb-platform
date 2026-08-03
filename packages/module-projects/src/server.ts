@@ -13,6 +13,7 @@ import {
   type ProjectLink,
   type ProjectListItem,
   type ProjectActivityItem,
+  type ProjectActivityPage,
   type ProjectMilestone,
   type ProjectMember,
   type ProjectMemberColor,
@@ -774,7 +775,7 @@ export async function getProjectDashboard(
   projectId: string,
   options?: { clientVisibleOnly?: boolean },
 ): Promise<ProjectDashboardData> {
-  const [data, tasks, milestones, links, members] = await Promise.all([
+  const [data, tasks, milestones, links, members, activity] = await Promise.all([
     getProjectDashboardProjectRow(supabase, projectId),
     listProjectTasks(supabase, projectId),
     listProjectMilestones(supabase, projectId),
@@ -782,6 +783,9 @@ export async function getProjectDashboard(
       clientVisibleOnly: options?.clientVisibleOnly,
     }),
     listProjectMembers(supabase, projectId),
+    options?.clientVisibleOnly
+      ? Promise.resolve({ items: [], page: 1, pageSize: 3, total: 0, totalPages: 1 })
+      : queryProjectActivity(supabase, projectId, { page: 1, pageSize: 3 }),
   ]);
 
   const projectRecord = toRecord(data);
@@ -802,7 +806,8 @@ export async function getProjectDashboard(
     milestones,
     tasks,
     links,
-    activity: [],
+    activity: activity.items,
+    activityTotal: activity.total,
   };
 }
 
@@ -815,43 +820,10 @@ type ActivityEventRow = {
   actor_profile_id: string | null;
 };
 
-export async function listProjectActivity(
+async function hydrateProjectActivityRows(
   supabase: SupabaseClient,
-  projectId: string,
+  rows: ActivityEventRow[],
 ): Promise<ProjectActivityItem[]> {
-  const [payloadProjectEvents, directProjectEvents] = await Promise.all([
-    supabase
-      .from("app_activity_events")
-      .select("id, created_at, event_type, summary, payload, actor_profile_id")
-      .eq("domain", "projects")
-      .filter("payload->>project_id", "eq", projectId)
-      .order("created_at", { ascending: false })
-      .limit(50),
-    supabase
-      .from("app_activity_events")
-      .select("id, created_at, event_type, summary, payload, actor_profile_id")
-      .eq("domain", "projects")
-      .eq("entity_table", "projects")
-      .eq("entity_id", projectId)
-      .order("created_at", { ascending: false })
-      .limit(50),
-  ]);
-
-  if (payloadProjectEvents.error) throw new Error(payloadProjectEvents.error.message);
-  if (directProjectEvents.error) throw new Error(directProjectEvents.error.message);
-
-  const rowsById = new Map<string, ActivityEventRow>();
-  for (const row of [
-    ...((payloadProjectEvents.data ?? []) as ActivityEventRow[]),
-    ...((directProjectEvents.data ?? []) as ActivityEventRow[]),
-  ]) {
-    rowsById.set(String(row.id), row);
-  }
-
-  const rows = Array.from(rowsById.values())
-    .sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)))
-    .slice(0, 50);
-
   // Every profile referenced anywhere — the actor plus the member profiles named
   // in member_*/project_members_synced payloads — resolved in one query so the
   // feed can speak people by name instead of leaving raw ids or "Sistema".
@@ -917,6 +889,82 @@ export async function listProjectActivity(
       payload: enrichedPayload,
     };
   });
+}
+
+export async function queryProjectActivity(
+  supabase: SupabaseClient,
+  projectId: string,
+  query: { page?: number; pageSize?: number } = {},
+): Promise<ProjectActivityPage> {
+  const page = Math.max(1, Math.floor(query.page ?? 1));
+  const pageSize = Math.min(100, Math.max(1, Math.floor(query.pageSize ?? 50)));
+  const from = (page - 1) * pageSize;
+  const to = from + pageSize - 1;
+  const columns = "id, created_at, event_type, summary, payload, actor_profile_id";
+
+  // Activity can identify a project through the canonical payload or the legacy
+  // direct entity columns. Query both safely, then subtract their exact overlap.
+  const [payloadProjectEvents, directProjectEvents, overlappingEvents] = await Promise.all([
+    supabase
+      .from("app_activity_events")
+      .select(columns, { count: "exact" })
+      .eq("domain", "projects")
+      .filter("payload->>project_id", "eq", projectId)
+      .order("created_at", { ascending: false })
+      .range(0, to),
+    supabase
+      .from("app_activity_events")
+      .select(columns, { count: "exact" })
+      .eq("domain", "projects")
+      .eq("entity_table", "projects")
+      .eq("entity_id", projectId)
+      .order("created_at", { ascending: false })
+      .range(0, to),
+    supabase
+      .from("app_activity_events")
+      .select("id", { count: "exact", head: true })
+      .eq("domain", "projects")
+      .filter("payload->>project_id", "eq", projectId)
+      .eq("entity_table", "projects")
+      .eq("entity_id", projectId),
+  ]);
+
+  if (payloadProjectEvents.error) throw new Error(payloadProjectEvents.error.message);
+  if (directProjectEvents.error) throw new Error(directProjectEvents.error.message);
+  if (overlappingEvents.error) throw new Error(overlappingEvents.error.message);
+
+  const rowsById = new Map<string, ActivityEventRow>();
+  for (const row of [
+    ...((payloadProjectEvents.data ?? []) as ActivityEventRow[]),
+    ...((directProjectEvents.data ?? []) as ActivityEventRow[]),
+  ]) {
+    rowsById.set(String(row.id), row);
+  }
+
+  const rows = Array.from(rowsById.values())
+    .sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)))
+    .slice(from, to + 1);
+  const total = Math.max(
+    0,
+    (payloadProjectEvents.count ?? 0)
+      + (directProjectEvents.count ?? 0)
+      - (overlappingEvents.count ?? 0),
+  );
+
+  return {
+    items: await hydrateProjectActivityRows(supabase, rows),
+    page,
+    pageSize,
+    total,
+    totalPages: Math.max(1, Math.ceil(total / pageSize)),
+  };
+}
+
+export async function listProjectActivity(
+  supabase: SupabaseClient,
+  projectId: string,
+): Promise<ProjectActivityItem[]> {
+  return (await queryProjectActivity(supabase, projectId)).items;
 }
 
 export async function createProject(supabase: SupabaseClient, input: CreateProjectInput) {

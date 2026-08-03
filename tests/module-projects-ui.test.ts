@@ -8,6 +8,7 @@ import type { ProjectDashboardData, ProjectLink } from "../packages/module-proje
 import { listAccountProjects } from "../packages/module-projects/src/account-projects.ts";
 import {
   createProjectsAssignableProfilesGetHandler,
+  createProjectsActivityGetHandler,
   createProjectsDeleteHandler,
   createProjectsLinksDeleteHandler,
   createProjectsLinksPatchHandler,
@@ -29,6 +30,68 @@ import { resolveProjectsNavigation } from "../packages/module-projects/src/ui/na
 import { parseProjectBoardApiError, parseTaskListPayload } from "../packages/module-projects/src/ui/project-board-response-parser.ts";
 import { parseProjectDashboardPayload, parseProjectLinksPayload, projectDetailDataReducer } from "../packages/module-projects/src/ui/project-detail-data-provider.tsx";
 import { createProjectsModuleRegistration } from "../packages/module-projects/src/registration.ts";
+import {
+  getCompactCollectionPreview,
+  hasCompactCollectionOverflow,
+} from "../packages/module-projects/src/ui/shared/compact-collection-model.ts";
+
+test("compact collection previews preserve the 0/1/2/3 boundary and gate overflow at 4+", () => {
+  for (const count of [0, 1, 2, 3, 4, 9]) {
+    const items = Array.from({ length: count }, (_, index) => index);
+    assert.deepEqual(getCompactCollectionPreview(items), items.slice(0, 3));
+    assert.equal(hasCompactCollectionOverflow(count), count >= 4);
+  }
+});
+
+test("Projects compact cards use natural three-row previews, viewer expansion, and reduced-motion reveals", () => {
+  const uiRoot = join(process.cwd(), "packages/module-projects/src/ui");
+  const cardSources = [
+    "project-recent-activity.tsx",
+    "project-detail-team-card.tsx",
+    "project-links-card.tsx",
+  ].map((file) => readFileSync(join(uiRoot, file), "utf8"));
+  const sharedSource = readFileSync(join(uiRoot, "shared/compact-collection.tsx"), "utf8");
+
+  for (const source of cardSources) {
+    assert.match(source, /getCompactCollectionPreview/);
+    assert.match(source, /CompactCollectionHeaderActions/);
+    assert.doesNotMatch(source, /h-\[17\.75rem\]|transition-\[padding\]/);
+  }
+  assert.match(sharedSource, /motion-safe:animate-in[\s\S]*motion-safe:fade-in-0[\s\S]*motion-safe:slide-in-from-bottom-1[\s\S]*motion-safe:duration-200/);
+  assert.match(sharedSource, /CompactCollectionContentSkeleton[\s\S]*min-h-\[3\.25rem\]/);
+});
+
+test("Projects activity endpoint keeps the legacy array response and exposes bounded pagination", async () => {
+  const pageCalls: unknown[] = [];
+  let legacyCalls = 0;
+  const handler = createProjectsActivityGetHandler({
+    getAccess: async () => ({ ok: true, supabase: {} }),
+    listActivity: async () => {
+      legacyCalls += 1;
+      return [];
+    },
+    queryActivity: async (_supabase: unknown, projectId: string, query: unknown) => {
+      pageCalls.push({ projectId, query });
+      return { items: [], page: 2, pageSize: 3, total: 7, totalPages: 3 };
+    },
+  } as never);
+
+  const pagedResponse = await handler(
+    new Request("https://example.test/api/projects/project-1/activity?page=2&pageSize=3"),
+    { params: Promise.resolve({ id: "project-1" }) },
+  );
+  assert.equal(pagedResponse.status, 200);
+  assert.deepEqual(pageCalls, [{ projectId: "project-1", query: { page: 2, pageSize: 3 } }]);
+  assert.deepEqual(await pagedResponse.json(), { items: [], page: 2, pageSize: 3, total: 7, totalPages: 3 });
+
+  const legacyResponse = await handler(
+    new Request("https://example.test/api/projects/project-1/activity"),
+    { params: Promise.resolve({ id: "project-1" }) },
+  );
+  assert.equal(legacyResponse.status, 200);
+  assert.equal(legacyCalls, 1);
+  assert.deepEqual(await legacyResponse.json(), []);
+});
 
 test("Projects portfolio cancels stale requests and debounces only search", () => {
   const controller = readFileSync(join(process.cwd(), "packages/module-projects/src/ui/projects-portfolio/use-projects-portfolio-controller.ts"), "utf8");

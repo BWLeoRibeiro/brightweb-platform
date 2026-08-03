@@ -33,6 +33,12 @@ export function createProjectsUiClient(basePath = "/api/projects", fetcher: type
     getPortfolioStats: () => request("/stats"),
     getProjectDashboard: (id) => request(`/${id}`),
     listProjectActivity: (id) => request(`/${id}/activity`),
+    queryProjectActivity: (id, params = {}) => {
+      const query = new URLSearchParams();
+      if (params.page) query.set("page", String(params.page));
+      if (params.pageSize) query.set("pageSize", String(params.pageSize));
+      return request(`/${id}/activity?${query.toString()}`);
+    },
     listOrganizations: async (requestOptions = {}) => json<Array<{ id: string; name: string }>>(await observedFetch(
       fetcher,
       `${root}/organizations`,

@@ -3,7 +3,7 @@ import type { UiRequestMetricObserver } from "@brightweblabs/infra/request-obser
 import type { ListProjectsParams, ProjectsPortfolioStats } from "../data";
 import type {
   CreateProjectInput, CreateProjectLinkInput, CreateProjectMilestoneInput,
-  CreateProjectOrganizationInput, CreateProjectTaskInput, ProjectActivityItem,
+  CreateProjectOrganizationInput, CreateProjectTaskInput, ProjectActivityItem, ProjectActivityPage,
   ProjectAssignableProfile, ProjectDashboardData, ProjectLink, ProjectMemberInput,
   UpdateProjectInput, UpdateProjectLinkInput, UpdateProjectMilestoneInput, UpdateProjectTaskInput,
 } from "../types";
@@ -31,6 +31,7 @@ export type ProjectsUiClient = {
   getPortfolioStats: () => Promise<ProjectsPortfolioStats>;
   getProjectDashboard: (projectId: string) => Promise<ProjectDashboardData>;
   listProjectActivity: (projectId: string) => Promise<ProjectActivityItem[]>;
+  queryProjectActivity?: (projectId: string, params?: { page?: number; pageSize?: number }) => Promise<ProjectActivityPage>;
   listOrganizations: (options?: { signal?: AbortSignal }) => Promise<Array<{ id: string; name: string }>>;
   listAssignableProfiles: (projectId: string) => Promise<ProjectAssignableProfile[]>;
   createOrganization: (input: CreateProjectOrganizationInput) => Promise<{ id: string; name: string }>;

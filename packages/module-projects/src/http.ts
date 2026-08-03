@@ -37,6 +37,7 @@ import {
   deleteProjectTask,
   getProjectDashboard,
   listProjectActivity,
+  queryProjectActivity,
   listProjectAssignableProfiles,
   syncProjectMembers,
   updateProject,
@@ -93,6 +94,7 @@ export type ProjectsHttpDependencies = {
   getTasksDashboardData: typeof getTasksDashboardData;
   getDashboard: typeof getProjectDashboard;
   listActivity: typeof listProjectActivity;
+  queryActivity: typeof queryProjectActivity;
   listAssignableProfiles: typeof listProjectAssignableProfiles;
   createOrganization: typeof createProjectOrganization;
   createProject: typeof createProject;
@@ -466,8 +468,15 @@ export function createProjectsDashboardGetHandler(dependencies: ProjectsHttpDepe
 }
 
 export function createProjectsActivityGetHandler(dependencies: ProjectsHttpDependencies) {
-  return withUserAccess(dependencies, "projects.activity", async (access, _request, context) => {
+  return withUserAccess(dependencies, "projects.activity", async (access, request, context) => {
     const { id } = await getRouteParams(context);
+    const url = new URL(request.url);
+    if (url.searchParams.has("page") || url.searchParams.has("pageSize")) {
+      return json(await dependencies.queryActivity(access.supabase as never, id, {
+        page: parsePositiveInt(url.searchParams.get("page"), 1, 10_000),
+        pageSize: parsePositiveInt(url.searchParams.get("pageSize"), 50, 100),
+      }));
+    }
     return json(await dependencies.listActivity(access.supabase as never, id));
   });
 }

@@ -35,6 +35,11 @@ import { Input } from "@brightweblabs/ui";
 import { ProjectSurfaceCard, ProjectSurfaceSectionHeader } from "./shared/project-surface-card";
 import { SectionAddButton } from "./shared/section-icon-button";
 import {
+  CompactCollectionHeaderActions,
+  compactCollectionRevealClassName,
+} from "./shared/compact-collection";
+import { getCompactCollectionPreview } from "./shared/compact-collection-model";
+import {
   Sheet,
   SheetContent,
   SheetFooter,
@@ -140,6 +145,84 @@ function LinkVisibilityPill({ visibility }: { visibility: string }) {
   );
 }
 
+function ProjectLinkRows({
+  links,
+  canManageItems,
+  onEdit,
+}: {
+  links: ProjectLink[];
+  canManageItems: boolean;
+  onEdit: (link: ProjectLink) => void;
+}) {
+  const dictionary = useProjectsUiDictionary();
+  return links.map((link) => {
+    const kindConfig = getLinkKindConfig(link.kind);
+    const hostname = safeGetHostname(link.url);
+    const KindIcon = kindConfig.icon;
+    return (
+      <div
+        key={link.id}
+        className="group relative flex min-h-[3.25rem] items-center border-t border-[color:var(--border)] transition-colors first:border-t-0 hover:bg-[color:var(--project-ui-color-09)]"
+      >
+        <a
+          href={link.url}
+          target="_blank"
+          rel="noreferrer"
+          aria-label={`${dictionary.actions.open} ${link.label}`}
+          className="flex min-w-0 flex-1 items-center gap-3 px-3 py-1.5"
+        >
+          <div className={cn("flex size-8 shrink-0 items-center justify-center rounded-full", kindConfig.iconBgClass)}>
+            <KindIcon className={cn("size-4", kindConfig.iconClass)} aria-hidden="true" />
+          </div>
+          <div className="min-w-0 flex-1 py-0.5 group-focus-within:pr-[5.25rem] group-hover:pr-[5.25rem]">
+            <div className="flex min-w-0 items-center gap-2">
+              <p className="text-body text-foreground min-w-0 flex-1 truncate font-semibold leading-snug">{link.label}</p>
+              <LinkVisibilityPill visibility={link.visibility} />
+            </div>
+            <div className="text-meta text-muted-foreground mt-0.5 flex min-w-0 items-center gap-x-2">
+              <span className="shrink-0">{kindConfig.label}</span>
+              {hostname ? (
+                <>
+                  <span className="text-foreground/25">·</span>
+                  <span className="truncate">{hostname}</span>
+                </>
+              ) : null}
+            </div>
+          </div>
+        </a>
+        <div className="pointer-events-none absolute right-3 top-1/2 z-10 flex -translate-y-1/2 items-center gap-0.5 opacity-0 transition-opacity duration-200 motion-reduce:transition-none group-focus-within:opacity-100 group-hover:opacity-100">
+          {canManageItems ? (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-sm"
+                  className="pointer-events-auto size-8 rounded-full text-foreground/45 transition-colors hover:bg-[color:var(--muted)] hover:text-foreground motion-reduce:transition-none"
+                  onClick={() => onEdit(link)}
+                >
+                  <PencilLine className="size-4" aria-hidden="true" />
+                  <span className="sr-only">{dictionary.forms.editLink}</span>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="top">{dictionary.forms.editLink}</TooltipContent>
+            </Tooltip>
+          ) : null}
+          <a
+            href={link.url}
+            target="_blank"
+            rel="noreferrer"
+            aria-label={`${dictionary.actions.open} ${link.label}`}
+            className="pointer-events-auto flex size-8 items-center justify-center rounded-full text-foreground/45 transition-colors hover:bg-[color:var(--muted)] hover:text-foreground motion-reduce:transition-none"
+          >
+            <ExternalLink className="size-4" aria-hidden="true" />
+          </a>
+        </div>
+      </div>
+    );
+  });
+}
+
 export function ProjectLinksCard({
   projectId, canCreateItems, canManageItems }: ProjectLinksCardProps) {
   const client = useProjectsUiClient();
@@ -148,6 +231,7 @@ export function ProjectLinksCard({
   const links = useProjectDetailLinks();
   const { applyLinksPayload } = useProjectDetailActions();
   const [editingLink, setEditingLink] = useState<ProjectLink | null>(null);
+  const [isAllLinksOpen, setAllLinksOpen] = useState(false);
   const [isSavingLink, setIsSavingLink] = useState(false);
   const [isDeletingLink, setIsDeletingLink] = useState(false);
   const [isLinkDeleteDialogOpen, setLinkDeleteDialogOpen] = useState(false);
@@ -194,6 +278,7 @@ export function ProjectLinksCard({
   }, [linkEditBaseline, linkKind, linkLabel, linkMode, linkUrl, linkVisibility]);
 
   const openEditLink = (link: ProjectLink) => {
+    setAllLinksOpen(false);
     setLinkMode("view");
     setLinkEditBaseline(null);
     setEditingLink(link);
@@ -283,86 +368,35 @@ export function ProjectLinksCard({
             icon={Link2}
         title={dictionary.links.keyLinks}
             subtitle="Atalhos para recursos importantes"
-            rightSlot={
-              canCreateItems ? (
+            rightSlot={<CompactCollectionHeaderActions total={links.length} collectionLabel={dictionary.links.keyLinks} expandLabel={dictionary.links.viewAll} onExpand={() => setAllLinksOpen(true)}>
+              {canCreateItems ? (
                 <SectionAddButton
-              label={dictionary.links.addLink}
+                  label={dictionary.links.addLink}
                   onClick={() => dispatchProjectsEvent(PROJECTS_EVENTS.openNewLink)}
                 />
               ) : null
-            }
+            }</CompactCollectionHeaderActions>}
           />
-          <div className="portal-scroll mt-4 h-[17.75rem] rounded-[var(--radius-card)] border border-[color:var(--border)]">
+          <div className={`${compactCollectionRevealClassName} mt-4 overflow-hidden rounded-[var(--radius-card)] border border-[color:var(--border)]`}>
             {links.length === 0 ? <LinksEmptyState /> : null}
-            {links.map((link) => {
-              const kindConfig = getLinkKindConfig(link.kind);
-              const hostname = safeGetHostname(link.url);
-              const KindIcon = kindConfig.icon;
-              return (
-                <div
-                  key={link.id}
-                  className="group relative flex min-h-[3.25rem] items-center border-t border-[color:var(--border)] transition-colors first:border-t-0 hover:bg-[color:var(--project-ui-color-09)]"
-                >
-                  {/* The whole row opens the resource. */}
-                  <a
-                    href={link.url}
-                    target="_blank"
-                    rel="noreferrer"
-                    aria-label={`Abrir ${link.label}`}
-                    className="flex min-w-0 flex-1 items-center gap-3 px-3 py-1.5"
-                  >
-                    <div className={cn("flex size-8 shrink-0 items-center justify-center rounded-full", kindConfig.iconBgClass)}>
-                      <KindIcon className={cn("size-4", kindConfig.iconClass)} />
-                    </div>
-                    <div className="min-w-0 flex-1 py-0.5 transition-[padding] duration-200 group-focus-within:pr-[5.25rem] group-hover:pr-[5.25rem]">
-                      <div className="flex min-w-0 items-center gap-2">
-                        <p className="text-body text-foreground min-w-0 flex-1 truncate font-semibold leading-snug">{link.label}</p>
-                        <LinkVisibilityPill visibility={link.visibility} />
-                      </div>
-                      <div className="text-meta text-muted-foreground mt-0.5 flex min-w-0 items-center gap-x-2">
-                        <span className="shrink-0">{kindConfig.label}</span>
-                        {hostname ? (
-                          <>
-                            <span className="text-foreground/25">·</span>
-                            <span className="truncate">{hostname}</span>
-                          </>
-                        ) : null}
-                      </div>
-                    </div>
-                  </a>
-                  <div className="pointer-events-none absolute right-3 top-1/2 z-10 flex -translate-y-1/2 items-center gap-0.5 opacity-0 transition-opacity duration-200 group-focus-within:opacity-100 group-hover:opacity-100">
-                    {canManageItems ? (
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon-sm"
-                            className="pointer-events-auto size-8 rounded-full text-foreground/45 transition hover:bg-[color:var(--muted)] hover:text-foreground"
-                            onClick={() => openEditLink(link)}
-                          >
-                            <PencilLine className="size-4" />
-                            <span className="sr-only">{dictionary.forms.editLink}</span>
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent side="top">{dictionary.forms.editLink}</TooltipContent>
-                      </Tooltip>
-                    ) : null}
-                    <a
-                      href={link.url}
-                      target="_blank"
-                      rel="noreferrer"
-                      aria-label={`Abrir ${link.label}`}
-                      className="pointer-events-auto flex size-8 items-center justify-center rounded-full text-foreground/45 transition hover:bg-[color:var(--muted)] hover:text-foreground"
-                    >
-                      <ExternalLink className="size-4" />
-                    </a>
-                  </div>
-                </div>
-              );
-            })}
+            <ProjectLinkRows links={getCompactCollectionPreview(links)} canManageItems={canManageItems} onEdit={openEditLink} />
           </div>
         </ProjectSurfaceCard>
+
+        <Sheet open={isAllLinksOpen} onOpenChange={setAllLinksOpen}>
+          <SheetContent className={sheetShellClassName}>
+            <AppSheetHeader
+              icon={Link2}
+              title={<>{dictionary.links.fullTitle}</>}
+              description={<>{dictionary.links.fullDescription}</>}
+            />
+            <div className={sheetBodyClassName}>
+              <div className="overflow-hidden rounded-[var(--radius-card)] border border-[color:var(--border)]">
+                <ProjectLinkRows links={links} canManageItems={canManageItems} onEdit={openEditLink} />
+              </div>
+            </div>
+          </SheetContent>
+        </Sheet>
 
         <Sheet
           open={Boolean(editingLink)}

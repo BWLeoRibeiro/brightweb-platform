@@ -95,6 +95,14 @@ export type ProjectActivityItem = {
   payload: Record<string, unknown>;
 };
 
+export type ProjectActivityPage = {
+  items: ProjectActivityItem[];
+  page: number;
+  pageSize: number;
+  total: number;
+  totalPages: number;
+};
+
 export type ProjectDashboardData = {
   project: ProjectListItem;
   members: ProjectMember[];
@@ -102,6 +110,8 @@ export type ProjectDashboardData = {
   tasks: ProjectTask[];
   links: ProjectLink[];
   activity: ProjectActivityItem[];
+  /** Exact total when the dashboard supplied an authoritative activity preview. */
+  activityTotal?: number;
 };
 
 export type CreateProjectInput = {
