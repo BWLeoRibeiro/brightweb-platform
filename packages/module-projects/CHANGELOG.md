@@ -1,5 +1,11 @@
 # @brightweblabs/module-projects
 
+## 0.13.2
+
+### Patch Changes
+
+- ce3a271: Make project detail collections use natural three-item previews with truthful counts, viewer-accessible full sheets, one-row loading states, and paginated server-provided activity data.
+
 ## 0.13.1
 
 ### Patch Changes

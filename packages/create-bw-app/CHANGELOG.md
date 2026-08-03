@@ -1,5 +1,11 @@
 # create-bw-app
 
+## 0.24.3
+
+### Patch Changes
+
+- ce3a271: Make project detail collections use natural three-item previews with truthful counts, viewer-accessible full sheets, one-row loading states, and paginated server-provided activity data.
+
 ## 0.24.2
 
 ### Patch Changes
