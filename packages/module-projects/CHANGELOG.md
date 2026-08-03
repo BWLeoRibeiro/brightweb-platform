@@ -1,5 +1,16 @@
 # @brightweblabs/module-projects
 
+## 0.13.3
+
+### Patch Changes
+
+- 29ae3b0: Preserve semantic button foregrounds when canonical typography classes are merged, pair brand button fills with a dedicated brand foreground token, and migrate the project danger zone from hardcoded Rose colors to shared semantic danger tokens.
+- Updated dependencies [29ae3b0]
+  - @brightweblabs/theme@0.7.4
+  - @brightweblabs/ui@1.4.6
+  - @brightweblabs/app-shell@0.11.2
+  - @brightweblabs/core-auth@0.10.2
+
 ## 0.13.2
 
 ### Patch Changes
