@@ -1,5 +1,11 @@
 # @brightweblabs/module-crm
 
+## 0.14.3
+
+### Patch Changes
+
+- 95e7ae7: Keep CRM sidebar previews stable at one entry with matching loading geometry and visible collection counts.
+
 ## 0.14.2
 
 ### Patch Changes
