@@ -51,6 +51,7 @@ test("Projects compact cards use natural three-row previews, viewer expansion, a
     "project-links-card.tsx",
   ].map((file) => readFileSync(join(uiRoot, file), "utf8"));
   const sharedSource = readFileSync(join(uiRoot, "shared/compact-collection.tsx"), "utf8");
+  const skeletonSource = readFileSync(join(uiRoot, "shared/compact-collection-skeleton.tsx"), "utf8");
 
   for (const source of cardSources) {
     assert.match(source, /getCompactCollectionPreview/);
@@ -58,7 +59,8 @@ test("Projects compact cards use natural three-row previews, viewer expansion, a
     assert.doesNotMatch(source, /h-\[17\.75rem\]|transition-\[padding\]/);
   }
   assert.match(sharedSource, /motion-safe:animate-in[\s\S]*motion-safe:fade-in-0[\s\S]*motion-safe:slide-in-from-bottom-1[\s\S]*motion-safe:duration-200/);
-  assert.match(sharedSource, /CompactCollectionContentSkeleton[\s\S]*min-h-\[3\.25rem\]/);
+  assert.match(sharedSource, /^"use client";/);
+  assert.match(skeletonSource, /CompactCollectionContentSkeleton[\s\S]*min-h-\[3\.25rem\]/);
 });
 
 test("Projects activity endpoint keeps the legacy array response and exposes bounded pagination", async () => {

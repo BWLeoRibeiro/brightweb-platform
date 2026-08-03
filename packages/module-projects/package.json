@@ -25,6 +25,7 @@
     "./server": "./src/server.ts",
     "./types": "./src/types.ts",
     "./ui": "./src/ui/index.ts",
+    "./ui/project-detail-loading": "./src/ui/project-detail-loading.tsx",
     "./tokens.css": "./tokens.css"
   },
   "dependencies": {

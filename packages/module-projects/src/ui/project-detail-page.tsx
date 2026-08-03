@@ -14,7 +14,7 @@ import { ProjectDetailTeamCard } from "./project-detail-team-card";
 import { ProjectEditSheetLazy } from "./project-lazy-panels";
 import { ProjectLinksCard } from "./project-links-card";
 import type { RoleColor } from "./shared/role-colors";
-import { CompactCollectionCardSkeleton } from "./shared/compact-collection";
+import { CompactCollectionCardSkeleton } from "./shared/compact-collection-skeleton";
 import type { ProjectDetailPermissions, ProjectDetailSlots, ProjectsNavigationConfig, ProjectsUiClient, ProjectsUiDictionary } from "./types";
 
 const DEFAULT_PERMISSIONS: ProjectDetailPermissions = { canOpenEditProject: true, canEditProjectItems: false, canCreateProjectLinks: false, canManageProjectLinks: false, canManageMembers: false, canViewOrganization: true };

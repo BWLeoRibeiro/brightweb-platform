@@ -1,5 +1,5 @@
 import { SkeletonCard } from "@brightweblabs/ui";
-import { CompactCollectionCardSkeleton } from "./shared/compact-collection";
+import { CompactCollectionCardSkeleton } from "./shared/compact-collection-skeleton";
 
 export function ProjectDetailLoading() {
   return (

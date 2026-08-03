@@ -9,7 +9,7 @@ import {
 import type { AppActivityRealtimePayload } from "@brightweblabs/infra/realtime";
 import { ProjectRecentActivity } from "./project-recent-activity";
 import { ProjectSurfaceCard, ProjectSurfaceSectionHeader } from "./shared/project-surface-card";
-import { CompactCollectionContentSkeleton } from "./shared/compact-collection";
+import { CompactCollectionContentSkeleton } from "./shared/compact-collection-skeleton";
 import { Button } from "@brightweblabs/ui";
 import { Skeleton } from "@brightweblabs/ui";
 import type { ProjectActivityItem } from "../types";
