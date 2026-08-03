@@ -402,12 +402,12 @@ export function ProjectEditSheet({
           </SheetSection>
 
           {canDeleteProject ? (
-            <div className="overflow-hidden rounded-2xl border border-rose-300/60 bg-rose-50/45 dark:border-rose-500/30 dark:bg-rose-500/10">
-              <div className="bg-rose-500 px-4 py-2.5">
-                <p className="text-label font-semibold uppercase tracking-widest text-white/90">{dictionary.projectEdit.dangerZone}</p>
+            <div className="overflow-hidden rounded-2xl border border-semantic-danger/30 bg-[color:var(--surface-danger-subtle)]">
+              <div className="bg-semantic-danger px-4 py-2.5">
+                <p className="text-label font-semibold uppercase tracking-widest text-on-fill-danger">{dictionary.projectEdit.dangerZone}</p>
               </div>
               <div className="space-y-3 px-4 py-3">
-                <p className="text-meta text-rose-700/90 dark:text-rose-200/90">
+                <p className="text-meta text-semantic-danger-strong">
                   {dictionary.projectEdit.dangerDescription}
                 </p>
                 <Button

@@ -3,6 +3,7 @@
   /* MQ deployments load their client font at the app root and restore it with
      one theme override: --font-body: var(--font-client-body); */
   --brand-accent: #5bc5f2;
+  --brand-accent-foreground: #0a151a;
   --brand-accent-soft: #6fc4e7;
   --brand-ink: #0a151a;
   --brand-neutral-500: #8e8f9a;
@@ -103,6 +104,7 @@
 :root[data-theme="dark"],
 .theme-dark {
   --brand-accent: #5bc5f2;
+  --brand-accent-foreground: #061118;
   --brand-accent-soft: #6fc4e7;
   --brand-ink: #061118;
   --brand-neutral-500: #9ca5b5;
@@ -193,6 +195,7 @@
 :root[data-theme="light"],
 .theme-light {
   --brand-accent: #5bc5f2;
+  --brand-accent-foreground: #0a151a;
   --brand-accent-soft: #6fc4e7;
   --brand-ink: #0a151a;
   --brand-neutral-500: #8e8f9a;

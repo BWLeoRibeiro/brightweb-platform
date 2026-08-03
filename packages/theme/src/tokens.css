@@ -72,6 +72,7 @@
   --type-tracking-180: 0.18em;
 
   --brand-accent: #4a7dbd;
+  --brand-accent-foreground: #ffffff;
   --brand-accent-soft: #7196c4;
   --brand-ink: #111827;
   --brand-neutral-500: #64748b;
@@ -258,7 +259,7 @@
   --surface-button-soft-hover: color-mix(in srgb, var(--foreground) 7%, var(--card));
   --border-button-soft-hover: color-mix(in srgb, var(--foreground) 16%, transparent);
   --surface-button-brand: color-mix(in srgb, var(--brand-accent) 84%, var(--foreground));
-  --foreground-button-brand: var(--accent-foreground);
+  --foreground-button-brand: var(--brand-accent-foreground);
   --foreground-accent-link: color-mix(in srgb, var(--brand-accent) 45%, var(--foreground));
   --surface-selection: color-mix(in srgb, var(--accent) 12%, var(--card));
   --border-selection: color-mix(in srgb, var(--accent) 40%, var(--hairline));
@@ -491,6 +492,7 @@
 .theme-dark {
   color-scheme: dark;
   --brand-accent: #79a8df;
+  --brand-accent-foreground: #0b1220;
   --brand-accent-soft: #9bbce2;
   --brand-ink: #0b1220;
   --brand-neutral-500: #9aa9bc;

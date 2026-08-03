@@ -10,6 +10,10 @@ test("platform packages expose every supported destructive UI surface", () => {
   assert.match(projectEditor, /role === "admin" \|\| role === "owner"/);
   assert.doesNotMatch(projectEditor, /\/api\/projects\/\$\{projectId\}\/access/);
   assert.match(projectEditor, /deleteProject/);
+  assert.match(projectEditor, /bg-semantic-danger/);
+  assert.match(projectEditor, /text-on-fill-danger/);
+  assert.match(projectEditor, /text-semantic-danger-strong/);
+  assert.doesNotMatch(projectEditor, /bg-rose-500|border-rose-300|text-rose-700|dark:text-rose-200/);
 
   const organizationSheet = source("packages/module-crm/src/ui/organization-sheet.tsx");
   assert.match(organizationSheet, /Eliminar organização/);

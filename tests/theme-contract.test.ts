@@ -262,6 +262,26 @@ test("accessible muted foreground meets WCAG AA in default and MQ light/dark the
   }
 });
 
+test("brand buttons keep an explicit accessible foreground in every packaged theme", async () => {
+  for (const file of ["src/tokens.css", "themes/mq.css"]) {
+    const css = await read(file);
+    const root = scopedCustomProperties(css, ":root");
+    const darkOverrides = scopedCustomProperties(css, ":root.dark");
+    for (const [mode, overrides] of [["light", new Map<string, string>()], ["dark", darkOverrides]] as const) {
+      const properties = new Map([...root, ...overrides]);
+      const accent = resolveHex(properties, "--brand-accent");
+      const foreground = resolveHex(properties, "--brand-accent-foreground");
+      const pageForeground = resolveHex(properties, "--foreground");
+      const buttonSurface = composite(accent, pageForeground, 0.84);
+
+      assert.ok(
+        contrastRatio(foreground, buttonSurface) >= 4.5,
+        `${file} ${mode} brand button text must meet 4.5:1 on its fill`,
+      );
+    }
+  }
+});
+
 test("project risk and health aliases match MQ in light and dark themes", async () => {
   const tokens = await read("src/tokens.css");
   const sharedAliases = new Map([
@@ -299,7 +319,7 @@ test("tokenized package visuals have defaults and live consumers", async () => {
     return files.join("\n");
   }))).join("\n")}\n${await fs.readFile(path.join(repoRoot, "packages/module-admin/tokens.css"), "utf8")}`;
 
-  assert.match(tokensCss, /--foreground-button-brand:\s*var\(--accent-foreground\);/);
+  assert.match(tokensCss, /--foreground-button-brand:\s*var\(--brand-accent-foreground\);/);
 
   for (const token of tokenizedVisualContract) {
     assert.ok(defaults.has(token), `${token} must have a neutral default in tokens.css`);
