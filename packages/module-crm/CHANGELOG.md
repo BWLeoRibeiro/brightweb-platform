@@ -1,5 +1,11 @@
 # @brightweblabs/module-crm
 
+## 0.15.3
+
+### Patch Changes
+
+- 8138f26: Prevent unchanged CRM contact and organization editors from submitting when entering edit mode.
+
 ## 0.15.2
 
 ### Patch Changes
