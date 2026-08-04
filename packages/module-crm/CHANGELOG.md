@@ -1,5 +1,11 @@
 # @brightweblabs/module-crm
 
+## 0.15.1
+
+### Patch Changes
+
+- 7c3ea34: Keep contact and organization sheets open during editing when an outside interaction occurs, preventing accidental dismissal and lost changes.
+
 ## 0.15.0
 
 ### Minor Changes
