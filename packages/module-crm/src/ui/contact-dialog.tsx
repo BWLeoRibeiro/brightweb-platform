@@ -25,6 +25,18 @@ function initialValue(contact?: CrmContact | null): CrmContactFormInput {
   return { firstName: contact?.first_name ?? "", lastName: contact?.last_name ?? "", email: contact?.email ?? "", phone: contact?.phone ?? "", source: contact?.source ?? "", organizationId: contact?.organization_id ?? "", ownerId: contact?.owner_id ?? "", status: (contact?.status as CrmContactFormInput["status"]) ?? "lead" };
 }
 
+function hasContactChanges(value: CrmContactFormInput, contact?: CrmContact | null) {
+  const initial = initialValue(contact);
+  return value.firstName !== initial.firstName
+    || value.lastName !== initial.lastName
+    || value.email !== initial.email
+    || value.phone !== initial.phone
+    || value.source !== initial.source
+    || value.organizationId !== initial.organizationId
+    || value.ownerId !== initial.ownerId
+    || value.status !== initial.status;
+}
+
 export type CrmContactDialogProps = {
   open: boolean;
   contact?: CrmContact | null;
@@ -51,6 +63,7 @@ export function CrmContactDialog({ open, contact, organizations = [], owners = [
   const activeStage = resolvedStages.find((stage) => stage.value === value.status) ?? resolvedStages[0];
   const controlClassName = mode === "view" ? sheetViewControlClassName : sheetEditControlClassName;
   const ownerLabel = owners.find((owner) => owner.id === value.ownerId)?.label ?? dictionary.contactDialog.placeholders.owner;
+  const hasChanges = mode === "create" || hasContactChanges(value, contact);
 
   useEffect(() => {
     if (!open) return;
@@ -66,7 +79,7 @@ export function CrmContactDialog({ open, contact, organizations = [], owners = [
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
-    if (mode === "view") return;
+    if (mode === "view" || !hasChanges) return;
     setSaving(true);
     try { await onSubmit(value); onOpenChange(false); } finally { setSaving(false); }
   };
@@ -133,7 +146,7 @@ export function CrmContactDialog({ open, contact, organizations = [], owners = [
           </AppSheetBody>
 
           <AppSheetFooter className={mode === "view" ? undefined : "flex-row"}>
-            {mode === "view" ? <Button type="button" className="w-full" onClick={() => setMode("edit")}><Pencil className="mr-2 size-4" />{dictionary.contactDialog.edit}</Button> : <><Button type="submit" className="flex-1" disabled={saving}><Save className="mr-2 size-4" />{saving ? dictionary.contactDialog.saving : mode === "create" ? dictionary.contactDialog.create : dictionary.contactDialog.save}</Button><Button type="button" variant="outline" className="flex-1" onClick={() => contact ? (setValue(initialValue(contact)), setMode("view")) : onOpenChange(false)}>{dictionary.contactDialog.cancel}</Button></>}
+            {mode === "view" ? <Button type="button" className="w-full" onClick={() => setMode("edit")}><Pencil className="mr-2 size-4" />{dictionary.contactDialog.edit}</Button> : <><Button type="submit" className="flex-1" disabled={saving || !hasChanges}><Save className="mr-2 size-4" />{saving ? dictionary.contactDialog.saving : mode === "create" ? dictionary.contactDialog.create : dictionary.contactDialog.save}</Button><Button type="button" variant="outline" className="flex-1" onClick={() => contact ? (setValue(initialValue(contact)), setMode("view")) : onOpenChange(false)}>{dictionary.contactDialog.cancel}</Button></>}
           </AppSheetFooter>
         </form>
       </SheetContent>

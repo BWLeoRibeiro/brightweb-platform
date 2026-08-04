@@ -187,6 +187,18 @@ test("CRM edit sheets reject primitive close signals until the user explicitly e
   assert.match(organizationSource, /showCloseButton=\{!editing\}/);
 });
 
+test("CRM edit sheets cannot submit until an existing record has actually changed", () => {
+  const contactSource = readFileSync(join(process.cwd(), "packages/module-crm/src/ui/contact-dialog.tsx"), "utf8");
+  const organizationSource = readFileSync(join(process.cwd(), "packages/module-crm/src/ui/organization-sheet.tsx"), "utf8");
+
+  assert.match(contactSource, /const hasChanges = mode === "create" \|\| hasContactChanges\(value, contact\)/);
+  assert.match(contactSource, /if \(mode === "view" \|\| !hasChanges\) return/);
+  assert.match(contactSource, /disabled=\{saving \|\| !hasChanges\}/);
+  assert.match(organizationSource, /const hasChanges = mode === "create" \|\| hasOrganizationChanges\(value, organization\)/);
+  assert.match(organizationSource, /!value\.name\?\.trim\(\) \|\| !hasChanges\) return/);
+  assert.match(organizationSource, /disabled=\{saving \|\| !value\.name\?\.trim\(\) \|\| !hasChanges\}/);
+});
+
 test("CRM sheets consume the canonical natural-case typography recipes", () => {
   const contactSource = readFileSync(join(process.cwd(), "packages/module-crm/src/ui/contact-dialog.tsx"), "utf8");
   const organizationSource = readFileSync(join(process.cwd(), "packages/module-crm/src/ui/organization-sheet.tsx"), "utf8");

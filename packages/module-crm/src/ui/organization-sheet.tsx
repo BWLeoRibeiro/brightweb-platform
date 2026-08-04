@@ -33,6 +33,18 @@ function initialValue(organization?: CrmOrganization | null): CrmOrganizationFor
   return { name: organization?.name ?? "", industry: organization?.industry ?? "", company_size: organization?.company_size ?? "", budget_range: organization?.budget_range ?? "", website_url: organization?.website_url ?? "", address: organization?.address ?? "", taxIdentifierValue: organization?.taxIdentifierValue ?? "", primary_contact_id: organization?.primary_contact_id ?? null };
 }
 
+function hasOrganizationChanges(value: CrmOrganizationFormInput, organization?: CrmOrganization | null) {
+  const initial = initialValue(organization);
+  return value.name !== initial.name
+    || value.industry !== initial.industry
+    || value.company_size !== initial.company_size
+    || value.budget_range !== initial.budget_range
+    || value.website_url !== initial.website_url
+    || value.address !== initial.address
+    || value.taxIdentifierValue !== initial.taxIdentifierValue
+    || value.primary_contact_id !== initial.primary_contact_id;
+}
+
 export type CrmOrganizationSheetProps = {
   open: boolean;
   organization?: CrmOrganization | null;
@@ -56,6 +68,7 @@ export function CrmOrganizationSheet({ open, organization, dictionary = defaultC
   const editing = mode !== "view";
   const controlClassName = editing ? sheetEditControlClassName : sheetViewControlClassName;
   const deleteConfirmationTarget = organization?.name && organization.name.trim().length > 0 ? organization.name : organization?.id ?? "";
+  const hasChanges = mode === "create" || hasOrganizationChanges(value, organization);
 
   useEffect(() => {
     if (!open) return;
@@ -78,7 +91,7 @@ export function CrmOrganizationSheet({ open, organization, dictionary = defaultC
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
-    if (saving || !editing || !value.name?.trim()) return;
+    if (saving || !editing || !value.name?.trim() || !hasChanges) return;
     setSaving(true);
     try { await onSubmit(value, organization); onOpenChange(false); } finally { setSaving(false); }
   };
@@ -171,7 +184,7 @@ export function CrmOrganizationSheet({ open, organization, dictionary = defaultC
               </FieldGroup>
             </SheetSection>
           </AppSheetBody>
-          <AppSheetFooter className={editing ? "flex-row" : undefined}>{mode === "view" ? <Button type="button" className="w-full" onClick={() => setMode("edit")}><Pencil className="mr-2 size-4" />{dictionary.organizations.edit}</Button> : <><Button type="submit" className="flex-1" disabled={saving || !value.name?.trim()}><Save className="mr-2 size-4" />{saving ? dictionary.organizations.saving : mode === "create" ? dictionary.organizations.create : dictionary.organizations.save}</Button><Button type="button" variant="outline" className="flex-1" onClick={() => organization ? (setValue(initialValue(organization)), setMode("view")) : onOpenChange(false)}>{dictionary.organizations.cancel}</Button></>}</AppSheetFooter>
+          <AppSheetFooter className={editing ? "flex-row" : undefined}>{mode === "view" ? <Button type="button" className="w-full" onClick={() => setMode("edit")}><Pencil className="mr-2 size-4" />{dictionary.organizations.edit}</Button> : <><Button type="submit" className="flex-1" disabled={saving || !value.name?.trim() || !hasChanges}><Save className="mr-2 size-4" />{saving ? dictionary.organizations.saving : mode === "create" ? dictionary.organizations.create : dictionary.organizations.save}</Button><Button type="button" variant="outline" className="flex-1" onClick={() => organization ? (setValue(initialValue(organization)), setMode("view")) : onOpenChange(false)}>{dictionary.organizations.cancel}</Button></>}</AppSheetFooter>
         </form>
       </SheetContent>
       <AlertDialog open={deleteDialogOpen} onOpenChange={(next) => { if (!saving) setDeleteDialogOpen(next); }}>
