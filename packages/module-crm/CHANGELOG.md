@@ -1,5 +1,20 @@
 # @brightweblabs/module-crm
 
+## 0.15.0
+
+### Minor Changes
+
+- 5b75161: Add optional task and project start dates with date-range validation, introduce an accessible BrightWeb selector with a fully styled popup across all package UI dropdowns, and organize task, CRM contact, CRM organization, and project creation sheets into consistent semantic sections.
+
+### Patch Changes
+
+- Updated dependencies [5b75161]
+- Updated dependencies [5b75161]
+  - @brightweblabs/app-shell@0.11.3
+  - @brightweblabs/ui@1.4.7
+  - @brightweblabs/core-auth@0.10.3
+  - @brightweblabs/module-orgs@0.4.3
+
 ## 0.14.4
 
 ### Patch Changes

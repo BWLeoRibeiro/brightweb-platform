@@ -1,5 +1,11 @@
 # create-bw-app
 
+## 0.24.4
+
+### Patch Changes
+
+- 6efe637: Include the new project and task start-date migrations in generated apps and in the standard BrightWeb upgrade path.
+
 ## 0.24.3
 
 ### Patch Changes

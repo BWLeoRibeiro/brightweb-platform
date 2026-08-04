@@ -1,5 +1,11 @@
 # @brightweblabs/ui
 
+## 1.4.7
+
+### Patch Changes
+
+- 5b75161: Add optional task and project start dates with date-range validation, introduce an accessible BrightWeb selector with a fully styled popup across all package UI dropdowns, and organize task, CRM contact, CRM organization, and project creation sheets into consistent semantic sections.
+
 ## 1.4.6
 
 ### Patch Changes

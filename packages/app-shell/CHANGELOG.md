@@ -1,5 +1,14 @@
 # @brightweblabs/app-shell
 
+## 0.11.3
+
+### Patch Changes
+
+- 5b75161: Refocus the shared dashboard on today’s attention, active work, and recent CRM changes, and align the marketing workspace with shared shell chrome through a simpler campaign ledger, staged sending actions, and one authoritative create action per collection.
+- 5b75161: Add optional task and project start dates with date-range validation, introduce an accessible BrightWeb selector with a fully styled popup across all package UI dropdowns, and organize task, CRM contact, CRM organization, and project creation sheets into consistent semantic sections.
+- Updated dependencies [5b75161]
+  - @brightweblabs/ui@1.4.7
+
 ## 0.11.2
 
 ### Patch Changes
