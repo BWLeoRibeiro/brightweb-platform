@@ -1,5 +1,11 @@
 # @brightweblabs/module-projects
 
+## 0.14.1
+
+### Patch Changes
+
+- 98c0a17: Localize every project calendar control for Portuguese users.
+
 ## 0.14.0
 
 ### Minor Changes
