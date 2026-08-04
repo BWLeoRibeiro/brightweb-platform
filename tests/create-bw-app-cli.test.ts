@@ -791,6 +791,21 @@ test("bw upgrade appends only unapplied migrations and preserves drifted scaffol
   assert.match(appended, new RegExp(`^-- bw-module: crm@${release.packages["@brightweblabs/module-crm"].replaceAll(".", "\\.")} 20260316092010_crm_org_integration\\.sql`));
 });
 
+test("bw upgrade synchronizes manifest module versions without an installed package tree", async (t) => {
+  const { root, targetDir } = await scaffold(["crm"]);
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+  const manifestPath = path.join(targetDir, ".brightweb", "app-manifest.json");
+  const manifest = await readJson(manifestPath);
+  manifest.modules.crm.version = "0.0.1";
+  await writeJson(manifestPath, manifest);
+
+  await upgradeBrightwebApp(undefined, { targetDir }, { fetchImpl: mockNpmFetch });
+
+  const packageManifest = await readJson(path.join(targetDir, "package.json"));
+  const upgradedManifest = await readJson(manifestPath);
+  assert.equal(upgradedManifest.modules.crm.version, packageManifest.dependencies["@brightweblabs/module-crm"].replace(/^\^/, ""));
+});
+
 test("bw upgrade installs and tracks deletion routes introduced after the original scaffold", async (t) => {
   const { root, targetDir } = await scaffold(["marketing"]);
   t.after(() => fs.rm(root, { recursive: true, force: true }));

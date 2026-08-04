@@ -612,6 +612,7 @@ export async function buildBrightwebAppUpdatePlan(argvOptions = {}, runtimeOptio
     manifest,
     installedModules,
     installedBrightwebPackages: Array.from(installedBrightwebPackagesMap.keys()).sort(),
+    targetVersions: canonicalVersions,
     packageUpdates: packageJsonUpdate.packageUpdates,
     configFilesToWrite: fileWrites.filter((entry) => entry.type === "config").map((entry) => entry.relativePath),
     starterFilesMissing: starterFilesMissing.map((entry) => entry.relativePath),

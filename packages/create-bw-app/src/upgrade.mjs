@@ -33,6 +33,10 @@ export async function upgradeBrightwebApp(moduleKey, argvOptions = {}, runtimeOp
   plan.starterFilesMissing = Array.from(new Set([...plan.starterFilesMissing, ...missing]));
 
   const catalog = await loadModuleCatalog({ targetDir, workspaceRoot });
+  for (const entry of Object.values(catalog)) {
+    const targetVersion = plan.targetVersions?.[entry.packageName];
+    if (targetVersion) entry.version = cleanVersion(targetVersion) || entry.version;
+  }
   for (const update of plan.packageUpdates) {
     const key = Object.keys(catalog).find((candidate) => catalog[candidate].packageName === update.packageName);
     if (key) catalog[key].version = cleanVersion(update.to) || catalog[key].version;
@@ -60,7 +64,8 @@ export async function upgradeBrightwebApp(moduleKey, argvOptions = {}, runtimeOp
   await applyMigrationWrites(migrationPlan.writes);
   appManifest.migrationCursor = migrationPlan.nextCursor;
   for (const [key, entry] of Object.entries(appManifest.modules)) {
-    if (catalog[key]?.packageRoot) entry.version = catalog[key].version;
+    const packageName = catalog[key]?.packageName;
+    if (catalog[key]?.packageRoot || plan.targetVersions?.[packageName]) entry.version = catalog[key].version;
   }
   for (const write of plan.fileWrites) {
     const relativePath = write.relativePath;
