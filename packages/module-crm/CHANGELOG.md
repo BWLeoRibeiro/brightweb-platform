@@ -1,5 +1,11 @@
 # @brightweblabs/module-crm
 
+## 0.15.4
+
+### Patch Changes
+
+- e0d4385: Ignore a phone country dial code without a subscriber number when detecting or saving CRM contact changes.
+
 ## 0.15.3
 
 ### Patch Changes
