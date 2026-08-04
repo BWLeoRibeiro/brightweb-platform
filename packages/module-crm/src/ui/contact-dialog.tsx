@@ -25,12 +25,17 @@ function initialValue(contact?: CrmContact | null): CrmContactFormInput {
   return { firstName: contact?.first_name ?? "", lastName: contact?.last_name ?? "", email: contact?.email ?? "", phone: contact?.phone ?? "", source: contact?.source ?? "", organizationId: contact?.organization_id ?? "", ownerId: contact?.owner_id ?? "", status: (contact?.status as CrmContactFormInput["status"]) ?? "lead" };
 }
 
+function normalizedPhone(phone?: string | null) {
+  const compact = phone?.trim().replace(/[\s()-]/g, "") ?? "";
+  return /^\+\d{1,3}$/.test(compact) ? "" : phone ?? "";
+}
+
 function hasContactChanges(value: CrmContactFormInput, contact?: CrmContact | null) {
   const initial = initialValue(contact);
   return value.firstName !== initial.firstName
     || value.lastName !== initial.lastName
     || value.email !== initial.email
-    || value.phone !== initial.phone
+    || normalizedPhone(value.phone) !== normalizedPhone(initial.phone)
     || value.source !== initial.source
     || value.organizationId !== initial.organizationId
     || value.ownerId !== initial.ownerId
@@ -81,7 +86,7 @@ export function CrmContactDialog({ open, contact, organizations = [], owners = [
     event.preventDefault();
     if (mode === "view" || !hasChanges) return;
     setSaving(true);
-    try { await onSubmit(value); onOpenChange(false); } finally { setSaving(false); }
+    try { await onSubmit({ ...value, phone: normalizedPhone(value.phone) }); onOpenChange(false); } finally { setSaving(false); }
   };
 
   const handleSheetOpenChange = (nextOpen: boolean) => {

@@ -192,6 +192,8 @@ test("CRM edit sheets cannot submit until an existing record has actually change
   const organizationSource = readFileSync(join(process.cwd(), "packages/module-crm/src/ui/organization-sheet.tsx"), "utf8");
 
   assert.match(contactSource, /const hasChanges = mode === "create" \|\| hasContactChanges\(value, contact\)/);
+  assert.match(contactSource, /normalizedPhone\(value\.phone\) !== normalizedPhone\(initial\.phone\)/);
+  assert.match(contactSource, /onSubmit\(\{ \.\.\.value, phone: normalizedPhone\(value\.phone\) \}\)/);
   assert.match(contactSource, /if \(mode === "view" \|\| !hasChanges\) return/);
   assert.match(contactSource, /disabled=\{saving \|\| !hasChanges\}/);
   assert.match(organizationSource, /const hasChanges = mode === "create" \|\| hasOrganizationChanges\(value, organization\)/);
