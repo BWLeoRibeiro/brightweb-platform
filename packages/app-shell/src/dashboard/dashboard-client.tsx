@@ -5,11 +5,13 @@ import { createContext, useContext, useEffect, useMemo, useState, type CSSProper
 import {
   AlertTriangle,
   ArrowUpRight,
+  BriefcaseBusiness,
   CalendarDays,
   CheckCircle2,
   ChevronDown,
   CircleDot,
   Flag,
+  Users,
 } from "lucide-react";
 
 import { Skeleton } from "@brightweblabs/ui";
@@ -17,6 +19,7 @@ import type { DashboardAssignedTask, DashboardCrmData, DashboardCrmRecentContact
 import { useDashboardData, type DashboardState } from "./use-dashboard-data";
 import { defaultDashboardDictionary, type DashboardDictionary } from "./dictionary";
 import { DashboardActionLink as PortalActionLink, DashboardSectionHeading as PortalSectionHeading, dashboardCardTitleClassName as CARD_TITLE, dashboardLabelClassName as LABEL, dashboardMonoTabularClassName as MONO } from "./primitives";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@brightweblabs/ui";
 import { cn } from "../lib/utils";
 import { PillTabs } from "../components/pill-tabs";
 
@@ -109,6 +112,53 @@ function isDueThisWeek(iso: string | null) {
 
 /* ─── Welcome + Tabs ─────────────────────────────────────────────── */
 
+function HeroMetricMini({ value, label, tone }: { value: number; label: string; tone: "risk" | "on" }) {
+  const dot = tone === "risk" ? "var(--project-risk-overdue)" : "var(--project-state-active)";
+  return (
+    <div
+      className="flex items-center justify-between gap-4 rounded-[var(--radius-card)] border px-4 py-2.5"
+      style={{ borderColor: "var(--project-hero-border)", background: "var(--project-hero-surface-raised)" }}
+    >
+      <span className="inline-flex items-center gap-2 text-meta" style={{ color: "var(--project-hero-muted)" }}>
+        <span className="h-1.5 w-1.5 rounded-full" style={{ background: dot }} />
+        {label}
+      </span>
+      <span
+        className="text-kpi text-[length:var(--text-ui-dashboard-card-title)] font-extrabold leading-none tracking-[var(--type-tracking-n030)]"
+        style={{ color: "var(--project-hero-foreground)" }}
+      >
+        {value}
+      </span>
+    </div>
+  );
+}
+
+function HeroMetrics({ activeProjects, overdueProjects, newLeads }: { activeProjects: number; overdueProjects: number; newLeads: number }) {
+  const dictionary = useDashboardDictionary();
+  return (
+    <div className="grid w-full min-w-0 grid-cols-1 gap-3 sm:grid-cols-2 lg:w-auto lg:min-w-[330px]">
+      <div
+        className="flex min-w-[150px] flex-col justify-center rounded-[var(--radius-card)] border px-5 py-4"
+        style={{ borderColor: "var(--project-hero-border)", background: "var(--project-hero-surface-raised)" }}
+      >
+        <span
+          className="text-kpi-lg text-[length:var(--text-ui-dashboard-metric)] font-black leading-[var(--type-leading-090)] tracking-[var(--type-tracking-n050)]"
+          style={{ color: "var(--accent)" }}
+        >
+          {activeProjects}
+        </span>
+        <span className="mt-1.5 text-meta" style={{ color: "var(--project-hero-muted)" }}>
+          {dictionary.welcome.activeProjects}
+        </span>
+      </div>
+      <div className="flex flex-col justify-between gap-3">
+        <HeroMetricMini value={overdueProjects} label={dictionary.welcome.overdueProjects} tone="risk" />
+        <HeroMetricMini value={newLeads} label={dictionary.welcome.newLeads} tone="on" />
+      </div>
+    </div>
+  );
+}
+
 function WelcomeHeader({
   name,
   urgentCount,
@@ -138,21 +188,35 @@ function WelcomeHeader({
   }, []);
 
   return (
-    <header className="dashboard-briefing">
-      <div className="dashboard-briefing-copy">
-        <div className="min-w-0">
-          <p className="inline-flex items-center gap-2 text-meta font-semibold text-[color:var(--muted-foreground)]">
+    <header className="brand-panel relative overflow-hidden rounded-[var(--radius-panel)] p-6 text-[color:var(--project-hero-foreground)] md:p-8">
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -right-24 -top-28 h-80 w-80 rounded-full blur-3xl opacity-100 dark:opacity-40"
+        style={{ background: "var(--dashboard-hero-glow)" }}
+      />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 top-0 h-px"
+        style={{ background: "var(--dashboard-hero-highlight)" }}
+      />
+
+      <div className="relative flex flex-col gap-7 lg:flex-row lg:items-end lg:justify-between">
+        <div className="min-w-0 lg:flex-1">
+          <p
+            className="inline-flex items-center gap-2 text-meta font-semibold"
+            style={{ color: "var(--project-hero-muted)" }}
+          >
             <CalendarDays className="h-3.5 w-3.5" style={{ color: "var(--accent)" }} />
             <span className="text-data capitalize">{dateLabel}</span>
             <span className="opacity-40">·</span>
             <span className="text-data">{time}</span>
           </p>
 
-          <h1 className="font-display mt-3 text-heading-1 font-extrabold tracking-[var(--type-tracking-n035)] text-[color:var(--foreground)]">
+          <h1 className="font-display mt-4 text-heading-1 text-[length:var(--text-ui-dashboard-title)] font-extrabold leading-[var(--type-leading-102)] tracking-[var(--type-tracking-n035)] md:text-[length:var(--text-ui-dashboard-title-lg)]">
             {greeting}
             {name ? (
               <>
-                , <span className="text-[color:var(--accent)]">{name}</span>
+                , <span style={{ color: "var(--accent)" }}>{name}</span>
               </>
             ) : (
               ""
@@ -160,10 +224,10 @@ function WelcomeHeader({
             .
           </h1>
 
-          <p className="mt-2 max-w-[36rem] text-body text-[color:var(--muted-foreground)]">
+          <p className="mt-3 max-w-[32rem] text-body-lg" style={{ color: "var(--project-hero-muted)" }}>
             {urgentCount > 0 ? (
               <>
-                <span className="font-semibold text-[color:var(--foreground)]">
+                <span className="font-semibold" style={{ color: "var(--project-hero-foreground)" }}>
                   {urgentCount} {urgentCount === 1 ? dictionary.welcome.urgentOne : dictionary.welcome.urgentMany}
                 </span>{" "}
                 {dictionary.welcome.attentionToday}
@@ -173,36 +237,23 @@ function WelcomeHeader({
             )}
           </p>
 
+          {errors.length > 0 ? (
+            <div className="mt-5 flex flex-wrap gap-2" role="status">
+              {errors.map((error) => (
+                <span
+                  key={error}
+                  className="dashboard-error inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-meta font-semibold leading-snug"
+                >
+                  <AlertTriangle className="h-3 w-3" />
+                  {error}
+                </span>
+              ))}
+            </div>
+          ) : null}
         </div>
-        <div className="dashboard-briefing-metrics" aria-label="Resumo de hoje">
-          <div className="dashboard-briefing-metric dashboard-briefing-metric-attention">
-            <strong className="text-data">{urgentCount}</strong>
-            <span>{urgentCount === 1 ? dictionary.welcome.urgentOne : dictionary.welcome.urgentMany}</span>
-          </div>
-          <div className="dashboard-briefing-metric">
-            <strong className="text-data">{activeProjects}</strong>
-            <span>{dictionary.welcome.activeProjects}</span>
-          </div>
-          <div className="dashboard-briefing-metric">
-            <strong className="text-data">{overdueProjects}</strong>
-            <span>{dictionary.welcome.overdueProjects}</span>
-          </div>
-          <div className="dashboard-briefing-metric">
-            <strong className="text-data">{newLeads}</strong>
-            <span>{dictionary.welcome.newLeads}</span>
-          </div>
-        </div>
+
+        <HeroMetrics activeProjects={activeProjects} overdueProjects={overdueProjects} newLeads={newLeads} />
       </div>
-      {errors.length > 0 ? (
-        <div className="dashboard-briefing-errors" role="status">
-          {errors.map((error) => (
-            <span key={error} className="dashboard-error inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-meta font-semibold leading-snug">
-              <AlertTriangle className="h-3 w-3" />
-              {error}
-            </span>
-          ))}
-        </div>
-      ) : null}
     </header>
   );
 }
@@ -217,6 +268,124 @@ function TabsRow({ value, onChange, sections }: { value: TabKey; onChange: (v: T
   ];
 
   return <PillTabs ariaLabel="Dashboard" items={tabs.map((tab) => ({ value: tab.key, label: tab.label }))} value={value} onValueChange={onChange} />;
+}
+
+/* ─── Hero cards ─────────────────────────────────────────────────── */
+
+type KpiBreakdownItem = { label: string; tone: VisualTone; value: number };
+
+function KpiBreakdownBar({ items }: { items: KpiBreakdownItem[] }) {
+  const total = items.reduce((sum, item) => sum + Math.max(0, item.value), 0);
+
+  return (
+    <div className="mt-5">
+      <TooltipProvider delayDuration={80}>
+        <div className="flex h-2 overflow-hidden rounded-full" style={{ background: "var(--dashboard-breakdown-track)" }}>
+          {total > 0 && items.map((item) => item.value > 0 ? (
+            <Tooltip key={item.label}>
+              <TooltipTrigger asChild>
+                <span
+                  className="h-full cursor-default transition-[filter] duration-150 first:rounded-l-full last:rounded-r-full hover:brightness-110"
+                  style={{ width: `${(item.value / total) * 100}%`, background: TONE_COLOR[item.tone] }}
+                />
+              </TooltipTrigger>
+              <TooltipContent>
+                <span className="flex items-center gap-2">
+                  <span className="h-2 w-2 rounded-[2px]" style={{ background: TONE_COLOR[item.tone] }} />
+                  <span className="capitalize">{item.label}</span>
+                  <span className="text-data font-bold">{item.value}</span>
+                </span>
+              </TooltipContent>
+            </Tooltip>
+          ) : null)}
+        </div>
+      </TooltipProvider>
+      <div className="mt-3.5 grid grid-cols-2 gap-x-6 gap-y-1.5">
+        {items.map((item) => (
+          <div key={item.label} className="flex items-center justify-between gap-2 text-meta">
+            <span className="flex min-w-0 items-center gap-2 text-[color:var(--muted-foreground)]">
+              <span className="h-1.5 w-1.5 shrink-0 rounded-[2px]" style={{ background: TONE_COLOR[item.tone] }} />
+              <span className="truncate">{item.label}</span>
+            </span>
+            <span className={`${MONO} text-body text-[length:var(--text-ui-action)] font-bold text-[color:var(--foreground)]`}>{item.value}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ProjectsKpiCard({ projects, isLoading }: { projects: DashboardProjectsData | null; isLoading: boolean }) {
+  const dictionary = useDashboardDictionary();
+  const kpis = projects?.kpis;
+  const showLoading = isLoading && !projects;
+  return (
+    <Link href="/projects" prefetch={false} className={`${SURFACE} group relative flex flex-col overflow-hidden p-6 transition hover:border-[color:var(--accent)]/40 hover:shadow-[var(--dashboard-shadow-lg)]`}>
+      <span aria-hidden className="absolute inset-y-0 left-0 w-[3px]" style={{ background: "var(--accent)" }} />
+      <div className="flex items-center justify-between">
+        <span className="flex h-9 w-9 items-center justify-center rounded-full" style={{ background: "var(--dashboard-accent-soft)", color: "var(--accent)" }}>
+          <BriefcaseBusiness className="h-4 w-4" />
+        </span>
+        <span className={LABEL}>{dictionary.projects.title}</span>
+      </div>
+      {showLoading ? (
+        <div className="mt-4 space-y-5" aria-hidden="true">
+          <Skeleton className="h-10 w-28 rounded-lg" />
+          <Skeleton className="h-14 w-full rounded-lg" />
+        </div>
+      ) : (
+        <>
+          <div className="mt-4 flex items-baseline gap-2">
+            <span className="text-kpi-lg text-foreground">{kpis?.projectsActive ?? 0}</span>
+            <span className="text-body font-semibold text-[color:var(--muted-foreground)]">{dictionary.projects.active}</span>
+          </div>
+          <KpiBreakdownBar items={[
+            { label: dictionary.projects.atRisk, tone: "watch", value: kpis?.projectsAtRisk ?? 0 },
+            { label: dictionary.projects.overdue, tone: "risk", value: kpis?.projectsOverdue ?? 0 },
+            { label: dictionary.projects.dueSevenDays, tone: "accent", value: kpis?.projectsDueNext7Days ?? 0 },
+            { label: dictionary.projects.noOwner, tone: "on", value: kpis?.projectsWithoutOwner ?? 0 },
+          ]} />
+        </>
+      )}
+    </Link>
+  );
+}
+
+function CrmKpiCard({ crm, isLoading }: { crm: DashboardCrmData | null; isLoading: boolean }) {
+  const dictionary = useDashboardDictionary();
+  const kpis = crm?.kpis;
+  const breakdown = crm?.crm.statusBreakdown;
+  const showLoading = isLoading && !crm;
+  return (
+    <Link href="/crm" className={`${SURFACE} group relative flex flex-col overflow-hidden p-6 transition hover:border-[color:var(--accent)]/40 hover:shadow-[var(--dashboard-shadow-lg)]`}>
+      <span aria-hidden className="absolute inset-y-0 left-0 w-[3px]" style={{ background: "var(--dashboard-neutral-rule)" }} />
+      <div className="flex items-center justify-between">
+        <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[color:var(--muted)] text-[color:var(--muted-foreground)]">
+          <Users className="h-4 w-4" />
+        </span>
+        <span className={LABEL}>{dictionary.crm.title}</span>
+      </div>
+      {showLoading ? (
+        <div className="mt-4 space-y-5" aria-hidden="true">
+          <Skeleton className="h-10 w-28 rounded-lg" />
+          <Skeleton className="h-14 w-full rounded-lg" />
+        </div>
+      ) : (
+        <>
+          <div className="mt-4 flex items-baseline gap-2">
+            <span className="text-kpi-lg text-foreground">{kpis?.crmTotalContacts ?? 0}</span>
+            <span className="text-body font-semibold text-[color:var(--muted-foreground)]">{dictionary.crm.contacts}</span>
+          </div>
+          <KpiBreakdownBar items={[
+            { label: dictionary.crm.newSevenDays, tone: "on", value: kpis?.crmNewLast7Days ?? 0 },
+            { label: dictionary.crm.noOwner, tone: "watch", value: kpis?.crmUnassignedContacts ?? 0 },
+            { label: dictionary.crm.proposals, tone: "accent", value: breakdown?.proposal ?? 0 },
+            { label: dictionary.crm.won, tone: "on", value: breakdown?.won ?? 0 },
+          ]} />
+        </>
+      )}
+    </Link>
+  );
 }
 
 /* ─── Activity table ─────────────────────────────────────────────── */
@@ -798,115 +967,6 @@ function TasksView({ rows, isLoading }: { rows: TaskRow[]; isLoading: boolean })
 
 /* ─── Overview ───────────────────────────────────────────────────── */
 
-function AttentionPanel({ projects, isLoading }: { projects: DashboardProjectsData | null; isLoading: boolean }) {
-  const dictionary = useDashboardDictionary();
-  const items = projects?.projects.overdue.slice(0, 4) ?? [];
-  const attentionCount = projects?.kpis.projectsOverdue ?? 0;
-
-  return (
-    <section className={`${SURFACE} flex min-h-0 flex-col overflow-hidden`}>
-      <header className="flex items-center justify-between border-b border-[color:var(--border)] px-5 py-4">
-        <div>
-          <p className={LABEL}>{dictionary.header.kicker}</p>
-          <h2 className={CARD_TITLE}>{dictionary.projects.attentionTitle}</h2>
-        </div>
-        <span className={cn(
-          "text-data rounded-full px-2.5 py-1 text-meta font-bold",
-          attentionCount > 0
-            ? "bg-[color:var(--dashboard-danger-soft)] text-[color:var(--dashboard-danger-foreground)]"
-            : "bg-[color:var(--muted)] text-[color:var(--project-state-active)]",
-        )}>
-          {attentionCount}
-        </span>
-      </header>
-      {isLoading && items.length === 0 ? (
-        <div className="space-y-3 p-5" aria-hidden="true">
-          {[0, 1, 2].map((item) => <Skeleton key={item} className="h-14 rounded-lg" />)}
-        </div>
-      ) : items.length === 0 ? (
-        <div className="flex flex-1 flex-col items-center justify-center gap-3 px-6 py-10 text-center">
-          <span className="flex h-11 w-11 items-center justify-center rounded-full bg-[color:var(--muted)] text-[color:var(--project-state-active)]">
-            <CheckCircle2 className="h-5 w-5" />
-          </span>
-          <p className="max-w-[18rem] text-body text-[color:var(--muted-foreground)]">
-            {dictionary.projects.noneNeedAttention(projects?.kpis.projectsActive ?? 0)}
-          </p>
-        </div>
-      ) : (
-        <div className="divide-y divide-[color:var(--border)]">
-          {items.map((project) => (
-            <Link key={project.id} href={`/projects/${project.id}`} prefetch={false} className="group flex items-center gap-3 px-5 py-3 transition hover:bg-[color:var(--dashboard-task-row-hover)]">
-              <span
-                className="h-2 w-2 shrink-0 rounded-full"
-                style={{
-                  background: TONE_COLOR[
-                    project.taskStats.overdue > 0
-                      ? "risk"
-                      : project.taskStats.blocked > 0 || project.health === "at_risk"
-                        ? "watch"
-                        : healthToTone(project.health)
-                  ],
-                }}
-              />
-              <span className="min-w-0 flex-1">
-                <strong className="block truncate text-body font-semibold text-[color:var(--foreground)]">{project.name}</strong>
-                <small className="block truncate text-meta text-[color:var(--muted-foreground)]">{project.organizationName} · {formatShortDate(project.targetDate)}</small>
-              </span>
-              <ArrowUpRight className="h-3.5 w-3.5 text-[color:var(--muted-foreground)] opacity-0 transition group-hover:opacity-100" />
-            </Link>
-          ))}
-        </div>
-      )}
-      <PortalActionLink href="/projects" prefetch={false} className="m-4 mt-auto self-start">
-        {dictionary.projects.viewAll}<ArrowUpRight className="h-3.5 w-3.5" />
-      </PortalActionLink>
-    </section>
-  );
-}
-
-function RecentChangesPanel({ crm, isLoading }: { crm: DashboardCrmData | null; isLoading: boolean }) {
-  const dictionary = useDashboardDictionary();
-  const changes = crm?.crm.recentChanges.slice(0, 4) ?? [];
-
-  return (
-    <section className={`${SURFACE} overflow-hidden`}>
-      <header className="flex items-center justify-between border-b border-[color:var(--border)] px-5 py-4">
-        <div>
-          <p className={LABEL}>{dictionary.crm.title}</p>
-          <h2 className={CARD_TITLE}>{dictionary.clients.lastChange}</h2>
-        </div>
-        <PortalActionLink href="/crm">{dictionary.clients.viewAll}<ArrowUpRight className="h-3.5 w-3.5" /></PortalActionLink>
-      </header>
-      {isLoading && changes.length === 0 ? (
-        <div className="grid gap-3 p-5 sm:grid-cols-2" aria-hidden="true">
-          {[0, 1, 2, 3].map((item) => <Skeleton key={item} className="h-16 rounded-lg" />)}
-        </div>
-      ) : changes.length === 0 ? (
-        <div className="px-5 py-8 text-center text-body text-[color:var(--muted-foreground)]">{dictionary.clients.noRecent}</div>
-      ) : (
-        <div className="grid sm:grid-cols-2">
-          {changes.map((change) => (
-            <Link key={change.id} href="/crm" className="group flex items-center gap-3 border-b border-[color:var(--border)] px-5 py-3 odd:sm:border-r">
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[color:var(--muted)] text-meta font-bold text-[color:var(--foreground)]">
-                {initialsOf(change.contactLabel)}
-              </span>
-              <span className="min-w-0 flex-1">
-                <strong className="block truncate text-body font-semibold text-[color:var(--foreground)]">{change.contactLabel}</strong>
-                <small className="flex items-center gap-1.5 text-meta text-[color:var(--muted-foreground)]">
-                  {change.previousStatus ? crmStatusMeta(change.previousStatus, dictionary).label : "—"}
-                  <span aria-hidden="true">→</span>
-                  <span className="font-semibold text-[color:var(--foreground)]">{change.newStatus ? crmStatusMeta(change.newStatus, dictionary).label : "—"}</span>
-                </small>
-              </span>
-              <span className="text-data text-label text-[color:var(--muted-foreground)]">{formatShortDate(change.changedAt)}</span>
-            </Link>
-          ))}
-        </div>
-      )}
-    </section>
-  );
-}
-
 function OverviewView({
   data,
   taskRows,
@@ -922,30 +982,20 @@ function OverviewView({
   const overviewMilestones = milestones.slice(0, 5);
 
   return (
-    <section className="grid grid-cols-1 gap-4 lg:grid-cols-12">
-      {sections.includes("projects") ? (
-        <div className="lg:col-span-4">
-          <AttentionPanel projects={data.projects} isLoading={data.isProjectsLoading} />
-        </div>
-      ) : null}
+    <section className="grid grid-cols-1 gap-4 lg:grid-cols-3 lg:grid-rows-[auto_minmax(0,1fr)] lg:[grid-auto-flow:dense]">
+      {sections.includes("projects") ? <ProjectsKpiCard projects={data.projects} isLoading={data.isProjectsLoading} /> : null}
+      {sections.includes("crm") ? <CrmKpiCard crm={data.crm} isLoading={data.isCrmLoading} /> : null}
       {sections.includes("tasks") ? <TasksTable
         rows={overviewTaskRows}
         isLoading={data.tasks === null && (data.isProjectsLoading || data.isCrmLoading || data.isTasksLoading)}
-        className="h-[360px] lg:col-span-8"
+        className="lg:col-span-2 lg:col-start-1 lg:row-start-2 h-[340px]"
         bodyClassName="flex-1 overflow-hidden"
       /> : null}
-      {sections.includes("crm") ? (
-        <div className="lg:col-span-8">
-          <RecentChangesPanel crm={data.crm} isLoading={data.isCrmLoading} />
-        </div>
-      ) : null}
-      {sections.includes("projects") ? (
-        <MilestonesPanel
-          items={overviewMilestones}
-          isLoading={data.isProjectsLoading && milestones.length === 0}
-          className="min-h-[260px] lg:col-span-4"
-        />
-      ) : null}
+      {sections.includes("projects") ? <MilestonesPanel
+        items={overviewMilestones}
+        isLoading={data.isProjectsLoading && milestones.length === 0}
+        className="lg:col-start-3 lg:row-start-1 lg:row-span-2 lg:h-full"
+      /> : null}
     </section>
   );
 }
