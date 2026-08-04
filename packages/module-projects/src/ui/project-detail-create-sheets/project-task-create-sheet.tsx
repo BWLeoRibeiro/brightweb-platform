@@ -1,5 +1,7 @@
 "use client";
 
+import { StyledSelect } from "@brightweblabs/ui";
+
 import { useProjectsUiClient, useProjectsUiDictionary } from "../context";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { format } from "date-fns";
@@ -49,8 +51,10 @@ export function ProjectTaskCreateSheet({
   const [priority, setPriority] = useState("medium");
   const [milestoneId, setMilestoneId] = useState("");
   const [assigneeProfileId, setAssigneeProfileId] = useState("");
+  const [startDate, setStartDate] = useState("");
   const [dueDate, setDueDate] = useState("");
   const [blockedReason, setBlockedReason] = useState("");
+  const startDateValue = useMemo(() => parseIsoDate(startDate), [startDate]);
   const dueDateValue = useMemo(() => parseIsoDate(dueDate), [dueDate]);
   const memberOptions = useMemo(
     () =>
@@ -86,6 +90,7 @@ export function ProjectTaskCreateSheet({
     setPriority("medium");
     setMilestoneId("");
     setAssigneeProfileId("");
+    setStartDate("");
     setDueDate("");
     setBlockedReason("");
   };
@@ -93,6 +98,10 @@ export function ProjectTaskCreateSheet({
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (isSubmitting || !title.trim()) return;
+    if (startDate && dueDate && dueDate < startDate) {
+      toast.error(dictionary.board.invalidDateRange);
+      return;
+    }
 
     setIsSubmitting(true);
     try {
@@ -103,6 +112,7 @@ export function ProjectTaskCreateSheet({
         priority,
         milestoneId: milestoneId || undefined,
         assigneeProfileId: assigneeProfileId || undefined,
+        startDate: startDate || undefined,
         dueDate: dueDate || undefined,
         blockedReason: blockedReason.trim() || undefined,
       });
@@ -130,7 +140,7 @@ export function ProjectTaskCreateSheet({
 
         <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
           <div className={`${sheetBodyClassName} space-y-4`}>
-            <SheetSection title={dictionary.board.task} editing bodyClassName="space-y-3 px-4 py-3">
+            <SheetSection title={dictionary.board.contentSection} editing bodyClassName="space-y-3 px-4 py-3">
               <div>
                 <label className={sheetFieldLabelClassName} htmlFor="task-create-title">{dictionary.forms.title}</label>
                 <Input
@@ -153,11 +163,11 @@ export function ProjectTaskCreateSheet({
               </div>
             </SheetSection>
 
-            <SheetSection title={dictionary.create.classification} editing bodyClassName="space-y-3 px-4 py-3">
+            <SheetSection title={dictionary.board.executionSection} editing bodyClassName="space-y-3 px-4 py-3">
               <div className="grid gap-3 sm:grid-cols-2">
                 <div>
                   <label className={sheetFieldLabelClassName} htmlFor="task-create-status">{dictionary.forms.status}</label>
-                  <select
+                  <StyledSelect
                     id="task-create-status"
                     value={status}
                     onChange={(event) => setStatus(event.target.value)}
@@ -167,11 +177,11 @@ export function ProjectTaskCreateSheet({
                     <option value="in_progress">{dictionary.board.columns.in_progress}</option>
                     <option value="blocked">{dictionary.board.columns.blocked}</option>
                     <option value="done">{dictionary.board.columns.done}</option>
-                  </select>
+                  </StyledSelect>
                 </div>
                 <div>
                   <label className={sheetFieldLabelClassName} htmlFor="task-create-priority">{dictionary.forms.priority}</label>
-                  <select
+                  <StyledSelect
                     id="task-create-priority"
                     value={priority}
                     onChange={(event) => setPriority(event.target.value)}
@@ -181,13 +191,22 @@ export function ProjectTaskCreateSheet({
                     <option value="medium">{dictionary.board.priority.medium}</option>
                     <option value="high">{dictionary.board.priority.high}</option>
                     <option value="urgent">{dictionary.board.priority.urgent}</option>
-                  </select>
+                  </StyledSelect>
                 </div>
               </div>
+              {status === "blocked" ? (
+                <div>
+                  <label className={sheetFieldLabelClassName} htmlFor="task-create-blocked">{dictionary.forms.blockedReason}</label>
+                  <Input id="task-create-blocked" value={blockedReason} onChange={(event) => setBlockedReason(event.target.value)} required className={cn(sheetEditControlClassName, "mt-1.5")} />
+                </div>
+              ) : null}
+            </SheetSection>
+
+            <SheetSection title={dictionary.board.planningSection} editing bodyClassName="space-y-3 px-4 py-3">
               <div className="grid gap-3 sm:grid-cols-2">
                 <div>
                   <label className={sheetFieldLabelClassName} htmlFor="task-create-milestone">{dictionary.create.milestoneOptional}</label>
-                  <select
+                  <StyledSelect
                     id="task-create-milestone"
                     value={milestoneId}
                     onChange={(event) => setMilestoneId(event.target.value)}
@@ -199,11 +218,11 @@ export function ProjectTaskCreateSheet({
                         {milestone.title}
                       </option>
                     ))}
-                  </select>
+                  </StyledSelect>
                 </div>
                 <div>
                   <label className={sheetFieldLabelClassName} htmlFor="task-create-assignee">{dictionary.create.assigneeOptional}</label>
-                  <select
+                  <StyledSelect
                     id="task-create-assignee"
                     value={assigneeProfileId}
                     onChange={(event) => setAssigneeProfileId(event.target.value)}
@@ -215,8 +234,26 @@ export function ProjectTaskCreateSheet({
                         {member.label}
                       </option>
                     ))}
-                  </select>
+                  </StyledSelect>
                 </div>
+              </div>
+            </SheetSection>
+
+            <SheetSection title={dictionary.board.calendarSection} editing bodyClassName="px-4 py-3">
+              <div className="grid gap-3 sm:grid-cols-2">
+              <div>
+                <label className={sheetFieldLabelClassName} htmlFor="task-create-start">{dictionary.create.startDateOptional}</label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button id="task-create-start" type="button" variant="ghost" className={cn("mt-1.5", sheetDatePickerButtonClassName, startDateValue ? "text-foreground" : "text-foreground/45")}>
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {startDateValue ? format(startDateValue, "dd/MM/yyyy") : dictionary.create.selectDate}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar mode="single" captionLayout="dropdown" className="rounded-lg border" selected={startDateValue} onSelect={(date) => setStartDate(toIsoDate(date))} initialFocus />
+                  </PopoverContent>
+                </Popover>
               </div>
               <div>
                 <label className={sheetFieldLabelClassName} htmlFor="task-create-due">{dictionary.create.dueDateOptional}</label>
@@ -248,14 +285,6 @@ export function ProjectTaskCreateSheet({
                   </PopoverContent>
                 </Popover>
               </div>
-              <div>
-                <label className={sheetFieldLabelClassName} htmlFor="task-create-blocked">{dictionary.create.blockedReasonOptional}</label>
-                <Input
-                  id="task-create-blocked"
-                  value={blockedReason}
-                  onChange={(event) => setBlockedReason(event.target.value)}
-                  className={cn(sheetEditControlClassName, "mt-1.5")}
-                />
               </div>
             </SheetSection>
           </div>

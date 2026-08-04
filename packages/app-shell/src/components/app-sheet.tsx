@@ -1,6 +1,12 @@
 import type { ReactNode } from "react";
 import type { LucideIcon } from "lucide-react";
-import { SheetDescription, SheetFooter, SheetHeader, SheetTitle } from "@brightweblabs/ui";
+import {
+  SelectControl,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from "@brightweblabs/ui";
 import { cn } from "../lib/utils";
 
 export const sheetShellClassName = "gap-0 h-screen w-full border-l border-[color:var(--border)] bg-[color:var(--background)] sm:max-w-[28rem]";
@@ -18,6 +24,40 @@ export const sheetViewControlClassName = "h-7 appearance-none border-0 bg-transp
 export const sheetEditControlClassName = "h-9 w-full rounded-lg border border-[color:var(--sheet-edit-control-border)] bg-[color:var(--card)] px-2.5 text-body shadow-none transition focus-visible:border-[color:var(--accent)] focus-visible:ring-[3px] focus-visible:ring-[color:var(--sheet-edit-control-ring)] disabled:opacity-100";
 export const sheetAccentTextareaClassName = "w-full rounded-xl border border-[color:var(--sheet-edit-control-border)] bg-[color:var(--card)] px-3 py-2 text-body text-foreground placeholder:text-foreground/35 focus:border-[color:var(--accent)] focus:outline-none focus:ring-[3px] focus:ring-[color:var(--sheet-edit-control-ring)] disabled:opacity-100";
 export const sheetDatePickerButtonClassName = "h-9 w-full justify-start rounded-lg border border-[color:var(--sheet-edit-control-border)] bg-[color:var(--card)] px-2.5 text-body hover:bg-[color:var(--card)]";
+
+export type SheetSelectOption = {
+  value: string;
+  label: ReactNode;
+  disabled?: boolean;
+};
+
+export type SheetSelectProps = {
+  id?: string;
+  name?: string;
+  value: string;
+  options: readonly SheetSelectOption[];
+  onValueChange: (value: string) => void;
+  placeholder?: string;
+  disabled?: boolean;
+  className?: string;
+  "aria-label"?: string;
+};
+
+export function SheetSelect({ id, name, value, options, onValueChange, placeholder, disabled, className, "aria-label": ariaLabel }: SheetSelectProps) {
+  return (
+    <SelectControl
+      id={id}
+      name={name}
+      value={value}
+      options={options}
+      onValueChange={onValueChange}
+      placeholder={placeholder}
+      disabled={disabled}
+      aria-label={ariaLabel}
+      className={cn(sheetEditControlClassName, className)}
+    />
+  );
+}
 
 export type AppSheetHeaderProps = {
   icon?: LucideIcon;

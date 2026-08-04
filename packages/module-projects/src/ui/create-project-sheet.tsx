@@ -1,5 +1,7 @@
 "use client";
 
+import { StyledSelect } from "@brightweblabs/ui";
+
 import { useProjectsUiClient, useProjectsUiDictionary } from "./context";
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { Building2, FolderKanban, Loader2, Plus, Save, Users2 } from "lucide-react";
@@ -51,7 +53,7 @@ import {
   SheetFooter,
 } from "@brightweblabs/ui";
 import { PROJECT_MEMBER_ROLE_LABELS_PT, type ProjectMemberRole } from "../contracts";
-import { useShellAction } from "@brightweblabs/app-shell";
+import { SheetSelect, useShellAction } from "@brightweblabs/app-shell";
 
 
 type OrganizationOption = {
@@ -90,8 +92,9 @@ export function CreateProjectSheet({ organizations, initialOpen = false }: Creat
   const isProjectDirty = useMemo(
     () =>
       Boolean(
-        projectForm.name.trim() ||
+          projectForm.name.trim() ||
           projectForm.summary.trim() ||
+          projectForm.startDate ||
           projectForm.targetDate ||
           projectForm.cancellationReason.trim() ||
           projectForm.codeTouched ||
@@ -102,6 +105,7 @@ export function CreateProjectSheet({ organizations, initialOpen = false }: Creat
       projectForm.codeTouched,
       projectForm.name,
       projectForm.status,
+      projectForm.startDate,
       projectForm.summary,
       projectForm.targetDate,
     ],
@@ -296,6 +300,7 @@ export function CreateProjectSheet({ organizations, initialOpen = false }: Creat
         name: projectForm.name,
         code: projectForm.code.trim() || undefined,
         status: projectForm.status,
+        startDate: projectForm.startDate || undefined,
         targetDate: projectForm.targetDate || undefined,
         cancellationReason: projectForm.cancellationReason.trim() || undefined,
         summary: projectForm.summary.trim() || undefined,
@@ -415,38 +420,29 @@ export function CreateProjectSheet({ organizations, initialOpen = false }: Creat
 
           <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col gap-0">
             <div className={`${sheetBodyClassName} space-y-4`}>
-              <FormSection title={dictionary.projectEdit.projectSection}>
+              <FormSection title={dictionary.projectCreate.context}>
                 <Field className="gap-1.5 px-4 py-2">
                   <FieldLabel className={sheetFieldLabelClassName}>{dictionary.forms.organization}</FieldLabel>
                   <FieldContent>
-                    <div className="mt-1.5 flex items-center gap-2">
-                      <select
+                    <div className="mt-1.5 flex flex-col gap-2 sm:flex-row sm:items-center">
+                      <SheetSelect
                         id="project-organization"
-                        className={cn(sheetEditControlClassName, "text-foreground outline-none")}
                         value={projectForm.organizationId}
-                        onChange={(event) => projectForm.setOrganizationId(event.target.value)}
-                        required
+                        onValueChange={projectForm.setOrganizationId}
                         disabled={!hasOrganizations || isLoadingOrganizations}
-                      >
-                        {isLoadingOrganizations ? (
-                          <option value="">{dictionary.projectCreate.loadingOrganizations}</option>
-                        ) : organizationsLoadState === "rejected" ? (
-                          <option value="">{dictionary.projectCreate.loadOrganizationsError}</option>
-                        ) : hasOrganizations ? (
-                          organizationOptions.map((organization) => (
-                            <option key={organization.id} value={organization.id}>
-                              {organization.name}
-                            </option>
-                          ))
-                        ) : (
-                          <option value="">{dictionary.projectCreate.noOrganizations}</option>
-                        )}
-                      </select>
+                        options={isLoadingOrganizations
+                          ? [{ value: "", label: dictionary.projectCreate.loadingOrganizations }]
+                          : organizationsLoadState === "rejected"
+                            ? [{ value: "", label: dictionary.projectCreate.loadOrganizationsError }]
+                            : hasOrganizations
+                              ? organizationOptions.map((organization) => ({ value: organization.id, label: organization.name }))
+                              : [{ value: "", label: dictionary.projectCreate.noOrganizations }]}
+                      />
                       <Button
                         type="button"
                         variant="outline"
                         size="sm"
-                        className="h-9 shrink-0 rounded-lg px-2"
+                        className="h-9 w-full shrink-0 rounded-lg px-2 sm:w-auto"
                         onClick={() => organizationCreation.setOrganizationSheetOpen(true)}
                       >
                         <Plus className="mr-1 h-3 w-3" />
@@ -462,6 +458,9 @@ export function CreateProjectSheet({ organizations, initialOpen = false }: Creat
                     ) : null}
                   </FieldContent>
                 </Field>
+              </FormSection>
+
+              <FormSection title={dictionary.board.contentSection}>
                 <Field className="gap-1.5 px-4 py-2">
                   <FieldLabel className={sheetFieldLabelClassName}>{dictionary.projectCreate.projectName}</FieldLabel>
                   <FieldContent>
@@ -504,7 +503,7 @@ export function CreateProjectSheet({ organizations, initialOpen = false }: Creat
                 </Field>
               </FormSection>
 
-              <FormSection title={dictionary.projectEdit.planning}>
+              <FormSection title={dictionary.board.executionSection}>
                 <SelectField
                   id="project-status"
                   label={dictionary.forms.status}
@@ -520,12 +519,6 @@ export function CreateProjectSheet({ organizations, initialOpen = false }: Creat
                   <option value="completed">{dictionary.badge.status.completed}</option>
                   <option value="canceled">{dictionary.badge.status.canceled}</option>
                 </SelectField>
-                <DateField
-                  id="project-target-date"
-                  label={dictionary.projectEdit.targetDate}
-                  value={projectForm.targetDate}
-                  onChange={projectForm.setTargetDate}
-                />
                 {projectForm.status === "canceled" ? (
                   <Field className="gap-1.5 px-4 py-2">
                     <FieldLabel className={sheetFieldLabelClassName}>{dictionary.projectEdit.cancellationReasonLabel}</FieldLabel>
@@ -541,6 +534,24 @@ export function CreateProjectSheet({ organizations, initialOpen = false }: Creat
                     </FieldContent>
                   </Field>
                 ) : null}
+              </FormSection>
+
+              <FormSection title={dictionary.board.calendarSection}>
+                <div className="grid gap-0 sm:grid-cols-2">
+                  <DateField
+                    id="project-start-date"
+                    label={dictionary.projectEdit.startDate}
+                    value={projectForm.startDate}
+                    onChange={projectForm.setStartDate}
+                  />
+                  <DateField
+                    id="project-target-date"
+                    label={dictionary.projectEdit.targetDate}
+                    value={projectForm.targetDate}
+                    onChange={projectForm.setTargetDate}
+                  />
+                </div>
+                {!projectForm.isDateRangeValid ? <p role="alert" className="px-4 pb-2 text-meta text-semantic-danger-strong">{dictionary.projectEdit.invalidDateRange}</p> : null}
               </FormSection>
             </div>
 
@@ -642,7 +653,7 @@ export function CreateProjectSheet({ organizations, initialOpen = false }: Creat
                         </div>
                       </FieldContent>
                     </Field>
-                    <div className="grid grid-cols-2 gap-px">
+                    <div className="grid gap-px sm:grid-cols-2">
                       <Field className="gap-1.5 px-4 py-2">
                         <FieldLabel className={sheetFieldLabelClassName}>{dictionary.projectCreate.zipCode}</FieldLabel>
                         <FieldContent>
@@ -669,7 +680,7 @@ export function CreateProjectSheet({ organizations, initialOpen = false }: Creat
                   </FormSection>
 
                   <FormSection title={dictionary.projectCreate.profile}>
-                    <div className="grid grid-cols-2 gap-px">
+                    <div className="grid gap-px sm:grid-cols-2">
                       <SelectField
                         label={dictionary.projectCreate.companySize}
                         value={organizationCreation.organizationForm.companySize}
@@ -699,21 +710,21 @@ export function CreateProjectSheet({ organizations, initialOpen = false }: Creat
                   </FormSection>
 
                   <SheetSection title={dictionary.projectCreate.members} editing bodyClassName="space-y-3 px-4 py-3">
-                      <div className="grid grid-cols-[1fr_auto_auto] gap-2">
+                      <div className="grid gap-2 sm:grid-cols-[1fr_auto_auto]">
                         <Input
                           value={organizationCreation.organizationInviteDraft.email}
                           onChange={(event) => organizationCreation.setOrganizationInviteDraft((prev) => ({ ...prev, email: event.target.value }))}
                           placeholder="email@empresa.pt"
                           className="h-8"
                         />
-                        <select
+                        <StyledSelect
                           className="h-8 rounded-md border border-black/10 bg-background px-2 text-meta dark:border-white/12 dark:bg-white/[0.04]"
                           value={organizationCreation.organizationInviteDraft.role}
                           onChange={(event) => organizationCreation.setOrganizationInviteDraft((prev) => ({ ...prev, role: event.target.value === "admin" ? "admin" : "member" }))}
                         >
                           <option value="member">{dictionary.people.member}</option>
                           <option value="admin">{dictionary.projectCreate.admin}</option>
-                        </select>
+                        </StyledSelect>
                         <Button type="button" variant="outline" size="sm" className="h-8" onClick={addOrganizationInvite}>
                           <Plus className="mr-1 h-3 w-3" />
                           {dictionary.projectCreate.add}
@@ -826,7 +837,7 @@ export function CreateProjectSheet({ organizations, initialOpen = false }: Creat
                                     {member.email ?? dictionary.people.noEmail} · {PROJECT_MEMBER_SCOPE_LABELS[member.organizationRole]}
                                   </span>
                                 </label>
-                                <select
+                                <StyledSelect
                                   className="h-7 rounded-md border border-black/10 bg-background px-2 text-meta dark:border-white/10"
                                   value={selectedRole ?? "contributor"}
                                   onChange={(event) => setup.setMemberRole(member.profileId, event.target.value as ProjectMemberRole)}
@@ -834,7 +845,7 @@ export function CreateProjectSheet({ organizations, initialOpen = false }: Creat
                                   <option value="owner">{PROJECT_MEMBER_ROLE_LABELS_PT.owner}</option>
                                   <option value="contributor">{PROJECT_MEMBER_ROLE_LABELS_PT.contributor}</option>
                                   <option value="observer">{PROJECT_MEMBER_ROLE_LABELS_PT.observer}</option>
-                                </select>
+                                </StyledSelect>
                               </div>
                             );
                           })}

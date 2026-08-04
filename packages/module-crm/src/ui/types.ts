@@ -143,6 +143,9 @@ export type CrmUiDictionary = {
     createdOn: (date: string) => string;
     noName: string;
     information: string;
+    identity: string;
+    contactDetails: string;
+    relationship: string;
     pipeline: string;
     edit: string;
     fields: {
@@ -221,6 +224,7 @@ export type CrmUiDictionary = {
     createDescription: string;
     fallbackDescription: string;
     identity: string;
+    location: string;
     profile: string;
     name: string;
     namePlaceholder: string;
@@ -230,6 +234,7 @@ export type CrmUiDictionary = {
     taxIdentifierPlaceholder: string;
     addressPlaceholder: string;
     edit: string;
+    create: string;
     save: string;
     saving: string;
     cancel: string;

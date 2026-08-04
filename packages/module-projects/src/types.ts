@@ -67,6 +67,7 @@ export type ProjectTask = {
   assigneeLabel: string | null;
   reporterProfileId: string | null;
   reporterLabel: string | null;
+  startDate: string | null;
   dueDate: string | null;
   position: number;
   blockedReason: string | null;
@@ -120,6 +121,7 @@ export type CreateProjectInput = {
   code?: string | null;
   status?: ProjectStatus;
   ownerProfileId?: string | null;
+  startDate?: string | null;
   targetDate?: string | null;
   cancellationReason?: string | null;
   summary?: string | null;
@@ -144,6 +146,7 @@ export type UpdateProjectInput = {
   code?: string | null;
   status?: ProjectStatus;
   ownerProfileId?: string | null;
+  startDate?: string | null;
   targetDate?: string | null;
   cancellationReason?: string | null;
   summary?: string | null;
@@ -157,6 +160,7 @@ export type CreateProjectTaskInput = {
   priority?: TaskPriority;
   assigneeProfileId?: string | null;
   reporterProfileId?: string | null;
+  startDate?: string | null;
   dueDate?: string | null;
   blockedReason?: string | null;
 };
@@ -169,6 +173,7 @@ export type UpdateProjectTaskInput = {
   priority?: TaskPriority;
   assigneeProfileId?: string | null;
   reporterProfileId?: string | null;
+  startDate?: string | null;
   dueDate?: string | null;
   position?: number;
   blockedReason?: string | null;

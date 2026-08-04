@@ -1,5 +1,7 @@
 "use client";
 
+import { StyledSelect } from "@brightweblabs/ui";
+
 import { useState, useTransition, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, Pencil, Save, X } from "lucide-react";
@@ -135,7 +137,7 @@ export function AccountClient({
 
           <div className="space-y-1.5">
             <Label htmlFor="account-language">{dictionary.profile.preferredLanguage}</Label>
-            <select
+            <StyledSelect
               id="account-language"
               value={preferredLanguage}
               onChange={(event) => setPreferredLanguage(event.target.value === "en" ? "en" : "pt-PT")}
@@ -144,7 +146,7 @@ export function AccountClient({
             >
               <option value="pt-PT">{dictionary.profile.portuguese}</option>
               <option value="en">{dictionary.profile.english}</option>
-            </select>
+            </StyledSelect>
           </div>
         </>
       )}

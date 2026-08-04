@@ -382,6 +382,8 @@ test("projects scaffolding resolves organizations without CRM", async (t) => {
     "0018_projects__20260731124000_project_task_stats.sql",
     "0019_projects__20260731130300_project_collection_indexes.sql",
     "0020_projects__20260801122000_project_member_sync.sql",
+    "0021_projects__20260804120000_project_task_start_date.sql",
+    "0022_projects__20260804123000_project_start_date.sql",
   ]);
   assert.equal(migrations.some((fileName) => fileName.includes("_crm__")), false);
 

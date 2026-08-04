@@ -1,5 +1,7 @@
 "use client";
 
+import { StyledSelect } from "@brightweblabs/ui";
+
 import { useProjectsUiClient, useProjectsUiDictionary } from "./context";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { format } from "date-fns";
@@ -60,13 +62,15 @@ export function CreateProjectTaskSheet({ projects, initialOpen = false }: Create
   const [description, setDescription] = useState("");
   const [status, setStatus] = useState("todo");
   const [priority, setPriority] = useState("medium");
+  const [startDate, setStartDate] = useState("");
   const [dueDate, setDueDate] = useState("");
   const [blockedReason, setBlockedReason] = useState("");
 
   const canSubmit = useMemo(
-    () => projectId.trim().length > 0 && title.trim().length > 0 && (status !== "blocked" || blockedReason.trim().length > 0),
-    [blockedReason, projectId, status, title],
+    () => projectId.trim().length > 0 && title.trim().length > 0 && (status !== "blocked" || blockedReason.trim().length > 0) && (!startDate || !dueDate || dueDate >= startDate),
+    [blockedReason, dueDate, projectId, startDate, status, title],
   );
+  const startDateValue = useMemo(() => parseIsoDate(startDate), [startDate]);
   const dueDateValue = useMemo(() => parseIsoDate(dueDate), [dueDate]);
   const isBlockedStatus = status === "blocked";
 
@@ -76,6 +80,7 @@ export function CreateProjectTaskSheet({ projects, initialOpen = false }: Create
     setDescription("");
     setStatus("todo");
     setPriority("medium");
+    setStartDate("");
     setDueDate("");
     setBlockedReason("");
   };
@@ -113,6 +118,7 @@ export function CreateProjectTaskSheet({ projects, initialOpen = false }: Create
         description: description.trim() || undefined,
         status,
         priority,
+        startDate: startDate || undefined,
         dueDate: dueDate || undefined,
         blockedReason: isBlockedStatus ? (blockedReason.trim() || undefined) : undefined,
       });
@@ -140,29 +146,8 @@ export function CreateProjectTaskSheet({ projects, initialOpen = false }: Create
 
         <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col gap-0">
           <div className={`${sheetBodyClassName} space-y-4`}>
-            <SheetSection title={dictionary.create.details} editing>
+            <SheetSection title={dictionary.board.contentSection} editing>
               <FieldGroup className="gap-0 px-0 py-1">
-                <Field className="gap-1.5 px-4 py-2">
-                  <FieldLabel className={sheetFieldLabelClassName}>{dictionary.projectEdit.projectSection}</FieldLabel>
-                  <FieldContent>
-                    <select
-                      id="task-project-id"
-                      className={cn(sheetEditControlClassName, "mt-1.5 text-foreground outline-none")}
-                      value={projectId}
-                      onChange={(event) => setProjectId(event.target.value)}
-                      required
-                      disabled={projects.length === 0}
-                    >
-                      {projects.map((project) => (
-                        <option key={project.id} value={project.id}>
-                          {project.organizationName ? `${project.organizationName} · ` : ""}
-                          {project.name}
-                        </option>
-                      ))}
-                    </select>
-                    {projects.length === 0 ? <p className="mt-1 text-micro text-foreground/55">{dictionary.create.noProjects}</p> : null}
-                  </FieldContent>
-                </Field>
                 <Field className="gap-1.5 px-4 py-2">
                   <FieldLabel className={sheetFieldLabelClassName}>{dictionary.forms.title}</FieldLabel>
                   <FieldContent>
@@ -191,13 +176,13 @@ export function CreateProjectTaskSheet({ projects, initialOpen = false }: Create
               </FieldGroup>
             </SheetSection>
 
-            <SheetSection title={dictionary.projectEdit.planning} editing>
+            <SheetSection title={dictionary.board.executionSection} editing>
               <FieldGroup className="gap-0 px-0 py-1">
                 <div className="grid grid-cols-2 gap-3">
                   <Field className="gap-1.5 px-4 py-2">
                     <FieldLabel className={sheetFieldLabelClassName}>{dictionary.forms.status}</FieldLabel>
                     <FieldContent>
-                      <select
+                      <StyledSelect
                         id="task-status"
                         className={cn(sheetEditControlClassName, "mt-1.5 text-foreground outline-none")}
                         value={status}
@@ -207,13 +192,13 @@ export function CreateProjectTaskSheet({ projects, initialOpen = false }: Create
                         <option value="in_progress">{dictionary.board.columns.in_progress}</option>
                         <option value="blocked">{dictionary.board.columns.blocked}</option>
                         <option value="done">{dictionary.board.columns.done}</option>
-                      </select>
+                      </StyledSelect>
                     </FieldContent>
                   </Field>
                   <Field className="gap-1.5 px-4 py-2">
                     <FieldLabel className={sheetFieldLabelClassName}>{dictionary.forms.priority}</FieldLabel>
                     <FieldContent>
-                      <select
+                      <StyledSelect
                         id="task-priority"
                         className={cn(sheetEditControlClassName, "mt-1.5 text-foreground outline-none")}
                         value={priority}
@@ -222,11 +207,43 @@ export function CreateProjectTaskSheet({ projects, initialOpen = false }: Create
                         <option value="low">{dictionary.board.priority.low}</option>
                         <option value="medium">{dictionary.board.priority.medium}</option>
                         <option value="high">{dictionary.board.priority.high}</option>
-                        <option value="critical">{dictionary.create.critical}</option>
-                      </select>
+                        <option value="urgent">{dictionary.board.priority.urgent}</option>
+                      </StyledSelect>
                     </FieldContent>
                   </Field>
                 </div>
+                {isBlockedStatus ? (
+                  <Field className="gap-1.5 px-4 py-2">
+                    <FieldLabel className={sheetFieldLabelClassName}>{dictionary.forms.blockedReason}</FieldLabel>
+                    <FieldContent><Input id="task-blocked-reason" value={blockedReason} onChange={(event) => setBlockedReason(event.target.value)} placeholder={dictionary.create.blockedReasonPlaceholder} required className={cn(sheetEditControlClassName, "mt-1.5")} /></FieldContent>
+                  </Field>
+                ) : null}
+              </FieldGroup>
+            </SheetSection>
+
+            <SheetSection title={dictionary.board.planningSection} editing>
+              <FieldGroup className="gap-0 px-0 py-1">
+                <Field className="gap-1.5 px-4 py-2">
+                  <FieldLabel className={sheetFieldLabelClassName}>{dictionary.projectEdit.projectSection}</FieldLabel>
+                  <FieldContent>
+                    <StyledSelect id="task-project-id" className={cn(sheetEditControlClassName, "mt-1.5 text-foreground outline-none")} value={projectId} onChange={(event) => setProjectId(event.target.value)} required disabled={projects.length === 0}>
+                      {projects.map((project) => <option key={project.id} value={project.id}>{project.organizationName ? `${project.organizationName} · ` : ""}{project.name}</option>)}
+                    </StyledSelect>
+                    {projects.length === 0 ? <p className="mt-1 text-micro text-foreground/55">{dictionary.create.noProjects}</p> : null}
+                  </FieldContent>
+                </Field>
+              </FieldGroup>
+            </SheetSection>
+
+            <SheetSection title={dictionary.board.calendarSection} editing>
+              <FieldGroup className="gap-0 px-0 py-1">
+                <div className="grid gap-3 sm:grid-cols-2">
+                <Field className="gap-1.5 px-4 py-2">
+                  <FieldLabel className={sheetFieldLabelClassName}>{dictionary.create.startDateOptional}</FieldLabel>
+                  <FieldContent>
+                    <Popover><PopoverTrigger asChild><Button id="task-start-date" type="button" variant="ghost" className={cn("mt-1.5", sheetDatePickerButtonClassName, startDateValue ? "text-foreground" : "text-foreground/45")}><CalendarIcon className="mr-1.5 h-3.5 w-3.5" />{startDateValue ? format(startDateValue, "dd/MM/yyyy") : dictionary.create.selectDate}</Button></PopoverTrigger><PopoverContent className="w-auto p-0" align="start"><Calendar mode="single" captionLayout="dropdown" className="rounded-lg border" selected={startDateValue} onSelect={(date) => setStartDate(toIsoDate(date))} initialFocus /></PopoverContent></Popover>
+                  </FieldContent>
+                </Field>
                 <Field className="gap-1.5 px-4 py-2">
                   <FieldLabel className={sheetFieldLabelClassName}>{dictionary.create.dueDateOptional}</FieldLabel>
                   <FieldContent>
@@ -259,23 +276,8 @@ export function CreateProjectTaskSheet({ projects, initialOpen = false }: Create
                     </Popover>
                   </FieldContent>
                 </Field>
-                {isBlockedStatus ? (
-                  <Field className="gap-1.5 px-4 py-2">
-                    <FieldLabel className={sheetFieldLabelClassName}>
-                      {dictionary.forms.blockedReason}
-                    </FieldLabel>
-                    <FieldContent>
-                      <Input
-                        id="task-blocked-reason"
-                        value={blockedReason}
-                        onChange={(event) => setBlockedReason(event.target.value)}
-                        placeholder={dictionary.create.blockedReasonPlaceholder}
-                        required
-                        className={cn(sheetEditControlClassName, "mt-1.5")}
-                      />
-                    </FieldContent>
-                  </Field>
-                ) : null}
+                </div>
+                {startDate && dueDate && dueDate < startDate ? <p className="px-4 pt-2 text-meta text-[color:var(--destructive)]">{dictionary.board.invalidDateRange}</p> : null}
               </FieldGroup>
             </SheetSection>
           </div>

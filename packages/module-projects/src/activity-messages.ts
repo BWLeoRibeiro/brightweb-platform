@@ -140,6 +140,7 @@ export const ptProjectActivityDictionary: ProjectActivityDictionary = {
     title: "Título",
     name: "Nome",
     status: "Estado",
+    start_date: "Data de início",
     target_date: "Data-alvo",
     due_date: "Prazo",
     priority: "Prioridade",

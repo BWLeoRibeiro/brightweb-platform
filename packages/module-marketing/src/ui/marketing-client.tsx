@@ -1,5 +1,7 @@
 "use client";
 
+import { StyledSelect } from "@brightweblabs/ui";
+
 import { CalendarClock, Check, Clock3, Mail, Plus, RotateCcw, Send, Trash2, Users, X } from "lucide-react";
 import {
   Badge,
@@ -910,16 +912,16 @@ export function MarketingClient({
               </div>
               <div className="marketing-field marketing-field-wide">
                 <Label htmlFor="campaign-topic">{dictionary.editor.fields.topic}</Label>
-                <select className="marketing-select" id="campaign-topic" value={form.topicId} onChange={(event) => setForm((current) => ({ ...current, topicId: event.target.value }))}>
+                <StyledSelect className="marketing-select" id="campaign-topic" value={form.topicId} onChange={(event) => setForm((current) => ({ ...current, topicId: event.target.value }))}>
                   <option value="">{dictionary.editor.placeholders.topic}</option>
                   {topics.filter((topic) => topic.isActive || topic.id === form.topicId).map((topic) => <option key={topic.id} value={topic.id}>{topic.label}</option>)}
-                </select>
+                </StyledSelect>
               </div>
               <div className="marketing-field marketing-field-wide">
                 <Label htmlFor="campaign-segment">
                   {dictionary.editor.fields.segment}
                 </Label>
-                <select
+                <StyledSelect
                   className="marketing-select"
                   id="campaign-segment"
                   value={form.segmentId}
@@ -935,7 +937,7 @@ export function MarketingClient({
                       {segment.name}
                     </option>
                   ))}
-                </select>
+                </StyledSelect>
                 {segmentOptionsFailed ? <p role="alert" className="mt-2 text-meta text-destructive">{dictionary.feedback.genericError}</p> : null}
                 <p className="mt-2 text-meta text-muted-foreground">
                   {dictionary.editor.effectiveAudience}

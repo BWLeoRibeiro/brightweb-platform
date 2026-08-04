@@ -26,6 +26,7 @@ export { PhoneInput } from "./components/phone-input";
 export type { PhoneInputProps } from "./components/phone-input";
 export { SearchField } from "./components/search-field";
 export type { SearchFieldProps } from "./components/search-field";
+export * from "./components/select";
 export * from "./components/skeleton";
 export { TableRowsSkeleton } from "./components/skeleton-table";
 export { Separator } from "./components/separator";
