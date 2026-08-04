@@ -1,5 +1,7 @@
 "use client";
 
+import { StyledSelect } from "@brightweblabs/ui";
+
 import { useProjectsUiClient, useProjectsUiDictionary } from "./context";
 import { defaultProjectsUiDictionary } from "./dictionary";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
@@ -75,7 +77,7 @@ function TeamMemberRow({ member, role, onRoleChange, onRemove }: TeamMemberRowPr
     <div className="flex items-center gap-2 rounded-xl border border-black/8 bg-background/70 px-3 py-2 dark:border-white/10">
       <MemberIdentity member={member} />
       {isInternalIdentity(member.organizationRole) ? (
-        <select
+        <StyledSelect
           className="h-7 rounded-md border border-black/10 bg-background px-2 text-meta dark:border-white/10"
           value={role}
           onChange={(event) => onRoleChange(event.target.value as ProjectMemberRole)}
@@ -83,7 +85,7 @@ function TeamMemberRow({ member, role, onRoleChange, onRemove }: TeamMemberRowPr
           <option value="owner">{PROJECT_MEMBER_ROLE_LABELS_PT.owner}</option>
           <option value="contributor">{PROJECT_MEMBER_ROLE_LABELS_PT.contributor}</option>
           <option value="observer">{PROJECT_MEMBER_ROLE_LABELS_PT.observer}</option>
-        </select>
+        </StyledSelect>
       ) : (
         // Client role is fixed and cannot be changed.
         <span className="inline-flex h-7 items-center rounded-md border border-black/8 bg-background/60 px-2 text-meta text-foreground/60 dark:border-white/10">

@@ -114,7 +114,7 @@ test("create-project organization choices never present unresolved or failed dat
   assert.match(source, /role="alert"[\s\S]*loadOrganizationsError/);
 });
 
-const project = { id: "project-1", organizationId: "org-1", organizationName: "MQ", organizationOwnerLabel: null, organizationOwnerEmail: null, organizationOwnerPhone: null, name: "Projeto", code: "MQ-1", status: "active", health: "on_track", ownerProfileId: null, ownerLabel: null, ownerEmail: null, ownerPhone: null, activatedAt: null, targetDate: null, completedAt: null, cancellationReason: null, summary: null, createdAt: "2026-01-01T00:00:00.000Z", updatedAt: "2026-01-01T00:00:00.000Z", taskStats: { total: 0, done: 0, overdue: 0, blocked: 0 }, milestoneStats: { total: 0, achieved: 0, delayed: 0 } } satisfies ProjectDashboardData["project"];
+const project = { id: "project-1", organizationId: "org-1", organizationName: "MQ", organizationOwnerLabel: null, organizationOwnerEmail: null, organizationOwnerPhone: null, name: "Projeto", code: "MQ-1", status: "active", health: "on_track", ownerProfileId: null, ownerLabel: null, ownerEmail: null, ownerPhone: null, activatedAt: null, startDate: null, targetDate: null, completedAt: null, cancellationReason: null, summary: null, createdAt: "2026-01-01T00:00:00.000Z", updatedAt: "2026-01-01T00:00:00.000Z", taskStats: { total: 0, done: 0, overdue: 0, blocked: 0 }, milestoneStats: { total: 0, achieved: 0, delayed: 0 } } satisfies ProjectDashboardData["project"];
 const link = { id: "link-1", projectId: "project-1", label: "Drive", url: "https://example.com", visibility: "staff", kind: "drive", createdAt: project.createdAt, updatedAt: project.updatedAt } satisfies ProjectLink;
 const dashboard = { project, members: [], milestones: [], tasks: [], links: [link], activity: [] } satisfies ProjectDashboardData;
 
@@ -195,6 +195,7 @@ test("client project health enforces client link visibility in the query and res
     owner_profile_id: null,
     owner: null,
     activated_at: null,
+    start_date: null,
     target_date: null,
     completed_at: null,
     cancellation_reason: null,

@@ -23,6 +23,7 @@ export type ProjectListItem = {
   ownerEmail: string | null;
   ownerPhone: string | null;
   activatedAt: string | null;
+  startDate: string | null;
   targetDate: string | null;
   completedAt: string | null;
   cancellationReason: string | null;
@@ -96,6 +97,7 @@ function buildProjectSelectColumns(profileColumns: string, includeCancellationRe
     "health",
     "owner_profile_id",
     "activated_at",
+    "start_date",
     "target_date",
     "completed_at",
     ...(includeCancellationReason ? ["cancellation_reason"] : []),
@@ -231,6 +233,7 @@ function normalizeProjectRow(row: Record<string, unknown>): ProjectListItem {
     ownerEmail: typeof owner?.email === "string" ? owner.email : null,
     ownerPhone: typeof owner?.phone === "string" ? owner.phone : null,
     activatedAt: toDateString(row.activated_at),
+    startDate: toDateString(row.start_date),
     targetDate: toDateString(row.target_date),
     completedAt: toDateString(row.completed_at),
     cancellationReason: typeof row.cancellation_reason === "string" ? row.cancellation_reason : null,

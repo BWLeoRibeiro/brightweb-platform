@@ -1,5 +1,7 @@
 "use client";
 
+import { StyledSelect } from "@brightweblabs/ui";
+
 import {
   ChevronDown,
   ChevronUp,
@@ -401,18 +403,12 @@ export function WorkflowWorkspace({
   return (
     <>
       <section className="space-y-6" aria-labelledby="marketing-workflows-title">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <p className="marketing-kicker">{dictionary.workflows.eyebrow}</p>
-            <h2 id="marketing-workflows-title" className="text-heading-3 font-semibold">
-              {dictionary.workflows.title}
-            </h2>
-            <p className="mt-1 text-body text-muted-foreground">{dictionary.workflows.subtitle}</p>
-          </div>
-          <Button type="button" onClick={beginCreate}>
-            <Plus className="size-4" />
-            {dictionary.workflows.newWorkflow}
-          </Button>
+        <div>
+          <p className="marketing-kicker">{dictionary.workflows.eyebrow}</p>
+          <h2 id="marketing-workflows-title" className="text-heading-3 font-semibold">
+            {dictionary.workflows.title}
+          </h2>
+          <p className="mt-1 text-body text-muted-foreground">{dictionary.workflows.subtitle}</p>
         </div>
 
         {workflows.length === 0 ? (
@@ -427,10 +423,6 @@ export function WorkflowWorkspace({
                   {dictionary.workflows.emptyDescription}
                 </p>
               </div>
-              <Button type="button" onClick={beginCreate}>
-                <Plus className="size-4" />
-                {dictionary.workflows.newWorkflow}
-              </Button>
             </CardContent>
           </Card>
         ) : (
@@ -495,7 +487,7 @@ export function WorkflowWorkspace({
               </div>
               <div className="space-y-2">
                 <Label htmlFor="workflow-trigger">{dictionary.workflows.fields.triggerType}</Label>
-                <select
+                <StyledSelect
                   id="workflow-trigger"
                   value={form.triggerType}
                   onChange={(event) => setForm((current) => ({
@@ -508,7 +500,7 @@ export function WorkflowWorkspace({
                   {(Object.keys(dictionary.workflows.triggers) as MarketingWorkflowTriggerType[]).map((type) => (
                     <option value={type} key={type}>{dictionary.workflows.triggers[type]}</option>
                   ))}
-                </select>
+                </StyledSelect>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="workflow-trigger-value">{triggerLabel.label}</Label>
@@ -530,7 +522,7 @@ export function WorkflowWorkspace({
                   <p className="text-body text-muted-foreground">{dictionary.workflows.steps.subtitle}</p>
                 </div>
                 <div className="flex gap-2">
-                  <select
+                  <StyledSelect
                     value={addType}
                     onChange={(event) => setAddType(event.target.value as MarketingWorkflowNodeType)}
                     aria-label={dictionary.workflows.steps.add}
@@ -539,7 +531,7 @@ export function WorkflowWorkspace({
                     {(Object.keys(dictionary.workflows.steps.types) as MarketingWorkflowNodeType[]).map((type) => (
                       <option value={type} key={type}>{dictionary.workflows.steps.types[type]}</option>
                     ))}
-                  </select>
+                  </StyledSelect>
                   <Button
                     type="button"
                     variant="outline"
@@ -663,7 +655,7 @@ export function WorkflowWorkspace({
                               <Label htmlFor={`workflow-unit-${node.key}`}>
                                 {dictionary.workflows.steps.unit}
                               </Label>
-                              <select
+                              <StyledSelect
                                 id={`workflow-unit-${node.key}`}
                                 value={node.durationUnit}
                                 onChange={(event) => updateNode(node.key, {
@@ -674,7 +666,7 @@ export function WorkflowWorkspace({
                                 <option value="minutes">{dictionary.workflows.steps.units.minutes}</option>
                                 <option value="hours">{dictionary.workflows.steps.units.hours}</option>
                                 <option value="days">{dictionary.workflows.steps.units.days}</option>
-                              </select>
+                              </StyledSelect>
                             </div>
                           </div>
                         ) : (

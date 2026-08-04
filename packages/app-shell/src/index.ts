@@ -23,6 +23,7 @@ export {
   AppSheetBody,
   AppSheetFooter,
   AppSheetHeader,
+  SheetSelect,
   SheetSection,
   sheetAccentTextareaClassName,
   sheetBodyClassName,
@@ -40,7 +41,7 @@ export {
   sheetShellClassName,
   sheetViewControlClassName,
 } from "./components/app-sheet";
-export type { AppSheetHeaderProps } from "./components/app-sheet";
+export type { AppSheetHeaderProps, SheetSelectOption, SheetSelectProps } from "./components/app-sheet";
 export { AppShellFrame } from "./components/app-shell-frame";
 export type { AppShellFrameProps } from "./components/app-shell-frame";
 export { AccountMenu } from "./components/account-menu";

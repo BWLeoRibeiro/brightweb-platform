@@ -1,5 +1,7 @@
 "use client";
 
+import { StyledSelect } from "@brightweblabs/ui";
+
 import { useProjectsUiClient, useProjectsUiDictionary } from "../context";
 import { useState, type FormEvent } from "react";
 import { Link2, Save } from "lucide-react";
@@ -140,7 +142,7 @@ export function ProjectLinkCreateSheet({
               <div className="grid gap-3 sm:grid-cols-2">
                 <div>
                   <label className={sheetFieldLabelClassName} htmlFor="link-create-kind">{dictionary.forms.kind}</label>
-                  <select
+                  <StyledSelect
                     id="link-create-kind"
                     value={kind}
                     onChange={(event) => setKind(event.target.value)}
@@ -150,11 +152,11 @@ export function ProjectLinkCreateSheet({
                     <option value="doc">{dictionary.create.linkKinds.doc}</option>
                     <option value="sheet">{dictionary.create.linkKinds.sheet}</option>
                     <option value="drive">{dictionary.create.linkKinds.drive}</option>
-                  </select>
+                  </StyledSelect>
                 </div>
                 <div>
                   <label className={sheetFieldLabelClassName} htmlFor="link-create-visibility">{dictionary.forms.visibility}</label>
-                  <select
+                  <StyledSelect
                     id="link-create-visibility"
                     value={visibility}
                     onChange={(event) => setVisibility(event.target.value)}
@@ -162,7 +164,7 @@ export function ProjectLinkCreateSheet({
                   >
                     <option value="staff">{dictionary.create.internalTeam}</option>
                     <option value="client">{dictionary.people.client}</option>
-                  </select>
+                  </StyledSelect>
                 </div>
               </div>
             </SheetSection>

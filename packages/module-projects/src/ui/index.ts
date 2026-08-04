@@ -1,11 +1,13 @@
 export * from "./client";
 export * from "./context";
+export * from "./create-project-sheet";
 export { defaultProjectsUiDictionary } from "./dictionary";
 export * from "./events";
 export * from "./navigation";
 export * from "./project-activity-card";
 export * from "./project-detail-data-provider";
 export * from "./project-detail-loading";
+export * from "./project-detail-create-sheets/project-task-create-sheet";
 export * from "./project-detail-page";
 export * from "./project-board-kanban";
 export { default as ProjectBoardLoading } from "./project-board-loading";

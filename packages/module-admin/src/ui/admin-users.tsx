@@ -1,5 +1,7 @@
 "use client";
 
+import { StyledSelect } from "@brightweblabs/ui";
+
 import { useCallback, useEffect, useEffectEvent, useRef, useState } from "react";
 import { useShellAction } from "@brightweblabs/app-shell";
 import { motion, useReducedMotion } from "motion/react";
@@ -351,9 +353,9 @@ export function AdminUsersClient({
               <Field>
                 <FieldLabel htmlFor="admin-user-invite-role">{dictionary.invitations.roleLabel}</FieldLabel>
                 <FieldContent>
-                  <select id="admin-user-invite-role" value={inviteRole} onChange={(event) => setInviteRole(event.target.value === "admin" ? "admin" : "staff")} disabled={inviteSubmitting} className="h-11 w-full rounded-[var(--radius)] border border-[color:var(--hairline-strong)] bg-[color:var(--elevate-1)] px-3 text-body text-[color:var(--foreground)] shadow-xs outline-none transition-[color,box-shadow] focus:border-[color:var(--accent)] focus:ring-[color:var(--ring)] focus:ring-[3px] disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50">
+                  <StyledSelect id="admin-user-invite-role" value={inviteRole} onChange={(event) => setInviteRole(event.target.value === "admin" ? "admin" : "staff")} disabled={inviteSubmitting} className="h-11 w-full rounded-[var(--radius)] border border-[color:var(--hairline-strong)] bg-[color:var(--elevate-1)] px-3 text-body text-[color:var(--foreground)] shadow-xs outline-none transition-[color,box-shadow] focus:border-[color:var(--accent)] focus:ring-[color:var(--ring)] focus:ring-[3px] disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50">
                     {inviteRoleValues.map((role) => <option key={role} value={role}>{dictionary.roles[role]}</option>)}
-                  </select>
+                  </StyledSelect>
                   {dictionary.invitations.roleDescriptions?.[inviteRole] ? <FieldDescription>{dictionary.invitations.roleDescriptions[inviteRole]}</FieldDescription> : null}
                 </FieldContent>
               </Field>

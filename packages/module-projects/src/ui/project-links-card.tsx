@@ -1,5 +1,7 @@
 "use client";
 
+import { StyledSelect } from "@brightweblabs/ui";
+
 import { useProjectsUiClient, useProjectsUiDictionary } from "./context";
 import { defaultProjectsUiDictionary } from "./dictionary";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
@@ -451,7 +453,7 @@ export function ProjectLinksCard({
                 <div className="grid gap-4 sm:grid-cols-2">
                   <label className={cn("mt-0 block", sheetFieldLabelClassName)}>
                     {dictionary.forms.kind}
-                    <select
+                    <StyledSelect
                       value={linkKind}
                       onChange={(event) => setLinkKind(event.target.value)}
                       disabled={linkMode === "view"}
@@ -461,11 +463,11 @@ export function ProjectLinksCard({
                       <option value="doc">{dictionary.create.linkKinds.doc}</option>
                       <option value="sheet">{dictionary.create.linkKinds.sheet}</option>
                       <option value="drive">{dictionary.create.linkKinds.drive}</option>
-                    </select>
+                    </StyledSelect>
                   </label>
                   <label className={cn("mt-0 block", sheetFieldLabelClassName)}>
                     {dictionary.forms.visibility}
-                    <select
+                    <StyledSelect
                       value={linkVisibility}
                       onChange={(event) => setLinkVisibility(event.target.value)}
                       disabled={linkMode === "view"}
@@ -473,7 +475,7 @@ export function ProjectLinksCard({
                     >
                       <option value="staff">{dictionary.create.internalTeam}</option>
                       <option value="client">{dictionary.people.client}</option>
-                    </select>
+                    </StyledSelect>
                   </label>
                 </div>
                 </SheetSection>

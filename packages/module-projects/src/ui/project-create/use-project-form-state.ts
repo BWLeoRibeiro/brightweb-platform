@@ -31,10 +31,15 @@ export function useProjectFormState(organizations: OrganizationOption[]) {
   const [codeTouched, setCodeTouched] = useState(false);
   const [status, setStatus] = useState("planned");
   const [cancellationReason, setCancellationReason] = useState("");
+  const [startDate, setStartDate] = useState("");
   const [targetDate, setTargetDate] = useState("");
   const [summary, setSummary] = useState("");
 
-  const isFormValid = useMemo(() => organizationId.trim().length > 0 && name.trim().length > 0, [name, organizationId]);
+  const isDateRangeValid = !startDate || !targetDate || targetDate >= startDate;
+  const isFormValid = useMemo(
+    () => organizationId.trim().length > 0 && name.trim().length > 0 && isDateRangeValid,
+    [isDateRangeValid, name, organizationId],
+  );
   const derivedCode = useMemo(() => {
     const organizationName = organizations.find((organization) => organization.id === organizationId)?.name ?? "";
     if (!organizationName.trim() || !name.trim()) {
@@ -55,6 +60,7 @@ export function useProjectFormState(organizations: OrganizationOption[]) {
     setCodeTouched(false);
     setStatus("planned");
     setCancellationReason("");
+    setStartDate("");
     setTargetDate("");
     setSummary("");
   }, [organizations]);
@@ -72,10 +78,13 @@ export function useProjectFormState(organizations: OrganizationOption[]) {
     setStatus,
     cancellationReason,
     setCancellationReason,
+    startDate,
+    setStartDate,
     targetDate,
     setTargetDate,
     summary,
     setSummary,
+    isDateRangeValid,
     isFormValid,
     resetProjectForm,
   };

@@ -218,3 +218,17 @@ test("dashboard parsers read publicError envelopes, plain strings, and reject ga
   assert.equal(parseErrorFromPayload({ error: { code: "FORBIDDEN" } }, "fallback"), "fallback");
   assert.equal(parseErrorFromPayload({ error: 500 }, "fallback"), "fallback");
 });
+
+test("dashboard overview prioritizes briefing, attention, work, and recent changes", () => {
+  const clientSource = readFileSync(new URL("../src/dashboard/dashboard-client.tsx", import.meta.url), "utf8");
+  const stylesheet = readFileSync(new URL("../src/dashboard/dashboard.css", import.meta.url), "utf8");
+
+  assert.match(clientSource, /className="dashboard-briefing"/);
+  assert.match(clientSource, /function AttentionPanel/);
+  assert.match(clientSource, /function RecentChangesPanel/);
+  assert.match(clientSource, /<AttentionPanel[\s\S]*<TasksTable[\s\S]*<RecentChangesPanel[\s\S]*<MilestonesPanel/);
+  assert.match(clientSource, /const attentionCount = projects\?\.kpis\.projectsOverdue \?\? 0/);
+  assert.doesNotMatch(clientSource, /href=\{`\/crm\?contact=/);
+  assert.doesNotMatch(clientSource, /Bento \(Idea C\)/);
+  assert.match(stylesheet, /\.dashboard-briefing\s*\{/);
+});

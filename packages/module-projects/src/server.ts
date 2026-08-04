@@ -27,8 +27,8 @@ import {
 
 const ORGANIZATION_ADDRESS_SEPARATOR = " | ";
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
-const PROJECT_SELECT_COLUMNS = "id, organization_id, name, code, status, health, owner_profile_id, activated_at, target_date, completed_at, cancellation_reason, summary, created_at, updated_at, organizations(name, primary_contact:profiles!organizations_primary_contact_id_fkey(first_name, last_name, email)), owner:profiles!projects_owner_profile_id_fkey(first_name, last_name, email)";
-const PROJECT_SELECT_COLUMNS_LEGACY = "id, organization_id, name, code, status, health, owner_profile_id, activated_at, target_date, completed_at, summary, created_at, updated_at, organizations(name, primary_contact:profiles!organizations_primary_contact_id_fkey(first_name, last_name, email)), owner:profiles!projects_owner_profile_id_fkey(first_name, last_name, email)";
+const PROJECT_SELECT_COLUMNS = "id, organization_id, name, code, status, health, owner_profile_id, activated_at, start_date, target_date, completed_at, cancellation_reason, summary, created_at, updated_at, organizations(name, primary_contact:profiles!organizations_primary_contact_id_fkey(first_name, last_name, email)), owner:profiles!projects_owner_profile_id_fkey(first_name, last_name, email)";
+const PROJECT_SELECT_COLUMNS_LEGACY = "id, organization_id, name, code, status, health, owner_profile_id, activated_at, start_date, target_date, completed_at, summary, created_at, updated_at, organizations(name, primary_contact:profiles!organizations_primary_contact_id_fkey(first_name, last_name, email)), owner:profiles!projects_owner_profile_id_fkey(first_name, last_name, email)";
 
 function createProjectsServiceRoleClient() {
   return createServiceRoleClient();
@@ -302,6 +302,7 @@ function normalizeProjectRow(row: Record<string, unknown>): ProjectListItem {
     ownerEmail: typeof owner?.email === "string" ? owner.email : null,
     ownerPhone: typeof owner?.phone === "string" ? owner.phone : null,
     activatedAt: toDateString(row.activated_at),
+    startDate: toDateString(row.start_date),
     targetDate: toDateString(row.target_date),
     completedAt: toDateString(row.completed_at),
     cancellationReason: typeof row.cancellation_reason === "string" ? row.cancellation_reason : null,
@@ -629,6 +630,7 @@ function normalizeTaskRow(row: Record<string, unknown>): ProjectTask {
     assigneeLabel: profileLabel(assignee?.first_name, assignee?.last_name, assignee?.email),
     reporterProfileId: typeof row.reporter_profile_id === "string" ? row.reporter_profile_id : null,
     reporterLabel: profileLabel(reporter?.first_name, reporter?.last_name, reporter?.email),
+    startDate: toDateString(row.start_date),
     dueDate: toDateString(row.due_date),
     position: typeof row.position === "number" ? row.position : 0,
     blockedReason: typeof row.blocked_reason === "string" ? row.blocked_reason : null,
@@ -672,7 +674,7 @@ export async function listProjectTasks(supabase: SupabaseClient, projectId: stri
   const { data, error } = await supabase
     .from("project_tasks")
     .select(
-      "id, project_id, milestone_id, title, description, status, priority, assignee_profile_id, reporter_profile_id, due_date, position, blocked_reason, created_at, updated_at, assignee:profiles!project_tasks_assignee_profile_id_fkey(first_name, last_name, email), reporter:profiles!project_tasks_reporter_profile_id_fkey(first_name, last_name, email)",
+      "id, project_id, milestone_id, title, description, status, priority, assignee_profile_id, reporter_profile_id, start_date, due_date, position, blocked_reason, created_at, updated_at, assignee:profiles!project_tasks_assignee_profile_id_fkey(first_name, last_name, email), reporter:profiles!project_tasks_reporter_profile_id_fkey(first_name, last_name, email)",
     )
     .eq("project_id", projectId)
     .order("position", { ascending: true })
@@ -969,6 +971,9 @@ export async function listProjectActivity(
 
 export async function createProject(supabase: SupabaseClient, input: CreateProjectInput) {
   const cancellationReason = input.cancellationReason?.trim() || null;
+  if (input.startDate && input.targetDate && input.targetDate < input.startDate) {
+    throw new Error("A data alvo não pode ser anterior à data de início.");
+  }
   if (input.status === "canceled" && !cancellationReason) {
     throw new Error("Indica o motivo do cancelamento.");
   }
@@ -1000,6 +1005,7 @@ export async function createProject(supabase: SupabaseClient, input: CreateProje
       taskStats: { total: 0, done: 0, overdue: 0, blocked: 0 },
     }),
     owner_profile_id: input.ownerProfileId ?? null,
+    start_date: input.startDate ?? null,
     target_date: input.targetDate ?? null,
     cancellation_reason: input.status === "canceled" ? cancellationReason : null,
     summary: input.summary?.trim() || null,
@@ -1063,6 +1069,21 @@ export async function updateProject(supabase: SupabaseClient, projectId: string,
   const payload: Record<string, unknown> = {};
   const cancellationReason = input.cancellationReason?.trim() || null;
 
+  if (typeof input.startDate !== "undefined" || typeof input.targetDate !== "undefined") {
+    const { data: currentDates, error: datesError } = await supabase
+      .from("projects")
+      .select("start_date, target_date")
+      .eq("id", projectId)
+      .maybeSingle<{ start_date: string | null; target_date: string | null }>();
+    if (datesError) throw new Error(datesError.message);
+    if (!currentDates) throw new Error("Projeto não encontrado.");
+    const nextStartDate = typeof input.startDate === "undefined" ? currentDates.start_date : input.startDate || null;
+    const nextTargetDate = typeof input.targetDate === "undefined" ? currentDates.target_date : input.targetDate || null;
+    if (nextStartDate && nextTargetDate && nextTargetDate < nextStartDate) {
+      throw new Error("A data alvo não pode ser anterior à data de início.");
+    }
+  }
+
   if (input.status === "canceled" && !cancellationReason) {
     throw new Error("Indica o motivo do cancelamento.");
   }
@@ -1071,6 +1092,7 @@ export async function updateProject(supabase: SupabaseClient, projectId: string,
   if (typeof input.code !== "undefined") payload.code = input.code?.trim() || null;
   if (typeof input.status !== "undefined") payload.status = input.status;
   if (typeof input.ownerProfileId !== "undefined") payload.owner_profile_id = input.ownerProfileId || null;
+  if (typeof input.startDate !== "undefined") payload.start_date = input.startDate || null;
   if (typeof input.targetDate !== "undefined") payload.target_date = input.targetDate || null;
   if (typeof input.cancellationReason !== "undefined") payload.cancellation_reason = cancellationReason;
   if (typeof input.status !== "undefined" && input.status !== "canceled") payload.cancellation_reason = null;
@@ -1239,6 +1261,9 @@ export async function createProjectTask(supabase: SupabaseClient, projectId: str
   if (status === "blocked" && !blockedReason) {
     throw new Error("Motivo de bloqueio é obrigatório quando a tarefa está bloqueada.");
   }
+  if (input.startDate && input.dueDate && input.dueDate < input.startDate) {
+    throw new Error("A data limite não pode ser anterior à data de início.");
+  }
   const payload = {
     project_id: projectId,
     title: input.title.trim(),
@@ -1248,6 +1273,7 @@ export async function createProjectTask(supabase: SupabaseClient, projectId: str
     priority: input.priority ?? "medium",
     assignee_profile_id: input.assigneeProfileId ?? null,
     reporter_profile_id: input.reporterProfileId ?? null,
+    start_date: input.startDate ?? null,
     due_date: input.dueDate ?? null,
     blocked_reason: status === "blocked" ? blockedReason : null,
     position,
@@ -1257,7 +1283,7 @@ export async function createProjectTask(supabase: SupabaseClient, projectId: str
     .from("project_tasks")
     .insert(payload)
     .select(
-      "id, project_id, milestone_id, title, description, status, priority, assignee_profile_id, reporter_profile_id, due_date, position, blocked_reason, created_at, updated_at, assignee:profiles!project_tasks_assignee_profile_id_fkey(first_name, last_name, email), reporter:profiles!project_tasks_reporter_profile_id_fkey(first_name, last_name, email)",
+      "id, project_id, milestone_id, title, description, status, priority, assignee_profile_id, reporter_profile_id, start_date, due_date, position, blocked_reason, created_at, updated_at, assignee:profiles!project_tasks_assignee_profile_id_fkey(first_name, last_name, email), reporter:profiles!project_tasks_reporter_profile_id_fkey(first_name, last_name, email)",
     )
     .single();
   if (error) throw new Error(error.message);
@@ -1273,6 +1299,20 @@ export async function updateProjectTask(
   taskId: string,
   input: UpdateProjectTaskInput,
 ) {
+  if (typeof input.startDate !== "undefined" || typeof input.dueDate !== "undefined") {
+    const { data: currentDates, error: currentDatesError } = await supabase
+      .from("project_tasks")
+      .select("start_date, due_date")
+      .eq("id", taskId)
+      .eq("project_id", projectId)
+      .maybeSingle<{ start_date: string | null; due_date: string | null }>();
+    if (currentDatesError) throw new Error(currentDatesError.message);
+    const startDate = typeof input.startDate === "undefined" ? currentDates?.start_date ?? null : input.startDate || null;
+    const dueDate = typeof input.dueDate === "undefined" ? currentDates?.due_date ?? null : input.dueDate || null;
+    if (startDate && dueDate && dueDate < startDate) {
+      throw new Error("A data limite não pode ser anterior à data de início.");
+    }
+  }
   const nextStatus = typeof input.status !== "undefined" ? input.status : null;
   const nextBlockedReason = typeof input.blockedReason !== "undefined" ? input.blockedReason?.trim() || null : undefined;
   if (nextStatus === "blocked") {
@@ -1304,6 +1344,7 @@ export async function updateProjectTask(
   if (typeof input.priority !== "undefined") payload.priority = input.priority;
   if (typeof input.assigneeProfileId !== "undefined") payload.assignee_profile_id = input.assigneeProfileId || null;
   if (typeof input.reporterProfileId !== "undefined") payload.reporter_profile_id = input.reporterProfileId || null;
+  if (typeof input.startDate !== "undefined") payload.start_date = input.startDate || null;
   if (typeof input.dueDate !== "undefined") payload.due_date = input.dueDate || null;
   if (typeof input.position === "number") payload.position = input.position;
   if (typeof nextBlockedReason !== "undefined") payload.blocked_reason = nextBlockedReason;

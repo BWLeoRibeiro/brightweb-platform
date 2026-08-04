@@ -12,6 +12,7 @@ type ProjectEditSheetLazyProps = {
     name: string;
     code: string | null;
     status: string;
+    startDate: string | null;
     targetDate: string | null;
     cancellationReason: string | null;
     summary: string | null;

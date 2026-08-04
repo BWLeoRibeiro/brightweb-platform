@@ -1,5 +1,7 @@
 "use client";
 
+import { StyledSelect } from "@brightweblabs/ui";
+
 import { Trash2, Users } from "lucide-react";
 import type { ReactNode } from "react";
 import {
@@ -143,27 +145,27 @@ export function CrmContactsTable({
           aria-label={dictionary.table.searchPlaceholder}
           className="max-w-[28rem]"
         />
-        <select
+        <StyledSelect
           value={params.status ?? ""}
           onChange={(event) => updateParams({ status: event.target.value || null, page: 1 })}
           aria-label={dictionary.table.allSegments}
-          className="h-10 rounded-[var(--radius-control)] border border-hairline bg-card px-3 text-body text-foreground"
+          className="h-10 w-auto min-w-40 rounded-[var(--radius-control)] border border-hairline bg-card px-3 text-body text-foreground"
         >
           <option value="">{dictionary.table.allSegments}</option>
           {resolvedStages.map((stage) => <option key={stage.value} value={stage.value}>{stage.label}</option>)}
-        </select>
-        <select
+        </StyledSelect>
+        <StyledSelect
           value={params.sort ?? "date_desc"}
           onChange={(event) => updateParams({ sort: event.target.value as CrmContactSort, page: 1 })}
           aria-label={dictionary.table.organizeBy}
-          className="h-10 rounded-[var(--radius-control)] border border-hairline bg-card px-3 text-body text-foreground"
+          className="h-10 w-auto min-w-44 rounded-[var(--radius-control)] border border-hairline bg-card px-3 text-body text-foreground"
         >
           <option value="date_desc">{dictionary.table.sortNewest}</option>
           <option value="name">{dictionary.table.sortName}</option>
           <option value="company">{dictionary.table.sortCompany}</option>
           <option value="status_grouped">{dictionary.table.sortStatusGrouped ?? dictionary.toolbar.status}</option>
           <option value="source_grouped">{dictionary.table.sortSourceGrouped ?? "Origem (agrupado A → Z)"}</option>
-        </select>
+        </StyledSelect>
         {selectedIds.length > 0 ? (
           <div className="ml-auto flex items-center gap-3 rounded-[var(--radius-card)] border border-hairline bg-muted px-3 py-2">
             <span className="text-meta font-semibold text-foreground">{dictionary.table.selectedCount(selectedIds.length)}</span>

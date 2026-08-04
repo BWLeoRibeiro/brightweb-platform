@@ -1,5 +1,7 @@
 "use client";
 
+import { StyledSelect } from "@brightweblabs/ui";
+
 import { Filter, Plus, Trash2, Users } from "lucide-react";
 import {
   Badge,
@@ -220,20 +222,12 @@ export function SegmentWorkspace({
                 {dictionary.segments.subtitle}
               </p>
             </div>
-            <Button onClick={beginCreate}>
-              <Plus aria-hidden="true" />
-              {dictionary.segments.newSegment}
-            </Button>
           </div>
           {segments.length === 0 ? (
             <div className="marketing-empty">
               <div className="marketing-empty-icon"><Filter aria-hidden="true" /></div>
               <h2>{dictionary.segments.emptyTitle}</h2>
               <p>{dictionary.segments.emptyDescription}</p>
-              <Button onClick={beginCreate} variant="outline">
-                <Plus aria-hidden="true" />
-                {dictionary.segments.newSegment}
-              </Button>
             </div>
           ) : (
             <div className="marketing-campaign-list">
@@ -405,7 +399,7 @@ export function SegmentWorkspace({
                 <Label htmlFor="segment-engagement-type">
                   {dictionary.segments.fields.engagementType}
                 </Label>
-                <select
+                <StyledSelect
                   className="marketing-select"
                   id="segment-engagement-type"
                   value={form.rule.engagementType ?? ""}
@@ -418,7 +412,7 @@ export function SegmentWorkspace({
                   <option value="">{dictionary.segments.engagementTypes.any}</option>
                   <option value="opened">{dictionary.segments.engagementTypes.opened}</option>
                   <option value="clicked">{dictionary.segments.engagementTypes.clicked}</option>
-                </select>
+                </StyledSelect>
               </div>
               <label className="marketing-field flex-row items-center gap-3 self-end rounded-lg border p-3">
                 <Checkbox

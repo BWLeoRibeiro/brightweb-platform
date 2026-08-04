@@ -135,6 +135,29 @@ test("marketing collection controls use registered actions and authoritative que
   assert.match(registrationSource, /surface: "marketing"[\s\S]*exact: \["\/marketing"\]/);
 });
 
+test("marketing workspace delegates page chrome to the shell and keeps one primary collection action", () => {
+  const clientSource = readFileSync(join(process.cwd(), "packages/module-marketing/src/ui/marketing-client.tsx"), "utf8");
+  const segmentSource = readFileSync(join(process.cwd(), "packages/module-marketing/src/ui/segment-workspace.tsx"), "utf8");
+  const workflowSource = readFileSync(join(process.cwd(), "packages/module-marketing/src/ui/workflow-workspace.tsx"), "utf8");
+  const stylesheet = readFileSync(join(process.cwd(), "packages/module-marketing/marketing.css"), "utf8");
+
+  assert.doesNotMatch(clientSource, /className="marketing-hero"/);
+  assert.match(clientSource, /className="marketing-view-nav"/);
+  assert.match(clientSource, /className="marketing-campaign-columns"/);
+  assert.doesNotMatch(clientSource, /marketing-ledger-heading[\s\S]{0,600}<Button onClick=\{beginCreate\}/);
+  assert.doesNotMatch(segmentSource, /marketing-ledger-heading[\s\S]{0,600}<Button onClick=\{beginCreate\}/);
+  assert.doesNotMatch(workflowSource, /marketing-workflows-title[\s\S]{0,600}<Button type="button" onClick=\{beginCreate\}/);
+  assert.doesNotMatch(clientSource, /campaigns\.length === 0[\s\S]{0,600}<Button onClick=\{beginCreate\}/);
+  assert.doesNotMatch(segmentSource, /segments\.length === 0[\s\S]{0,600}<Button onClick=\{beginCreate\}/);
+  assert.doesNotMatch(workflowSource, /workflows\.length === 0[\s\S]{0,800}<Button type="button" onClick=\{beginCreate\}>/);
+  assert.match(clientSource, /marketing-action-card marketing-action-primary/);
+  assert.match(clientSource, /className="marketing-action-alternatives"/);
+  assert.match(clientSource, /initialCollectionsLoaded/);
+  assert.match(clientSource, /collectionFailed && campaigns\.length === 0/);
+  assert.match(clientSource, /dictionary\.page\.loadError/);
+  assert.doesNotMatch(stylesheet, /\.marketing-hero\s*\{/);
+});
+
 test("marketing UI client methods match the exported HTTP handler contract", async () => {
   const dependencyCalls: Array<[string, unknown]> = [];
   const dependencies = {
