@@ -227,6 +227,8 @@ test("dashboard overview prioritizes briefing, attention, work, and recent chang
   assert.match(clientSource, /function AttentionPanel/);
   assert.match(clientSource, /function RecentChangesPanel/);
   assert.match(clientSource, /<AttentionPanel[\s\S]*<TasksTable[\s\S]*<RecentChangesPanel[\s\S]*<MilestonesPanel/);
+  assert.match(clientSource, /const attentionCount = projects\?\.kpis\.projectsOverdue \?\? 0/);
+  assert.doesNotMatch(clientSource, /href=\{`\/crm\?contact=/);
   assert.doesNotMatch(clientSource, /Bento \(Idea C\)/);
   assert.match(stylesheet, /\.dashboard-briefing\s*\{/);
 });

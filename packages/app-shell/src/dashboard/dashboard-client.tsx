@@ -670,7 +670,7 @@ function ContactCard({ c }: { c: DashboardCrmRecentContact }) {
   const meta = crmStatusMeta(c.status, dictionary);
   return (
     <Link
-      href={`/crm?contact=${c.id}`}
+      href="/crm"
       className={`${SURFACE} group flex w-full flex-col p-4 transition hover:border-[color:var(--accent)]/40 hover:shadow-[var(--dashboard-shadow-md)] sm:w-[280px]`}
     >
       <div className="flex items-center gap-3">
@@ -801,7 +801,7 @@ function TasksView({ rows, isLoading }: { rows: TaskRow[]; isLoading: boolean })
 function AttentionPanel({ projects, isLoading }: { projects: DashboardProjectsData | null; isLoading: boolean }) {
   const dictionary = useDashboardDictionary();
   const items = projects?.projects.overdue.slice(0, 4) ?? [];
-  const attentionCount = (projects?.kpis.projectsOverdue ?? 0) + (projects?.kpis.projectsAtRisk ?? 0);
+  const attentionCount = projects?.kpis.projectsOverdue ?? 0;
 
   return (
     <section className={`${SURFACE} flex min-h-0 flex-col overflow-hidden`}>
@@ -886,7 +886,7 @@ function RecentChangesPanel({ crm, isLoading }: { crm: DashboardCrmData | null; 
       ) : (
         <div className="grid sm:grid-cols-2">
           {changes.map((change) => (
-            <Link key={change.id} href={`/crm?contact=${change.contactId}`} className="group flex items-center gap-3 border-b border-[color:var(--border)] px-5 py-3 odd:sm:border-r">
+            <Link key={change.id} href="/crm" className="group flex items-center gap-3 border-b border-[color:var(--border)] px-5 py-3 odd:sm:border-r">
               <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[color:var(--muted)] text-meta font-bold text-[color:var(--foreground)]">
                 {initialsOf(change.contactLabel)}
               </span>
