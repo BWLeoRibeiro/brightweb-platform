@@ -1,5 +1,11 @@
 # @brightweblabs/module-crm
 
+## 0.15.2
+
+### Patch Changes
+
+- 1222a62: Keep CRM contact and organization sheets controlled while editing so dialog-generated close events cannot dismiss active forms.
+
 ## 0.15.1
 
 ### Patch Changes
