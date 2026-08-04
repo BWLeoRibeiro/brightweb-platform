@@ -114,7 +114,12 @@ export function CrmOrganizationSheet({ open, organization, dictionary = defaultC
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className={sheetShellClassName}>
+      <SheetContent
+        className={sheetShellClassName}
+        onInteractOutside={(event) => {
+          if (editing) event.preventDefault();
+        }}
+      >
         <form onSubmit={submit} className="flex min-h-0 flex-1 flex-col gap-0">
           <AppSheetHeader icon={Building2} editing={editing} eyebrow={mode === "view" ? dictionary.organizations.viewEyebrow : mode === "edit" ? dictionary.organizations.editEyebrow : dictionary.organizations.createEyebrow} title={mode === "create" ? dictionary.organizations.newTitle : value.name || dictionary.contactDialog.noName} description={mode === "create" ? dictionary.organizations.createDescription : value.industry ? `${value.industry}${value.company_size ? ` · ${value.company_size} colaboradores` : ""}` : dictionary.organizations.fallbackDescription} />
           <AppSheetBody>

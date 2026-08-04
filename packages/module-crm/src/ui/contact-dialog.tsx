@@ -77,7 +77,12 @@ export function CrmContactDialog({ open, contact, organizations = [], owners = [
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className={sheetShellClassName}>
+      <SheetContent
+        className={sheetShellClassName}
+        onInteractOutside={(event) => {
+          if (mode !== "view") event.preventDefault();
+        }}
+      >
         <form onSubmit={submit} className="flex min-h-0 flex-1 flex-col gap-0">
           <AppSheetHeader
             editing={mode !== "view"}

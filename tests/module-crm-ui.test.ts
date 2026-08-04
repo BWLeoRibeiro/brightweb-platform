@@ -175,6 +175,14 @@ test("CRM contact and organization details use right-side sheets instead of cent
   assert.match(organizationSource, /SheetSection/);
 });
 
+test("CRM edit sheets cannot be dismissed by an outside interaction", () => {
+  const contactSource = readFileSync(join(process.cwd(), "packages/module-crm/src/ui/contact-dialog.tsx"), "utf8");
+  const organizationSource = readFileSync(join(process.cwd(), "packages/module-crm/src/ui/organization-sheet.tsx"), "utf8");
+
+  assert.match(contactSource, /onInteractOutside=\{\(event\) => \{[\s\S]*if \(mode !== "view"\) event\.preventDefault\(\)/);
+  assert.match(organizationSource, /onInteractOutside=\{\(event\) => \{[\s\S]*if \(editing\) event\.preventDefault\(\)/);
+});
+
 test("CRM sheets consume the canonical natural-case typography recipes", () => {
   const contactSource = readFileSync(join(process.cwd(), "packages/module-crm/src/ui/contact-dialog.tsx"), "utf8");
   const organizationSource = readFileSync(join(process.cwd(), "packages/module-crm/src/ui/organization-sheet.tsx"), "utf8");
