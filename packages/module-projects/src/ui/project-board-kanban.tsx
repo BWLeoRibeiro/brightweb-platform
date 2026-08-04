@@ -16,7 +16,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   Button,
-  Calendar,
   Input,
   Popover,
   PopoverContent,
@@ -26,6 +25,7 @@ import {
   SheetFooter,
   TooltipProvider,
 } from "@brightweblabs/ui";
+import { ProjectCalendar as Calendar } from "./shared/project-calendar";
 import type { TaskStatus } from "../contracts";
 import type { ProjectTask } from "../types";
 import { useProjectsUiClient, useProjectsUiDictionary } from "./context";

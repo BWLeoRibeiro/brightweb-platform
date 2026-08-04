@@ -20,7 +20,7 @@ import { parseIsoDate, toIsoDate } from "./date-utils";
 import { AppSheetHeader, SheetSection } from "../shared/app-sheet";
 import { sheetAccentTextareaClassName, sheetDatePickerButtonClassName, sheetEditControlClassName, sheetFieldLabelClassName } from "../shared/sheet-section";
 import { Button } from "@brightweblabs/ui";
-import { Calendar } from "@brightweblabs/ui";
+import { ProjectCalendar as Calendar } from "../shared/project-calendar";
 import { Input } from "@brightweblabs/ui";
 import { Popover, PopoverContent, PopoverTrigger } from "@brightweblabs/ui";
 import { Sheet, SheetContent, SheetFooter } from "@brightweblabs/ui";

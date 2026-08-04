@@ -20,7 +20,7 @@ import { PROJECTS_EVENTS } from "../events";
 import { createMilestone } from "../project-ui-actions";
 import { parseIsoDate, toIsoDate } from "./date-utils";
 import { Button } from "@brightweblabs/ui";
-import { Calendar } from "@brightweblabs/ui";
+import { ProjectCalendar as Calendar } from "../shared/project-calendar";
 import { Input } from "@brightweblabs/ui";
 import { Popover, PopoverContent, PopoverTrigger } from "@brightweblabs/ui";
 import {

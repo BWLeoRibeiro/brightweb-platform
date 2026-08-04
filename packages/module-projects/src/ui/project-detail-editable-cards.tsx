@@ -38,7 +38,7 @@ import {
   AlertDialogTitle,
 } from "@brightweblabs/ui";
 import { Button } from "@brightweblabs/ui";
-import { Calendar } from "@brightweblabs/ui";
+import { ProjectCalendar as Calendar } from "./shared/project-calendar";
 import { Input } from "@brightweblabs/ui";
 import { Popover, PopoverContent, PopoverTrigger } from "@brightweblabs/ui";
 import {

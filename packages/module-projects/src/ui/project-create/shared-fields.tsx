@@ -12,7 +12,7 @@ import { SheetSelect } from "@brightweblabs/app-shell";
 import { cn } from "../utils";
 import { defaultProjectsUiDictionary } from "../dictionary";
 import { Button } from "@brightweblabs/ui";
-import { Calendar } from "@brightweblabs/ui";
+import { ProjectCalendar as Calendar } from "../shared/project-calendar";
 import { Field, FieldContent, FieldGroup, FieldLabel } from "@brightweblabs/ui";
 import { Popover, PopoverContent, PopoverTrigger } from "@brightweblabs/ui";
 
