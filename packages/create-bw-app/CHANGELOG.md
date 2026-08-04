@@ -1,5 +1,11 @@
 # create-bw-app
 
+## 0.24.5
+
+### Patch Changes
+
+- 558f1c1: Keep installed module versions in the BrightWeb app manifest synchronized during `bw upgrade`, including before dependencies have been installed locally.
+
 ## 0.24.4
 
 ### Patch Changes
