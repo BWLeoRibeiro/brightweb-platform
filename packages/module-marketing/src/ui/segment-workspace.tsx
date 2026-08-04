@@ -220,20 +220,12 @@ export function SegmentWorkspace({
                 {dictionary.segments.subtitle}
               </p>
             </div>
-            <Button onClick={beginCreate}>
-              <Plus aria-hidden="true" />
-              {dictionary.segments.newSegment}
-            </Button>
           </div>
           {segments.length === 0 ? (
             <div className="marketing-empty">
               <div className="marketing-empty-icon"><Filter aria-hidden="true" /></div>
               <h2>{dictionary.segments.emptyTitle}</h2>
               <p>{dictionary.segments.emptyDescription}</p>
-              <Button onClick={beginCreate} variant="outline">
-                <Plus aria-hidden="true" />
-                {dictionary.segments.newSegment}
-              </Button>
             </div>
           ) : (
             <div className="marketing-campaign-list">

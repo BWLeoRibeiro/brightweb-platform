@@ -401,18 +401,12 @@ export function WorkflowWorkspace({
   return (
     <>
       <section className="space-y-6" aria-labelledby="marketing-workflows-title">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <p className="marketing-kicker">{dictionary.workflows.eyebrow}</p>
-            <h2 id="marketing-workflows-title" className="text-heading-3 font-semibold">
-              {dictionary.workflows.title}
-            </h2>
-            <p className="mt-1 text-body text-muted-foreground">{dictionary.workflows.subtitle}</p>
-          </div>
-          <Button type="button" onClick={beginCreate}>
-            <Plus className="size-4" />
-            {dictionary.workflows.newWorkflow}
-          </Button>
+        <div>
+          <p className="marketing-kicker">{dictionary.workflows.eyebrow}</p>
+          <h2 id="marketing-workflows-title" className="text-heading-3 font-semibold">
+            {dictionary.workflows.title}
+          </h2>
+          <p className="mt-1 text-body text-muted-foreground">{dictionary.workflows.subtitle}</p>
         </div>
 
         {workflows.length === 0 ? (
@@ -427,10 +421,6 @@ export function WorkflowWorkspace({
                   {dictionary.workflows.emptyDescription}
                 </p>
               </div>
-              <Button type="button" onClick={beginCreate}>
-                <Plus className="size-4" />
-                {dictionary.workflows.newWorkflow}
-              </Button>
             </CardContent>
           </Card>
         ) : (

@@ -235,6 +235,7 @@ export type MarketingClientProps = {
   initialOverview: MarketingOverviewMetrics;
   initialCampaignAnalytics: Record<string, MarketingCampaignAnalytics>;
   initialCollectionPages?: Record<MarketingCollectionView, { total: number; totalPages: number }>;
+  initialCollectionsLoaded?: boolean;
   dictionary?: MarketingUiDictionary;
 };
 
@@ -247,6 +248,7 @@ export function MarketingClient({
   initialCampaignAnalytics,
   dictionary: dictionaryOverride = defaultMarketingUiDictionary,
   initialCollectionPages,
+  initialCollectionsLoaded = true,
 }: MarketingClientProps) {
   const dictionary = {
     ...dictionaryOverride,
@@ -296,6 +298,7 @@ export function MarketingClient({
   const segmentOptionsRequestRef = useRef<Promise<MarketingSegment[]> | null>(null);
   const segmentOptionsLoadedRef = useRef(false);
   const [collectionLoading, setCollectionLoading] = useState(false);
+  const [collectionFailed, setCollectionFailed] = useState(false);
   const [collectionRefreshNonce, setCollectionRefreshNonce] = useState(0);
   const [analyticsCampaigns, setAnalyticsCampaigns] = useState<MarketingCampaign[]>([]);
   const [analyticsLoading, setAnalyticsLoading] = useState(false);
@@ -315,7 +318,9 @@ export function MarketingClient({
     segments: { total: initialSegments.length, totalPages: 1 },
     workflows: { total: initialWorkflows.length, totalPages: 1 },
   });
-  const initialLoadedViewsRef = useRef(new Set<MarketingCollectionView>(["campaigns", "segments", "workflows"]));
+  const initialLoadedViewsRef = useRef(new Set<MarketingCollectionView>(
+    initialCollectionsLoaded ? ["campaigns", "segments", "workflows"] : [],
+  ));
   const campaignLoadGeneration = useRef(0);
 
   const ensureSegmentOptions = useCallback((selectedId?: string | null) => {
@@ -566,6 +571,7 @@ export function MarketingClient({
     }
     const latest = collectionRequestRef.current.begin();
     setCollectionLoading(true);
+    setCollectionFailed(false);
     const requestOptions = { signal: latest.signal };
     const query = { page: activeQuery.page, pageSize: 20, search: activeQuery.debouncedSearch || undefined };
     const request = collectionView === "campaigns"
@@ -583,7 +589,10 @@ export function MarketingClient({
       else setWorkflows(result.items as MarketingWorkflow[]);
       setCollectionPages((current) => ({ ...current, [collectionView]: { total: result.total, totalPages: result.totalPages } }));
     }).catch((error) => {
-      if (!isAbortError(error) && latest.isCurrent()) toast.error(error instanceof Error ? error.message : dictionary.feedback.genericError);
+      if (!isAbortError(error) && latest.isCurrent()) {
+        setCollectionFailed(true);
+        toast.error(error instanceof Error ? error.message : dictionary.feedback.genericError);
+      }
     }).finally(() => {
       const current = latest.isCurrent();
       latest.finish();
@@ -690,40 +699,7 @@ export function MarketingClient({
 
   return (
     <main className="marketing-workspace" aria-busy={collectionLoading}>
-      <header className="marketing-hero">
-        <div>
-          <p className="marketing-kicker">{dictionary.page.eyebrow}</p>
-          <h1 className="text-heading-1">
-            {activeView === "campaigns"
-              ? dictionary.page.title
-              : activeView === "segments"
-                ? dictionary.segments.title
-                : activeView === "analytics"
-                  ? dictionary.analytics.title
-                  : activeView === "topics"
-                    ? dictionary.topics.title
-                    : dictionary.workflows.title}
-          </h1>
-          <p>
-            {activeView === "campaigns"
-              ? dictionary.page.subtitle
-              : activeView === "segments"
-                ? dictionary.segments.subtitle
-                : activeView === "analytics"
-                  ? dictionary.analytics.subtitle
-                  : activeView === "topics"
-                    ? dictionary.topics.subtitle
-                    : dictionary.workflows.subtitle}
-          </p>
-        </div>
-        {activeView === "campaigns" ? (
-          <Button onClick={beginCreate} size="lg">
-            <Plus aria-hidden="true" />{dictionary.page.newCampaign}
-          </Button>
-        ) : null}
-      </header>
-
-      <div className="-m-4 max-w-[calc(100%+2rem)] overflow-x-auto p-4">
+      <div className="marketing-view-nav">
         <PillTabs
           ariaLabel="Marketing"
           items={[
@@ -743,24 +719,44 @@ export function MarketingClient({
         <CardContent className="p-0">
           <div className="marketing-ledger-heading">
             <div>
-              <p className="marketing-kicker">{dictionary.list.title}</p>
-              <p className="text-body text-muted-foreground">
+              <p className="marketing-kicker">{dictionary.page.eyebrow}</p>
+              <h1 className="text-heading-3">{dictionary.list.title}</h1>
+              <p className="text-meta text-muted-foreground">
                 {dictionary.list.campaignCount(collectionPages.campaigns.total)}
               </p>
             </div>
             <Mail className="text-muted-foreground" aria-hidden="true" />
           </div>
-          {campaigns.length === 0 ? (
+          {collectionLoading && campaigns.length === 0 ? (
+            <div className="marketing-collection-state" aria-label="A carregar campanhas">
+              <Skeleton className="h-14 rounded-lg" />
+              <Skeleton className="h-14 rounded-lg" />
+              <Skeleton className="h-14 rounded-lg" />
+            </div>
+          ) : collectionFailed && campaigns.length === 0 ? (
+            <div className="marketing-empty" role="alert">
+              <div className="marketing-empty-icon"><RotateCcw aria-hidden="true" /></div>
+              <h2>{dictionary.page.loadError}</h2>
+              <p>{dictionary.feedback.genericError}</p>
+              <Button onClick={() => setCollectionRefreshNonce((current) => current + 1)} variant="outline">
+                <RotateCcw aria-hidden="true" />Tentar novamente
+              </Button>
+            </div>
+          ) : campaigns.length === 0 ? (
             <div className="marketing-empty">
               <div className="marketing-empty-icon"><Mail aria-hidden="true" /></div>
               <h2>{dictionary.page.emptyTitle}</h2>
               <p>{dictionary.page.emptyDescription}</p>
-              <Button onClick={beginCreate} variant="outline">
-                <Plus aria-hidden="true" />{dictionary.page.newCampaign}
-              </Button>
             </div>
           ) : (
             <div className="marketing-campaign-list">
+              <div className="marketing-campaign-columns" aria-hidden="true">
+                <span>{dictionary.list.subject}</span>
+                <span>{dictionary.list.topic}</span>
+                <span>{dictionary.list.recipients}</span>
+                <span>{dictionary.list.created}</span>
+                <span>Estado</span>
+              </div>
               {campaigns.map((campaign) => (
                 <button
                   className="marketing-campaign-row"
@@ -974,24 +970,26 @@ export function MarketingClient({
 
             <Separator />
 
-            <section className="marketing-action-deck">
-              <div className="marketing-action-card">
+            <section className="marketing-action-deck" aria-label="Ações de envio">
+              <div className="marketing-action-card marketing-action-primary">
                 <div className="marketing-action-title"><Send aria-hidden="true" /><span>{dictionary.editor.sendNow}</span></div>
                 <Button disabled={busy !== null} onClick={() => void runAction("send", (campaign) => client.sendCampaign(campaign.id), dictionary.feedback.sent)}>
                   {dictionary.editor.sendNow}
                 </Button>
               </div>
-              <div className="marketing-action-card">
-                <div className="marketing-action-title"><CalendarClock aria-hidden="true" /><Label htmlFor="campaign-schedule">{dictionary.editor.schedule}</Label></div>
-                <Input id="campaign-schedule" min={new Date().toISOString().slice(0, 16)} onChange={(event) => setScheduledAt(event.target.value)} type="datetime-local" value={scheduledAt} />
-                <Button disabled={busy !== null || !scheduledAt} onClick={() => void runAction("schedule", (campaign) => client.scheduleCampaign(campaign.id, new Date(scheduledAt).toISOString()), dictionary.feedback.scheduled)} variant="outline">
-                  {dictionary.editor.schedule}
-                </Button>
-              </div>
-              <div className="marketing-action-card">
-                <div className="marketing-action-title"><Mail aria-hidden="true" /><Label htmlFor="campaign-test">{dictionary.editor.sendTest}</Label></div>
-                <Input id="campaign-test" onChange={(event) => setTestEmail(event.target.value)} placeholder={dictionary.editor.placeholders.testEmail} type="email" value={testEmail} />
-                <Button disabled={busy !== null} onClick={() => void sendTest()} variant="outline">{dictionary.editor.sendTest}</Button>
+              <div className="marketing-action-alternatives">
+                <div className="marketing-action-row">
+                  <div className="marketing-action-title"><CalendarClock aria-hidden="true" /><Label htmlFor="campaign-schedule">{dictionary.editor.schedule}</Label></div>
+                  <Input id="campaign-schedule" min={new Date().toISOString().slice(0, 16)} onChange={(event) => setScheduledAt(event.target.value)} type="datetime-local" value={scheduledAt} />
+                  <Button disabled={busy !== null || !scheduledAt} onClick={() => void runAction("schedule", (campaign) => client.scheduleCampaign(campaign.id, new Date(scheduledAt).toISOString()), dictionary.feedback.scheduled)} variant="outline">
+                    {dictionary.editor.schedule}
+                  </Button>
+                </div>
+                <div className="marketing-action-row">
+                  <div className="marketing-action-title"><Mail aria-hidden="true" /><Label htmlFor="campaign-test">{dictionary.editor.sendTest}</Label></div>
+                  <Input id="campaign-test" onChange={(event) => setTestEmail(event.target.value)} placeholder={dictionary.editor.placeholders.testEmail} type="email" value={testEmail} />
+                  <Button disabled={busy !== null} onClick={() => void sendTest()} variant="outline">{dictionary.editor.sendTest}</Button>
+                </div>
               </div>
             </section>
 

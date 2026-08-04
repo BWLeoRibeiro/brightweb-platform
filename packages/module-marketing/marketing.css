@@ -1,39 +1,18 @@
 @layer components {
   .marketing-workspace {
     display: grid;
-    gap: var(--space-lg);
+    gap: var(--space-md);
     width: 100%;
   }
 
-  .marketing-hero {
-    display: flex;
-    align-items: flex-end;
-    justify-content: space-between;
-    gap: var(--space-lg);
-    overflow: hidden;
-    border: 1px solid var(--brand-panel-border);
-    border-radius: var(--radius-panel);
-    background: var(--brand-panel-surface);
-    box-shadow: var(--brand-shadow-soft);
-    color: var(--brand-panel-foreground);
-    padding: var(--space-xl);
+  .marketing-view-nav {
+    max-width: 100%;
+    overflow-x: auto;
+    padding: var(--space-2xs) 0;
+    scrollbar-width: none;
   }
 
-  .marketing-hero > div {
-    display: grid;
-    gap: var(--space-xs);
-    max-width: 48rem;
-  }
-
-  .marketing-hero h1 {
-    color: inherit;
-  }
-
-  .marketing-hero p:last-child {
-    color: var(--brand-panel-muted);
-    font-size: var(--text-body);
-    line-height: var(--leading-relaxed);
-  }
+  .marketing-view-nav::-webkit-scrollbar { display: none; }
 
   .marketing-kicker {
     color: var(--marketing-accent);
@@ -42,10 +21,6 @@
     letter-spacing: var(--tracking-widest);
     line-height: var(--leading-snug);
     text-transform: uppercase;
-  }
-
-  .marketing-hero .marketing-kicker {
-    color: var(--brand-panel-muted);
   }
 
   .marketing-ledger {
@@ -68,6 +43,20 @@
   .marketing-ledger-heading > div {
     display: grid;
     gap: var(--space-2xs);
+  }
+
+  .marketing-campaign-columns {
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) minmax(8rem, 1fr) auto auto auto;
+    gap: var(--space-md);
+    border-bottom: 1px solid var(--border-hairline);
+    background: var(--surface-muted, var(--muted));
+    color: var(--muted-foreground);
+    padding: var(--space-xs) var(--space-lg);
+    font-size: var(--text-label);
+    font-weight: var(--font-weight-semibold);
+    letter-spacing: var(--tracking-wide);
+    text-transform: uppercase;
   }
 
   .marketing-campaign-list {
@@ -187,6 +176,12 @@
     gap: var(--space-sm);
     padding: var(--space-4xl) var(--space-lg);
     text-align: center;
+  }
+
+  .marketing-collection-state {
+    display: grid;
+    gap: var(--space-sm);
+    padding: var(--space-lg);
   }
 
   .marketing-empty-icon {
@@ -354,7 +349,7 @@
 
   .marketing-action-deck {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: minmax(12rem, 0.72fr) minmax(0, 1.28fr);
     gap: var(--space-sm);
   }
 
@@ -371,6 +366,31 @@
 
   .marketing-action-card > :last-child {
     align-self: end;
+  }
+
+  .marketing-action-primary {
+    border-color: var(--border-selection);
+    background: var(--surface-selection);
+  }
+
+  .marketing-action-alternatives {
+    display: grid;
+    overflow: hidden;
+    border: 1px solid var(--border-hairline);
+    border-radius: var(--radius-card);
+    background: var(--surface-card);
+  }
+
+  .marketing-action-row {
+    display: grid;
+    grid-template-columns: minmax(9rem, 0.7fr) minmax(12rem, 1fr) auto;
+    align-items: center;
+    gap: var(--space-sm);
+    padding: var(--space-sm);
+  }
+
+  .marketing-action-row + .marketing-action-row {
+    border-top: 1px solid var(--border-hairline);
   }
 
   .marketing-action-title {
@@ -447,6 +467,15 @@
   }
 
   @media (max-width: 64rem) {
+    .marketing-campaign-columns {
+      grid-template-columns: minmax(0, 2fr) minmax(7rem, 1fr) auto;
+    }
+
+    .marketing-campaign-columns span:nth-child(3),
+    .marketing-campaign-columns span:nth-child(4) {
+      display: none;
+    }
+
     .marketing-campaign-row {
       grid-template-columns: minmax(0, 2fr) minmax(7rem, 1fr) auto;
     }
@@ -462,16 +491,6 @@
   }
 
   @media (max-width: 40rem) {
-    .marketing-hero {
-      align-items: stretch;
-      flex-direction: column;
-      padding: var(--space-lg);
-    }
-
-    .marketing-hero > button {
-      width: 100%;
-    }
-
     .marketing-ledger-heading,
     .marketing-editor-header,
     .marketing-editor-footer,
@@ -482,6 +501,10 @@
     .marketing-campaign-row {
       grid-template-columns: minmax(0, 1fr) auto;
       padding: var(--space-sm) var(--space-md);
+    }
+
+    .marketing-campaign-columns {
+      display: none;
     }
 
     .marketing-row-topic {
@@ -504,6 +527,10 @@
 
     .marketing-token-list {
       justify-content: flex-start;
+    }
+
+    .marketing-action-row {
+      grid-template-columns: 1fr;
     }
   }
 
