@@ -175,12 +175,16 @@ test("CRM contact and organization details use right-side sheets instead of cent
   assert.match(organizationSource, /SheetSection/);
 });
 
-test("CRM edit sheets cannot be dismissed by an outside interaction", () => {
+test("CRM edit sheets reject primitive close signals until the user explicitly exits editing", () => {
   const contactSource = readFileSync(join(process.cwd(), "packages/module-crm/src/ui/contact-dialog.tsx"), "utf8");
   const organizationSource = readFileSync(join(process.cwd(), "packages/module-crm/src/ui/organization-sheet.tsx"), "utf8");
 
   assert.match(contactSource, /onInteractOutside=\{\(event\) => \{[\s\S]*if \(mode !== "view"\) event\.preventDefault\(\)/);
   assert.match(organizationSource, /onInteractOutside=\{\(event\) => \{[\s\S]*if \(editing\) event\.preventDefault\(\)/);
+  assert.match(contactSource, /if \(!nextOpen && mode !== "view"\) return;[\s\S]*<Sheet open=\{open\} onOpenChange=\{handleSheetOpenChange\}>/);
+  assert.match(organizationSource, /if \(!nextOpen && editing\) return;[\s\S]*<Sheet open=\{open\} onOpenChange=\{handleSheetOpenChange\}>/);
+  assert.match(contactSource, /showCloseButton=\{mode === "view"\}/);
+  assert.match(organizationSource, /showCloseButton=\{!editing\}/);
 });
 
 test("CRM sheets consume the canonical natural-case typography recipes", () => {

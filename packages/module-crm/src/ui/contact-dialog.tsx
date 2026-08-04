@@ -71,14 +71,20 @@ export function CrmContactDialog({ open, contact, organizations = [], owners = [
     try { await onSubmit(value); onOpenChange(false); } finally { setSaving(false); }
   };
 
+  const handleSheetOpenChange = (nextOpen: boolean) => {
+    if (!nextOpen && mode !== "view") return;
+    onOpenChange(nextOpen);
+  };
+
   const name = [value.firstName, value.lastName].filter(Boolean).join(" ") || dictionary.contactDialog.noName;
   const initials = `${value.firstName?.[0] ?? ""}${value.lastName?.[0] ?? ""}`.toUpperCase() || "?";
   const tintStyle = activeStage ? ({ "--tint": `var(${activeStage.token})` } as CSSProperties) : undefined;
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
+    <Sheet open={open} onOpenChange={handleSheetOpenChange}>
       <SheetContent
         className={sheetShellClassName}
+        showCloseButton={mode === "view"}
         onInteractOutside={(event) => {
           if (mode !== "view") event.preventDefault();
         }}

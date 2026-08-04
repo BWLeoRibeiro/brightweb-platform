@@ -83,6 +83,11 @@ export function CrmOrganizationSheet({ open, organization, dictionary = defaultC
     try { await onSubmit(value, organization); onOpenChange(false); } finally { setSaving(false); }
   };
 
+  const handleSheetOpenChange = (nextOpen: boolean) => {
+    if (!nextOpen && editing) return;
+    onOpenChange(nextOpen);
+  };
+
   const remove = async () => {
     if (!organization || !onDelete || saving) return;
     if (deleteConfirmation !== deleteConfirmationTarget) return;
@@ -113,9 +118,10 @@ export function CrmOrganizationSheet({ open, organization, dictionary = defaultC
   };
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
+    <Sheet open={open} onOpenChange={handleSheetOpenChange}>
       <SheetContent
         className={sheetShellClassName}
+        showCloseButton={!editing}
         onInteractOutside={(event) => {
           if (editing) event.preventDefault();
         }}
