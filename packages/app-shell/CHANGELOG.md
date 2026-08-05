@@ -1,5 +1,11 @@
 # @brightweblabs/app-shell
 
+## 0.11.5
+
+### Patch Changes
+
+- da843d7: Use “meta” consistently across the Portuguese dashboard and project interfaces while preserving milestone API compatibility.
+
 ## 0.11.4
 
 ### Patch Changes
