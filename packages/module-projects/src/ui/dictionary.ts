@@ -55,7 +55,7 @@ export const defaultProjectsUiDictionary = {
       overdue: "Atrasado",
       atRisk: "Em risco",
       blockedTasks: "Com bloqueios",
-      withoutOwner: "Sem responsável",
+      withoutOwner: "Por atribuir",
       dueSoon: "Prazo próximo",
     },
     reasons: {

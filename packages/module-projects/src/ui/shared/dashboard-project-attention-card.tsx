@@ -7,6 +7,7 @@ import type { DashboardProjectAttentionItem } from "@brightweblabs/app-shell";
 import { useProjectsNavigation, useProjectsUiDictionary } from "../context";
 import { getCompletionPercent } from "./project-progress";
 import { ProjectOwnerAvatar } from "./project-owner-avatar";
+import { ProjectPill } from "./project-pill";
 import { PROJECT_RISK_META, resolveProjectRisk } from "./project-risk";
 import { monoTabularClassName as MONO } from "./typography";
 
@@ -89,7 +90,7 @@ export function DashboardProjectAttentionCard({
     >
       <span
         aria-hidden
-        className={`${MONO} self-start pt-0.5 text-label font-black tracking-[var(--type-tracking-080)]`}
+        className="text-data-sm self-start pt-0.5 font-black tracking-[var(--type-tracking-080)]"
         style={{ color: attention.tone }}
       >
         {String(rank).padStart(2, "0")}
@@ -98,7 +99,7 @@ export function DashboardProjectAttentionCard({
 
       <div className="min-w-0">
         <p className="truncate text-label text-[color:var(--muted-foreground)]">{project.organizationName}</p>
-        <h3 className="mt-0.5 truncate text-body font-bold text-[color:var(--foreground)]">{project.name}</h3>
+        <h3 className="mt-0.5 truncate text-title font-bold text-[color:var(--foreground)]">{project.name}</h3>
         <p className="mt-2 flex items-start gap-2 text-meta leading-[var(--type-leading-140)] text-[color:var(--muted-foreground)]">
           <span aria-hidden className="mt-[0.4rem] h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: attention.tone }} />
           <span><strong className="text-[color:var(--foreground)]">{reason}</strong></span>
@@ -106,21 +107,22 @@ export function DashboardProjectAttentionCard({
       </div>
 
       <div className="col-span-2 col-start-2 min-w-0 pt-1 lg:col-span-1 lg:col-start-auto lg:pt-0">
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="inline-flex items-center gap-1.5 text-label font-semibold text-[color:var(--foreground)]">
-            <span className="h-[7px] w-[7px] rounded-full" style={{ background: status.dot }} />
+        <div className="flex min-w-0 items-center gap-2">
+          <span className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap text-meta font-semibold text-[color:var(--foreground)]">
+            <span className="h-[7px] w-[7px] shrink-0 rounded-full" style={{ background: status.dot }} />
             {status.label}
           </span>
-          <span
-            className="inline-flex items-center rounded-full border border-[color:var(--tint-soft-border)] bg-[color:var(--tint-soft-bg)] px-2 py-[3px] text-label font-bold text-[color:var(--tint)]"
+          <ProjectPill
+            size="small"
+            className="border-[color:var(--tint-soft-border)] bg-[color:var(--tint-soft-bg)] font-bold text-[color:var(--tint)]"
             style={{ "--tint": riskMeta?.var ?? attention.tone } as CSSProperties}
           >
             {riskMeta?.label ?? attentionLabel}
-          </span>
+          </ProjectPill>
         </div>
 
         <div className="mt-2.5 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1.5">
-          <span className="inline-flex min-w-0 items-center gap-2 text-label text-[color:var(--muted-foreground)]">
+          <span className="inline-flex min-w-0 items-center gap-2 text-meta text-[color:var(--muted-foreground)]">
             <ProjectOwnerAvatar label={project.ownerLabel} size="sm" roleColor="manager" />
             <span className="truncate">{project.ownerLabel ?? dictionary.detail.noOwnerLowercase}</span>
           </span>
@@ -128,7 +130,7 @@ export function DashboardProjectAttentionCard({
           <span className="col-span-2 h-1 overflow-hidden rounded-full bg-[color:var(--project-ui-color-71)]">
             <span className="block h-full rounded-full bg-[color:var(--accent)]" style={{ width: `${progress}%` }} />
           </span>
-          <span className="col-span-2 inline-flex justify-end gap-1.5 text-label font-bold" style={{ color: attention.tone }}>
+          <span className="col-span-2 inline-flex justify-end gap-1.5 text-meta font-bold" style={{ color: attention.tone }}>
             <CalendarDays className="h-3.5 w-3.5 opacity-70" strokeWidth={1.75} />
             <span className={MONO}>{formatShortDate(project.targetDate)}</span>
           </span>

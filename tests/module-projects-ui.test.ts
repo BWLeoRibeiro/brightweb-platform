@@ -538,6 +538,19 @@ test("Projects package UI contains the literal list/detail translation and no ra
   for (const symbol of ["ProjectsPage", "ProjectDetailPage", "ProjectsToolbarControls", "ProjectDetailDataProvider", "ProjectBoardKanban", "ProjectTasksPage", "ProjectBoardLoading"]) assert.match(readFileSync(join(root, "index.ts"), "utf8"), new RegExp(symbol.replace("ProjectsToolbarControls", "toolbar-controls").replace("ProjectDetailDataProvider", "project-detail-data-provider").replace("ProjectsPage", "projects-page").replace("ProjectDetailPage", "project-detail-page").replace("ProjectBoardKanban", "project-board-kanban").replace("ProjectTasksPage", "project-tasks-page").replace("ProjectBoardLoading", "project-board-loading")));
 });
 
+test("dashboard attention cards use canonical metadata and pill roles", () => {
+  const card = readFileSync(
+    join(process.cwd(), "packages/module-projects/src/ui/shared/dashboard-project-attention-card.tsx"),
+    "utf8",
+  );
+
+  assert.match(card, /<ProjectPill[\s\S]*size="small"/);
+  assert.match(card, /whitespace-nowrap text-meta font-semibold/);
+  assert.match(card, /items-center gap-2 text-meta text-\[color:var\(--muted-foreground\)\]/);
+  assert.doesNotMatch(card, /flex flex-wrap items-center gap-2/);
+  assert.equal(defaultProjectsUiDictionary.dashboard.badges.withoutOwner, "Por atribuir");
+});
+
 test("Projects board toolbar waits for authoritative page actions", () => {
   const root = join(process.cwd(), "packages/module-projects/src/ui");
   const toolbar = readFileSync(join(root, "project-board-toolbar-controls.tsx"), "utf8");
