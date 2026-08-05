@@ -3,6 +3,7 @@
 "@brightweblabs/app-shell": patch
 "@brightweblabs/core-auth": patch
 "@brightweblabs/module-crm": patch
+"@brightweblabs/module-admin": patch
 "@brightweblabs/module-marketing": patch
 "@brightweblabs/module-projects": patch
 ---

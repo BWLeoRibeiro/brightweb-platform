@@ -653,7 +653,7 @@ function MilestonesPanel({ items, isLoading = false, className = "" }: { items: 
           <h2 className="text-title font-semibold tracking-tight">{dictionary.milestones.title}</h2>
         </div>
         <span
-          className="rounded-full border px-2 py-0.5 text-micro font-bold tracking-widest"
+          className="rounded-full border px-2 py-0.5 text-micro font-bold"
           style={{ borderColor: "var(--project-hero-border)", color: "var(--project-hero-muted)" }}
         >
           {items.length ? <span className="text-data">{items.length}</span> : dictionary.milestones.emptyBadge}
@@ -717,7 +717,7 @@ function MilestonesPanel({ items, isLoading = false, className = "" }: { items: 
                 <div className="relative min-w-0 flex-1">
                   <p className="truncate text-body text-[length:var(--text-ui-action)] font-semibold">{m.title}</p>
                   <p className="truncate text-meta" style={{ color: "var(--project-hero-muted)" }}>
-                    {m.projectName} · {m.code}
+                    {m.projectName} · <span className={MONO}>{m.code}</span>
                   </p>
                 </div>
                 <ArrowUpRight className="relative h-3.5 w-3.5 shrink-0 opacity-0 transition group-hover:opacity-70" />

@@ -38,9 +38,10 @@ are mono, and numbers in sentences inherit their surrounding prose. The legacy
 existing rendered output for compatibility; new code should use the semantic roles
 above.
 
-Existing recipes remain supported and preserve their rendered values. The table
-below gives the recommended semantic role for new code; it is a migration guide,
-not a claim that every compatibility utility renders identically:
+Existing recipes remain supported. Compatibility label recipes intentionally
+adopt the shared sentence-case label treatment; other compatibility recipes keep
+their established values. The table below gives the recommended semantic role for
+new code rather than promising pixel-identical output:
 
 | Compatibility utility | Recommended role |
 | --- | --- |

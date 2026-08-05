@@ -38,7 +38,7 @@ export async function sendAdminUserInviteEmail(params: {
             <tr><td style="height:6px;background:#2f5d50;font-size:0;">&nbsp;</td></tr>
             <tr>
               <td style="padding:40px 40px 20px;">
-                <p style="margin:0 0 14px;color:#627069;font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;">Acesso ao portal</p>
+                <p style="margin:0 0 14px;color:#627069;font-size:12px;font-weight:600;line-height:1.4;letter-spacing:0;">Acesso ao portal</p>
                 <h1 style="margin:0 0 18px;font-family:Georgia,serif;font-size:30px;line-height:1.2;font-weight:500;color:#1e2925;">Foi convidado para colaborar</h1>
                 <p style="margin:0;color:#4f5854;font-size:16px;line-height:1.65;">Foi-lhe atribuído o perfil de <strong style="color:#25282b;">${roleLabel}</strong>. Crie a sua conta para aceitar o convite e entrar no portal.</p>
               </td>
