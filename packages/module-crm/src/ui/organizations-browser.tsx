@@ -104,8 +104,19 @@ export function CrmOrganizationsBrowser({ open, organizations, loading = false, 
           <SearchField value={search} onChange={setSearch} onClear={() => setSearch("")} placeholder={dictionary.organizations.searchPlaceholder} aria-label={dictionary.organizations.searchPlaceholder} />
           <div className="mt-4 grid gap-3" aria-busy={loading || queryLoading}>
             {visibleOrganizations.map((organization) => (
-              <SurfaceCard key={organization.id} className="p-4">
-                <button type="button" className="w-full text-left" onClick={() => onSelect?.(organization)}>
+              <SurfaceCard
+                key={organization.id}
+                className={`relative p-4 transition-[transform,background-color,border-color,box-shadow] ${onSelect ? "group cursor-pointer hover:-translate-y-0.5 hover:border-border-strong hover:bg-surface-hover hover:shadow-[0_12px_30px_var(--elevate-2)] focus-within:border-border-strong focus-within:shadow-[0_12px_30px_var(--elevate-2)]" : ""}`}
+              >
+                {onSelect ? (
+                  <button
+                    type="button"
+                    aria-label={`${dictionary.organizations.viewEyebrow}: ${organization.name ?? dictionary.organizations.unavailable}`}
+                    className="absolute inset-0 z-0 cursor-pointer rounded-[var(--radius-card)] outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--ring)]"
+                    onClick={() => onSelect(organization)}
+                  />
+                ) : null}
+                <div className={onSelect ? "pointer-events-none relative z-10" : undefined}>
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <p className="truncate text-body font-semibold text-foreground">{organization.name ?? dictionary.organizations.unavailable}</p>
@@ -115,14 +126,14 @@ export function CrmOrganizationsBrowser({ open, organizations, loading = false, 
                       <Badge variant="outline"><span>{dataNumerals(dictionary.organizations.contactCount(contactsByOrganization.get(organization.id) ?? 0))}</span></Badge>
                     ) : null}
                   </div>
-                </button>
-                <dl className="mt-3 grid gap-2 text-meta text-muted-foreground sm:grid-cols-2">
-                  {config.showCompanySize ? <div><dt className="text-label text-foreground">{dictionary.organizations.companySize}</dt><dd>{organization.company_size ?? dictionary.organizations.unavailable}</dd></div> : null}
-                  {config.showBudgetRange ? <div><dt className="text-label text-foreground">{dictionary.organizations.budgetRange}</dt><dd>{organization.budget_range ?? dictionary.organizations.unavailable}</dd></div> : null}
-                  {config.showAddress ? <div><dt className="text-label text-foreground">{dictionary.organizations.address}</dt><dd>{organization.address ?? dictionary.organizations.unavailable}</dd></div> : null}
-                  {config.showTaxIdentifier ? <div><dt className="text-label text-foreground">{fields.taxIdentifierLabel ?? dictionary.organizations.taxIdentifier}</dt><dd>{organization.taxIdentifierValue ?? dictionary.organizations.unavailable}</dd></div> : null}
-                </dl>
-                {config.showWebsite && organization.website_url ? <a href={organization.website_url} target="_blank" rel="noreferrer" className="mt-3 inline-flex items-center gap-1 text-meta text-muted-foreground hover:text-foreground"><span className="truncate">{organization.website_url}</span><ExternalLink className="size-3" aria-hidden /></a> : null}
+                  <dl className="mt-3 grid gap-2 text-meta text-muted-foreground sm:grid-cols-2">
+                    {config.showCompanySize ? <div><dt className="text-label text-foreground">{dictionary.organizations.companySize}</dt><dd>{organization.company_size ?? dictionary.organizations.unavailable}</dd></div> : null}
+                    {config.showBudgetRange ? <div><dt className="text-label text-foreground">{dictionary.organizations.budgetRange}</dt><dd>{organization.budget_range ?? dictionary.organizations.unavailable}</dd></div> : null}
+                    {config.showAddress ? <div><dt className="text-label text-foreground">{dictionary.organizations.address}</dt><dd>{organization.address ?? dictionary.organizations.unavailable}</dd></div> : null}
+                    {config.showTaxIdentifier ? <div><dt className="text-label text-foreground">{fields.taxIdentifierLabel ?? dictionary.organizations.taxIdentifier}</dt><dd>{organization.taxIdentifierValue ?? dictionary.organizations.unavailable}</dd></div> : null}
+                  </dl>
+                </div>
+                {config.showWebsite && organization.website_url ? <a href={organization.website_url} target="_blank" rel="noreferrer" className="relative z-20 mt-3 inline-flex max-w-full items-center gap-1 text-meta text-muted-foreground hover:text-foreground"><span className="truncate">{organization.website_url}</span><ExternalLink className="size-3 shrink-0" aria-hidden /></a> : null}
               </SurfaceCard>
             ))}
             {(loading || queryLoading) && visibleOrganizations.length === 0 ? <div className="grid gap-3">{[0, 1, 2].map((index) => <Skeleton key={index} className="h-32 rounded-[var(--radius-card)]" />)}</div> : null}
