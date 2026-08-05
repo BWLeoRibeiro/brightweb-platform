@@ -294,6 +294,8 @@ test("CRM timeline request limits and timestamps are bounded before data access"
   let receivedLimit = 0;
   const query = {
     select() { return this; },
+    eq() { return this; },
+    in() { return this; },
     gte(_column: string, value: string) { receivedSince = value; return this; },
     order() { return this; },
     limit(value: number) {

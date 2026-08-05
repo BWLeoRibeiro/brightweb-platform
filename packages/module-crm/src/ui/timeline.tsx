@@ -35,9 +35,9 @@ export function CrmTimeline({ entries, loading = false, unavailable = false, dic
       <ol className="flex flex-col pl-[var(--timeline-list-inset)]" aria-label={dictionary.timeline.title}>
         {entries.map((entry) => {
           const segments = composeCrmMessage({
-            eventType: "crm_contact_status_changed",
-            summary: entry.new_status,
-            payload: {
+            eventType: entry.event_type ?? "crm_contact_status_changed",
+            summary: entry.summary ?? entry.new_status,
+            payload: entry.payload ?? {
               contact_name: entry.contact_label,
               changes: { status: { from: entry.previous_status, to: entry.new_status } },
             },
