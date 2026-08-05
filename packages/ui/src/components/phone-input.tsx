@@ -23,21 +23,26 @@ function flagEmoji(iso2: string) {
   return iso2.toUpperCase().split("").map((character) => String.fromCodePoint(0x1f1e6 - 0x41 + character.charCodeAt(0))).join("");
 }
 
-export function PhoneInput({ value, onChange, defaultCountry = "pt", disabled = false, className, placeholder = "912 345 678", ...inputProps }: PhoneInputProps) {
+function normalizePhoneValue(phone: string, dialCode: string) {
+  return phone === `+${dialCode}` ? "" : phone;
+}
+
+export function PhoneInput({ value, onChange, defaultCountry = "pt", disabled = false, className, placeholder = "912 345 678", name, "aria-describedby": ariaDescribedBy, ...inputProps }: PhoneInputProps) {
   const inputRef = useRef<HTMLInputElement | null>(null);
   const triggerRef = useRef<HTMLButtonElement | null>(null);
   const dropdownRef = useRef<HTMLDivElement | null>(null);
   const optionRefs = useRef<Array<HTMLButtonElement | null>>([]);
   const countryListId = useId();
+  const phonePrefixId = useId();
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [activeIndex, setActiveIndex] = useState(0);
 
-  const { inputValue, handlePhoneValueChange, country, setCountry } = usePhoneInput({
+  const { phone, inputValue, handlePhoneValueChange, country, setCountry } = usePhoneInput({
     defaultCountry,
     value,
     disableDialCodeAndPrefix: true,
-    onChange: ({ phone }) => onChange(phone),
+    onChange: ({ phone: nextPhone, country: nextCountry }) => onChange(normalizePhoneValue(nextPhone, nextCountry.dialCode)),
     inputRef,
   });
 
@@ -123,7 +128,7 @@ export function PhoneInput({ value, onChange, defaultCountry = "pt", disabled = 
         aria-controls={countryListId}
         aria-expanded={open}
         aria-haspopup="listbox"
-        aria-label="Choose country code"
+        aria-label={`Choose country code, current ${country.name} +${country.dialCode}`}
       >
         <span className="text-body-lg leading-none">{flagEmoji(country.iso2)}</span>
         <svg className="size-2.5 text-foreground/40" viewBox="0 0 10 6" fill="none" aria-hidden>
@@ -181,8 +186,9 @@ export function PhoneInput({ value, onChange, defaultCountry = "pt", disabled = 
       ) : null}
 
       <span className="h-4 w-px shrink-0 bg-foreground/15" />
-      <span className="select-none pl-2 text-body text-foreground">+{country.dialCode}</span>
-      <input {...inputProps} ref={inputRef} value={inputValue} onChange={handlePhoneValueChange} disabled={disabled} placeholder={placeholder} type="tel" className="h-7 flex-1 border-0 bg-transparent pl-1 text-body text-foreground outline-none placeholder:text-foreground-muted-accessible disabled:pointer-events-none disabled:opacity-100" />
+      <span id={phonePrefixId} className="select-none pl-2 text-body text-foreground">+{country.dialCode}</span>
+      <input {...inputProps} aria-describedby={[ariaDescribedBy, phonePrefixId].filter(Boolean).join(" ")} ref={inputRef} value={inputValue} onChange={handlePhoneValueChange} disabled={disabled} placeholder={placeholder} type="tel" className="h-7 flex-1 border-0 bg-transparent pl-1 text-body text-foreground outline-none placeholder:text-foreground-muted-accessible disabled:pointer-events-none disabled:opacity-100" />
+      {name ? <input type="hidden" name={name} value={normalizePhoneValue(phone, country.dialCode)} disabled={disabled} form={inputProps.form} /> : null}
     </div>
   );
 }

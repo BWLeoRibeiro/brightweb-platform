@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { createElement as h } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
+import { act, create } from "react-test-renderer";
 import test from "node:test";
 
 import { BreadcrumbLink } from "../packages/ui/src/components/breadcrumb.tsx";
@@ -12,6 +13,7 @@ import { cn as uiCn } from "../packages/ui/src/lib/utils.ts";
 import { getInitials, getPaginationWindow, getRoleLabel, resolveRoleToken } from "../packages/ui/src/lib/patterns.ts";
 
 const repoRoot = path.resolve(new URL("..", import.meta.url).pathname);
+(globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 const patternExports = {
   action: ["ActionButton", "actionClassName"],
@@ -62,7 +64,8 @@ test("PhoneInput forwards the native telephone accessible-name contract", () => 
   );
 
   assert.match(html, /<label for="customer-phone">Phone/);
-  assert.match(html, /<input id="customer-phone" autoComplete="tel" aria-describedby="phone-help"[^>]*type="tel"[^>]*name="phone"/);
+  assert.match(html, /<input id="customer-phone" autoComplete="tel" aria-describedby="phone-help [^"]+"[^>]*type="tel"/);
+  assert.match(html, /<input type="hidden" name="phone" value=""/);
 });
 
 test("PhoneInput keeps the country calling code outside the editable field", () => {
@@ -75,8 +78,55 @@ test("PhoneInput keeps the country calling code outside the editable field", () 
   );
 
   assert.match(html, /<span[^>]*class="[^"]*select-none[^"]*"[^>]*>\+34<\/span>/);
+  assert.match(html, /aria-label="Choose country code, current Spain \+34"/);
   assert.match(html, /<input[^>]*value="912 345 678"/);
   assert.doesNotMatch(html, /<input[^>]*value="\+34/);
+});
+
+test("PhoneInput emits and submits E.164 while only the subscriber number is editable", async () => {
+  const changes: string[] = [];
+  let renderer: ReturnType<typeof create>;
+
+  await act(async () => {
+    renderer = create(h(PhoneInput, {
+      defaultCountry: "es",
+      name: "phone",
+      value: "+34912345678",
+      onChange: (phone) => changes.push(phone),
+    }), {
+      createNodeMock: (element) => element.type === "input" ? {
+        addEventListener: () => {},
+        removeEventListener: () => {},
+        setSelectionRange: () => {},
+      } : null,
+    });
+  });
+
+  const editableInput = renderer!.root.find((node) => node.type === "input" && node.props.type === "tel");
+  const hiddenInput = renderer!.root.find((node) => node.type === "input" && node.props.type === "hidden");
+  assert.equal(editableInput.props.name, undefined);
+  assert.equal(hiddenInput.props.name, "phone");
+  assert.equal(hiddenInput.props.value, "+34912345678");
+
+  await act(async () => {
+    editableInput.props.onChange({
+      preventDefault: () => {},
+      nativeEvent: { data: "9", inputType: "insertText" },
+      target: { selectionStart: 11, value: "912 345 679" },
+    });
+  });
+  assert.equal(changes.at(-1), "+34912345679");
+
+  await act(async () => {
+    editableInput.props.onChange({
+      preventDefault: () => {},
+      nativeEvent: { data: null, inputType: "deleteContentBackward" },
+      target: { selectionStart: 0, value: "" },
+    });
+  });
+  assert.equal(changes.at(-1), "");
+
+  await act(async () => renderer!.unmount());
 });
 
 test("PhoneInput country picker exposes a listbox and complete keyboard contract", async () => {
