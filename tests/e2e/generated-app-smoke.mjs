@@ -353,6 +353,12 @@ async function main() {
       parsedByPath[pathname] = data;
     }
 
+    const projectDashboardData = parsedByPath["/api/dashboard/projects"];
+    assert(
+      projectDashboardData.projects.milestones.every((milestone) => milestone.status !== "achieved"),
+      "projects dashboard excludes achieved milestones from the upcoming metas contract",
+    );
+
     // 9. HEAD exact-count contract: the CRM "total contacts" KPI is derived
     //    from a `head:true` count whose only transport is the Content-Range
     //    header. If HEAD handling regressed, this number would be wrong. ------
