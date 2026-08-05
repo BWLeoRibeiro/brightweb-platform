@@ -1,5 +1,16 @@
 # @brightweblabs/module-projects
 
+## 0.15.0
+
+### Minor Changes
+
+- 69eb6d5: Replace the clipped dashboard task preview with a responsive attention queue that ranks blocked, overdue, due-today, and due-soon work by priority and deadline. Add honest task totals, paginated full-task loading beyond 100 items, and a Projects-owned canonical dashboard task row. Update generated dashboard clients to request subsequent task pages.
+
+### Patch Changes
+
+- Updated dependencies [69eb6d5]
+  - @brightweblabs/app-shell@0.12.0
+
 ## 0.14.5
 
 ### Patch Changes
