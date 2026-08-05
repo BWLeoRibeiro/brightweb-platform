@@ -70,6 +70,19 @@ function isInvitationExpired(expiresAt: string): boolean {
   return Number.isNaN(date.getTime()) || date.getTime() < Date.now();
 }
 
+async function expirePendingAdminUserInvitations(
+  supabase: SupabaseClient,
+  email?: string,
+): Promise<void> {
+  let query = supabase.from("admin_user_invitations")
+    .update({ status: "expired" })
+    .eq("status", "pending")
+    .lte("expires_at", new Date().toISOString());
+  if (email) query = query.eq("invited_email", normalizeEmail(email));
+  const { error } = await query;
+  if (error) throwInviteError(error);
+}
+
 function isExistingAccountError(error: { message?: string } | null): boolean {
   const message = (error?.message ?? "").toLowerCase();
   return message.includes("already") || message.includes("exists") || message.includes("registered");
@@ -155,6 +168,7 @@ async function assignInvitedUserRole(
 }
 
 export async function listAdminUserInvitations(supabase: SupabaseClient): Promise<AdminUserInvitation[]> {
+  await expirePendingAdminUserInvitations(supabase);
   const { data, error } = await supabase.from("admin_user_invitations")
     .select("id, invited_email, role_code, status, invited_by_profile_id, accepted_by_profile_id, accepted_at, revoked_at, expires_at, created_at")
     .order("created_at", { ascending: false }).limit(50);
@@ -187,6 +201,7 @@ export async function createAdminUserInvitation(
   const email = normalizeEmail(params.email);
   if (!email) throw new Error("EMAIL_REQUIRED");
   if (await findAuthUserIdByEmail(supabase, email)) throw new Error("ACCOUNT_ALREADY_EXISTS");
+  await expirePendingAdminUserInvitations(supabase, email);
   const { data, error } = await supabase.from("admin_user_invitations").insert({
     invited_email: email,
     role_code: params.role,

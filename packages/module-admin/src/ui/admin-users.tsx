@@ -21,6 +21,7 @@ import {
 import type { AdminManagedRole, AdminUserRow, AdminUsersListResult } from "../users";
 import { createAdminUiClient } from "./client";
 import { defaultAdminUiDictionary } from "./dictionary";
+import { formatInvitationExpiry } from "./invitation-expiry";
 import { AdminRolePill } from "./role-pill";
 import type { AdminInviteRole, AdminUiClient, AdminUiDictionary, AdminUserInvitation, AdminUsersView } from "./types";
 
@@ -41,15 +42,6 @@ function formatAdminDate(value: string | null, locale: string, fallback = "-") {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
   return new Intl.DateTimeFormat(locale, { day: "2-digit", month: "2-digit", year: "numeric" }).format(date);
-}
-
-function formatInvitationExpiry(value: string, locale: string, dictionary: AdminUiDictionary) {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  const days = Math.max(0, Math.ceil((date.getTime() - Date.now()) / 86_400_000));
-  if (days === 0) return dictionary.invitations.expiresToday ?? formatAdminDate(value, locale);
-  if (days <= 3 && dictionary.invitations.expirySoon) return dictionary.invitations.expirySoon(days);
-  return formatAdminDate(value, locale);
 }
 
 function getBulkRoleSelectionSummary(rows: AdminUserRow[], selectedIds: string[], bulkTargetRole: AdminManagedRole) {

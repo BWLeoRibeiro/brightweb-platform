@@ -96,6 +96,7 @@ export type AdminUiDictionary = {
     retry?: string;
     expirySoon?: (days: number) => string;
     expiresToday?: string;
+    expired?: string;
     confirmRevokeTitle?: string;
     confirmRevokeDescription?: (email: string) => string;
     cancelRevoke?: string;

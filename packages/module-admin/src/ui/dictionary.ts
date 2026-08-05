@@ -60,6 +60,7 @@ export const defaultAdminUiDictionary: AdminUiDictionary = {
     retry: "Tentar novamente",
     expirySoon: (days) => `Expira dentro de ${days} dia${days === 1 ? "" : "s"}`,
     expiresToday: "Expira hoje",
+    expired: "Expirado",
     confirmRevokeTitle: "Revogar este convite?",
     confirmRevokeDescription: (email) => `${email} deixará de poder usar este link para criar acesso.`,
     cancelRevoke: "Manter convite",
