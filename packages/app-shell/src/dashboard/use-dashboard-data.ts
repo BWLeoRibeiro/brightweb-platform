@@ -25,8 +25,10 @@ export type DashboardState = {
   isProjectsLoading: boolean;
   isCrmLoading: boolean;
   isTasksLoading: boolean;
+  isTasksLoadingMore: boolean;
   errors: DashboardSectionErrors;
   ensureTasks: () => void;
+  loadMoreTasks: () => void;
   refresh: () => void;
 };
 
@@ -60,13 +62,16 @@ export function useDashboardData({
   const [isProjectsLoading, setIsProjectsLoading] = useState(hasProjects && !initialData?.projects);
   const [isCrmLoading, setIsCrmLoading] = useState(hasCrm && !initialData?.crm);
   const [isTasksLoading, setIsTasksLoading] = useState(hasTasks && !initialData?.tasks);
+  const [isTasksLoadingMore, setIsTasksLoadingMore] = useState(false);
   const [errors, setErrors] = useState<DashboardSectionErrors>({});
   const generationsRef = useRef(createDashboardRequestGenerations());
   const tasksRequestRef = useRef<Promise<boolean> | null>(null);
+  const tasksPageRequestRef = useRef<Promise<boolean> | null>(null);
   const overviewRequestController = useRef(createLatestRequestController());
   const projectsRequestController = useRef(createLatestRequestController());
   const crmRequestController = useRef(createLatestRequestController());
   const tasksRequestController = useRef(createLatestRequestController());
+  const tasksPageRequestController = useRef(createLatestRequestController());
 
   const loadTasks = useCallback(async ({
     force = false,
@@ -77,6 +82,8 @@ export function useDashboardData({
   } = {}) => {
     if (!hasTasks) return false;
     if (!force && tasksRequestRef.current) return tasksRequestRef.current;
+    tasksPageRequestController.current.abort();
+    setIsTasksLoadingMore(false);
     const requestGeneration = generation ?? generationsRef.current.begin(["tasks"]);
     const latest = tasksRequestController.current.begin();
     setErrors((current) => clearDashboardSectionErrors(current, ["tasks"]));
@@ -103,6 +110,44 @@ export function useDashboardData({
     tasksRequestRef.current = request;
     return request;
   }, [client, hasTasks, messages.tasksUnavailable]);
+
+  const loadMoreTasks = useCallback(async () => {
+    if (!hasTasks || !tasks?.pagination.hasMore || tasksPageRequestRef.current) return false;
+    const expectedPage = tasks.pagination.page + 1;
+    const latest = tasksPageRequestController.current.begin();
+    setErrors((current) => clearDashboardSectionErrors(current, ["tasks"]));
+    setIsTasksLoadingMore(true);
+    let request: Promise<boolean>;
+    request = client.getTasks({
+      signal: latest.signal,
+      page: expectedPage,
+      pageSize: tasks.pagination.pageSize,
+    }).then((payload) => {
+      const parsed = parseDashboardTasksResponse(payload);
+      if (!parsed.data) throw new Error(parsed.error ?? messages.tasksUnavailable);
+      if (!latest.isCurrent() || parsed.data.pagination.page !== expectedPage) return false;
+      setTasks((current) => {
+        if (!current || current.pagination.page >= parsed.data!.pagination.page) return current;
+        const existingIds = new Set(current.tasks.map((task) => task.id));
+        return {
+          ...parsed.data!,
+          tasks: [...current.tasks, ...parsed.data!.tasks.filter((task) => !existingIds.has(task.id))],
+        };
+      });
+      return true;
+    }).catch((error) => {
+      if (isAbortError(error) || !latest.isCurrent()) return false;
+      setErrors((current) => setDashboardSectionError(current, "tasks", messages.tasksUnavailable));
+      return false;
+    }).finally(() => {
+      const current = latest.isCurrent();
+      latest.finish();
+      if (tasksPageRequestRef.current === request) tasksPageRequestRef.current = null;
+      if (current) setIsTasksLoadingMore(false);
+    });
+    tasksPageRequestRef.current = request;
+    return request;
+  }, [client, hasTasks, messages.tasksUnavailable, tasks]);
 
   const load = useCallback(async (options: { notify?: boolean; sections?: DashboardRefreshEventDetail["sections"] } = {}) => {
     const requested = normalizeDashboardRefreshSections(options.sections).filter((section) => sections.includes(section));
@@ -222,6 +267,7 @@ export function useDashboardData({
     projectsRequestController.current.abort();
     crmRequestController.current.abort();
     tasksRequestController.current.abort();
+    tasksPageRequestController.current.abort();
   }, []);
 
   const refresh = useCallback(() => { void load({ notify: true }); }, [load]);
@@ -230,5 +276,17 @@ export function useDashboardData({
     onRefresh: useCallback((detail?: DashboardRefreshEventDetail) => { void load({ sections: detail?.sections }); }, [load]),
   });
 
-  return { projects, crm, tasks, isProjectsLoading, isCrmLoading, isTasksLoading, errors, ensureTasks: () => { void loadTasks(); }, refresh };
+  return {
+    projects,
+    crm,
+    tasks,
+    isProjectsLoading,
+    isCrmLoading,
+    isTasksLoading,
+    isTasksLoadingMore,
+    errors,
+    ensureTasks: () => { void loadTasks(); },
+    loadMoreTasks: () => { void loadMoreTasks(); },
+    refresh,
+  };
 }

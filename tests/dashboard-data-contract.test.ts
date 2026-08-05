@@ -170,27 +170,47 @@ test("Tasks dashboard handler returns assigned task rollups accepted by the real
       milestoneId: null,
       updatedAt: generatedAt,
     }],
+    attentionTotal: 1,
+    attentionTasks: [{
+      id: "task-1",
+      projectId: project.id,
+      projectName: project.name,
+      projectCode: project.code,
+      title: "Ship the dashboard",
+      status: "in_progress",
+      priority: "high",
+      dueDate: "2026-07-25",
+      blockedReason: null,
+      milestoneId: null,
+      updatedAt: generatedAt,
+    }],
+    page: 1,
+    pageSize: 50,
   });
   let requestedProfileId: string | undefined;
+  let requestedOptions: { page?: number; pageSize?: number } | undefined;
   const handler = createTasksDashboardGetHandler({
     getAccess: async () => ({ ok: true, supabase: {}, profileId: "profile-1", role: "admin" }),
-    getTasksDashboardData: async (_supabase: unknown, profileId: string | undefined) => {
+    getTasksDashboardData: async (_supabase: unknown, profileId: string | undefined, _now: Date, options: { page?: number; pageSize?: number }) => {
       requestedProfileId = profileId;
+      requestedOptions = options;
       return data;
     },
   } as never);
-  const response = await handler(new Request("https://example.test/api/dashboard/tasks"));
+  const response = await handler(new Request("https://example.test/api/dashboard/tasks?page=3&pageSize=25"));
   const parsed = parseDashboardTasksResponse(await response.json());
 
   assert.equal(response.status, 200);
   assert.equal(requestedProfileId, "profile-1");
+  assert.deepEqual(requestedOptions, { page: 3, pageSize: 25 });
   assert.equal(parsed.error, null);
   assert.equal(parsed.data?.kpis.total, 1);
   assert.equal(parsed.data?.tasks[0]?.title, "Ship the dashboard");
 });
 
-test("task dashboard approximates only the unfiltered total count", async () => {
+test("task dashboard returns exact counts for pagination and attention summaries", async () => {
   const countModes: Array<string | undefined> = [];
+  const excludedStatuses: string[] = [];
   const supabase = {
     from(table: string) {
       assert.equal(table, "project_tasks");
@@ -200,13 +220,18 @@ test("task dashboard approximates only the unfiltered total count", async () => 
           if (options?.count) countModes.push(options.count);
           return query;
         },
-        neq() { return query; },
+        neq(column: string, value: string) {
+          if (column === "status") excludedStatuses.push(value);
+          return query;
+        },
         eq() { return query; },
         gte() { return query; },
         lte() { return query; },
         lt() { return query; },
+        or() { return query; },
         order() { return query; },
         limit() { return query; },
+        range() { return query; },
         then(resolve: (value: typeof result) => unknown) {
           return Promise.resolve(resolve(result));
         },
@@ -216,5 +241,6 @@ test("task dashboard approximates only the unfiltered total count", async () => 
   };
 
   await getTasksDashboardData(supabase as never, undefined, new Date(generatedAt));
-  assert.deepEqual(countModes, ["planned", "exact", "exact", "exact"]);
+  assert.deepEqual(countModes, ["exact", "exact", "exact", "exact", "exact"]);
+  assert.ok(excludedStatuses.filter((status) => status === "blocked").length >= 2);
 });

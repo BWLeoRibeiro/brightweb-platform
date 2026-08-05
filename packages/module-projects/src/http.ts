@@ -454,11 +454,17 @@ export function createProjectsDashboardOverviewGetHandler(dependencies: Projects
 }
 
 export function createTasksDashboardGetHandler(dependencies: ProjectsHttpDependencies) {
-  return withUserAccessWithoutContext(dependencies, "projects.tasks-dashboard", async (access) => {
+  return withUserAccessWithoutContext(dependencies, "projects.tasks-dashboard", async (access, request) => {
+    const url = new URL(request.url);
     return json({
       data: await dependencies.getTasksDashboardData(
         access.supabase as never,
         access.profileId,
+        new Date(),
+        {
+          page: parsePositiveInt(url.searchParams.get("page"), 1, 10_000),
+          pageSize: parsePositiveInt(url.searchParams.get("pageSize"), 50, 100),
+        },
       ),
     });
   });

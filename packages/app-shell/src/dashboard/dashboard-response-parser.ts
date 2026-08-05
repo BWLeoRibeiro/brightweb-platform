@@ -116,7 +116,17 @@ function isDashboardTasksData(value: unknown): value is DashboardTasksData {
     && isString(value.generatedAt)
     && hasCounts(value.kpis, ["total", "dueThisWeek", "overdue", "blocked"])
     && Array.isArray(value.tasks)
-    && value.tasks.every(isDashboardAssignedTask);
+    && value.tasks.every(isDashboardAssignedTask)
+    && isRecord(value.attention)
+    && isCount(value.attention.total)
+    && Array.isArray(value.attention.tasks)
+    && value.attention.tasks.every(isDashboardAssignedTask)
+    && isRecord(value.pagination)
+    && isCount(value.pagination.page)
+    && value.pagination.page >= 1
+    && isCount(value.pagination.pageSize)
+    && value.pagination.pageSize >= 1
+    && typeof value.pagination.hasMore === "boolean";
 }
 
 function readErrorMessage(value: unknown): string | null {

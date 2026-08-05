@@ -54,6 +54,15 @@ export const dashboardTasks: DashboardTasksData = {
     { id: "task-content", projectId: "aurora", projectName: "Portal Aurora", projectCode: "AUR-26", title: "Migrar conteúdos", status: "todo", priority: "medium", dueDate: "2026-08-02", blockedReason: null, milestoneId: "milestone-build", updatedAt: generatedAt },
     { id: "task-research", projectId: "fieldnotes", projectName: "Identidade e website", projectCode: "FLD-09", title: "Consolidar referências editoriais", status: "todo", priority: "low", dueDate: null, blockedReason: null, milestoneId: null, updatedAt: generatedAt },
   ],
+  attention: {
+    total: 3,
+    tasks: [
+      { id: "task-approval", projectId: "aurora", projectName: "Portal Aurora", projectCode: "AUR-26", title: "Validar integração editorial", status: "blocked", priority: "urgent", dueDate: "2026-07-18", blockedReason: "Credenciais externas em falta.", milestoneId: "milestone-build", updatedAt: generatedAt },
+      { id: "task-checkout", projectId: "northstar", projectName: "E-commerce B2B", projectCode: "NST-14", title: "Fechar regras do checkout empresarial", status: "in_progress", priority: "high", dueDate: "2026-07-24", blockedReason: null, milestoneId: null, updatedAt: generatedAt },
+      { id: "task-home", projectId: "aurora", projectName: "Portal Aurora", projectCode: "AUR-26", title: "Implementar homepage", status: "in_progress", priority: "high", dueDate: "2026-07-28", blockedReason: null, milestoneId: "milestone-build", updatedAt: generatedAt },
+    ],
+  },
+  pagination: { page: 1, pageSize: 50, hasMore: false },
 };
 
 export const dashboardInitialData: DashboardInitialData = { projects: dashboardProjects, crm: dashboardCrm, tasks: dashboardTasks };

@@ -60,9 +60,12 @@ export {
 export {
   buildProjectsDashboardData,
   buildTasksDashboardData,
+  getDashboardTaskAttentionState,
   getProjectsDashboardData,
   getTasksDashboardData,
+  rankDashboardAttentionTasks,
   type ProjectsDashboardSnapshot,
+  type TasksDashboardOptions,
   type TasksDashboardSnapshot,
 } from "./dashboard";
 export {

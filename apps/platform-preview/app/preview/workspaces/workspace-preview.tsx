@@ -23,6 +23,8 @@ const emptyDashboardInitial = {
     generatedAt,
     kpis: { total: 0, dueThisWeek: 0, overdue: 0, blocked: 0 },
     tasks: [],
+    attention: { total: 0, tasks: [] },
+    pagination: { page: 1, pageSize: 50, hasMore: false },
   },
 };
 

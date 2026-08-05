@@ -4,6 +4,7 @@ export type DashboardProjectStatus = "planned" | "active" | "blocked" | "complet
 export type DashboardProjectHealth = "on_track" | "at_risk" | "off_track";
 export type DashboardTaskStatus = "todo" | "in_progress" | "blocked" | "done";
 export type DashboardTaskPriority = "low" | "medium" | "high" | "urgent";
+export type DashboardTaskAttentionState = "blocked" | "overdue" | "today" | "soon";
 
 export type DashboardProjectItem = {
   id: string;
@@ -89,6 +90,15 @@ export type DashboardTasksData = {
   generatedAt: string;
   kpis: { total: number; dueThisWeek: number; overdue: number; blocked: number };
   tasks: DashboardAssignedTask[];
+  attention: {
+    total: number;
+    tasks: DashboardAssignedTask[];
+  };
+  pagination: {
+    page: number;
+    pageSize: number;
+    hasMore: boolean;
+  };
 };
 
 export type DashboardInitialData = {
@@ -104,17 +114,24 @@ export type DashboardDataClient = {
   getOverview?: (options?: { signal?: AbortSignal }) => Promise<unknown>;
   getProjects: (options?: { signal?: AbortSignal }) => Promise<unknown>;
   getCrm: (options?: { signal?: AbortSignal }) => Promise<unknown>;
-  getTasks: (options?: { signal?: AbortSignal }) => Promise<unknown>;
+  getTasks: (options?: { signal?: AbortSignal; page?: number; pageSize?: number }) => Promise<unknown>;
 };
 
 export type DashboardSection = "projects" | "crm" | "tasks";
 
 export type DashboardProjectComponents = {
+  projectBaseHref?: string;
   ProjectSummaryCard: ComponentType<{ project: DashboardProjectItem }>;
   ProjectSummaryCardSkeleton: ComponentType;
   TaskDueMeta: ComponentType<{ dueDate: string | null; isOverdue?: boolean }>;
   TaskPriorityTag: ComponentType<{ task: Pick<DashboardAssignedTask, "status" | "priority"> }>;
   TaskStatusTag: ComponentType<{ task: Pick<DashboardAssignedTask, "status" | "blockedReason"> }>;
+  DashboardTaskRow: ComponentType<{
+    task: DashboardAssignedTask;
+    href: string;
+    attentionState?: DashboardTaskAttentionState;
+    attentionLabel?: string;
+  }>;
 };
 
 export type DashboardSurfaceContribution = {
