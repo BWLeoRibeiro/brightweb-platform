@@ -1,5 +1,17 @@
 # @brightweblabs/module-crm
 
+## 0.15.12
+
+### Patch Changes
+
+- c88018a: Align the organization danger zone to the same full-width geometry and card radius as the surrounding detail sections.
+- Updated dependencies [db5a6ab]
+- Updated dependencies [9fc9ee5]
+  - @brightweblabs/ui@1.4.9
+  - @brightweblabs/app-shell@0.14.1
+  - @brightweblabs/core-auth@0.10.5
+  - @brightweblabs/module-orgs@0.4.9
+
 ## 0.15.11
 
 ### Patch Changes
