@@ -25,7 +25,7 @@ The family contract starts at `--font-body`, `--font-heading`, and `--font-code`
 | `text-body-lg` | `1rem` | Emphasized or introductory body copy |
 | `text-body` | `0.875rem` | Default interface body copy |
 | `text-meta` | `0.75rem` | Secondary metadata |
-| `text-label` | `0.6875rem` | Uppercase interface label |
+| `text-label` | `0.75rem` | Compact sentence-case interface label |
 | `text-micro` | `0.625rem` | Dense supporting copy |
 | `text-kpi` | `2.75rem` | Display-face headline KPI |
 | `text-kpi-lg` | `3.5rem` | Large display-face headline KPI |
@@ -38,9 +38,10 @@ are mono, and numbers in sentences inherit their surrounding prose. The legacy
 existing rendered output for compatibility; new code should use the semantic roles
 above.
 
-Existing recipes remain supported and preserve their rendered values. The table
-below gives the recommended semantic role for new code; it is a migration guide,
-not a claim that every compatibility utility renders identically:
+Existing recipes remain supported. Compatibility label recipes intentionally
+adopt the shared sentence-case label treatment; other compatibility recipes keep
+their established values. The table below gives the recommended semantic role for
+new code rather than promising pixel-identical output:
 
 | Compatibility utility | Recommended role |
 | --- | --- |

@@ -46,7 +46,7 @@ export function CrmReportBanner({ summary, href, loading = false, unavailable = 
         <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-px bg-[image:var(--report-hero-rule)]" />
         <div className="relative flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
           <div className="min-w-0 lg:flex-1">
-            <p className="inline-flex items-center gap-2 text-label font-semibold uppercase tracking-[var(--type-tracking-160)]" style={{ color: "var(--project-hero-muted)" }}>
+            <p className="inline-flex items-center gap-2 text-label font-semibold" style={{ color: "var(--project-hero-muted)" }}>
               <BarChart3 className="h-3.5 w-3.5" style={{ color: "var(--accent)" }} aria-hidden />
               {dictionary.dashboard.reportEyebrow}
             </p>
@@ -67,7 +67,7 @@ export function CrmReportBanner({ summary, href, loading = false, unavailable = 
             {metrics.map((metric) => (
               <div key={metric.label} className="flex min-w-[var(--crm-report-metric-min-width)] flex-col justify-center rounded-[var(--radius-card)] border px-4 py-4" style={{ borderColor: "var(--project-hero-border)", background: "var(--project-hero-surface-raised)" }}>
                 <span className="text-kpi text-[length:var(--text-ui-report-metric)] font-black leading-[var(--type-leading-090)] tracking-[var(--type-tracking-n050)]" style={{ color: "var(--project-hero-foreground)" }}>{metric.value}</span>
-                <span className="mt-2 text-label uppercase tracking-[var(--type-tracking-100)]" style={{ color: "var(--project-hero-muted)" }}>{metric.label}</span>
+                <span className="mt-2 text-label" style={{ color: "var(--project-hero-muted)" }}>{metric.label}</span>
               </div>
             ))}
           </div>

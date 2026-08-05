@@ -631,7 +631,7 @@ export function CreateProjectSheet({ organizations, initialOpen = false }: Creat
                       <FieldContent>
                         <div className="mt-0.5 space-y-2">
                           <div>
-                            <p className="text-micro uppercase tracking-wider text-foreground/45">{dictionary.projectCreate.line1}</p>
+                            <p className="text-meta font-semibold text-foreground/55">{dictionary.projectCreate.line1}</p>
                             <Input
                               value={organizationCreation.organizationForm.addressLine1}
                               onChange={(event) => organizationCreation.setOrganizationForm((prev) => ({ ...prev, addressLine1: event.target.value }))}
@@ -640,7 +640,7 @@ export function CreateProjectSheet({ organizations, initialOpen = false }: Creat
                             />
                           </div>
                           <div>
-                            <p className="text-micro uppercase tracking-wider text-foreground/45">{dictionary.projectCreate.line2}</p>
+                            <p className="text-meta font-semibold text-foreground/55">{dictionary.projectCreate.line2}</p>
                             <Input
                               value={organizationCreation.organizationForm.addressLine2}
                               onChange={(event) => organizationCreation.setOrganizationForm((prev) => ({ ...prev, addressLine2: event.target.value }))}
@@ -740,7 +740,7 @@ export function CreateProjectSheet({ organizations, initialOpen = false }: Creat
                             >
                               <span className="truncate text-foreground">{invite.email}</span>
                               <div className="flex items-center gap-2">
-                                <span className="rounded-full border border-black/10 px-2 py-0.5 text-micro uppercase tracking-wide text-foreground/70 dark:border-white/15">
+                                <span className="rounded-full border border-black/10 px-2 py-0.5 text-micro font-semibold text-foreground/70 dark:border-white/15">
                                   {invite.role === "admin" ? dictionary.projectCreate.admin : dictionary.people.member}
                                 </span>
                                 <button

@@ -80,7 +80,7 @@ function formatShortDate(iso: string | null | undefined) {
 function formatWeekday(iso: string) {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "";
-  return new Intl.DateTimeFormat("pt-PT", { weekday: "short" }).format(d).replace(".", "").toUpperCase();
+  return new Intl.DateTimeFormat("pt-PT", { weekday: "short" }).format(d).replace(".", "");
 }
 
 function initialsOf(name: string | null | undefined, fallback = "?") {
@@ -435,9 +435,8 @@ const GROUP_HEADER_TONE: Record<TaskRow["group"], { header: string; label: strin
   },
 };
 
-// Explicit label styling (11px/600/uppercase) so the per-group tone color wins
-// over the shared muted text-label text-muted-foreground color.
-const TASK_GROUP_LABEL_BASE = "text-label font-semibold uppercase tracking-[var(--type-tracking-060)]";
+// Keep urgency labels compact without forcing a shouty all-caps treatment.
+const TASK_GROUP_LABEL_BASE = "text-label font-semibold";
 
 function dateOnly(value: string | Date) {
   const date = typeof value === "string" ? new Date(value) : value;
@@ -654,7 +653,7 @@ function MilestonesPanel({ items, isLoading = false, className = "" }: { items: 
           <h2 className="text-title font-semibold tracking-tight">{dictionary.milestones.title}</h2>
         </div>
         <span
-          className="rounded-full border px-2 py-0.5 text-micro font-bold tracking-widest"
+          className="rounded-full border px-2 py-0.5 text-micro font-bold"
           style={{ borderColor: "var(--project-hero-border)", color: "var(--project-hero-muted)" }}
         >
           {items.length ? <span className="text-data">{items.length}</span> : dictionary.milestones.emptyBadge}
@@ -708,7 +707,7 @@ function MilestonesPanel({ items, isLoading = false, className = "" }: { items: 
                         }
                   }
                 >
-                  <span className="block text-micro text-[length:var(--text-ui-nano-lg)] font-bold leading-none tracking-[var(--type-tracking-080)] opacity-80">
+                  <span className="block text-micro text-[length:var(--text-ui-nano-lg)] font-bold leading-none opacity-80">
                     {m.day}
                   </span>
                   <span className={`${MONO} block text-heading-4 font-extrabold leading-none`}>
@@ -717,8 +716,8 @@ function MilestonesPanel({ items, isLoading = false, className = "" }: { items: 
                 </div>
                 <div className="relative min-w-0 flex-1">
                   <p className="truncate text-body text-[length:var(--text-ui-action)] font-semibold">{m.title}</p>
-                  <p className={`${MONO} truncate text-label`} style={{ color: "var(--project-hero-muted)" }}>
-                    {m.projectName} · {m.code}
+                  <p className="truncate text-meta" style={{ color: "var(--project-hero-muted)" }}>
+                    {m.projectName} · <span className={MONO}>{m.code}</span>
                   </p>
                 </div>
                 <ArrowUpRight className="relative h-3.5 w-3.5 shrink-0 opacity-0 transition group-hover:opacity-70" />
@@ -816,7 +815,7 @@ function ProjectsView({ projects, isLoading }: { projects: DashboardProjectsData
       <section className="brand-panel relative grid overflow-hidden rounded-[var(--radius-panel)] px-6 py-5 text-[color:var(--project-hero-foreground)] md:grid-cols-[minmax(10rem,0.7fr)_minmax(18rem,2fr)_minmax(10rem,0.8fr)] md:items-center md:gap-8">
         <span aria-hidden className="pointer-events-none absolute -right-20 -top-32 h-64 w-64 rounded-full border border-[color:var(--project-hero-border)] bg-[image:var(--dashboard-hero-glow)] opacity-50" />
         <div className="relative">
-          <span className="text-label font-bold uppercase tracking-[var(--type-tracking-100)] text-[color:var(--project-hero-muted)]">{dictionary.projects.inProgress}</span>
+          <span className="text-label font-bold text-[color:var(--project-hero-muted)]">{dictionary.projects.inProgress}</span>
           <div className="mt-1 flex items-baseline gap-2">
             <strong className={`${MONO} text-kpi-lg leading-none`}>{isLoading && !projects ? "–" : openProjects}</strong>
             <span className="text-meta text-[color:var(--project-hero-muted)]">{dictionary.projects.openProjects}</span>
@@ -836,7 +835,7 @@ function ProjectsView({ projects, isLoading }: { projects: DashboardProjectsData
         </div>
 
         <div className="relative mt-5 md:mt-0">
-          <span className="text-label font-bold uppercase tracking-[var(--type-tracking-100)] text-[color:var(--project-hero-muted)]">{dictionary.projects.nextSevenDays}</span>
+          <span className="text-label font-bold text-[color:var(--project-hero-muted)]">{dictionary.projects.nextSevenDays}</span>
           <div className="mt-1 flex items-baseline gap-2">
             <strong className={`${MONO} text-kpi-lg leading-none`}>{milestonesDueThisWeek}</strong>
             <span className="text-meta text-[color:var(--project-hero-muted)]">{milestonesDueThisWeek === 1 ? dictionary.projects.milestoneOne : dictionary.projects.milestoneMany}</span>
@@ -892,7 +891,7 @@ type TagMeta = { label: string; color: string; strong: string };
 function Tag({ meta }: { meta: TagMeta }) {
   return (
     <span
-      className="tint-soft inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-micro font-bold uppercase tracking-[var(--type-tracking-080)]"
+      className="tint-soft inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-micro font-bold"
       style={{ ["--tint" as string]: meta.color, ["--tint-strong" as string]: meta.strong }}
     >
       <span className="dashboard-status-dot h-1.5 w-1.5 rounded-full" />

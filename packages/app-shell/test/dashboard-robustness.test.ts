@@ -316,6 +316,8 @@ test("dashboard renders the restored branded overview with live KPI content", ()
   assert.match(html, /href="\/crm"[^>]*>[\s\S]*CRM[\s\S]*2[\s\S]*contactos/);
   assert.match(html, />Tarefas</);
   assert.match(html, />Próximas metas</);
+  assert.match(html, /class="truncate text-meta"[^>]*>Platform · <span class="text-data">PROJECT-/);
+  assert.doesNotMatch(html, /class="text-data truncate text-label"/);
   assert.match(html, /lg:col-span-2 lg:col-start-1 lg:row-start-2/);
   assert.doesNotMatch(html, /h-\[340px\]/);
   assert.match(html, /lg:col-start-3 lg:row-start-1 lg:row-span-2 lg:h-full/);

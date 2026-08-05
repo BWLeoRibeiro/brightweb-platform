@@ -138,10 +138,10 @@
   border-radius: var(--radius-pill);
   background: var(--brand-surface-tint);
   color: var(--brand-accent);
-  font-size: var(--text-ui-label);
-  font-weight: var(--font-weight-bold);
-  letter-spacing: var(--type-tracking-040);
-  text-transform: uppercase;
+  font-size: var(--text-meta);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--type-tracking-normal);
+  text-transform: none;
 }
 
 .status {
