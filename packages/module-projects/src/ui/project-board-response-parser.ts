@@ -1,12 +1,12 @@
 import type { ProjectTask } from "../types";
+import { readPublicError } from "@brightweblabs/infra/robustness";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 export function parseProjectBoardApiError(payload: unknown, fallback: string) {
-  if (isRecord(payload) && typeof payload.error === "string" && payload.error.trim()) return payload.error;
-  return fallback;
+  return readPublicError(payload, fallback).message;
 }
 
 function isTaskItem(value: unknown): value is ProjectTask {

@@ -25,6 +25,8 @@ test("admin UI exposes an injectable client and keeps fetch out of components", 
   assert.match(component, /usersRequestAbortRef\.current\?\.abort\(\)/);
   assert.match(component, /setLoading\(true\)[\s\S]*window\.setTimeout\(\(\) => \{[\s\S]*setDebouncedSearch/);
   assert.match(client, /signal: requestOptions\.signal/);
+  assert.match(component, /toast\.warning\(dictionary\.roleChange\.unchanged/);
+  assert.match(component, /toast\.warning\(dictionary\.roleChange\.skipped/);
 });
 
 test("admin package exposes users, invitations, toolbar, loading, and tokens", async () => {

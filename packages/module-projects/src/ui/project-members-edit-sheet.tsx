@@ -25,6 +25,7 @@ import {
 } from "@brightweblabs/ui";
 import { TooltipProvider } from "@brightweblabs/ui";
 import { PROJECT_MEMBER_ROLE_LABELS_PT, type ProjectMemberRole } from "../contracts";
+import { parseProjectBoardApiError } from "./project-board-response-parser";
 
 type ProjectMemberOption = {
   profileId: string;
@@ -174,7 +175,7 @@ export function ProjectMembersEditSheet({
         });
         const payload = await response.json().catch(() => null);
         if (!response.ok) {
-          const message = typeof payload?.error === "string" ? payload.error : dictionary.team.loadOptionsError;
+          const message = parseProjectBoardApiError(payload, dictionary.team.loadOptionsError);
           throw new Error(message);
         }
 
@@ -282,7 +283,7 @@ export function ProjectMembersEditSheet({
       });
       const payload = await response.json().catch(() => null);
       if (!response.ok) {
-        const message = typeof payload?.error === "string" ? payload.error : dictionary.team.saveError;
+        const message = parseProjectBoardApiError(payload, dictionary.team.saveError);
         throw new Error(message);
       }
 

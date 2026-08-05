@@ -34,6 +34,7 @@ import {
 import { PROJECT_MEMBER_SCOPE_LABELS, useProjectSetupState } from "./project-create/use-project-setup-state";
 import { useProjectFormState } from "./project-create/use-project-form-state";
 import { createProject } from "./project-ui-actions";
+import { parseProjectBoardApiError } from "./project-board-response-parser";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -243,7 +244,7 @@ export function CreateProjectSheet({ organizations, initialOpen = false }: Creat
 
       const payload = await response.json();
       if (!response.ok) {
-        const errorMessage = typeof payload?.error === "string" ? payload.error : dictionary.projectCreate.createOrganizationError;
+        const errorMessage = parseProjectBoardApiError(payload, dictionary.projectCreate.createOrganizationError);
         throw new Error(errorMessage);
       }
 
@@ -383,16 +384,13 @@ export function CreateProjectSheet({ organizations, initialOpen = false }: Creat
 
       const projectPayload = await projectResponse.json();
       if (!projectResponse.ok) {
-        const message = typeof projectPayload?.error === "string" ? projectPayload.error : dictionary.projectCreate.saveDetailsError;
+        const message = parseProjectBoardApiError(projectPayload, dictionary.projectCreate.saveDetailsError);
         throw new Error(message);
       }
 
       const membersPayloadResponse = await membersResponse.json();
       if (!membersResponse.ok) {
-        const message =
-          typeof membersPayloadResponse?.error === "string"
-            ? membersPayloadResponse.error
-            : dictionary.projectCreate.saveTeamError;
+        const message = parseProjectBoardApiError(membersPayloadResponse, dictionary.projectCreate.saveTeamError);
         throw new Error(message);
       }
 

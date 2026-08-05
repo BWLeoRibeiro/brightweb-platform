@@ -427,7 +427,7 @@ export function MarketingClient({
 
   const persist = async (successMessage?: string) => {
     if (!isValid(form)) {
-      toast.error(dictionary.feedback.required);
+      toast.error(dictionary.feedback.campaignRequired ?? dictionary.feedback.required);
       return null;
     }
     const editorGeneration = campaignEditorGenerationRef.current;
@@ -681,7 +681,7 @@ export function MarketingClient({
   const sendTest = async () => {
     const email = testEmail.trim();
     if (!email) {
-      toast.error(dictionary.feedback.required);
+      toast.error(dictionary.feedback.testEmailRequired ?? dictionary.feedback.required);
       return;
     }
     const campaign = activeCampaign ?? await persist();

@@ -656,6 +656,7 @@ test("full-modules scaffold mounts shell, auth, account, dashboard, projects, ad
   assert.match(shellLayout, /AppShellFrame/);
   assert.match(shellLayout, /DesktopSidebar/);
   assert.match(shellLayout, /AppHeader/);
+  assert.doesNotMatch(shellLayout, /<Toaster|import \{ Toaster \}/);
   const rootLayout = await fs.readFile(path.join(targetDir, "app", "layout.tsx"), "utf8");
   assert.match(rootLayout, /ThemeProvider/);
   assert.match(rootLayout, /ThemeScript/);

@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { useProjectDetailActions, useProjectDetailLinks } from "./project-detail-data-provider";
 import { PROJECTS_EVENTS, dispatchProjectsEvent } from "./events";
 import { isValidProjectLinkUrl, normalizeProjectLinkUrl } from "./project-link-url-utils";
+import { parseProjectBoardApiError } from "./project-board-response-parser";
 import {
   sheetBodyClassName,
   sheetFooterClassName,
@@ -314,7 +315,7 @@ export function ProjectLinksCard({
       });
       const payload = await response.json().catch(() => null);
       if (!response.ok) {
-        const message = typeof payload?.error === "string" ? payload.error : dictionary.links.updateError;
+        const message = parseProjectBoardApiError(payload, dictionary.links.updateError);
         throw new Error(message);
       }
       const didApplyLinks = applyLinksPayload(payload);
@@ -342,7 +343,7 @@ export function ProjectLinksCard({
       });
       const payload = await response.json().catch(() => null);
       if (!response.ok) {
-        const message = typeof payload?.error === "string" ? payload.error : dictionary.links.deleteError;
+        const message = parseProjectBoardApiError(payload, dictionary.links.deleteError);
         throw new Error(message);
       }
       const didApplyLinks = applyLinksPayload(payload);

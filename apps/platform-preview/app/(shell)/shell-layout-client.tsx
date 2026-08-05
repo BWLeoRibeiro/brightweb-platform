@@ -22,7 +22,6 @@ import { createAuthUiClient } from "@brightweblabs/core-auth/ui";
 import "@brightweblabs/app-shell/dashboard.css";
 import "@brightweblabs/module-crm/tokens.css";
 import "@brightweblabs/module-projects/tokens.css";
-import { Toaster } from "@brightweblabs/ui";
 
 import { getModuleToolbarControls } from "../../config/module-toolbar-controls";
 import { getStarterShellConfig } from "../../config/shell";
@@ -73,7 +72,6 @@ function PreviewShellLayoutInner({
   } = useShellNavState({ pathname, groups: shellGroups });
   const notifications = useShellNotifications({ enabled: viewer.isStaff });
   const isAdminSurface = pathname === "/admin" || pathname.startsWith("/admin/");
-  const usesToasts = isAdminSurface || pathname === "/account";
   const shellNavItems = [
     ...config.primaryNav,
     ...(config.adminNavItem ? [config.adminNavItem] : []),
@@ -176,7 +174,6 @@ function PreviewShellLayoutInner({
     >
       <ShellRealtimeBridge viewer={viewer} />
       {children}
-      {usesToasts ? <Toaster /> : null}
     </AppShellFrame>
   );
 }

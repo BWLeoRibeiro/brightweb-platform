@@ -154,7 +154,7 @@ export function SegmentWorkspace({
 
   const save = async () => {
     if (!form.name.trim()) {
-      toast.error(dictionary.segments.fields.name);
+      toast.error(dictionary.feedback.segmentNameRequired ?? dictionary.segments.fields.name);
       return;
     }
     const editorGeneration = editorGenerationRef.current;

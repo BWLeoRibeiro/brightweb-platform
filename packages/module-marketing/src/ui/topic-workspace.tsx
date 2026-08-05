@@ -57,7 +57,7 @@ export function TopicWorkspace({
 
   const save = async () => {
     if (!form.label.trim() || (!editingId && !form.slug.trim())) {
-      toast.error(dictionary.feedback.required);
+      toast.error(dictionary.feedback.topicRequired ?? dictionary.feedback.required);
       return;
     }
     setBusy("save");

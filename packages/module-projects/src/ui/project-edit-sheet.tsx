@@ -25,6 +25,7 @@ import {
 import { cn } from "./utils";
 import { Button } from "@brightweblabs/ui";
 import { ProjectCalendar as Calendar } from "./shared/project-calendar";
+import { parseProjectBoardApiError } from "./project-board-response-parser";
 import { Field, FieldContent, FieldGroup, FieldLabel } from "@brightweblabs/ui";
 import {
   AlertDialog,
@@ -216,7 +217,7 @@ export function ProjectEditSheet({
       });
       const result = await response.json().catch(() => null);
       if (!response.ok) {
-        const message = typeof result?.error === "string" ? result.error : dictionary.projectEdit.saveError;
+        const message = parseProjectBoardApiError(result, dictionary.projectEdit.saveError);
         throw new Error(message);
       }
       const didApplyDashboard = detailActions?.applyDashboardPayload(result) ?? false;
@@ -240,7 +241,7 @@ export function ProjectEditSheet({
       const response = await client.requestRaw(`/api/projects/${projectId}`, { method: "DELETE" });
       const result = await response.json();
       if (!response.ok) {
-        const message = typeof result?.error === "string" ? result.error : dictionary.projectEdit.deleteError;
+        const message = parseProjectBoardApiError(result, dictionary.projectEdit.deleteError);
         throw new Error(message);
       }
 

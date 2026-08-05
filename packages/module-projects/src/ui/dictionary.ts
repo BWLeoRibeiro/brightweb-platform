@@ -130,7 +130,7 @@ export const defaultProjectsUiDictionary = {
     noAllocatedMembers: "Sem membros alocados.",
     editProject: "Editar projeto",
     openProject: "Abrir projeto",
-    copyProjectId: "Copiar Project ID",
+    copyProjectId: "Copiar ID do projeto",
     completedTasks: "Tarefas concluídas",
     dueDate: "Prazo",
     unassigned: "Por atribuir",
@@ -467,8 +467,8 @@ export const defaultProjectsUiDictionary = {
     health: { on_track: "Dentro do prazo", at_risk: "Em risco", off_track: "Fora do prazo" },
   },
   messages: {
-    projectIdCopied: "Project ID copied",
-    projectIdCopyError: "Could not copy Project ID",
+    projectIdCopied: "ID do projeto copiado.",
+    projectIdCopyError: "Não foi possível copiar o ID do projeto.",
   },
   people: {
     admin: "Admin",

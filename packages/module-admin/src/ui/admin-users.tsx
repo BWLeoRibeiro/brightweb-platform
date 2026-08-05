@@ -210,7 +210,7 @@ export function AdminUsersClient({
       toast.error(dictionary.roleChange.alreadyAssigned(dictionary.roles[bulkTargetRole]));
       return;
     }
-    if (unchangedCount > 0) toast.error(dictionary.roleChange.unchanged(unchangedCount));
+    if (unchangedCount > 0) toast.warning(dictionary.roleChange.unchanged(unchangedCount));
     setPendingRoleAction({ profileIds: profileIdsToChange, newRole: bulkTargetRole, mode: "bulk" });
     setReason("");
   });
@@ -292,7 +292,7 @@ export function AdminUsersClient({
         profileIds: pendingRoleAction.profileIds, newRole: pendingRoleAction.newRole, reason: normalizedReason,
       });
       if (summary.changed > 0) toast.success(dictionary.roleChange.changed(summary.changed));
-      if (summary.skipped > 0) toast.error(dictionary.roleChange.skipped(summary.skipped));
+      if (summary.skipped > 0) toast.warning(dictionary.roleChange.skipped(summary.skipped));
       setPendingRoleAction(null);
       setReason("");
       setSelectedIds([]);

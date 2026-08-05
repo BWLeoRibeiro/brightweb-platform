@@ -5,6 +5,7 @@ import test from "node:test";
 
 import { createMarketingCampaignHttpHandlers } from "../packages/module-marketing/src/http.ts";
 import { createMarketingUiClient } from "../packages/module-marketing/src/ui/client.ts";
+import { defaultMarketingUiDictionary } from "../packages/module-marketing/src/ui/dictionary.ts";
 
 const campaign = {
   id: "campaign/1",
@@ -94,6 +95,37 @@ const queue = {
   suppressed: 0,
   skipped: 0,
 };
+
+test("marketing validation feedback names the action that needs attention", () => {
+  assert.equal(
+    defaultMarketingUiDictionary.feedback.campaignRequired,
+    "Preenche o nome, o assunto, o tópico e o conteúdo do email.",
+  );
+  assert.equal(
+    defaultMarketingUiDictionary.feedback.testEmailRequired,
+    "Indica o destinatário do email de teste.",
+  );
+  assert.equal(
+    defaultMarketingUiDictionary.feedback.topicRequired,
+    "Preenche os campos obrigatórios do tópico.",
+  );
+  assert.equal(
+    defaultMarketingUiDictionary.feedback.workflowRequired,
+    "Preenche o nome, configura o evento inicial e completa todos os passos da automação.",
+  );
+  assert.equal(
+    defaultMarketingUiDictionary.feedback.segmentNameRequired,
+    "Indica o nome do segmento.",
+  );
+
+  const root = join(process.cwd(), "packages/module-marketing/src/ui");
+  const campaignSource = readFileSync(join(root, "marketing-client.tsx"), "utf8");
+  assert.match(campaignSource, /feedback\.campaignRequired \?\? dictionary\.feedback\.required/);
+  assert.match(campaignSource, /feedback\.testEmailRequired \?\? dictionary\.feedback\.required/);
+  assert.match(readFileSync(join(root, "topic-workspace.tsx"), "utf8"), /feedback\.topicRequired \?\? dictionary\.feedback\.required/);
+  assert.match(readFileSync(join(root, "workflow-workspace.tsx"), "utf8"), /feedback\.workflowRequired \?\? dictionary\.feedback\.required/);
+  assert.match(readFileSync(join(root, "segment-workspace.tsx"), "utf8"), /feedback\.segmentNameRequired \?\? dictionary\.segments\.fields\.name/);
+});
 
 test("marketing editors distinguish pending, unavailable, and fulfilled-empty collections", () => {
   const campaignSource = readFileSync(join(process.cwd(), "packages/module-marketing/src/ui/marketing-client.tsx"), "utf8");
