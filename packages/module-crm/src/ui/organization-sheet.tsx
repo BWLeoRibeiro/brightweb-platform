@@ -176,7 +176,7 @@ export function CrmOrganizationSheet({ open, organization, dictionary = defaultC
               </SheetSection>
             ) : null}
             {mode === "view" && organization && onDelete ? (
-              <div className="mx-4 rounded-xl border border-destructive/30 bg-destructive/5 p-4">
+              <div className="w-full rounded-[var(--radius-card)] border border-destructive/30 bg-destructive/5 p-4">
                 <p className="text-body font-semibold text-destructive">Zona de perigo</p>
                 <p className="mt-1 text-meta text-muted-foreground">A eliminação remove membros e convites, desassocia contactos e é bloqueada enquanto existirem projetos.</p>
                 <Button type="button" variant="destructive" className="mt-3" disabled={saving} onClick={() => { setOperationError(null); setDeleteConfirmation(""); setDeleteDialogOpen(true); }}>
