@@ -100,7 +100,11 @@ export async function getCrmDashboardOverviewData(
     await Promise.all([
       getCrmContactStatusStats(supabase),
       listCrmContacts(supabase, { page: 1, pageSize: RECENT_CONTACT_LIMIT, sort: "date_desc" }),
-      listCrmStatusTimeline(supabase, { since: since(365), limit: RECENT_CHANGE_LIMIT }),
+      listCrmStatusTimeline(supabase, {
+        since: since(365),
+        limit: RECENT_CHANGE_LIMIT,
+        eventTypes: ["crm_contact_status_changed"],
+      }),
       resolveCount(
         supabase
           .from("crm_contacts")

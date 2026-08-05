@@ -548,24 +548,26 @@ function createCrmSupabase() {
         profile: [{ id: "owner-3", first_name: "Client", last_name: "User", email: "client@example.com" }],
       },
     ],
-    crm_status_log: [
+    app_activity_events: [
       {
         id: "status-1",
-        contact_id: "contact-1",
-        previous_status: "lead",
-        new_status: "qualified",
-        reason: "Discovery complete",
-        changed_at: "2026-03-10T12:00:00.000Z",
-        changed_by_user_id: "user-owner-1",
+        domain: "crm",
+        entity_id: "contact-1",
+        event_type: "crm_contact_status_changed",
+        actor_profile_id: "profile-1",
+        summary: "Estado alterado",
+        payload: { contact_name: "Ana Silva", reason: "Discovery complete", changes: { status: { from: "lead", to: "qualified" } } },
+        created_at: "2026-03-10T12:00:00.000Z",
       },
       {
         id: "status-2",
-        contact_id: "contact-3",
-        previous_status: null,
-        new_status: "lead",
-        reason: null,
-        changed_at: "2026-03-09T12:00:00.000Z",
-        changed_by_user_id: null,
+        domain: "crm",
+        entity_id: "contact-3",
+        event_type: "crm_contact_status_changed",
+        actor_profile_id: null,
+        summary: "Estado alterado",
+        payload: { contact_name: "Bruno Matos", changes: { status: { from: null, to: "lead" } } },
+        created_at: "2026-03-09T12:00:00.000Z",
       },
     ],
     profiles: [
@@ -1141,6 +1143,9 @@ test("CRM stable helpers return filtered, paginated, and summarized results", as
       changed_by_user_id: "user-owner-1",
       contact_label: "Ana Silva",
       changed_by_label: "Sara Costa",
+      event_type: "crm_contact_status_changed",
+      summary: "Estado alterado",
+      payload: { contact_name: "Ana Silva", reason: "Discovery complete", changes: { status: { from: "lead", to: "qualified" } } },
     },
     {
       id: "status-2",
@@ -1152,8 +1157,33 @@ test("CRM stable helpers return filtered, paginated, and summarized results", as
       changed_by_user_id: null,
       contact_label: "Bruno Matos",
       changed_by_label: null,
+      event_type: "crm_contact_status_changed",
+      summary: "Estado alterado",
+      payload: { contact_name: "Bruno Matos", changes: { status: { from: null, to: "lead" } } },
     },
   ]);
+});
+
+test("CRM timeline keeps deletion activity after the contact row is gone", async () => {
+  const supabase = new FakeSupabase({
+    app_activity_events: [{
+      id: "delete-1",
+      domain: "crm",
+      entity_id: "deleted-contact",
+      event_type: "crm_contact_deleted",
+      actor_profile_id: "profile-1",
+      summary: "Contacto CRM eliminado.",
+      payload: { contact_name: "Deleted Person", contact_ids: ["deleted-contact"], contact_count: 1 },
+      created_at: new Date().toISOString(),
+    }],
+    profiles: [{ id: "profile-1", user_id: "user-1", first_name: "Sara", last_name: "Costa" }],
+  });
+
+  const [entry] = await listCrmStatusTimeline(supabase as never);
+  assert.equal(entry?.event_type, "crm_contact_deleted");
+  assert.equal(entry?.contact_id, "deleted-contact");
+  assert.equal(entry?.contact_label, "Deleted Person");
+  assert.equal(entry?.changed_by_label, "Sara Costa");
 });
 
 test("CRM status stats use head count queries so totals are not capped at 1000 rows", async () => {
@@ -1202,8 +1232,20 @@ test("CRM status stats use head count queries so totals are not capped at 1000 r
   );
 });
 
-test("CRM uses aggregate and joined-search RPCs when collection migrations are available", async () => {
+test("CRM uses aggregate RPCs and canonical activity events for timeline search", async () => {
   const calls: Array<{ name: string; params?: Record<string, unknown> }> = [];
+  const activitySupabase = new FakeSupabase({
+    app_activity_events: [{
+      id: "00000000-0000-0000-0000-000000000001",
+      domain: "crm",
+      entity_id: "00000000-0000-0000-0000-000000000002",
+      event_type: "crm_contact_status_changed",
+      actor_profile_id: null,
+      summary: "Estado alterado",
+      payload: { contact_name: "Ana Silva", changes: { status: { from: "lead", to: "qualified" } } },
+      created_at: "2026-07-30T10:00:00.000Z",
+    }],
+  });
   const supabase = {
     async rpc(name: string, params?: Record<string, unknown>) {
       calls.push({ name, params });
@@ -1220,18 +1262,9 @@ test("CRM uses aggregate and joined-search RPCs when collection migrations are a
         new_last_30_days: 6,
         new_last_year: 9,
       }], error: null };
-      return { data: [{
-        id: "00000000-0000-0000-0000-000000000001",
-        contact_id: "00000000-0000-0000-0000-000000000002",
-        previous_status: "lead",
-        new_status: "qualified",
-        reason: null,
-        changed_at: "2026-07-30T10:00:00.000Z",
-        changed_by_user_id: null,
-        changed_by_label: null,
-        contact_label: "Ana Silva",
-      }], error: null };
+      return { data: [], error: null };
     },
+    from(table: string) { return activitySupabase.from(table); },
   };
 
   const stats = await getCrmContactStatusStats(supabase as never);
@@ -1239,9 +1272,8 @@ test("CRM uses aggregate and joined-search RPCs when collection migrations are a
   assert.equal(stats.total, 9);
   assert.equal(stats.activity?.newLast30Days, 6);
   assert.equal(timeline[0]?.contact_label, "Ana Silva");
-  assert.deepEqual(calls.map((call) => call.name), ["get_crm_contact_stats", "search_crm_status_timeline"]);
-  assert.equal(calls[1]?.params?.p_search, "Ana");
-  assert.equal(calls[1]?.params?.p_limit, 25);
+  assert.deepEqual(calls.map((call) => call.name), ["get_crm_contact_stats"]);
+  assert.equal(timeline[0]?.event_type, "crm_contact_status_changed");
 });
 
 test("CRM handler helpers parse params and return JSON envelopes", async () => {

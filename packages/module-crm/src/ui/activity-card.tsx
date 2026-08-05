@@ -37,9 +37,9 @@ export function CrmActivityCard({
   systemActor: string;
 }) {
   const message = composeCrmMessage({
-    eventType: "crm_contact_status_changed",
-    summary: item.new_status,
-    payload: {
+    eventType: item.event_type ?? "crm_contact_status_changed",
+    summary: item.summary ?? item.new_status,
+    payload: item.payload ?? {
       contact_name: item.contact_label,
       changes: { status: { from: item.previous_status, to: item.new_status } },
     },

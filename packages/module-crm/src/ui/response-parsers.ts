@@ -182,6 +182,9 @@ function parseTimelineItem(value: unknown): CrmStatusLog {
     changed_by_user_id: nullableString(item.changed_by_user_id, "CRM timeline item"),
     changed_by_label: nullableString(item.changed_by_label, "CRM timeline item"),
     contact_label: string(item.contact_label, "CRM timeline item"),
+    event_type: item.event_type === undefined ? undefined : string(item.event_type, "CRM timeline item") as CrmStatusLog["event_type"],
+    summary: item.summary === undefined ? undefined : string(item.summary, "CRM timeline item"),
+    payload: item.payload === undefined ? undefined : record(item.payload, "CRM timeline item payload"),
   };
 }
 

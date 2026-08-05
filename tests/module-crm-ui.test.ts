@@ -74,6 +74,18 @@ test("CRM UI surfaces render from data without network access", () => {
   assert.match(renderToStaticMarkup(h(CrmDashboard, { initialData: { contacts, stats: { total: 1, byStatus: { lead: 1 } }, owners: [], organizations: [], timeline } })), /Ada Lovelace/);
 });
 
+test("CRM timeline renders a retained contact deletion as a deletion event", () => {
+  const deleted: CrmStatusLog = {
+    id: "delete-1", contact_id: contact.id, previous_status: null, new_status: "", reason: null,
+    changed_at: "2026-07-18T15:00:00.000Z", changed_by_user_id: "user-1", changed_by_label: "Sara Costa", contact_label: "Ada Lovelace",
+    event_type: "crm_contact_deleted", summary: "Contacto CRM eliminado.", payload: { contact_name: "Ada Lovelace" },
+  };
+  const html = renderToStaticMarkup(h(CrmTimeline, { entries: [deleted] }));
+  assert.match(html, /eliminou o contacto/);
+  assert.match(html, /Ada Lovelace/);
+  assert.doesNotMatch(html, /moveu o contacto/);
+});
+
 test("CRM dashboard follows the MQ table, right rail, and report hero composition", () => {
   const html = renderToStaticMarkup(h(CrmDashboard, { initialData: { contacts, stats: { total: 1, byStatus: { lead: 1 } }, owners: [], organizations: [{ id: "org-1", name: "Analytical Engines" }], timeline } }));
   assert.match(html, /Timeline/);
