@@ -1413,7 +1413,7 @@ export async function deleteProjectMilestone(supabase: SupabaseClient, projectId
     .select("id");
 
   if (error) throw new Error(error.message);
-  if (!deletedRows?.some((row) => row.id === milestoneId)) throw new Error("Marco não encontrado.");
+  if (!deletedRows?.some((row) => row.id === milestoneId)) throw new Error("Meta não encontrada.");
   await syncProjectHealth(supabase, projectId);
   return listProjectMilestones(supabase, projectId);
 }
