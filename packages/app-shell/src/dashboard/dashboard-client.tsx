@@ -732,62 +732,6 @@ function MilestonesPanel({ items, isLoading = false, className = "" }: { items: 
 
 /* ─── Projects tab ───────────────────────────────────────────────── */
 
-function ProjectsMilestonesList({ items, isLoading }: { items: Milestone[]; isLoading: boolean }) {
-  const dictionary = useDashboardDictionary();
-  const projectBaseHref = useProjectBaseHref();
-  return (
-    <section className={`${SURFACE} overflow-hidden`} aria-labelledby="dashboard-project-milestones">
-      <div className="flex min-h-16 items-center justify-between border-b border-[color:var(--border)] px-5 py-4">
-        <div className="flex items-center gap-2.5">
-          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[color:var(--dashboard-milestone-icon)] text-[color:var(--accent)]">
-            <Flag className="h-3.5 w-3.5" />
-          </span>
-          <h3 id="dashboard-project-milestones" className={LABEL}>{dictionary.milestones.title}</h3>
-        </div>
-        <span className={`${MONO} flex h-7 min-w-7 items-center justify-center rounded-full bg-[color:var(--muted)] px-2 text-label font-bold text-[color:var(--foreground)]`}>
-          {items.length}
-        </span>
-      </div>
-
-      {isLoading && items.length === 0 ? (
-        <div className="space-y-2 p-5">
-          {[0, 1, 2].map((index) => <Skeleton key={index} className="h-14" rounded="0.75rem" />)}
-        </div>
-      ) : items.length === 0 ? (
-        <div className="flex min-h-56 flex-col items-center justify-center gap-3 px-6 text-center">
-          <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[color:var(--muted)] text-[color:var(--muted-foreground)]">
-            <Flag className="h-4 w-4" />
-          </span>
-          <div>
-            <p className="text-body font-semibold text-[color:var(--foreground)]">{dictionary.milestones.emptyTitle}</p>
-            <p className="mt-1 text-meta text-[color:var(--muted-foreground)]">{dictionary.milestones.emptyDescription}</p>
-          </div>
-        </div>
-      ) : (
-        <ol className="px-5 py-1">
-          {items.map((milestone) => (
-            <li key={milestone.id} className="border-b border-[color:var(--border)] last:border-b-0">
-              <Link
-                href={projectHref(projectBaseHref, milestone.projectId)}
-                prefetch={false}
-                className="group grid grid-cols-[3.25rem_0.5rem_minmax(0,1fr)_1rem] items-start gap-2.5 rounded-[var(--radius)] py-4 transition hover:translate-x-0.5 hover:text-[color:var(--primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--ring)] focus-visible:ring-offset-2"
-              >
-                <span className={`${MONO} pt-0.5 text-label font-bold text-[color:var(--primary)]`}>{formatShortDate(milestone.targetDate)}</span>
-                <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-[color:var(--accent)] shadow-[0_0_0_4px_var(--dashboard-milestone-date)]" />
-                <span className="min-w-0">
-                  <strong className="block truncate text-body font-semibold text-[color:var(--foreground)]">{milestone.title}</strong>
-                  <span className="mt-0.5 block truncate text-meta text-[color:var(--muted-foreground)]">{milestone.projectName} · {milestone.code}</span>
-                </span>
-                <ArrowUpRight className="mt-0.5 h-3.5 w-3.5 opacity-0 transition group-hover:opacity-70 group-focus-visible:opacity-70" />
-              </Link>
-            </li>
-          ))}
-        </ol>
-      )}
-    </section>
-  );
-}
-
 function ProjectsView({ projects, isLoading }: { projects: DashboardProjectsData | null; isLoading: boolean }) {
   const dictionary = useDashboardDictionary();
   const projectBaseHref = useProjectBaseHref();
@@ -878,7 +822,7 @@ function ProjectsView({ projects, isLoading }: { projects: DashboardProjectsData
           )}
         </section>
 
-        <ProjectsMilestonesList items={milestones} isLoading={isLoading && !projects} />
+        <MilestonesPanel items={milestones} isLoading={isLoading && !projects} />
       </div>
     </div>
   );

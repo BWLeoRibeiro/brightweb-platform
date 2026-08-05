@@ -296,6 +296,8 @@ test("dashboard overview preserves the branded bento layout", () => {
   assert.match(clientSource, /lg:col-start-3 lg:row-start-1 lg:row-span-2 lg:h-full/);
   assert.doesNotMatch(clientSource, /href=\{`\/crm\?contact=/);
   assert.doesNotMatch(stylesheet, /\.dashboard-briefing\s*\{/);
+  assert.doesNotMatch(clientSource, /function ProjectsMilestonesList/);
+  assert.match(clientSource, /<MilestonesPanel items=\{milestones\} isLoading=\{isLoading && !projects\} \/>/);
 });
 
 test("dashboard renders the restored branded overview with live KPI content", () => {

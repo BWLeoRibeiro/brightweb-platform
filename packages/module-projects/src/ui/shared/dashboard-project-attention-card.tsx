@@ -9,6 +9,7 @@ import { getCompletionPercent } from "./project-progress";
 import { ProjectOwnerAvatar } from "./project-owner-avatar";
 import { ProjectPill } from "./project-pill";
 import { PROJECT_RISK_META, resolveProjectRisk } from "./project-risk";
+import { formatNaturalDisplayName } from "./natural-display-name";
 
 const ATTENTION_META = {
   overdue: {
@@ -126,7 +127,7 @@ export function DashboardProjectAttentionCard({
       </span>
 
       <div className="project-attention-summary">
-        <p className="project-attention-company">{project.organizationName}</p>
+        <p className="project-attention-company">{formatNaturalDisplayName(project.organizationName)}</p>
         <h3 className="project-attention-title">{project.name}</h3>
         <p className="project-attention-reason">
           <span aria-hidden className="project-attention-reason-dot" />
@@ -160,7 +161,7 @@ export function DashboardProjectAttentionCard({
             <span className="block h-full rounded-full bg-[color:var(--accent)]" style={{ width: `${progress}%` }} />
           </span>
           <span className="project-attention-date">
-            <CalendarDays aria-hidden className="h-3 w-3 opacity-70" strokeWidth={1.75} />
+            <CalendarDays aria-hidden className="project-attention-date-icon opacity-70" strokeWidth={1.75} />
             <span>{formatShortDate(project.targetDate)}</span>
           </span>
         </div>
