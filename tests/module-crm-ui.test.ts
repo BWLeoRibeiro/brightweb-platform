@@ -175,6 +175,16 @@ test("CRM contact and organization details use right-side sheets instead of cent
   assert.match(organizationSource, /SheetSection/);
 });
 
+test("CRM organization cards expose full-card hover, pointer, and keyboard affordances", () => {
+  const source = readFileSync(join(process.cwd(), "packages/module-crm/src/ui/organizations-browser.tsx"), "utf8");
+
+  assert.match(source, /group cursor-pointer hover:-translate-y-0\.5 hover:border-border-strong hover:bg-surface-hover/);
+  assert.match(source, /className="absolute inset-0 z-0 cursor-pointer rounded-\[var\(--radius-card\)\] outline-none focus-visible:ring-2/);
+  assert.match(source, /aria-label=\{`\$\{dictionary\.organizations\.viewEyebrow\}: \$\{organization\.name/);
+  assert.match(source, /className=\{onSelect \? "pointer-events-none relative z-10" : undefined\}/);
+  assert.match(source, /className="relative z-20 mt-3 inline-flex/);
+});
+
 test("CRM edit sheets reject primitive close signals until the user explicitly exits editing", () => {
   const contactSource = readFileSync(join(process.cwd(), "packages/module-crm/src/ui/contact-dialog.tsx"), "utf8");
   const organizationSource = readFileSync(join(process.cwd(), "packages/module-crm/src/ui/organization-sheet.tsx"), "utf8");
