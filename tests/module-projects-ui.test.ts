@@ -59,6 +59,22 @@ test("project-facing Portuguese copy consistently calls milestones metas", () =>
   assert.equal(defaultDashboardDictionary.milestones.emptyDescription, "Metas com data aparecem aqui.");
 });
 
+test("project detail hero only renders selected project dates and combines complete ranges", () => {
+  const heroSource = readFileSync(
+    join(process.cwd(), "packages/module-projects/src/ui/project-detail-hero.tsx"),
+    "utf8",
+  );
+
+  assert.match(heroSource, /const hasStartDate = Boolean\(project\.startDate\)/);
+  assert.match(heroSource, /const hasTargetDate = Boolean\(project\.targetDate\)/);
+  assert.match(heroSource, /\{hasStartDate \|\| hasTargetDate \? \(/);
+  assert.match(heroSource, /hasBothProjectDates[\s\S]*dictionary\.detail\.projectDates/);
+  assert.match(heroSource, /ProjectHeroDate label=\{dictionary\.detail\.projectStartShort\}/);
+  assert.match(heroSource, /ProjectHeroDate label=\{dictionary\.detail\.projectEndShort\}/);
+  assert.equal(defaultProjectsUiDictionary.detail.projectStartDate, "Data de início");
+  assert.equal(defaultProjectsUiDictionary.detail.projectDueDate, "Prazo do projeto");
+});
+
 test("compact collection previews preserve the 0/1/2/3 boundary and gate overflow at 4+", () => {
   for (const count of [0, 1, 2, 3, 4, 9]) {
     const items = Array.from({ length: count }, (_, index) => index);
