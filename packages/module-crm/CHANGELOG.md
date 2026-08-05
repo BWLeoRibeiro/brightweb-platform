@@ -1,5 +1,11 @@
 # @brightweblabs/module-crm
 
+## 0.15.9
+
+### Patch Changes
+
+- 15f4153: Make CRM organization cards visibly interactive with a full-card click target, pointer cursor, hover elevation, and keyboard focus treatment.
+
 ## 0.15.8
 
 ### Patch Changes
