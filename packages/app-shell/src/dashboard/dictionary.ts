@@ -50,7 +50,7 @@ export const defaultDashboardDictionary = {
     title: "Próximas metas",
     emptyBadge: "VAZIO",
     emptyTitle: "Sem metas próximas",
-    emptyDescription: "Marcos com data aparecem aqui.",
+    emptyDescription: "Metas com data aparecem aqui.",
   },
   clients: {
     title: "Clientes",

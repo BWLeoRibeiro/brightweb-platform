@@ -5,6 +5,7 @@ import test from "node:test";
 import ts from "typescript";
 
 import type { ProjectDashboardData, ProjectLink } from "../packages/module-projects/src/types.ts";
+import { ptProjectActivityDictionary } from "../packages/module-projects/src/activity-messages.ts";
 import { listAccountProjects } from "../packages/module-projects/src/account-projects.ts";
 import {
   createProjectsAssignableProfilesGetHandler,
@@ -26,6 +27,8 @@ import {
 } from "../packages/module-projects/src/http.ts";
 import { getClientProjectHealth } from "../packages/module-projects/src/server.ts";
 import { defaultProjectsUiDictionary } from "../packages/module-projects/src/ui/dictionary.ts";
+import { clientProjectsDictionary } from "../packages/module-projects/src/ui/client/dictionary.ts";
+import { defaultDashboardDictionary } from "../packages/app-shell/src/dashboard/dictionary.ts";
 import { resolveProjectsNavigation } from "../packages/module-projects/src/ui/navigation.ts";
 import { parseProjectBoardApiError, parseTaskListPayload } from "../packages/module-projects/src/ui/project-board-response-parser.ts";
 import { parseProjectDashboardPayload, parseProjectLinksPayload, projectDetailDataReducer } from "../packages/module-projects/src/ui/project-detail-data-provider.tsx";
@@ -34,6 +37,27 @@ import {
   getCompactCollectionPreview,
   hasCompactCollectionOverflow,
 } from "../packages/module-projects/src/ui/shared/compact-collection-model.ts";
+
+function collectDictionaryStrings(value: unknown): string[] {
+  if (typeof value === "string") return [value];
+  if (!value || typeof value !== "object") return [];
+  return Object.values(value).flatMap(collectDictionaryStrings);
+}
+
+test("project-facing Portuguese copy consistently calls milestones metas", () => {
+  const visibleCopy = collectDictionaryStrings({
+    projects: defaultProjectsUiDictionary,
+    clientProjects: clientProjectsDictionary,
+    activity: ptProjectActivityDictionary,
+    dashboardMilestones: defaultDashboardDictionary.milestones,
+  });
+
+  assert.equal(visibleCopy.some((label) => /milestone|marcos?/i.test(label)), false);
+  assert.equal(defaultProjectsUiDictionary.detail.milestones, "Metas");
+  assert.equal(defaultProjectsUiDictionary.forms.newMilestone, "Nova meta");
+  assert.equal(clientProjectsDictionary.list.milestones(1, 2), "1/2 metas");
+  assert.equal(defaultDashboardDictionary.milestones.emptyDescription, "Metas com data aparecem aqui.");
+});
 
 test("compact collection previews preserve the 0/1/2/3 boundary and gate overflow at 4+", () => {
   for (const count of [0, 1, 2, 3, 4, 9]) {
