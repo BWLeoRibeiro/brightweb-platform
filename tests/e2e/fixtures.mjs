@@ -182,7 +182,7 @@ const projectMilestones = [
     id: "66666666-6666-4666-8666-666666666601",
     project_id: PROJECT_OVERDUE_ID,
     title: "Lançamento beta",
-    status: "planned",
+    status: "pending",
     target_date: dateOnly(14),
     completed_at: null,
     position: 1,
