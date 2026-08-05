@@ -1,5 +1,18 @@
 # @brightweblabs/module-projects
 
+## 0.16.3
+
+### Patch Changes
+
+- ac5871e: Align the Projects dashboard with the approved card language by normalizing legacy all-caps organization names for display, reducing attention-card due-date typography by one token step, and reusing Overview's Próximas metas panel in the Projects view.
+- ef36f3d: Replace the oversized, uppercase, widely tracked label treatment with compact sentence-case typography across shared portal surfaces. Keep monospace and uppercase styling only for structured data such as project codes and initials.
+- Updated dependencies [ac5871e]
+- Updated dependencies [ef36f3d]
+  - @brightweblabs/app-shell@0.14.2
+  - @brightweblabs/theme@0.8.0
+  - @brightweblabs/core-auth@0.10.6
+  - @brightweblabs/ui@1.4.10
+
 ## 0.16.2
 
 ### Patch Changes

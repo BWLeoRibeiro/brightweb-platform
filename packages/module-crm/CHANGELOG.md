@@ -1,5 +1,18 @@
 # @brightweblabs/module-crm
 
+## 0.15.14
+
+### Patch Changes
+
+- 3d61932: Read the CRM timeline from retained activity events so status changes and contact deletions remain visible after a contact is deleted.
+- ef36f3d: Replace the oversized, uppercase, widely tracked label treatment with compact sentence-case typography across shared portal surfaces. Keep monospace and uppercase styling only for structured data such as project codes and initials.
+- Updated dependencies [ac5871e]
+- Updated dependencies [ef36f3d]
+  - @brightweblabs/app-shell@0.14.2
+  - @brightweblabs/core-auth@0.10.6
+  - @brightweblabs/module-orgs@0.4.10
+  - @brightweblabs/ui@1.4.10
+
 ## 0.15.13
 
 ### Patch Changes
