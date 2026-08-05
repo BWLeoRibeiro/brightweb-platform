@@ -71,6 +71,10 @@ test("project detail hero only renders selected project dates and combines compl
   assert.match(heroSource, /hasBothProjectDates[\s\S]*dictionary\.detail\.projectDates/);
   assert.match(heroSource, /ProjectHeroDate label=\{dictionary\.detail\.projectStartShort\}/);
   assert.match(heroSource, /ProjectHeroDate label=\{dictionary\.detail\.projectEndShort\}/);
+  assert.match(heroSource, /xl:divide-x/);
+  assert.match(heroSource, /grid-cols-\[auto_minmax\(2\.5rem,1fr\)_auto\]/);
+  assert.equal(defaultProjectsUiDictionary.detail.projectManager, "Gestor do projeto");
+  assert.equal(defaultProjectsUiDictionary.detail.projectDates, "Período do projeto");
   assert.equal(defaultProjectsUiDictionary.detail.projectStartDate, "Data de início");
   assert.equal(defaultProjectsUiDictionary.detail.projectDueDate, "Prazo do projeto");
 });
