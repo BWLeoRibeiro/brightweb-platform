@@ -301,6 +301,7 @@ test("CRM table nests contact details under the name and uses MQ's short updated
   const html = renderToStaticMarkup(h(CrmContactsTable, { data: contacts }));
   assert.match(html, /Ada Lovelace.*ada@example\.com/s);
   assert.match(html, /18\/07/);
+  assert.match(html, /text-data-sm text-foreground\/60[^>]*>18\/07</);
   assert.doesNotMatch(html, />Email</);
 });
 

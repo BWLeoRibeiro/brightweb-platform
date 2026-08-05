@@ -214,7 +214,7 @@ export function CrmContactsTable({
                     className="h-3.5 w-3.5 rounded border border-border-strong"
                   />
                 </TableCell>
-                {visibleColumns.map((column) => <TableCell key={column.key} className={`max-w-0 px-[var(--table-cell-padding-x)] py-[var(--table-cell-padding-y)] text-body text-[color:var(--muted-foreground)] ${column.key === "updated" ? "text-data" : ""} ${columnVisibility[column.key] ?? ""} ${column.key === "organization" || column.key === "owner" ? "truncate" : ""}`}>{renderCell(column, contact)}</TableCell>)}
+                {visibleColumns.map((column) => <TableCell key={column.key} className={`max-w-0 px-[var(--table-cell-padding-x)] py-[var(--table-cell-padding-y)] ${column.key === "updated" ? "text-data-sm text-foreground/60" : "text-body text-[color:var(--muted-foreground)]"} ${columnVisibility[column.key] ?? ""} ${column.key === "organization" || column.key === "owner" ? "truncate" : ""}`}>{renderCell(column, contact)}</TableCell>)}
                 {renderRowActions ? <TableCell className="px-4 py-2" onClick={(event) => event.stopPropagation()}>{renderRowActions(contact)}</TableCell> : null}
               </TableRow>
             );

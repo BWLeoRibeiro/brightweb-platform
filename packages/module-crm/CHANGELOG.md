@@ -1,5 +1,11 @@
 # @brightweblabs/module-crm
 
+## 0.15.13
+
+### Patch Changes
+
+- Reduce the size and visual emphasis of updated dates in the shared contacts table.
+
 ## 0.15.12
 
 ### Patch Changes
