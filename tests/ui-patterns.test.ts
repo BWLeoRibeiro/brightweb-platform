@@ -65,6 +65,20 @@ test("PhoneInput forwards the native telephone accessible-name contract", () => 
   assert.match(html, /<input id="customer-phone" autoComplete="tel" aria-describedby="phone-help"[^>]*type="tel"[^>]*name="phone"/);
 });
 
+test("PhoneInput keeps the country calling code outside the editable field", () => {
+  const html = renderToStaticMarkup(
+    h(PhoneInput, {
+      defaultCountry: "es",
+      value: "+34912345678",
+      onChange: () => {},
+    }),
+  );
+
+  assert.match(html, /<span[^>]*class="[^"]*select-none[^"]*"[^>]*>\+34<\/span>/);
+  assert.match(html, /<input[^>]*value="912 345 678"/);
+  assert.doesNotMatch(html, /<input[^>]*value="\+34/);
+});
+
 test("PhoneInput country picker exposes a listbox and complete keyboard contract", async () => {
   const source = await readFile(path.join(repoRoot, "packages/ui/src/components/phone-input.tsx"), "utf8");
 

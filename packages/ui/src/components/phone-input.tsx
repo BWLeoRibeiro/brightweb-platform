@@ -36,7 +36,7 @@ export function PhoneInput({ value, onChange, defaultCountry = "pt", disabled = 
   const { inputValue, handlePhoneValueChange, country, setCountry } = usePhoneInput({
     defaultCountry,
     value,
-    forceDialCode: true,
+    disableDialCodeAndPrefix: true,
     onChange: ({ phone }) => onChange(phone),
     inputRef,
   });
@@ -181,7 +181,8 @@ export function PhoneInput({ value, onChange, defaultCountry = "pt", disabled = 
       ) : null}
 
       <span className="h-4 w-px shrink-0 bg-foreground/15" />
-      <input {...inputProps} ref={inputRef} value={inputValue} onChange={handlePhoneValueChange} disabled={disabled} placeholder={placeholder} type="tel" className="h-7 flex-1 border-0 bg-transparent pl-2 text-body text-foreground outline-none placeholder:text-foreground-muted-accessible disabled:pointer-events-none disabled:opacity-100" />
+      <span className="select-none pl-2 text-body text-foreground">+{country.dialCode}</span>
+      <input {...inputProps} ref={inputRef} value={inputValue} onChange={handlePhoneValueChange} disabled={disabled} placeholder={placeholder} type="tel" className="h-7 flex-1 border-0 bg-transparent pl-1 text-body text-foreground outline-none placeholder:text-foreground-muted-accessible disabled:pointer-events-none disabled:opacity-100" />
     </div>
   );
 }
