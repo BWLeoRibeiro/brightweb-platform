@@ -107,6 +107,21 @@ test("composite typography roles survive explicit size composition", () => {
   }
 });
 
+test("canonical typography roles survive explicit text colors", () => {
+  const roles = [
+    "text-heading-1", "text-heading-2", "text-heading-3", "text-heading-4",
+    "text-title", "text-body-lg", "text-body", "text-meta", "text-label",
+    "text-micro", "text-kpi", "text-kpi-lg", "text-data-sm",
+  ];
+  for (const cn of [appShellCn, uiCn]) {
+    for (const role of roles) {
+      assert.equal(cn(role, "text-[color:var(--muted-foreground)]"), `${role} text-[color:var(--muted-foreground)]`);
+      assert.equal(cn("text-[color:var(--muted-foreground)]", role), `text-[color:var(--muted-foreground)] ${role}`);
+    }
+    assert.equal(cn("text-meta", "text-label"), "text-label");
+  }
+});
+
 test("ActionButton shares the canonical brand Button variant", async () => {
   const source = await readFile(path.join(repoRoot, "packages/ui/src/components/action.tsx"), "utf8");
   assert.match(source, /buttonVariants\(\{\s*variant:\s*"brand"/);

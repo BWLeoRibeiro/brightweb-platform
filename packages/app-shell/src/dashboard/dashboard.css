@@ -15,66 +15,6 @@
   box-shadow: var(--dashboard-shadow-sm);
 }
 
-.dashboard-briefing {
-  overflow: hidden;
-  border: 1px solid var(--border);
-  border-left: 4px solid var(--accent);
-  border-radius: var(--radius-panel);
-  background: var(--card);
-  box-shadow: var(--dashboard-shadow-sm);
-}
-
-.dashboard-briefing-copy {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: end;
-  gap: var(--space-xl);
-  padding: var(--space-xl);
-}
-
-.dashboard-briefing-metrics {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(6rem, 1fr));
-  overflow: hidden;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-card);
-  background: var(--muted);
-}
-
-.dashboard-briefing-metric {
-  display: grid;
-  gap: var(--space-2xs);
-  min-width: 0;
-  border-left: 1px solid var(--border);
-  padding: var(--space-sm) var(--space-md);
-}
-
-.dashboard-briefing-metric:first-child { border-left: 0; }
-.dashboard-briefing-metric strong { color: var(--foreground); font-size: var(--text-heading-3); }
-.dashboard-briefing-metric span { color: var(--muted-foreground); font-size: var(--text-label); line-height: var(--leading-snug); }
-.dashboard-briefing-metric-attention strong { color: var(--dashboard-danger-foreground); }
-
-.dashboard-briefing-errors {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-xs);
-  border-top: 1px solid var(--border);
-  padding: var(--space-sm) var(--space-xl);
-}
-
-@media (max-width: 64rem) {
-  .dashboard-briefing-copy { grid-template-columns: 1fr; }
-  .dashboard-briefing-metrics { width: 100%; }
-}
-
-@media (max-width: 40rem) {
-  .dashboard-briefing-copy { gap: var(--space-lg); padding: var(--space-lg); }
-  .dashboard-briefing-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .dashboard-briefing-metric:nth-child(3) { border-left: 0; }
-  .dashboard-briefing-metric:nth-child(n + 3) { border-top: 1px solid var(--border); }
-  .dashboard-briefing-errors { padding: var(--space-sm) var(--space-lg); }
-}
-
 .dashboard-status-dot { background: var(--tint); }
   .dashboard-error { border-color: var(--dashboard-danger-border); background: var(--dashboard-danger-soft); color: var(--dashboard-danger-foreground); }
 }

@@ -1,7 +1,10 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 
+import { AppDashboard } from "../src/dashboard/dashboard-client.tsx";
 import { createDashboardRequestGenerations } from "../src/dashboard/dashboard-request-generations.ts";
 import {
   clearDashboardSectionErrors,
@@ -219,16 +222,46 @@ test("dashboard parsers read publicError envelopes, plain strings, and reject ga
   assert.equal(parseErrorFromPayload({ error: 500 }, "fallback"), "fallback");
 });
 
-test("dashboard overview prioritizes briefing, attention, work, and recent changes", () => {
+test("dashboard overview preserves the branded bento layout", () => {
   const clientSource = readFileSync(new URL("../src/dashboard/dashboard-client.tsx", import.meta.url), "utf8");
   const stylesheet = readFileSync(new URL("../src/dashboard/dashboard.css", import.meta.url), "utf8");
 
-  assert.match(clientSource, /className="dashboard-briefing"/);
-  assert.match(clientSource, /function AttentionPanel/);
-  assert.match(clientSource, /function RecentChangesPanel/);
-  assert.match(clientSource, /<AttentionPanel[\s\S]*<TasksTable[\s\S]*<RecentChangesPanel[\s\S]*<MilestonesPanel/);
-  assert.match(clientSource, /const attentionCount = projects\?\.kpis\.projectsOverdue \?\? 0/);
+  assert.match(clientSource, /className="brand-panel relative overflow-hidden/);
+  assert.match(clientSource, /function HeroMetrics/);
+  assert.match(clientSource, /function ProjectsKpiCard/);
+  assert.match(clientSource, /function CrmKpiCard/);
+  assert.match(clientSource, /<ProjectsKpiCard[\s\S]*<CrmKpiCard[\s\S]*<TasksTable[\s\S]*<MilestonesPanel/);
+  assert.match(clientSource, /grid w-full min-w-0 grid-cols-1 gap-3 sm:grid-cols-2 lg:w-auto lg:min-w-\[330px\]/);
+  assert.match(clientSource, /md:text-\[length:var\(--text-ui-dashboard-title-lg\)\]/);
+  assert.doesNotMatch(clientSource, /md:text-heading-1 text-\[length:var\(--text-ui-dashboard-title-lg\)\]/);
+  assert.match(clientSource, /const showLoading = isLoading && !projects/);
+  assert.match(clientSource, /const showLoading = isLoading && !crm/);
+  assert.match(clientSource, /<ProjectsKpiCard projects=\{data\.projects\} isLoading=\{data\.isProjectsLoading\}/);
+  assert.match(clientSource, /<CrmKpiCard crm=\{data\.crm\} isLoading=\{data\.isCrmLoading\}/);
+  assert.match(clientSource, /lg:col-start-3 lg:row-start-1 lg:row-span-2 lg:h-full/);
   assert.doesNotMatch(clientSource, /href=\{`\/crm\?contact=/);
-  assert.doesNotMatch(clientSource, /Bento \(Idea C\)/);
-  assert.match(stylesheet, /\.dashboard-briefing\s*\{/);
+  assert.doesNotMatch(stylesheet, /\.dashboard-briefing\s*\{/);
+});
+
+test("dashboard renders the restored branded overview with live KPI content", () => {
+  const client = {
+    async getProjects() { return { data: projects }; },
+    async getCrm() { return { data: crm }; },
+    async getTasks() { return { data: tasks }; },
+  };
+  const html = renderToStaticMarkup(createElement(AppDashboard, {
+    client,
+    contributions: [{ key: "test", sections: ["projects", "crm", "tasks"] }],
+    initialData: { projects, crm, tasks },
+    viewerFirstName: "Leonel",
+  }));
+
+  assert.match(html, /class="brand-panel [^"]*"/);
+  assert.match(html, /href="\/projects"[^>]*>[\s\S]*Projetos[\s\S]*1[\s\S]*ativos/);
+  assert.match(html, /href="\/crm"[^>]*>[\s\S]*CRM[\s\S]*2[\s\S]*contactos/);
+  assert.match(html, />Tarefas</);
+  assert.match(html, />Próximas metas</);
+  assert.match(html, /lg:col-span-2 lg:col-start-1 lg:row-start-2 h-\[340px\]/);
+  assert.match(html, /lg:col-start-3 lg:row-start-1 lg:row-span-2 lg:h-full/);
+  assert.doesNotMatch(html, /dashboard-briefing/);
 });
