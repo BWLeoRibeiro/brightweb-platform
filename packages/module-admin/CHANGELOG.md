@@ -1,5 +1,12 @@
 # @brightweblabs/module-admin
 
+## 0.8.11
+
+### Patch Changes
+
+- Updated dependencies [69eb6d5]
+  - @brightweblabs/app-shell@0.12.0
+
 ## 0.8.10
 
 ### Patch Changes
