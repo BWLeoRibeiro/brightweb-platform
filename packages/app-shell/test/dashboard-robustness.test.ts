@@ -28,6 +28,8 @@ const projects = {
     projectsDueNext7Days: 0,
     projectsWithoutOwner: 0,
     projectBlockedTasks: 1,
+    projectsAttention: 1,
+    projectsOnTrack: 0,
   },
   projects: {
     overdue: [{
@@ -40,6 +42,27 @@ const projects = {
       ownerLabel: null,
       targetDate: "2026-07-25",
       taskStats: { total: 2, done: 1, overdue: 1, blocked: 1 },
+    }],
+    attention: [{
+      id: "project-1",
+      organizationName: "BrightWeb",
+      name: "Platform",
+      code: null,
+      status: "active",
+      health: "at_risk",
+      ownerLabel: null,
+      targetDate: "2026-07-25",
+      taskStats: { total: 2, done: 1, overdue: 1, blocked: 1 },
+      attentionReason: "overdue",
+    }],
+    milestones: [{
+      id: "milestone-1",
+      projectId: "project-1",
+      projectName: "Platform",
+      projectCode: null,
+      title: "Dashboard shipped",
+      status: "in_progress",
+      targetDate: "2026-07-25",
     }],
   },
 };
@@ -195,6 +218,12 @@ test("dashboard parsers accept fully valid nested contracts", () => {
 test("dashboard parsers reject malformed nested KPI values, items, enums, and nullability", () => {
   assert.equal(parseDashboardProjectsResponse({
     data: { ...projects, kpis: { ...projects.kpis, projectsActive: "1" } },
+  }).data, null);
+  assert.equal(parseDashboardProjectsResponse({
+    data: {
+      ...projects,
+      projects: { ...projects.projects, attention: [{ ...projects.projects.attention[0], attentionReason: "unknown" }] },
+    },
   }).data, null);
   assert.equal(parseDashboardProjectsResponse({
     data: {

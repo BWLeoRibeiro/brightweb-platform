@@ -1,6 +1,9 @@
 import type {
   DashboardAssignedTask,
+  DashboardProjectAttentionItem,
+  DashboardProjectAttentionReason,
   DashboardProjectItem,
+  DashboardProjectMilestone,
   DashboardProjectsData,
   DashboardTaskAttentionState,
   DashboardTasksData,
@@ -18,6 +21,9 @@ const DASHBOARD_TASK_PAGE_SIZE = 50;
 const DASHBOARD_TASK_PAGE_SIZE_MAX = 100;
 const DASHBOARD_ATTENTION_LIMIT = 6;
 const DASHBOARD_OVERDUE_PROJECT_LIMIT = 12;
+const DASHBOARD_PROJECT_ATTENTION_LIMIT = 3;
+const DASHBOARD_PROJECT_ATTENTION_CANDIDATE_LIMIT = 100;
+const DASHBOARD_MILESTONE_LIMIT = 6;
 
 type CountQueryResult = {
   count: number | null;
@@ -40,10 +46,25 @@ type DashboardTaskRow = {
     | null;
 };
 
+type DashboardMilestoneRow = {
+  id: string;
+  project_id: string;
+  title: string;
+  status: DashboardProjectMilestone["status"];
+  target_date: string;
+  projects:
+    | { name?: string | null; code?: string | null }
+    | Array<{ name?: string | null; code?: string | null }>
+    | null;
+};
+
 export type ProjectsDashboardSnapshot = {
   generatedAt: string;
   portfolioStats: ProjectsPortfolioStats;
   overdueProjects: ProjectListItem[];
+  attentionProjects: ProjectListItem[];
+  attentionTotal: number;
+  milestones: DashboardProjectMilestone[];
   dueNext7Days: number;
   withoutOwner: number;
   blockedTasks: number;
@@ -91,7 +112,61 @@ function toDashboardProject(project: ProjectListItem): DashboardProjectItem {
   };
 }
 
+export function getDashboardProjectAttentionReason(
+  project: Pick<ProjectListItem, "status" | "health" | "ownerLabel" | "targetDate" | "taskStats">,
+  now = new Date(),
+): DashboardProjectAttentionReason | null {
+  const today = dateOnly(now);
+  const next7Days = dateOnly(now, 7);
+  if (project.targetDate && project.targetDate < today) return "overdue";
+  if (project.health === "at_risk" || project.health === "off_track" || project.status === "blocked") return "at_risk";
+  if (project.taskStats.blocked > 0) return "blocked_tasks";
+  if (!project.ownerLabel) return "without_owner";
+  if (project.targetDate && project.targetDate <= next7Days) return "due_soon";
+  return null;
+}
+
+const PROJECT_ATTENTION_RANK: Record<DashboardProjectAttentionReason, number> = {
+  overdue: 0,
+  at_risk: 1,
+  blocked_tasks: 2,
+  without_owner: 3,
+  due_soon: 4,
+};
+
+export function rankDashboardAttentionProjects(
+  projects: ProjectListItem[],
+  now = new Date(),
+): DashboardProjectAttentionItem[] {
+  return projects
+    .map((project, index) => ({ project, index, reason: getDashboardProjectAttentionReason(project, now) }))
+    .filter((item): item is typeof item & { reason: DashboardProjectAttentionReason } => item.reason !== null)
+    .sort((left, right) => {
+      const rank = PROJECT_ATTENTION_RANK[left.reason] - PROJECT_ATTENTION_RANK[right.reason];
+      if (rank !== 0) return rank;
+      const date = (left.project.targetDate ?? "9999-12-31").localeCompare(right.project.targetDate ?? "9999-12-31");
+      if (date !== 0) return date;
+      const blocked = right.project.taskStats.blocked - left.project.taskStats.blocked;
+      return blocked !== 0 ? blocked : left.index - right.index;
+    })
+    .map(({ project, reason }) => ({ ...toDashboardProject(project), attentionReason: reason }));
+}
+
+function normalizeDashboardMilestone(row: DashboardMilestoneRow): DashboardProjectMilestone {
+  const projectRaw = Array.isArray(row.projects) ? row.projects[0] ?? null : row.projects;
+  return {
+    id: row.id,
+    projectId: row.project_id,
+    projectName: projectRaw?.name || "Projeto",
+    projectCode: projectRaw?.code || null,
+    title: row.title,
+    status: row.status,
+    targetDate: row.target_date,
+  };
+}
+
 export function buildProjectsDashboardData(snapshot: ProjectsDashboardSnapshot): DashboardProjectsData {
+  const attention = rankDashboardAttentionProjects(snapshot.attentionProjects, new Date(snapshot.generatedAt));
   return {
     generatedAt: snapshot.generatedAt,
     kpis: {
@@ -101,9 +176,13 @@ export function buildProjectsDashboardData(snapshot: ProjectsDashboardSnapshot):
       projectsDueNext7Days: snapshot.dueNext7Days,
       projectsWithoutOwner: snapshot.withoutOwner,
       projectBlockedTasks: snapshot.blockedTasks,
+      projectsAttention: snapshot.attentionTotal,
+      projectsOnTrack: Math.max(0, snapshot.portfolioStats.total - snapshot.attentionTotal),
     },
     projects: {
       overdue: snapshot.overdueProjects.map(toDashboardProject),
+      attention: attention.slice(0, DASHBOARD_PROJECT_ATTENTION_LIMIT),
+      milestones: snapshot.milestones,
     },
   };
 }
@@ -115,43 +194,80 @@ export async function getProjectsDashboardData(
   const today = dateOnly(now);
   const next7Days = dateOnly(now, 7);
 
-  const [portfolioStats, overdueResult, dueNext7Days, withoutOwner, blockedTasks] = await Promise.all([
-    getProjectPortfolioStats(supabase),
-    listProjects(supabase, {
-      page: 1,
-      pageSize: DASHBOARD_OVERDUE_PROJECT_LIMIT,
-      dueWindow: "overdue",
-    }),
-    resolveCount(
-      supabase
-        .from("projects")
-        .select("id", { count: "exact", head: true })
-        .gte("target_date", today)
-        .lte("target_date", next7Days)
-        .not("status", "in", "(completed,canceled)"),
-    ),
-    resolveCount(
-      supabase
-        .from("projects")
-        .select("id", { count: "exact", head: true })
-        .is("owner_profile_id", null)
-        .not("status", "in", "(completed,canceled)"),
-    ),
-    resolveCount(
-      supabase
-        .from("project_tasks")
-        .select("id", { count: "exact", head: true })
-        .eq("status", "blocked"),
-    ),
+  const portfolioStatsPromise = getProjectPortfolioStats(supabase);
+  const overdueProjectsPromise = listProjects(supabase, {
+    page: 1,
+    pageSize: DASHBOARD_OVERDUE_PROJECT_LIMIT,
+    dueWindow: "overdue",
+  });
+  const dueNext7DaysPromise = resolveCount(
+    supabase
+      .from("projects")
+      .select("id", { count: "exact", head: true })
+      .gte("target_date", today)
+      .lte("target_date", next7Days)
+      .not("status", "in", "(completed,canceled)"),
+  );
+  const withoutOwnerPromise = resolveCount(
+    supabase
+      .from("projects")
+      .select("id", { count: "exact", head: true })
+      .is("owner_profile_id", null)
+      .not("status", "in", "(completed,canceled)"),
+  );
+  const blockedProjectsPromise = supabase
+    .from("project_tasks")
+    .select("project_id", { count: "exact" })
+    .eq("status", "blocked");
+  const milestonesPromise = supabase
+    .from("project_milestones")
+    .select("id,project_id,title,status,target_date,projects!inner(name,code,status)")
+    .neq("status", "achieved")
+    .gte("target_date", today)
+    .not("projects.status", "in", "(completed,canceled)")
+    .order("target_date", { ascending: true })
+    .limit(DASHBOARD_MILESTONE_LIMIT);
+
+  const blockedProjectsResult = await blockedProjectsPromise;
+  if (blockedProjectsResult.error) throw new Error(blockedProjectsResult.error.message);
+  const blockedProjectIds = Array.from(new Set(
+    (blockedProjectsResult.data ?? [])
+      .map((row) => typeof row.project_id === "string" ? row.project_id : "")
+      .filter(Boolean),
+  ));
+  const attentionProjectsPromise = listProjects(supabase, {
+    page: 1,
+    pageSize: DASHBOARD_PROJECT_ATTENTION_CANDIDATE_LIMIT,
+    dashboardAttention: { dueThrough: next7Days, includeProjectIds: blockedProjectIds },
+  });
+
+  const [
+    portfolioStats,
+    overdueResult,
+    dueNext7Days,
+    withoutOwner,
+    attentionResult,
+    milestonesResult,
+  ] = await Promise.all([
+    portfolioStatsPromise,
+    overdueProjectsPromise,
+    dueNext7DaysPromise,
+    withoutOwnerPromise,
+    attentionProjectsPromise,
+    milestonesPromise,
   ]);
+  if (milestonesResult.error) throw new Error(milestonesResult.error.message);
 
   return buildProjectsDashboardData({
     generatedAt: now.toISOString(),
     portfolioStats,
     overdueProjects: overdueResult.items,
+    attentionProjects: attentionResult.items,
+    attentionTotal: attentionResult.total,
+    milestones: ((milestonesResult.data ?? []) as unknown as DashboardMilestoneRow[]).map(normalizeDashboardMilestone),
     dueNext7Days,
     withoutOwner,
-    blockedTasks,
+    blockedTasks: blockedProjectsResult.count ?? 0,
   });
 }
 

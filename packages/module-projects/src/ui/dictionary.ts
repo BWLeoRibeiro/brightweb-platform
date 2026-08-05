@@ -50,6 +50,22 @@ export const defaultProjectsUiDictionary = {
     page: (page: number, total: number) => `Página ${page} de ${total}`,
     projectCount: (count: number) => `${count} projeto${count === 1 ? "" : "s"}`,
   },
+  dashboard: {
+    badges: {
+      overdue: "Atrasado",
+      atRisk: "Em risco",
+      blockedTasks: "Com bloqueios",
+      withoutOwner: "Sem responsável",
+      dueSoon: "Prazo próximo",
+    },
+    reasons: {
+      overdue: "Prazo ultrapassado.",
+      atRisk: "Saúde do projeto requer atenção.",
+      blockedTasks: (count: number) => `${count} ${count === 1 ? "tarefa bloqueada" : "tarefas bloqueadas"}.`,
+      withoutOwner: "Sem responsável.",
+      dueSoon: "Data-alvo nos próximos 7 dias.",
+    },
+  },
   actions: {
     refresh: "Atualizar",
     create: "Novo",

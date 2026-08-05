@@ -11,12 +11,23 @@ export const dashboardProjects: DashboardProjectsData = {
     projectsDueNext7Days: 1,
     projectsWithoutOwner: 0,
     projectBlockedTasks: 2,
+    projectsAttention: 2,
+    projectsOnTrack: 1,
   },
   projects: {
     overdue: [
       { id: "aurora", organizationName: "Atlas Studio", name: "Portal Aurora", code: "AUR-26", status: "active", health: "on_track", ownerLabel: "Leonel Ribeiro", targetDate: "2026-08-30", taskStats: { total: 18, done: 11, overdue: 1, blocked: 0 } },
       { id: "northstar", organizationName: "Northstar Foods", name: "E-commerce B2B", code: "NST-14", status: "blocked", health: "at_risk", ownerLabel: "Maya Costa", targetDate: "2026-07-31", taskStats: { total: 24, done: 13, overdue: 3, blocked: 2 } },
       { id: "fieldnotes", organizationName: "Field Notes", name: "Identidade e website", code: "FLD-09", status: "planned", health: "on_track", ownerLabel: "Leonel Ribeiro", targetDate: "2026-10-15", taskStats: { total: 8, done: 1, overdue: 0, blocked: 0 } },
+    ],
+    attention: [
+      { id: "northstar", organizationName: "Northstar Foods", name: "E-commerce B2B", code: "NST-14", status: "blocked", health: "at_risk", ownerLabel: "Maya Costa", targetDate: "2026-07-31", taskStats: { total: 24, done: 13, overdue: 3, blocked: 2 }, attentionReason: "overdue" },
+      { id: "aurora", organizationName: "Atlas Studio", name: "Portal Aurora", code: "AUR-26", status: "active", health: "at_risk", ownerLabel: "Leonel Ribeiro", targetDate: "2026-08-30", taskStats: { total: 18, done: 11, overdue: 1, blocked: 0 }, attentionReason: "at_risk" },
+    ],
+    milestones: [
+      { id: "milestone-visual", projectId: "aurora", projectName: "Portal Aurora", projectCode: "AUR-26", title: "Direção visual aprovada", status: "in_progress", targetDate: "2026-08-08" },
+      { id: "milestone-launch", projectId: "northstar", projectName: "E-commerce B2B", projectCode: "NST-14", title: "Checkout empresarial publicado", status: "pending", targetDate: "2026-08-12" },
+      { id: "milestone-discovery", projectId: "fieldnotes", projectName: "Identidade e website", projectCode: "FLD-09", title: "Discovery concluído", status: "pending", targetDate: "2026-08-19" },
     ],
   },
 };

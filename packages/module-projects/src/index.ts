@@ -60,10 +60,12 @@ export {
 export {
   buildProjectsDashboardData,
   buildTasksDashboardData,
+  getDashboardProjectAttentionReason,
   getDashboardTaskAttentionState,
   getProjectsDashboardData,
   getTasksDashboardData,
   rankDashboardAttentionTasks,
+  rankDashboardAttentionProjects,
   type ProjectsDashboardSnapshot,
   type TasksDashboardOptions,
   type TasksDashboardSnapshot,

@@ -11,8 +11,8 @@ const generatedAt = "2026-08-04T09:30:00.000Z";
 const emptyDashboardInitial = {
   projects: {
     generatedAt,
-    kpis: { projectsActive: 0, projectsAtRisk: 0, projectsOverdue: 0, projectsDueNext7Days: 0, projectsWithoutOwner: 0, projectBlockedTasks: 0 },
-    projects: { overdue: [] },
+    kpis: { projectsActive: 0, projectsAtRisk: 0, projectsOverdue: 0, projectsDueNext7Days: 0, projectsWithoutOwner: 0, projectBlockedTasks: 0, projectsAttention: 0, projectsOnTrack: 0 },
+    projects: { overdue: [], attention: [], milestones: [] },
   },
   crm: {
     generatedAt,
