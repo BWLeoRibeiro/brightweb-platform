@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { createContext, useContext, useEffect, useMemo, useState, type CSSProperties } from "react";
+import { createContext, useContext, useEffect, useMemo, useRef, useState, type CSSProperties, type RefObject } from "react";
 import {
   AlertTriangle,
   ArrowUpRight,
@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 
 import { Skeleton } from "@brightweblabs/ui";
-import type { DashboardAssignedTask, DashboardCrmData, DashboardCrmRecentContact, DashboardDataClient, DashboardInitialData, DashboardProjectComponents, DashboardProjectItem, DashboardProjectsData, DashboardSection, DashboardSurfaceContribution, DashboardTasksData } from "./types";
+import type { DashboardAssignedTask, DashboardCrmData, DashboardCrmRecentContact, DashboardDataClient, DashboardInitialData, DashboardProjectComponents, DashboardProjectItem, DashboardProjectsData, DashboardSection, DashboardSurfaceContribution, DashboardTaskAttentionState, DashboardTasksData } from "./types";
 import { useDashboardData, type DashboardState } from "./use-dashboard-data";
 import { defaultDashboardDictionary, type DashboardDictionary } from "./dictionary";
 import { DashboardActionLink as PortalActionLink, DashboardSectionHeading as PortalSectionHeading, dashboardCardTitleClassName as CARD_TITLE, dashboardLabelClassName as LABEL, dashboardMonoTabularClassName as MONO } from "./primitives";
@@ -28,11 +28,11 @@ const ProjectComponentsContext = createContext<DashboardProjectComponents | null
 const DashboardDictionaryContext = createContext<DashboardDictionary>(defaultDashboardDictionary);
 function useProjectComponents() { return useContext(ProjectComponentsContext); }
 function useDashboardDictionary() { return useContext(DashboardDictionaryContext); }
+function useProjectBaseHref() { return useProjectComponents()?.projectBaseHref ?? "/projects"; }
+function projectHref(baseHref: string, projectId?: string) { return projectId ? `${baseHref}/${projectId}` : baseHref; }
 function ProjectSummaryCard({ project }: { project: DashboardProjectItem }) { const value = useProjectComponents(); return value ? <value.ProjectSummaryCard project={project} /> : null; }
 function ProjectSummaryCardSkeleton() { const value = useProjectComponents(); return value ? <value.ProjectSummaryCardSkeleton /> : null; }
-function TaskDueMeta(props: { dueDate: string | null; isOverdue?: boolean; className?: string }) { const value = useProjectComponents(); return value ? <value.TaskDueMeta {...props} /> : null; }
-function TaskPriorityTag({ task }: { task: Pick<DashboardAssignedTask, "status" | "priority"> }) { const value = useProjectComponents(); return value ? <value.TaskPriorityTag task={task} /> : null; }
-function TaskStatusTag({ task }: { task: Pick<DashboardAssignedTask, "status" | "blockedReason"> }) { const value = useProjectComponents(); return value ? <value.TaskStatusTag task={task} /> : null; }
+function DashboardTaskListRow(props: { task: DashboardAssignedTask; href: string; attentionState?: DashboardTaskAttentionState; attentionLabel?: string }) { const value = useProjectComponents(); return value ? <value.DashboardTaskRow {...props} /> : null; }
 
 /* ──────────────────────────────────────────────────────────────────
    V6 — real data. Welcome → hero 4-card grid →
@@ -317,10 +317,11 @@ function KpiBreakdownBar({ items }: { items: KpiBreakdownItem[] }) {
 
 function ProjectsKpiCard({ projects, isLoading }: { projects: DashboardProjectsData | null; isLoading: boolean }) {
   const dictionary = useDashboardDictionary();
+  const projectBaseHref = useProjectBaseHref();
   const kpis = projects?.kpis;
   const showLoading = isLoading && !projects;
   return (
-    <Link href="/projects" prefetch={false} className={`${SURFACE} group relative flex flex-col overflow-hidden p-6 transition hover:border-[color:var(--accent)]/40 hover:shadow-[var(--dashboard-shadow-lg)]`}>
+    <Link href={projectBaseHref} prefetch={false} className={`${SURFACE} group relative flex flex-col overflow-hidden p-6 transition hover:border-[color:var(--accent)]/40 hover:shadow-[var(--dashboard-shadow-lg)]`}>
       <span aria-hidden className="absolute inset-y-0 left-0 w-[3px]" style={{ background: "var(--accent)" }} />
       <div className="flex items-center justify-between">
         <span className="flex h-9 w-9 items-center justify-center rounded-full" style={{ background: "var(--dashboard-accent-soft)", color: "var(--accent)" }}>
@@ -394,7 +395,8 @@ type TaskRow = {
   id: string;
   code: string;
   name: string;
-  group: "due" | "risk" | "flight";
+  group: "blocked" | "overdue" | "today" | "soon" | "later";
+  task: DashboardAssignedTask;
   status: DashboardAssignedTask["status"];
   priority: DashboardAssignedTask["priority"];
   blockedReason: string | null;
@@ -406,19 +408,31 @@ type TaskRow = {
 // tasks bento (project-milestone-task-lists): overdue red, due-soon amber, in
 // flight a quiet neutral.
 const GROUP_HEADER_TONE: Record<TaskRow["group"], { header: string; label: string; dot: string }> = {
-  risk: {
+  blocked: {
+    header:
+      "bg-[color:var(--dashboard-task-risk-bg)] hover:bg-[color:var(--dashboard-task-risk-hover)]",
+    label: "text-[color:var(--project-state-blocked-strong)]",
+    dot: "bg-[color:var(--project-state-blocked)]",
+  },
+  overdue: {
     header:
       "bg-[color:var(--dashboard-task-risk-bg)] hover:bg-[color:var(--dashboard-task-risk-hover)]",
     label: "text-[color:var(--project-risk-overdue-strong)]",
     dot: "bg-[color:var(--project-risk-overdue)]",
   },
-  due: {
+  today: {
     header:
       "bg-[color:var(--dashboard-task-due-bg)] hover:bg-[color:var(--dashboard-task-due-hover)]",
     label: "text-[color:var(--project-risk-at-risk-strong)]",
     dot: "bg-[color:var(--project-risk-at-risk)]",
   },
-  flight: {
+  soon: {
+    header:
+      "bg-[color:var(--dashboard-task-due-bg)] hover:bg-[color:var(--dashboard-task-due-hover)]",
+    label: "text-[color:var(--project-risk-at-risk-strong)]",
+    dot: "bg-[color:var(--project-risk-at-risk)]",
+  },
+  later: {
     header:
       "bg-[color:var(--dashboard-task-flight-bg)] hover:bg-[color:var(--dashboard-task-flight-hover)]",
     label: "text-[color:var(--muted-foreground)]",
@@ -430,29 +444,42 @@ const GROUP_HEADER_TONE: Record<TaskRow["group"], { header: string; label: strin
 // over the shared muted text-label text-muted-foreground color.
 const TASK_GROUP_LABEL_BASE = "text-label font-semibold uppercase tracking-[var(--type-tracking-060)]";
 
-function groupFromTask(task: DashboardAssignedTask): TaskRow["group"] {
-  if (task.status === "blocked") return "risk";
-  if (!task.dueDate) return "flight";
-  const t = new Date(task.dueDate).getTime();
-  if (Number.isNaN(t)) return "flight";
-  const now = Date.now();
-  if (t < now) return "risk";
-  if (t <= now + 7 * 24 * 60 * 60 * 1000) return "due";
-  return "flight";
+function dateOnly(value: string | Date) {
+  const date = typeof value === "string" ? new Date(value) : value;
+  return Number.isNaN(date.getTime()) ? null : date.toISOString().slice(0, 10);
 }
 
-function buildTasks(tasks: DashboardTasksData | null): TaskRow[] {
+function attentionStateFromTask(task: DashboardAssignedTask, generatedAt: string): DashboardTaskAttentionState | null {
+  if (task.status === "blocked") return "blocked";
+  if (!task.dueDate) return null;
+  const today = dateOnly(generatedAt);
+  if (!today) return null;
+  const next = new Date(`${today}T00:00:00.000Z`);
+  next.setUTCDate(next.getUTCDate() + 7);
+  const next7Days = next.toISOString().slice(0, 10);
+  if (task.dueDate < today) return "overdue";
+  if (task.dueDate === today) return "today";
+  if (task.dueDate <= next7Days) return "soon";
+  return null;
+}
+
+function groupFromTask(task: DashboardAssignedTask, generatedAt: string): TaskRow["group"] {
+  return attentionStateFromTask(task, generatedAt) ?? "later";
+}
+
+function buildTasks(tasks: DashboardTasksData | null, projectBaseHref: string): TaskRow[] {
   if (!tasks) return [];
   return tasks.tasks.map((task) => ({
     id: `task-${task.id}`,
     code: task.projectCode ?? task.projectName.slice(0, 12).toUpperCase(),
     name: task.title,
-    group: groupFromTask(task),
+    group: groupFromTask(task, tasks.generatedAt),
+    task,
     status: task.status,
     priority: task.priority,
     blockedReason: task.blockedReason,
     dueDate: task.dueDate,
-    href: `/projects/${task.projectId}`,
+    href: projectHref(projectBaseHref, task.projectId),
   }));
 }
 
@@ -460,21 +487,31 @@ function TasksTable({
   rows,
   title,
   isLoading,
+  total,
+  hasMore = false,
+  isLoadingMore = false,
+  onLoadMore,
   className = "",
   bodyClassName = "",
 }: {
   rows: TaskRow[];
   title?: string;
   isLoading: boolean;
+  total?: number;
+  hasMore?: boolean;
+  isLoadingMore?: boolean;
+  onLoadMore?: () => void;
   className?: string;
   bodyClassName?: string;
 }) {
   const dictionary = useDashboardDictionary();
-  const groups: TaskRow["group"][] = ["risk", "due", "flight"];
+  const groups: TaskRow["group"][] = ["blocked", "overdue", "today", "soon", "later"];
   const groupLabel: Record<TaskRow["group"], string> = {
-    risk: dictionary.tasks.overdue,
-    due: dictionary.tasks.dueThisWeek,
-    flight: dictionary.tasks.inProgress,
+    blocked: dictionary.tasks.blocked,
+    overdue: dictionary.tasks.overdue,
+    today: dictionary.tasks.dueToday,
+    soon: dictionary.tasks.dueThisWeek,
+    later: dictionary.tasks.later,
   };
 
   return (
@@ -493,7 +530,7 @@ function TasksTable({
           <Skeleton className="h-[26px] w-16 rounded-full" />
         ) : (
           <span className="inline-flex items-center gap-1.5 rounded-full border border-[color:var(--accent)]/30 bg-[color:var(--accent)]/10 px-2.5 py-1 text-label font-bold text-[color:var(--accent)]">
-            <span className="text-data">{rows.length}</span> {dictionary.tasks.active}
+            <span className="text-data">{total ?? rows.length}</span> {dictionary.tasks.active}
           </span>
         )}
       </header>
@@ -546,42 +583,31 @@ function TasksTable({
                   <span className={`${MONO} text-micro text-[color:var(--muted-foreground)]`}>{gr.length}</span>
                 </div>
                 {gr.map((r) => (
-                  <Link
+                  <DashboardTaskListRow
                     key={r.id}
+                    task={r.task}
                     href={r.href}
-                    prefetch={false}
-                    className="group relative flex w-full flex-col gap-1 border-t border-[color:var(--border)] px-5 py-2.5 text-left transition first:border-t-0 hover:bg-[color:var(--dashboard-task-row-hover)]"
-                  >
-                    {/* Primary: title + due date */}
-                    <div className="flex min-w-0 items-start gap-2">
-                      <p className="text-body text-foreground min-w-0 flex-1 font-semibold leading-snug line-clamp-2" title={r.name}>
-                        {r.name}
-                      </p>
-                      <TaskDueMeta
-                        dueDate={r.dueDate}
-                        isOverdue={r.group === "risk"}
-                        className="whitespace-nowrap pt-0.5"
-                      />
-                    </div>
-
-                    {/* Secondary: signal tags */}
-                    <div className="mt-0.5 flex min-w-0 flex-wrap items-center gap-1.5">
-                      <TaskPriorityTag task={{ priority: r.priority, status: r.status }} />
-                      <TaskStatusTag task={{ status: r.status, blockedReason: r.blockedReason }} />
-                      <span
-                        className={`${MONO} ml-auto max-w-[8rem] truncate text-label text-[color:var(--muted-foreground)]`}
-                        title={r.code}
-                      >
-                        {r.code}
-                      </span>
-                    </div>
-                  </Link>
+                    attentionState={r.group === "later" ? undefined : r.group}
+                    attentionLabel={r.group === "later" || r.group === "blocked" ? undefined : groupLabel[r.group]}
+                  />
                 ))}
               </section>
             );
           })
         )}
       </div>
+      {hasMore ? (
+        <div className="flex shrink-0 justify-center border-t border-[color:var(--border)] px-5 py-3">
+          <button
+            type="button"
+            onClick={onLoadMore}
+            disabled={isLoadingMore}
+            className="text-body rounded-[var(--radius-control)] border border-[color:var(--border)] bg-[color:var(--card)] px-3 py-2 font-semibold text-[color:var(--foreground)] transition hover:border-[color:var(--accent)] disabled:cursor-wait disabled:opacity-60"
+          >
+            {isLoadingMore ? dictionary.tasks.loadingMore : dictionary.tasks.loadMore}
+          </button>
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -618,6 +644,7 @@ function buildMilestones(projects: DashboardProjectsData | null): Milestone[] {
 
 function MilestonesPanel({ items, isLoading = false, className = "" }: { items: Milestone[]; isLoading?: boolean; className?: string }) {
   const dictionary = useDashboardDictionary();
+  const projectBaseHref = useProjectBaseHref();
   return (
     <div className={`brand-panel relative flex min-h-0 flex-col overflow-hidden rounded-[var(--radius-card)] p-6 text-[color:var(--project-hero-foreground)] ${className}`}>
       <div
@@ -674,7 +701,7 @@ function MilestonesPanel({ items, isLoading = false, className = "" }: { items: 
           {items.map((m) => (
             <li key={`${m.projectId}-${m.date}`}>
               <Link
-                href={`/projects/${m.projectId}`}
+                href={projectHref(projectBaseHref, m.projectId)}
                 prefetch={false}
                 className="group relative flex items-center gap-3 rounded-[var(--radius-card)] py-1.5 pl-2 pr-3"
               >
@@ -717,6 +744,7 @@ function MilestonesPanel({ items, isLoading = false, className = "" }: { items: 
 
 function ProjectsView({ projects, isLoading }: { projects: DashboardProjectsData | null; isLoading: boolean }) {
   const dictionary = useDashboardDictionary();
+  const projectBaseHref = useProjectBaseHref();
   const kpis = projects?.kpis;
   const list = projects?.projects.overdue ?? [];
 
@@ -743,7 +771,7 @@ function ProjectsView({ projects, isLoading }: { projects: DashboardProjectsData
           </>
         }
         action={
-          <PortalActionLink href="/projects" prefetch={false}>
+          <PortalActionLink href={projectBaseHref} prefetch={false}>
             {dictionary.projects.viewAll}
             <ArrowUpRight className="h-3.5 w-3.5" />
           </PortalActionLink>
@@ -952,15 +980,130 @@ function ClientsView({ crm, isLoading }: { crm: DashboardCrmData | null; isLoadi
 
 /* ─── Actions tab ────────────────────────────────────────────────── */
 
-function TasksView({ rows, isLoading }: { rows: TaskRow[]; isLoading: boolean }) {
+function TasksView({
+  rows,
+  tasks,
+  isLoading,
+  isLoadingMore,
+  onLoadMore,
+}: {
+  rows: TaskRow[];
+  tasks: DashboardTasksData | null;
+  isLoading: boolean;
+  isLoadingMore: boolean;
+  onLoadMore: () => void;
+}) {
   const dictionary = useDashboardDictionary();
+  const total = tasks?.kpis.total ?? rows.length;
   return (
     <div className="space-y-4">
       <PortalSectionHeading
         title={dictionary.tasks.title}
-        subtitle={`${rows.length} ${rows.length === 1 ? dictionary.tasks.one : dictionary.tasks.many} · ${dictionary.tasks.groupedByUrgencyLower}`}
+        subtitle={`${total} ${total === 1 ? dictionary.tasks.one : dictionary.tasks.many} · ${dictionary.tasks.groupedByUrgencyLower}`}
       />
-      <TasksTable rows={rows} title={dictionary.tasks.all} isLoading={isLoading} />
+      <TasksTable
+        rows={rows}
+        title={dictionary.tasks.all}
+        isLoading={isLoading}
+        total={tasks?.kpis.total}
+        hasMore={tasks?.pagination.hasMore}
+        isLoadingMore={isLoadingMore}
+        onLoadMore={onLoadMore}
+      />
+    </div>
+  );
+}
+
+function useAttentionPreviewCapacity(cardRef: RefObject<HTMLDivElement | null>) {
+  const [capacity, setCapacity] = useState(3);
+  useEffect(() => {
+    const update = () => {
+      const cardTop = cardRef.current?.getBoundingClientRect().top ?? 0;
+      setCapacity(getAttentionPreviewCapacity(window.innerWidth, window.innerHeight, cardTop));
+    };
+    update();
+    const observer = new ResizeObserver(update);
+    if (cardRef.current) observer.observe(cardRef.current);
+    window.addEventListener("resize", update, { passive: true });
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", update);
+    };
+  }, [cardRef]);
+  return capacity;
+}
+
+export function getAttentionPreviewCapacity(viewportWidth: number, viewportHeight: number, cardTop = 0) {
+  if (viewportWidth < 640) return 3;
+  const availableHeight = viewportHeight - Math.max(0, cardTop) - 24;
+  const wholeRows = Math.floor((availableHeight - 130) / 72);
+  return Math.max(3, Math.min(6, wholeRows));
+}
+
+function AttentionTasksCard({
+  tasks,
+  isLoading,
+  onViewAll,
+}: {
+  tasks: DashboardTasksData | null;
+  isLoading: boolean;
+  onViewAll: () => void;
+}) {
+  const dictionary = useDashboardDictionary();
+  const projectBaseHref = useProjectBaseHref();
+  const cardRef = useRef<HTMLDivElement>(null);
+  const capacity = useAttentionPreviewCapacity(cardRef);
+  const attentionTasks = tasks?.attention.tasks ?? [];
+  const visibleTasks = attentionTasks.slice(0, capacity);
+  const hiddenCount = Math.max(0, (tasks?.attention.total ?? 0) - visibleTasks.length);
+  const labels: Record<DashboardTaskAttentionState, string> = {
+    blocked: dictionary.tasks.blocked,
+    overdue: dictionary.tasks.overdue,
+    today: dictionary.tasks.dueToday,
+    soon: dictionary.tasks.dueThisWeek,
+  };
+
+  return (
+    <div ref={cardRef} className={`${SURFACE} flex min-h-0 flex-col overflow-hidden lg:col-span-2 lg:col-start-1 lg:row-start-2`}>
+      <header className="flex min-h-[4.875rem] shrink-0 items-center justify-between border-b border-[color:var(--border)] px-5 py-4">
+        <div className="flex items-center gap-3">
+          <span className="project-section-icon"><CircleDot className="size-3.5" /></span>
+          <div>
+            <h2 className={CARD_TITLE}>{dictionary.tasks.title}</h2>
+            <p className="text-meta text-[color:var(--muted-foreground)]">{dictionary.tasks.attentionSubtitle}</p>
+          </div>
+        </div>
+        {isLoading && !tasks ? <Skeleton className="h-[26px] w-20 rounded-full" /> : (
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-[color:var(--accent)]/30 bg-[color:var(--accent)]/10 px-2.5 py-1 text-label font-bold text-[color:var(--accent)]">
+            <span className="text-data">{tasks?.kpis.total ?? 0}</span> {dictionary.tasks.active}
+          </span>
+        )}
+      </header>
+
+      {isLoading && !tasks ? (
+        <div>{Array.from({ length: capacity }, (_, index) => <Skeleton key={index} className="mx-5 my-3 h-12" />)}</div>
+      ) : visibleTasks.length === 0 ? (
+        <div className="flex min-h-52 flex-col items-center justify-center gap-3 px-6 py-10 text-center">
+          <span className="flex h-11 w-11 items-center justify-center rounded-full bg-[color:var(--muted)] text-[color:var(--muted-foreground)]"><CheckCircle2 className="h-5 w-5" /></span>
+          <div><p className="text-body font-semibold text-[color:var(--foreground)]">{dictionary.tasks.allClear}</p><p className="mt-0.5 text-meta text-[color:var(--muted-foreground)]">{dictionary.tasks.urgentEmpty}</p></div>
+        </div>
+      ) : (
+        <div>
+          {visibleTasks.map((task) => {
+            const attentionState = attentionStateFromTask(task, tasks!.generatedAt);
+            return <DashboardTaskListRow key={task.id} task={task} href={projectHref(projectBaseHref, task.projectId)} attentionState={attentionState ?? undefined} attentionLabel={attentionState ? labels[attentionState] : undefined} />;
+          })}
+        </div>
+      )}
+
+      <footer className="mt-auto flex min-h-[3.25rem] shrink-0 items-center justify-between gap-3 border-t border-[color:var(--border)] px-5 py-3">
+        <span className="text-meta text-[color:var(--muted-foreground)]">
+          {hiddenCount > 0 ? dictionary.tasks.moreAttention(hiddenCount) : dictionary.tasks.attentionVisible}
+        </span>
+        <button type="button" onClick={onViewAll} className="text-body shrink-0 font-semibold text-[color:var(--accent)] hover:underline">
+          {dictionary.tasks.viewAll} →
+        </button>
+      </footer>
     </div>
   );
 }
@@ -969,28 +1112,22 @@ function TasksView({ rows, isLoading }: { rows: TaskRow[]; isLoading: boolean })
 
 function OverviewView({
   data,
-  taskRows,
   milestones,
   sections,
+  onViewAllTasks,
 }: {
   data: DashboardState;
-  taskRows: TaskRow[];
   milestones: Milestone[];
   sections: DashboardSection[];
+  onViewAllTasks: () => void;
 }) {
-  const overviewTaskRows = taskRows.slice(0, 5);
   const overviewMilestones = milestones.slice(0, 5);
 
   return (
     <section className="grid grid-cols-1 gap-4 lg:grid-cols-3 lg:grid-rows-[auto_minmax(0,1fr)] lg:[grid-auto-flow:dense]">
       {sections.includes("projects") ? <ProjectsKpiCard projects={data.projects} isLoading={data.isProjectsLoading} /> : null}
       {sections.includes("crm") ? <CrmKpiCard crm={data.crm} isLoading={data.isCrmLoading} /> : null}
-      {sections.includes("tasks") ? <TasksTable
-        rows={overviewTaskRows}
-        isLoading={data.tasks === null && (data.isProjectsLoading || data.isCrmLoading || data.isTasksLoading)}
-        className="lg:col-span-2 lg:col-start-1 lg:row-start-2 h-[340px]"
-        bodyClassName="flex-1 overflow-hidden"
-      /> : null}
+      {sections.includes("tasks") ? <AttentionTasksCard tasks={data.tasks} isLoading={data.tasks === null && data.isTasksLoading} onViewAll={onViewAllTasks} /> : null}
       {sections.includes("projects") ? <MilestonesPanel
         items={overviewMilestones}
         isLoading={data.isProjectsLoading && milestones.length === 0}
@@ -1014,10 +1151,11 @@ export type AppDashboardProps = {
 export function AppDashboard({ client, contributions, initialData, viewerFirstName, dictionary = defaultDashboardDictionary, onNotify }: AppDashboardProps) {
   const sections = useMemo(() => Array.from(new Set(contributions.flatMap((contribution) => contribution.sections))), [contributions]);
   const projectComponents = contributions.find((contribution) => contribution.projectComponents)?.projectComponents ?? null;
+  const projectBaseHref = projectComponents?.projectBaseHref ?? "/projects";
   const [tab, setTab] = useState<TabKey>("overview");
   const data = useDashboardData({ client, initialData, sections, messages: dictionary.data, onNotify });
 
-  const taskRows = useMemo(() => buildTasks(data.tasks), [data.tasks]);
+  const taskRows = useMemo(() => buildTasks(data.tasks, projectBaseHref), [data.tasks, projectBaseHref]);
   const milestones = useMemo(() => buildMilestones(data.projects), [data.projects]);
 
   const urgentCount =
@@ -1058,11 +1196,19 @@ export function AppDashboard({ client, contributions, initialData, viewerFirstNa
 
         <div className="mt-3">
           {tab === "overview" && (
-            <OverviewView data={data} taskRows={taskRows} milestones={milestones} sections={sections} />
+            <OverviewView data={data} milestones={milestones} sections={sections} onViewAllTasks={() => setTab("tasks")} />
           )}
           {tab === "projects" && sections.includes("projects") ? <ProjectsView projects={data.projects} isLoading={data.isProjectsLoading} /> : null}
           {tab === "clients" && sections.includes("crm") ? <ClientsView crm={data.crm} isLoading={data.isCrmLoading} /> : null}
-          {tab === "tasks" && sections.includes("tasks") ? <TasksView rows={taskRows} isLoading={data.isTasksLoading} /> : null}
+          {tab === "tasks" && sections.includes("tasks") ? (
+            <TasksView
+              rows={taskRows}
+              tasks={data.tasks}
+              isLoading={data.isTasksLoading}
+              isLoadingMore={data.isTasksLoadingMore}
+              onLoadMore={data.loadMoreTasks}
+            />
+          ) : null}
         </div>
       </div>
     </div>

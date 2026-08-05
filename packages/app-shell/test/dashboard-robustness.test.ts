@@ -4,7 +4,7 @@ import test from "node:test";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 
-import { AppDashboard } from "../src/dashboard/dashboard-client.tsx";
+import { AppDashboard, getAttentionPreviewCapacity } from "../src/dashboard/dashboard-client.tsx";
 import { createDashboardRequestGenerations } from "../src/dashboard/dashboard-request-generations.ts";
 import {
   clearDashboardSectionErrors,
@@ -89,7 +89,33 @@ const tasks = {
     milestoneId: null,
     updatedAt: "2026-07-24T12:00:00.000Z",
   }],
+  attention: {
+    total: 1,
+    tasks: [{
+      id: "task-1",
+      projectId: "project-1",
+      projectName: "Platform",
+      projectCode: null,
+      title: "Harden dashboard",
+      status: "in_progress",
+      priority: "high",
+      dueDate: null,
+      blockedReason: null,
+      milestoneId: null,
+      updatedAt: "2026-07-24T12:00:00.000Z",
+    }],
+  },
+  pagination: { page: 1, pageSize: 50, hasMore: false },
 };
+
+test("attention preview capacity uses whole rows in the space below the card", () => {
+  assert.equal(getAttentionPreviewCapacity(390, 1_200), 3);
+  assert.equal(getAttentionPreviewCapacity(1_280, 720, 450), 3);
+  assert.equal(getAttentionPreviewCapacity(1_280, 900, 450), 4);
+  assert.equal(getAttentionPreviewCapacity(1_280, 972, 450), 5);
+  assert.equal(getAttentionPreviewCapacity(1_280, 1_044, 450), 6);
+  assert.equal(getAttentionPreviewCapacity(1_280, 1_044, 650), 3);
+});
 
 test("dashboard request generations gate stale success, error, and loading writes per section", async () => {
   const generations = createDashboardRequestGenerations();
@@ -230,7 +256,7 @@ test("dashboard overview preserves the branded bento layout", () => {
   assert.match(clientSource, /function HeroMetrics/);
   assert.match(clientSource, /function ProjectsKpiCard/);
   assert.match(clientSource, /function CrmKpiCard/);
-  assert.match(clientSource, /<ProjectsKpiCard[\s\S]*<CrmKpiCard[\s\S]*<TasksTable[\s\S]*<MilestonesPanel/);
+  assert.match(clientSource, /<ProjectsKpiCard[\s\S]*<CrmKpiCard[\s\S]*<AttentionTasksCard[\s\S]*<MilestonesPanel/);
   assert.match(clientSource, /grid w-full min-w-0 grid-cols-1 gap-3 sm:grid-cols-2 lg:w-auto lg:min-w-\[330px\]/);
   assert.match(clientSource, /md:text-\[length:var\(--text-ui-dashboard-title-lg\)\]/);
   assert.doesNotMatch(clientSource, /md:text-heading-1 text-\[length:var\(--text-ui-dashboard-title-lg\)\]/);
@@ -261,7 +287,8 @@ test("dashboard renders the restored branded overview with live KPI content", ()
   assert.match(html, /href="\/crm"[^>]*>[\s\S]*CRM[\s\S]*2[\s\S]*contactos/);
   assert.match(html, />Tarefas</);
   assert.match(html, />Próximas metas</);
-  assert.match(html, /lg:col-span-2 lg:col-start-1 lg:row-start-2 h-\[340px\]/);
+  assert.match(html, /lg:col-span-2 lg:col-start-1 lg:row-start-2/);
+  assert.doesNotMatch(html, /h-\[340px\]/);
   assert.match(html, /lg:col-start-3 lg:row-start-1 lg:row-span-2 lg:h-full/);
   assert.doesNotMatch(html, /dashboard-briefing/);
 });

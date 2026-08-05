@@ -2,6 +2,7 @@ import type {
   DashboardAssignedTask,
   DashboardProjectItem,
   DashboardProjectsData,
+  DashboardTaskAttentionState,
   DashboardTasksData,
 } from "@brightweblabs/app-shell";
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -13,7 +14,9 @@ import {
 } from "./data";
 
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
-const DASHBOARD_TASK_LIMIT = 100;
+const DASHBOARD_TASK_PAGE_SIZE = 50;
+const DASHBOARD_TASK_PAGE_SIZE_MAX = 100;
+const DASHBOARD_ATTENTION_LIMIT = 6;
 const DASHBOARD_OVERDUE_PROJECT_LIMIT = 12;
 
 type CountQueryResult = {
@@ -53,6 +56,15 @@ export type TasksDashboardSnapshot = {
   overdue: number;
   blocked: number;
   tasks: DashboardAssignedTask[];
+  attentionTotal: number;
+  attentionTasks: DashboardAssignedTask[];
+  page: number;
+  pageSize: number;
+};
+
+export type TasksDashboardOptions = {
+  page?: number;
+  pageSize?: number;
 };
 
 function dateOnly(now: Date, daysFromNow = 0) {
@@ -184,13 +196,95 @@ export function buildTasksDashboardData(snapshot: TasksDashboardSnapshot): Dashb
       blocked: snapshot.blocked,
     },
     tasks: snapshot.tasks,
+    attention: {
+      total: snapshot.attentionTotal,
+      tasks: snapshot.attentionTasks,
+    },
+    pagination: {
+      page: snapshot.page,
+      pageSize: snapshot.pageSize,
+      hasMore: snapshot.page * snapshot.pageSize < snapshot.total,
+    },
   };
+}
+
+const ATTENTION_STATE_ORDER: Record<DashboardTaskAttentionState, number> = {
+  blocked: 0,
+  overdue: 1,
+  today: 2,
+  soon: 3,
+};
+
+const PRIORITY_ORDER: Record<DashboardAssignedTask["priority"], number> = {
+  urgent: 0,
+  high: 1,
+  medium: 2,
+  low: 3,
+};
+
+export function getDashboardTaskAttentionState(
+  task: Pick<DashboardAssignedTask, "status" | "dueDate">,
+  now = new Date(),
+): DashboardTaskAttentionState | null {
+  if (task.status === "blocked") return "blocked";
+  if (!task.dueDate) return null;
+  const today = dateOnly(now);
+  const next7Days = dateOnly(now, 7);
+  if (task.dueDate < today) return "overdue";
+  if (task.dueDate === today) return "today";
+  if (task.dueDate <= next7Days) return "soon";
+  return null;
+}
+
+export function rankDashboardAttentionTasks(tasks: DashboardAssignedTask[], now = new Date()) {
+  return tasks
+    .map((task) => ({ task, state: getDashboardTaskAttentionState(task, now) }))
+    .filter((entry): entry is { task: DashboardAssignedTask; state: DashboardTaskAttentionState } => entry.state !== null)
+    .sort((a, b) => {
+      const stateDifference = ATTENTION_STATE_ORDER[a.state] - ATTENTION_STATE_ORDER[b.state];
+      if (stateDifference !== 0) return stateDifference;
+      const priorityDifference = PRIORITY_ORDER[a.task.priority] - PRIORITY_ORDER[b.task.priority];
+      if (priorityDifference !== 0) return priorityDifference;
+      const dueDifference = (a.task.dueDate ?? "9999-12-31").localeCompare(b.task.dueDate ?? "9999-12-31");
+      if (dueDifference !== 0) return dueDifference;
+      const updatedDifference = b.task.updatedAt.localeCompare(a.task.updatedAt);
+      if (updatedDifference !== 0) return updatedDifference;
+      return a.task.id.localeCompare(b.task.id);
+    })
+    .map((entry) => entry.task);
+}
+
+async function listAttentionTaskRows(
+  supabase: SupabaseClient,
+  profileId: string | undefined,
+  columns: string,
+  today: string,
+  next7Days: string,
+) {
+  const priorities: DashboardAssignedTask["priority"][] = ["urgent", "high", "medium", "low"];
+  const states: DashboardTaskAttentionState[] = ["blocked", "overdue", "today", "soon"];
+  const results = await Promise.all(states.flatMap((state) => priorities.map(async (priority) => {
+    let query = activeAssignedTasksQuery(supabase, profileId, columns).eq("priority", priority);
+    if (state === "blocked") query = query.eq("status", "blocked");
+    if (state === "overdue") query = query.neq("status", "blocked").lt("due_date", today);
+    if (state === "today") query = query.neq("status", "blocked").eq("due_date", today);
+    if (state === "soon") query = query.neq("status", "blocked").gte("due_date", dateOnly(new Date(`${today}T00:00:00.000Z`), 1)).lte("due_date", next7Days);
+    const result = await query
+      .order("due_date", { ascending: true, nullsFirst: false })
+      .order("updated_at", { ascending: false })
+      .order("id", { ascending: true })
+      .limit(DASHBOARD_ATTENTION_LIMIT);
+    if (result.error) throw new Error(result.error.message);
+    return (result.data ?? []) as unknown as DashboardTaskRow[];
+  })));
+  return results.flat();
 }
 
 export async function getTasksDashboardData(
   supabase: SupabaseClient,
   profileId?: string,
   now = new Date(),
+  options: TasksDashboardOptions = {},
 ): Promise<DashboardTasksData> {
   const today = dateOnly(now);
   const next7Days = dateOnly(now, 7);
@@ -207,28 +301,40 @@ export async function getTasksDashboardData(
     "projects(name, code)",
   ].join(", ");
 
+  const page = Math.max(1, Math.floor(options.page ?? 1));
+  const pageSize = Math.min(DASHBOARD_TASK_PAGE_SIZE_MAX, Math.max(1, Math.floor(options.pageSize ?? DASHBOARD_TASK_PAGE_SIZE)));
+  const from = (page - 1) * pageSize;
   const tasksQuery = activeAssignedTasksQuery(supabase, profileId, taskColumns)
     .order("due_date", { ascending: true, nullsFirst: false })
     .order("updated_at", { ascending: false })
-    .limit(DASHBOARD_TASK_LIMIT);
-  const totalQuery = activeAssignedTasksQuery(supabase, profileId, "id", { count: "planned", head: true });
+    .order("id", { ascending: true })
+    .range(from, from + pageSize - 1);
+  const totalQuery = activeAssignedTasksQuery(supabase, profileId, "id", { count: "exact", head: true });
   const dueThisWeekQuery = activeAssignedTasksQuery(supabase, profileId, "id", { count: "exact", head: true })
+    .neq("status", "blocked")
     .gte("due_date", today)
     .lte("due_date", next7Days);
   const overdueQuery = activeAssignedTasksQuery(supabase, profileId, "id", { count: "exact", head: true })
+    .neq("status", "blocked")
     .lt("due_date", today);
   const blockedQuery = activeAssignedTasksQuery(supabase, profileId, "id", { count: "exact", head: true })
     .eq("status", "blocked");
+  const attentionTotalQuery = activeAssignedTasksQuery(supabase, profileId, "id", { count: "exact", head: true })
+    .or(`status.eq.blocked,due_date.lte.${next7Days}`);
 
-  const [tasksResult, total, dueThisWeek, overdue, blocked] = await Promise.all([
+  const attentionRowsPromise = listAttentionTaskRows(supabase, profileId, taskColumns, today, next7Days);
+  const [tasksResult, total, dueThisWeek, overdue, blocked, attentionTotal, attentionRows] = await Promise.all([
     tasksQuery,
     resolveCount(totalQuery),
     resolveCount(dueThisWeekQuery),
     resolveCount(overdueQuery),
     resolveCount(blockedQuery),
+    resolveCount(attentionTotalQuery),
+    attentionRowsPromise,
   ]);
   if (tasksResult.error) throw new Error(tasksResult.error.message);
 
+  const attentionTasks = rankDashboardAttentionTasks(attentionRows.map(normalizeDashboardTask), now);
   return buildTasksDashboardData({
     generatedAt: now.toISOString(),
     total,
@@ -236,5 +342,9 @@ export async function getTasksDashboardData(
     overdue,
     blocked,
     tasks: ((tasksResult.data ?? []) as unknown as DashboardTaskRow[]).map(normalizeDashboardTask),
+    attentionTotal,
+    attentionTasks: attentionTasks.slice(0, DASHBOARD_ATTENTION_LIMIT),
+    page,
+    pageSize,
   });
 }

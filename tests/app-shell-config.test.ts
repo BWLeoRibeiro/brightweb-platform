@@ -34,6 +34,7 @@ import type {
   ShellModuleRegistration,
   ShellToolbarRouteConfig,
 } from "../packages/app-shell/src/types.ts";
+import { createProjectsModuleRegistration } from "../packages/module-projects/src/registration.ts";
 
 function collectElementProps(node: ReactNode, elementType: unknown): Record<string, unknown>[] {
   const matches: Record<string, unknown>[] = [];
@@ -422,6 +423,11 @@ test("builds dashboard contributions from enabled module registrations", () => {
     ],
   });
   assert.deepEqual(built.dashboardContributions.map((item) => item.sections), [["projects", "tasks"], ["crm"]]);
+});
+
+test("projects dashboard contribution carries the consumer route base", () => {
+  const registration = createProjectsModuleRegistration("/projetos");
+  assert.equal(registration.dashboardContribution?.projectComponents?.projectBaseHref, "/projetos");
 });
 
 test("renders every resolved module nav group in registration order", () => {

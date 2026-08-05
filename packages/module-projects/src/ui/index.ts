@@ -23,4 +23,5 @@ export * from "./toolbar-controls";
 export * from "./shared/project-summary-card";
 export * from "./shared/project-summary-card-skeleton";
 export { TaskDueMeta, TaskPriorityTag, TaskStatusTag } from "./shared/task-tags";
+export { DashboardTaskRow } from "./shared/dashboard-task-row";
 export type * from "./types";
