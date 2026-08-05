@@ -1,5 +1,14 @@
 # @brightweblabs/module-projects
 
+## 0.16.1
+
+### Patch Changes
+
+- 5455af7: Align dashboard attention cards with the canonical project-card typography and pill patterns, keep status and attention tags together when space permits, and distinguish unassigned attention from the empty owner value.
+- b083ca3: Mount the shared Sonner toaster from every app shell by default, with an escape hatch for custom or disabled toast regions. Remove duplicate route-scoped toaster mounts from generated apps, localize project clipboard feedback, use warning severity for partial admin role changes, add context-specific marketing validation messages, and read Project UI failures only from the public error envelope.
+- Updated dependencies [b083ca3]
+  - @brightweblabs/app-shell@0.14.0
+
 ## 0.16.0
 
 ### Minor Changes
