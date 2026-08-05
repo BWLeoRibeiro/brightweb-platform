@@ -182,6 +182,7 @@
     font-weight: var(--font-weight-semibold);
     line-height: var(--type-leading-130);
     text-overflow: ellipsis;
+    text-transform: none;
     white-space: nowrap;
   }
   .project-attention-title {
@@ -273,10 +274,15 @@
     gap: 0.375rem;
     color: var(--project-attention-tone);
     font-family: var(--font-body);
-    font-size: var(--text-micro);
+    font-size: var(--text-ui-fine);
     font-variant-numeric: tabular-nums;
     font-weight: var(--font-weight-bold);
     line-height: var(--type-leading-130);
+  }
+  .project-attention-date-icon {
+    width: 0.625rem;
+    height: 0.625rem;
+    flex: none;
   }
 
   .project-attention-arrow {

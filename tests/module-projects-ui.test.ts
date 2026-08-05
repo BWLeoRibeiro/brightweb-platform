@@ -37,6 +37,7 @@ import {
   getCompactCollectionPreview,
   hasCompactCollectionOverflow,
 } from "../packages/module-projects/src/ui/shared/compact-collection-model.ts";
+import { formatNaturalDisplayName } from "../packages/module-projects/src/ui/shared/natural-display-name.ts";
 
 function collectDictionaryStrings(value: unknown): string[] {
   if (typeof value === "string") return [value];
@@ -581,19 +582,27 @@ test("dashboard attention cards use the canonical editorial attention-row recipe
 
   assert.match(card, /className="project-attention-row group/);
   assert.match(card, /<ProjectPill[\s\S]*size="normal"[\s\S]*dotClassName="project-attention-pill-dot"/);
-  assert.match(card, /className="project-attention-company"/);
+  assert.match(card, /className="project-attention-company">\{formatNaturalDisplayName\(project\.organizationName\)\}/);
   assert.match(card, /<strong>\{reason\}<\/strong> \{detail\}/);
-  assert.match(card, /<CalendarDays aria-hidden/);
+  assert.match(card, /<CalendarDays aria-hidden className="project-attention-date-icon/);
   assert.match(card, /<span aria-hidden className="project-attention-arrow">/);
   assert.doesNotMatch(card, /text-label[^\n]*organizationName|monoTabularClassName/);
   assert.match(projectTokens, /\.project-attention-row \{[\s\S]*grid-template-columns: 2\.125rem minmax\(0, 1\.18fr\) minmax\(11\.875rem, 0\.86fr\) 1\.75rem/);
-  assert.match(projectTokens, /\.project-attention-company \{[\s\S]*font-size: var\(--text-meta\)[\s\S]*white-space: nowrap/);
+  assert.match(projectTokens, /\.project-attention-company \{[\s\S]*font-size: var\(--text-meta\)[\s\S]*text-transform: none[\s\S]*white-space: nowrap/);
+  assert.match(projectTokens, /\.project-attention-date \{[\s\S]*font-size: var\(--text-ui-fine\)/);
   assert.match(projectTokens, /@media \(max-width: 650px\)[\s\S]*\.project-attention-meta \{ grid-column: 2 \/ 4/);
   assert.match(projectTokens, /@media \(prefers-reduced-motion: reduce\)/);
   assert.match(dashboard, /className="dashboard-projects-grid"/);
   assert.match(dashboard, /className="dashboard-attention-count"/);
   assert.match(dashboardStyles, /@media \(min-width: 901px\)[\s\S]*\.dashboard-projects-grid/);
   assert.equal(defaultProjectsUiDictionary.dashboard.badges.withoutOwner, "Por atribuir");
+});
+
+test("dashboard organization names normalize only legacy all-caps values", () => {
+  assert.equal(formatNaturalDisplayName("ZZ TESTE PLATAFORMA (APAGAR)"), "ZZ Teste Plataforma (Apagar)");
+  assert.equal(formatNaturalDisplayName("MQ CONSULTORIA DE NEGÓCIOS"), "MQ Consultoria de Negócios");
+  assert.equal(formatNaturalDisplayName("BSCork"), "BSCork");
+  assert.equal(formatNaturalDisplayName("iServices"), "iServices");
 });
 
 test("Projects board toolbar waits for authoritative page actions", () => {
