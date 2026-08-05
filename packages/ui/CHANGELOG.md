@@ -1,5 +1,11 @@
 # @brightweblabs/ui
 
+## 1.4.8
+
+### Patch Changes
+
+- fa591ab: Allow dropdown calendars to navigate up to 25 years beyond the current year by default while preserving consumer-provided date boundaries.
+
 ## 1.4.7
 
 ### Patch Changes

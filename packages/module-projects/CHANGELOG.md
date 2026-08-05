@@ -1,5 +1,19 @@
 # @brightweblabs/module-projects
 
+## 0.16.0
+
+### Minor Changes
+
+- b065163: Add a project portfolio briefing to the dashboard with ranked attention projects, real upcoming project metas, healthy and loading states, and project-card interaction affordances shared with the Projects module.
+
+### Patch Changes
+
+- Updated dependencies [fa591ab]
+- Updated dependencies [b065163]
+  - @brightweblabs/ui@1.4.8
+  - @brightweblabs/app-shell@0.13.0
+  - @brightweblabs/core-auth@0.10.4
+
 ## 0.15.0
 
 ### Minor Changes
