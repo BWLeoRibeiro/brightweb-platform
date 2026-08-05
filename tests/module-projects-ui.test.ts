@@ -570,16 +570,29 @@ test("Projects package UI contains the literal list/detail translation and no ra
   for (const symbol of ["ProjectsPage", "ProjectDetailPage", "ProjectsToolbarControls", "ProjectDetailDataProvider", "ProjectBoardKanban", "ProjectTasksPage", "ProjectBoardLoading"]) assert.match(readFileSync(join(root, "index.ts"), "utf8"), new RegExp(symbol.replace("ProjectsToolbarControls", "toolbar-controls").replace("ProjectDetailDataProvider", "project-detail-data-provider").replace("ProjectsPage", "projects-page").replace("ProjectDetailPage", "project-detail-page").replace("ProjectBoardKanban", "project-board-kanban").replace("ProjectTasksPage", "project-tasks-page").replace("ProjectBoardLoading", "project-board-loading")));
 });
 
-test("dashboard attention cards use canonical metadata and pill roles", () => {
+test("dashboard attention cards use the canonical editorial attention-row recipe", () => {
   const card = readFileSync(
     join(process.cwd(), "packages/module-projects/src/ui/shared/dashboard-project-attention-card.tsx"),
     "utf8",
   );
+  const projectTokens = readFileSync(join(process.cwd(), "packages/module-projects/tokens.css"), "utf8");
+  const dashboard = readFileSync(join(process.cwd(), "packages/app-shell/src/dashboard/dashboard-client.tsx"), "utf8");
+  const dashboardStyles = readFileSync(join(process.cwd(), "packages/app-shell/src/dashboard/dashboard.css"), "utf8");
 
-  assert.match(card, /<ProjectPill[\s\S]*size="small"/);
-  assert.match(card, /whitespace-nowrap text-meta font-semibold/);
-  assert.match(card, /items-center gap-2 text-meta text-\[color:var\(--muted-foreground\)\]/);
-  assert.doesNotMatch(card, /flex flex-wrap items-center gap-2/);
+  assert.match(card, /className="project-attention-row group/);
+  assert.match(card, /<ProjectPill[\s\S]*size="normal"[\s\S]*dotClassName="project-attention-pill-dot"/);
+  assert.match(card, /className="project-attention-company"/);
+  assert.match(card, /<strong>\{reason\}<\/strong> \{detail\}/);
+  assert.match(card, /<CalendarDays aria-hidden/);
+  assert.match(card, /<span aria-hidden className="project-attention-arrow">/);
+  assert.doesNotMatch(card, /text-label[^\n]*organizationName|monoTabularClassName/);
+  assert.match(projectTokens, /\.project-attention-row \{[\s\S]*grid-template-columns: 2\.125rem minmax\(0, 1\.18fr\) minmax\(11\.875rem, 0\.86fr\) 1\.75rem/);
+  assert.match(projectTokens, /\.project-attention-company \{[\s\S]*font-size: var\(--text-meta\)[\s\S]*white-space: nowrap/);
+  assert.match(projectTokens, /@media \(max-width: 650px\)[\s\S]*\.project-attention-meta \{ grid-column: 2 \/ 4/);
+  assert.match(projectTokens, /@media \(prefers-reduced-motion: reduce\)/);
+  assert.match(dashboard, /className="dashboard-projects-grid"/);
+  assert.match(dashboard, /className="dashboard-attention-count"/);
+  assert.match(dashboardStyles, /@media \(min-width: 901px\)[\s\S]*\.dashboard-projects-grid/);
   assert.equal(defaultProjectsUiDictionary.dashboard.badges.withoutOwner, "Por atribuir");
 });
 

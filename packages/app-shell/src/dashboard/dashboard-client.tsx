@@ -844,11 +844,11 @@ function ProjectsView({ projects, isLoading }: { projects: DashboardProjectsData
         </div>
       </section>
 
-      <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[minmax(0,1.55fr)_minmax(19rem,0.85fr)]">
+      <div className="dashboard-projects-grid">
         <section className={`${SURFACE} overflow-hidden`} aria-labelledby="dashboard-project-attention">
           <div className="flex min-h-16 items-center justify-between border-b border-[color:var(--border)] px-5 py-4">
             <h3 id="dashboard-project-attention" className={LABEL}>{dictionary.projects.attentionQueueTitle}</h3>
-            <span className={`${MONO} flex h-7 min-w-7 items-center justify-center rounded-full bg-[color:var(--muted)] px-2 text-label font-bold text-[color:var(--foreground)]`}>
+            <span className="dashboard-attention-count">
               {kpis?.projectsAttention ?? 0}
             </span>
           </div>

@@ -65,6 +65,22 @@ export const defaultProjectsUiDictionary = {
       withoutOwner: "Sem responsável.",
       dueSoon: "Data-alvo nos próximos 7 dias.",
     },
+    details: {
+      overdueYesterday: "A entrega estava prevista para ontem.",
+      overdueDaysAgo: (days: number) => `A entrega estava prevista há ${days} ${days === 1 ? "dia" : "dias"}.`,
+      atRisk: (days: number | null, tasks: number) => days !== null && days > 0
+        ? `Faltam ${days} ${days === 1 ? "dia" : "dias"}${tasks > 0 ? ` e ${tasks} ${tasks === 1 ? "tarefa" : "tarefas"}` : ""}.`
+        : tasks > 0 ? `Restam ${tasks} ${tasks === 1 ? "tarefa" : "tarefas"} por concluir.` : "Revê o plano e os próximos passos.",
+      blockedTasks: (tasks: number) => tasks > 0
+        ? `Restam ${tasks} ${tasks === 1 ? "tarefa" : "tarefas"} por concluir.`
+        : "Revê os bloqueios antes de avançar.",
+      withoutOwner: (days: number | null) => days !== null && days > 0
+        ? `O prazo do projeto é dentro de ${days} ${days === 1 ? "dia" : "dias"}.`
+        : "Atribui alguém para acompanhar o projeto.",
+      dueSoon: (days: number | null, tasks: number) => days !== null
+        ? `Faltam ${Math.max(0, days)} ${days === 1 ? "dia" : "dias"}${tasks > 0 ? ` e ${tasks} ${tasks === 1 ? "tarefa" : "tarefas"}` : ""}.`
+        : tasks > 0 ? `Restam ${tasks} ${tasks === 1 ? "tarefa" : "tarefas"} por concluir.` : "Confirma os próximos passos.",
+    },
   },
   actions: {
     refresh: "Atualizar",
