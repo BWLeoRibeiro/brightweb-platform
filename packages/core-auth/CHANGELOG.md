@@ -1,5 +1,12 @@
 # @brightweblabs/core-auth
 
+## 0.10.6
+
+### Patch Changes
+
+- ef36f3d: Replace the oversized, uppercase, widely tracked label treatment with compact sentence-case typography across shared portal surfaces. Keep monospace and uppercase styling only for structured data such as project codes and initials.
+  - @brightweblabs/ui@1.4.10
+
 ## 0.10.5
 
 ### Patch Changes
