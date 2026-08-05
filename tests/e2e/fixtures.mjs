@@ -4,7 +4,7 @@
 // - packages/core-auth/src/server.ts        (profiles, rpc current_global_role)
 // - packages/module-projects/src/data.ts    (projects, project_tasks, project_milestones, organizations)
 // - packages/module-projects/src/dashboard.ts
-// - packages/module-crm/src/data.ts         (crm_contacts, crm_status_log, organizations, profiles,
+// - packages/module-crm/src/data.ts         (crm_contacts, app_activity_events, organizations, profiles,
 //                                            user_role_assignments)
 // Embedded-resource aliases (organizations, owner, primary_contact, projects, profile)
 // are stored directly on the rows: the stub returns whole rows regardless of the
@@ -282,6 +282,27 @@ const crmStatusLog = [
   },
 ];
 
+const appActivityEvents = crmStatusLog.map((entry) => {
+  const contact = crmContacts.find((candidate) => candidate.id === entry.contact_id);
+  return {
+    id: entry.id,
+    domain: "crm",
+    entity_id: entry.contact_id,
+    created_at: entry.changed_at,
+    event_type: "crm_contact_status_changed",
+    actor_profile_id: PROFILE_ID,
+    summary: "Estado do contacto atualizado",
+    payload: {
+      contact_id: entry.contact_id,
+      contact_name: [contact?.first_name, contact?.last_name].filter(Boolean).join(" ") || contact?.email || "Contacto",
+      reason: entry.reason,
+      changes: {
+        status: { from: entry.previous_status, to: entry.new_status },
+      },
+    },
+  };
+});
+
 const userRoleAssignments = [
   {
     profile_id: PROFILE_ID,
@@ -347,6 +368,7 @@ export const tables = {
   organization_members: [],
   crm_contacts: crmContacts,
   crm_status_log: crmStatusLog,
+  app_activity_events: appActivityEvents,
   user_role_assignments: userRoleAssignments,
   admin_user_invitations: [],
   marketing_topics: marketingTopics,
