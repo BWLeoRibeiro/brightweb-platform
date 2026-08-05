@@ -1,5 +1,11 @@
 # @brightweblabs/module-projects
 
+## 0.14.4
+
+### Patch Changes
+
+- 5245250: Show selected project start and end dates in the project detail hero while omitting unselected dates.
+
 ## 0.14.3
 
 ### Patch Changes
