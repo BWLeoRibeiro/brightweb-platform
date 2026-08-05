@@ -211,6 +211,17 @@ test("CRM edit sheets cannot submit until an existing record has actually change
   assert.match(organizationSource, /disabled=\{saving \|\| !value\.name\?\.trim\(\) \|\| !hasChanges\}/);
 });
 
+test("CRM organization view exposes the website as a safe external link", () => {
+  const organizationSource = readFileSync(join(process.cwd(), "packages/module-crm/src/ui/organization-sheet.tsx"), "utf8");
+
+  assert.match(organizationSource, /function organizationWebsiteHref/);
+  assert.ok(organizationSource.includes('return /^https?:\\/\\//i.test(website) ? website : `https://${website}`;'));
+  assert.match(organizationSource, /editing \? <Input[\s\S]*websiteHref \? <a/);
+  assert.match(organizationSource, /href=\{websiteHref\} target="_blank" rel="noreferrer"/);
+  assert.match(organizationSource, /cursor-pointer[^"]*hover:underline[^"]*focus-visible:ring-2/);
+  assert.match(organizationSource, /<ExternalLink className="size-3\.5 shrink-0" aria-hidden/);
+});
+
 test("CRM sheets consume the canonical natural-case typography recipes", () => {
   const contactSource = readFileSync(join(process.cwd(), "packages/module-crm/src/ui/contact-dialog.tsx"), "utf8");
   const organizationSource = readFileSync(join(process.cwd(), "packages/module-crm/src/ui/organization-sheet.tsx"), "utf8");
