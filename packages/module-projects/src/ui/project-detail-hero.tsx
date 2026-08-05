@@ -59,6 +59,19 @@ function ProjectHeroFact({ icon: Icon, label, children, meta, avatarLabel, avata
   );
 }
 
+function ProjectHeroDate({ label, value, tone }: { label: string; value: string; tone?: string }) {
+  return (
+    <span className="min-w-[6.75rem]">
+      <span className="block text-micro font-semibold uppercase tracking-[var(--type-tracking-100)] text-[color:var(--project-hero-subtle)]">
+        {label}
+      </span>
+      <span className="text-data mt-0.5 block" style={tone ? { color: tone } : undefined}>
+        {formatProjectDate(value)}
+      </span>
+    </span>
+  );
+}
+
 function ProjectHeroActions({
   project,
   canOpenEditProject,
@@ -134,6 +147,9 @@ function ProjectHeroFactGrid({
   const isComplete = completion >= 100;
   const risk = resolveProjectRisk(project);
   const deadlineTone = risk ? PROJECT_RISK_META[risk].var : undefined;
+  const hasStartDate = Boolean(project.startDate);
+  const hasTargetDate = Boolean(project.targetDate);
+  const hasBothProjectDates = hasStartDate && hasTargetDate;
 
   return (
     <div className="grid gap-x-8 gap-y-5 sm:grid-cols-2 xl:grid-cols-4">
@@ -167,9 +183,27 @@ function ProjectHeroFactGrid({
         />
       </ProjectHeroFact>
 
-      <ProjectHeroFact icon={CalendarDays} label={dictionary.detail.projectDueDate}>
-        <span className="text-data" style={deadlineTone ? { color: deadlineTone } : undefined}>{formatProjectDate(project.targetDate)}</span>
-      </ProjectHeroFact>
+      {hasStartDate || hasTargetDate ? (
+        <ProjectHeroFact
+          icon={CalendarDays}
+          label={hasBothProjectDates
+            ? dictionary.detail.projectDates
+            : hasStartDate
+              ? dictionary.detail.projectStartDate
+              : dictionary.detail.projectDueDate}
+        >
+          {hasBothProjectDates ? (
+            <span className="flex flex-wrap gap-x-5 gap-y-2">
+              <ProjectHeroDate label={dictionary.detail.projectStartShort} value={project.startDate!} />
+              <ProjectHeroDate label={dictionary.detail.projectEndShort} value={project.targetDate!} tone={deadlineTone} />
+            </span>
+          ) : (
+            <span className="text-data" style={hasTargetDate && deadlineTone ? { color: deadlineTone } : undefined}>
+              {formatProjectDate(hasStartDate ? project.startDate : project.targetDate)}
+            </span>
+          )}
+        </ProjectHeroFact>
+      ) : null}
 
       <ProjectHeroFact
         icon={ListChecks}
