@@ -18,6 +18,7 @@ import { sheetEditControlClassName, sheetFieldLabelClassName } from "../shared/s
 import { cn } from "../utils";
 import { PROJECTS_EVENTS } from "../events";
 import { isValidProjectLinkUrl, normalizeProjectLinkUrl } from "../project-link-url-utils";
+import { parseProjectBoardApiError } from "../project-board-response-parser";
 import { Button } from "@brightweblabs/ui";
 import { Input } from "@brightweblabs/ui";
 import {
@@ -80,7 +81,7 @@ export function ProjectLinkCreateSheet({
       });
       const payload = await response.json().catch(() => null);
       if (!response.ok) {
-        const message = typeof payload?.error === "string" ? payload.error : dictionary.errors.createLink;
+        const message = parseProjectBoardApiError(payload, dictionary.errors.createLink);
         throw new Error(message);
       }
       const didApplyLinks = detailActions?.applyLinksPayload(payload) ?? false;

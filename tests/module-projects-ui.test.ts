@@ -59,6 +59,15 @@ test("project-facing Portuguese copy consistently calls milestones metas", () =>
   assert.equal(defaultDashboardDictionary.milestones.emptyDescription, "Metas com data aparecem aqui.");
 });
 
+test("project clipboard feedback is localized and action-specific", () => {
+  assert.equal(defaultProjectsUiDictionary.detail.copyProjectId, "Copiar ID do projeto");
+  assert.equal(defaultProjectsUiDictionary.messages.projectIdCopied, "ID do projeto copiado.");
+  assert.equal(
+    defaultProjectsUiDictionary.messages.projectIdCopyError,
+    "Não foi possível copiar o ID do projeto.",
+  );
+});
+
 test("project detail hero only renders selected project dates and combines complete ranges", () => {
   const heroSource = readFileSync(
     join(process.cwd(), "packages/module-projects/src/ui/project-detail-hero.tsx"),
@@ -440,12 +449,35 @@ test("Projects detail reducer replaces links without changing the dashboard reco
   assert.deepEqual(projectDetailDataReducer(dashboard, { type: "replace-links", links }), { ...dashboard, links });
 });
 
-test("Projects board parser accepts task lists and preserves API errors", () => {
+test("Projects board parser accepts task lists and reads only public API errors", () => {
   const task = { id: "task-1", projectId: project.id, milestoneId: null, title: "Board task", description: null, status: "todo", health: "on_track", priority: "medium", assigneeProfileId: null, assigneeLabel: null, reporterProfileId: null, reporterLabel: null, dueDate: null, position: 1, blockedReason: null, createdAt: project.createdAt, updatedAt: project.updatedAt } as const;
   assert.deepEqual(parseTaskListPayload({ data: [task] }), [task]);
   assert.equal(parseTaskListPayload({ data: [{ id: "task-1" }] }), null);
-  assert.equal(parseProjectBoardApiError({ error: "Move rejected" }, "Fallback"), "Move rejected");
+  assert.equal(
+    parseProjectBoardApiError({ error: { code: "MOVE_REJECTED", message: "Move rejected" } }, "Fallback"),
+    "Move rejected",
+  );
+  assert.equal(parseProjectBoardApiError({ error: "Raw internal detail" }, "Fallback"), "Fallback");
   assert.equal(parseProjectBoardApiError({}, "Fallback"), "Fallback");
+});
+
+test("Projects UI request failures consistently read the public error envelope", () => {
+  const uiRoot = join(process.cwd(), "packages/module-projects/src/ui");
+  const consumers = [
+    "create-project-sheet.tsx",
+    "project-edit-sheet.tsx",
+    "project-detail-create-sheets/project-link-create-sheet.tsx",
+    "project-links-card.tsx",
+    "project-members-edit-sheet.tsx",
+    "project-status-quick-action.tsx",
+    "project-create/use-project-setup-state.ts",
+  ];
+
+  for (const consumer of consumers) {
+    const source = readFileSync(join(uiRoot, consumer), "utf8");
+    assert.match(source, /parseProjectBoardApiError\(/, `${consumer} must read public errors`);
+    assert.doesNotMatch(source, /typeof [a-zA-Z]+\?\.error === "string"/, `${consumer} must not expose raw errors`);
+  }
 });
 
 test("Projects UI ships Portuguese defaults and configurable shell registration", () => {

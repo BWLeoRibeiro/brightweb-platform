@@ -333,7 +333,7 @@ export function WorkflowWorkspace({
 
   const save = async () => {
     if (!form.name.trim() || !form.triggerValue.trim() || nodes.some((node) => !isNodeValid(node))) {
-      toast.error(dictionary.feedback.required);
+      toast.error(dictionary.feedback.workflowRequired ?? dictionary.feedback.required);
       return;
     }
     const editorGeneration = editorGenerationRef.current;

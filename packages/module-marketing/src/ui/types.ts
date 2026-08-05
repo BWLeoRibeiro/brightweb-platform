@@ -481,6 +481,12 @@ export type MarketingUiDictionary = {
     canceled: string;
     retried: string;
     testSent: string;
+    campaignRequired?: string;
+    testEmailRequired?: string;
+    topicRequired?: string;
+    workflowRequired?: string;
+    segmentNameRequired?: string;
+    /** Legacy validation fallback for custom dictionaries. */
     required: string;
     genericError: string;
   };

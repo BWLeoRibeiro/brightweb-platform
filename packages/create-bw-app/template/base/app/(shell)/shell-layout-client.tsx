@@ -19,7 +19,6 @@ import {
   type ShellNavStateGroup,
 } from "@brightweblabs/app-shell";
 import { createAuthUiClient } from "@brightweblabs/core-auth/ui";
-import { Toaster } from "@brightweblabs/ui";
 import { getModuleToolbarControls } from "../../config/module-toolbar-controls";
 import { getStarterShellConfig } from "../../config/shell";
 import "@brightweblabs/app-shell/dashboard.css";
@@ -65,7 +64,6 @@ function ShellLayoutInner({
   const { isSidebarCollapsed, isGroupOpen, toggleGroup, toggleSidebar } =
     useShellNavState({ pathname, groups: shellGroups });
   const notifications = useShellNotifications({ enabled: viewer.isStaff });
-  const isAdminSurface = pathname === "/admin" || pathname.startsWith("/admin/");
   const shellNavItems = [
     ...config.primaryNav,
     ...(config.adminNavItem ? [config.adminNavItem] : []),
@@ -174,7 +172,6 @@ function ShellLayoutInner({
     >
       <ShellRealtimeBridge viewer={viewer} />
       {children}
-      {isAdminSurface || pathname === "/account" ? <Toaster /> : null}
     </AppShellFrame>
   );
 }
