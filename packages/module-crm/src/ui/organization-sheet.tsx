@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useId, useState, type FormEvent } from "react";
-import { Building2, Pencil, Save, Trash2 } from "lucide-react";
+import { Building2, ExternalLink, Pencil, Save, Trash2 } from "lucide-react";
 import { AppSheetBody, AppSheetFooter, AppSheetHeader, SheetSection, SheetSelect, sheetEditControlClassName, sheetFieldLabelClassName, sheetShellClassName, sheetViewControlClassName } from "@brightweblabs/app-shell";
 import {
   AlertDialog,
@@ -31,6 +31,12 @@ const budgetRanges = ["Até 5.000 €", "5.000 € - 10.000 €", "10.000 € - 
 
 function initialValue(organization?: CrmOrganization | null): CrmOrganizationFormInput {
   return { name: organization?.name ?? "", industry: organization?.industry ?? "", company_size: organization?.company_size ?? "", budget_range: organization?.budget_range ?? "", website_url: organization?.website_url ?? "", address: organization?.address ?? "", taxIdentifierValue: organization?.taxIdentifierValue ?? "", primary_contact_id: organization?.primary_contact_id ?? null };
+}
+
+function organizationWebsiteHref(websiteUrl?: string | null) {
+  const website = websiteUrl?.trim();
+  if (!website) return null;
+  return /^https?:\/\//i.test(website) ? website : `https://${website}`;
 }
 
 function hasOrganizationChanges(value: CrmOrganizationFormInput, organization?: CrmOrganization | null) {
@@ -69,6 +75,7 @@ export function CrmOrganizationSheet({ open, organization, dictionary = defaultC
   const controlClassName = editing ? sheetEditControlClassName : sheetViewControlClassName;
   const deleteConfirmationTarget = organization?.name && organization.name.trim().length > 0 ? organization.name : organization?.id ?? "";
   const hasChanges = mode === "create" || hasOrganizationChanges(value, organization);
+  const websiteHref = organizationWebsiteHref(value.website_url);
 
   useEffect(() => {
     if (!open) return;
@@ -147,7 +154,7 @@ export function CrmOrganizationSheet({ open, organization, dictionary = defaultC
               <FieldGroup className={`gap-0 px-0 py-1 ${editing ? "" : "divide-y divide-hairline"}`}>
                 <Field className="gap-1.5 px-4 py-2"><FieldLabel htmlFor={`${fieldId}-name`} className={sheetFieldLabelClassName}>{dictionary.organizations.name}</FieldLabel><FieldContent><Input id={`${fieldId}-name`} name="name" autoComplete="organization" value={value.name ?? ""} onChange={(event) => setValue({ ...value, name: event.target.value })} placeholder={dictionary.organizations.namePlaceholder} disabled={!editing} className={`${controlClassName} mt-1.5`} /></FieldContent></Field>
                 <Field className="gap-1.5 px-4 py-2"><FieldLabel htmlFor={`${fieldId}-industry`} className={sheetFieldLabelClassName}>{dictionary.organizations.industry}</FieldLabel><FieldContent>{editing ? <SheetSelect id={`${fieldId}-industry`} name="industry" className="mt-1.5" value={value.industry ?? ""} onValueChange={(industry) => setValue({ ...value, industry })} options={[{ value: "", label: dictionary.organizations.selectIndustry }, ...(value.industry && !industries.includes(value.industry) ? [{ value: value.industry, label: `${value.industry} (atual)` }] : []), ...industries.map((industry) => ({ value: industry, label: industry }))]} /> : <p className="mt-1.5 text-body text-foreground/75">{value.industry || "—"}</p>}</FieldContent></Field>
-                <Field className="gap-1.5 px-4 py-2"><FieldLabel htmlFor={`${fieldId}-website`} className={sheetFieldLabelClassName}>{dictionary.organizations.website}</FieldLabel><FieldContent><Input id={`${fieldId}-website`} name="website" autoComplete="url" type="url" value={value.website_url ?? ""} onChange={(event) => setValue({ ...value, website_url: event.target.value })} placeholder={dictionary.organizations.websitePlaceholder} disabled={!editing} className={`${controlClassName} mt-1.5`} /></FieldContent></Field>
+                <Field className="gap-1.5 px-4 py-2"><FieldLabel htmlFor={`${fieldId}-website`} className={sheetFieldLabelClassName}>{dictionary.organizations.website}</FieldLabel><FieldContent>{editing ? <Input id={`${fieldId}-website`} name="website" autoComplete="url" type="url" value={value.website_url ?? ""} onChange={(event) => setValue({ ...value, website_url: event.target.value })} placeholder={dictionary.organizations.websitePlaceholder} className={`${controlClassName} mt-1.5`} /> : websiteHref ? <a id={`${fieldId}-website`} href={websiteHref} target="_blank" rel="noreferrer" className="group mt-1.5 inline-flex max-w-full cursor-pointer items-center gap-1 text-body text-foreground/75 underline-offset-4 hover:text-foreground hover:underline focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"><span className="truncate">{value.website_url}</span><ExternalLink className="size-3.5 shrink-0" aria-hidden /></a> : <p id={`${fieldId}-website`} className="mt-1.5 text-body text-foreground/75">—</p>}</FieldContent></Field>
                 <Field className="gap-1.5 px-4 py-2"><FieldLabel htmlFor={`${fieldId}-tax-identifier`} className={sheetFieldLabelClassName}>{dictionary.organizations.taxIdentifierLong}</FieldLabel><FieldContent><Input id={`${fieldId}-tax-identifier`} name="taxIdentifierValue" value={value.taxIdentifierValue ?? ""} onChange={(event) => setValue({ ...value, taxIdentifierValue: event.target.value })} placeholder={dictionary.organizations.taxIdentifierPlaceholder} inputMode="numeric" disabled={!editing} className={`${controlClassName} mt-1.5`} /></FieldContent></Field>
               </FieldGroup>
             </SheetSection>
