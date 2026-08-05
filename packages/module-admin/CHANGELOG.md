@@ -1,5 +1,13 @@
 # @brightweblabs/module-admin
 
+## 0.8.13
+
+### Patch Changes
+
+- b083ca3: Mount the shared Sonner toaster from every app shell by default, with an escape hatch for custom or disabled toast regions. Remove duplicate route-scoped toaster mounts from generated apps, localize project clipboard feedback, use warning severity for partial admin role changes, add context-specific marketing validation messages, and read Project UI failures only from the public error envelope.
+- Updated dependencies [b083ca3]
+  - @brightweblabs/app-shell@0.14.0
+
 ## 0.8.12
 
 ### Patch Changes
