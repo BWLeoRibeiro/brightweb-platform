@@ -1,5 +1,13 @@
 # @brightweblabs/app-shell
 
+## 0.14.1
+
+### Patch Changes
+
+- 9fc9ee5: Bring dashboard project-attention rows into parity with the approved prototype using reusable design-system recipes, natural-case metadata, richer context, and intentional responsive behavior.
+- Updated dependencies [db5a6ab]
+  - @brightweblabs/ui@1.4.9
+
 ## 0.14.0
 
 ### Minor Changes

@@ -1,5 +1,11 @@
 # @brightweblabs/ui
 
+## 1.4.9
+
+### Patch Changes
+
+- db5a6ab: Render phone country calling codes as fixed, non-selectable prefixes so users can only edit the subscriber number, while preserving full E.164 values for controlled and native form submissions.
+
 ## 1.4.8
 
 ### Patch Changes

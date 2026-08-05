@@ -1,5 +1,16 @@
 # @brightweblabs/module-admin
 
+## 0.8.14
+
+### Patch Changes
+
+- ba9974c: Expire stale admin invitations before listing or replacing them, and show past expiry dates as expired instead of expiring today.
+- Updated dependencies [db5a6ab]
+- Updated dependencies [9fc9ee5]
+  - @brightweblabs/ui@1.4.9
+  - @brightweblabs/app-shell@0.14.1
+  - @brightweblabs/core-auth@0.10.5
+
 ## 0.8.13
 
 ### Patch Changes
