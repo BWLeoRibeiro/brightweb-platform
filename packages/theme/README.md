@@ -25,7 +25,7 @@ The family contract starts at `--font-body`, `--font-heading`, and `--font-code`
 | `text-body-lg` | `1rem` | Emphasized or introductory body copy |
 | `text-body` | `0.875rem` | Default interface body copy |
 | `text-meta` | `0.75rem` | Secondary metadata |
-| `text-label` | `0.6875rem` | Uppercase interface label |
+| `text-label` | `0.75rem` | Compact sentence-case interface label |
 | `text-micro` | `0.625rem` | Dense supporting copy |
 | `text-kpi` | `2.75rem` | Display-face headline KPI |
 | `text-kpi-lg` | `3.5rem` | Large display-face headline KPI |

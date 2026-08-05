@@ -68,10 +68,10 @@
 @utility text-label {
   font-family: var(--font-body);
   font-size: var(--text-label);
-  font-weight: var(--font-weight-medium);
-  line-height: var(--type-leading-none);
-  text-transform: uppercase;
-  letter-spacing: var(--type-tracking-140);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--type-leading-140);
+  text-transform: none;
+  letter-spacing: var(--type-tracking-normal);
 }
 
 @utility text-micro {
@@ -151,10 +151,10 @@
 @utility text-ui-label {
   font-family: var(--font-body);
   font-size: var(--text-ui-label);
-  font-weight: var(--font-weight-medium);
-  line-height: var(--type-leading-none);
-  text-transform: uppercase;
-  letter-spacing: var(--type-tracking-140);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--type-leading-140);
+  text-transform: none;
+  letter-spacing: var(--type-tracking-normal);
 }
 
 @utility text-ui-meta {
@@ -317,10 +317,10 @@
 @utility portal-label {
   font-family: var(--font-body);
   font-size: var(--text-ui-label);
-  font-weight: var(--font-weight-medium);
-  line-height: var(--type-leading-none);
-  text-transform: uppercase;
-  letter-spacing: var(--type-tracking-140);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--type-leading-140);
+  text-transform: none;
+  letter-spacing: var(--type-tracking-normal);
   /* MQ parity: apps/portal/app/globals.css:663. */
   color: var(--muted-foreground);
 }

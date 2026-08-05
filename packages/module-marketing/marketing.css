@@ -16,11 +16,10 @@
 
   .marketing-kicker {
     color: var(--marketing-accent);
-    font-size: var(--text-label);
+    font-size: var(--text-meta);
     font-weight: var(--font-weight-semibold);
-    letter-spacing: var(--tracking-widest);
-    line-height: var(--leading-snug);
-    text-transform: uppercase;
+    letter-spacing: var(--type-tracking-normal);
+    line-height: var(--type-leading-140);
   }
 
   .marketing-ledger {
@@ -53,10 +52,9 @@
     background: var(--surface-muted, var(--muted));
     color: var(--muted-foreground);
     padding: var(--space-xs) var(--space-lg);
-    font-size: var(--text-label);
+    font-size: var(--text-meta);
     font-weight: var(--font-weight-semibold);
-    letter-spacing: var(--tracking-wide);
-    text-transform: uppercase;
+    letter-spacing: var(--type-tracking-normal);
   }
 
   .marketing-campaign-list {

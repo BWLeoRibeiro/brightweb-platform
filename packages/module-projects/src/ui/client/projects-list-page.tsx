@@ -66,7 +66,7 @@ export async function ClientProjectsListPage() {
               <p className="text-kpi text-[length:var(--text-heading-2)] font-bold">
                 {projects.items.length}
               </p>
-              <p className="mt-1.5 text-label uppercase tracking-wide text-muted-foreground">
+              <p className="mt-1.5 text-label text-muted-foreground">
                 {dictionary.total}
               </p>
             </div>
@@ -77,7 +77,7 @@ export async function ClientProjectsListPage() {
               >
                 {activeCount}
               </p>
-              <p className="mt-1.5 text-label uppercase tracking-wide text-muted-foreground">
+              <p className="mt-1.5 text-label text-muted-foreground">
                 {dictionary.active}
               </p>
             </div>
@@ -88,7 +88,7 @@ export async function ClientProjectsListPage() {
               >
                 {onTrackCount}
               </p>
-              <p className="mt-1.5 text-label uppercase tracking-wide text-muted-foreground">
+              <p className="mt-1.5 text-label text-muted-foreground">
                 {dictionary.onTime}
               </p>
             </div>

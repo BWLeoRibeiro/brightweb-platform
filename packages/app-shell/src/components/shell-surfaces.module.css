@@ -153,7 +153,7 @@
   font-family: inherit;
 }
 .navbarTitle { display: flex; align-items: flex-end; gap: var(--space-xs); }
-.navbarKicker { display: block; font-size: var(--text-micro); font-weight: var(--font-weight-heavy); line-height: var(--type-leading-130); text-transform: uppercase; letter-spacing: var(--type-tracking-160); color: var(--accent); }
+.navbarKicker { display: block; font-size: var(--text-meta); font-weight: var(--font-weight-semibold); line-height: var(--type-leading-140); color: var(--accent); }
 .navbarTitle h1 { margin: 0; font-size: var(--text-ui-shell-title); font-weight: var(--font-weight-heavy); line-height: var(--type-leading-124); letter-spacing: var(--type-tracking-n025); white-space: nowrap; color: var(--shell-navbar-fg); }
 .navbarCount { font-size: var(--text-meta); font-weight: var(--font-weight-bold); color: var(--shell-navbar-muted); }
 .navbarSpacer { flex: 1; }

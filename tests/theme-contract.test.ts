@@ -197,6 +197,9 @@ test("canonical typography roles expose complete color-independent recipes and c
   assert.match(utilities.get("text-metric")!, /font-family:\s*var\(--font-mono\);/);
   assert.match(utilities.get("text-metric-display")!, /font-family:\s*var\(--font-display\);/);
   assert.match(utilities.get("text-metric-lg")!, /font-family:\s*var\(--font-display\);/);
+  assert.match(utilities.get("text-label")!, /text-transform:\s*none;/);
+  assert.match(utilities.get("text-label")!, /letter-spacing:\s*var\(--type-tracking-normal\);/);
+  assert.doesNotMatch(utilities.get("text-label")!, /type-tracking-(?:wide|\d)/);
 
   const aliases = new Map([
     ["--text-ui-title", "--text-heading-1"],

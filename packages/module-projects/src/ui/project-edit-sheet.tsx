@@ -430,7 +430,7 @@ export function ProjectEditSheet({
           {canDeleteProject ? (
             <div className="overflow-hidden rounded-2xl border border-semantic-danger/30 bg-[color:var(--surface-danger-subtle)]">
               <div className="bg-semantic-danger px-4 py-2.5">
-                <p className="text-label font-semibold uppercase tracking-widest text-on-fill-danger">{dictionary.projectEdit.dangerZone}</p>
+                <p className="text-label font-semibold text-on-fill-danger">{dictionary.projectEdit.dangerZone}</p>
               </div>
               <div className="space-y-3 px-4 py-3">
                 <p className="text-meta text-semantic-danger-strong">

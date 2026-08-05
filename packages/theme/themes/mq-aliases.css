@@ -59,11 +59,11 @@
 
   .label {
     margin: 0;
-    font-family: var(--font-display);
-    font-size: var(--type-label);
-    font-weight: var(--font-weight-heavy);
-    line-height: var(--type-leading-120);
-    letter-spacing: var(--type-tracking-120);
-    text-transform: uppercase;
+    font-family: var(--font-body);
+    font-size: var(--text-meta);
+    font-weight: var(--font-weight-semibold);
+    line-height: var(--type-leading-140);
+    letter-spacing: var(--type-tracking-normal);
+    text-transform: none;
   }
 }

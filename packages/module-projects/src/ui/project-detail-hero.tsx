@@ -44,7 +44,7 @@ function ProjectHeroFact({ label, children, meta, className = "", avatarLabel, a
         <ProjectOwnerAvatar label={avatarLabel} size="md" roleColor={avatarRoleColor} />
       ) : null}
       <div className="min-w-0 flex-1">
-        <p className="text-micro font-semibold uppercase tracking-[var(--type-tracking-160)] text-[color:var(--project-hero-subtle)]">{label}</p>
+        <p className="text-meta font-semibold text-[color:var(--project-hero-subtle)]">{label}</p>
         <div className="mt-1 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-body font-semibold leading-snug text-[color:var(--project-hero-foreground)]">
           {children}
         </div>
@@ -252,7 +252,7 @@ export function ProjectDetailHero({ canOpenEditProject, canViewOrganization }: P
               <span className="text-data rounded-[var(--radius)] border border-[color:var(--project-hero-border)] bg-white/[0.06] px-1.5 py-0.5 text-micro font-semibold uppercase tracking-[var(--type-tracking-100)] text-[color:var(--project-hero-muted)]">
                 {projectReference}
               </span>
-              <p className="truncate text-label font-semibold uppercase tracking-[var(--type-tracking-160)] text-[color:var(--project-hero-muted)]">{project.organizationName}</p>
+              <p className="truncate text-label font-semibold text-[color:var(--project-hero-muted)]">{project.organizationName}</p>
             </div>
             <h1
               className="text-heading-1 text-foreground text-[length:var(--text-ui-title-sm)] mt-2 [text-wrap:pretty] md:text-heading-1 text-[length:var(--text-ui-preview-card-title)]"
@@ -269,7 +269,7 @@ export function ProjectDetailHero({ canOpenEditProject, canViewOrganization }: P
 
         {isCanceledProject ? (
           <div className="mt-5 rounded-[var(--radius-card)] border border-[color:var(--project-ui-color-04)] bg-[color:var(--project-ui-color-05)] px-4 py-3">
-            <p className="text-micro font-semibold uppercase tracking-[var(--type-tracking-180)] text-[color:var(--project-ui-color-06)]">{dictionary.detail.cancellationReason}</p>
+            <p className="text-meta font-semibold text-[color:var(--project-ui-color-06)]">{dictionary.detail.cancellationReason}</p>
             <p className="mt-1 text-body text-[color:var(--project-ui-color-07)]">{project.cancellationReason ?? dictionary.detail.noCancellationReason}</p>
           </div>
         ) : null}
