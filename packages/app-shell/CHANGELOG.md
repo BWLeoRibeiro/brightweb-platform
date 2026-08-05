@@ -1,5 +1,11 @@
 # @brightweblabs/app-shell
 
+## 0.11.4
+
+### Patch Changes
+
+- 4ba15c1: Restore the branded dashboard hero and bento layout, and preserve canonical typography roles when composing them with semantic text colors.
+
 ## 0.11.3
 
 ### Patch Changes
