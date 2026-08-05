@@ -1,5 +1,11 @@
 # @brightweblabs/module-crm
 
+## 0.15.11
+
+### Patch Changes
+
+- bfcd6bc: Render organization websites as normalized, keyboard-focusable external links in the organization detail view while preserving the URL input in edit mode.
+
 ## 0.15.10
 
 ### Patch Changes
