@@ -3,9 +3,12 @@ import test from "node:test";
 import type { DashboardAssignedTask } from "@brightweblabs/app-shell";
 import {
   buildTasksDashboardData,
+  getDashboardProjectAttentionReason,
   getDashboardTaskAttentionState,
+  rankDashboardAttentionProjects,
   rankDashboardAttentionTasks,
 } from "../src/dashboard.ts";
+import type { ProjectListItem } from "../src/data.ts";
 
 const now = new Date("2026-08-05T12:00:00.000Z");
 
@@ -28,6 +31,58 @@ function task(
     ...overrides,
   };
 }
+
+function project(id: string, overrides: Partial<ProjectListItem> = {}): ProjectListItem {
+  return {
+    id,
+    organizationId: "organization-1",
+    organizationName: "Organização",
+    organizationOwnerLabel: null,
+    organizationOwnerEmail: null,
+    organizationOwnerPhone: null,
+    name: id,
+    code: id.toUpperCase(),
+    status: "active",
+    health: "on_track",
+    ownerProfileId: "profile-1",
+    ownerLabel: "Ada Lovelace",
+    ownerEmail: "ada@example.test",
+    ownerPhone: null,
+    activatedAt: "2026-08-01",
+    startDate: "2026-08-01",
+    targetDate: "2026-08-20",
+    completedAt: null,
+    cancellationReason: null,
+    summary: null,
+    createdAt: "2026-08-01T12:00:00.000Z",
+    updatedAt: "2026-08-01T12:00:00.000Z",
+    taskStats: { total: 4, done: 1, overdue: 0, blocked: 0 },
+    milestoneStats: { total: 1, achieved: 0, delayed: 0 },
+    ...overrides,
+  };
+}
+
+test("project attention reasons stay project-level and prioritize the strongest signal", () => {
+  assert.equal(getDashboardProjectAttentionReason(project("overdue", { targetDate: "2026-08-04" }), now), "overdue");
+  assert.equal(getDashboardProjectAttentionReason(project("risk", { health: "at_risk" }), now), "at_risk");
+  assert.equal(getDashboardProjectAttentionReason(project("blocked", { taskStats: { total: 4, done: 1, overdue: 0, blocked: 2 } }), now), "blocked_tasks");
+  assert.equal(getDashboardProjectAttentionReason(project("unowned", { ownerProfileId: null, ownerLabel: null }), now), "without_owner");
+  assert.equal(getDashboardProjectAttentionReason(project("soon", { targetDate: "2026-08-10" }), now), "due_soon");
+  assert.equal(getDashboardProjectAttentionReason(project("healthy"), now), null);
+});
+
+test("project attention queue ranks severity before date and omits healthy projects", () => {
+  const ranked = rankDashboardAttentionProjects([
+    project("soon", { targetDate: "2026-08-10" }),
+    project("healthy"),
+    project("risk", { health: "at_risk", targetDate: "2026-08-30" }),
+    project("overdue-later", { targetDate: "2026-08-04" }),
+    project("overdue-earlier", { targetDate: "2026-08-01" }),
+    project("unowned", { ownerProfileId: null, ownerLabel: null }),
+  ], now);
+
+  assert.deepEqual(ranked.map((item) => item.id), ["overdue-earlier", "overdue-later", "risk", "unowned", "soon"]);
+});
 
 test("attention states use calendar dates and keep blocked separate from overdue", () => {
   assert.equal(getDashboardTaskAttentionState(task("blocked", { status: "blocked", dueDate: "2026-08-01" }), now), "blocked");

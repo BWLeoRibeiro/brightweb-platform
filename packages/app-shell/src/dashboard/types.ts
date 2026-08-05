@@ -2,6 +2,8 @@ import type { ComponentType } from "react";
 
 export type DashboardProjectStatus = "planned" | "active" | "blocked" | "completed" | "canceled";
 export type DashboardProjectHealth = "on_track" | "at_risk" | "off_track";
+export type DashboardProjectAttentionReason = "overdue" | "at_risk" | "blocked_tasks" | "without_owner" | "due_soon";
+export type DashboardProjectMilestoneStatus = "pending" | "in_progress" | "delayed";
 export type DashboardTaskStatus = "todo" | "in_progress" | "blocked" | "done";
 export type DashboardTaskPriority = "low" | "medium" | "high" | "urgent";
 export type DashboardTaskAttentionState = "blocked" | "overdue" | "today" | "soon";
@@ -18,6 +20,20 @@ export type DashboardProjectItem = {
   taskStats: { total: number; done: number; overdue: number; blocked: number };
 };
 
+export type DashboardProjectAttentionItem = DashboardProjectItem & {
+  attentionReason: DashboardProjectAttentionReason;
+};
+
+export type DashboardProjectMilestone = {
+  id: string;
+  projectId: string;
+  projectName: string;
+  projectCode: string | null;
+  title: string;
+  status: DashboardProjectMilestoneStatus;
+  targetDate: string;
+};
+
 export type DashboardProjectsData = {
   generatedAt: string;
   kpis: {
@@ -27,8 +43,14 @@ export type DashboardProjectsData = {
     projectsDueNext7Days: number;
     projectsWithoutOwner: number;
     projectBlockedTasks: number;
+    projectsAttention: number;
+    projectsOnTrack: number;
   };
-  projects: { overdue: DashboardProjectItem[] };
+  projects: {
+    overdue: DashboardProjectItem[];
+    attention: DashboardProjectAttentionItem[];
+    milestones: DashboardProjectMilestone[];
+  };
 };
 
 export type DashboardCrmStatusBreakdown = {
@@ -123,6 +145,7 @@ export type DashboardProjectComponents = {
   projectBaseHref?: string;
   ProjectSummaryCard: ComponentType<{ project: DashboardProjectItem }>;
   ProjectSummaryCardSkeleton: ComponentType;
+  ProjectAttentionCard?: ComponentType<{ project: DashboardProjectAttentionItem; rank: number }>;
   TaskDueMeta: ComponentType<{ dueDate: string | null; isOverdue?: boolean }>;
   TaskPriorityTag: ComponentType<{ task: Pick<DashboardAssignedTask, "status" | "priority"> }>;
   TaskStatusTag: ComponentType<{ task: Pick<DashboardAssignedTask, "status" | "blockedReason"> }>;

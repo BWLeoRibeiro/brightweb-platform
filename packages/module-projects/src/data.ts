@@ -50,6 +50,10 @@ export type ListProjectsParams = {
   organizationId?: string | null;
   ownerProfileId?: string | null;
   dueWindow?: ProjectsDueWindow;
+  dashboardAttention?: {
+    dueThrough: string;
+    includeProjectIds?: string[];
+  };
   page?: number;
   pageSize?: number;
 };
@@ -377,9 +381,12 @@ export async function listProjects(
   const runProjectsListQuery = (columns: string) => {
     let query = supabase
       .from("projects")
-      .select(columns, { count: "exact" })
-      .order("updated_at", { ascending: false })
-      .range(from, to);
+      .select(columns, { count: "exact" });
+
+    query = params.dashboardAttention
+      ? query.order("target_date", { ascending: true, nullsFirst: false })
+      : query.order("updated_at", { ascending: false });
+    query = query.range(from, to);
 
     if (params.status === undefined || params.status === null) {
       query = query.not("status", "in", "(completed,canceled)");
@@ -417,6 +424,19 @@ export async function listProjects(
       const end = new Date();
       end.setDate(now.getDate() + 30);
       query = query.gte("target_date", now.toISOString().slice(0, 10)).lte("target_date", end.toISOString().slice(0, 10));
+    }
+
+    if (params.dashboardAttention) {
+      const includeProjectIds = (params.dashboardAttention.includeProjectIds ?? [])
+        .filter((id) => /^[0-9a-f-]{36}$/i.test(id));
+      const attentionFilters = [
+        `target_date.lte.${params.dashboardAttention.dueThrough}`,
+        "health.in.(at_risk,off_track)",
+        "status.eq.blocked",
+        "owner_profile_id.is.null",
+      ];
+      if (includeProjectIds.length > 0) attentionFilters.push(`id.in.(${includeProjectIds.join(",")})`);
+      query = query.or(attentionFilters.join(","));
     }
 
     return query;

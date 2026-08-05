@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 
 import { Skeleton } from "@brightweblabs/ui";
-import type { DashboardAssignedTask, DashboardCrmData, DashboardCrmRecentContact, DashboardDataClient, DashboardInitialData, DashboardProjectComponents, DashboardProjectItem, DashboardProjectsData, DashboardSection, DashboardSurfaceContribution, DashboardTaskAttentionState, DashboardTasksData } from "./types";
+import type { DashboardAssignedTask, DashboardCrmData, DashboardCrmRecentContact, DashboardDataClient, DashboardInitialData, DashboardProjectAttentionItem, DashboardProjectComponents, DashboardProjectItem, DashboardProjectMilestone, DashboardProjectsData, DashboardSection, DashboardSurfaceContribution, DashboardTaskAttentionState, DashboardTasksData } from "./types";
 import { useDashboardData, type DashboardState } from "./use-dashboard-data";
 import { defaultDashboardDictionary, type DashboardDictionary } from "./dictionary";
 import { DashboardActionLink as PortalActionLink, DashboardSectionHeading as PortalSectionHeading, dashboardCardTitleClassName as CARD_TITLE, dashboardLabelClassName as LABEL, dashboardMonoTabularClassName as MONO } from "./primitives";
@@ -30,8 +30,7 @@ function useProjectComponents() { return useContext(ProjectComponentsContext); }
 function useDashboardDictionary() { return useContext(DashboardDictionaryContext); }
 function useProjectBaseHref() { return useProjectComponents()?.projectBaseHref ?? "/projects"; }
 function projectHref(baseHref: string, projectId?: string) { return projectId ? `${baseHref}/${projectId}` : baseHref; }
-function ProjectSummaryCard({ project }: { project: DashboardProjectItem }) { const value = useProjectComponents(); return value ? <value.ProjectSummaryCard project={project} /> : null; }
-function ProjectSummaryCardSkeleton() { const value = useProjectComponents(); return value ? <value.ProjectSummaryCardSkeleton /> : null; }
+function ProjectAttentionCard({ project, rank }: { project: DashboardProjectAttentionItem; rank: number }) { const value = useProjectComponents(); return value?.ProjectAttentionCard ? <value.ProjectAttentionCard project={project} rank={rank} /> : value ? <value.ProjectSummaryCard project={project} /> : null; }
 function DashboardTaskListRow(props: { task: DashboardAssignedTask; href: string; attentionState?: DashboardTaskAttentionState; attentionLabel?: string }) { const value = useProjectComponents(); return value ? <value.DashboardTaskRow {...props} /> : null; }
 
 /* ──────────────────────────────────────────────────────────────────
@@ -90,10 +89,6 @@ function initialsOf(name: string | null | undefined, fallback = "?") {
   if (parts.length === 0) return fallback;
   if (parts.length === 1) return parts[0]!.slice(0, 2).toUpperCase();
   return (parts[0]![0]! + parts[parts.length - 1]![0]!).toUpperCase();
-}
-
-function codeOf(p: Pick<DashboardProjectItem, "id" | "code">) {
-  return p.code ?? p.id.slice(0, 8).toUpperCase();
 }
 
 function healthToTone(h: DashboardProjectItem["health"]): VisualTone {
@@ -614,11 +609,9 @@ function TasksTable({
 
 /* ─── Milestones panel ───────────────────────────────────────────── */
 
-type Milestone = {
-  projectId: string;
+type Milestone = DashboardProjectMilestone & {
   day: string;
   date: string;
-  title: string;
   code: string;
   highlight?: boolean;
 };
@@ -626,17 +619,15 @@ type Milestone = {
 function buildMilestones(projects: DashboardProjectsData | null): Milestone[] {
   if (!projects) return [];
   const rows: Milestone[] = [];
-  for (const p of projects.projects.overdue) {
-    if (!p.targetDate) continue;
-    const d = new Date(p.targetDate);
+  for (const milestone of projects.projects.milestones) {
+    const d = new Date(milestone.targetDate);
     if (Number.isNaN(d.getTime())) continue;
     rows.push({
-      projectId: p.id,
-      day: formatWeekday(p.targetDate),
+      ...milestone,
+      day: formatWeekday(milestone.targetDate),
       date: String(d.getDate()).padStart(2, "0"),
-      title: p.name,
-      code: codeOf(p),
-      highlight: isDueThisWeek(p.targetDate),
+      code: milestone.projectCode ?? milestone.projectId.slice(0, 8).toUpperCase(),
+      highlight: isDueThisWeek(milestone.targetDate),
     });
   }
   return rows.slice(0, 6);
@@ -699,7 +690,7 @@ function MilestonesPanel({ items, isLoading = false, className = "" }: { items: 
       ) : (
         <ul className="relative mt-5 min-h-0 flex-1 space-y-1.5 overflow-hidden">
           {items.map((m) => (
-            <li key={`${m.projectId}-${m.date}`}>
+            <li key={m.id}>
               <Link
                 href={projectHref(projectBaseHref, m.projectId)}
                 prefetch={false}
@@ -727,7 +718,7 @@ function MilestonesPanel({ items, isLoading = false, className = "" }: { items: 
                 <div className="relative min-w-0 flex-1">
                   <p className="truncate text-body text-[length:var(--text-ui-action)] font-semibold">{m.title}</p>
                   <p className={`${MONO} truncate text-label`} style={{ color: "var(--project-hero-muted)" }}>
-                    {m.code}
+                    {m.projectName} · {m.code}
                   </p>
                 </div>
                 <ArrowUpRight className="relative h-3.5 w-3.5 shrink-0 opacity-0 transition group-hover:opacity-70" />
@@ -742,34 +733,78 @@ function MilestonesPanel({ items, isLoading = false, className = "" }: { items: 
 
 /* ─── Projects tab ───────────────────────────────────────────────── */
 
+function ProjectsMilestonesList({ items, isLoading }: { items: Milestone[]; isLoading: boolean }) {
+  const dictionary = useDashboardDictionary();
+  const projectBaseHref = useProjectBaseHref();
+  return (
+    <section className={`${SURFACE} overflow-hidden`} aria-labelledby="dashboard-project-milestones">
+      <div className="flex min-h-16 items-center justify-between border-b border-[color:var(--border)] px-5 py-4">
+        <div className="flex items-center gap-2.5">
+          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[color:var(--dashboard-milestone-icon)] text-[color:var(--accent)]">
+            <Flag className="h-3.5 w-3.5" />
+          </span>
+          <h3 id="dashboard-project-milestones" className={LABEL}>{dictionary.milestones.title}</h3>
+        </div>
+        <span className={`${MONO} flex h-7 min-w-7 items-center justify-center rounded-full bg-[color:var(--muted)] px-2 text-label font-bold text-[color:var(--foreground)]`}>
+          {items.length}
+        </span>
+      </div>
+
+      {isLoading && items.length === 0 ? (
+        <div className="space-y-2 p-5">
+          {[0, 1, 2].map((index) => <Skeleton key={index} className="h-14" rounded="0.75rem" />)}
+        </div>
+      ) : items.length === 0 ? (
+        <div className="flex min-h-56 flex-col items-center justify-center gap-3 px-6 text-center">
+          <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[color:var(--muted)] text-[color:var(--muted-foreground)]">
+            <Flag className="h-4 w-4" />
+          </span>
+          <div>
+            <p className="text-body font-semibold text-[color:var(--foreground)]">{dictionary.milestones.emptyTitle}</p>
+            <p className="mt-1 text-meta text-[color:var(--muted-foreground)]">{dictionary.milestones.emptyDescription}</p>
+          </div>
+        </div>
+      ) : (
+        <ol className="px-5 py-1">
+          {items.map((milestone) => (
+            <li key={milestone.id} className="border-b border-[color:var(--border)] last:border-b-0">
+              <Link
+                href={projectHref(projectBaseHref, milestone.projectId)}
+                prefetch={false}
+                className="group grid grid-cols-[3.25rem_0.5rem_minmax(0,1fr)_1rem] items-start gap-2.5 rounded-[var(--radius)] py-4 transition hover:translate-x-0.5 hover:text-[color:var(--primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--ring)] focus-visible:ring-offset-2"
+              >
+                <span className={`${MONO} pt-0.5 text-label font-bold text-[color:var(--primary)]`}>{formatShortDate(milestone.targetDate)}</span>
+                <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-[color:var(--accent)] shadow-[0_0_0_4px_var(--dashboard-milestone-date)]" />
+                <span className="min-w-0">
+                  <strong className="block truncate text-body font-semibold text-[color:var(--foreground)]">{milestone.title}</strong>
+                  <span className="mt-0.5 block truncate text-meta text-[color:var(--muted-foreground)]">{milestone.projectName} · {milestone.code}</span>
+                </span>
+                <ArrowUpRight className="mt-0.5 h-3.5 w-3.5 opacity-0 transition group-hover:opacity-70 group-focus-visible:opacity-70" />
+              </Link>
+            </li>
+          ))}
+        </ol>
+      )}
+    </section>
+  );
+}
+
 function ProjectsView({ projects, isLoading }: { projects: DashboardProjectsData | null; isLoading: boolean }) {
   const dictionary = useDashboardDictionary();
   const projectBaseHref = useProjectBaseHref();
   const kpis = projects?.kpis;
-  const list = projects?.projects.overdue ?? [];
+  const attention = projects?.projects.attention ?? [];
+  const milestones = buildMilestones(projects);
+  const openProjects = (kpis?.projectsOnTrack ?? 0) + (kpis?.projectsAttention ?? 0);
+  const onTrackPercentage = openProjects > 0 ? Math.round(((kpis?.projectsOnTrack ?? 0) / openProjects) * 100) : 100;
+  const hiddenAttentionCount = Math.max(0, (kpis?.projectsAttention ?? 0) - attention.length);
+  const milestonesDueThisWeek = milestones.filter((milestone) => isDueThisWeek(milestone.targetDate)).length;
 
   return (
     <div className="space-y-6">
       <PortalSectionHeading
-        title={dictionary.projects.attentionTitle}
-        subtitle={
-          <>
-            <span className={`${MONO} font-semibold text-[color:var(--project-risk-overdue-strong)]`}>
-              {kpis?.projectsOverdue ?? 0}
-            </span>{" "}
-            {dictionary.projects.overdue}
-            <span className="mx-1.5 opacity-50">·</span>
-            <span className={`${MONO} font-semibold text-[color:var(--project-risk-at-risk-strong)]`}>
-              {kpis?.projectsAtRisk ?? 0}
-            </span>{" "}
-            {dictionary.projects.atRisk}
-            <span className="mx-1.5 opacity-50">·</span>
-            <span className={`${MONO} font-semibold text-[color:var(--accent)]`}>
-              {kpis?.projectsDueNext7Days ?? 0}
-            </span>{" "}
-            {dictionary.projects.dueInSevenDays}
-          </>
-        }
+        title={dictionary.projects.stateTitle}
+        subtitle={dictionary.projects.stateSubtitle}
         action={
           <PortalActionLink href={projectBaseHref} prefetch={false}>
             {dictionary.projects.viewAll}
@@ -778,21 +813,74 @@ function ProjectsView({ projects, isLoading }: { projects: DashboardProjectsData
         }
       />
 
-      {isLoading && list.length === 0 ? (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          {[0, 1, 2, 3].map((i) => (
-            <ProjectSummaryCardSkeleton key={i} />
-          ))}
+      <section className="brand-panel relative grid overflow-hidden rounded-[var(--radius-panel)] px-6 py-5 text-[color:var(--project-hero-foreground)] md:grid-cols-[minmax(10rem,0.7fr)_minmax(18rem,2fr)_minmax(10rem,0.8fr)] md:items-center md:gap-8">
+        <span aria-hidden className="pointer-events-none absolute -right-20 -top-32 h-64 w-64 rounded-full border border-[color:var(--project-hero-border)] bg-[image:var(--dashboard-hero-glow)] opacity-50" />
+        <div className="relative">
+          <span className="text-label font-bold uppercase tracking-[var(--type-tracking-100)] text-[color:var(--project-hero-muted)]">{dictionary.projects.inProgress}</span>
+          <div className="mt-1 flex items-baseline gap-2">
+            <strong className={`${MONO} text-kpi-lg leading-none`}>{isLoading && !projects ? "–" : openProjects}</strong>
+            <span className="text-meta text-[color:var(--project-hero-muted)]">{dictionary.projects.openProjects}</span>
+          </div>
         </div>
-      ) : list.length === 0 ? (
-        <p className="text-body text-[color:var(--muted-foreground)]">{dictionary.projects.noneNeedAttention(kpis?.projectsActive ?? 0)}</p>
-      ) : (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          {list.map((project) => (
-            <ProjectSummaryCard key={project.id} project={project} />
-          ))}
+
+        <div className="relative mt-5 md:mt-0">
+          <div className="mb-2.5 flex items-center justify-between gap-4 text-meta font-semibold">
+            <span>{kpis?.projectsOnTrack ?? 0} {dictionary.projects.onTrack}</span>
+            <span className="text-[color:var(--accent)]">{kpis?.projectsAttention ?? 0} {(kpis?.projectsAttention ?? 0) === 1 ? dictionary.projects.needsAttentionOne : dictionary.projects.needsAttentionMany}</span>
+          </div>
+          <div className="flex h-2.5 gap-1 overflow-hidden rounded-full bg-[color:var(--project-hero-surface-raised)]">
+            <span className="h-full rounded-full bg-[color:var(--brand-lime,var(--project-state-active))] transition-[width]" style={{ width: `${onTrackPercentage}%` }} />
+            <span className="h-full flex-1 rounded-full bg-[color:var(--project-risk-at-risk)]" />
+          </div>
+          <p className="mt-2.5 text-label text-[color:var(--project-hero-muted)]">{dictionary.projects.healthBasis}</p>
         </div>
-      )}
+
+        <div className="relative mt-5 md:mt-0">
+          <span className="text-label font-bold uppercase tracking-[var(--type-tracking-100)] text-[color:var(--project-hero-muted)]">{dictionary.projects.nextSevenDays}</span>
+          <div className="mt-1 flex items-baseline gap-2">
+            <strong className={`${MONO} text-kpi-lg leading-none`}>{milestonesDueThisWeek}</strong>
+            <span className="text-meta text-[color:var(--project-hero-muted)]">{milestonesDueThisWeek === 1 ? dictionary.projects.milestoneOne : dictionary.projects.milestoneMany}</span>
+          </div>
+        </div>
+      </section>
+
+      <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[minmax(0,1.55fr)_minmax(19rem,0.85fr)]">
+        <section className={`${SURFACE} overflow-hidden`} aria-labelledby="dashboard-project-attention">
+          <div className="flex min-h-16 items-center justify-between border-b border-[color:var(--border)] px-5 py-4">
+            <h3 id="dashboard-project-attention" className={LABEL}>{dictionary.projects.attentionQueueTitle}</h3>
+            <span className={`${MONO} flex h-7 min-w-7 items-center justify-center rounded-full bg-[color:var(--muted)] px-2 text-label font-bold text-[color:var(--foreground)]`}>
+              {kpis?.projectsAttention ?? 0}
+            </span>
+          </div>
+
+          {isLoading && attention.length === 0 ? (
+            <div>
+              {[0, 1, 2].map((index) => <Skeleton key={index} className="h-32 border-b border-[color:var(--border)] last:border-b-0" rounded="0" />)}
+            </div>
+          ) : attention.length === 0 ? (
+            <div className="flex min-h-64 flex-col justify-center bg-[color:var(--project-surface-secondary)] px-7 py-8">
+              <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[color:var(--project-health-on-track)] text-[color:var(--primary-foreground)]">
+                <CheckCircle2 className="h-5 w-5" />
+              </span>
+              <h3 className="mt-4 text-title font-bold text-[color:var(--foreground)]">{dictionary.projects.allOnTrackTitle}</h3>
+              <p className="mt-1 text-body text-[color:var(--muted-foreground)]">{dictionary.projects.allOnTrackDescription(kpis?.projectsActive ?? 0)}</p>
+            </div>
+          ) : (
+            <div>
+              {attention.map((project, index) => <ProjectAttentionCard key={project.id} project={project} rank={index + 1} />)}
+              {hiddenAttentionCount > 0 ? (
+                <div className="flex justify-center border-t border-[color:var(--border)] px-5 py-3">
+                  <Link href={projectBaseHref} prefetch={false} className="text-meta font-semibold text-[color:var(--primary)] hover:underline">
+                    {dictionary.projects.moreAttention(hiddenAttentionCount)}
+                  </Link>
+                </div>
+              ) : null}
+            </div>
+          )}
+        </section>
+
+        <ProjectsMilestonesList items={milestones} isLoading={isLoading && !projects} />
+      </div>
     </div>
   );
 }

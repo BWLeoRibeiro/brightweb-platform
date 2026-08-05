@@ -43,6 +43,23 @@ function isDashboardProjectItem(value: unknown) {
     && hasCounts(value.taskStats, ["total", "done", "overdue", "blocked"]);
 }
 
+function isDashboardProjectAttentionItem(value: unknown) {
+  return isRecord(value)
+    && isDashboardProjectItem(value)
+    && isOneOf(value.attentionReason, ["overdue", "at_risk", "blocked_tasks", "without_owner", "due_soon"]);
+}
+
+function isDashboardProjectMilestone(value: unknown) {
+  return isRecord(value)
+    && isString(value.id)
+    && isString(value.projectId)
+    && isString(value.projectName)
+    && isNullableString(value.projectCode)
+    && isString(value.title)
+    && isOneOf(value.status, ["pending", "in_progress", "delayed"])
+    && isString(value.targetDate);
+}
+
 function isDashboardProjectsData(value: unknown): value is DashboardProjectsData {
   return isRecord(value)
     && isString(value.generatedAt)
@@ -53,10 +70,16 @@ function isDashboardProjectsData(value: unknown): value is DashboardProjectsData
       "projectsDueNext7Days",
       "projectsWithoutOwner",
       "projectBlockedTasks",
+      "projectsAttention",
+      "projectsOnTrack",
     ])
     && isRecord(value.projects)
     && Array.isArray(value.projects.overdue)
-    && value.projects.overdue.every(isDashboardProjectItem);
+    && value.projects.overdue.every(isDashboardProjectItem)
+    && Array.isArray(value.projects.attention)
+    && value.projects.attention.every(isDashboardProjectAttentionItem)
+    && Array.isArray(value.projects.milestones)
+    && value.projects.milestones.every(isDashboardProjectMilestone);
 }
 
 function isDashboardCrmRecentChange(value: unknown) {
