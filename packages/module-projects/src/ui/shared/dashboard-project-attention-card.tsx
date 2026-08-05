@@ -9,7 +9,6 @@ import { getCompletionPercent } from "./project-progress";
 import { ProjectOwnerAvatar } from "./project-owner-avatar";
 import { ProjectPill } from "./project-pill";
 import { PROJECT_RISK_META, resolveProjectRisk } from "./project-risk";
-import { monoTabularClassName as MONO } from "./typography";
 
 const ATTENTION_META = {
   overdue: {
@@ -41,6 +40,15 @@ function formatShortDate(iso: string | null) {
   return new Intl.DateTimeFormat("pt-PT", { day: "2-digit", month: "short" }).format(date);
 }
 
+function getCalendarDayDifference(iso: string | null) {
+  if (!iso) return null;
+  const target = new Date(`${iso.slice(0, 10)}T00:00:00`);
+  if (Number.isNaN(target.getTime())) return null;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return Math.round((target.getTime() - today.getTime()) / 86_400_000);
+}
+
 export function DashboardProjectAttentionCard({
   project,
   rank,
@@ -62,6 +70,8 @@ export function DashboardProjectAttentionCard({
   const risk = resolveProjectRisk(project);
   const riskMeta = risk ? PROJECT_RISK_META[risk] : null;
   const progress = getCompletionPercent(project.taskStats.done, project.taskStats.total);
+  const remainingTasks = Math.max(0, project.taskStats.total - project.taskStats.done);
+  const targetDayDifference = getCalendarDayDifference(project.targetDate);
   const reason = (() => {
     switch (project.attentionReason) {
       case "overdue": return dictionary.dashboard.reasons.overdue;
@@ -80,64 +90,85 @@ export function DashboardProjectAttentionCard({
       case "due_soon": return dictionary.dashboard.badges.dueSoon;
     }
   })();
+  const detail = (() => {
+    switch (project.attentionReason) {
+      case "overdue":
+        return targetDayDifference === -1
+          ? dictionary.dashboard.details.overdueYesterday
+          : dictionary.dashboard.details.overdueDaysAgo(Math.max(1, Math.abs(targetDayDifference ?? 1)));
+      case "at_risk":
+        return dictionary.dashboard.details.atRisk(targetDayDifference, remainingTasks);
+      case "blocked_tasks":
+        return dictionary.dashboard.details.blockedTasks(remainingTasks);
+      case "without_owner":
+        return dictionary.dashboard.details.withoutOwner(targetDayDifference);
+      case "due_soon":
+        return dictionary.dashboard.details.dueSoon(targetDayDifference, remainingTasks);
+    }
+  })();
 
   return (
     <Link
       href={navigation.detailHref(project.id)}
       prefetch={false}
-      className="group relative grid min-h-[8rem] grid-cols-[2rem_minmax(0,1fr)_1.75rem] items-center gap-3 overflow-hidden border-b border-[color:var(--border)] px-4 py-4 transition hover:z-[1] hover:-translate-y-px hover:shadow-[0_12px_30px_var(--project-ui-color-72)] focus-visible:z-[2] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--ring)] last:border-b-0 lg:grid-cols-[2rem_minmax(0,1.2fr)_minmax(12rem,0.8fr)_1.75rem]"
-      style={{ background: attention.surface } as CSSProperties}
+      className="project-attention-row group focus-visible:z-[2] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--ring)]"
+      style={{
+        "--project-attention-tone": attention.tone,
+        "--project-attention-surface": attention.surface,
+      } as CSSProperties}
     >
       <span
         aria-hidden
-        className="text-data-sm self-start pt-0.5 font-black tracking-[var(--type-tracking-080)]"
-        style={{ color: attention.tone }}
+        className="project-attention-rank"
       >
         {String(rank).padStart(2, "0")}
-        <span className="mt-2 block h-0.5 w-3 rounded-full" style={{ background: attention.tone }} />
+        <span />
       </span>
 
-      <div className="min-w-0">
-        <p className="truncate text-label text-[color:var(--muted-foreground)]">{project.organizationName}</p>
-        <h3 className="mt-0.5 truncate text-title font-bold text-[color:var(--foreground)]">{project.name}</h3>
-        <p className="mt-2 flex items-start gap-2 text-meta leading-[var(--type-leading-140)] text-[color:var(--muted-foreground)]">
-          <span aria-hidden className="mt-[0.4rem] h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: attention.tone }} />
-          <span><strong className="text-[color:var(--foreground)]">{reason}</strong></span>
+      <div className="project-attention-summary">
+        <p className="project-attention-company">{project.organizationName}</p>
+        <h3 className="project-attention-title">{project.name}</h3>
+        <p className="project-attention-reason">
+          <span aria-hidden className="project-attention-reason-dot" />
+          <span><strong>{reason}</strong> {detail}</span>
         </p>
       </div>
 
-      <div className="col-span-2 col-start-2 min-w-0 pt-1 lg:col-span-1 lg:col-start-auto lg:pt-0">
-        <div className="flex min-w-0 items-center gap-2">
-          <span className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap text-meta font-semibold text-[color:var(--foreground)]">
-            <span className="h-[7px] w-[7px] shrink-0 rounded-full" style={{ background: status.dot }} />
+      <div className="project-attention-meta">
+        <div className="project-attention-badges">
+          <span className="project-attention-status">
+            <span aria-hidden style={{ background: status.dot }} />
             {status.label}
           </span>
           <ProjectPill
-            size="small"
+            size="normal"
+            dotClassName="project-attention-pill-dot"
             className="border-[color:var(--tint-soft-border)] bg-[color:var(--tint-soft-bg)] font-bold text-[color:var(--tint)]"
             style={{ "--tint": riskMeta?.var ?? attention.tone } as CSSProperties}
           >
-            {riskMeta?.label ?? attentionLabel}
+            {attentionLabel}
           </ProjectPill>
         </div>
 
-        <div className="mt-2.5 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1.5">
-          <span className="inline-flex min-w-0 items-center gap-2 text-meta text-[color:var(--muted-foreground)]">
-            <ProjectOwnerAvatar label={project.ownerLabel} size="sm" roleColor="manager" />
+        <div className="project-attention-progress">
+          <span className="project-attention-owner">
+            <ProjectOwnerAvatar className="project-attention-avatar" label={project.ownerLabel} size="sm" roleColor="manager" />
             <span className="truncate">{project.ownerLabel ?? dictionary.detail.noOwnerLowercase}</span>
           </span>
-          <strong className={`${MONO} text-meta text-[color:var(--foreground)]`}>{progress}%</strong>
-          <span className="col-span-2 h-1 overflow-hidden rounded-full bg-[color:var(--project-ui-color-71)]">
+          <strong className="project-attention-progress-value">{progress}%</strong>
+          <span className="project-attention-track">
             <span className="block h-full rounded-full bg-[color:var(--accent)]" style={{ width: `${progress}%` }} />
           </span>
-          <span className="col-span-2 inline-flex justify-end gap-1.5 text-meta font-bold" style={{ color: attention.tone }}>
-            <CalendarDays className="h-3.5 w-3.5 opacity-70" strokeWidth={1.75} />
-            <span className={MONO}>{formatShortDate(project.targetDate)}</span>
+          <span className="project-attention-date">
+            <CalendarDays aria-hidden className="h-3 w-3 opacity-70" strokeWidth={1.75} />
+            <span>{formatShortDate(project.targetDate)}</span>
           </span>
         </div>
       </div>
 
-      <ArrowUpRight className="col-start-3 row-start-1 h-3.5 w-3.5 self-start justify-self-end text-[color:var(--muted-foreground)] opacity-0 transition group-hover:text-[color:var(--accent)] group-hover:opacity-100 group-focus-visible:opacity-100 lg:col-start-4" />
+      <span aria-hidden className="project-attention-arrow">
+        <ArrowUpRight className="h-3.5 w-3.5" />
+      </span>
     </Link>
   );
 }
