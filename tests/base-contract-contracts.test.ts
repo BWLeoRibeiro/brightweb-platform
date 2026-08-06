@@ -1268,7 +1268,11 @@ test("CRM uses aggregate RPCs and canonical activity events for timeline search"
   };
 
   const stats = await getCrmContactStatusStats(supabase as never);
-  const timeline = await listCrmStatusTimeline(supabase as never, { search: "Ana", limit: 25 });
+  const timeline = await listCrmStatusTimeline(supabase as never, {
+    search: "Ana",
+    limit: 25,
+    since: "2026-07-29T00:00:00.000Z",
+  });
   assert.equal(stats.total, 9);
   assert.equal(stats.activity?.newLast30Days, 6);
   assert.equal(timeline[0]?.contact_label, "Ana Silva");
