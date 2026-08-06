@@ -54,7 +54,7 @@ export function DashboardTaskRow({
         <TaskPriorityTag task={task} />
         <TaskStatusTag task={task} />
         <span
-          className="text-label text-muted-foreground ml-auto max-w-[8rem] truncate font-mono tracking-[var(--type-tracking-060)]"
+          className="text-label text-muted-foreground ml-auto max-w-[8rem] truncate font-mono"
           title={task.projectCode ?? task.projectName}
         >
           {task.projectCode ?? task.projectName}
