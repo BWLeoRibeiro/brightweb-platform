@@ -69,6 +69,20 @@ test("project clipboard feedback is localized and action-specific", () => {
   );
 });
 
+test("project summary cards use native navigation without swallowing their copy action", () => {
+  const source = readFileSync(
+    join(process.cwd(), "packages/module-projects/src/ui/shared/project-summary-card.tsx"),
+    "utf8",
+  );
+
+  assert.match(source, /<Card asChild variant="interactive">/);
+  assert.match(source, /<Link[\s\S]*href=\{projectHref\}[\s\S]*prefetch=\{false\}/);
+  assert.match(source, /className="after:absolute after:inset-0/);
+  assert.match(source, /<button[\s\S]*onClick=\{copyProjectId\}/);
+  assert.match(source, /event\.preventDefault\(\)[\s\S]*event\.stopPropagation\(\)/);
+  assert.doesNotMatch(source, /role="link"|useRouter|onKeyDown=\{openProjectFromKeyboard\}/);
+});
+
 test("project detail hero only renders selected project dates and combines complete ranges", () => {
   const heroSource = readFileSync(
     join(process.cwd(), "packages/module-projects/src/ui/project-detail-hero.tsx"),

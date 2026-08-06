@@ -9,6 +9,7 @@ import test from "node:test";
 import { BreadcrumbLink } from "../packages/ui/src/components/breadcrumb.tsx";
 import { Card } from "../packages/ui/src/components/card.tsx";
 import { PhoneInput } from "../packages/ui/src/components/phone-input.tsx";
+import { SurfaceCard } from "../packages/ui/src/components/surface-card.tsx";
 import { cn as appShellCn } from "../packages/app-shell/src/lib/utils.ts";
 import { cn as uiCn } from "../packages/ui/src/lib/utils.ts";
 import { getInitials, getPaginationWindow, getRoleLabel, resolveRoleToken } from "../packages/ui/src/lib/patterns.ts";
@@ -241,7 +242,17 @@ test("Card composes onto native semantic elements and exposes finite visual vari
 
 test("SurfaceCard delegates to the canonical Card recipe", async () => {
   const source = await readFile(path.join(repoRoot, "packages/ui/src/components/surface-card.tsx"), "utf8");
+  const html = renderToStaticMarkup(
+    h(SurfaceCard, { isLight: true, id: "legacy-surface", className: "consumer-class" }, "Legacy content"),
+  );
+
   assert.match(source, /<Card asChild/);
   assert.match(source, /<article/);
   assert.doesNotMatch(source, /return <article/);
+  assert.match(html, /^<article\b/);
+  assert.match(html, /id="legacy-surface"/);
+  assert.match(html, /data-variant="light"/);
+  assert.match(html, /data-density="default"/);
+  assert.match(html, /data-motion="enter"/);
+  assert.match(html, /class="[^"]*surface-card[^"]*is-light[^"]*consumer-class[^"]*"/);
 });
