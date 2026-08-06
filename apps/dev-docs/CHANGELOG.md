@@ -1,5 +1,12 @@
 # dev-docs
 
+## 0.0.20
+
+### Patch Changes
+
+- Updated dependencies [cc7d41c]
+  - @brightweblabs/ui@1.5.0
+
 ## 0.0.19
 
 ### Patch Changes

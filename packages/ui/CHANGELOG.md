@@ -1,5 +1,16 @@
 # @brightweblabs/ui
 
+## 1.5.0
+
+### Minor Changes
+
+- cc7d41c: Standardize application surfaces on a single polymorphic Card recipe with explicit visual, density, and motion variants. Migrate dashboard and module cards to the shared foundation, preserve native link behavior for interactive project cards, and make dashboard project-card styling independent of route-level stylesheet loading.
+
+### Patch Changes
+
+- Updated dependencies [cc7d41c]
+  - @brightweblabs/theme@0.8.1
+
 ## 1.4.11
 
 ### Patch Changes

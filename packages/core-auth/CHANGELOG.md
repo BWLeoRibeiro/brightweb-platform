@@ -1,5 +1,13 @@
 # @brightweblabs/core-auth
 
+## 0.10.8
+
+### Patch Changes
+
+- cc7d41c: Standardize application surfaces on a single polymorphic Card recipe with explicit visual, density, and motion variants. Migrate dashboard and module cards to the shared foundation, preserve native link behavior for interactive project cards, and make dashboard project-card styling independent of route-level stylesheet loading.
+- Updated dependencies [cc7d41c]
+  - @brightweblabs/ui@1.5.0
+
 ## 0.10.7
 
 ### Patch Changes
