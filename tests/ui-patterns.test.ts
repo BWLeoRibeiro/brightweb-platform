@@ -7,6 +7,7 @@ import { act, create } from "react-test-renderer";
 import test from "node:test";
 
 import { BreadcrumbLink } from "../packages/ui/src/components/breadcrumb.tsx";
+import { Card } from "../packages/ui/src/components/card.tsx";
 import { PhoneInput } from "../packages/ui/src/components/phone-input.tsx";
 import { cn as appShellCn } from "../packages/app-shell/src/lib/utils.ts";
 import { cn as uiCn } from "../packages/ui/src/lib/utils.ts";
@@ -215,4 +216,32 @@ test("BreadcrumbLink uses the direct Slot dependency and preserves composition",
   assert.match(html, /data-slot="breadcrumb-link"/);
   assert.match(html, /class="[^"]*custom-link[^"]*"/);
   assert.doesNotMatch(html, /<a\b[^>]*><a\b/);
+});
+
+test("Card composes onto native semantic elements and exposes finite visual variants", async () => {
+  const source = await readFile(path.join(repoRoot, "packages/ui/src/components/card.tsx"), "utf8");
+  const linkedCard = renderToStaticMarkup(
+    h(Card, { asChild: true, variant: "interactive", density: "compact" },
+      h("a", { href: "/projects" }, "Projects"),
+    ),
+  );
+
+  assert.match(source, /import \{ Slot \} from "@radix-ui\/react-slot"/);
+  assert.match(linkedCard, /^<a\b/);
+  assert.match(linkedCard, /href="\/projects"/);
+  assert.match(linkedCard, /data-slot="card"/);
+  assert.match(linkedCard, /data-variant="interactive"/);
+  assert.match(linkedCard, /data-density="compact"/);
+  assert.doesNotMatch(linkedCard, /<div\b/);
+
+  for (const variant of ["default", "light", "elevated", "interactive", "insight"]) {
+    assert.match(source, new RegExp(`\\b${variant}:`));
+  }
+});
+
+test("SurfaceCard delegates to the canonical Card recipe", async () => {
+  const source = await readFile(path.join(repoRoot, "packages/ui/src/components/surface-card.tsx"), "utf8");
+  assert.match(source, /<Card asChild/);
+  assert.match(source, /<article/);
+  assert.doesNotMatch(source, /return <article/);
 });

@@ -581,6 +581,7 @@ test("dashboard attention cards use the canonical editorial attention-row recipe
   const dashboardStyles = readFileSync(join(process.cwd(), "packages/app-shell/src/dashboard/dashboard.css"), "utf8");
 
   assert.match(card, /className="project-attention-row group/);
+  assert.match(card, /import "\.\.\/\.\.\/\.\.\/tokens\.css"/);
   assert.match(card, /<ProjectPill[\s\S]*size="normal"[\s\S]*dotClassName="project-attention-pill-dot"/);
   assert.match(card, /className="project-attention-company">\{formatNaturalDisplayName\(project\.organizationName\)\}/);
   assert.match(card, /<strong>\{reason\}<\/strong> \{detail\}/);

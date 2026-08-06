@@ -8,8 +8,6 @@ import { defaultCrmUiDictionary } from "./dictionary";
 import { CrmActivityCard } from "./activity-card";
 import type { CrmOrganization, CrmUiDictionary } from "./types";
 
-const CRM_SIDEBAR_SURFACE =
-  "rounded-[var(--radius-card)] border border-border-hairline bg-[color:var(--project-surface-secondary)] shadow-none";
 const CRM_CONTENT_REVEAL =
   "motion-safe:animate-in motion-safe:fade-in-0 motion-safe:slide-in-from-bottom-1 motion-safe:duration-200";
 
@@ -42,7 +40,7 @@ export function CrmDashboardSidebar({
 }: CrmDashboardSidebarProps) {
   return (
     <div className="min-w-0 space-y-[var(--crm-sidebar-gap)] self-start md:col-span-1">
-      <SurfaceCard aria-busy={isRefreshing} className={`${CRM_SIDEBAR_SURFACE} self-start p-0`}>
+      <SurfaceCard aria-busy={isRefreshing} density="none" className="self-start bg-[color:var(--project-surface-secondary)] p-0 shadow-none">
         <div className="px-4 pb-2 pt-4">
           <SectionHeading
             icon={Clock}
@@ -84,7 +82,7 @@ export function CrmDashboardSidebar({
         </div>
       </SurfaceCard>
 
-      <SurfaceCard aria-busy={isLoadingOrganizations} className={`${CRM_SIDEBAR_SURFACE} self-start p-0`}>
+      <SurfaceCard aria-busy={isLoadingOrganizations} density="none" className="self-start bg-[color:var(--project-surface-secondary)] p-0 shadow-none">
         <div className="px-4 pb-2 pt-4">
           <SectionHeading
             icon={Building2}

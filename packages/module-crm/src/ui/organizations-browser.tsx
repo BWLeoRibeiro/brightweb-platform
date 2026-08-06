@@ -106,7 +106,10 @@ export function CrmOrganizationsBrowser({ open, organizations, loading = false, 
             {visibleOrganizations.map((organization) => (
               <SurfaceCard
                 key={organization.id}
-                className={`relative p-4 transition-[transform,background-color,border-color,box-shadow] ${onSelect ? "group cursor-pointer hover:-translate-y-0.5 hover:border-border-strong hover:bg-surface-hover hover:shadow-[0_12px_30px_var(--elevate-2)] focus-within:border-border-strong focus-within:shadow-[0_12px_30px_var(--elevate-2)]" : ""}`}
+                variant={onSelect ? "interactive" : "default"}
+                density="compact"
+                motion="none"
+                className={`relative p-4 ${onSelect ? "group" : ""}`}
               >
                 {onSelect ? (
                   <button

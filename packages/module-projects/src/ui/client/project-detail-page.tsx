@@ -18,6 +18,7 @@ import {
   Users,
 } from "lucide-react";
 import { requireProjectReadAccess } from "@brightweblabs/core-auth/server";
+import { Card } from "@brightweblabs/ui";
 import type { MilestoneStatus, ProjectLinkKind } from "../../contracts";
 import {
   getClientProjectHealth,
@@ -64,19 +65,21 @@ function getInitials(label: string): string {
 
 function ErrorPage({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <section className="client-projects-panel panel preview-glass-card">
-      <div className="panel-inner space-y-4">
-        <Link
-          href="/account/projetos"
-          className="inline-flex items-center gap-2 text-body font-semibold text-primary hover:underline"
-        >
-          <ArrowLeft className="size-4" />
-          {clientProjectsDictionary.detail.back}
-        </Link>
-        <h1 className="text-heading-2 font-semibold">{title}</h1>
-        {children}
-      </div>
-    </section>
+    <Card asChild variant="elevated">
+      <section className="client-projects-panel panel preview-glass-card">
+        <div className="panel-inner space-y-4">
+          <Link
+            href="/account/projetos"
+            className="inline-flex items-center gap-2 text-body font-semibold text-primary hover:underline"
+          >
+            <ArrowLeft className="size-4" />
+            {clientProjectsDictionary.detail.back}
+          </Link>
+          <h1 className="text-heading-2 font-semibold">{title}</h1>
+          {children}
+        </div>
+      </section>
+    </Card>
   );
 }
 
@@ -158,11 +161,12 @@ export async function ClientProjectDetailPage({
   });
 
   return (
-    <section
-      className="client-projects-panel panel preview-glass-card"
-      style={{ borderTopColor: healthVar, borderTopWidth: "3px" }}
-    >
-      <div className="panel-inner space-y-6">
+    <Card asChild variant="elevated">
+      <section
+        className="client-projects-panel panel preview-glass-card"
+        style={{ borderTopColor: healthVar, borderTopWidth: "3px" }}
+      >
+        <div className="panel-inner space-y-6">
         <Link
           href="/account/projetos"
           className="inline-flex items-center gap-1.5 text-body font-semibold text-muted-foreground transition-colors hover:text-foreground motion-reduce:transition-none"
@@ -402,8 +406,9 @@ export async function ClientProjectDetailPage({
             </ul>
           </section>
         ) : null}
-      </div>
-    </section>
+        </div>
+      </section>
+    </Card>
   );
 }
 
@@ -436,7 +441,7 @@ function StatCard({
   noteClassName?: string;
 }) {
   return (
-    <div className="space-y-1.5 rounded-xl border border-border/60 bg-background/60 px-3.5 py-3">
+    <Card variant="light" density="compact" className="space-y-1.5 bg-background/60 px-3.5 py-3 shadow-none">
       <div className="flex items-center gap-1.5 text-meta text-muted-foreground">
         <span style={accent ? { color: accent } : undefined}>{icon}</span>
         {label}
@@ -467,6 +472,6 @@ function StatCard({
           {note}
         </p>
       ) : null}
-    </div>
+    </Card>
   );
 }

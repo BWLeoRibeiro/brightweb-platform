@@ -1,19 +1,16 @@
 "use client";
 
-import type { KeyboardEvent, MouseEvent } from "react";
-import { useRouter } from "next/navigation";
+import type { MouseEvent } from "react";
+import Link from "next/link";
 import { ArrowUpRight, CalendarDays, ListChecks } from "lucide-react";
 import { toast } from "sonner";
 import { monoTabularClassName as MONO } from "./typography";
 import { ProjectOwnerAvatar } from "./project-owner-avatar";
 import { PROJECT_RISK_META, resolveProjectRisk } from "./project-risk";
 import { getCompletionPercent } from "./project-progress";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@brightweblabs/ui";
+import { Card, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@brightweblabs/ui";
 import type { ProjectListItem } from "../../types";
 import { useProjectsNavigation, useProjectsUiDictionary } from "../context";
-
-const SURFACE =
-  "rounded-[var(--radius-card)] border border-[color:var(--border)] bg-[color:var(--card)] shadow-[0_1px_2px_var(--project-ui-color-67)]";
 
 export type ProjectSummaryCardItem = Pick<
   ProjectListItem,
@@ -34,7 +31,6 @@ function codeOf(project: ProjectSummaryCardItem) {
 export function ProjectSummaryCard({ project }: { project: ProjectSummaryCardItem }) {
   const navigation = useProjectsNavigation();
   const dictionary = useProjectsUiDictionary();
-  const router = useRouter();
   const projectStatusMeta: Record<ProjectSummaryCardItem["status"], { label: string; dot: string }> = {
     planned: { label: dictionary.status.planned, dot: "bg-[color:var(--project-state-planned)]" },
     active: { label: dictionary.status.active, dot: "bg-[color:var(--project-state-active)]" },
@@ -52,17 +48,6 @@ export function ProjectSummaryCard({ project }: { project: ProjectSummaryCardIte
   // late/at-risk projects carry their tone through to the target date
   const dateTone = riskMeta ? riskMeta.var : "var(--foreground)";
 
-  function openProject() {
-    router.push(projectHref);
-  }
-
-  function openProjectFromKeyboard(event: KeyboardEvent<HTMLElement>) {
-    if (event.target !== event.currentTarget) return;
-    if (event.key !== "Enter" && event.key !== " ") return;
-    event.preventDefault();
-    openProject();
-  }
-
   async function copyProjectId(event: MouseEvent<HTMLButtonElement>) {
     event.preventDefault();
     event.stopPropagation();
@@ -76,35 +61,31 @@ export function ProjectSummaryCard({ project }: { project: ProjectSummaryCardIte
 
   return (
     <TooltipProvider>
-      <article
-        role="link"
-        tabIndex={0}
-        className={`${SURFACE} group relative flex cursor-pointer flex-col overflow-hidden px-[17px] pb-4 pt-[14px] transition hover:-translate-y-0.5 hover:border-[color:var(--project-ui-color-68)] hover:shadow-[0_12px_30px_var(--project-ui-color-72)]`}
-        onClick={openProject}
-        onKeyDown={openProjectFromKeyboard}
-      >
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <span className="absolute right-[15px] top-[15px] z-10 inline-flex h-4 w-4 items-center justify-center">
-              <ArrowUpRight className="h-3.5 w-3.5 text-[color:var(--muted-foreground)] opacity-0 transition group-hover:text-[color:var(--accent)] group-hover:opacity-100" />
-            </span>
-          </TooltipTrigger>
-          <TooltipContent>{dictionary.detail.openProject}</TooltipContent>
-        </Tooltip>
+      <Card asChild variant="interactive">
+        <article className="group relative overflow-hidden px-[17px] pb-4 pt-[14px]">
+        <span aria-hidden className="pointer-events-none absolute right-[15px] top-[15px] inline-flex h-4 w-4 items-center justify-center">
+          <ArrowUpRight className="h-3.5 w-3.5 text-[color:var(--muted-foreground)] opacity-0 transition group-hover:text-[color:var(--accent)] group-hover:opacity-100 motion-reduce:transition-none" />
+        </span>
 
         {/* header — fixed height so pills/progress align across cards */}
         <p className="text-label text-muted-foreground truncate pr-6">
           {project.organizationName ?? "-"}
         </p>
         <h3 className="text-title text-foreground mt-1 line-clamp-2 min-h-[2.6em] font-bold leading-[var(--type-leading-130)]">
-          {project.name}
+          <Link
+            href={projectHref}
+            prefetch={false}
+            className="after:absolute after:inset-0 after:content-[''] focus-visible:outline-none"
+          >
+            {project.name}
+          </Link>
         </h3>
 
         {/* status (quiet dot) + risk (chip) — fixed height so the chip never grows the row */}
         <div className="mt-3 flex min-h-[24px] items-center gap-x-2">
           <Tooltip>
             <TooltipTrigger asChild>
-              <span className="pointer-events-auto inline-flex items-center gap-1.5 text-meta font-semibold text-[color:var(--foreground)]">
+              <span className="pointer-events-auto relative z-10 inline-flex items-center gap-1.5 text-meta font-semibold text-[color:var(--foreground)]">
                 <span className={`h-[7px] w-[7px] shrink-0 rounded-full ${statusMeta.dot}`} />
                 {statusMeta.label}
               </span>
@@ -135,7 +116,7 @@ export function ProjectSummaryCard({ project }: { project: ProjectSummaryCardIte
             </span>
             <Tooltip>
               <TooltipTrigger asChild>
-                <span className={`${MONO} pointer-events-auto text-body text-[length:var(--text-ui-action)] font-extrabold text-[color:var(--foreground)]`}>
+                <span className={`${MONO} pointer-events-auto relative z-10 text-body text-[length:var(--text-ui-action)] font-extrabold text-[color:var(--foreground)]`}>
                   {progress}%
                 </span>
               </TooltipTrigger>
@@ -159,7 +140,7 @@ export function ProjectSummaryCard({ project }: { project: ProjectSummaryCardIte
             <TooltipTrigger asChild>
               <button
                 type="button"
-                className={`${MONO} text-micro text-muted-foreground pointer-events-auto min-w-0 max-w-[44%] truncate text-left tracking-[var(--type-tracking-060)] transition hover:text-[color:var(--foreground)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--ring)]`}
+                className={`${MONO} text-micro text-muted-foreground pointer-events-auto relative z-10 min-w-0 max-w-[44%] truncate text-left tracking-[var(--type-tracking-060)] transition hover:text-[color:var(--foreground)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--ring)] motion-reduce:transition-none`}
                 onClick={copyProjectId}
               >
                 {projectCode}
@@ -170,7 +151,7 @@ export function ProjectSummaryCard({ project }: { project: ProjectSummaryCardIte
           <Tooltip>
             <TooltipTrigger asChild>
               <span className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap">
-                <ListChecks className="h-3.5 w-3.5 opacity-70" strokeWidth={1.75} />
+                <ListChecks aria-hidden className="h-3.5 w-3.5 opacity-70" strokeWidth={1.75} />
                 <span className={MONO}>
                   {project.taskStats.done}/{project.taskStats.total}
                 </span>
@@ -181,7 +162,7 @@ export function ProjectSummaryCard({ project }: { project: ProjectSummaryCardIte
           <Tooltip>
             <TooltipTrigger asChild>
               <span className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap" style={{ color: dateTone }}>
-                <CalendarDays className="h-3.5 w-3.5 opacity-70" strokeWidth={1.75} />
+                <CalendarDays aria-hidden className="h-3.5 w-3.5 opacity-70" strokeWidth={1.75} />
                 <span className={`${MONO} font-bold`} style={{ color: dateTone }}>
                   {formatShortDate(project.targetDate)}
                 </span>
@@ -190,7 +171,8 @@ export function ProjectSummaryCard({ project }: { project: ProjectSummaryCardIte
             <TooltipContent>{dictionary.detail.dueDate}</TooltipContent>
           </Tooltip>
         </div>
-      </article>
+        </article>
+      </Card>
     </TooltipProvider>
   );
 }

@@ -24,10 +24,7 @@
 
   .marketing-ledger {
     overflow: hidden;
-    border-color: var(--border-hairline);
     border-radius: var(--radius-panel);
-    background: var(--surface-card);
-    box-shadow: var(--dashboard-shadow-sm);
   }
 
   .marketing-ledger-heading {

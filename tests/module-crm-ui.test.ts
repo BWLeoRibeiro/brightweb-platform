@@ -189,8 +189,11 @@ test("CRM contact and organization details use right-side sheets instead of cent
 
 test("CRM organization cards expose full-card hover, pointer, and keyboard affordances", () => {
   const source = readFileSync(join(process.cwd(), "packages/module-crm/src/ui/organizations-browser.tsx"), "utf8");
+  const cardRecipe = readFileSync(join(process.cwd(), "packages/theme/src/surfaces.css"), "utf8");
 
-  assert.match(source, /group cursor-pointer hover:-translate-y-0\.5 hover:border-border-strong hover:bg-surface-hover/);
+  assert.match(source, /variant=\{onSelect \? "interactive" : "default"\}/);
+  assert.match(cardRecipe, /\.card-root\[data-variant="interactive"\]:hover/);
+  assert.match(cardRecipe, /cursor: pointer/);
   assert.match(source, /className="absolute inset-0 z-0 cursor-pointer rounded-\[var\(--radius-card\)\] outline-none focus-visible:ring-2/);
   assert.match(source, /aria-label=\{`\$\{dictionary\.organizations\.viewEyebrow\}: \$\{organization\.name/);
   assert.match(source, /className=\{onSelect \? "pointer-events-none relative z-10" : undefined\}/);

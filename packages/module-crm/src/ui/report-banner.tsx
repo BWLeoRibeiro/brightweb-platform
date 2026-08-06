@@ -1,5 +1,5 @@
 import { ArrowUpRight, BarChart3 } from "lucide-react";
-import { Skeleton } from "@brightweblabs/ui";
+import { Card, Skeleton } from "@brightweblabs/ui";
 
 import { defaultCrmUiDictionary } from "./dictionary";
 import type { CrmUiDictionary } from "./types";
@@ -65,10 +65,10 @@ export function CrmReportBanner({ summary, href, loading = false, unavailable = 
           </div>
           <div className="grid shrink-0 grid-cols-3 gap-3">
             {metrics.map((metric) => (
-              <div key={metric.label} className="flex min-w-[var(--crm-report-metric-min-width)] flex-col justify-center rounded-[var(--radius-card)] border px-4 py-4" style={{ borderColor: "var(--project-hero-border)", background: "var(--project-hero-surface-raised)" }}>
+              <Card key={metric.label} density="compact" className="min-w-[var(--crm-report-metric-min-width)] justify-center px-4 py-4 shadow-none" style={{ borderColor: "var(--project-hero-border)", background: "var(--project-hero-surface-raised)" }}>
                 <span className="text-kpi text-[length:var(--text-ui-report-metric)] font-black leading-[var(--type-leading-090)] tracking-[var(--type-tracking-n050)]" style={{ color: "var(--project-hero-foreground)" }}>{metric.value}</span>
                 <span className="mt-2 text-label" style={{ color: "var(--project-hero-muted)" }}>{metric.label}</span>
-              </div>
+              </Card>
             ))}
           </div>
         </div>
