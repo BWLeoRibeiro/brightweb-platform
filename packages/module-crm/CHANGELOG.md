@@ -1,5 +1,11 @@
 # @brightweblabs/module-crm
 
+## 0.15.15
+
+### Patch Changes
+
+- Match contact updated dates to the table's muted body-text weight and color while retaining compact tabular typography.
+
 ## 0.15.14
 
 ### Patch Changes
