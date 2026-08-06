@@ -1,5 +1,15 @@
 # @brightweblabs/module-projects
 
+## 0.16.4
+
+### Patch Changes
+
+- 1de7902: Remove the remaining presentational uppercase and expanded letter spacing from shared project references, attention ranks, menu shortcuts, and avatars. Structured values keep their source casing without CSS forcing it.
+- Updated dependencies [1de7902]
+  - @brightweblabs/ui@1.4.11
+  - @brightweblabs/app-shell@0.14.3
+  - @brightweblabs/core-auth@0.10.7
+
 ## 0.16.3
 
 ### Patch Changes
