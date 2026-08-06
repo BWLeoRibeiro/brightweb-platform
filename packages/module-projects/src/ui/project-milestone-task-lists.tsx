@@ -379,7 +379,7 @@ export function ProjectMilestonesAndTasksLists({
   return (
     <TooltipProvider>
       <>
-        <ProjectSurfaceCard className="is-light flex h-full flex-col">
+        <ProjectSurfaceCard variant="light" className="flex h-full flex-col">
           <ProjectSurfaceSectionHeader
             icon={Flag}
             title={dictionary.detail.milestones}
@@ -477,7 +477,7 @@ export function ProjectMilestonesAndTasksLists({
           </div>
         </ProjectSurfaceCard>
 
-        <ProjectSurfaceCard className="is-light flex h-full flex-col xl:col-span-2">
+        <ProjectSurfaceCard variant="light" className="flex h-full flex-col xl:col-span-2">
           <ProjectSurfaceSectionHeader
             icon={ListChecks}
             title={dictionary.detail.tasks}

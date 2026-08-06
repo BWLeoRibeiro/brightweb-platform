@@ -8,13 +8,6 @@
   --dashboard-danger-foreground: var(--project-risk-overdue-strong);
 }
 
-.dashboard-surface {
-  border-radius: var(--radius-card);
-  border: 1px solid var(--border);
-  background: var(--card);
-  box-shadow: var(--dashboard-shadow-sm);
-}
-
 .dashboard-status-dot { background: var(--tint); }
   .dashboard-projects-grid {
     display: grid;

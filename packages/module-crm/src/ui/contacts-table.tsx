@@ -35,8 +35,6 @@ const defaultColumns: CrmTableColumnConfig[] = [
   { key: "updated" },
 ];
 
-const CRM_TABLE_SURFACE =
-  "rounded-[var(--radius-card)] border border-border-hairline bg-[color:var(--project-surface-primary)] shadow-none";
 const CRM_TABLE_DIVIDERS = "[&_tr]:border-[color:var(--hairline)]";
 // Percentages are table-layout constraints whose sum leaves a fixed 5% selection column.
 const columnWidth: Record<CrmTableColumnKey, string> = {
@@ -135,7 +133,7 @@ export function CrmContactsTable({
   };
 
   return (
-    <SurfaceCard aria-busy={loading} className={`${CRM_TABLE_SURFACE} scroll-mt-28 flex h-[calc(100dvh-var(--crm-table-viewport-offset))] min-h-[var(--crm-table-min-height)] min-w-0 w-full max-w-full flex-col overflow-hidden p-0 transition-opacity duration-150 motion-reduce:transition-none ${loading && data.items.length > 0 ? "opacity-60" : ""}`}>
+    <SurfaceCard isLight density="none" motion="none" aria-busy={loading} className={`scroll-mt-28 h-[calc(100dvh-var(--crm-table-viewport-offset))] min-h-[var(--crm-table-min-height)] min-w-0 w-full max-w-full overflow-hidden bg-[color:var(--project-surface-primary)] p-0 shadow-none transition-opacity duration-150 motion-reduce:transition-none ${loading && data.items.length > 0 ? "opacity-60" : ""}`}>
       {showToolbar ? <div className="flex flex-wrap items-center gap-3 border-b border-hairline p-4">
         <SearchField
           value={params.search ?? ""}

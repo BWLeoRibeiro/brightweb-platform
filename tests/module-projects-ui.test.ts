@@ -69,6 +69,20 @@ test("project clipboard feedback is localized and action-specific", () => {
   );
 });
 
+test("project summary cards use native navigation without swallowing their copy action", () => {
+  const source = readFileSync(
+    join(process.cwd(), "packages/module-projects/src/ui/shared/project-summary-card.tsx"),
+    "utf8",
+  );
+
+  assert.match(source, /<Card asChild variant="interactive">/);
+  assert.match(source, /<Link[\s\S]*href=\{projectHref\}[\s\S]*prefetch=\{false\}/);
+  assert.match(source, /className="after:absolute after:inset-0/);
+  assert.match(source, /<button[\s\S]*onClick=\{copyProjectId\}/);
+  assert.match(source, /event\.preventDefault\(\)[\s\S]*event\.stopPropagation\(\)/);
+  assert.doesNotMatch(source, /role="link"|useRouter|onKeyDown=\{openProjectFromKeyboard\}/);
+});
+
 test("project detail hero only renders selected project dates and combines complete ranges", () => {
   const heroSource = readFileSync(
     join(process.cwd(), "packages/module-projects/src/ui/project-detail-hero.tsx"),
@@ -581,6 +595,7 @@ test("dashboard attention cards use the canonical editorial attention-row recipe
   const dashboardStyles = readFileSync(join(process.cwd(), "packages/app-shell/src/dashboard/dashboard.css"), "utf8");
 
   assert.match(card, /className="project-attention-row group/);
+  assert.match(card, /import "\.\.\/\.\.\/\.\.\/tokens\.css"/);
   assert.match(card, /<ProjectPill[\s\S]*size="normal"[\s\S]*dotClassName="project-attention-pill-dot"/);
   assert.match(card, /className="project-attention-company">\{formatNaturalDisplayName\(project\.organizationName\)\}/);
   assert.match(card, /<strong>\{reason\}<\/strong> \{detail\}/);

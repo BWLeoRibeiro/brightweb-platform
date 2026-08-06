@@ -2,6 +2,7 @@ import Link from "next/link";
 import { connection } from "next/server";
 import { ArrowLeft, ArrowRight, FolderKanban } from "lucide-react";
 import { requireServerPageAccess } from "@brightweblabs/core-auth/server";
+import { Card } from "@brightweblabs/ui";
 import { listAccountProjects } from "../../account-projects";
 import { clientProjectsDictionary } from "./dictionary";
 import { ProjectListCard } from "./project-list-card";
@@ -26,14 +27,15 @@ export async function ClientProjectsListPage() {
 
   // TODO(projects-realtime): mount the account projects refresher when the app shell supports it.
   return (
-    <section
-      className="client-projects-panel panel preview-glass-card"
-      style={{
-        borderTopColor: "var(--project-client-accent)",
-        borderTopWidth: "3px",
-      }}
-    >
-      <div className="panel-inner space-y-6">
+    <Card asChild variant="elevated">
+      <section
+        className="client-projects-panel panel preview-glass-card"
+        style={{
+          borderTopColor: "var(--project-client-accent)",
+          borderTopWidth: "3px",
+        }}
+      >
+        <div className="panel-inner space-y-6">
         <header className="flex flex-wrap items-start justify-between gap-3">
           <div className="space-y-1">
             <span className="eyebrow">{dictionary.kicker}</span>
@@ -119,7 +121,8 @@ export async function ClientProjectsListPage() {
             <ProjectListCard key={project.id} project={project} isStaff={isStaff} />
           ))}
         </div>
-      </div>
-    </section>
+        </div>
+      </section>
+    </Card>
   );
 }

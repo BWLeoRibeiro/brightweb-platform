@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ArrowRight, CalendarDays, Flag, FolderKanban } from "lucide-react";
+import { Card } from "@brightweblabs/ui";
 import type { ProjectListItem } from "../../data";
 import {
   CLIENT_PROJECT_HEALTH_LABELS,
@@ -36,7 +37,8 @@ export function ProjectListCard({
   const dictionary = clientProjectsDictionary.list;
 
   return (
-    <article className="group relative flex flex-col overflow-hidden rounded-xl border border-border/70 bg-background/70 transition-shadow hover:shadow-md">
+    <Card asChild variant="light">
+      <article className="group relative overflow-hidden bg-background/70 transition-shadow hover:shadow-md motion-reduce:transition-none">
       <div className="h-[3px] w-full shrink-0" style={{ background: healthVar }} />
 
       <div className="flex flex-1 flex-col gap-3 p-4">
@@ -74,7 +76,7 @@ export function ProjectListCard({
             className={`inline-flex items-center gap-1.5 ${overdue ? "font-semibold" : ""}`}
             style={overdue ? { color: "var(--project-health-off-track)" } : undefined}
           >
-            <CalendarDays className="size-3.5 shrink-0" />
+            <CalendarDays aria-hidden className="size-3.5 shrink-0" />
             <span className="text-data">{formatClientProjectDate(project.targetDate)}</span>
             {overdue ? <span className="text-micro">({clientProjectsDictionary.common.delayed})</span> : null}
           </span>
@@ -87,7 +89,7 @@ export function ProjectListCard({
                 : undefined
             }
           >
-            <Flag className="size-3.5 shrink-0" />
+            <Flag aria-hidden className="size-3.5 shrink-0" />
             {project.milestoneStats.total > 0
               ? dictionary.milestones(
                 project.milestoneStats.achieved,
@@ -130,13 +132,14 @@ export function ProjectListCard({
             className="flex w-full items-center justify-between rounded-lg border border-border/60 bg-muted/30 px-3 py-2 text-body font-semibold text-foreground transition-[color,background-color,border-color] hover:border-border hover:bg-muted/60 motion-reduce:transition-none"
           >
             <span className="inline-flex items-center gap-2">
-              <FolderKanban className="size-4 text-muted-foreground" />
+              <FolderKanban aria-hidden className="size-4 text-muted-foreground" />
               {dictionary.open}
             </span>
-            <ArrowRight className="size-3.5 text-muted-foreground transition-transform group-hover:translate-x-0.5 motion-reduce:transition-none motion-reduce:transform-none" />
+            <ArrowRight aria-hidden className="size-3.5 text-muted-foreground transition-transform group-hover:translate-x-0.5 motion-reduce:transition-none motion-reduce:transform-none" />
           </Link>
         </div>
       </div>
-    </article>
+      </article>
+    </Card>
   );
 }

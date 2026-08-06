@@ -1,7 +1,4 @@
-import { Skeleton, SkeletonLine } from "@brightweblabs/ui";
-
-const SURFACE =
-  "rounded-[var(--radius-card)] border border-[color:var(--border)] bg-[color:var(--card)] shadow-[0_1px_2px_var(--project-ui-color-67)]";
+import { Card, Skeleton, SkeletonLine } from "@brightweblabs/ui";
 
 /**
  * Loading ghost for {@link ProjectSummaryCard}. Mirrors that card's real
@@ -11,7 +8,8 @@ const SURFACE =
  */
 export function ProjectSummaryCardSkeleton() {
   return (
-    <article className={`${SURFACE} flex flex-col px-[17px] pb-4 pt-[14px]`}>
+    <Card asChild>
+      <article className="px-[17px] pb-4 pt-[14px]">
       {/* org */}
       <SkeletonLine w="42%" className="h-[0.5rem]" />
       {/* title — two lines, fixed height like the real line-clamp-2 */}
@@ -41,6 +39,7 @@ export function ProjectSummaryCardSkeleton() {
         <SkeletonLine w="2.5rem" className="h-[0.5rem]" />
         <SkeletonLine w="3rem" className="h-[0.5rem]" />
       </div>
-    </article>
+      </article>
+    </Card>
   );
 }

@@ -107,9 +107,7 @@
    Responsive column template + reserved rows so pagination doesn't reflow. */
 @layer components {
   .client-projects-panel {
-    border: 1px solid var(--border);
     border-radius: 24px;
-    background: var(--card);
     box-shadow: var(--brand-shadow-soft);
   }
 
@@ -356,47 +354,13 @@
   --project-cell-padding: 1rem;
 }
 
-@keyframes dashboard-fade-in {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
 @layer components {
-  .project-surface-card {
-  border-radius: var(--radius-card);
-  border: 1px solid var(--border-hairline);
-  background: var(--project-surface-secondary);
-  padding: var(--project-surface-padding);
-  animation: dashboard-fade-in 640ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
-}
-
 @media (prefers-reduced-motion: reduce) {
-  .dashboard-reveal,
-  .project-surface-card {
+  .dashboard-reveal {
     animation: none;
     opacity: 1;
     transform: none;
   }
-}
-
-.dark .project-surface-card {
-  border-color: var(--border-hairline);
-  background: var(--project-surface-secondary);
-}
-
-.project-surface-card.is-light {
-  background: var(--project-surface-primary);
-}
-
-.dark .project-surface-card.is-light,
-.theme-dark .project-surface-card.is-light {
-  background: color-mix(in srgb, var(--card) 92%, white 8%);
 }
 
 .project-item-card {

@@ -215,6 +215,7 @@ test("reduced motion is static across theme entrances, sheets, modules, and auth
   assert.match(base, /@media \(prefers-reduced-motion: reduce\)[\s\S]*animation-duration:\s*0ms !important/);
   assert.match(base, /@media \(prefers-reduced-motion: reduce\)[\s\S]*animation-iteration-count:\s*1 !important/);
   assert.match(surfaces, /@media \(prefers-reduced-motion: reduce\)[\s\S]*\.skeleton-ghost::after\s*\{\s*display:\s*none/);
+  assert.match(surfaces, /@media \(prefers-reduced-motion: reduce\)[\s\S]*\.card-root[\s\S]*animation:\s*none[\s\S]*opacity:\s*1[\s\S]*transform:\s*none/);
   assert.doesNotMatch(surfaces, /skeleton-breathe/);
   assert.match(sheet, /motion-reduce:animate-none/);
   assert.match(sheet, /motion-reduce:transform-none/);
@@ -222,7 +223,6 @@ test("reduced motion is static across theme entrances, sheets, modules, and auth
   for (const [source, selector] of [
     [adminTokens, String.raw`\.admin-dashboard-reveal`],
     [projectTokens, String.raw`\.dashboard-reveal`],
-    [projectTokens, String.raw`\.project-surface-card`],
   ]) {
     assert.match(source, new RegExp(`@media \\(prefers-reduced-motion: reduce\\)[\\s\\S]*${selector}[\\s\\S]*animation:\\s*none[\\s\\S]*opacity:\\s*1[\\s\\S]*transform:\\s*none`));
   }

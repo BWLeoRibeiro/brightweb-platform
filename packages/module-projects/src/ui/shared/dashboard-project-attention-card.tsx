@@ -1,5 +1,8 @@
 "use client";
 
+// This component is registered into the shared dashboard, outside the Projects
+// route layout. Own its package styles so route placement cannot strip its grid.
+import "../../../tokens.css";
 import Link from "next/link";
 import { ArrowUpRight, CalendarDays } from "lucide-react";
 import type { CSSProperties } from "react";

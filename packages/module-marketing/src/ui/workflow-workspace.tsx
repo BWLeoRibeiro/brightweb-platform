@@ -428,12 +428,8 @@ export function WorkflowWorkspace({
         ) : (
           <div className="grid gap-3 lg:grid-cols-2">
             {workflows.map((workflow) => (
-              <button
-                type="button"
-                key={workflow.id}
-                onClick={() => void openWorkflow(workflow)}
-                className="rounded-xl border bg-card p-5 text-left text-card-foreground transition-colors hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              >
+              <Card key={workflow.id} asChild variant="interactive" density="default">
+                <button type="button" onClick={() => void openWorkflow(workflow)} className="p-5 text-left">
                 <div className="flex items-start justify-between gap-4">
                   <div className="min-w-0">
                     <h3 className="truncate text-title">{workflow.name}</h3>
@@ -449,7 +445,8 @@ export function WorkflowWorkspace({
                   <span>{workflow.countsKnown === false ? "—" : dictionary.workflows.nodeCount(workflow.nodeCount)}</span>
                   <span>{workflow.countsKnown === false ? "—" : dictionary.workflows.runCount(workflow.runCount)}</span>
                 </div>
-              </button>
+                </button>
+              </Card>
             ))}
           </div>
         )}
