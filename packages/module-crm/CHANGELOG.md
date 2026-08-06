@@ -1,5 +1,16 @@
 # @brightweblabs/module-crm
 
+## 0.15.17
+
+### Patch Changes
+
+- cc7d41c: Standardize application surfaces on a single polymorphic Card recipe with explicit visual, density, and motion variants. Migrate dashboard and module cards to the shared foundation, preserve native link behavior for interactive project cards, and make dashboard project-card styling independent of route-level stylesheet loading.
+- Updated dependencies [cc7d41c]
+  - @brightweblabs/ui@1.5.0
+  - @brightweblabs/app-shell@0.14.4
+  - @brightweblabs/core-auth@0.10.8
+  - @brightweblabs/module-orgs@0.4.12
+
 ## 0.15.16
 
 ### Patch Changes
