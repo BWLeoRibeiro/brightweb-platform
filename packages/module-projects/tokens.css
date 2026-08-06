@@ -160,7 +160,6 @@
     font-size: var(--text-label);
     font-variant-numeric: tabular-nums;
     font-weight: var(--font-weight-heavy);
-    letter-spacing: var(--type-tracking-080);
     line-height: var(--type-leading-none);
   }
   .project-attention-rank > span {

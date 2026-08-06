@@ -249,7 +249,7 @@ export function ProjectDetailHero({ canOpenEditProject, canViewOrganization }: P
         <div className="flex flex-wrap items-start justify-between gap-5">
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-              <span className="text-data rounded-[var(--radius)] border border-[color:var(--project-hero-border)] bg-white/[0.06] px-1.5 py-0.5 text-micro font-semibold uppercase tracking-[var(--type-tracking-100)] text-[color:var(--project-hero-muted)]">
+              <span className="text-data rounded-[var(--radius)] border border-[color:var(--project-hero-border)] bg-white/[0.06] px-1.5 py-0.5 text-micro font-semibold text-[color:var(--project-hero-muted)]">
                 {projectReference}
               </span>
               <p className="truncate text-label font-semibold text-[color:var(--project-hero-muted)]">{project.organizationName}</p>
