@@ -159,7 +159,7 @@ export function ProjectSummaryCard({ project }: { project: ProjectSummaryCardIte
             <TooltipTrigger asChild>
               <button
                 type="button"
-                className={`${MONO} text-micro text-muted-foreground pointer-events-auto min-w-0 max-w-[44%] truncate text-left tracking-[var(--type-tracking-060)] transition hover:text-[color:var(--foreground)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--ring)]`}
+                className={`${MONO} text-micro text-muted-foreground pointer-events-auto min-w-0 max-w-[44%] truncate text-left transition hover:text-[color:var(--foreground)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--ring)]`}
                 onClick={copyProjectId}
               >
                 {projectCode}
