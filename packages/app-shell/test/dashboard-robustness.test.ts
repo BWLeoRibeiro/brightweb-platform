@@ -323,6 +323,15 @@ test("projects dashboard presents one coherent, accessible health story", () => 
   assert.match(stylesheet, /\.dashboard-projects-grid--single/);
 });
 
+test("projects dashboard provides a quick-create handoff to the projects module", () => {
+  const clientSource = readFileSync(new URL("../src/dashboard/dashboard-client.tsx", import.meta.url), "utf8");
+  const dictionarySource = readFileSync(new URL("../src/dashboard/dictionary.ts", import.meta.url), "utf8");
+
+  assert.match(clientSource, /dictionary\.projects\.viewAll[\s\S]*dictionary\.projects\.addNew/);
+  assert.match(clientSource, /sessionStorage\.setItem\("dashboard:pending-action", "projects-new-project"\)/);
+  assert.match(dictionarySource, /addNew: "Novo projeto"/);
+});
+
 test("dashboard renders the restored branded overview with live KPI content", () => {
   const client = {
     async getProjects() { return { data: projects }; },

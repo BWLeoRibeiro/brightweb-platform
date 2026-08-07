@@ -39,6 +39,7 @@ export const defaultDashboardDictionary = {
     attentionQueueTitle: "Requer atenção",
     attentionTitle: "Projetos que requerem atenção",
     viewAll: "Ver todos os projetos",
+    addNew: "Novo projeto",
     noneNeedAttention: (active: number) => `Nada em atenção agora — ${active} projetos no rumo.`,
     allOnTrackTitle: "Tudo no rumo",
     allOnTrackDescription: (active: number) => `Os ${active} projetos ativos estão dentro do prazo e sem bloqueios críticos.`,
@@ -113,9 +114,11 @@ export const defaultDashboardDictionary = {
 
 type DefaultDashboardDictionary = typeof defaultDashboardDictionary;
 type OptionalWelcomeKey = "activeProjectOne" | "activeProjectMany" | "projectOne" | "projectMany" | "needsOwnerOne" | "needsOwnerMany";
+type OptionalProjectKey = "addNew";
 type OptionalClientKey = "addNew" | "addedOn" | "thisMonth" | "vsPreviousMonth";
 
-export type DashboardDictionary = Omit<DefaultDashboardDictionary, "welcome" | "clients"> & {
+export type DashboardDictionary = Omit<DefaultDashboardDictionary, "welcome" | "projects" | "clients"> & {
   welcome: Omit<DefaultDashboardDictionary["welcome"], OptionalWelcomeKey> & Partial<Pick<DefaultDashboardDictionary["welcome"], OptionalWelcomeKey>>;
+  projects: Omit<DefaultDashboardDictionary["projects"], OptionalProjectKey> & Partial<Pick<DefaultDashboardDictionary["projects"], OptionalProjectKey>>;
   clients: Omit<DefaultDashboardDictionary["clients"], OptionalClientKey> & Partial<Pick<DefaultDashboardDictionary["clients"], OptionalClientKey>>;
 };
