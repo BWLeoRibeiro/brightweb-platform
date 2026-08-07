@@ -15,7 +15,7 @@ import {
 } from "./data";
 
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
-const RECENT_CONTACT_LIMIT = 12;
+const RECENT_CONTACT_LIMIT = 5;
 const RECENT_CHANGE_LIMIT = 12;
 
 type CountQueryResult = {
@@ -115,7 +115,7 @@ export function buildCrmDashboardOverviewData(snapshot: CrmDashboardSnapshot): D
         lost: snapshot.stats.byStatus.lost ?? 0,
       },
       recentChanges: snapshot.recentChanges.map(toRecentChange),
-      recentContacts: snapshot.contacts.map(toRecentContact),
+      recentContacts: snapshot.contacts.slice(0, RECENT_CONTACT_LIMIT).map(toRecentContact),
       monthlyNewContacts: buildMonthlyNewContacts(snapshot.createdDatesLastYear ?? [], new Date(snapshot.generatedAt)),
     },
   };
