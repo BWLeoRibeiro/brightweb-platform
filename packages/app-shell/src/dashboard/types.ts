@@ -50,6 +50,7 @@ export type DashboardProjectsData = {
     overdue: DashboardProjectItem[];
     attention: DashboardProjectAttentionItem[];
     milestones: DashboardProjectMilestone[];
+    milestonesNext7Days?: DashboardProjectMilestone[];
   };
 };
 

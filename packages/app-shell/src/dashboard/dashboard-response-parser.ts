@@ -83,7 +83,10 @@ function isDashboardProjectsData(value: unknown): value is DashboardProjectsData
     && Array.isArray(value.projects.attention)
     && value.projects.attention.every(isDashboardProjectAttentionItem)
     && Array.isArray(value.projects.milestones)
-    && value.projects.milestones.every(isDashboardProjectMilestone);
+    && value.projects.milestones.every(isDashboardProjectMilestone)
+    && (value.projects.milestonesNext7Days === undefined
+      || (Array.isArray(value.projects.milestonesNext7Days)
+        && value.projects.milestonesNext7Days.every(isDashboardProjectMilestone)));
 }
 
 function isDashboardCrmRecentChange(value: unknown) {
