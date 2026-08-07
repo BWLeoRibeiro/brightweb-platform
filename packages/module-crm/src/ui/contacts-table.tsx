@@ -133,7 +133,7 @@ export function CrmContactsTable({
   };
 
   return (
-    <SurfaceCard isLight density="none" motion="none" aria-busy={loading} className={`scroll-mt-28 h-[calc(100dvh-var(--crm-table-viewport-offset))] min-h-[var(--crm-table-min-height)] min-w-0 w-full max-w-full overflow-hidden bg-[color:var(--project-surface-primary)] p-0 shadow-none transition-opacity duration-150 motion-reduce:transition-none ${loading && data.items.length > 0 ? "opacity-60" : ""}`}>
+    <SurfaceCard isLight density="none" motion="none" aria-busy={loading} className={`scroll-mt-28 h-[calc(100dvh-var(--crm-table-viewport-offset))] min-h-[var(--crm-table-min-height)] min-w-0 w-full max-w-full overflow-hidden bg-[color:var(--project-surface-primary)] !p-0 shadow-none transition-opacity duration-150 motion-reduce:transition-none ${loading && data.items.length > 0 ? "opacity-60" : ""}`}>
       {showToolbar ? <div className="flex flex-wrap items-center gap-3 border-b border-hairline p-4">
         <SearchField
           value={params.search ?? ""}
