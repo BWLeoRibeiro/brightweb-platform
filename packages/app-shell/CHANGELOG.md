@@ -1,5 +1,11 @@
 # @brightweblabs/app-shell
 
+## 0.15.1
+
+### Patch Changes
+
+- ce90992: Show an "Este mês" headline with a delta chip versus the previous month on the contacts rhythm card, replacing the duplicated "Últimos 30 dias" label; adds thisMonth and vsPreviousMonth as optional dictionary keys.
+
 ## 0.15.0
 
 ### Minor Changes

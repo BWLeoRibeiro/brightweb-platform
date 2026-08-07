@@ -1,5 +1,12 @@
 # @brightweblabs/module-marketing
 
+## 0.4.14
+
+### Patch Changes
+
+- Updated dependencies [ce90992]
+  - @brightweblabs/app-shell@0.15.1
+
 ## 0.4.13
 
 ### Patch Changes

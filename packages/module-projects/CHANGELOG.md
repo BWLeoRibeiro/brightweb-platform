@@ -1,5 +1,14 @@
 # @brightweblabs/module-projects
 
+## 0.17.2
+
+### Patch Changes
+
+- ce90992: Keep newly created organizations selected when returning to project creation, and reset the complete project draft whenever its parent creation sheet closes.
+- Updated dependencies [ce90992]
+  - @brightweblabs/app-shell@0.15.1
+  - @brightweblabs/module-orgs@0.5.1
+
 ## 0.17.1
 
 ### Patch Changes
