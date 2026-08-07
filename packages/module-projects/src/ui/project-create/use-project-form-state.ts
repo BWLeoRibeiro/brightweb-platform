@@ -53,8 +53,11 @@ export function useProjectFormState(organizations: OrganizationOption[]) {
     setManualCode(value);
   }, []);
 
-  const resetProjectForm = useCallback((nextOrganizations: OrganizationOption[] = organizations) => {
-    setOrganizationId(nextOrganizations[0]?.id ?? "");
+  const resetProjectForm = useCallback((
+    nextOrganizations: OrganizationOption[] = organizations,
+    defaultOrganizationId: string = nextOrganizations[0]?.id ?? "",
+  ) => {
+    setOrganizationId(defaultOrganizationId);
     setName("");
     setManualCode("");
     setCodeTouched(false);
