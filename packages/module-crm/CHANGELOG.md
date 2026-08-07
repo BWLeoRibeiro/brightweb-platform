@@ -1,5 +1,21 @@
 # @brightweblabs/module-crm
 
+## 0.16.0
+
+### Minor Changes
+
+- 94e10d3: Add a twelve-month contact rhythm view to the shared dashboard, distinguish contact creation dates, and provide deep-linked new-contact actions that open the CRM creation flow.
+- 94e10d3: Use one shared organization-creation sheet in CRM and Projects, including optional member invitations. Contact and project drafts now resume with the newly created organization selected, and both use the same compact, accessible plus button.
+
+### Patch Changes
+
+- Updated dependencies [94e10d3]
+- Updated dependencies [94e10d3]
+- Updated dependencies [94e10d3]
+- Updated dependencies [94e10d3]
+  - @brightweblabs/app-shell@0.15.0
+  - @brightweblabs/module-orgs@0.5.0
+
 ## 0.15.18
 
 ### Patch Changes
