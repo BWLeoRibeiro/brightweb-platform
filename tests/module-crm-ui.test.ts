@@ -95,6 +95,12 @@ test("CRM dashboard follows the MQ table, right rail, and report hero compositio
   assert.ok(html.indexOf("Ada Lovelace") < html.indexOf("Relatório do CRM"));
 });
 
+test("CRM contacts table remains edge-to-edge inside the shared card surface", () => {
+  const html = renderToStaticMarkup(h(CrmContactsTable, { data: contacts }));
+
+  assert.match(html, /^<article\b(?=[^>]*class="[^"]*!p-0[^"]*")(?=[^>]*data-density="none")[^>]*>/);
+});
+
 test("CRM summary consumers render pending state instead of transient empty UI", () => {
   const html = renderToStaticMarkup(h(CrmDashboard, { initialData: { contacts } }));
   assert.match(html, /aria-busy="true"/);
