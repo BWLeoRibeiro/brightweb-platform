@@ -12,15 +12,15 @@ import {
 } from "../packages/app-shell/src/theme/theme-controller.ts";
 import { ThemeScript } from "../packages/app-shell/src/theme/theme-script.tsx";
 
-test("theme script uses Next.js beforeInteractive handling instead of a raw script element", () => {
+test("theme script remains server-renderable without a client-only Next.js boundary", () => {
   const element = ThemeScript({ defaultTheme: "light", nonce: "test-nonce" });
 
-  assert.notEqual(element.type, "script");
-  assert.equal(typeof element.type, "function");
-  assert.equal(element.props.id, "brightweb-theme");
-  assert.equal(element.props.strategy, "beforeInteractive");
+  assert.equal(element.type, "script");
   assert.equal(element.props.nonce, "test-nonce");
-  assert.equal(element.props.children, getThemeBootstrapScript("light"));
+  assert.equal(element.props.suppressHydrationWarning, true);
+  assert.deepEqual(element.props.dangerouslySetInnerHTML, {
+    __html: getThemeBootstrapScript("light"),
+  });
 });
 
 test("theme modes resolve light, dark, and system consistently", () => {
