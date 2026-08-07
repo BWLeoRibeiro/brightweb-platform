@@ -944,7 +944,9 @@ function RhythmCard({ crm, isLoading }: { crm: DashboardCrmData | null; isLoadin
   const dictionary = useDashboardDictionary();
   const kpis = crm?.kpis;
   const series = crm?.crm.monthlyNewContacts ?? [];
-  const monthValue = kpis?.crmNewLast30Days ?? 0;
+  const monthValue = series.length > 0 ? series[series.length - 1]!.count : kpis?.crmNewLast30Days ?? 0;
+  const previousMonth = series.length > 1 ? series[series.length - 2]!.count : null;
+  const delta = previousMonth === null ? null : monthValue - previousMonth;
   return (
     <Card density="default" className="relative overflow-hidden p-6">
       <span
@@ -953,8 +955,8 @@ function RhythmCard({ crm, isLoading }: { crm: DashboardCrmData | null; isLoadin
         style={{ background: "var(--dashboard-period-glow)" }}
       />
       <div className={`relative grid grid-cols-1 gap-6 md:items-center ${series.length > 0 ? "md:grid-cols-[auto_1fr] lg:grid-cols-[auto_1fr_auto]" : "md:grid-cols-[1fr_auto]"}`}>
-        <div className="md:min-w-[12rem]">
-          <span className={LABEL}>{dictionary.clients.lastThirtyDays}</span>
+        <div className="flex flex-col items-start md:min-w-[12rem]">
+          <span className={LABEL}>{series.length > 0 ? dictionary.clients.thisMonth ?? "Este mês" : dictionary.clients.lastThirtyDays}</span>
           <div className="mt-4 flex items-baseline gap-2">
             <span className="text-kpi" style={{ color: "var(--accent)" }}>
               {isLoading ? "–" : monthValue}
@@ -963,6 +965,16 @@ function RhythmCard({ crm, isLoading }: { crm: DashboardCrmData | null; isLoadin
               {monthValue === 1 ? dictionary.clients.newOne : dictionary.clients.newMany}
             </span>
           </div>
+          {delta !== null && !isLoading ? (
+            <span
+              className="mt-3 inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-micro font-semibold"
+              style={delta > 0
+                ? { borderColor: "var(--accent)", color: "var(--accent)" }
+                : { borderColor: "var(--border)", color: "var(--muted-foreground)" }}
+            >
+              {delta > 0 ? `↑ +${delta}` : delta < 0 ? `↓ ${delta}` : "– 0"} {dictionary.clients.vsPreviousMonth ?? "vs. mês anterior"}
+            </span>
+          ) : null}
         </div>
         {series.length > 0 ? <RhythmSparkline series={series} /> : null}
         <div className="flex flex-col gap-2.5 border-t border-[color:var(--border)] pt-4 md:col-span-full md:flex-row md:gap-8 lg:col-span-1 lg:w-60 lg:flex-col lg:gap-2.5 lg:border-l lg:border-t-0 lg:pl-8 lg:pt-0">
