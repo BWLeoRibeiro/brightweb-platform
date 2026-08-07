@@ -179,7 +179,7 @@ export const APP_DEPENDENCY_DEFAULTS = {
   "@brightweblabs/core-auth": "^0.10.8",
   "@brightweblabs/infra": "^0.7.0",
   "@brightweblabs/module-admin": "^0.8.22",
-  "@brightweblabs/module-crm": "^0.16.4",
+  "@brightweblabs/module-crm": "^0.16.5",
   "@brightweblabs/module-marketing": "^0.4.17",
   "@brightweblabs/module-orgs": "^0.5.4",
   "@brightweblabs/module-projects": "^0.17.5",
