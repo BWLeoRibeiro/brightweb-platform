@@ -1,5 +1,21 @@
 # @brightweblabs/module-projects
 
+## 0.17.0
+
+### Minor Changes
+
+- 94e10d3: Use one shared organization-creation sheet in CRM and Projects, including optional member invitations. Contact and project drafts now resume with the newly created organization selected, and both use the same compact, accessible plus button.
+
+### Patch Changes
+
+- 94e10d3: Make project health, attention counts, ownership gaps, deadlines, and empty milestones tell one consistent and accessible dashboard story.
+- Updated dependencies [94e10d3]
+- Updated dependencies [94e10d3]
+- Updated dependencies [94e10d3]
+- Updated dependencies [94e10d3]
+  - @brightweblabs/app-shell@0.15.0
+  - @brightweblabs/module-orgs@0.5.0
+
 ## 0.16.5
 
 ### Patch Changes

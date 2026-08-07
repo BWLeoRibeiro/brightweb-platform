@@ -1,5 +1,16 @@
 # @brightweblabs/app-shell
 
+## 0.15.0
+
+### Minor Changes
+
+- 94e10d3: Add a twelve-month contact rhythm view to the shared dashboard, distinguish contact creation dates, and provide deep-linked new-contact actions that open the CRM creation flow.
+
+### Patch Changes
+
+- 94e10d3: Make project health, attention counts, ownership gaps, deadlines, and empty milestones tell one consistent and accessible dashboard story.
+- 94e10d3: Load the theme bootstrap through Next.js before hydration to avoid React client-rendered script errors.
+
 ## 0.14.4
 
 ### Patch Changes
