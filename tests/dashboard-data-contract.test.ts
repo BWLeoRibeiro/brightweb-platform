@@ -158,6 +158,31 @@ test("CRM dashboard handler turns the live stats shape into non-zero parser-safe
   assert.equal(parsed.data?.crm.recentContacts[0]?.company, "Compiler Works");
 });
 
+test("CRM dashboard exposes at most the five most recently added contacts", () => {
+  const contacts = Array.from({ length: 7 }, (_, index) => ({
+    ...contact,
+    id: `contact-${index + 1}`,
+    first_name: `Contact ${index + 1}`,
+  }));
+
+  const data = buildCrmDashboardOverviewData({
+    generatedAt,
+    stats: { total: contacts.length, byStatus: { lead: contacts.length, qualified: 0, proposal: 0, won: 0, lost: 0 } },
+    contacts,
+    recentChanges: [],
+    newLast7Days: contacts.length,
+    newLast30Days: contacts.length,
+    newLastYear: contacts.length,
+    unassignedContacts: 0,
+  });
+
+  assert.equal(data.crm.recentContacts.length, 5);
+  assert.deepEqual(
+    data.crm.recentContacts.map((recentContact) => recentContact.id),
+    ["contact-1", "contact-2", "contact-3", "contact-4", "contact-5"],
+  );
+});
+
 test("CRM dashboard builds exactly twelve ordered monthly contact points across year boundaries", () => {
   const data = buildCrmDashboardOverviewData({
     generatedAt: "2026-07-24T12:00:00.000Z",
