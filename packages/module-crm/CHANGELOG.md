@@ -1,5 +1,11 @@
 # @brightweblabs/module-crm
 
+## 0.16.5
+
+### Patch Changes
+
+- 5906c1c: Limit the dashboard's recently added contacts to the five newest records.
+
 ## 0.16.4
 
 ### Patch Changes
