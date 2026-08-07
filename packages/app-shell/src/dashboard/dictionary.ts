@@ -98,6 +98,8 @@ export const defaultDashboardDictionary = {
     noRecent: "Sem contactos recentes.",
     lastChange: "Última alteração",
     addedOn: "Adicionado a",
+    thisMonth: "Este mês",
+    vsPreviousMonth: "vs. mês anterior",
   },
   data: {
     dashboardError: "Erro a carregar dashboard.",
@@ -111,7 +113,7 @@ export const defaultDashboardDictionary = {
 
 type DefaultDashboardDictionary = typeof defaultDashboardDictionary;
 type OptionalWelcomeKey = "activeProjectOne" | "activeProjectMany" | "projectOne" | "projectMany" | "needsOwnerOne" | "needsOwnerMany";
-type OptionalClientKey = "addNew" | "addedOn";
+type OptionalClientKey = "addNew" | "addedOn" | "thisMonth" | "vsPreviousMonth";
 
 export type DashboardDictionary = Omit<DefaultDashboardDictionary, "welcome" | "clients"> & {
   welcome: Omit<DefaultDashboardDictionary["welcome"], OptionalWelcomeKey> & Partial<Pick<DefaultDashboardDictionary["welcome"], OptionalWelcomeKey>>;
