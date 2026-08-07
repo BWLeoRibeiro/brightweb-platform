@@ -1,5 +1,14 @@
 # @brightweblabs/module-projects
 
+## 0.17.3
+
+### Patch Changes
+
+- fb3bb21: Add a URL-based dashboard quick action that opens the new-project form from the Projects tab, including direct and new-tab navigation.
+- Updated dependencies [fb3bb21]
+  - @brightweblabs/app-shell@0.15.2
+  - @brightweblabs/module-orgs@0.5.2
+
 ## 0.17.2
 
 ### Patch Changes
