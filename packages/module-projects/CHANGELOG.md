@@ -1,5 +1,14 @@
 # @brightweblabs/module-projects
 
+## 0.17.5
+
+### Patch Changes
+
+- d6795af: Restructure the projects dashboard into a responsive attention-list and sticky portfolio-health layout, with complete seven-day milestone data for the new timeline.
+- Updated dependencies [d6795af]
+  - @brightweblabs/app-shell@0.15.4
+  - @brightweblabs/module-orgs@0.5.4
+
 ## 0.17.4
 
 ### Patch Changes
