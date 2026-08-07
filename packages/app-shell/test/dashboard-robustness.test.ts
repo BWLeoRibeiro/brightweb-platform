@@ -4,7 +4,13 @@ import test from "node:test";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 
-import { AppDashboard, getAttentionPreviewCapacity } from "../src/dashboard/dashboard-client.tsx";
+import {
+  AppDashboard,
+  buildProjectQuickCreateHref,
+  getAttentionPreviewCapacity,
+  ProjectQuickCreateAction,
+  ProjectsView,
+} from "../src/dashboard/dashboard-client.tsx";
 import { createDashboardRequestGenerations } from "../src/dashboard/dashboard-request-generations.ts";
 import {
   clearDashboardSectionErrors,
@@ -321,6 +327,19 @@ test("projects dashboard presents one coherent, accessible health story", () => 
   assert.match(clientSource, /dashboard-projects-grid--single/);
   assert.match(clientSource, /milestones\.length > 0 \? <MilestonesPanel/);
   assert.match(stylesheet, /\.dashboard-projects-grid--single/);
+});
+
+test("projects dashboard provides a quick-create handoff to the projects module", () => {
+  const html = renderToStaticMarkup(createElement(ProjectsView, { projects, isLoading: false }));
+  const customAction = ProjectQuickCreateAction({
+    href: "/projetos",
+    label: "Novo projeto",
+  });
+
+  assert.match(html, /href="\/projects"[^>]*>Ver todos os projetos/);
+  assert.match(html, /href="\/projects\?create=project"[^>]*>[\s\S]*Novo projeto/);
+  assert.equal(customAction.props.href, "/projetos?create=project");
+  assert.equal(buildProjectQuickCreateHref("/projetos?view=grid#recent"), "/projetos?view=grid&create=project#recent");
 });
 
 test("dashboard renders the restored branded overview with live KPI content", () => {
