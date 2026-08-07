@@ -105,6 +105,53 @@ function isDueThisWeek(iso: string | null) {
   return t >= now && t <= now + 7 * 24 * 60 * 60 * 1000;
 }
 
+type UpcomingMilestoneDay = {
+  dateKey: string;
+  weekday: string;
+  fullDate: string;
+  isToday: boolean;
+  count: number;
+  milestones: DashboardProjectMilestone[];
+};
+
+function calendarDateKey(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+export function buildUpcomingMilestoneDays(
+  milestones: DashboardProjectMilestone[],
+  now = new Date(),
+): UpcomingMilestoneDay[] {
+  const milestonesByDate = new Map<string, DashboardProjectMilestone[]>();
+  for (const milestone of milestones) {
+    const dateKey = /^\d{4}-\d{2}-\d{2}/.exec(milestone.targetDate)?.[0];
+    if (!dateKey) continue;
+    const items = milestonesByDate.get(dateKey);
+    if (items) items.push(milestone);
+    else milestonesByDate.set(dateKey, [milestone]);
+  }
+
+  const start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  return Array.from({ length: 7 }, (_, index) => {
+    const date = new Date(start);
+    date.setDate(start.getDate() + index);
+    const dateKey = calendarDateKey(date);
+    const milestonesForDay = milestonesByDate.get(dateKey) ?? [];
+    const formattedDate = new Intl.DateTimeFormat("pt-PT", { weekday: "long", day: "numeric", month: "long" }).format(date);
+    return {
+      dateKey,
+      weekday: new Intl.DateTimeFormat("pt-PT", { weekday: "short" }).format(date).replace(".", "").slice(0, 3),
+      fullDate: formattedDate.charAt(0).toLocaleUpperCase("pt-PT") + formattedDate.slice(1),
+      isToday: index === 0,
+      count: milestonesForDay.length,
+      milestones: milestonesForDay,
+    };
+  });
+}
+
 /* ─── Welcome + Tabs ─────────────────────────────────────────────── */
 
 function HeroMetricMini({ value, label, tone }: { value: number; label: string; tone: "risk" | "on" | "neutral" }) {
@@ -779,15 +826,190 @@ export function ProjectQuickCreateAction({
   );
 }
 
+function PortfolioHealthCard({
+  openProjects,
+  onTrackCount,
+  attentionCount,
+  milestoneDays,
+  isLoading,
+}: {
+  openProjects: number;
+  onTrackCount: number;
+  attentionCount: number;
+  milestoneDays: UpcomingMilestoneDay[];
+  isLoading: boolean;
+}) {
+  const dictionary = useDashboardDictionary();
+  const attentionLabel = attentionCount === 1
+    ? dictionary.projects.needsAttentionOne
+    : dictionary.projects.needsAttentionMany;
+  const milestonesDueThisWeek = milestoneDays.reduce((sum, day) => sum + day.count, 0);
+  const healthStatus = openProjects === 0
+    ? {
+        label: dictionary.projects.healthStatusEmpty ?? "Sem projetos",
+        dotClassName: "bg-[color:var(--project-hero-subtle)]",
+        textClassName: "text-[color:var(--project-hero-subtle)]",
+      }
+    : attentionCount > 0
+      ? {
+          label: dictionary.projects.healthStatusAttention ?? "Requer atenção",
+          dotClassName: "bg-[color:var(--project-risk-at-risk)]",
+          textClassName: "text-[color:var(--project-hero-foreground)]",
+        }
+      : {
+          label: dictionary.projects.healthStatusOnTrack ?? "No rumo",
+          dotClassName: "bg-[color:var(--brand-lime,var(--project-state-active))]",
+          textClassName: "text-[color:var(--project-hero-foreground)]",
+        };
+
+  return (
+    <aside
+      className="dashboard-projects-health brand-panel overflow-hidden rounded-[var(--radius-card)] p-6 text-[color:var(--project-hero-foreground)]"
+      aria-labelledby="dashboard-project-health-title"
+    >
+      <span
+        aria-hidden
+        className="pointer-events-none absolute -left-16 -top-16 h-48 w-48 rounded-full blur-3xl opacity-100 dark:opacity-40"
+        style={{ background: "var(--dashboard-milestone-glow)" }}
+      />
+
+      <div className="relative flex items-center justify-between gap-4">
+        <div className="flex min-w-0 items-center gap-3">
+          <span
+            className="flex h-[1.875rem] w-[1.875rem] shrink-0 items-center justify-center rounded-full"
+            style={{ background: "var(--dashboard-milestone-icon)", color: "var(--accent)" }}
+          >
+            <CircleDot aria-hidden className="size-3.5" />
+          </span>
+          <h2 id="dashboard-project-health-title" className="truncate text-title font-semibold">
+            {dictionary.projects.healthTitle ?? "Resumo"}
+          </h2>
+        </div>
+        {isLoading ? (
+          <Skeleton className="h-6 w-24 shrink-0 rounded-full bg-[color:var(--project-hero-surface-raised)]" />
+        ) : (
+          <span
+            className={`inline-flex shrink-0 items-center gap-1.5 rounded-full border border-[color:var(--project-hero-border)] bg-[color:var(--project-hero-surface-raised)] px-2.5 py-1 text-micro font-semibold ${healthStatus.textClassName}`}
+            data-health-status
+          >
+            <span aria-hidden className={`h-1.5 w-1.5 rounded-full ${healthStatus.dotClassName}`} />
+            {healthStatus.label}
+          </span>
+        )}
+      </div>
+
+      <div className="relative mt-7 flex flex-wrap items-baseline gap-x-2 gap-y-1">
+        <strong className="text-kpi-lg text-[color:var(--project-hero-foreground)]">{isLoading ? "–" : openProjects}</strong>
+        <span className="text-body text-[color:var(--project-hero-muted)]">{dictionary.projects.openProjects}</span>
+      </div>
+
+      <div
+        className="relative mt-6 flex h-2 overflow-hidden rounded-full bg-[color:var(--project-hero-surface-raised)]"
+        role="img"
+        aria-label={`${onTrackCount} ${dictionary.projects.onTrack}; ${attentionCount} ${attentionLabel}`}
+      >
+        {onTrackCount > 0 ? (
+          <span className="h-full min-w-1 bg-[color:var(--brand-lime,var(--project-state-active))] first:rounded-l-full last:rounded-r-full" style={{ flex: onTrackCount }} />
+        ) : null}
+        {attentionCount > 0 ? (
+          <span className="h-full min-w-1 bg-[color:var(--project-risk-at-risk)] first:rounded-l-full last:rounded-r-full" style={{ flex: attentionCount }} />
+        ) : null}
+      </div>
+
+      <div className="relative mt-4 space-y-2.5">
+        <div className="flex items-center justify-between gap-4 text-label">
+          <span className={cn("inline-flex items-center gap-2", onTrackCount === 0 ? "text-[color:var(--project-hero-subtle)]" : "text-[color:var(--project-hero-muted)]")}>
+            <span aria-hidden className="h-2 w-2 rounded-full bg-[color:var(--brand-lime,var(--project-state-active))]" />
+            {dictionary.projects.onTrack}
+          </span>
+          <strong className={cn("text-data-sm", onTrackCount === 0 ? "text-[color:var(--project-hero-subtle)]" : "text-[color:var(--project-hero-foreground)]")}>{onTrackCount}</strong>
+        </div>
+        <div className="flex items-center justify-between gap-4 text-label">
+          <span className={cn("inline-flex items-center gap-2", attentionCount === 0 ? "text-[color:var(--project-hero-subtle)]" : "text-[color:var(--project-hero-foreground)]")}>
+            <span aria-hidden className="h-2 w-2 rounded-full bg-[color:var(--project-risk-at-risk)]" />
+            {attentionLabel}
+          </span>
+          <strong className={cn("text-data-sm", attentionCount === 0 ? "text-[color:var(--project-hero-subtle)]" : "text-[color:var(--project-hero-foreground)]")}>{attentionCount}</strong>
+        </div>
+      </div>
+
+      <div className="relative my-6 border-t border-[color:var(--project-hero-border)]" />
+
+      <div className="relative">
+        <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+          <strong className="text-kpi-lg text-[color:var(--project-hero-foreground)]">{isLoading ? "–" : milestonesDueThisWeek}</strong>
+          <span className="text-body text-[color:var(--project-hero-muted)]">
+            {milestonesDueThisWeek === 1
+              ? (dictionary.projects.milestonePlannedOne ?? "meta prevista")
+              : (dictionary.projects.milestonePlannedMany ?? dictionary.projects.milestonesWithDate ?? "metas previstas")}
+          </span>
+        </div>
+        <span className="mt-1.5 block text-meta text-[color:var(--project-hero-subtle)]">
+          {dictionary.projects.withinNextSevenDays ?? "nos próximos 7 dias"}
+        </span>
+
+        <div className="relative mt-5">
+          <span aria-hidden className="absolute inset-x-4 top-3.5 h-px bg-[color:var(--project-hero-border)]" />
+          <TooltipProvider delayDuration={80}>
+            <ol className="relative grid grid-cols-7 gap-1" aria-label={`${milestonesDueThisWeek} ${milestonesDueThisWeek === 1 ? dictionary.projects.milestoneOne : dictionary.projects.milestoneMany}`}>
+              {milestoneDays.map((day) => {
+                const label = day.isToday ? (dictionary.projects.today ?? "Hoje") : day.weekday;
+                const markerClassName = "relative flex h-7 w-7 items-center justify-center rounded-full text-data-sm";
+                return (
+                  <li key={day.dateKey} className="flex min-w-0 flex-col items-center gap-2">
+                    {day.count > 0 ? (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button
+                            type="button"
+                            className={`${markerClassName} touch-manipulation bg-[color:var(--accent)] text-[color:var(--accent-foreground)] transition-[filter,box-shadow] hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--project-hero-foreground)]`}
+                            aria-label={`${day.fullDate}: ${day.count} ${day.count === 1 ? dictionary.projects.milestoneOne : dictionary.projects.milestoneMany}. ${day.milestones.map((milestone) => `${milestone.title}, ${milestone.projectName}`).join("; ")}`}
+                          >
+                            {day.count}
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent side="top" className="w-64 p-3">
+                          <p className="text-label">{day.fullDate} · {day.count} {day.count === 1 ? dictionary.projects.milestoneOne : dictionary.projects.milestoneMany}</p>
+                          <ul className="mt-2 space-y-2">
+                            {day.milestones.map((milestone) => (
+                              <li key={milestone.id}>
+                                <p className="text-meta">{milestone.title}</p>
+                                <p className="text-micro text-[color:var(--muted-foreground)]">{milestone.projectName}</p>
+                              </li>
+                            ))}
+                          </ul>
+                        </TooltipContent>
+                      </Tooltip>
+                    ) : (
+                      <span
+                        className={`${markerClassName} border border-[color:var(--project-hero-border)] bg-[color:var(--project-hero-surface-raised)] text-[color:var(--project-hero-subtle)]`}
+                        aria-label={`${label}: 0`}
+                      >
+                        <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-current" />
+                      </span>
+                    )}
+                    <span className={cn("truncate text-micro", day.count > 0 ? "text-[color:var(--project-hero-muted)]" : "text-[color:var(--project-hero-subtle)]")}>{label}</span>
+                  </li>
+                );
+              })}
+            </ol>
+          </TooltipProvider>
+        </div>
+      </div>
+    </aside>
+  );
+}
+
 export function ProjectsView({ projects, isLoading }: { projects: DashboardProjectsData | null; isLoading: boolean }) {
   const dictionary = useDashboardDictionary();
   const projectBaseHref = useProjectBaseHref();
   const kpis = projects?.kpis;
   const attention = projects?.projects.attention ?? [];
-  const milestones = buildMilestones(projects);
+  const milestoneDays = buildUpcomingMilestoneDays(
+    projects?.projects.milestonesNext7Days ?? projects?.projects.milestones ?? [],
+  );
   const openProjects = (kpis?.projectsOnTrack ?? 0) + (kpis?.projectsAttention ?? 0);
   const hiddenAttentionCount = Math.max(0, (kpis?.projectsAttention ?? 0) - attention.length);
-  const milestonesDueThisWeek = milestones.filter((milestone) => isDueThisWeek(milestone.targetDate)).length;
   const onTrackCount = Math.max(0, kpis?.projectsOnTrack ?? 0);
   const attentionCount = Math.max(0, kpis?.projectsAttention ?? 0);
 
@@ -810,54 +1032,17 @@ export function ProjectsView({ projects, isLoading }: { projects: DashboardProje
         }
       />
 
-      <section className="brand-panel relative grid overflow-hidden rounded-[var(--radius-panel)] px-6 py-5 text-[color:var(--project-hero-foreground)] md:grid-cols-[minmax(10rem,0.7fr)_minmax(18rem,2fr)_minmax(10rem,0.8fr)] md:items-center md:gap-8">
-        <span aria-hidden className="pointer-events-none absolute -right-20 -top-32 h-64 w-64 rounded-full border border-[color:var(--project-hero-border)] bg-[image:var(--dashboard-hero-glow)] opacity-50" />
-        <div className="relative">
-          <span className="text-label font-bold text-[color:var(--project-hero-muted)]">{dictionary.projects.inProgress}</span>
-          <div className="mt-1 flex items-baseline gap-2">
-            <strong className={`${MONO} text-kpi-lg leading-none`}>{isLoading && !projects ? "–" : openProjects}</strong>
-            <span className="text-meta text-[color:var(--project-hero-muted)]">{dictionary.projects.openProjects}</span>
-          </div>
-        </div>
+      <div className="dashboard-projects-grid">
+        <PortfolioHealthCard
+          openProjects={openProjects}
+          onTrackCount={onTrackCount}
+          attentionCount={attentionCount}
+          milestoneDays={milestoneDays}
+          isLoading={isLoading && !projects}
+        />
 
-        <div className="relative mt-5 md:mt-0">
-          <div className="mb-2.5 flex items-center justify-between gap-4 text-meta font-semibold">
-            <span className="inline-flex items-center gap-2">
-              <span aria-hidden className="h-2 w-2 rounded-[2px] bg-[color:var(--brand-lime,var(--project-state-active))]" />
-              {onTrackCount} {dictionary.projects.onTrack}
-            </span>
-            <span className="inline-flex items-center gap-2 text-[color:var(--project-hero-foreground)]">
-              <span aria-hidden className="h-2 w-2 rounded-[2px] bg-[color:var(--project-risk-at-risk)]" />
-              {attentionCount} {attentionCount === 1 ? dictionary.projects.needsAttentionOne : dictionary.projects.needsAttentionMany}
-            </span>
-          </div>
-          <div
-            className="flex h-2.5 gap-1 overflow-hidden rounded-full bg-[color:var(--project-hero-surface-raised)]"
-            role="img"
-            aria-label={`${onTrackCount} ${dictionary.projects.onTrack}; ${attentionCount} ${attentionCount === 1 ? dictionary.projects.needsAttentionOne : dictionary.projects.needsAttentionMany}`}
-          >
-            {onTrackCount > 0 ? (
-              <span className="h-full min-w-1 bg-[color:var(--brand-lime,var(--project-state-active))] first:rounded-l-full last:rounded-r-full" style={{ flex: onTrackCount }} />
-            ) : null}
-            {attentionCount > 0 ? (
-              <span className="h-full min-w-1 bg-[color:var(--project-risk-at-risk)] first:rounded-l-full last:rounded-r-full" style={{ flex: attentionCount }} />
-            ) : null}
-          </div>
-          <p className="mt-2.5 text-label text-[color:var(--project-hero-muted)]">{dictionary.projects.healthBasis}</p>
-        </div>
-
-        <div className="relative mt-5 md:mt-0">
-          <span className="text-label font-bold text-[color:var(--project-hero-muted)]">{dictionary.projects.nextSevenDays}</span>
-          <div className="mt-1 flex items-baseline gap-2">
-            <strong className="text-kpi-lg leading-none">{milestonesDueThisWeek}</strong>
-            <span className="text-meta text-[color:var(--project-hero-muted)]">{milestonesDueThisWeek === 1 ? dictionary.projects.milestoneOne : dictionary.projects.milestoneMany}</span>
-          </div>
-        </div>
-      </section>
-
-      <div className={`dashboard-projects-grid ${!isLoading && milestones.length === 0 ? "dashboard-projects-grid--single" : ""}`}>
         <Card asChild>
-          <section className="overflow-hidden" aria-labelledby="dashboard-project-attention">
+          <section className="dashboard-projects-attention overflow-hidden" aria-labelledby="dashboard-project-attention">
           <div className="flex min-h-16 items-center justify-between border-b border-[color:var(--border)] px-5 py-4">
             <h3 id="dashboard-project-attention" className={LABEL}>{dictionary.projects.attentionQueueTitle}</h3>
             <span className="dashboard-attention-count">
@@ -891,8 +1076,6 @@ export function ProjectsView({ projects, isLoading }: { projects: DashboardProje
           )}
           </section>
         </Card>
-
-        {isLoading || milestones.length > 0 ? <MilestonesPanel items={milestones} isLoading={isLoading && !projects} /> : null}
       </div>
     </div>
   );

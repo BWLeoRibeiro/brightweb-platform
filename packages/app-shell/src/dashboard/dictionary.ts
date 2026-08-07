@@ -25,24 +25,35 @@ export const defaultDashboardDictionary = {
     dueSevenDays: "a vencer 7d",
     dueInSevenDays: "a vencer em 7 dias",
     noOwner: "sem responsável",
-    stateTitle: "Estado dos projetos",
-    stateSubtitle: "Uma leitura rápida do portefólio: o que precisa de decisão e as próximas metas.",
-    healthBasis: "Saúde baseada em prazo, progresso, bloqueios e responsabilidade.",
+    stateTitle: "Projetos",
+    stateSubtitle: "Veja o que precisa de atenção e as próximas metas.",
+    healthTitle: "Resumo",
+    healthBasis: "Com base em prazos, progresso, bloqueios e responsáveis.",
+    healthStatusAttention: "Requer atenção",
+    healthStatusOnTrack: "No rumo",
+    healthStatusEmpty: "Sem projetos",
     inProgress: "Em curso",
-    openProjects: "projetos em aberto",
+    openProjects: "projetos em curso",
     onTrack: "no rumo",
-    needsAttentionOne: "requer atenção",
-    needsAttentionMany: "requerem atenção",
+    needsAttentionOne: "precisa de atenção",
+    needsAttentionMany: "precisam de atenção",
     nextSevenDays: "Próximos 7 dias",
+    milestonesWithDate: "metas previstas",
+    milestonePlannedOne: "meta prevista",
+    milestonePlannedMany: "metas previstas",
+    withinNextSevenDays: "nos próximos 7 dias",
+    today: "Hoje",
     milestoneOne: "meta",
     milestoneMany: "metas",
-    attentionQueueTitle: "Requer atenção",
-    attentionTitle: "Projetos que requerem atenção",
+    attentionQueueTitle: "Precisam de atenção",
+    attentionTitle: "Projetos que precisam de atenção",
     viewAll: "Ver todos os projetos",
     addNew: "Novo projeto",
-    noneNeedAttention: (active: number) => `Nada em atenção agora — ${active} projetos no rumo.`,
+    noneNeedAttention: (active: number) => `${active} ${active === 1 ? "projeto no rumo" : "projetos no rumo"}.`,
     allOnTrackTitle: "Tudo no rumo",
-    allOnTrackDescription: (active: number) => `Os ${active} projetos ativos estão dentro do prazo e sem bloqueios críticos.`,
+    allOnTrackDescription: (active: number) => active === 1
+      ? "O projeto em curso está dentro do prazo e sem bloqueios."
+      : `Os ${active} projetos em curso estão dentro do prazo e sem bloqueios.`,
     moreAttention: (count: number) => `Ver mais ${count} ${count === 1 ? "projeto" : "projetos"}`,
   },
   crm: {
@@ -114,7 +125,7 @@ export const defaultDashboardDictionary = {
 
 type DefaultDashboardDictionary = typeof defaultDashboardDictionary;
 type OptionalWelcomeKey = "activeProjectOne" | "activeProjectMany" | "projectOne" | "projectMany" | "needsOwnerOne" | "needsOwnerMany";
-type OptionalProjectKey = "addNew";
+type OptionalProjectKey = "addNew" | "healthTitle" | "healthStatusAttention" | "healthStatusOnTrack" | "healthStatusEmpty" | "milestonesWithDate" | "milestonePlannedOne" | "milestonePlannedMany" | "withinNextSevenDays" | "today";
 type OptionalClientKey = "addNew" | "addedOn" | "thisMonth" | "vsPreviousMonth";
 
 export type DashboardDictionary = Omit<DefaultDashboardDictionary, "welcome" | "projects" | "clients"> & {

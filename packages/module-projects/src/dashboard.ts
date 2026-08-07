@@ -65,6 +65,7 @@ export type ProjectsDashboardSnapshot = {
   attentionProjects: ProjectListItem[];
   attentionTotal: number;
   milestones: DashboardProjectMilestone[];
+  milestonesNext7Days?: DashboardProjectMilestone[];
   dueNext7Days: number;
   withoutOwner: number;
   blockedTasks: number;
@@ -183,6 +184,7 @@ export function buildProjectsDashboardData(snapshot: ProjectsDashboardSnapshot):
       overdue: snapshot.overdueProjects.map(toDashboardProject),
       attention: attention.slice(0, DASHBOARD_PROJECT_ATTENTION_LIMIT),
       milestones: snapshot.milestones,
+      milestonesNext7Days: snapshot.milestonesNext7Days ?? snapshot.milestones,
     },
   };
 }
@@ -227,6 +229,14 @@ export async function getProjectsDashboardData(
     .not("projects.status", "in", "(completed,canceled)")
     .order("target_date", { ascending: true })
     .limit(DASHBOARD_MILESTONE_LIMIT);
+  const milestonesNext7DaysPromise = supabase
+    .from("project_milestones")
+    .select("id,project_id,title,status,target_date,projects!inner(name,code,status)")
+    .neq("status", "achieved")
+    .gte("target_date", today)
+    .lte("target_date", next7Days)
+    .not("projects.status", "in", "(completed,canceled)")
+    .order("target_date", { ascending: true });
 
   const blockedProjectsResult = await blockedProjectsPromise;
   if (blockedProjectsResult.error) throw new Error(blockedProjectsResult.error.message);
@@ -248,6 +258,7 @@ export async function getProjectsDashboardData(
     withoutOwner,
     attentionResult,
     milestonesResult,
+    milestonesNext7DaysResult,
   ] = await Promise.all([
     portfolioStatsPromise,
     overdueProjectsPromise,
@@ -255,8 +266,10 @@ export async function getProjectsDashboardData(
     withoutOwnerPromise,
     attentionProjectsPromise,
     milestonesPromise,
+    milestonesNext7DaysPromise,
   ]);
   if (milestonesResult.error) throw new Error(milestonesResult.error.message);
+  if (milestonesNext7DaysResult.error) throw new Error(milestonesNext7DaysResult.error.message);
 
   return buildProjectsDashboardData({
     generatedAt: now.toISOString(),
@@ -265,6 +278,7 @@ export async function getProjectsDashboardData(
     attentionProjects: attentionResult.items,
     attentionTotal: attentionResult.total,
     milestones: ((milestonesResult.data ?? []) as unknown as DashboardMilestoneRow[]).map(normalizeDashboardMilestone),
+    milestonesNext7Days: ((milestonesNext7DaysResult.data ?? []) as unknown as DashboardMilestoneRow[]).map(normalizeDashboardMilestone),
     dueNext7Days,
     withoutOwner,
     blockedTasks: blockedProjectsResult.count ?? 0,

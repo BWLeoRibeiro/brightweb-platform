@@ -6,6 +6,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 
 import {
   AppDashboard,
+  buildUpcomingMilestoneDays,
   buildProjectQuickCreateHref,
   getAttentionPreviewCapacity,
   ProjectQuickCreateAction,
@@ -69,6 +70,15 @@ const projects = {
       title: "Dashboard shipped",
       status: "in_progress",
       targetDate: "2026-07-25",
+    }],
+    milestonesNext7Days: [{
+      id: "milestone-week-1",
+      projectId: "project-1",
+      projectName: "Platform",
+      projectCode: null,
+      title: "Weekly dashboard shipped",
+      status: "pending",
+      targetDate: "2026-07-26",
     }],
   },
 };
@@ -144,6 +154,22 @@ test("attention preview capacity uses whole rows in the space below the card", (
   assert.equal(getAttentionPreviewCapacity(1_280, 972, 450), 5);
   assert.equal(getAttentionPreviewCapacity(1_280, 1_044, 450), 6);
   assert.equal(getAttentionPreviewCapacity(1_280, 1_044, 650), 3);
+});
+
+test("project milestone timeline groups the next seven calendar days", () => {
+  const days = buildUpcomingMilestoneDays([
+    { ...projects.projects.milestones[0], id: "milestone-a", targetDate: "2026-08-08" },
+    { ...projects.projects.milestones[0], id: "milestone-b", targetDate: "2026-08-12" },
+    { ...projects.projects.milestones[0], id: "milestone-c", targetDate: "2026-08-12" },
+    { ...projects.projects.milestones[0], id: "milestone-later", targetDate: "2026-08-14" },
+  ], new Date(2026, 7, 7, 12));
+
+  assert.deepEqual(days.map((day) => day.count), [0, 1, 0, 0, 0, 2, 0]);
+  assert.deepEqual(days.map((day) => day.weekday), ["sex", "sáb", "dom", "seg", "ter", "qua", "qui"]);
+  assert.equal(days[0]?.isToday, true);
+  assert.equal(days[6]?.dateKey, "2026-08-13");
+  assert.equal(days[1]?.fullDate, "Sábado, 8 de agosto");
+  assert.deepEqual(days[5]?.milestones.map((milestone) => milestone.id), ["milestone-b", "milestone-c"]);
 });
 
 test("dashboard request generations gate stale success, error, and loading writes per section", async () => {
@@ -234,6 +260,12 @@ test("dashboard parsers reject malformed nested KPI values, items, enums, and nu
   assert.equal(parseDashboardProjectsResponse({
     data: {
       ...projects,
+      projects: { ...projects.projects, milestonesNext7Days: [{ ...projects.projects.milestonesNext7Days[0], status: "unknown" }] },
+    },
+  }).data, null);
+  assert.equal(parseDashboardProjectsResponse({
+    data: {
+      ...projects,
       projects: { overdue: [{ ...projects.projects.overdue[0], health: "unknown" }] },
     },
   }).data, null);
@@ -312,7 +344,7 @@ test("dashboard overview preserves the branded bento layout", () => {
   assert.doesNotMatch(clientSource, /href=\{`\/crm\?contact=/);
   assert.doesNotMatch(stylesheet, /\.dashboard-briefing\s*\{/);
   assert.doesNotMatch(clientSource, /function ProjectsMilestonesList/);
-  assert.match(clientSource, /isLoading \|\| milestones\.length > 0 \? <MilestonesPanel items=\{milestones\}/);
+  assert.match(clientSource, /function OverviewView[\s\S]*<MilestonesPanel/);
 });
 
 test("projects dashboard presents one coherent, accessible health story", () => {
@@ -324,9 +356,51 @@ test("projects dashboard presents one coherent, accessible health story", () => 
   assert.match(clientSource, /activeProjects === 1[\s\S]*dictionary\.welcome\.activeProjectOne/);
   assert.match(clientSource, /overdueProjects > 0 \? "risk" : "neutral"/);
   assert.match(clientSource, /role="img"[\s\S]*aria-label=\{`\$\{onTrackCount\}/);
-  assert.match(clientSource, /dashboard-projects-grid--single/);
-  assert.match(clientSource, /milestones\.length > 0 \? <MilestonesPanel/);
-  assert.match(stylesheet, /\.dashboard-projects-grid--single/);
+  assert.match(clientSource, /function PortfolioHealthCard/);
+  assert.doesNotMatch(clientSource, /md:grid-cols-\[minmax\(10rem,0\.7fr\)/);
+  assert.doesNotMatch(clientSource, /dashboard-projects-grid--single/);
+  assert.match(stylesheet, /grid-template-columns: minmax\(0, 1fr\) 23\.75rem/);
+  assert.match(stylesheet, /@media \(min-width: 1081px\)/);
+  assert.match(stylesheet, /position: sticky;[\s\S]*top: 1\.5rem/);
+});
+
+test("projects dashboard keeps its health card in populated and empty states", () => {
+  const populatedHtml = renderToStaticMarkup(createElement(ProjectsView, { projects, isLoading: false }));
+  const onTrackProjects = {
+    ...projects,
+    kpis: {
+      ...projects.kpis,
+      projectsAttention: 0,
+      projectsOnTrack: 3,
+    },
+    projects: { ...projects.projects, overdue: [], attention: [] },
+  };
+  const emptyProjects = {
+    ...projects,
+    kpis: {
+      ...projects.kpis,
+      projectsActive: 0,
+      projectsAttention: 0,
+      projectsOnTrack: 0,
+    },
+    projects: { overdue: [], attention: [], milestones: [] },
+  };
+  const onTrackHtml = renderToStaticMarkup(createElement(ProjectsView, { projects: onTrackProjects, isLoading: false }));
+  const emptyHtml = renderToStaticMarkup(createElement(ProjectsView, { projects: emptyProjects, isLoading: false }));
+
+  assert.match(populatedHtml, />Resumo</);
+  assert.doesNotMatch(populatedHtml, />EM CURSO</);
+  assert.match(populatedHtml, /data-health-status="true"[^>]*>[^]*Requer atenção/);
+  assert.match(onTrackHtml, /data-health-status="true"[^>]*>[^]*No rumo/);
+  assert.match(emptyHtml, /data-health-status="true"[^>]*>[^]*Sem projetos/);
+  assert.match(populatedHtml, />projetos em curso</);
+  assert.match(populatedHtml, />metas previstas</);
+  assert.match(populatedHtml, />nos próximos 7 dias</);
+  assert.doesNotMatch(populatedHtml, />Com base em prazos/);
+  assert.match(populatedHtml, /dashboard-projects-health[\s\S]*dashboard-projects-attention/);
+  assert.match(emptyHtml, />Resumo</);
+  assert.match(emptyHtml, />Tudo no rumo</);
+  assert.match(emptyHtml, /--project-hero-subtle/);
 });
 
 test("projects dashboard provides a quick-create handoff to the projects module", () => {

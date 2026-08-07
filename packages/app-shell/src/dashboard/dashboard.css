@@ -12,8 +12,16 @@
   .dashboard-projects-grid {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "health"
+      "attention";
     align-items: start;
     gap: 1.375rem;
+  }
+  .dashboard-projects-attention { grid-area: attention; }
+  .dashboard-projects-health {
+    grid-area: health;
+    position: relative;
   }
   .dashboard-attention-count {
     display: flex;
@@ -31,9 +39,15 @@
     font-weight: var(--font-weight-heavy);
     line-height: var(--type-leading-none);
   }
-  @media (min-width: 901px) {
-    .dashboard-projects-grid { grid-template-columns: minmax(0, 1.55fr) minmax(18.75rem, 0.85fr); }
-    .dashboard-projects-grid--single { grid-template-columns: minmax(0, 1fr); }
+  @media (min-width: 1081px) {
+    .dashboard-projects-grid {
+      grid-template-columns: minmax(0, 1fr) 23.75rem;
+      grid-template-areas: "attention health";
+    }
+    .dashboard-projects-health {
+      position: sticky;
+      top: 1.5rem;
+    }
   }
   .dashboard-error { border-color: var(--dashboard-danger-border); background: var(--dashboard-danger-soft); color: var(--dashboard-danger-foreground); }
 }

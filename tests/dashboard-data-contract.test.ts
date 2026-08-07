@@ -103,6 +103,7 @@ test("Projects dashboard handler returns a full payload accepted by the real par
     attentionProjects: [project],
     attentionTotal: 1,
     milestones: [{ id: "milestone-1", projectId: project.id, projectName: project.name, projectCode: project.code, title: "Release", status: "in_progress", targetDate: "2026-07-25" }],
+    milestonesNext7Days: [{ id: "milestone-week-1", projectId: project.id, projectName: project.name, projectCode: project.code, title: "Weekly release", status: "pending", targetDate: "2026-07-26" }],
     dueNext7Days: 0,
     withoutOwner: 0,
     blockedTasks: 1,
@@ -122,6 +123,7 @@ test("Projects dashboard handler returns a full payload accepted by the real par
   assert.equal(parsed.data?.projects.overdue[0]?.name, "Platform");
   assert.equal(parsed.data?.projects.attention[0]?.attentionReason, "overdue");
   assert.equal(parsed.data?.projects.milestones[0]?.title, "Release");
+  assert.equal(parsed.data?.projects.milestonesNext7Days?.[0]?.title, "Weekly release");
 });
 
 test("CRM dashboard handler turns the live stats shape into non-zero parser-safe data", async () => {

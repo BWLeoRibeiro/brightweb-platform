@@ -621,9 +621,10 @@ test("dashboard attention cards use the canonical editorial attention-row recipe
   assert.match(projectTokens, /\.project-attention-date \{[\s\S]*font-size: var\(--text-ui-fine\)/);
   assert.match(projectTokens, /@media \(max-width: 650px\)[\s\S]*\.project-attention-meta \{ grid-column: 2 \/ 4/);
   assert.match(projectTokens, /@media \(prefers-reduced-motion: reduce\)/);
-  assert.match(dashboard, /dashboard-projects-grid \$\{!isLoading && milestones\.length === 0 \? "dashboard-projects-grid--single"/);
+  assert.match(dashboard, /className="dashboard-projects-grid"/);
+  assert.match(dashboard, /<PortfolioHealthCard[\s\S]*<Card asChild>/);
   assert.match(dashboard, /className="dashboard-attention-count"/);
-  assert.match(dashboardStyles, /@media \(min-width: 901px\)[\s\S]*\.dashboard-projects-grid/);
+  assert.match(dashboardStyles, /@media \(min-width: 1081px\)[\s\S]*grid-template-columns: minmax\(0, 1fr\) 23\.75rem/);
   assert.equal(defaultProjectsUiDictionary.dashboard.badges.withoutOwner, "Por atribuir");
   assert.equal(defaultProjectsUiDictionary.dashboard.defineDeadline, "Definir prazo");
 });
