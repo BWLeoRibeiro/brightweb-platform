@@ -1,5 +1,11 @@
 # @brightweblabs/app-shell
 
+## 0.15.3
+
+### Patch Changes
+
+- 95a44ed: Keep the theme bootstrap server-renderable so Next.js applications do not encounter a client-rendered script error during hydration.
+
 ## 0.15.2
 
 ### Patch Changes
