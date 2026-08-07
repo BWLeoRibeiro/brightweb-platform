@@ -156,6 +156,35 @@ test("CRM dashboard handler turns the live stats shape into non-zero parser-safe
   assert.equal(parsed.data?.crm.recentContacts[0]?.company, "Compiler Works");
 });
 
+test("CRM dashboard builds exactly twelve ordered monthly contact points across year boundaries", () => {
+  const data = buildCrmDashboardOverviewData({
+    generatedAt: "2026-07-24T12:00:00.000Z",
+    stats: { total: 5, byStatus: { lead: 5, qualified: 0, proposal: 0, won: 0, lost: 0 } },
+    contacts: [],
+    recentChanges: [],
+    newLast7Days: 2,
+    newLast30Days: 2,
+    newLastYear: 5,
+    unassignedContacts: 0,
+    createdDatesLastYear: [
+      "2025-08-01T09:00:00.000Z",
+      "2025-12-12T09:00:00.000Z",
+      "2026-01-03T09:00:00.000Z",
+      "2026-07-01T09:00:00.000Z",
+      "2026-07-20T09:00:00.000Z",
+    ],
+  });
+
+  assert.deepEqual(data.crm.monthlyNewContacts, [
+    { month: "2025-08", count: 1 }, { month: "2025-09", count: 0 },
+    { month: "2025-10", count: 0 }, { month: "2025-11", count: 0 },
+    { month: "2025-12", count: 1 }, { month: "2026-01", count: 1 },
+    { month: "2026-02", count: 0 }, { month: "2026-03", count: 0 },
+    { month: "2026-04", count: 0 }, { month: "2026-05", count: 0 },
+    { month: "2026-06", count: 0 }, { month: "2026-07", count: 2 },
+  ]);
+});
+
 test("Tasks dashboard handler returns assigned task rollups accepted by the real parser", async () => {
   const data = buildTasksDashboardData({
     generatedAt,

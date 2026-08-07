@@ -21,6 +21,7 @@ import {
 } from "@brightweblabs/ui";
 import type { CrmOrganization, CrmOrganizationWriteInput, CrmUiDictionary } from "./types";
 import { defaultCrmUiDictionary } from "./dictionary";
+import { OrganizationCreateSheet, type OrganizationCreateSheetInput } from "@brightweblabs/module-orgs/ui";
 
 export type CrmOrganizationFormInput = CrmOrganizationWriteInput;
 type OrganizationMode = "create" | "view" | "edit";
@@ -62,7 +63,61 @@ export type CrmOrganizationSheetProps = {
   onRevokeInvitation?: (organizationId: string, invitationId: string) => Promise<void>;
 };
 
-export function CrmOrganizationSheet({ open, organization, dictionary = defaultCrmUiDictionary, onOpenChange, onSubmit, onDelete, listInvitations, onRevokeInvitation }: CrmOrganizationSheetProps) {
+export function CrmOrganizationSheet(props: CrmOrganizationSheetProps) {
+  const { open, organization, dictionary = defaultCrmUiDictionary, onOpenChange, onSubmit } = props;
+  if (!organization) {
+    return (
+      <OrganizationCreateSheet
+        open={open}
+        onOpenChange={onOpenChange}
+        dictionary={{
+          eyebrow: dictionary.organizations.createEyebrow,
+          title: dictionary.organizations.newTitle,
+          description: dictionary.organizations.createDescription,
+          identity: dictionary.organizations.identity,
+          name: dictionary.organizations.name,
+          namePlaceholder: dictionary.organizations.namePlaceholder,
+          industry: dictionary.organizations.industry,
+          selectIndustry: dictionary.organizations.selectIndustry,
+          website: dictionary.organizations.website,
+          websitePlaceholder: dictionary.organizations.websitePlaceholder,
+          taxIdentifier: dictionary.organizations.taxIdentifierLong,
+          taxIdentifierPlaceholder: dictionary.organizations.taxIdentifierPlaceholder,
+          location: dictionary.organizations.location,
+          address: dictionary.organizations.address,
+          addressPlaceholder: dictionary.organizations.addressPlaceholder,
+          profile: dictionary.organizations.profile,
+          companySize: dictionary.organizations.companySize,
+          budgetRange: dictionary.organizations.budgetRange,
+          create: dictionary.organizations.create,
+          creating: dictionary.organizations.saving,
+          cancel: dictionary.organizations.cancel,
+        }}
+        onSubmit={(input) => onSubmit(mapCreateInput(input), null)}
+      />
+    );
+  }
+  return <CrmOrganizationDetailSheet {...props} organization={organization} />;
+}
+
+function mapCreateInput(input: OrganizationCreateSheetInput): CrmOrganizationFormInput {
+  return {
+    name: input.name,
+    industry: input.industry,
+    company_size: input.companySize,
+    budget_range: input.budgetRange,
+    website_url: input.websiteUrl,
+    address: input.addressLine1,
+    addressLine2: input.addressLine2,
+    zipCode: input.zipCode,
+    country: input.country,
+    taxIdentifierValue: input.taxIdentifierValue,
+    primary_contact_id: null,
+    invitations: input.invitations,
+  };
+}
+
+function CrmOrganizationDetailSheet({ open, organization, dictionary = defaultCrmUiDictionary, onOpenChange, onSubmit, onDelete, listInvitations, onRevokeInvitation }: CrmOrganizationSheetProps & { organization: CrmOrganization }) {
   const fieldId = useId();
   const [mode, setMode] = useState<OrganizationMode>(organization ? "view" : "create");
   const [value, setValue] = useState(() => initialValue(organization));

@@ -11,6 +11,7 @@ import {
   ChevronDown,
   CircleDot,
   Flag,
+  Plus,
   Users,
 } from "lucide-react";
 
@@ -63,7 +64,8 @@ function getGreeting(h: number, dictionary: DashboardDictionary) {
 }
 
 function formatFullDate(d: Date, dictionary: DashboardDictionary) {
-  const dow = new Intl.DateTimeFormat("pt-PT", { weekday: "long" }).format(d);
+  const weekday = new Intl.DateTimeFormat("pt-PT", { weekday: "long" }).format(d);
+  const dow = weekday.charAt(0).toLocaleUpperCase("pt-PT") + weekday.slice(1);
   const month = new Intl.DateTimeFormat("pt-PT", { month: "long" }).format(d);
   return `${dow}, ${d.getDate()} ${dictionary.date.joiner} ${month}`;
 }
@@ -105,8 +107,12 @@ function isDueThisWeek(iso: string | null) {
 
 /* ─── Welcome + Tabs ─────────────────────────────────────────────── */
 
-function HeroMetricMini({ value, label, tone }: { value: number; label: string; tone: "risk" | "on" }) {
-  const dot = tone === "risk" ? "var(--project-risk-overdue)" : "var(--project-state-active)";
+function HeroMetricMini({ value, label, tone }: { value: number; label: string; tone: "risk" | "on" | "neutral" }) {
+  const dot = tone === "risk"
+    ? "var(--project-risk-overdue)"
+    : tone === "on"
+      ? "var(--project-state-active)"
+      : "var(--project-hero-subtle)";
   return (
     <Card
       density="compact"
@@ -138,16 +144,18 @@ function HeroMetrics({ activeProjects, overdueProjects, newLeads }: { activeProj
       >
         <span
           className="text-kpi-lg text-[length:var(--text-ui-dashboard-metric)] font-black leading-[var(--type-leading-090)] tracking-[var(--type-tracking-n050)]"
-          style={{ color: "var(--accent)" }}
+          style={{ color: "var(--project-hero-foreground)" }}
         >
           {activeProjects}
         </span>
         <span className="mt-1.5 text-meta" style={{ color: "var(--project-hero-muted)" }}>
-          {dictionary.welcome.activeProjects}
+          {activeProjects === 1
+            ? (dictionary.welcome.activeProjectOne ?? dictionary.welcome.activeProjects.replace(/^projetos ativos$/, "projeto ativo"))
+            : (dictionary.welcome.activeProjectMany ?? dictionary.welcome.activeProjects)}
         </span>
       </Card>
       <div className="flex flex-col justify-between gap-3">
-        <HeroMetricMini value={overdueProjects} label={dictionary.welcome.overdueProjects} tone="risk" />
+        <HeroMetricMini value={overdueProjects} label={dictionary.welcome.overdueProjects} tone={overdueProjects > 0 ? "risk" : "neutral"} />
         <HeroMetricMini value={newLeads} label={dictionary.welcome.newLeads} tone="on" />
       </div>
     </div>
@@ -157,6 +165,7 @@ function HeroMetrics({ activeProjects, overdueProjects, newLeads }: { activeProj
 function WelcomeHeader({
   name,
   urgentCount,
+  unownedProjects,
   errors,
   activeProjects,
   overdueProjects,
@@ -164,6 +173,7 @@ function WelcomeHeader({
 }: {
   name: string;
   urgentCount: number;
+  unownedProjects: number;
   errors: string[];
   activeProjects: number;
   overdueProjects: number;
@@ -174,6 +184,7 @@ function WelcomeHeader({
   const greeting = now ? getGreeting(now.getHours(), dictionary) : dictionary.greeting.fallback;
   const dateLabel = now ? formatFullDate(now, dictionary) : dictionary.greeting.loadingDate;
   const time = now ? now.toLocaleTimeString("pt-PT", { hour: "2-digit", minute: "2-digit" }) : "--:--";
+  const allAttentionIsMissingOwners = unownedProjects > 0 && urgentCount === unownedProjects;
 
   useEffect(() => {
     const update = () => setNow(new Date());
@@ -202,7 +213,7 @@ function WelcomeHeader({
             style={{ color: "var(--project-hero-muted)" }}
           >
             <CalendarDays className="h-3.5 w-3.5" style={{ color: "var(--accent)" }} />
-            <span className="text-data capitalize">{dateLabel}</span>
+            <span className="text-data">{dateLabel}</span>
             <span className="opacity-40">·</span>
             <span className="text-data">{time}</span>
           </p>
@@ -220,7 +231,14 @@ function WelcomeHeader({
           </h1>
 
           <p className="mt-3 max-w-[32rem] text-body-lg" style={{ color: "var(--project-hero-muted)" }}>
-            {urgentCount > 0 ? (
+            {allAttentionIsMissingOwners ? (
+              <>
+                <span className="font-semibold" style={{ color: "var(--project-hero-foreground)" }}>
+                  {unownedProjects} {unownedProjects === 1 ? (dictionary.welcome.projectOne ?? "projeto") : (dictionary.welcome.projectMany ?? "projetos")}
+                </span>{" "}
+                {unownedProjects === 1 ? (dictionary.welcome.needsOwnerOne ?? "precisa de responsável.") : (dictionary.welcome.needsOwnerMany ?? "precisam de responsável.")}
+              </>
+            ) : urgentCount > 0 ? (
               <>
                 <span className="font-semibold" style={{ color: "var(--project-hero-foreground)" }}>
                   {urgentCount} {urgentCount === 1 ? dictionary.welcome.urgentOne : dictionary.welcome.urgentMany}
@@ -743,9 +761,10 @@ function ProjectsView({ projects, isLoading }: { projects: DashboardProjectsData
   const attention = projects?.projects.attention ?? [];
   const milestones = buildMilestones(projects);
   const openProjects = (kpis?.projectsOnTrack ?? 0) + (kpis?.projectsAttention ?? 0);
-  const onTrackPercentage = openProjects > 0 ? Math.round(((kpis?.projectsOnTrack ?? 0) / openProjects) * 100) : 100;
   const hiddenAttentionCount = Math.max(0, (kpis?.projectsAttention ?? 0) - attention.length);
   const milestonesDueThisWeek = milestones.filter((milestone) => isDueThisWeek(milestone.targetDate)).length;
+  const onTrackCount = Math.max(0, kpis?.projectsOnTrack ?? 0);
+  const attentionCount = Math.max(0, kpis?.projectsAttention ?? 0);
 
   return (
     <div className="space-y-6">
@@ -772,12 +791,26 @@ function ProjectsView({ projects, isLoading }: { projects: DashboardProjectsData
 
         <div className="relative mt-5 md:mt-0">
           <div className="mb-2.5 flex items-center justify-between gap-4 text-meta font-semibold">
-            <span>{kpis?.projectsOnTrack ?? 0} {dictionary.projects.onTrack}</span>
-            <span className="text-[color:var(--accent)]">{kpis?.projectsAttention ?? 0} {(kpis?.projectsAttention ?? 0) === 1 ? dictionary.projects.needsAttentionOne : dictionary.projects.needsAttentionMany}</span>
+            <span className="inline-flex items-center gap-2">
+              <span aria-hidden className="h-2 w-2 rounded-[2px] bg-[color:var(--brand-lime,var(--project-state-active))]" />
+              {onTrackCount} {dictionary.projects.onTrack}
+            </span>
+            <span className="inline-flex items-center gap-2 text-[color:var(--project-hero-foreground)]">
+              <span aria-hidden className="h-2 w-2 rounded-[2px] bg-[color:var(--project-risk-at-risk)]" />
+              {attentionCount} {attentionCount === 1 ? dictionary.projects.needsAttentionOne : dictionary.projects.needsAttentionMany}
+            </span>
           </div>
-          <div className="flex h-2.5 gap-1 overflow-hidden rounded-full bg-[color:var(--project-hero-surface-raised)]">
-            <span className="h-full rounded-full bg-[color:var(--brand-lime,var(--project-state-active))] transition-[width]" style={{ width: `${onTrackPercentage}%` }} />
-            <span className="h-full flex-1 rounded-full bg-[color:var(--project-risk-at-risk)]" />
+          <div
+            className="flex h-2.5 gap-1 overflow-hidden rounded-full bg-[color:var(--project-hero-surface-raised)]"
+            role="img"
+            aria-label={`${onTrackCount} ${dictionary.projects.onTrack}; ${attentionCount} ${attentionCount === 1 ? dictionary.projects.needsAttentionOne : dictionary.projects.needsAttentionMany}`}
+          >
+            {onTrackCount > 0 ? (
+              <span className="h-full min-w-1 bg-[color:var(--brand-lime,var(--project-state-active))] first:rounded-l-full last:rounded-r-full" style={{ flex: onTrackCount }} />
+            ) : null}
+            {attentionCount > 0 ? (
+              <span className="h-full min-w-1 bg-[color:var(--project-risk-at-risk)] first:rounded-l-full last:rounded-r-full" style={{ flex: attentionCount }} />
+            ) : null}
           </div>
           <p className="mt-2.5 text-label text-[color:var(--project-hero-muted)]">{dictionary.projects.healthBasis}</p>
         </div>
@@ -785,13 +818,13 @@ function ProjectsView({ projects, isLoading }: { projects: DashboardProjectsData
         <div className="relative mt-5 md:mt-0">
           <span className="text-label font-bold text-[color:var(--project-hero-muted)]">{dictionary.projects.nextSevenDays}</span>
           <div className="mt-1 flex items-baseline gap-2">
-            <strong className={`${MONO} text-kpi-lg leading-none`}>{milestonesDueThisWeek}</strong>
+            <strong className="text-kpi-lg leading-none">{milestonesDueThisWeek}</strong>
             <span className="text-meta text-[color:var(--project-hero-muted)]">{milestonesDueThisWeek === 1 ? dictionary.projects.milestoneOne : dictionary.projects.milestoneMany}</span>
           </div>
         </div>
       </section>
 
-      <div className="dashboard-projects-grid">
+      <div className={`dashboard-projects-grid ${!isLoading && milestones.length === 0 ? "dashboard-projects-grid--single" : ""}`}>
         <Card asChild>
           <section className="overflow-hidden" aria-labelledby="dashboard-project-attention">
           <div className="flex min-h-16 items-center justify-between border-b border-[color:var(--border)] px-5 py-4">
@@ -828,7 +861,7 @@ function ProjectsView({ projects, isLoading }: { projects: DashboardProjectsData
           </section>
         </Card>
 
-        <MilestonesPanel items={milestones} isLoading={isLoading && !projects} />
+        {isLoading || milestones.length > 0 ? <MilestonesPanel items={milestones} isLoading={isLoading && !projects} /> : null}
       </div>
     </div>
   );
@@ -862,40 +895,98 @@ function crmStatusMeta(status: string, dictionary: DashboardDictionary): TagMeta
   return values[status] ?? values.lead!;
 }
 
-function PeriodTile({
-  label,
-  value,
-  isLoading,
-  accent,
-}: {
-  label: string;
-  value: number;
-  isLoading: boolean;
-  accent?: boolean;
-}) {
+function formatMonthShort(isoMonth: string) {
+  const d = new Date(`${isoMonth}-01T00:00:00Z`);
+  if (Number.isNaN(d.getTime())) return isoMonth;
+  return new Intl.DateTimeFormat("pt-PT", { month: "short", timeZone: "UTC" }).format(d).replace(".", "");
+}
+
+function RhythmSparkline({ series }: { series: { month: string; count: number }[] }) {
+  const max = Math.max(1, ...series.map((p) => p.count));
+  const w = 560;
+  const h = 64;
+  const step = series.length > 1 ? w / (series.length - 1) : w;
+  const points = series
+    .map((p, i) => `${(i * step).toFixed(1)},${(h - 4 - (p.count / max) * (h - 8)).toFixed(1)}`)
+    .join(" ");
+  return (
+    <div aria-hidden className="min-w-0">
+      <svg viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" className="h-16 w-full">
+        <polyline
+          points={points}
+          fill="none"
+          stroke="var(--accent)"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          vectorEffect="non-scaling-stroke"
+        />
+      </svg>
+      <div className="mt-1.5 flex justify-between text-micro text-[color:var(--muted-foreground)]">
+        {series.map((p) => (
+          <span key={p.month}>{formatMonthShort(p.month)}</span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function RhythmPeriodRow({ label, value, isLoading }: { label: string; value: number; isLoading: boolean }) {
+  return (
+    <div className="flex items-baseline justify-between gap-6">
+      <span className="text-meta text-[color:var(--muted-foreground)]">{label}</span>
+      <span className={`${MONO} text-body font-semibold text-[color:var(--foreground)]`}>{isLoading ? "–" : value}</span>
+    </div>
+  );
+}
+
+function RhythmCard({ crm, isLoading }: { crm: DashboardCrmData | null; isLoading: boolean }) {
   const dictionary = useDashboardDictionary();
+  const kpis = crm?.kpis;
+  const series = crm?.crm.monthlyNewContacts ?? [];
+  const monthValue = kpis?.crmNewLast30Days ?? 0;
   return (
     <Card density="default" className="relative overflow-hidden p-6">
-      {accent && (
-        <span
-          aria-hidden
-          className="absolute right-0 top-0 h-20 w-20 rounded-full blur-2xl"
-          style={{ background: "var(--dashboard-period-glow)" }}
-        />
-      )}
-      <span className={LABEL}>{label}</span>
-      <div className="relative mt-4 flex items-baseline gap-2">
-        <span
-          className="text-kpi text-foreground"
-          style={accent ? { color: "var(--accent)" } : undefined}
-        >
-          {isLoading ? "–" : value}
-        </span>
-        <span className="text-body font-semibold text-[color:var(--muted-foreground)]">
-          {value === 1 ? dictionary.clients.newOne : dictionary.clients.newMany}
-        </span>
+      <span
+        aria-hidden
+        className="absolute right-0 top-0 h-20 w-20 rounded-full blur-2xl"
+        style={{ background: "var(--dashboard-period-glow)" }}
+      />
+      <div className={`relative grid grid-cols-1 gap-6 md:items-center ${series.length > 0 ? "md:grid-cols-[auto_1fr] lg:grid-cols-[auto_1fr_auto]" : "md:grid-cols-[1fr_auto]"}`}>
+        <div className="md:min-w-[12rem]">
+          <span className={LABEL}>{dictionary.clients.lastThirtyDays}</span>
+          <div className="mt-4 flex items-baseline gap-2">
+            <span className="text-kpi" style={{ color: "var(--accent)" }}>
+              {isLoading ? "–" : monthValue}
+            </span>
+            <span className="text-body font-semibold text-[color:var(--muted-foreground)]">
+              {monthValue === 1 ? dictionary.clients.newOne : dictionary.clients.newMany}
+            </span>
+          </div>
+        </div>
+        {series.length > 0 ? <RhythmSparkline series={series} /> : null}
+        <div className="flex flex-col gap-2.5 border-t border-[color:var(--border)] pt-4 md:col-span-full md:flex-row md:gap-8 lg:col-span-1 lg:w-60 lg:flex-col lg:gap-2.5 lg:border-l lg:border-t-0 lg:pl-8 lg:pt-0">
+          <RhythmPeriodRow label={dictionary.clients.lastSevenDays} value={kpis?.crmNewLast7Days ?? 0} isLoading={isLoading} />
+          <RhythmPeriodRow label={dictionary.clients.lastThirtyDays} value={kpis?.crmNewLast30Days ?? 0} isLoading={isLoading} />
+          <RhythmPeriodRow label={dictionary.clients.lastTwelveMonths} value={kpis?.crmNewLastYear ?? 0} isLoading={isLoading} />
+        </div>
       </div>
     </Card>
+  );
+}
+
+function AddContactCard() {
+  const dictionary = useDashboardDictionary();
+  return (
+    <Link
+      href="/crm?create=contact"
+      className="flex min-h-[8rem] w-full flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-[color:var(--border)] p-4 text-meta font-semibold text-[color:var(--muted-foreground)] transition-colors hover:border-[color:var(--accent)] hover:text-[color:var(--accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-current sm:w-[280px]"
+    >
+      <span className="flex h-9 w-9 items-center justify-center rounded-full border border-current">
+        <Plus className="h-4 w-4" strokeWidth={2} />
+      </span>
+      {dictionary.clients.addNew ?? "Novo contacto"}
+    </Link>
   );
 }
 
@@ -904,7 +995,13 @@ function ContactCard({ c }: { c: DashboardCrmRecentContact }) {
   const meta = crmStatusMeta(c.status, dictionary);
   return (
     <Card asChild variant="interactive" density="compact">
-      <Link href="/crm" className="group w-full p-4 sm:w-[280px]">
+      <Link href="/crm" className="group relative w-full p-4 sm:w-[280px]">
+        <span
+          aria-hidden
+          className="absolute right-3 top-3 flex h-7 w-7 items-center justify-center rounded-full border border-[color:var(--border)] text-[color:var(--foreground-accent-link)] opacity-0 transition group-hover:opacity-100 group-focus-visible:opacity-100"
+        >
+          <ArrowUpRight className="h-3.5 w-3.5" />
+        </span>
       <div className="flex items-center gap-3">
         <span
           className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-meta font-bold"
@@ -925,9 +1022,9 @@ function ContactCard({ c }: { c: DashboardCrmRecentContact }) {
         <Tag meta={meta} />
         <span className="inline-flex items-center gap-1.5">
           <CalendarDays aria-hidden className="h-3.5 w-3.5 opacity-70" strokeWidth={1.75} />
-          <span>{dictionary.clients.lastChange}</span>
+          <span>{c.createdAt ? (dictionary.clients.addedOn ?? dictionary.clients.lastChange) : dictionary.clients.lastChange}</span>
           <span className={`${MONO} font-semibold text-[color:var(--foreground)]`}>
-            {formatShortDate(c.lastChangedAt)}
+            {formatShortDate(c.createdAt ?? c.lastChangedAt)}
           </span>
         </span>
       </div>
@@ -938,7 +1035,6 @@ function ContactCard({ c }: { c: DashboardCrmRecentContact }) {
 
 function ClientsView({ crm, isLoading }: { crm: DashboardCrmData | null; isLoading: boolean }) {
   const dictionary = useDashboardDictionary();
-  const kpis = crm?.kpis;
   const contacts = crm?.crm.recentContacts ?? [];
   const tilesLoading = isLoading && !crm;
 
@@ -948,31 +1044,23 @@ function ClientsView({ crm, isLoading }: { crm: DashboardCrmData | null; isLoadi
         title={dictionary.clients.title}
         subtitle={dictionary.clients.subtitle}
         action={
-          <PortalActionLink href="/crm">
-            {dictionary.clients.viewAll}
-            <ArrowUpRight className="h-3.5 w-3.5" />
-          </PortalActionLink>
+          <div className="flex flex-wrap items-center gap-2">
+            <PortalActionLink href="/crm">
+              {dictionary.clients.viewAll}
+              <ArrowUpRight className="h-3.5 w-3.5" />
+            </PortalActionLink>
+            <Link
+              href="/crm?create=contact"
+              className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-[color:var(--surface-button-brand)] px-3.5 py-1.5 text-meta font-semibold text-[color:var(--accent-foreground)] transition hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-current [&_svg]:h-3.5 [&_svg]:w-3.5"
+            >
+              <Plus />
+              {dictionary.clients.addNew ?? "Novo contacto"}
+            </Link>
+          </div>
         }
       />
 
-      <section className="grid grid-cols-1 gap-4 md:grid-cols-3">
-        <PeriodTile
-          label={dictionary.clients.lastSevenDays}
-          value={kpis?.crmNewLast7Days ?? 0}
-          isLoading={tilesLoading}
-          accent
-        />
-        <PeriodTile
-          label={dictionary.clients.lastThirtyDays}
-          value={kpis?.crmNewLast30Days ?? 0}
-          isLoading={tilesLoading}
-        />
-        <PeriodTile
-          label={dictionary.clients.lastTwelveMonths}
-          value={kpis?.crmNewLastYear ?? 0}
-          isLoading={tilesLoading}
-        />
-      </section>
+      <RhythmCard crm={crm} isLoading={tilesLoading} />
 
       <section className="space-y-3">
         <div className="flex items-end justify-between">
@@ -1002,12 +1090,16 @@ function ClientsView({ crm, isLoading }: { crm: DashboardCrmData | null; isLoadi
             ))}
           </div>
         ) : contacts.length === 0 ? (
-          <p className="text-body text-[color:var(--muted-foreground)]">{dictionary.clients.noRecent}</p>
+          <div className="space-y-3">
+            <p className="text-body text-[color:var(--muted-foreground)]">{dictionary.clients.noRecent}</p>
+            <AddContactCard />
+          </div>
         ) : (
           <div className="flex flex-wrap gap-4">
             {contacts.map((c) => (
               <ContactCard key={c.id} c={c} />
             ))}
+            <AddContactCard />
           </div>
         )}
       </section>
@@ -1196,7 +1288,7 @@ export function AppDashboard({ client, contributions, initialData, viewerFirstNa
   const milestones = useMemo(() => buildMilestones(data.projects), [data.projects]);
 
   const urgentCount =
-    (data.tasks?.kpis.overdue ?? 0) + (data.tasks?.kpis.blocked ?? 0) + (data.projects?.kpis.projectsAtRisk ?? 0);
+    (data.tasks?.kpis.overdue ?? 0) + (data.tasks?.kpis.blocked ?? 0) + (data.projects?.kpis.projectsAttention ?? 0);
 
   return (
     <DashboardDictionaryContext.Provider value={dictionary}>
@@ -1215,6 +1307,7 @@ export function AppDashboard({ client, contributions, initialData, viewerFirstNa
         <WelcomeHeader
           name={viewerFirstName ?? ""}
           urgentCount={urgentCount}
+          unownedProjects={data.projects?.kpis.projectsWithoutOwner ?? 0}
           errors={sections.flatMap((section) => data.errors[section] ? [data.errors[section]] : [])}
           activeProjects={data.projects?.kpis.projectsActive ?? 0}
           overdueProjects={data.projects?.kpis.projectsOverdue ?? 0}

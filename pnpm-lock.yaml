@@ -369,12 +369,25 @@ importers:
       '@brightweblabs/infra':
         specifier: workspace:*
         version: link:../infra
+      '@brightweblabs/ui':
+        specifier: workspace:*
+        version: link:../ui
       '@supabase/supabase-js':
         specifier: ^2.110.8
         version: 2.110.8
+      lucide-react:
+        specifier: ^1.26.0
+        version: 1.26.0(react@19.2.4)
       server-only:
         specifier: ^0.0.1
         version: 0.0.1
+    devDependencies:
+      react:
+        specifier: 19.2.4
+        version: 19.2.4
+      react-dom:
+        specifier: 19.2.4
+        version: 19.2.4(react@19.2.4)
 
   packages/module-projects:
     dependencies:
@@ -387,6 +400,9 @@ importers:
       '@brightweblabs/infra':
         specifier: workspace:*
         version: link:../infra
+      '@brightweblabs/module-orgs':
+        specifier: workspace:*
+        version: link:../module-orgs
       '@brightweblabs/theme':
         specifier: workspace:*
         version: link:../theme

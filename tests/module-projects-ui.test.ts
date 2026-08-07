@@ -180,6 +180,10 @@ test("create-project organization choices never present unresolved or failed dat
   assert.match(source, /setOrganizationsLoadState\("pending"\)[\s\S]*requestRaw/);
   assert.match(source, /isLoadingOrganizations \?[\s\S]*loadingOrganizations[\s\S]*organizationsLoadState === "rejected"[\s\S]*loadOrganizationsError[\s\S]*hasOrganizations/);
   assert.match(source, /role="alert"[\s\S]*loadOrganizationsError/);
+  assert.match(source, /size="icon"[\s\S]*aria-label=\{dictionary\.projectCreate\.newOrganization\}[\s\S]*<Plus className="size-4" \/>/);
+  assert.match(source, /<OrganizationCreateSheet[\s\S]*onSubmit=\{handleCreateOrganization\}/);
+  assert.match(source, /requestRaw\("\/api\/organizations"/);
+  assert.doesNotMatch(source, /requestRaw\("\/api\/projects\/organizations"/);
 });
 
 const project = { id: "project-1", organizationId: "org-1", organizationName: "MQ", organizationOwnerLabel: null, organizationOwnerEmail: null, organizationOwnerPhone: null, name: "Projeto", code: "MQ-1", status: "active", health: "on_track", ownerProfileId: null, ownerLabel: null, ownerEmail: null, ownerPhone: null, activatedAt: null, startDate: null, targetDate: null, completedAt: null, cancellationReason: null, summary: null, createdAt: "2026-01-01T00:00:00.000Z", updatedAt: "2026-01-01T00:00:00.000Z", taskStats: { total: 0, done: 0, overdue: 0, blocked: 0 }, milestoneStats: { total: 0, achieved: 0, delayed: 0 } } satisfies ProjectDashboardData["project"];
@@ -598,7 +602,11 @@ test("dashboard attention cards use the canonical editorial attention-row recipe
   assert.match(card, /import "\.\.\/\.\.\/\.\.\/tokens\.css"/);
   assert.match(card, /<ProjectPill[\s\S]*size="normal"[\s\S]*dotClassName="project-attention-pill-dot"/);
   assert.match(card, /className="project-attention-company">\{formatNaturalDisplayName\(project\.organizationName\)\}/);
+  assert.match(card, /className="project-attention-title">\{formatNaturalDisplayName\(project\.name\)\}/);
   assert.match(card, /<strong>\{reason\}<\/strong> \{detail\}/);
+  assert.match(card, /project\.attentionReason !== "without_owner"/);
+  assert.match(card, /project\.ownerLabel \? \(/);
+  assert.match(card, /dictionary\.dashboard\.defineDeadline/);
   assert.match(card, /<CalendarDays aria-hidden className="project-attention-date-icon/);
   assert.match(card, /<span aria-hidden className="project-attention-arrow">/);
   assert.doesNotMatch(card, /text-label[^\n]*organizationName|monoTabularClassName/);
@@ -607,10 +615,11 @@ test("dashboard attention cards use the canonical editorial attention-row recipe
   assert.match(projectTokens, /\.project-attention-date \{[\s\S]*font-size: var\(--text-ui-fine\)/);
   assert.match(projectTokens, /@media \(max-width: 650px\)[\s\S]*\.project-attention-meta \{ grid-column: 2 \/ 4/);
   assert.match(projectTokens, /@media \(prefers-reduced-motion: reduce\)/);
-  assert.match(dashboard, /className="dashboard-projects-grid"/);
+  assert.match(dashboard, /dashboard-projects-grid \$\{!isLoading && milestones\.length === 0 \? "dashboard-projects-grid--single"/);
   assert.match(dashboard, /className="dashboard-attention-count"/);
   assert.match(dashboardStyles, /@media \(min-width: 901px\)[\s\S]*\.dashboard-projects-grid/);
   assert.equal(defaultProjectsUiDictionary.dashboard.badges.withoutOwner, "Por atribuir");
+  assert.equal(defaultProjectsUiDictionary.dashboard.defineDeadline, "Definir prazo");
 });
 
 test("dashboard organization names normalize only legacy all-caps values", () => {

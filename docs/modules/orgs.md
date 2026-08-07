@@ -15,7 +15,7 @@ The organizations baseline installs without CRM. When CRM is present, CRM's inte
 
 ## Package contract
 
-@brightweblabs/module-orgs exports organization list/create/update helpers and organization membership list/admin helpers. Its orgsModuleRegistration uses hidden placement so it can participate in shell configuration without adding navigation.
+`@brightweblabs/module-orgs` exports organization list/create/update helpers and organization membership list/admin helpers. `@brightweblabs/module-orgs/ui` exports `OrganizationCreateSheet`, the shared organization-creation surface with optional member invitations used by CRM and Projects. Its `orgsModuleRegistration` uses hidden placement so it can participate in shell configuration without adding navigation.
 
 See [Base Contract](./base-contract.md) for support tiers and [Using BrightWeb Modules](./using-modules.md) for integration guidance.
 
