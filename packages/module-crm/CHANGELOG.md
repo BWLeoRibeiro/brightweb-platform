@@ -1,5 +1,11 @@
 # @brightweblabs/module-crm
 
+## 0.15.18
+
+### Patch Changes
+
+- 557eeb9: Keep the CRM contacts table flush with its shared card surface even when card defaults add padding.
+
 ## 0.15.17
 
 ### Patch Changes
