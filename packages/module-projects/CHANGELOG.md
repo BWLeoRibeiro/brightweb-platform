@@ -1,5 +1,11 @@
 # @brightweblabs/module-projects
 
+## 0.17.1
+
+### Patch Changes
+
+- 32124e6: Keep newly created organizations selected when returning to project creation, and reset the complete project draft whenever its parent creation sheet closes.
+
 ## 0.17.0
 
 ### Minor Changes
