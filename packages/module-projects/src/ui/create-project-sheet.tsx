@@ -4,6 +4,7 @@ import { StyledSelect } from "@brightweblabs/ui";
 
 import { useProjectsUiClient, useProjectsUiDictionary } from "./context";
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { flushSync } from "react-dom";
 import { FolderKanban, Loader2, Plus, Save, Users2 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -30,6 +31,7 @@ import { PROJECT_MEMBER_SCOPE_LABELS, useProjectSetupState } from "./project-cre
 import { useProjectFormState } from "./project-create/use-project-form-state";
 import { createProject } from "./project-ui-actions";
 import { parseProjectBoardApiError } from "./project-board-response-parser";
+import { reconcileLoadedOrganizationOptions, upsertOrganizationOption } from "./project-create/organization-options";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -71,6 +73,9 @@ export function CreateProjectSheet({ organizations, initialOpen = false }: Creat
   const [organizationOptions, setOrganizationOptions] = useState<OrganizationOption[]>(organizations);
   const [organizationsLoadState, setOrganizationsLoadState] = useState<"idle" | "pending" | "fulfilled" | "rejected">(organizations.length > 0 ? "fulfilled" : "idle");
   const organizationsRequestRef = useRef<AbortController | null>(null);
+  const createdOrganizationRef = useRef<OrganizationOption | null>(null);
+  const latestCreatedOrganizationRef = useRef<OrganizationOption | null>(null);
+  const defaultOrganizationIdRef = useRef(organizations[0]?.id ?? "");
 
   const projectForm = useProjectFormState(organizationOptions);
   const setup = useProjectSetupState();
@@ -105,8 +110,12 @@ export function CreateProjectSheet({ organizations, initialOpen = false }: Creat
   );
 
   const performProjectCancel = useCallback(() => {
+    createdOrganizationRef.current = null;
+    latestCreatedOrganizationRef.current = null;
+    setOrganizationSheetOpen(false);
+    projectForm.resetProjectForm(organizationOptions, defaultOrganizationIdRef.current);
     setOpen(false);
-  }, []);
+  }, [organizationOptions, projectForm]);
 
   const handleProjectCancel = useCallback(() => {
     if (isProjectDirty) {
@@ -131,7 +140,11 @@ export function CreateProjectSheet({ organizations, initialOpen = false }: Creat
       const nextOrganizations = await client.listOrganizations({ signal: controller.signal });
       if (organizationsRequestRef.current !== controller) return;
 
-      setOrganizationOptions(nextOrganizations);
+      const latestCreated = latestCreatedOrganizationRef.current;
+      setOrganizationOptions(reconcileLoadedOrganizationOptions(nextOrganizations, latestCreated));
+      if (!defaultOrganizationIdRef.current && nextOrganizations[0]?.id) {
+        defaultOrganizationIdRef.current = nextOrganizations[0].id;
+      }
       if (!projectForm.organizationId && nextOrganizations[0]?.id) {
         projectForm.setOrganizationId(nextOrganizations[0].id);
       }
@@ -190,11 +203,16 @@ export function CreateProjectSheet({ organizations, initialOpen = false }: Creat
         throw new Error(dictionary.projectCreate.invalidOrganizationResponse);
       }
 
-      const nextOrganizations = [...organizationOptions.filter((organization) => organization.id !== created.id), created]
-        .toSorted((a, b) => a.name.localeCompare(b.name, "pt-PT"));
-      setOrganizationOptions(nextOrganizations);
-      projectForm.setOrganizationId(created.id);
-      projectForm.setCodeTouched(false);
+      createdOrganizationRef.current = created;
+      latestCreatedOrganizationRef.current = created;
+      // OrganizationCreateSheet closes immediately after onSubmit resolves. Commit
+      // the option and selection before that nested sheet unmounts so the parent
+      // project form cannot render one frame with an unknown/empty select value.
+      flushSync(() => {
+        setOrganizationOptions((current) => upsertOrganizationOption(current, created));
+        projectForm.setOrganizationId(created.id);
+        projectForm.setCodeTouched(false);
+      });
       const pendingCount = inviteSummary?.pendingInvitations ?? 0;
       const directCount = (inviteSummary?.directAssignments ?? 0) + (inviteSummary?.updatedExistingMembers ?? 0);
       if (input.invitations.length > 0) {
@@ -206,6 +224,19 @@ export function CreateProjectSheet({ organizations, initialOpen = false }: Creat
       } else {
         toast.success(dictionary.projectCreate.organizationCreated);
       }
+  };
+
+  const handleOrganizationSheetOpenChange = (nextOpen: boolean) => {
+    setOrganizationSheetOpen(nextOpen);
+    if (nextOpen) return;
+
+    const created = createdOrganizationRef.current;
+    if (!created) return;
+    createdOrganizationRef.current = null;
+    flushSync(() => {
+      setOrganizationOptions((current) => upsertOrganizationOption(current, created));
+      projectForm.setOrganizationId(created.id);
+    });
   };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -231,7 +262,7 @@ export function CreateProjectSheet({ organizations, initialOpen = false }: Creat
 
       toast.success(dictionary.projectCreate.projectCreated);
       setOpen(false);
-      projectForm.resetProjectForm(organizationOptions);
+      projectForm.resetProjectForm(organizationOptions, defaultOrganizationIdRef.current);
       setup.setSetupOpen(true);
       await setup.loadSetupData(
         createdProject.id,
@@ -489,7 +520,7 @@ export function CreateProjectSheet({ organizations, initialOpen = false }: Creat
 
           <OrganizationCreateSheet
             open={organizationSheetOpen}
-            onOpenChange={setOrganizationSheetOpen}
+            onOpenChange={handleOrganizationSheetOpenChange}
             onSubmit={handleCreateOrganization}
             dictionary={{
               eyebrow: dictionary.create.creatingEyebrow,

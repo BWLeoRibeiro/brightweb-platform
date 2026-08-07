@@ -184,6 +184,12 @@ test("create-project organization choices never present unresolved or failed dat
   assert.match(source, /<OrganizationCreateSheet[\s\S]*onSubmit=\{handleCreateOrganization\}/);
   assert.match(source, /requestRaw\("\/api\/organizations"/);
   assert.doesNotMatch(source, /requestRaw\("\/api\/projects\/organizations"/);
+  assert.match(source, /createdOrganizationRef\.current = created;[\s\S]*flushSync\(\(\) => \{[\s\S]*setOrganizationOptions\(\(current\) => upsertOrganizationOption\(current, created\)\)[\s\S]*setOrganizationId\(created\.id\)/);
+  assert.match(source, /handleOrganizationSheetOpenChange[\s\S]*createdOrganizationRef\.current[\s\S]*setOrganizationId\(created\.id\)/);
+  assert.match(source, /performProjectCancel[\s\S]*resetProjectForm\(organizationOptions, defaultOrganizationIdRef\.current\)[\s\S]*setOpen\(false\)/);
+  assert.match(source, /if \(!defaultOrganizationIdRef\.current && nextOrganizations\[0\]\?\.id\)/);
+  assert.match(source, /latestCreatedOrganizationRef\.current[\s\S]*reconcileLoadedOrganizationOptions\(nextOrganizations, latestCreated\)/);
+  assert.match(source, /onOpenChange=\{handleOrganizationSheetOpenChange\}/);
 });
 
 const project = { id: "project-1", organizationId: "org-1", organizationName: "MQ", organizationOwnerLabel: null, organizationOwnerEmail: null, organizationOwnerPhone: null, name: "Projeto", code: "MQ-1", status: "active", health: "on_track", ownerProfileId: null, ownerLabel: null, ownerEmail: null, ownerPhone: null, activatedAt: null, startDate: null, targetDate: null, completedAt: null, cancellationReason: null, summary: null, createdAt: "2026-01-01T00:00:00.000Z", updatedAt: "2026-01-01T00:00:00.000Z", taskStats: { total: 0, done: 0, overdue: 0, blocked: 0 }, milestoneStats: { total: 0, achieved: 0, delayed: 0 } } satisfies ProjectDashboardData["project"];
