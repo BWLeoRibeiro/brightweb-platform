@@ -193,6 +193,27 @@ test("CRM contact and organization details use right-side sheets instead of cent
   assert.match(organizationSource, /SheetSection/);
 });
 
+test("CRM contact creation quick-creates an organization and resumes with it selected", () => {
+  const contactSource = readFileSync(join(process.cwd(), "packages/module-crm/src/ui/contact-dialog.tsx"), "utf8");
+  const dashboardSource = readFileSync(join(process.cwd(), "packages/module-crm/src/ui/dashboard.tsx"), "utf8");
+  const organizationSheetSource = readFileSync(join(process.cwd(), "packages/module-crm/src/ui/organization-sheet.tsx"), "utf8");
+
+  assert.match(contactSource, /onCreateOrganization\?: \(input: CrmOrganizationWriteInput\) => Promise<CrmOrganizationOption>/);
+  assert.match(contactSource, /<CrmOrganizationSheet[\s\S]*onSubmit=\{createOrganization\}/);
+  assert.match(contactSource, /const created = await onCreateOrganization\(input\);[\s\S]*setOrganizationOptions[\s\S]*organization\.id !== created\.id[\s\S]*organizationId: created\.id/);
+  assert.match(contactSource, /options=\{\[\{ value: "",[\s\S]*\.\.\.organizationOptions\.map/);
+  assert.match(contactSource, /organizationToSelect\?: CrmOrganizationOption \| null/);
+  assert.match(contactSource, /if \(!open \|\| !organizationToSelect\) return;[\s\S]*organizationId: organizationToSelect\.id/);
+  assert.match(contactSource, /const merged = new Map[\s\S]*organizations\.forEach[\s\S]*return \[\.\.\.merged\.values\(\)\]/);
+  assert.match(contactSource, /<Sheet open=\{open\}[\s\S]*<CrmOrganizationSheet/);
+  assert.match(contactSource, /size="icon"[\s\S]*aria-label=\{dictionary\.organizations\.newTitle\}[\s\S]*<Plus className="size-4" \/>/);
+  assert.match(dashboardSource, /setContactOrganizationToSelect\(saved\)/);
+  assert.match(dashboardSource, /onCreateOrganization=\{createOrganizationForContact\} organizationToSelect=\{contactOrganizationToSelect\}/);
+  assert.match(dashboardSource, /setOrganizations\([\s\S]*return saved;/);
+  assert.match(organizationSheetSource, /OrganizationCreateSheet/);
+  assert.match(organizationSheetSource, /invitations: input\.invitations/);
+});
+
 test("CRM organization cards expose full-card hover, pointer, and keyboard affordances", () => {
   const source = readFileSync(join(process.cwd(), "packages/module-crm/src/ui/organizations-browser.tsx"), "utf8");
   const cardRecipe = readFileSync(join(process.cwd(), "packages/theme/src/surfaces.css"), "utf8");

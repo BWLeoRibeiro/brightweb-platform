@@ -19,7 +19,12 @@ export function createProjectsUiClient(basePath = "/api/projects", fetcher: type
   const request = async <T>(path: string, init?: RequestInit) => json<T>(await fetcher(`${root}${path}`, init));
   const write = <T>(path: string, method: string, body?: unknown) => request<T>(path, { method, headers: body === undefined ? undefined : { "content-type": "application/json" }, body: body === undefined ? undefined : JSON.stringify(body) });
   return {
-    requestRaw: (path, init) => fetcher(path.startsWith("http") ? path : `${root}${path.replace(/^\/api\/projects/, "")}`, init),
+    requestRaw: (path, init) => fetcher(
+      path.startsWith("http") || path.startsWith("/api/")
+        ? path
+        : `${root}${path}`,
+      init,
+    ),
     async listProjects(params: ListProjectsParams = {}, requestOptions = {}) {
       const q = new URLSearchParams();
       Object.entries(params).forEach(([key, value]) => { if (value !== undefined && value !== null) q.set(key, String(value)); });

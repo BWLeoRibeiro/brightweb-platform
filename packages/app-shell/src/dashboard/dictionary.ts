@@ -1,14 +1,20 @@
 export const defaultDashboardDictionary = {
   header: { kicker: "Visão geral", title: "Dashboard" },
-  tabs: { overview: "Overview", projects: "Projetos", clients: "Clientes", tasks: "Tarefas" },
+  tabs: { overview: "Visão geral", projects: "Projetos", clients: "Contactos", tasks: "Tarefas" },
   greeting: { morning: "Bom dia", afternoon: "Boa tarde", evening: "Boa noite", fallback: "Olá", loadingDate: "A carregar data" },
   welcome: {
     activeProjects: "projetos ativos",
+    activeProjectOne: "projeto ativo",
+    activeProjectMany: "projetos ativos",
     overdueProjects: "atrasados",
     newLeads: "novos leads",
     urgentOne: "item requer",
     urgentMany: "itens requerem",
     attentionToday: "atenção hoje.",
+    projectOne: "projeto",
+    projectMany: "projetos",
+    needsOwnerOne: "precisa de responsável.",
+    needsOwnerMany: "precisam de responsável.",
     allClear: "Tudo em dia por agora.",
   },
   projects: {
@@ -77,9 +83,10 @@ export const defaultDashboardDictionary = {
     emptyDescription: "Metas com data aparecem aqui.",
   },
   clients: {
-    title: "Clientes",
+    title: "Contactos",
     subtitle: "Ritmo de entrada e últimos contactos adicionados.",
     viewAll: "Ver todos os contactos",
+    addNew: "Novo contacto",
     lastSevenDays: "Últimos 7 dias",
     lastThirtyDays: "Últimos 30 dias",
     lastTwelveMonths: "Últimos 12 meses",
@@ -90,6 +97,7 @@ export const defaultDashboardDictionary = {
     many: "contactos",
     noRecent: "Sem contactos recentes.",
     lastChange: "Última alteração",
+    addedOn: "Adicionado a",
   },
   data: {
     dashboardError: "Erro a carregar dashboard.",
@@ -101,4 +109,11 @@ export const defaultDashboardDictionary = {
   date: { joiner: "de" },
 };
 
-export type DashboardDictionary = typeof defaultDashboardDictionary;
+type DefaultDashboardDictionary = typeof defaultDashboardDictionary;
+type OptionalWelcomeKey = "activeProjectOne" | "activeProjectMany" | "projectOne" | "projectMany" | "needsOwnerOne" | "needsOwnerMany";
+type OptionalClientKey = "addNew" | "addedOn";
+
+export type DashboardDictionary = Omit<DefaultDashboardDictionary, "welcome" | "clients"> & {
+  welcome: Omit<DefaultDashboardDictionary["welcome"], OptionalWelcomeKey> & Partial<Pick<DefaultDashboardDictionary["welcome"], OptionalWelcomeKey>>;
+  clients: Omit<DefaultDashboardDictionary["clients"], OptionalClientKey> & Partial<Pick<DefaultDashboardDictionary["clients"], OptionalClientKey>>;
+};

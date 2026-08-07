@@ -76,6 +76,13 @@ export type DashboardCrmRecentContact = {
   company: string | null;
   status: string;
   lastChangedAt: string;
+  createdAt?: string | null;
+};
+
+export type DashboardCrmMonthlyPoint = {
+  /** ISO year-month, e.g. "2026-08" */
+  month: string;
+  count: number;
 };
 
 export type DashboardCrmData = {
@@ -91,6 +98,7 @@ export type DashboardCrmData = {
     statusBreakdown: DashboardCrmStatusBreakdown;
     recentChanges: DashboardCrmRecentChange[];
     recentContacts: DashboardCrmRecentContact[];
+    monthlyNewContacts?: DashboardCrmMonthlyPoint[];
   };
 };
 

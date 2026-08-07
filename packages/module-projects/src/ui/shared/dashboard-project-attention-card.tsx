@@ -62,12 +62,12 @@ export function DashboardProjectAttentionCard({
 }) {
   const navigation = useProjectsNavigation();
   const dictionary = useProjectsUiDictionary();
-  const statusMeta: Record<DashboardProjectAttentionItem["status"], { label: string; dot: string }> = {
-    planned: { label: dictionary.status.planned, dot: "var(--project-state-planned)" },
-    active: { label: dictionary.status.active, dot: "var(--project-state-active)" },
-    blocked: { label: dictionary.status.blocked, dot: "var(--project-state-blocked)" },
-    completed: { label: dictionary.status.completed, dot: "var(--project-state-completed)" },
-    canceled: { label: dictionary.status.canceled, dot: "var(--project-state-canceled)" },
+  const statusMeta: Record<DashboardProjectAttentionItem["status"], { label: string }> = {
+    planned: { label: dictionary.status.planned },
+    active: { label: dictionary.status.active },
+    blocked: { label: dictionary.status.blocked },
+    completed: { label: dictionary.status.completed },
+    canceled: { label: dictionary.status.canceled },
   };
   const status = statusMeta[project.status] ?? statusMeta.active;
   const attention = ATTENTION_META[project.attentionReason];
@@ -131,7 +131,7 @@ export function DashboardProjectAttentionCard({
 
       <div className="project-attention-summary">
         <p className="project-attention-company">{formatNaturalDisplayName(project.organizationName)}</p>
-        <h3 className="project-attention-title">{project.name}</h3>
+        <h3 className="project-attention-title">{formatNaturalDisplayName(project.name)}</h3>
         <p className="project-attention-reason">
           <span aria-hidden className="project-attention-reason-dot" />
           <span><strong>{reason}</strong> {detail}</span>
@@ -141,31 +141,36 @@ export function DashboardProjectAttentionCard({
       <div className="project-attention-meta">
         <div className="project-attention-badges">
           <span className="project-attention-status">
-            <span aria-hidden style={{ background: status.dot }} />
             {status.label}
           </span>
-          <ProjectPill
-            size="normal"
-            dotClassName="project-attention-pill-dot"
-            className="border-[color:var(--tint-soft-border)] bg-[color:var(--tint-soft-bg)] font-bold text-[color:var(--tint)]"
-            style={{ "--tint": riskMeta?.var ?? attention.tone } as CSSProperties}
-          >
-            {attentionLabel}
-          </ProjectPill>
+          {project.attentionReason !== "without_owner" ? (
+            <ProjectPill
+              size="normal"
+              dotClassName="project-attention-pill-dot"
+              className="border-[color:var(--tint-soft-border)] bg-[color:var(--tint-soft-bg)] font-bold text-[color:var(--tint)]"
+              style={{ "--tint": riskMeta?.var ?? attention.tone } as CSSProperties}
+            >
+              {attentionLabel}
+            </ProjectPill>
+          ) : null}
         </div>
 
         <div className="project-attention-progress">
-          <span className="project-attention-owner">
-            <ProjectOwnerAvatar className="project-attention-avatar" label={project.ownerLabel} size="sm" roleColor="manager" />
-            <span className="truncate">{project.ownerLabel ?? dictionary.detail.noOwnerLowercase}</span>
-          </span>
+          {project.ownerLabel ? (
+            <span className="project-attention-owner">
+              <ProjectOwnerAvatar className="project-attention-avatar" label={project.ownerLabel} size="sm" roleColor="manager" />
+              <span className="truncate">{project.ownerLabel}</span>
+            </span>
+          ) : <span />}
           <strong className="project-attention-progress-value">{progress}%</strong>
           <span className="project-attention-track">
             <span className="block h-full rounded-full bg-[color:var(--accent)]" style={{ width: `${progress}%` }} />
           </span>
           <span className="project-attention-date">
             <CalendarDays aria-hidden className="project-attention-date-icon opacity-70" strokeWidth={1.75} />
-            <span>{formatShortDate(project.targetDate)}</span>
+            <span className={project.targetDate ? undefined : "font-semibold text-[color:var(--foreground)] group-hover:text-[color:var(--accent)]"}>
+              {project.targetDate ? formatShortDate(project.targetDate) : `${dictionary.dashboard.defineDeadline} →`}
+            </span>
           </span>
         </div>
       </div>

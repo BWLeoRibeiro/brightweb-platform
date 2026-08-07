@@ -31,12 +31,12 @@ function codeOf(project: ProjectSummaryCardItem) {
 export function ProjectSummaryCard({ project }: { project: ProjectSummaryCardItem }) {
   const navigation = useProjectsNavigation();
   const dictionary = useProjectsUiDictionary();
-  const projectStatusMeta: Record<ProjectSummaryCardItem["status"], { label: string; dot: string }> = {
-    planned: { label: dictionary.status.planned, dot: "bg-[color:var(--project-state-planned)]" },
-    active: { label: dictionary.status.active, dot: "bg-[color:var(--project-state-active)]" },
-    blocked: { label: dictionary.status.blocked, dot: "bg-[color:var(--project-state-blocked)]" },
-    completed: { label: dictionary.status.completed, dot: "bg-[color:var(--project-state-completed)]" },
-    canceled: { label: dictionary.status.canceled, dot: "bg-[color:var(--project-state-canceled)]" },
+  const projectStatusMeta: Record<ProjectSummaryCardItem["status"], { label: string }> = {
+    planned: { label: dictionary.status.planned },
+    active: { label: dictionary.status.active },
+    blocked: { label: dictionary.status.blocked },
+    completed: { label: dictionary.status.completed },
+    canceled: { label: dictionary.status.canceled },
   };
   const statusMeta = projectStatusMeta[project.status] ?? projectStatusMeta.active;
   const risk = resolveProjectRisk(project);
@@ -86,7 +86,6 @@ export function ProjectSummaryCard({ project }: { project: ProjectSummaryCardIte
           <Tooltip>
             <TooltipTrigger asChild>
               <span className="pointer-events-auto relative z-10 inline-flex items-center gap-1.5 text-meta font-semibold text-[color:var(--foreground)]">
-                <span className={`h-[7px] w-[7px] shrink-0 rounded-full ${statusMeta.dot}`} />
                 {statusMeta.label}
               </span>
             </TooltipTrigger>

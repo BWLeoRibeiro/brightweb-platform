@@ -43,8 +43,12 @@ function organizationPayload(input: CrmOrganizationWriteInput) {
     budgetRange: input.budget_range,
     websiteUrl: input.website_url,
     addressLine1: input.address,
+    addressLine2: input.addressLine2,
+    zipCode: input.zipCode,
+    country: input.country,
     taxIdentifierValue: input.taxIdentifierValue,
     primaryContactId: input.primary_contact_id,
+    invitations: input.invitations,
   };
 }
 

@@ -1,5 +1,6 @@
 import type {
   DashboardCrmData,
+  DashboardCrmMonthlyPoint,
   DashboardCrmRecentChange,
   DashboardCrmRecentContact,
 } from "@brightweblabs/app-shell";
@@ -31,12 +32,24 @@ export type CrmDashboardSnapshot = {
   newLast30Days: number;
   newLastYear: number;
   unassignedContacts: number;
+  createdDatesLastYear?: string[];
 };
 
 async function resolveCount(query: PromiseLike<CountQueryResult>) {
   const { count, error } = await query;
   if (error) throw new Error(error.message);
   return count ?? 0;
+}
+
+type CreatedDatesQueryResult = {
+  data: { created_at: string }[] | null;
+  error: { message: string } | null;
+};
+
+async function resolveCreatedDates(query: PromiseLike<CreatedDatesQueryResult>) {
+  const { data, error } = await query;
+  if (error) throw new Error(error.message);
+  return (data ?? []).map((row) => row.created_at);
 }
 
 function contactName(contact: Pick<CrmContact, "first_name" | "last_name" | "email">) {
@@ -52,7 +65,24 @@ function toRecentContact(contact: CrmContact): DashboardCrmRecentContact {
     company: contact.organizations?.name ?? null,
     status: contact.status,
     lastChangedAt: contact.updated_at,
+    createdAt: contact.created_at,
   };
+}
+
+function buildMonthlyNewContacts(createdDates: string[], now: Date): DashboardCrmMonthlyPoint[] {
+  const counts = new Map<string, number>();
+  for (const iso of createdDates) {
+    const key = iso.slice(0, 7);
+    counts.set(key, (counts.get(key) ?? 0) + 1);
+  }
+  const series: DashboardCrmMonthlyPoint[] = [];
+  for (let i = 11; i >= 0; i -= 1) {
+    const month = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - i, 1))
+      .toISOString()
+      .slice(0, 7);
+    series.push({ month, count: counts.get(month) ?? 0 });
+  }
+  return series;
 }
 
 function toRecentChange(change: CrmStatusLog): DashboardCrmRecentChange {
@@ -86,6 +116,7 @@ export function buildCrmDashboardOverviewData(snapshot: CrmDashboardSnapshot): D
       },
       recentChanges: snapshot.recentChanges.map(toRecentChange),
       recentContacts: snapshot.contacts.map(toRecentContact),
+      monthlyNewContacts: buildMonthlyNewContacts(snapshot.createdDatesLastYear ?? [], new Date(snapshot.generatedAt)),
     },
   };
 }
@@ -96,7 +127,7 @@ export async function getCrmDashboardOverviewData(
 ): Promise<DashboardCrmData> {
   const since = (days: number) => new Date(now.getTime() - days * DAY_IN_MS).toISOString();
 
-  const [stats, contacts, recentChanges, newLast7Days, newLast30Days, newLastYear, unassignedContacts] =
+  const [stats, contacts, recentChanges, newLast7Days, newLast30Days, newLastYear, unassignedContacts, createdDatesLastYear] =
     await Promise.all([
       getCrmContactStatusStats(supabase),
       listCrmContacts(supabase, { page: 1, pageSize: RECENT_CONTACT_LIMIT, sort: "date_desc" }),
@@ -129,6 +160,12 @@ export async function getCrmDashboardOverviewData(
           .select("id", { count: "exact", head: true })
           .is("owner_id", null),
       ),
+      resolveCreatedDates(
+        supabase
+          .from("crm_contacts")
+          .select("created_at")
+          .gte("created_at", since(365)),
+      ),
     ]);
 
   return buildCrmDashboardOverviewData({
@@ -140,5 +177,6 @@ export async function getCrmDashboardOverviewData(
     newLast30Days,
     newLastYear,
     unassignedContacts,
+    createdDatesLastYear,
   });
 }

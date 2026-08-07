@@ -10,6 +10,18 @@ import {
   resolveTheme,
   subscribeToSystemTheme,
 } from "../packages/app-shell/src/theme/theme-controller.ts";
+import { ThemeScript } from "../packages/app-shell/src/theme/theme-script.tsx";
+
+test("theme script uses Next.js beforeInteractive handling instead of a raw script element", () => {
+  const element = ThemeScript({ defaultTheme: "light", nonce: "test-nonce" });
+
+  assert.notEqual(element.type, "script");
+  assert.equal(typeof element.type, "function");
+  assert.equal(element.props.id, "brightweb-theme");
+  assert.equal(element.props.strategy, "beforeInteractive");
+  assert.equal(element.props.nonce, "test-nonce");
+  assert.equal(element.props.children, getThemeBootstrapScript("light"));
+});
 
 test("theme modes resolve light, dark, and system consistently", () => {
   assert.equal(resolveTheme("light", "dark"), "light");

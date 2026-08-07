@@ -4,12 +4,9 @@ import { StyledSelect } from "@brightweblabs/ui";
 
 import { useProjectsUiClient, useProjectsUiDictionary } from "./context";
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
-import { Building2, FolderKanban, Loader2, Plus, Save, Users2 } from "lucide-react";
+import { FolderKanban, Loader2, Plus, Save, Users2 } from "lucide-react";
 import { toast } from "sonner";
 import {
-  budgetRangeOptions,
-  companySizeOptions,
-  industryOptions,
   sheetBodyClassName,
   sheetFooterClassName,
   sheetShellClassName,
@@ -28,9 +25,7 @@ import {
 } from "./shared/sheet-section";
 import { cn } from "./utils";
 import { Checkbox, SearchField } from "@brightweblabs/ui";
-import {
-  useOrganizationCreationState,
-} from "./project-create/use-organization-creation-state";
+import { OrganizationCreateSheet, type OrganizationCreateSheetInput } from "@brightweblabs/module-orgs/ui";
 import { PROJECT_MEMBER_SCOPE_LABELS, useProjectSetupState } from "./project-create/use-project-setup-state";
 import { useProjectFormState } from "./project-create/use-project-form-state";
 import { createProject } from "./project-ui-actions";
@@ -72,21 +67,18 @@ export function CreateProjectSheet({ organizations, initialOpen = false }: Creat
   const dictionary = useProjectsUiDictionary();
   const [open, setOpen] = useState(initialOpen);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isCreatingOrganization, setIsCreatingOrganization] = useState(false);
+  const [organizationSheetOpen, setOrganizationSheetOpen] = useState(false);
   const [organizationOptions, setOrganizationOptions] = useState<OrganizationOption[]>(organizations);
   const [organizationsLoadState, setOrganizationsLoadState] = useState<"idle" | "pending" | "fulfilled" | "rejected">(organizations.length > 0 ? "fulfilled" : "idle");
   const organizationsRequestRef = useRef<AbortController | null>(null);
 
   const projectForm = useProjectFormState(organizationOptions);
-  const organizationCreation = useOrganizationCreationState();
   const setup = useProjectSetupState();
-  const { resetOrganizationForm, setOrganizationSheetOpen } = organizationCreation;
 
   const hasOrganizations = organizationOptions.length > 0;
   const isLoadingOrganizations = organizationsLoadState === "pending";
 
   const [isProjectDiscardDialogOpen, setProjectDiscardDialogOpen] = useState(false);
-  const [isOrganizationDiscardDialogOpen, setOrganizationDiscardDialogOpen] = useState(false);
 
   // Has the user written anything worth confirming before closing the project
   // sheet? The pre-selected organization isn't user input, so it doesn't count.
@@ -112,26 +104,6 @@ export function CreateProjectSheet({ organizations, initialOpen = false }: Creat
     ],
   );
 
-  // Mirrors `isProjectDirty` for the nested organization sheet.
-  const isOrganizationDirty = useMemo(
-    () =>
-      Boolean(
-        organizationCreation.organizationForm.name.trim() ||
-          organizationCreation.organizationForm.industry ||
-          organizationCreation.organizationForm.companySize ||
-          organizationCreation.organizationForm.budgetRange ||
-          organizationCreation.organizationForm.websiteUrl.trim() ||
-          organizationCreation.organizationForm.addressLine1.trim() ||
-          organizationCreation.organizationForm.addressLine2.trim() ||
-          organizationCreation.organizationForm.zipCode.trim() ||
-          organizationCreation.organizationForm.country.trim() ||
-          organizationCreation.organizationForm.taxIdentifierValue.trim() ||
-          organizationCreation.organizationInviteDraft.email.trim() ||
-          organizationCreation.organizationInvites.length > 0,
-      ),
-    [organizationCreation.organizationForm, organizationCreation.organizationInviteDraft.email, organizationCreation.organizationInvites.length],
-  );
-
   const performProjectCancel = useCallback(() => {
     setOpen(false);
   }, []);
@@ -143,19 +115,6 @@ export function CreateProjectSheet({ organizations, initialOpen = false }: Creat
     }
     performProjectCancel();
   }, [isProjectDirty, performProjectCancel]);
-
-  const performOrganizationCancel = useCallback(() => {
-    organizationCreation.setOrganizationSheetOpen(false);
-    organizationCreation.resetOrganizationForm();
-  }, [organizationCreation]);
-
-  const handleOrganizationCancel = useCallback(() => {
-    if (isOrganizationDirty) {
-      setOrganizationDiscardDialogOpen(true);
-      return;
-    }
-    performOrganizationCancel();
-  }, [isOrganizationDirty, performOrganizationCancel]);
 
   useShellAction(PROJECTS_EVENTS.openNewProject, () => {
     setOpen(true);
@@ -201,48 +160,18 @@ export function CreateProjectSheet({ organizations, initialOpen = false }: Creat
   useEffect(() => {
     if (open) return;
     setOrganizationSheetOpen(false);
-    resetOrganizationForm();
-  }, [open, resetOrganizationForm, setOrganizationSheetOpen]);
+  }, [open]);
 
-  const addOrganizationInvite = () => {
-    const email = organizationCreation.organizationInviteDraft.email.trim().toLowerCase();
-    if (!email) return;
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      toast.error(dictionary.projectCreate.invalidInviteEmail);
-      return;
-    }
-
-    organizationCreation.setOrganizationInvites((current) => {
-      if (current.some((invite) => invite.email === email)) {
-        return current;
-      }
-      return [...current, { email, role: organizationCreation.organizationInviteDraft.role }];
-    });
-    organizationCreation.setOrganizationInviteDraft({ email: "", role: "member" });
-  };
-
-  const removeOrganizationInvite = (email: string) => {
-    organizationCreation.setOrganizationInvites((current) => current.filter((invite) => invite.email !== email));
-  };
-
-  const handleCreateOrganization = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (!organizationCreation.hasOrganizationName || isCreatingOrganization) return;
-
-    setIsCreatingOrganization(true);
-    try {
-      const response = await client.requestRaw("/api/projects/organizations", {
+  const handleCreateOrganization = async (input: OrganizationCreateSheetInput) => {
+      const response = await client.requestRaw("/api/organizations", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          ...organizationCreation.organizationForm,
-          invitations: organizationCreation.organizationInvites,
-        }),
+        body: JSON.stringify(input),
       });
 
-      const payload = await response.json();
+      const payload = await response.json().catch(() => null);
       if (!response.ok) {
         const errorMessage = parseProjectBoardApiError(payload, dictionary.projectCreate.createOrganizationError);
         throw new Error(errorMessage);
@@ -266,11 +195,9 @@ export function CreateProjectSheet({ organizations, initialOpen = false }: Creat
       setOrganizationOptions(nextOrganizations);
       projectForm.setOrganizationId(created.id);
       projectForm.setCodeTouched(false);
-      organizationCreation.setOrganizationSheetOpen(false);
-      organizationCreation.resetOrganizationForm();
       const pendingCount = inviteSummary?.pendingInvitations ?? 0;
       const directCount = (inviteSummary?.directAssignments ?? 0) + (inviteSummary?.updatedExistingMembers ?? 0);
-      if (organizationCreation.organizationInvites.length > 0) {
+      if (input.invitations.length > 0) {
         const failedEmailCount = inviteSummary?.failedEmailDeliveries ?? 0;
         toast.success(dictionary.projectCreate.organizationCreatedWithInvites(pendingCount, directCount));
         if (failedEmailCount > 0) {
@@ -279,11 +206,6 @@ export function CreateProjectSheet({ organizations, initialOpen = false }: Creat
       } else {
         toast.success(dictionary.projectCreate.organizationCreated);
       }
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : dictionary.projectCreate.organizationCreateFallbackError);
-    } finally {
-      setIsCreatingOrganization(false);
-    }
   };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -439,12 +361,13 @@ export function CreateProjectSheet({ organizations, initialOpen = false }: Creat
                       <Button
                         type="button"
                         variant="outline"
-                        size="sm"
-                        className="h-9 w-full shrink-0 rounded-lg px-2 sm:w-auto"
-                        onClick={() => organizationCreation.setOrganizationSheetOpen(true)}
+                        size="icon"
+                        className="size-9 shrink-0 rounded-lg"
+                        aria-label={dictionary.projectCreate.newOrganization}
+                        title={dictionary.projectCreate.newOrganization}
+                        onClick={() => setOrganizationSheetOpen(true)}
                       >
-                        <Plus className="mr-1 h-3 w-3" />
-                        {dictionary.projectCreate.newOrganizationShort}
+                        <Plus className="size-4" />
                       </Button>
                     </div>
                     {isLoadingOrganizations ? (
@@ -564,221 +487,43 @@ export function CreateProjectSheet({ organizations, initialOpen = false }: Creat
             </SheetFooter>
           </form>
 
-          <Sheet
-            open={organizationCreation.isOrganizationSheetOpen}
-            onOpenChange={(next) => { if (next) organizationCreation.setOrganizationSheetOpen(true); else handleOrganizationCancel(); }}
-          >
-            <SheetContent className={sheetShellClassName}>
-              <form onSubmit={handleCreateOrganization} className="flex min-h-0 flex-1 flex-col gap-0">
-                <AppSheetHeader
-                  icon={Building2}
-                  editing
-                  eyebrow={dictionary.create.creatingEyebrow}
-                  title={<>{dictionary.projectCreate.newOrganization}</>}
-                  description={<>{dictionary.projectCreate.organizationDescription}</>}
-                />
-
-                <div className={`${sheetBodyClassName} space-y-4`}>
-                  <FormSection title={dictionary.projectCreate.identification}>
-                    <Field className="gap-1.5 px-4 py-2">
-                      <FieldLabel className={sheetFieldLabelClassName}>{dictionary.forms.name}</FieldLabel>
-                      <FieldContent>
-                        <Input
-                          value={organizationCreation.organizationForm.name}
-                          onChange={(event) => organizationCreation.setOrganizationForm((prev) => ({ ...prev, name: event.target.value }))}
-                          placeholder="Empresa Verde, Lda."
-                          className={cn(sheetEditControlClassName, "mt-1.5")}
-                        />
-                      </FieldContent>
-                    </Field>
-                    <SelectField
-                      label={dictionary.projectCreate.industry}
-                      value={organizationCreation.organizationForm.industry}
-                      onChange={(value) => organizationCreation.setOrganizationForm((prev) => ({ ...prev, industry: value }))}
-                    >
-                      <option value="">{dictionary.projectCreate.selectIndustry}</option>
-                      {industryOptions.map((industry) => (
-                        <option key={industry} value={industry}>
-                          {industry}
-                        </option>
-                      ))}
-                    </SelectField>
-                    <Field className="gap-1.5 px-4 py-2">
-                      <FieldLabel className={sheetFieldLabelClassName}>{dictionary.projectCreate.website}</FieldLabel>
-                      <FieldContent>
-                        <Input
-                          value={organizationCreation.organizationForm.websiteUrl}
-                          onChange={(event) => organizationCreation.setOrganizationForm((prev) => ({ ...prev, websiteUrl: event.target.value }))}
-                          placeholder="https://empresa.pt"
-                          className={cn(sheetEditControlClassName, "mt-1.5")}
-                        />
-                      </FieldContent>
-                    </Field>
-                    <Field className="gap-1.5 px-4 py-2">
-                      <FieldLabel className={sheetFieldLabelClassName}>{dictionary.projectCreate.taxIdentifier}</FieldLabel>
-                      <FieldContent>
-                        <Input
-                          value={organizationCreation.organizationForm.taxIdentifierValue}
-                          onChange={(event) => organizationCreation.setOrganizationForm((prev) => ({ ...prev, taxIdentifierValue: event.target.value.replace(/\D/g, "") }))}
-                          placeholder="123456789"
-                          inputMode="numeric"
-                          className={cn(sheetEditControlClassName, "mt-1.5")}
-                        />
-                      </FieldContent>
-                    </Field>
-                    <Field className="gap-1.5 px-4 py-2">
-                      <FieldLabel className={sheetFieldLabelClassName}>{dictionary.projectCreate.address}</FieldLabel>
-                      <FieldContent>
-                        <div className="mt-0.5 space-y-2">
-                          <div>
-                            <p className="text-meta font-semibold text-foreground/55">{dictionary.projectCreate.line1}</p>
-                            <Input
-                              value={organizationCreation.organizationForm.addressLine1}
-                              onChange={(event) => organizationCreation.setOrganizationForm((prev) => ({ ...prev, addressLine1: event.target.value }))}
-                              placeholder="Rua Exemplo, 120"
-                              className={cn(sheetEditControlClassName, "mt-1.5")}
-                            />
-                          </div>
-                          <div>
-                            <p className="text-meta font-semibold text-foreground/55">{dictionary.projectCreate.line2}</p>
-                            <Input
-                              value={organizationCreation.organizationForm.addressLine2}
-                              onChange={(event) => organizationCreation.setOrganizationForm((prev) => ({ ...prev, addressLine2: event.target.value }))}
-                              placeholder={dictionary.projectCreate.line2Placeholder}
-                              className={cn(sheetEditControlClassName, "mt-1.5")}
-                            />
-                          </div>
-                        </div>
-                      </FieldContent>
-                    </Field>
-                    <div className="grid gap-px sm:grid-cols-2">
-                      <Field className="gap-1.5 px-4 py-2">
-                        <FieldLabel className={sheetFieldLabelClassName}>{dictionary.projectCreate.zipCode}</FieldLabel>
-                        <FieldContent>
-                          <Input
-                            value={organizationCreation.organizationForm.zipCode}
-                            onChange={(event) => organizationCreation.setOrganizationForm((prev) => ({ ...prev, zipCode: event.target.value }))}
-                            placeholder="1000-001"
-                            className={cn(sheetEditControlClassName, "mt-1.5")}
-                          />
-                        </FieldContent>
-                      </Field>
-                      <Field className="border-l border-black/6 px-4 py-2 dark:border-white/8">
-                        <FieldLabel className={sheetFieldLabelClassName}>{dictionary.projectCreate.country}</FieldLabel>
-                        <FieldContent>
-                          <Input
-                            value={organizationCreation.organizationForm.country}
-                            onChange={(event) => organizationCreation.setOrganizationForm((prev) => ({ ...prev, country: event.target.value }))}
-                            placeholder="Portugal"
-                            className={cn(sheetEditControlClassName, "mt-1.5")}
-                          />
-                        </FieldContent>
-                      </Field>
-                    </div>
-                  </FormSection>
-
-                  <FormSection title={dictionary.projectCreate.profile}>
-                    <div className="grid gap-px sm:grid-cols-2">
-                      <SelectField
-                        label={dictionary.projectCreate.companySize}
-                        value={organizationCreation.organizationForm.companySize}
-                        onChange={(value) => organizationCreation.setOrganizationForm((prev) => ({ ...prev, companySize: value }))}
-                      >
-                        <option value="">—</option>
-                        {companySizeOptions.map((size) => (
-                          <option key={size} value={size}>
-                            {size}
-                          </option>
-                        ))}
-                      </SelectField>
-                      <SelectField
-                        label={dictionary.projectCreate.budget}
-                        value={organizationCreation.organizationForm.budgetRange}
-                        onChange={(value) => organizationCreation.setOrganizationForm((prev) => ({ ...prev, budgetRange: value }))}
-                        className="border-l border-black/6 px-4 py-2 dark:border-white/8"
-                      >
-                        <option value="">—</option>
-                        {budgetRangeOptions.map((range) => (
-                          <option key={range} value={range}>
-                            {range}
-                          </option>
-                        ))}
-                      </SelectField>
-                    </div>
-                  </FormSection>
-
-                  <SheetSection title={dictionary.projectCreate.members} editing bodyClassName="space-y-3 px-4 py-3">
-                      <div className="grid gap-2 sm:grid-cols-[1fr_auto_auto]">
-                        <Input
-                          value={organizationCreation.organizationInviteDraft.email}
-                          onChange={(event) => organizationCreation.setOrganizationInviteDraft((prev) => ({ ...prev, email: event.target.value }))}
-                          placeholder="email@empresa.pt"
-                          className="h-8"
-                        />
-                        <StyledSelect
-                          className="h-8 rounded-md border border-black/10 bg-background px-2 text-meta dark:border-white/12 dark:bg-white/[0.04]"
-                          value={organizationCreation.organizationInviteDraft.role}
-                          onChange={(event) => organizationCreation.setOrganizationInviteDraft((prev) => ({ ...prev, role: event.target.value === "admin" ? "admin" : "member" }))}
-                        >
-                          <option value="member">{dictionary.people.member}</option>
-                          <option value="admin">{dictionary.projectCreate.admin}</option>
-                        </StyledSelect>
-                        <Button type="button" variant="outline" size="sm" className="h-8" onClick={addOrganizationInvite}>
-                          <Plus className="mr-1 h-3 w-3" />
-                          {dictionary.projectCreate.add}
-                        </Button>
-                      </div>
-
-                      {organizationCreation.organizationInvites.length === 0 ? (
-                        <p className="text-meta text-foreground/55">{dictionary.projectCreate.optionalInvites}</p>
-                      ) : (
-                        <div className="space-y-1.5">
-                          {organizationCreation.organizationInvites.map((invite) => (
-                            <div
-                              key={invite.email}
-                              className="flex items-center justify-between rounded-lg border border-black/8 bg-background/60 px-2.5 py-1.5 text-meta dark:border-white/12 dark:bg-white/[0.03]"
-                            >
-                              <span className="truncate text-foreground">{invite.email}</span>
-                              <div className="flex items-center gap-2">
-                                <span className="rounded-full border border-black/10 px-2 py-0.5 text-micro font-semibold text-foreground/70 dark:border-white/15">
-                                  {invite.role === "admin" ? dictionary.projectCreate.admin : dictionary.people.member}
-                                </span>
-                                <button
-                                  type="button"
-                                  className="text-rose-600 transition-colors hover:text-rose-700 dark:text-rose-400 dark:hover:text-rose-300"
-                                  onClick={() => removeOrganizationInvite(invite.email)}
-                                >
-                                  {dictionary.projectCreate.remove}
-                                </button>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                      <p className="text-meta text-foreground/55">
-                        {dictionary.projectCreate.primaryContactHint}
-                      </p>
-                  </SheetSection>
-                </div>
-
-                <SheetFooter className={`${sheetFooterClassName} flex-row gap-2`}>
-                  <Button type="submit" className="flex-1" disabled={!organizationCreation.hasOrganizationName || isCreatingOrganization}>
-                    <Save className="mr-2 h-4 w-4" />
-                    {isCreatingOrganization ? dictionary.create.creating : dictionary.projectCreate.createOrganization}
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="flex-1"
-                    onClick={handleOrganizationCancel}
-                    disabled={isCreatingOrganization}
-                  >
-                    {dictionary.actions.cancel}
-                  </Button>
-                </SheetFooter>
-              </form>
-            </SheetContent>
-          </Sheet>
+          <OrganizationCreateSheet
+            open={organizationSheetOpen}
+            onOpenChange={setOrganizationSheetOpen}
+            onSubmit={handleCreateOrganization}
+            dictionary={{
+              eyebrow: dictionary.create.creatingEyebrow,
+              title: dictionary.projectCreate.newOrganization,
+              description: dictionary.projectCreate.organizationDescription,
+              identity: dictionary.projectCreate.identification,
+              name: dictionary.forms.name,
+              industry: dictionary.projectCreate.industry,
+              selectIndustry: dictionary.projectCreate.selectIndustry,
+              website: dictionary.projectCreate.website,
+              taxIdentifier: dictionary.projectCreate.taxIdentifier,
+              location: dictionary.projectCreate.address,
+              address: dictionary.projectCreate.line1,
+              addressLine2: dictionary.projectCreate.line2,
+              addressLine2Placeholder: dictionary.projectCreate.line2Placeholder,
+              zipCode: dictionary.projectCreate.zipCode,
+              country: dictionary.projectCreate.country,
+              profile: dictionary.projectCreate.profile,
+              companySize: dictionary.projectCreate.companySize,
+              budgetRange: dictionary.projectCreate.budget,
+              members: dictionary.projectCreate.members,
+              member: dictionary.people.member,
+              admin: dictionary.projectCreate.admin,
+              add: dictionary.projectCreate.add,
+              remove: dictionary.projectCreate.remove,
+              optionalInvites: dictionary.projectCreate.optionalInvites,
+              inviteHint: dictionary.projectCreate.primaryContactHint,
+              invalidEmail: dictionary.projectCreate.invalidInviteEmail,
+              create: dictionary.projectCreate.createOrganization,
+              creating: dictionary.create.creating,
+              cancel: dictionary.actions.cancel,
+              createError: dictionary.projectCreate.organizationCreateFallbackError,
+            }}
+          />
         </SheetContent>
       </Sheet>
 
@@ -897,28 +642,6 @@ export function CreateProjectSheet({ organizations, initialOpen = false }: Creat
         </AlertDialogContent>
       </AlertDialog>
 
-      <AlertDialog open={isOrganizationDiscardDialogOpen} onOpenChange={setOrganizationDiscardDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{dictionary.projectCreate.discardTitle}</AlertDialogTitle>
-            <AlertDialogDescription>
-              {dictionary.projectCreate.discardDescription}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>{dictionary.projectCreate.continueEditing}</AlertDialogCancel>
-            <AlertDialogAction
-              className="bg-rose-600 text-white hover:bg-rose-700"
-              onClick={() => {
-                setOrganizationDiscardDialogOpen(false);
-                performOrganizationCancel();
-              }}
-            >
-              {dictionary.projectCreate.discard}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </>
   );
 }

@@ -41,6 +41,7 @@ That means BrightWeb module usage is primarily a package and wiring model. The s
 | `@brightweblabs/module-admin/ui` | `AdminUsersClient`, `AdminToolbarControls`, `createAdminUiClient()` | `stable` | Packaged users, roles, invitations, and shell toolbar UI with injectable data access. |
 | `@brightweblabs/module-admin/tokens.css` | Admin UI tokens and parity classes | `stable` | Required visual contract for the packaged Admin UI. |
 | `@brightweblabs/module-orgs` | `listOrganizations()`, `createOrganization()`, `updateOrganization()`, `listOrganizationMembers()`, `setOrganizationMemberRole()` | `stable` | Shared organization and membership data operations used by CRM and Projects. |
+| `@brightweblabs/module-orgs/ui` | `OrganizationCreateSheet` | `stable` | Shared organization-creation sheet with optional member invitations for CRM, Projects, and app-owned flows. |
 | `@brightweblabs/module-orgs/registration` | `orgsModuleRegistration` | `stable` | Hidden foundation registration with no navigation. |
 | `@brightweblabs/module-crm` | `listCrmContacts()`, `listCrmOrganizations()`, `getCrmContactStatusStats()`, `listCrmOwnerOptions()`, `listCrmPrimaryContacts()`, `listCrmStatusTimeline()` | `stable` | Reusable CRM primitives for package-owned CRM surfaces and workflows. |
 | `@brightweblabs/module-crm` | `handleCrmContactsGetRequest()`, `handleCrmOrganizationsGetRequest()`, `handleCrmStatsGetRequest()`, `handleCrmOwnersGetRequest()` | `stable` | Package-owned CRM GET handlers that can be mounted directly from Next.js routes. |

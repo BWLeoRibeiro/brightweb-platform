@@ -53,7 +53,12 @@ export type CrmOrganization = {
   created_at?: string;
 };
 
-export type CrmOrganizationWriteInput = Omit<CrmOrganization, "id" | "created_at">;
+export type CrmOrganizationWriteInput = Omit<CrmOrganization, "id" | "created_at"> & {
+  addressLine2?: string | null;
+  zipCode?: string | null;
+  country?: string | null;
+  invitations?: Array<{ email: string; role: "admin" | "member" }>;
+};
 
 /** @deprecated Use CrmOrganization. */
 export type CrmOrganizationOption = CrmOrganization;

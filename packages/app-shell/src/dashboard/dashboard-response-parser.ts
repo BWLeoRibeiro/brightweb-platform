@@ -18,6 +18,10 @@ function isNullableString(value: unknown): value is string | null {
   return value === null || isString(value);
 }
 
+function isOptionalNullableString(value: unknown): value is string | null | undefined {
+  return value === undefined || isNullableString(value);
+}
+
 function isCount(value: unknown): value is number {
   return typeof value === "number" && Number.isSafeInteger(value) && value >= 0;
 }
@@ -98,7 +102,15 @@ function isDashboardCrmRecentContact(value: unknown) {
     && isString(value.name)
     && isNullableString(value.company)
     && isString(value.status)
-    && isString(value.lastChangedAt);
+    && isString(value.lastChangedAt)
+    && isOptionalNullableString(value.createdAt);
+}
+
+function isDashboardCrmMonthlyPoint(value: unknown) {
+  return isRecord(value)
+    && typeof value.month === "string"
+    && /^\d{4}-(?:0[1-9]|1[0-2])$/.test(value.month)
+    && isCount(value.count);
 }
 
 function isDashboardCrmData(value: unknown): value is DashboardCrmData {
@@ -116,7 +128,10 @@ function isDashboardCrmData(value: unknown): value is DashboardCrmData {
     && Array.isArray(value.crm.recentChanges)
     && value.crm.recentChanges.every(isDashboardCrmRecentChange)
     && Array.isArray(value.crm.recentContacts)
-    && value.crm.recentContacts.every(isDashboardCrmRecentContact);
+    && value.crm.recentContacts.every(isDashboardCrmRecentContact)
+    && (value.crm.monthlyNewContacts === undefined
+      || (Array.isArray(value.crm.monthlyNewContacts)
+        && value.crm.monthlyNewContacts.every(isDashboardCrmMonthlyPoint)));
 }
 
 function isDashboardAssignedTask(value: unknown) {

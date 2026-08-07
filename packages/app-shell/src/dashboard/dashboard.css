@@ -33,6 +33,7 @@
   }
   @media (min-width: 901px) {
     .dashboard-projects-grid { grid-template-columns: minmax(0, 1.55fr) minmax(18.75rem, 0.85fr); }
+    .dashboard-projects-grid--single { grid-template-columns: minmax(0, 1fr); }
   }
   .dashboard-error { border-color: var(--dashboard-danger-border); background: var(--dashboard-danger-soft); color: var(--dashboard-danger-foreground); }
 }

@@ -65,6 +65,7 @@ export const defaultProjectsUiDictionary = {
       withoutOwner: "Sem responsável.",
       dueSoon: "Data-alvo nos próximos 7 dias.",
     },
+    defineDeadline: "Definir prazo",
     details: {
       overdueYesterday: "A entrega estava prevista para ontem.",
       overdueDaysAgo: (days: number) => `A entrega estava prevista há ${days} ${days === 1 ? "dia" : "dias"}.`,

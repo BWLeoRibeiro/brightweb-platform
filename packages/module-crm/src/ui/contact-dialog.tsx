@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useId, useMemo, useState, type CSSProperties, type FormEvent } from "react";
-import { Pencil, Save, Trash2 } from "lucide-react";
+import { flushSync } from "react-dom";
+import { Pencil, Plus, Save, Trash2 } from "lucide-react";
 import {
   AppSheetBody,
   AppSheetFooter,
@@ -17,9 +18,11 @@ import { Button, Field, FieldContent, FieldGroup, FieldLabel, Input, PhoneInput,
 
 import type { CrmContact, CrmOwnerOption } from "../data";
 import { defaultCrmUiDictionary, resolveCrmStages } from "./dictionary";
-import type { CrmContactFormInput, CrmOrganizationOption, CrmStageConfig, CrmUiDictionary } from "./types";
+import { CrmOrganizationSheet } from "./organization-sheet";
+import type { CrmContactFormInput, CrmOrganizationOption, CrmOrganizationWriteInput, CrmStageConfig, CrmUiDictionary } from "./types";
 
 type ContactMode = "create" | "view" | "edit";
+const emptyOrganizations: CrmOrganizationOption[] = [];
 
 function initialValue(contact?: CrmContact | null): CrmContactFormInput {
   return { firstName: contact?.first_name ?? "", lastName: contact?.last_name ?? "", email: contact?.email ?? "", phone: contact?.phone ?? "", source: contact?.source ?? "", organizationId: contact?.organization_id ?? "", ownerId: contact?.owner_id ?? "", status: (contact?.status as CrmContactFormInput["status"]) ?? "lead" };
@@ -55,15 +58,20 @@ export type CrmContactDialogProps = {
   stages?: CrmStageConfig[];
   onOpenChange: (open: boolean) => void;
   onSubmit: (input: CrmContactFormInput) => Promise<void> | void;
+  onCreateOrganization?: (input: CrmOrganizationWriteInput) => Promise<CrmOrganizationOption>;
+  organizationToSelect?: CrmOrganizationOption | null;
+  onOrganizationSelectionApplied?: (organizationId: string) => void;
   onTimeline?: (contact: CrmContact) => void;
   onDelete?: (contact: CrmContact) => void;
 };
 
-export function CrmContactDialog({ open, contact, organizations = [], owners = [], organizationsLoading = false, ownersLoading = false, organizationsUnavailable = false, ownersUnavailable = false, dictionary = defaultCrmUiDictionary, stages, onOpenChange, onSubmit, onTimeline, onDelete }: CrmContactDialogProps) {
+export function CrmContactDialog({ open, contact, organizations = emptyOrganizations, owners = [], organizationsLoading = false, ownersLoading = false, organizationsUnavailable = false, ownersUnavailable = false, dictionary = defaultCrmUiDictionary, stages, onOpenChange, onSubmit, onCreateOrganization, organizationToSelect, onOrganizationSelectionApplied, onTimeline, onDelete }: CrmContactDialogProps) {
   const fieldId = useId();
   const [value, setValue] = useState(() => initialValue(contact));
   const [mode, setMode] = useState<ContactMode>(contact ? "view" : "create");
   const [saving, setSaving] = useState(false);
+  const [organizationOptions, setOrganizationOptions] = useState(organizations);
+  const [organizationSheetOpen, setOrganizationSheetOpen] = useState(false);
   const resolvedStages = resolveCrmStages(dictionary, stages);
   const activeStage = resolvedStages.find((stage) => stage.value === value.status) ?? resolvedStages[0];
   const controlClassName = mode === "view" ? sheetViewControlClassName : sheetEditControlClassName;
@@ -71,10 +79,30 @@ export function CrmContactDialog({ open, contact, organizations = [], owners = [
   const hasChanges = mode === "create" || hasContactChanges(value, contact);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      setOrganizationSheetOpen(false);
+      return;
+    }
     setValue(initialValue(contact));
     setMode(contact ? "view" : "create");
   }, [contact, open]);
+
+  useEffect(() => {
+    if (!open) return;
+    setOrganizationOptions(() => {
+      const merged = new Map<string, CrmOrganizationOption>();
+      organizations.forEach((organization) => merged.set(organization.id, organization));
+      if (organizationToSelect) merged.set(organizationToSelect.id, organizationToSelect);
+      return [...merged.values()];
+    });
+  }, [open, organizationToSelect, organizations]);
+
+  useEffect(() => {
+    if (!open || !organizationToSelect) return;
+    setOrganizationOptions((current) => [...current.filter((organization) => organization.id !== organizationToSelect.id), organizationToSelect]);
+    setValue((current) => ({ ...current, organizationId: organizationToSelect.id }));
+    onOrganizationSelectionApplied?.(organizationToSelect.id);
+  }, [onOrganizationSelectionApplied, open, organizationToSelect]);
 
   const createdLabel = useMemo(() => {
     if (!contact?.created_at) return null;
@@ -89,6 +117,16 @@ export function CrmContactDialog({ open, contact, organizations = [], owners = [
     try { await onSubmit({ ...value, phone: normalizedPhone(value.phone) }); onOpenChange(false); } finally { setSaving(false); }
   };
 
+  const createOrganization = async (input: CrmOrganizationWriteInput) => {
+    if (!onCreateOrganization) return;
+    const created = await onCreateOrganization(input);
+    flushSync(() => {
+      setOrganizationOptions((current) => [...current.filter((organization) => organization.id !== created.id), created]);
+      setValue((current) => ({ ...current, organizationId: created.id }));
+    });
+    onOrganizationSelectionApplied?.(created.id);
+  };
+
   const handleSheetOpenChange = (nextOpen: boolean) => {
     if (!nextOpen && mode !== "view") return;
     onOpenChange(nextOpen);
@@ -99,14 +137,15 @@ export function CrmContactDialog({ open, contact, organizations = [], owners = [
   const tintStyle = activeStage ? ({ "--tint": `var(${activeStage.token})` } as CSSProperties) : undefined;
 
   return (
-    <Sheet open={open} onOpenChange={handleSheetOpenChange}>
-      <SheetContent
-        className={sheetShellClassName}
-        showCloseButton={mode === "view"}
-        onInteractOutside={(event) => {
-          if (mode !== "view") event.preventDefault();
-        }}
-      >
+    <>
+      <Sheet open={open} onOpenChange={handleSheetOpenChange}>
+        <SheetContent
+          className={sheetShellClassName}
+          showCloseButton={mode === "view"}
+          onInteractOutside={(event) => {
+            if (mode !== "view") event.preventDefault();
+          }}
+        >
         <form onSubmit={submit} className="flex min-h-0 flex-1 flex-col gap-0">
           <AppSheetHeader
             editing={mode !== "view"}
@@ -135,7 +174,7 @@ export function CrmContactDialog({ open, contact, organizations = [], owners = [
 
             <SheetSection title={dictionary.contactDialog.relationship} editing={mode !== "view"}>
               <FieldGroup className={`gap-0 px-0 py-1 ${mode === "view" ? "divide-y divide-hairline" : ""}`}>
-                <Field className="gap-1.5 px-4 py-2" aria-busy={organizationsLoading}><FieldLabel htmlFor={`${fieldId}-organization`} className={sheetFieldLabelClassName}>{dictionary.contactDialog.fields.organization}</FieldLabel><FieldContent>{organizationsLoading ? <Skeleton className="h-9 w-full" /> : organizationsUnavailable ? <p role="alert" className="text-meta text-destructive">{dictionary.dashboard.loadError}</p> : mode === "view" ? <p id={`${fieldId}-organization`} className="text-body text-foreground/75">{organizations.find((organization) => organization.id === value.organizationId)?.name ?? dictionary.contactDialog.placeholders.organization}</p> : <SheetSelect id={`${fieldId}-organization`} name="organizationId" value={value.organizationId ?? ""} onValueChange={(organizationId) => setValue({ ...value, organizationId })} options={[{ value: "", label: dictionary.contactDialog.placeholders.organization }, ...organizations.map((organization) => ({ value: organization.id, label: organization.name ?? organization.id }))]} />}</FieldContent></Field>
+                <Field className="gap-1.5 px-4 py-2" aria-busy={organizationsLoading}><FieldLabel htmlFor={`${fieldId}-organization`} className={sheetFieldLabelClassName}>{dictionary.contactDialog.fields.organization}</FieldLabel><FieldContent>{organizationsLoading ? <Skeleton className="h-9 w-full" /> : organizationsUnavailable ? <p role="alert" className="text-meta text-destructive">{dictionary.dashboard.loadError}</p> : mode === "view" ? <p id={`${fieldId}-organization`} className="text-body text-foreground/75">{organizationOptions.find((organization) => organization.id === value.organizationId)?.name ?? dictionary.contactDialog.placeholders.organization}</p> : <div className="flex items-center gap-2"><SheetSelect id={`${fieldId}-organization`} name="organizationId" className="min-w-0 flex-1" value={value.organizationId ?? ""} onValueChange={(organizationId) => setValue({ ...value, organizationId })} options={[{ value: "", label: dictionary.contactDialog.placeholders.organization }, ...organizationOptions.map((organization) => ({ value: organization.id, label: organization.name ?? organization.id }))]} />{onCreateOrganization ? <Button type="button" variant="outline" size="icon" className="size-9 shrink-0 rounded-lg" aria-label={dictionary.organizations.newTitle} title={dictionary.organizations.newTitle} onClick={() => setOrganizationSheetOpen(true)}><Plus className="size-4" /></Button> : null}</div>}</FieldContent></Field>
                 <Field className="gap-1.5 px-4 py-2" aria-busy={ownersLoading}><FieldLabel id={`${fieldId}-owner-label`} htmlFor={`${fieldId}-owner`} className={sheetFieldLabelClassName}>{dictionary.contactDialog.fields.owner}</FieldLabel><FieldContent>{ownersLoading ? <Skeleton className="h-9 w-full" /> : ownersUnavailable ? <p role="alert" className="text-meta text-destructive">{dictionary.dashboard.loadError}</p> : mode === "view" ? <p id={`${fieldId}-owner`} aria-labelledby={`${fieldId}-owner-label`} className="text-body text-foreground/75">{ownerLabel}</p> : <SheetSelect id={`${fieldId}-owner`} name="ownerId" value={value.ownerId ?? ""} onValueChange={(ownerId) => setValue({ ...value, ownerId })} options={[{ value: "", label: dictionary.contactDialog.placeholders.owner }, ...owners.map((owner) => ({ value: owner.id, label: `${owner.label} (${owner.role === "admin" ? "Admin" : "Staff"})` }))]} />}</FieldContent></Field>
                 <Field className="gap-1.5 px-4 py-2"><FieldLabel htmlFor={`${fieldId}-source`} className={sheetFieldLabelClassName}>{dictionary.contactDialog.fields.source}</FieldLabel><FieldContent><Input id={`${fieldId}-source`} name="source" value={value.source ?? ""} disabled={mode === "view"} onChange={(event) => setValue({ ...value, source: event.target.value })} placeholder={dictionary.contactDialog.placeholders.source} className={controlClassName} /></FieldContent></Field>
               </FieldGroup>
@@ -154,7 +193,16 @@ export function CrmContactDialog({ open, contact, organizations = [], owners = [
             {mode === "view" ? <Button type="button" className="w-full" onClick={() => setMode("edit")}><Pencil className="mr-2 size-4" />{dictionary.contactDialog.edit}</Button> : <><Button type="submit" className="flex-1" disabled={saving || !hasChanges}><Save className="mr-2 size-4" />{saving ? dictionary.contactDialog.saving : mode === "create" ? dictionary.contactDialog.create : dictionary.contactDialog.save}</Button><Button type="button" variant="outline" className="flex-1" onClick={() => contact ? (setValue(initialValue(contact)), setMode("view")) : onOpenChange(false)}>{dictionary.contactDialog.cancel}</Button></>}
           </AppSheetFooter>
         </form>
-      </SheetContent>
-    </Sheet>
+        </SheetContent>
+      </Sheet>
+      {onCreateOrganization ? (
+        <CrmOrganizationSheet
+          open={organizationSheetOpen}
+          dictionary={dictionary}
+          onOpenChange={setOrganizationSheetOpen}
+          onSubmit={createOrganization}
+        />
+      ) : null}
+    </>
   );
 }

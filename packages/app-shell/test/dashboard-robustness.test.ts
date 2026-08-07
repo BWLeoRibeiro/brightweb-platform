@@ -246,6 +246,15 @@ test("dashboard parsers reject malformed nested KPI values, items, enums, and nu
       crm: { ...crm.crm, statusBreakdown: { ...crm.crm.statusBreakdown, won: -1 } },
     },
   }).data, null);
+  assert.equal(parseDashboardCrmResponse({
+    data: { ...crm, crm: { ...crm.crm, monthlyNewContacts: "not-a-series" } },
+  }).data, null);
+  assert.equal(parseDashboardCrmResponse({
+    data: { ...crm, crm: { ...crm.crm, monthlyNewContacts: [{ month: "2026-13", count: 1 }] } },
+  }).data, null);
+  assert.equal(parseDashboardCrmResponse({
+    data: { ...crm, crm: { ...crm.crm, recentContacts: [{ ...crm.crm.recentContacts[0], createdAt: 42 }] } },
+  }).data, null);
   assert.equal(parseDashboardTasksResponse({
     data: { ...tasks, tasks: [{ ...tasks.tasks[0], priority: "critical" }] },
   }).data, null);
@@ -297,7 +306,21 @@ test("dashboard overview preserves the branded bento layout", () => {
   assert.doesNotMatch(clientSource, /href=\{`\/crm\?contact=/);
   assert.doesNotMatch(stylesheet, /\.dashboard-briefing\s*\{/);
   assert.doesNotMatch(clientSource, /function ProjectsMilestonesList/);
-  assert.match(clientSource, /<MilestonesPanel items=\{milestones\} isLoading=\{isLoading && !projects\} \/>/);
+  assert.match(clientSource, /isLoading \|\| milestones\.length > 0 \? <MilestonesPanel items=\{milestones\}/);
+});
+
+test("projects dashboard presents one coherent, accessible health story", () => {
+  const clientSource = readFileSync(new URL("../src/dashboard/dashboard-client.tsx", import.meta.url), "utf8");
+  const stylesheet = readFileSync(new URL("../src/dashboard/dashboard.css", import.meta.url), "utf8");
+
+  assert.match(clientSource, /projectsAttention \?\? 0/);
+  assert.match(clientSource, /allAttentionIsMissingOwners/);
+  assert.match(clientSource, /activeProjects === 1[\s\S]*dictionary\.welcome\.activeProjectOne/);
+  assert.match(clientSource, /overdueProjects > 0 \? "risk" : "neutral"/);
+  assert.match(clientSource, /role="img"[\s\S]*aria-label=\{`\$\{onTrackCount\}/);
+  assert.match(clientSource, /dashboard-projects-grid--single/);
+  assert.match(clientSource, /milestones\.length > 0 \? <MilestonesPanel/);
+  assert.match(stylesheet, /\.dashboard-projects-grid--single/);
 });
 
 test("dashboard renders the restored branded overview with live KPI content", () => {
