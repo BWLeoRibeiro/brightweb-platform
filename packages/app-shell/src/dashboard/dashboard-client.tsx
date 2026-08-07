@@ -754,7 +754,32 @@ function MilestonesPanel({ items, isLoading = false, className = "" }: { items: 
 
 /* ─── Projects tab ───────────────────────────────────────────────── */
 
-function ProjectsView({ projects, isLoading }: { projects: DashboardProjectsData | null; isLoading: boolean }) {
+export function buildProjectQuickCreateHref(baseHref: string) {
+  const url = new URL(baseHref, "http://dashboard.local");
+  url.searchParams.set("create", "project");
+  return `${url.pathname}${url.search}${url.hash}`;
+}
+
+export function ProjectQuickCreateAction({
+  href,
+  label,
+}: {
+  href: string;
+  label: string;
+}) {
+  return (
+    <Link
+      href={buildProjectQuickCreateHref(href)}
+      prefetch={false}
+      className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-[color:var(--surface-button-brand)] px-3.5 py-1.5 text-meta font-semibold text-[color:var(--accent-foreground)] transition hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-current [&_svg]:h-3.5 [&_svg]:w-3.5"
+    >
+      <Plus />
+      {label}
+    </Link>
+  );
+}
+
+export function ProjectsView({ projects, isLoading }: { projects: DashboardProjectsData | null; isLoading: boolean }) {
   const dictionary = useDashboardDictionary();
   const projectBaseHref = useProjectBaseHref();
   const kpis = projects?.kpis;
@@ -772,10 +797,16 @@ function ProjectsView({ projects, isLoading }: { projects: DashboardProjectsData
         title={dictionary.projects.stateTitle}
         subtitle={dictionary.projects.stateSubtitle}
         action={
-          <PortalActionLink href={projectBaseHref} prefetch={false}>
-            {dictionary.projects.viewAll}
-            <ArrowUpRight className="h-3.5 w-3.5" />
-          </PortalActionLink>
+          <div className="flex flex-wrap items-center gap-2">
+            <PortalActionLink href={projectBaseHref} prefetch={false}>
+              {dictionary.projects.viewAll}
+              <ArrowUpRight className="h-3.5 w-3.5" />
+            </PortalActionLink>
+            <ProjectQuickCreateAction
+              href={projectBaseHref}
+              label={dictionary.projects.addNew ?? "Novo projeto"}
+            />
+          </div>
         }
       />
 

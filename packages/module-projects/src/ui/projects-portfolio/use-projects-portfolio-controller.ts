@@ -11,6 +11,7 @@ import {
 } from "../events";
 import type { ListProjectsPayload } from "../projects-list-response-parser";
 import { useProjectsUiClient, useProjectsUiDictionary } from "../context";
+import { resolveProjectCreationIntent } from "./project-create-intent";
 
 const PAGE_SIZE = 12;
 
@@ -76,9 +77,22 @@ export function useProjectsPortfolioController(
   }, []);
 
   useEffect(() => {
-    const pendingAction = window.sessionStorage.getItem("dashboard:pending-action");
-    if (pendingAction !== "projects-new-project") return;
-    window.sessionStorage.removeItem("dashboard:pending-action");
+    const routeIntent = resolveProjectCreationIntent(window.location.href);
+    let shouldOpen = routeIntent.shouldOpen;
+
+    try {
+      if (window.sessionStorage.getItem("dashboard:pending-action") === "projects-new-project") {
+        window.sessionStorage.removeItem("dashboard:pending-action");
+        shouldOpen = true;
+      }
+    } catch {
+      // URL-based creation still works when browser storage is unavailable.
+    }
+
+    if (routeIntent.nextHref) {
+      window.history.replaceState(window.history.state, "", routeIntent.nextHref);
+    }
+    if (!shouldOpen) return;
     dispatchProjectsEvent(PROJECTS_EVENTS.openNewProject);
   }, []);
 
