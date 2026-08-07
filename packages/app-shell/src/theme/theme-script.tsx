@@ -1,4 +1,3 @@
-import Script from "next/script";
 import type { ScriptHTMLAttributes } from "react";
 import { getThemeBootstrapScript, type ThemeMode } from "./theme-controller";
 
@@ -8,12 +7,10 @@ export type ThemeScriptProps = Pick<ScriptHTMLAttributes<HTMLScriptElement>, "no
 
 export function ThemeScript({ defaultTheme = "system", nonce }: ThemeScriptProps) {
   return (
-    <Script
-      id="brightweb-theme"
-      strategy="beforeInteractive"
+    <script
       nonce={nonce}
-    >
-      {getThemeBootstrapScript(defaultTheme)}
-    </Script>
+      suppressHydrationWarning
+      dangerouslySetInnerHTML={{ __html: getThemeBootstrapScript(defaultTheme) }}
+    />
   );
 }
