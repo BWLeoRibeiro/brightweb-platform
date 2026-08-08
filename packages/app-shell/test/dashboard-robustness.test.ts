@@ -8,6 +8,7 @@ import {
   AppDashboard,
   buildUpcomingMilestoneDays,
   buildProjectQuickCreateHref,
+  ClientsView,
   getAttentionPreviewCapacity,
   ProjectQuickCreateAction,
   ProjectsView,
@@ -401,6 +402,43 @@ test("projects dashboard keeps its health card in populated and empty states", (
   assert.match(emptyHtml, />Resumo</);
   assert.match(emptyHtml, />Tudo no rumo</);
   assert.match(emptyHtml, /--project-hero-subtle/);
+});
+
+test("contacts dashboard keeps the summary hierarchy, aligned chart labels, and empty state", () => {
+  const monthlyNewContacts = Array.from({ length: 12 }, (_, index) => ({
+    month: `2025-${String(index + 1).padStart(2, "0")}`,
+    count: index === 11 ? 2 : 0,
+  }));
+  const populatedCrm = {
+    ...crm,
+    crm: {
+      ...crm.crm,
+      monthlyNewContacts,
+      recentContacts: [{
+        ...crm.crm.recentContacts[0],
+        createdAt: "2026-08-04T12:00:00.000Z",
+      }],
+    },
+  };
+
+  const populatedHtml = renderToStaticMarkup(createElement(ClientsView, { crm: populatedCrm, isLoading: false }));
+  assert.match(populatedHtml, /dashboard-clients-grid/);
+  assert.match(populatedHtml, /dashboard-rhythm-card/);
+  assert.match(populatedHtml, />Resumo</);
+  assert.match(populatedHtml, />A crescer</);
+  assert.match(populatedHtml, /data-rhythm-month-label="2025-01"/);
+  assert.match(populatedHtml, /aria-label="dezembro · 2 contactos"/);
+  assert.match(populatedHtml, />Adicionado a</);
+  assert.match(populatedHtml, />04\/08</);
+
+  const emptyCrm = {
+    ...crm,
+    crm: { ...crm.crm, monthlyNewContacts, recentContacts: [] },
+  };
+  const emptyHtml = renderToStaticMarkup(createElement(ClientsView, { crm: emptyCrm, isLoading: false }));
+  assert.match(emptyHtml, />0<\/span> contactos</);
+  assert.match(emptyHtml, />Sem contactos recentes\.</);
+  assert.match(emptyHtml, />Novo contacto</);
 });
 
 test("projects dashboard provides a quick-create handoff to the projects module", () => {

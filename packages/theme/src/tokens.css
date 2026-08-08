@@ -452,6 +452,7 @@
   --dashboard-milestone-empty: color-mix(in srgb, var(--project-hero-foreground) 10%, transparent);
   --dashboard-milestone-date: color-mix(in srgb, var(--project-hero-foreground) 8%, transparent);
   --dashboard-period-glow: color-mix(in srgb, var(--accent) 22%, transparent);
+  --dashboard-rhythm-trend-border: color-mix(in srgb, var(--brand-lime, var(--accent)) 45%, transparent);
   --dashboard-client-avatar: color-mix(in srgb, var(--role-client) 18%, var(--card));
   --dashboard-local-muted-foreground: color-mix(in srgb, var(--foreground) 62%, transparent);
   --dashboard-local-border: color-mix(in srgb, var(--foreground) 14%, transparent);
