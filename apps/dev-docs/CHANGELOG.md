@@ -1,5 +1,11 @@
 # dev-docs
 
+## 0.0.21
+
+### Patch Changes
+
+- @brightweblabs/ui@1.5.1
+
 ## 0.0.20
 
 ### Patch Changes

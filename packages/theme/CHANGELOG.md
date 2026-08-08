@@ -1,5 +1,11 @@
 # @brightweblabs/theme
 
+## 0.8.2
+
+### Patch Changes
+
+- 60232ce: Restructure the Contactos dashboard into a responsive recent-contact grid and sticky Resumo card, with aligned monthly labels, accessible point tooltips, and preserved empty-state behavior.
+
 ## 0.8.1
 
 ### Patch Changes
