@@ -77,6 +77,13 @@ function formatShortDate(iso: string | null | undefined) {
   return new Intl.DateTimeFormat("pt-PT", { day: "2-digit", month: "short" }).format(d);
 }
 
+function formatDayMonth(iso: string | null | undefined) {
+  if (!iso) return "–";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "–";
+  return new Intl.DateTimeFormat("pt-PT", { day: "2-digit", month: "2-digit", timeZone: "UTC" }).format(d);
+}
+
 function formatWeekday(iso: string) {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "";
@@ -1115,30 +1122,103 @@ function formatMonthShort(isoMonth: string) {
   return new Intl.DateTimeFormat("pt-PT", { month: "short", timeZone: "UTC" }).format(d).replace(".", "");
 }
 
+function formatMonthLong(isoMonth: string) {
+  const d = new Date(`${isoMonth}-01T00:00:00Z`);
+  if (Number.isNaN(d.getTime())) return isoMonth;
+  return new Intl.DateTimeFormat("pt-PT", { month: "long", timeZone: "UTC" }).format(d);
+}
+
 function RhythmSparkline({ series }: { series: { month: string; count: number }[] }) {
+  const dictionary = useDashboardDictionary();
   const max = Math.max(1, ...series.map((p) => p.count));
-  const w = 560;
-  const h = 64;
+  const w = 320;
+  const h = 84;
+  const chartTop = 6;
+  const chartBottom = h - 4;
   const step = series.length > 1 ? w / (series.length - 1) : w;
-  const points = series
-    .map((p, i) => `${(i * step).toFixed(1)},${(h - 4 - (p.count / max) * (h - 8)).toFixed(1)}`)
-    .join(" ");
+  const coordinates = series.map((p, i) => ({
+    x: i * step,
+    y: chartBottom - (p.count / max) * (chartBottom - chartTop),
+  }));
+  const points = coordinates.map(({ x, y }) => `${x.toFixed(1)},${y.toFixed(1)}`).join(" ");
+  const area = coordinates.length > 0
+    ? `M 0 ${chartBottom} L ${points.replaceAll(",", " ")} L ${w} ${chartBottom} Z`
+    : "";
+  const current = coordinates[coordinates.length - 1];
+  const visibleMonths = series
+    .map((point, index) => ({ point, index, x: coordinates[index]!.x }))
+    .filter(({ index }) => index % 2 === 0 || index === series.length - 1);
+
   return (
-    <div aria-hidden className="min-w-0">
-      <svg viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" className="h-16 w-full">
-        <polyline
-          points={points}
-          fill="none"
-          stroke="var(--accent)"
-          strokeWidth="2.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          vectorEffect="non-scaling-stroke"
-        />
-      </svg>
-      <div className="mt-1.5 flex justify-between text-micro text-[color:var(--muted-foreground)]">
-        {series.map((p) => (
-          <span key={p.month}>{formatMonthShort(p.month)}</span>
+    <div className="mt-7 min-w-0">
+      <TooltipProvider delayDuration={80}>
+        <div className="relative h-[5.25rem] w-full">
+          <svg aria-hidden viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" className="absolute inset-0 h-full w-full overflow-visible">
+            <defs>
+              <linearGradient id="dashboard-rhythm-fill" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="var(--dashboard-rhythm-accent)" stopOpacity="0.34" />
+                <stop offset="100%" stopColor="var(--dashboard-rhythm-accent)" stopOpacity="0" />
+              </linearGradient>
+            </defs>
+            <path d={area} fill="url(#dashboard-rhythm-fill)" />
+            <polyline
+              points={points}
+              fill="none"
+              stroke="var(--dashboard-rhythm-accent)"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              vectorEffect="non-scaling-stroke"
+            />
+            {current ? (
+              <circle
+                cx={current.x}
+                cy={current.y}
+                r="4"
+                fill="var(--dashboard-rhythm-accent)"
+                stroke="var(--project-hero-surface-raised)"
+                strokeWidth="2"
+                vectorEffect="non-scaling-stroke"
+              />
+            ) : null}
+          </svg>
+          {coordinates.map(({ x, y }, index) => {
+            const point = series[index]!;
+            const countLabel = point.count === 1 ? dictionary.clients.one : dictionary.clients.many;
+            const tooltipLabel = `${formatMonthLong(point.month)} · ${point.count} ${countLabel}`;
+            return (
+              <Tooltip key={point.month}>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    aria-label={tooltipLabel}
+                    className="group absolute z-10 flex size-5 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--dashboard-rhythm-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--project-hero-surface-raised)]"
+                    style={{ left: `${(x / w) * 100}%`, top: `${(y / h) * 100}%` }}
+                  >
+                    <span className="size-2 rounded-full bg-[color:var(--dashboard-rhythm-accent)] opacity-0 shadow-[0_0_0_2px_var(--project-hero-surface-raised)] transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <span className={MONO}>{tooltipLabel}</span>
+                </TooltipContent>
+              </Tooltip>
+            );
+          })}
+        </div>
+      </TooltipProvider>
+      <div className={`${MONO} relative mt-2 h-3 text-micro text-[color:var(--project-hero-subtle)]`}>
+        {visibleMonths.map(({ point, index, x }) => (
+          <span
+            key={point.month}
+            data-rhythm-month-label={point.month}
+            className="absolute top-0 whitespace-nowrap"
+            style={{
+              left: `${(x / w) * 100}%`,
+              transform: index === 0 ? "none" : index === series.length - 1 ? "translateX(-100%)" : "translateX(-50%)",
+            }}
+          >
+            {formatMonthShort(point.month)}
+          </span>
         ))}
       </div>
     </div>
@@ -1148,8 +1228,8 @@ function RhythmSparkline({ series }: { series: { month: string; count: number }[
 function RhythmPeriodRow({ label, value, isLoading }: { label: string; value: number; isLoading: boolean }) {
   return (
     <div className="flex items-baseline justify-between gap-6">
-      <span className="text-meta text-[color:var(--muted-foreground)]">{label}</span>
-      <span className={`${MONO} text-body font-semibold text-[color:var(--foreground)]`}>{isLoading ? "–" : value}</span>
+      <span className="text-meta text-[color:var(--project-hero-muted)]">{label}</span>
+      <span className={`${MONO} text-body font-bold text-[color:var(--project-hero-foreground)]`}>{isLoading ? "–" : value}</span>
     </div>
   );
 }
@@ -1161,43 +1241,65 @@ function RhythmCard({ crm, isLoading }: { crm: DashboardCrmData | null; isLoadin
   const monthValue = series.length > 0 ? series[series.length - 1]!.count : kpis?.crmNewLast30Days ?? 0;
   const previousMonth = series.length > 1 ? series[series.length - 2]!.count : null;
   const delta = previousMonth === null ? null : monthValue - previousMonth;
+  const rhythmStatus = delta === null
+    ? dictionary.clients.rhythmNoHistory ?? "Sem histórico"
+    : delta > 0
+      ? dictionary.clients.rhythmGrowing ?? "A crescer"
+      : delta < 0
+        ? dictionary.clients.rhythmDeclining ?? "A diminuir"
+        : dictionary.clients.rhythmStable ?? "Estável";
   return (
-    <Card density="default" className="relative overflow-hidden p-6">
+    <aside className="brand-panel dashboard-rhythm-card overflow-hidden rounded-[var(--radius-card)] p-6 text-[color:var(--project-hero-foreground)]">
       <span
         aria-hidden
-        className="absolute right-0 top-0 h-20 w-20 rounded-full blur-2xl"
-        style={{ background: "var(--dashboard-period-glow)" }}
+        className="pointer-events-none absolute -left-16 -top-16 h-48 w-48 rounded-full blur-3xl opacity-100 dark:opacity-40"
+        style={{ background: "var(--dashboard-milestone-glow)" }}
       />
-      <div className={`relative grid grid-cols-1 gap-6 md:items-center ${series.length > 0 ? "md:grid-cols-[auto_1fr] lg:grid-cols-[auto_1fr_auto]" : "md:grid-cols-[1fr_auto]"}`}>
-        <div className="flex flex-col items-start md:min-w-[12rem]">
-          <span className={LABEL}>{series.length > 0 ? dictionary.clients.thisMonth ?? "Este mês" : dictionary.clients.lastThirtyDays}</span>
-          <div className="mt-4 flex items-baseline gap-2">
-            <span className="text-kpi" style={{ color: "var(--accent)" }}>
-              {isLoading ? "–" : monthValue}
-            </span>
-            <span className="text-body font-semibold text-[color:var(--muted-foreground)]">
-              {monthValue === 1 ? dictionary.clients.newOne : dictionary.clients.newMany}
-            </span>
-          </div>
-          {delta !== null && !isLoading ? (
-            <span
-              className="mt-3 inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-micro font-semibold"
-              style={delta > 0
-                ? { borderColor: "var(--accent)", color: "var(--accent)" }
-                : { borderColor: "var(--border)", color: "var(--muted-foreground)" }}
-            >
-              {delta > 0 ? `↑ +${delta}` : delta < 0 ? `↓ ${delta}` : "– 0"} {dictionary.clients.vsPreviousMonth ?? "vs. mês anterior"}
-            </span>
-          ) : null}
+      <div className="relative flex items-center justify-between gap-4">
+        <div className="flex min-w-0 items-center gap-3">
+          <span
+            className="flex h-[1.875rem] w-[1.875rem] shrink-0 items-center justify-center rounded-full"
+            style={{ background: "var(--dashboard-milestone-icon)", color: "var(--dashboard-rhythm-accent)" }}
+          >
+            <CircleDot aria-hidden className="size-3.5" />
+          </span>
+          <h2 className="truncate text-title font-semibold tracking-tight">{dictionary.clients.rhythmTitle ?? "Resumo"}</h2>
         </div>
-        {series.length > 0 ? <RhythmSparkline series={series} /> : null}
-        <div className="flex flex-col gap-2.5 border-t border-[color:var(--border)] pt-4 md:col-span-full md:flex-row md:gap-8 lg:col-span-1 lg:w-60 lg:flex-col lg:gap-2.5 lg:border-l lg:border-t-0 lg:pl-8 lg:pt-0">
-          <RhythmPeriodRow label={dictionary.clients.lastSevenDays} value={kpis?.crmNewLast7Days ?? 0} isLoading={isLoading} />
-          <RhythmPeriodRow label={dictionary.clients.lastThirtyDays} value={kpis?.crmNewLast30Days ?? 0} isLoading={isLoading} />
-          <RhythmPeriodRow label={dictionary.clients.lastTwelveMonths} value={kpis?.crmNewLastYear ?? 0} isLoading={isLoading} />
-        </div>
+        <span
+          className="shrink-0 rounded-full border px-2.5 py-1 text-micro font-bold"
+          style={{ borderColor: "var(--project-hero-border)", color: "var(--project-hero-muted)" }}
+        >
+          {rhythmStatus}
+        </span>
       </div>
-    </Card>
+
+      <div className="relative mt-7 flex flex-wrap items-baseline gap-x-2 gap-y-1">
+        <span className="text-kpi-lg leading-none text-[color:var(--project-hero-foreground)]">
+          {isLoading ? "–" : monthValue}
+        </span>
+        <span className="text-body font-semibold text-[color:var(--project-hero-muted)]">
+          {monthValue === 1 ? dictionary.clients.newOne : dictionary.clients.newMany}
+        </span>
+      </div>
+      {delta !== null && !isLoading ? (
+        <span
+          className="relative mt-3 inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-micro font-semibold"
+          style={delta > 0
+            ? { borderColor: "var(--dashboard-rhythm-trend-border, var(--project-hero-border))", color: "var(--dashboard-rhythm-accent)" }
+            : { borderColor: "var(--project-hero-border)", color: "var(--project-hero-muted)" }}
+        >
+          {delta > 0 ? `↑ +${delta}` : delta < 0 ? `↓ ${delta}` : "– 0"} {dictionary.clients.vsPreviousMonth ?? "vs. mês anterior"}
+        </span>
+      ) : null}
+
+      {series.length > 0 ? <RhythmSparkline series={series} /> : null}
+
+      <div className="relative mt-6 flex flex-col gap-3 border-t border-[color:var(--project-hero-border)] pt-5">
+        <RhythmPeriodRow label={dictionary.clients.lastSevenDays} value={kpis?.crmNewLast7Days ?? 0} isLoading={isLoading} />
+        <RhythmPeriodRow label={dictionary.clients.lastThirtyDays} value={kpis?.crmNewLast30Days ?? 0} isLoading={isLoading} />
+        <RhythmPeriodRow label={dictionary.clients.lastTwelveMonths} value={kpis?.crmNewLastYear ?? 0} isLoading={isLoading} />
+      </div>
+    </aside>
   );
 }
 
@@ -1206,7 +1308,7 @@ function AddContactCard() {
   return (
     <Link
       href="/crm?create=contact"
-      className="flex min-h-[8rem] w-full flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-[color:var(--border)] p-4 text-meta font-semibold text-[color:var(--muted-foreground)] transition-colors hover:border-[color:var(--accent)] hover:text-[color:var(--accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-current sm:w-[280px]"
+      className="flex min-h-[9.25rem] w-full flex-col items-center justify-center gap-2 rounded-[var(--radius-card)] border border-dashed border-[color:var(--border)] p-4 text-meta font-semibold text-[color:var(--muted-foreground)] transition-colors hover:border-[color:var(--accent)] hover:text-[color:var(--accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-current"
     >
       <span className="flex h-9 w-9 items-center justify-center rounded-full border border-current">
         <Plus className="h-4 w-4" strokeWidth={2} />
@@ -1221,7 +1323,7 @@ function ContactCard({ c }: { c: DashboardCrmRecentContact }) {
   const meta = crmStatusMeta(c.status, dictionary);
   return (
     <Card asChild variant="interactive" density="compact">
-      <Link href="/crm" className="group relative w-full p-4 sm:w-[280px]">
+      <Link href="/crm" className="group relative w-full p-5">
         <span
           aria-hidden
           className="absolute right-3 top-3 flex h-7 w-7 items-center justify-center rounded-full border border-[color:var(--border)] text-[color:var(--foreground-accent-link)] opacity-0 transition group-hover:opacity-100 group-focus-visible:opacity-100"
@@ -1244,13 +1346,13 @@ function ContactCard({ c }: { c: DashboardCrmRecentContact }) {
           <p className="truncate text-meta text-[color:var(--muted-foreground)]">{c.company ?? "—"}</p>
         </div>
       </div>
-      <div className="mt-4 flex items-center justify-between border-t border-[color:var(--border)] pt-3 text-meta text-[color:var(--muted-foreground)]">
+      <div className="mt-5 flex flex-wrap items-center justify-between gap-2 border-t border-[color:var(--border)] pt-3 text-meta text-[color:var(--muted-foreground)]">
         <Tag meta={meta} />
         <span className="inline-flex items-center gap-1.5">
           <CalendarDays aria-hidden className="h-3.5 w-3.5 opacity-70" strokeWidth={1.75} />
           <span>{c.createdAt ? (dictionary.clients.addedOn ?? dictionary.clients.lastChange) : dictionary.clients.lastChange}</span>
           <span className={`${MONO} font-semibold text-[color:var(--foreground)]`}>
-            {formatShortDate(c.createdAt ?? c.lastChangedAt)}
+            {c.createdAt ? formatDayMonth(c.createdAt) : formatShortDate(c.lastChangedAt)}
           </span>
         </span>
       </div>
@@ -1259,7 +1361,7 @@ function ContactCard({ c }: { c: DashboardCrmRecentContact }) {
   );
 }
 
-function ClientsView({ crm, isLoading }: { crm: DashboardCrmData | null; isLoading: boolean }) {
+export function ClientsView({ crm, isLoading }: { crm: DashboardCrmData | null; isLoading: boolean }) {
   const dictionary = useDashboardDictionary();
   const contacts = crm?.crm.recentContacts ?? [];
   const tilesLoading = isLoading && !crm;
@@ -1286,23 +1388,25 @@ function ClientsView({ crm, isLoading }: { crm: DashboardCrmData | null; isLoadi
         }
       />
 
-      <RhythmCard crm={crm} isLoading={tilesLoading} />
-
-      <section className="space-y-3">
-        <div className="flex items-end justify-between">
-          <h3 className={CARD_TITLE}>{dictionary.clients.recentTitle}</h3>
-          <span className="text-meta text-[color:var(--muted-foreground)]">
-            <span className="text-data font-semibold">{contacts.length}</span>{" "}
-            {contacts.length === 1 ? dictionary.clients.one : dictionary.clients.many}
-          </span>
-        </div>
+      <div className="dashboard-clients-grid">
+        <Card asChild>
+        <section className="min-w-0 overflow-hidden" aria-labelledby="dashboard-recent-contacts">
+          <header className="flex min-h-16 items-center justify-between gap-4 border-b border-[color:var(--border)] px-5 py-4">
+            <h3 id="dashboard-recent-contacts" className={CARD_TITLE}>{dictionary.clients.recentTitle}</h3>
+            {tilesLoading ? <Skeleton className="h-7 w-24 rounded-full" /> : (
+              <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-[color:var(--border)] bg-[color:var(--muted)] px-2.5 py-1 text-label font-bold text-[color:var(--muted-foreground)]">
+                <span className="text-data">{contacts.length}</span>{" "}
+                {contacts.length === 1 ? dictionary.clients.one : dictionary.clients.many}
+              </span>
+            )}
+          </header>
         {isLoading && contacts.length === 0 ? (
-          <div className="flex flex-wrap gap-4">
+          <div className="dashboard-contacts-list p-5">
             {[0, 1, 2, 3].map((i) => (
               <Card
               key={i}
               density="compact"
-              className="h-32 w-full justify-between p-4 sm:w-[280px]"
+              className="h-[9.25rem] w-full justify-between p-5"
             >
               <div className="flex items-center gap-3">
                 <Skeleton rounded="50%" className="h-9 w-9 shrink-0" />
@@ -1316,19 +1420,22 @@ function ClientsView({ crm, isLoading }: { crm: DashboardCrmData | null; isLoadi
             ))}
           </div>
         ) : contacts.length === 0 ? (
-          <div className="space-y-3">
+          <div className="dashboard-contacts-list p-5">
             <p className="text-body text-[color:var(--muted-foreground)]">{dictionary.clients.noRecent}</p>
             <AddContactCard />
           </div>
         ) : (
-          <div className="flex flex-wrap gap-4">
+          <div className="dashboard-contacts-list p-5">
             {contacts.map((c) => (
               <ContactCard key={c.id} c={c} />
             ))}
             <AddContactCard />
           </div>
         )}
-      </section>
+        </section>
+        </Card>
+        <RhythmCard crm={crm} isLoading={tilesLoading} />
+      </div>
     </div>
   );
 }

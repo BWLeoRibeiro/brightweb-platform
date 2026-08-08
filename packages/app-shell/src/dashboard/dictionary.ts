@@ -97,6 +97,11 @@ export const defaultDashboardDictionary = {
   clients: {
     title: "Contactos",
     subtitle: "Ritmo de entrada e últimos contactos adicionados.",
+    rhythmTitle: "Resumo",
+    rhythmGrowing: "A crescer",
+    rhythmStable: "Estável",
+    rhythmDeclining: "A diminuir",
+    rhythmNoHistory: "Sem histórico",
     viewAll: "Ver todos os contactos",
     addNew: "Novo contacto",
     lastSevenDays: "Últimos 7 dias",
@@ -126,7 +131,7 @@ export const defaultDashboardDictionary = {
 type DefaultDashboardDictionary = typeof defaultDashboardDictionary;
 type OptionalWelcomeKey = "activeProjectOne" | "activeProjectMany" | "projectOne" | "projectMany" | "needsOwnerOne" | "needsOwnerMany";
 type OptionalProjectKey = "addNew" | "healthTitle" | "healthStatusAttention" | "healthStatusOnTrack" | "healthStatusEmpty" | "milestonesWithDate" | "milestonePlannedOne" | "milestonePlannedMany" | "withinNextSevenDays" | "today";
-type OptionalClientKey = "addNew" | "addedOn" | "thisMonth" | "vsPreviousMonth";
+type OptionalClientKey = "addNew" | "addedOn" | "rhythmTitle" | "rhythmGrowing" | "rhythmStable" | "rhythmDeclining" | "rhythmNoHistory" | "thisMonth" | "vsPreviousMonth";
 
 export type DashboardDictionary = Omit<DefaultDashboardDictionary, "welcome" | "projects" | "clients"> & {
   welcome: Omit<DefaultDashboardDictionary["welcome"], OptionalWelcomeKey> & Partial<Pick<DefaultDashboardDictionary["welcome"], OptionalWelcomeKey>>;
