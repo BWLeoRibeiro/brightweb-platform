@@ -1,5 +1,11 @@
 # @brightweblabs/app-shell
 
+## 0.15.6
+
+### Patch Changes
+
+- 612fe63: Align the projects, contacts, and tasks dashboard tabs on shared actions, count pills, empty states, spacing, and accessible summary-card patterns.
+
 ## 0.15.5
 
 ### Patch Changes
