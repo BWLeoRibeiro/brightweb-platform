@@ -623,7 +623,8 @@ test("dashboard attention cards use the canonical editorial attention-row recipe
   assert.match(projectTokens, /@media \(prefers-reduced-motion: reduce\)/);
   assert.match(dashboard, /className="dashboard-projects-grid"/);
   assert.match(dashboard, /<PortfolioHealthCard[\s\S]*<Card asChild>/);
-  assert.match(dashboard, /className="dashboard-attention-count"/);
+  assert.match(dashboard, /<DashboardCountPill count=\{kpis\?\.projectsAttention \?\? 0\} tone="warning"/);
+  assert.doesNotMatch(dashboardStyles, /dashboard-attention-count/);
   assert.match(dashboardStyles, /@media \(min-width: 1081px\)[\s\S]*grid-template-columns: minmax\(0, 1fr\) 23\.75rem/);
   assert.equal(defaultProjectsUiDictionary.dashboard.badges.withoutOwner, "Por atribuir");
   assert.equal(defaultProjectsUiDictionary.dashboard.defineDeadline, "Definir prazo");

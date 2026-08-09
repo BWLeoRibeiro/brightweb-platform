@@ -19,7 +19,7 @@ import { Card, Skeleton } from "@brightweblabs/ui";
 import type { DashboardAssignedTask, DashboardCrmData, DashboardCrmRecentContact, DashboardDataClient, DashboardInitialData, DashboardProjectAttentionItem, DashboardProjectComponents, DashboardProjectItem, DashboardProjectMilestone, DashboardProjectsData, DashboardSection, DashboardSurfaceContribution, DashboardTaskAttentionState, DashboardTasksData } from "./types";
 import { useDashboardData, type DashboardState } from "./use-dashboard-data";
 import { defaultDashboardDictionary, type DashboardDictionary } from "./dictionary";
-import { DashboardActionLink as PortalActionLink, DashboardSectionHeading as PortalSectionHeading, dashboardCardTitleClassName as CARD_TITLE, dashboardLabelClassName as LABEL, dashboardMonoTabularClassName as MONO } from "./primitives";
+import { DashboardActionLink as PortalActionLink, DashboardCountPill, DashboardEmptyState, DashboardSectionHeading as PortalSectionHeading, QuickCreateAction, dashboardCardTitleClassName as CARD_TITLE, dashboardLabelClassName as LABEL, dashboardMonoTabularClassName as MONO } from "./primitives";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@brightweblabs/ui";
 import { cn } from "../lib/utils";
 import { PillTabs } from "../components/pill-tabs";
@@ -390,9 +390,9 @@ function ProjectsKpiCard({ projects, isLoading }: { projects: DashboardProjectsD
   return (
     <Card asChild variant="interactive" density="default">
       <Link href={projectBaseHref} prefetch={false} className="group relative overflow-hidden p-6">
-      <span aria-hidden className="absolute inset-y-0 left-0 w-[3px]" style={{ background: "var(--accent)" }} />
+      <span aria-hidden className="absolute inset-y-0 left-0 w-[3px] bg-[color:var(--accent)]" />
       <div className="flex items-center justify-between">
-        <span className="flex h-9 w-9 items-center justify-center rounded-full" style={{ background: "var(--dashboard-accent-soft)", color: "var(--accent)" }}>
+        <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[color:var(--dashboard-accent-soft)] text-[color:var(--accent)]">
           <BriefcaseBusiness aria-hidden className="h-4 w-4" />
         </span>
         <span className={LABEL}>{dictionary.projects.title}</span>
@@ -412,7 +412,7 @@ function ProjectsKpiCard({ projects, isLoading }: { projects: DashboardProjectsD
             { label: dictionary.projects.atRisk, tone: "watch", value: kpis?.projectsAtRisk ?? 0 },
             { label: dictionary.projects.overdue, tone: "risk", value: kpis?.projectsOverdue ?? 0 },
             { label: dictionary.projects.dueSevenDays, tone: "accent", value: kpis?.projectsDueNext7Days ?? 0 },
-            { label: dictionary.projects.noOwner, tone: "on", value: kpis?.projectsWithoutOwner ?? 0 },
+            { label: dictionary.projects.noOwner, tone: "watch", value: kpis?.projectsWithoutOwner ?? 0 },
           ]} />
         </>
       )}
@@ -428,8 +428,8 @@ function CrmKpiCard({ crm, isLoading }: { crm: DashboardCrmData | null; isLoadin
   const showLoading = isLoading && !crm;
   return (
     <Card asChild variant="interactive" density="default">
-      <Link href="/crm" className="group relative overflow-hidden p-6">
-      <span aria-hidden className="absolute inset-y-0 left-0 w-[3px]" style={{ background: "var(--dashboard-neutral-rule)" }} />
+      <Link href="/crm" prefetch={false} className="group relative overflow-hidden p-6">
+      <span aria-hidden className="absolute inset-y-0 left-0 w-[3px] bg-[color:var(--dashboard-neutral-rule)]" />
       <div className="flex items-center justify-between">
         <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[color:var(--muted)] text-[color:var(--muted-foreground)]">
           <Users aria-hidden className="h-4 w-4" />
@@ -599,9 +599,7 @@ function TasksTable({
         {isLoading && rows.length === 0 ? (
           <Skeleton className="h-[26px] w-16 rounded-full" />
         ) : (
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-[color:var(--accent)]/30 bg-[color:var(--accent)]/10 px-2.5 py-1 text-label font-bold text-[color:var(--accent)]">
-            <span className="text-data">{total ?? rows.length}</span> {dictionary.tasks.active}
-          </span>
+          <DashboardCountPill count={total ?? rows.length} label={dictionary.tasks.active} tone="accent" />
         )}
       </header>
 
@@ -629,15 +627,15 @@ function TasksTable({
             ))}
           </div>
         ) : rows.length === 0 ? (
-          <div className="flex h-full flex-col items-center justify-center gap-3 px-6 py-10 text-center">
-            <span className="flex h-11 w-11 items-center justify-center rounded-full bg-[color:var(--muted)] text-[color:var(--muted-foreground)]">
-              <CheckCircle2 className="h-5 w-5" />
-            </span>
-            <div>
-              <p className="text-body font-semibold text-[color:var(--foreground)]">{dictionary.tasks.allClear}</p>
-              <p className="mt-0.5 text-meta text-[color:var(--muted-foreground)]">{dictionary.tasks.urgentEmpty}</p>
-            </div>
-          </div>
+          <DashboardEmptyState
+            icon={(
+              <span className="flex h-11 w-11 items-center justify-center rounded-full bg-[color:var(--muted)] text-[color:var(--muted-foreground)]">
+                <CheckCircle2 aria-hidden className="h-5 w-5" />
+              </span>
+            )}
+            title={dictionary.tasks.allClear}
+            description={dictionary.tasks.urgentEmpty}
+          />
         ) : (
           groups.map((g) => {
             const gr = rows.filter((r) => r.group === g);
@@ -822,14 +820,10 @@ export function ProjectQuickCreateAction({
   label: string;
 }) {
   return (
-    <Link
+    <QuickCreateAction
       href={buildProjectQuickCreateHref(href)}
-      prefetch={false}
-      className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-[color:var(--surface-button-brand)] px-3.5 py-1.5 text-meta font-semibold text-[color:var(--accent-foreground)] transition hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-current [&_svg]:h-3.5 [&_svg]:w-3.5"
-    >
-      <Plus />
-      {label}
-    </Link>
+      label={label}
+    />
   );
 }
 
@@ -876,19 +870,17 @@ function PortfolioHealthCard({
     >
       <span
         aria-hidden
-        className="pointer-events-none absolute -left-16 -top-16 h-48 w-48 rounded-full blur-3xl opacity-100 dark:opacity-40"
-        style={{ background: "var(--dashboard-milestone-glow)" }}
+        className="pointer-events-none absolute -left-16 -top-16 h-48 w-48 rounded-full bg-[color:var(--dashboard-milestone-glow)] blur-3xl opacity-100 dark:opacity-40"
       />
 
       <div className="relative flex items-center justify-between gap-4">
         <div className="flex min-w-0 items-center gap-3">
           <span
-            className="flex h-[1.875rem] w-[1.875rem] shrink-0 items-center justify-center rounded-full"
-            style={{ background: "var(--dashboard-milestone-icon)", color: "var(--accent)" }}
+            className="flex h-[1.875rem] w-[1.875rem] shrink-0 items-center justify-center rounded-full bg-[color:var(--dashboard-milestone-icon)] text-[color:var(--accent)]"
           >
             <CircleDot aria-hidden className="size-3.5" />
           </span>
-          <h2 id="dashboard-project-health-title" className="truncate text-title font-semibold">
+          <h2 id="dashboard-project-health-title" className="truncate text-title font-semibold tracking-tight">
             {dictionary.projects.healthTitle ?? "Resumo"}
           </h2>
         </div>
@@ -1051,10 +1043,8 @@ export function ProjectsView({ projects, isLoading }: { projects: DashboardProje
         <Card asChild>
           <section className="dashboard-projects-attention overflow-hidden" aria-labelledby="dashboard-project-attention">
           <div className="flex min-h-16 items-center justify-between border-b border-[color:var(--border)] px-5 py-4">
-            <h3 id="dashboard-project-attention" className={LABEL}>{dictionary.projects.attentionQueueTitle}</h3>
-            <span className="dashboard-attention-count">
-              {kpis?.projectsAttention ?? 0}
-            </span>
+            <h3 id="dashboard-project-attention" className={CARD_TITLE}>{dictionary.projects.attentionQueueTitle}</h3>
+            <DashboardCountPill count={kpis?.projectsAttention ?? 0} tone="warning" />
           </div>
 
           {isLoading && attention.length === 0 ? (
@@ -1062,13 +1052,16 @@ export function ProjectsView({ projects, isLoading }: { projects: DashboardProje
               {[0, 1, 2].map((index) => <Skeleton key={index} className="h-32 border-b border-[color:var(--border)] last:border-b-0" rounded="0" />)}
             </div>
           ) : attention.length === 0 ? (
-            <div className="flex min-h-64 flex-col justify-center bg-[color:var(--project-surface-secondary)] px-7 py-8">
-              <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[color:var(--project-health-on-track)] text-[color:var(--primary-foreground)]">
-                <CheckCircle2 className="h-5 w-5" />
-              </span>
-              <h3 className="mt-4 text-title font-bold text-[color:var(--foreground)]">{dictionary.projects.allOnTrackTitle}</h3>
-              <p className="mt-1 text-body text-[color:var(--muted-foreground)]">{dictionary.projects.allOnTrackDescription(kpis?.projectsActive ?? 0)}</p>
-            </div>
+            <DashboardEmptyState
+              className="min-h-64 bg-[color:var(--project-surface-secondary)]"
+              icon={(
+                <span className="flex h-11 w-11 items-center justify-center rounded-full bg-[color:var(--project-health-on-track)] text-[color:var(--primary-foreground)]">
+                  <CheckCircle2 aria-hidden className="h-5 w-5" />
+                </span>
+              )}
+              title={dictionary.projects.allOnTrackTitle}
+              description={dictionary.projects.allOnTrackDescription(kpis?.projectsActive ?? 0)}
+            />
           ) : (
             <div>
               {attention.map((project, index) => <ProjectAttentionCard key={project.id} project={project} rank={index + 1} />)}
@@ -1128,7 +1121,7 @@ function formatMonthLong(isoMonth: string) {
   return new Intl.DateTimeFormat("pt-PT", { month: "long", timeZone: "UTC" }).format(d);
 }
 
-function RhythmSparkline({ series }: { series: { month: string; count: number }[] }) {
+function RhythmSparkline({ series, ariaLabel }: { series: { month: string; count: number }[]; ariaLabel: string }) {
   const dictionary = useDashboardDictionary();
   const max = Math.max(1, ...series.map((p) => p.count));
   const w = 320;
@@ -1150,7 +1143,7 @@ function RhythmSparkline({ series }: { series: { month: string; count: number }[
     .filter(({ index }) => index % 2 === 0 || index === series.length - 1);
 
   return (
-    <div className="mt-7 min-w-0">
+    <div className="mt-7 min-w-0" role="group" aria-label={ariaLabel}>
       <TooltipProvider delayDuration={80}>
         <div className="relative h-[5.25rem] w-full">
           <svg aria-hidden viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" className="absolute inset-0 h-full w-full overflow-visible">
@@ -1248,27 +1241,25 @@ function RhythmCard({ crm, isLoading }: { crm: DashboardCrmData | null; isLoadin
       : delta < 0
         ? dictionary.clients.rhythmDeclining ?? "A diminuir"
         : dictionary.clients.rhythmStable ?? "Estável";
+  const currentContactLabel = monthValue === 1 ? dictionary.clients.one : dictionary.clients.many;
+  const previousContactLabel = previousMonth === 1 ? dictionary.clients.one : dictionary.clients.many;
+  const rhythmSummary = `${dictionary.clients.thisMonth ?? "Este mês"}: ${monthValue} ${currentContactLabel}; ${dictionary.clients.vsPreviousMonth ?? "vs. mês anterior"}: ${previousMonth ?? 0} ${previousContactLabel}.`;
   return (
-    <aside className="brand-panel dashboard-rhythm-card overflow-hidden rounded-[var(--radius-card)] p-6 text-[color:var(--project-hero-foreground)]">
+    <aside className="brand-panel dashboard-rhythm-card overflow-hidden rounded-[var(--radius-card)] p-6 text-[color:var(--project-hero-foreground)]" aria-labelledby="dashboard-client-rhythm-title">
       <span
         aria-hidden
-        className="pointer-events-none absolute -left-16 -top-16 h-48 w-48 rounded-full blur-3xl opacity-100 dark:opacity-40"
-        style={{ background: "var(--dashboard-milestone-glow)" }}
+        className="pointer-events-none absolute -left-16 -top-16 h-48 w-48 rounded-full bg-[color:var(--dashboard-milestone-glow)] blur-3xl opacity-100 dark:opacity-40"
       />
       <div className="relative flex items-center justify-between gap-4">
         <div className="flex min-w-0 items-center gap-3">
           <span
-            className="flex h-[1.875rem] w-[1.875rem] shrink-0 items-center justify-center rounded-full"
-            style={{ background: "var(--dashboard-milestone-icon)", color: "var(--dashboard-rhythm-accent)" }}
+            className="flex h-[1.875rem] w-[1.875rem] shrink-0 items-center justify-center rounded-full bg-[color:var(--dashboard-milestone-icon)] text-[color:var(--dashboard-rhythm-accent)]"
           >
             <CircleDot aria-hidden className="size-3.5" />
           </span>
-          <h2 className="truncate text-title font-semibold tracking-tight">{dictionary.clients.rhythmTitle ?? "Resumo"}</h2>
+          <h2 id="dashboard-client-rhythm-title" className="truncate text-title font-semibold tracking-tight">{dictionary.clients.rhythmTitle ?? "Resumo"}</h2>
         </div>
-        <span
-          className="shrink-0 rounded-full border px-2.5 py-1 text-micro font-bold"
-          style={{ borderColor: "var(--project-hero-border)", color: "var(--project-hero-muted)" }}
-        >
+        <span className="shrink-0 rounded-full border border-[color:var(--project-hero-border)] px-2.5 py-1 text-micro font-semibold text-[color:var(--project-hero-muted)]">
           {rhythmStatus}
         </span>
       </div>
@@ -1292,7 +1283,7 @@ function RhythmCard({ crm, isLoading }: { crm: DashboardCrmData | null; isLoadin
         </span>
       ) : null}
 
-      {series.length > 0 ? <RhythmSparkline series={series} /> : null}
+      {series.length > 0 ? <RhythmSparkline series={series} ariaLabel={rhythmSummary} /> : null}
 
       <div className="relative mt-6 flex flex-col gap-3 border-t border-[color:var(--project-hero-border)] pt-5">
         <RhythmPeriodRow label={dictionary.clients.lastSevenDays} value={kpis?.crmNewLast7Days ?? 0} isLoading={isLoading} />
@@ -1308,6 +1299,7 @@ function AddContactCard() {
   return (
     <Link
       href="/crm?create=contact"
+      prefetch={false}
       className="flex min-h-[9.25rem] w-full flex-col items-center justify-center gap-2 rounded-[var(--radius-card)] border border-dashed border-[color:var(--border)] p-4 text-meta font-semibold text-[color:var(--muted-foreground)] transition-colors hover:border-[color:var(--accent)] hover:text-[color:var(--accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-current"
     >
       <span className="flex h-9 w-9 items-center justify-center rounded-full border border-current">
@@ -1323,7 +1315,8 @@ function ContactCard({ c }: { c: DashboardCrmRecentContact }) {
   const meta = crmStatusMeta(c.status, dictionary);
   return (
     <Card asChild variant="interactive" density="compact">
-      <Link href="/crm" className="group relative w-full p-5">
+      {/* TODO(dashboard-crm): deep-link contact cards */}
+      <Link href="/crm" prefetch={false} className="group relative w-full p-5">
         <span
           aria-hidden
           className="absolute right-3 top-3 flex h-7 w-7 items-center justify-center rounded-full border border-[color:var(--border)] text-[color:var(--foreground-accent-link)] opacity-0 transition group-hover:opacity-100 group-focus-visible:opacity-100"
@@ -1332,11 +1325,7 @@ function ContactCard({ c }: { c: DashboardCrmRecentContact }) {
         </span>
       <div className="flex items-center gap-3">
         <span
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-meta font-bold"
-          style={{
-            background: "var(--dashboard-client-avatar)",
-            color: "var(--role-client-strong)",
-          }}
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[color:var(--dashboard-client-avatar)] text-meta font-bold text-[color:var(--role-client-strong)]"
           aria-hidden
         >
           {initialsOf(c.name)}
@@ -1373,17 +1362,14 @@ export function ClientsView({ crm, isLoading }: { crm: DashboardCrmData | null; 
         subtitle={dictionary.clients.subtitle}
         action={
           <div className="flex flex-wrap items-center gap-2">
-            <PortalActionLink href="/crm">
+            <PortalActionLink href="/crm" prefetch={false}>
               {dictionary.clients.viewAll}
               <ArrowUpRight className="h-3.5 w-3.5" />
             </PortalActionLink>
-            <Link
+            <QuickCreateAction
               href="/crm?create=contact"
-              className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-[color:var(--surface-button-brand)] px-3.5 py-1.5 text-meta font-semibold text-[color:var(--accent-foreground)] transition hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-current [&_svg]:h-3.5 [&_svg]:w-3.5"
-            >
-              <Plus />
-              {dictionary.clients.addNew ?? "Novo contacto"}
-            </Link>
+              label={dictionary.clients.addNew ?? "Novo contacto"}
+            />
           </div>
         }
       />
@@ -1394,10 +1380,11 @@ export function ClientsView({ crm, isLoading }: { crm: DashboardCrmData | null; 
           <header className="flex min-h-16 items-center justify-between gap-4 border-b border-[color:var(--border)] px-5 py-4">
             <h3 id="dashboard-recent-contacts" className={CARD_TITLE}>{dictionary.clients.recentTitle}</h3>
             {tilesLoading ? <Skeleton className="h-7 w-24 rounded-full" /> : (
-              <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-[color:var(--border)] bg-[color:var(--muted)] px-2.5 py-1 text-label font-bold text-[color:var(--muted-foreground)]">
-                <span className="text-data">{contacts.length}</span>{" "}
-                {contacts.length === 1 ? dictionary.clients.one : dictionary.clients.many}
-              </span>
+              <DashboardCountPill
+                count={contacts.length}
+                label={contacts.length === 1 ? dictionary.clients.one : dictionary.clients.many}
+                tone="neutral"
+              />
             )}
           </header>
         {isLoading && contacts.length === 0 ? (
@@ -1409,7 +1396,7 @@ export function ClientsView({ crm, isLoading }: { crm: DashboardCrmData | null; 
               className="h-[9.25rem] w-full justify-between p-5"
             >
               <div className="flex items-center gap-3">
-                <Skeleton rounded="50%" className="h-9 w-9 shrink-0" />
+                <Skeleton rounded="50%" className="h-10 w-10 shrink-0" />
                 <div className="flex flex-1 flex-col gap-1.5">
                   <Skeleton rounded="999px" className="h-[0.6rem] w-[60%]" />
                   <Skeleton rounded="999px" className="h-[0.5rem] w-[80%]" />
@@ -1421,8 +1408,18 @@ export function ClientsView({ crm, isLoading }: { crm: DashboardCrmData | null; 
           </div>
         ) : contacts.length === 0 ? (
           <div className="dashboard-contacts-list p-5">
-            <p className="text-body text-[color:var(--muted-foreground)]">{dictionary.clients.noRecent}</p>
-            <AddContactCard />
+            <DashboardEmptyState
+              className="min-h-64 min-[1081px]:col-span-2"
+              icon={(
+                <span className="flex h-11 w-11 items-center justify-center rounded-full bg-[color:var(--muted)] text-[color:var(--muted-foreground)]">
+                  <Users aria-hidden className="h-5 w-5" />
+                </span>
+              )}
+              title={dictionary.clients.recentTitle}
+              description={dictionary.clients.noRecent}
+            >
+              <AddContactCard />
+            </DashboardEmptyState>
           </div>
         ) : (
           <div className="dashboard-contacts-list p-5">
@@ -1458,7 +1455,7 @@ function TasksView({
   const dictionary = useDashboardDictionary();
   const total = tasks?.kpis.total ?? rows.length;
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <PortalSectionHeading
         title={dictionary.tasks.title}
         subtitle={`${total} ${total === 1 ? dictionary.tasks.one : dictionary.tasks.many} · ${dictionary.tasks.groupedByUrgencyLower}`}
@@ -1536,19 +1533,23 @@ function AttentionTasksCard({
           </div>
         </div>
         {isLoading && !tasks ? <Skeleton className="h-[26px] w-20 rounded-full" /> : (
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-[color:var(--accent)]/30 bg-[color:var(--accent)]/10 px-2.5 py-1 text-label font-bold text-[color:var(--accent)]">
-            <span className="text-data">{tasks?.kpis.total ?? 0}</span> {dictionary.tasks.active}
-          </span>
+          <DashboardCountPill count={tasks?.kpis.total ?? 0} label={dictionary.tasks.active} tone="accent" />
         )}
       </header>
 
       {isLoading && !tasks ? (
         <div>{Array.from({ length: capacity }, (_, index) => <Skeleton key={index} className="mx-5 my-3 h-12" />)}</div>
       ) : visibleTasks.length === 0 ? (
-        <div className="flex min-h-52 flex-col items-center justify-center gap-3 px-6 py-10 text-center">
-          <span className="flex h-11 w-11 items-center justify-center rounded-full bg-[color:var(--muted)] text-[color:var(--muted-foreground)]"><CheckCircle2 className="h-5 w-5" /></span>
-          <div><p className="text-body font-semibold text-[color:var(--foreground)]">{dictionary.tasks.allClear}</p><p className="mt-0.5 text-meta text-[color:var(--muted-foreground)]">{dictionary.tasks.urgentEmpty}</p></div>
-        </div>
+        <DashboardEmptyState
+          className="min-h-52"
+          icon={(
+            <span className="flex h-11 w-11 items-center justify-center rounded-full bg-[color:var(--muted)] text-[color:var(--muted-foreground)]">
+              <CheckCircle2 aria-hidden className="h-5 w-5" />
+            </span>
+          )}
+          title={dictionary.tasks.allClear}
+          description={dictionary.tasks.urgentEmpty}
+        />
       ) : (
         <div>
           {visibleTasks.map((task) => {

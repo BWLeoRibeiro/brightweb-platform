@@ -363,6 +363,9 @@ test("projects dashboard presents one coherent, accessible health story", () => 
   assert.match(stylesheet, /grid-template-columns: minmax\(0, 1fr\) 23\.75rem/);
   assert.match(stylesheet, /@media \(min-width: 1081px\)/);
   assert.match(stylesheet, /position: sticky;[\s\S]*top: 1\.5rem/);
+  assert.match(clientSource, /dictionary\.projects\.noOwner, tone: "watch"/);
+  assert.doesNotMatch(stylesheet, /dashboard-attention-count/);
+  assert.doesNotMatch(stylesheet, /gap: 1\.375rem/);
 });
 
 test("projects dashboard keeps its health card in populated and empty states", () => {
@@ -426,6 +429,9 @@ test("contacts dashboard keeps the summary hierarchy, aligned chart labels, and 
   assert.match(populatedHtml, /dashboard-rhythm-card/);
   assert.match(populatedHtml, />Resumo</);
   assert.match(populatedHtml, />A crescer</);
+  assert.match(populatedHtml, /aria-labelledby="dashboard-client-rhythm-title"/);
+  assert.match(populatedHtml, /id="dashboard-client-rhythm-title"/);
+  assert.match(populatedHtml, /role="group" aria-label="Este mês: 2 contactos; vs\. mês anterior: 0 contactos\."/);
   assert.match(populatedHtml, /data-rhythm-month-label="2025-01"/);
   assert.match(populatedHtml, /aria-label="dezembro · 2 contactos"/);
   assert.match(populatedHtml, />Adicionado a</);
@@ -439,6 +445,25 @@ test("contacts dashboard keeps the summary hierarchy, aligned chart labels, and 
   assert.match(emptyHtml, />0<\/span> contactos</);
   assert.match(emptyHtml, />Sem contactos recentes\.</);
   assert.match(emptyHtml, />Novo contacto</);
+  assert.match(emptyHtml, /flex h-full flex-col items-center justify-center gap-3/);
+});
+
+test("dashboard tabs share quick-create, count-pill, and empty-state primitives", () => {
+  const clientSource = readFileSync(new URL("../src/dashboard/dashboard-client.tsx", import.meta.url), "utf8");
+  const primitivesSource = readFileSync(new URL("../src/dashboard/primitives.tsx", import.meta.url), "utf8");
+
+  assert.match(primitivesSource, /export function QuickCreateAction/);
+  assert.match(primitivesSource, /prefetch=\{false\}/);
+  assert.match(primitivesSource, /export function DashboardCountPill/);
+  assert.match(primitivesSource, /neutral:[\s\S]*accent:[\s\S]*warning:/);
+  assert.match(primitivesSource, /px-2\.5 py-1 text-label font-bold/);
+  assert.match(primitivesSource, /dashboardMonoTabularClassName/);
+  assert.match(primitivesSource, /export function DashboardEmptyState/);
+  assert.match(clientSource, /<QuickCreateAction[\s\S]*href="\/crm\?create=contact"/);
+  assert.match(clientSource, /<DashboardCountPill count=\{kpis\?\.projectsAttention \?\? 0\} tone="warning"/);
+  assert.match(clientSource, /id="dashboard-project-attention" className=\{CARD_TITLE\}/);
+  assert.match(clientSource, /TODO\(dashboard-crm\): deep-link contact cards/);
+  assert.doesNotMatch(clientSource, /<Link[\s\S]{0,180}surface-button-brand[\s\S]{0,180}>\s*<Plus/);
 });
 
 test("projects dashboard provides a quick-create handoff to the projects module", () => {
