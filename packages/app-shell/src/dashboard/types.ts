@@ -152,6 +152,8 @@ export type DashboardSection = "projects" | "crm" | "tasks";
 
 export type DashboardProjectComponents = {
   projectBaseHref?: string;
+  /** Standalone task destination. Falls back to the project destination when omitted. */
+  tasksBaseHref?: string;
   ProjectSummaryCard: ComponentType<{ project: DashboardProjectItem }>;
   ProjectSummaryCardSkeleton: ComponentType;
   ProjectAttentionCard?: ComponentType<{ project: DashboardProjectAttentionItem; rank: number }>;

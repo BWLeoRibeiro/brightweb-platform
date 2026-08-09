@@ -29,6 +29,16 @@
     align-items: start;
     gap: 1rem;
   }
+  .dashboard-tasks-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-items: start;
+    gap: 1rem;
+  }
+  .dashboard-tasks-pulse {
+    order: -1;
+    position: relative;
+  }
   .dashboard-rhythm-card {
     --dashboard-rhythm-accent: var(--brand-lime, var(--project-state-active));
     order: -1;
@@ -50,6 +60,9 @@
     }
     .dashboard-clients-grid { grid-template-columns: minmax(0, 1fr) 23.75rem; }
     .dashboard-clients-grid > :first-child { align-self: stretch; }
+    .dashboard-tasks-grid { grid-template-columns: minmax(0, 1fr) 25rem; }
+    .dashboard-tasks-grid > :first-child { align-self: stretch; }
+    .dashboard-tasks-pulse { order: initial; position: sticky; top: 1.5rem; }
     .dashboard-contacts-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .dashboard-rhythm-card { order: initial; position: sticky; top: 1.5rem; }
   }
