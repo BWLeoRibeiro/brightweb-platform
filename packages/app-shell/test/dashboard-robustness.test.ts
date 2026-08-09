@@ -7,7 +7,9 @@ import { renderToStaticMarkup } from "react-dom/server";
 import {
   AppDashboard,
   buildUpcomingMilestoneDays,
+  buildUpcomingTaskDays,
   buildProjectQuickCreateHref,
+  buildTaskQuickCreateHref,
   ClientsView,
   getAttentionPreviewCapacity,
   ProjectQuickCreateAction,
@@ -171,6 +173,20 @@ test("project milestone timeline groups the next seven calendar days", () => {
   assert.equal(days[6]?.dateKey, "2026-08-13");
   assert.equal(days[1]?.fullDate, "Sábado, 8 de agosto");
   assert.deepEqual(days[5]?.milestones.map((milestone) => milestone.id), ["milestone-b", "milestone-c"]);
+});
+
+test("task pulse groups due tasks into the next seven UTC calendar days", () => {
+  const days = buildUpcomingTaskDays([
+    { ...tasks.tasks[0], id: "task-today", dueDate: "2026-08-09" },
+    { ...tasks.tasks[0], id: "task-midweek-a", dueDate: "2026-08-12" },
+    { ...tasks.tasks[0], id: "task-midweek-b", dueDate: "2026-08-12" },
+    { ...tasks.tasks[0], id: "task-later", dueDate: "2026-08-16" },
+  ], "2026-08-09T12:00:00.000Z");
+
+  assert.deepEqual(days.map((day) => day.count), [1, 0, 0, 2, 0, 0, 0]);
+  assert.deepEqual(days.map((day) => day.weekday), ["dom", "seg", "ter", "qua", "qui", "sex", "sáb"]);
+  assert.equal(days[0]?.isToday, true);
+  assert.deepEqual(days[3]?.tasks.map((task) => task.id), ["task-midweek-a", "task-midweek-b"]);
 });
 
 test("dashboard request generations gate stale success, error, and loading writes per section", async () => {
@@ -462,6 +478,9 @@ test("dashboard tabs share quick-create, count-pill, and empty-state primitives"
   assert.match(clientSource, /<QuickCreateAction[\s\S]*href="\/crm\?create=contact"/);
   assert.match(clientSource, /<DashboardCountPill count=\{kpis\?\.projectsAttention \?\? 0\} tone="warning"/);
   assert.match(clientSource, /id="dashboard-project-attention" className=\{CARD_TITLE\}/);
+  assert.match(clientSource, /<div className=\{`min-h-0 flex-1 \$\{bodyClassName\}`\}>/);
+  assert.match(clientSource, /dashboard-contacts-list flex-1 p-5/);
+  assert.match(clientSource, /className="min-h-64 flex-1 bg-/);
   assert.match(clientSource, /TODO\(dashboard-crm\): deep-link contact cards/);
   assert.doesNotMatch(clientSource, /<Link[\s\S]{0,180}surface-button-brand[\s\S]{0,180}>\s*<Plus/);
 });
@@ -477,6 +496,7 @@ test("projects dashboard provides a quick-create handoff to the projects module"
   assert.match(html, /href="\/projects\?create=project"[^>]*>[\s\S]*Novo projeto/);
   assert.equal(customAction.props.href, "/projetos?create=project");
   assert.equal(buildProjectQuickCreateHref("/projetos?view=grid#recent"), "/projetos?view=grid&create=project#recent");
+  assert.equal(buildTaskQuickCreateHref("/projetos?view=tasks#urgent"), "/projetos?view=tasks&create=task#urgent");
 });
 
 test("dashboard renders the restored branded overview with live KPI content", () => {
