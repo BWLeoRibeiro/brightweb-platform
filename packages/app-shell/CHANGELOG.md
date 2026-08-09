@@ -1,5 +1,11 @@
 # @brightweblabs/app-shell
 
+## 0.15.7
+
+### Patch Changes
+
+- 973f7e1: Redesign the Tarefas dashboard as a responsive task list and sticky pulse summary with configurable task actions, accessible urgency and seven-day due-date breakdowns, stable loading geometry, and centered actionable empty states across dashboard collections.
+
 ## 0.15.6
 
 ### Patch Changes
