@@ -5,6 +5,7 @@ import { Building2 } from "lucide-react";
 import { useShellAction } from "@brightweblabs/app-shell";
 import { Badge, EmptyState, Skeleton, SurfaceCard, Table, TableBody, TableCell, TableHead, TableHeader, TablePagination, TableRow } from "@brightweblabs/ui";
 import { createCrmUiClient } from "./client";
+import { consumeCrmCreateIntent } from "./create-intent";
 import { CRM_UI_EVENTS } from "./hooks";
 import { CrmOrganizationSheet, type CrmOrganizationFormInput } from "./organization-sheet";
 import { CrmOrganizationWorkspaceSheet } from "./organization-workspace-sheet";
@@ -42,12 +43,18 @@ export function CrmOrganizationsPage({ client: providedClient, navigation }: { c
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const url = new URL(window.location.href);
-    if (url.searchParams.get("create") !== "organization") return;
+    const nextHref = consumeCrmCreateIntent(window.location.href, "organization");
+    if (!nextHref) return;
     setCreateOpen(true);
-    url.searchParams.delete("create");
-    window.history.replaceState(window.history.state, "", `${url.pathname}${url.search}${url.hash}`);
+    window.history.replaceState(window.history.state, "", nextHref);
   }, []);
+
+  const setOrganizationCreateOpen = (open: boolean) => {
+    setCreateOpen(open);
+    if (open || typeof window === "undefined") return;
+    const nextHref = consumeCrmCreateIntent(window.location.href, "organization");
+    if (nextHref) window.history.replaceState(window.history.state, "", nextHref);
+  };
 
   const selectOrganization = (organization: CrmOrganization | null) => {
     setSelected(organization);
@@ -100,7 +107,7 @@ export function CrmOrganizationsPage({ client: providedClient, navigation }: { c
         </TableBody></Table>
         {visible.length > 0 ? <TablePagination page={1} totalPages={1} onPageChange={() => undefined} summary={`${visible.length} organizações`} previousLabel="Anterior" nextLabel="Seguinte" pageLabel={(page, totalPages) => `Página ${page} de ${totalPages}`} /> : null}
       </SurfaceCard>
-      <CrmOrganizationSheet open={createOpen} onOpenChange={setCreateOpen} onSubmit={createOrganization} />
+      <CrmOrganizationSheet open={createOpen} onOpenChange={setOrganizationCreateOpen} onSubmit={createOrganization} />
       <CrmOrganizationWorkspaceSheet open={selected !== null} organization={selected} client={client} onOpenChange={(open) => { if (!open) selectOrganization(null); }} onOpenContact={openContact} onOrganizationChange={(updated) => { setSelected(updated); setOrganizations((items) => items.map((item) => item.id === updated.id ? updated : item)); }} />
     </div>
   );

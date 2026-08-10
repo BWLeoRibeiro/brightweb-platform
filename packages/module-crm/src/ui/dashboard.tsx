@@ -6,6 +6,7 @@ import { useShellAction } from "@brightweblabs/app-shell";
 import type { CrmContact, CrmContactsListParams, CrmContactsListResult, CrmContactStatusStats, CrmOwnerOption, CrmStatusLog } from "../data";
 import type { CrmContactStatus } from "../server";
 import { createCrmUiClient } from "./client";
+import { consumeCrmCreateIntent } from "./create-intent";
 import { CrmContactDialog } from "./contact-dialog";
 import { CrmContactsTable } from "./contacts-table";
 import { CrmDashboardSidebar } from "./dashboard-sidebar";
@@ -91,14 +92,19 @@ export function CrmDashboard({ client: providedClient, initialData, dictionary =
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const url = new URL(window.location.href);
-    if (url.searchParams.get("create") !== "contact") return;
+    const nextHref = consumeCrmCreateIntent(window.location.href, "contact");
+    if (!nextHref) return;
     setEditingContact(null);
     setContactOrganizationToSelect(null);
     setContactDialogOpen(true);
-    url.searchParams.delete("create");
-    window.history.replaceState(window.history.state, "", `${url.pathname}${url.search}${url.hash}`);
+    window.history.replaceState(window.history.state, "", nextHref);
   }, []);
+
+  const clearContactCreateIntent = () => {
+    if (typeof window === "undefined") return;
+    const nextHref = consumeCrmCreateIntent(window.location.href, "contact");
+    if (nextHref) window.history.replaceState(window.history.state, "", nextHref);
+  };
 
   useEffect(() => {
     if (typeof window === "undefined" || contacts.items.length === 0) return;
@@ -341,7 +347,7 @@ export function CrmDashboard({ client: providedClient, initialData, dictionary =
         <div className="min-w-0 md:col-span-1">{slots?.sidebarTop}<CrmDashboardSidebar timelineEntries={timeline} organizations={organizations} contactsByOrganization={contactsByOrganization} isRefreshing={summaryResourceStates.timeline.status === "pending" && !summaryResourceStates.timeline.hasData} isLoadingOrganizations={summaryResourceStates.organizations.status === "pending" && !summaryResourceStates.organizations.hasData} timelineUnavailable={summaryResourceStates.timeline.status === "rejected" && !summaryResourceStates.timeline.hasData} organizationsUnavailable={summaryResourceStates.organizations.status === "rejected" && !summaryResourceStates.organizations.hasData} dictionary={dictionary} onOpenTimeline={() => setTimelineOpen(true)} onOpenOrganizations={openOrganizations} onOpenOrganization={openOrganization} />{slots?.sidebarBottom}</div>
       </section>
       {slots?.reportBanner ?? (navigation.reportHref ? <CrmReportBanner summary={reportSummary} href={navigation.reportHref} loading={(loading && !contactsHasData) || (summaryResourceStates.timeline.status === "pending" && !summaryResourceStates.timeline.hasData)} unavailable={(contactsLoadFailed && !contactsHasData) || (summaryResourceStates.timeline.status === "rejected" && !summaryResourceStates.timeline.hasData)} dictionary={dictionary} /> : null)}
-      <CrmContactDialog open={contactDialogOpen} contact={editingContact} organizations={organizations} owners={owners} organizationsLoading={summaryResourceStates.organizations.status === "pending" && !summaryResourceStates.organizations.hasData} ownersLoading={summaryResourceStates.owners.status === "pending" && !summaryResourceStates.owners.hasData} organizationsUnavailable={summaryResourceStates.organizations.status === "rejected" && !summaryResourceStates.organizations.hasData} ownersUnavailable={summaryResourceStates.owners.status === "rejected" && !summaryResourceStates.owners.hasData} dictionary={dictionary} stages={resolvedStages} onOpenChange={(open) => { if (!open) selectContact(null); else setContactDialogOpen(true); }} onSubmit={saveContact} onCreateOrganization={createOrganizationForContact} organizationToSelect={contactOrganizationToSelect} onOrganizationSelectionApplied={(organizationId) => setContactOrganizationToSelect((current) => current?.id === organizationId ? null : current)} onTimeline={(contact) => { setEditingContact(contact); setContactDialogOpen(false); setContactTimelineOpen(true); }} onDelete={(contact) => { selectContact(null); openDelete([contact.id]); }} />
+      <CrmContactDialog open={contactDialogOpen} contact={editingContact} organizations={organizations} owners={owners} organizationsLoading={summaryResourceStates.organizations.status === "pending" && !summaryResourceStates.organizations.hasData} ownersLoading={summaryResourceStates.owners.status === "pending" && !summaryResourceStates.owners.hasData} organizationsUnavailable={summaryResourceStates.organizations.status === "rejected" && !summaryResourceStates.organizations.hasData} ownersUnavailable={summaryResourceStates.owners.status === "rejected" && !summaryResourceStates.owners.hasData} dictionary={dictionary} stages={resolvedStages} onOpenChange={(open) => { if (!open) { clearContactCreateIntent(); selectContact(null); } else setContactDialogOpen(true); }} onSubmit={saveContact} onCreateOrganization={createOrganizationForContact} organizationToSelect={contactOrganizationToSelect} onOrganizationSelectionApplied={(organizationId) => setContactOrganizationToSelect((current) => current?.id === organizationId ? null : current)} onTimeline={(contact) => { setEditingContact(contact); setContactDialogOpen(false); setContactTimelineOpen(true); }} onDelete={(contact) => { selectContact(null); openDelete([contact.id]); }} />
       <CrmStatusDialog open={statusDialogOpen} contactIds={statusTargets} initialStatus={statusInitial} dictionary={dictionary} stages={resolvedStages} onOpenChange={setStatusDialogOpen} onSubmit={saveStatus} />
       <CrmDeleteDialog open={deleteDialogOpen} contactIds={deleteTargets} dictionary={dictionary} onOpenChange={setDeleteDialogOpen} onConfirm={deleteContacts} />
       <CrmTimelineBrowser open={timelineOpen} entries={timeline} loading={summaryResourceStates.timeline.status === "pending" && !summaryResourceStates.timeline.hasData} unavailable={summaryResourceStates.timeline.status === "rejected" && !summaryResourceStates.timeline.hasData} dictionary={dictionary} onOpenChange={setTimelineOpen} queryTimeline={client.queryTimeline} />

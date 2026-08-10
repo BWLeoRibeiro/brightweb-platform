@@ -8,6 +8,7 @@ import { ShellActionsProvider } from "../packages/app-shell/src/lib/shell-action
 
 import type { CrmContact, CrmContactsListResult, CrmStatusLog } from "../packages/module-crm/src/data.ts";
 import { crmModuleRegistration } from "../packages/module-crm/src/registration.ts";
+import { consumeCrmCreateIntent } from "../packages/module-crm/src/ui/create-intent.ts";
 import {
   CrmContactDialog,
   CrmContactsTable,
@@ -339,7 +340,7 @@ test("CRM organization links hand off from Contacts to the canonical Organizatio
   assert.match(dashboardSource, /searchParams\.set\("contact", contact\.id\)/);
   assert.match(organizationsSource, /searchParams\.get\("organization"\)/);
   assert.match(organizationsSource, /searchParams\.set\("organization", organization\.id\)/);
-  assert.match(organizationsSource, /searchParams\.get\("create"\) !== "organization"/);
+  assert.match(organizationsSource, /consumeCrmCreateIntent\(window\.location\.href, "organization"\)/);
   assert.match(organizationsSource, /CRM_UI_EVENTS\.createContact/);
   assert.match(organizationsSource, /searchParams\.set\("create", "contact"\)/);
   assert.match(organizationsSource, /onOpenContact=\{openContact\}/);
@@ -347,6 +348,26 @@ test("CRM organization links hand off from Contacts to the canonical Organizatio
   assert.match(contactsTableSource, /onOrganizationClick\(contact\.organization_id!\)/);
   const dashboardClientSource = readFileSync(join(process.cwd(), "packages/app-shell/src/dashboard/dashboard-client.tsx"), "utf8");
   assert.match(dashboardClientSource, /\/crm\?contact=\$\{encodeURIComponent\(c\.id\)\}/);
+});
+
+test("CRM creation intents are consumed without dropping unrelated URL state", () => {
+  assert.equal(
+    consumeCrmCreateIntent("https://portal.example/crm/organizations?create=organization&source=toolbar#members", "organization"),
+    "/crm/organizations?source=toolbar#members",
+  );
+  assert.equal(
+    consumeCrmCreateIntent("https://portal.example/crm?create=contact", "contact"),
+    "/crm",
+  );
+  assert.equal(
+    consumeCrmCreateIntent("https://portal.example/crm?create=organization", "contact"),
+    null,
+  );
+
+  const dashboardSource = readFileSync(join(process.cwd(), "packages/module-crm/src/ui/dashboard.tsx"), "utf8");
+  const organizationsSource = readFileSync(join(process.cwd(), "packages/module-crm/src/ui/organizations-page.tsx"), "utf8");
+  assert.match(dashboardSource, /onOpenChange=\{\(open\) => \{ if \(!open\) \{ clearContactCreateIntent\(\); selectContact\(null\); \}/);
+  assert.match(organizationsSource, /onOpenChange=\{setOrganizationCreateOpen\}/);
 });
 
 test("CRM list requests debounce only search and expose pending state immediately", () => {
