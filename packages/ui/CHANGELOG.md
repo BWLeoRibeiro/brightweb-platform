@@ -1,5 +1,11 @@
 # @brightweblabs/ui
 
+## 1.5.2
+
+### Patch Changes
+
+- 9063aaa: Add client invitations tied to organizations, a CRM organization access page, invitation history, safe organization member role/removal operations, and shared branded invitation and authentication email designs. New CRM starters mount the organization detail route and organization member API handlers.
+
 ## 1.5.1
 
 ### Patch Changes
