@@ -1,5 +1,11 @@
 # @brightweblabs/module-crm
 
+## 0.17.1
+
+### Patch Changes
+
+- 5e273cc: Clear contact and organization creation URL intents when their right rails close so cancelled creation flows do not reopen after reload or navigation.
+
 ## 0.17.0
 
 ### Minor Changes
