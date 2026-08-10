@@ -3,9 +3,14 @@ import {
   publicError,
   sanitizePublicError,
 } from "@brightweblabs/infra/robustness";
+import { appendServerTiming, elapsedMs, requestStartedAt } from "@brightweblabs/infra/request-observability";
 import type {
+  createTopic,
+  deleteTopic,
   listTopics,
+  reorderTopics,
   resolveByUnsubscribeToken,
+  updateTopic,
   unsubscribeAll,
   unsubscribeTopic,
 } from "./server";
@@ -13,9 +18,11 @@ import type {
   cancelCampaign,
   createCampaign,
   deleteCampaign,
+  deleteCampaignRecipient,
   getCampaign,
   listCampaignRecipients,
   listCampaigns,
+  queryCampaigns,
   retryCampaignFailures,
   scheduleCampaign,
   sendCampaignNow,
@@ -30,6 +37,7 @@ import type {
   deleteSegment,
   getSegment,
   listSegments,
+  querySegments,
   previewSegment,
   updateSegment,
 } from "./segments";
@@ -46,6 +54,7 @@ import type {
   getWorkflow,
   listWorkflowRuns,
   listWorkflows,
+  queryWorkflows,
   pauseWorkflow,
   updateWorkflow,
   upsertWorkflowNodes,
@@ -108,6 +117,7 @@ function marketingErrorResponse(error: unknown, context: string) {
     || message.startsWith("A workflow ")
     || message.startsWith("Workflow node ")
     || message.startsWith("This campaign")
+    || message.startsWith("Recipients cannot")
     || message.startsWith("A valid email")
   ) {
     return json(publicError("INVALID_INPUT", message), { status: 400 });
@@ -117,6 +127,15 @@ function marketingErrorResponse(error: unknown, context: string) {
   }
   if (message === "Workflow not found.") {
     return json(publicError("WORKFLOW_NOT_FOUND", message), { status: 404 });
+  }
+  if (message === "Topic not found.") {
+    return json(publicError("TOPIC_NOT_FOUND", message), { status: 404 });
+  }
+  if (message === "Topic slug already exists.") {
+    return json(publicError("TOPIC_SLUG_CONFLICT", message), { status: 409 });
+  }
+  if (message === "Topic is used by campaigns and must be deactivated instead.") {
+    return json(publicError("TOPIC_IN_USE", message), { status: 409 });
   }
   return json(
     sanitizePublicError(
@@ -165,7 +184,7 @@ type ServerUserAccess =
   | { ok: false; status: number; error: string };
 
 type CampaignRouteContext = {
-  params: Promise<{ id: string }> | { id: string };
+  params: Promise<{ id: string; recipientId?: string }> | { id: string; recipientId?: string };
 };
 
 export type MarketingCampaignHttpDependencies = {
@@ -176,11 +195,17 @@ export type MarketingCampaignHttpDependencies = {
   webhookSecret: string;
   publicAppUrl?: string | null;
   listTopics: typeof listTopics;
+  reorderTopics?: typeof reorderTopics;
+  createTopic: typeof createTopic;
+  updateTopic: typeof updateTopic;
+  deleteTopic: typeof deleteTopic;
   listCampaigns: typeof listCampaigns;
+  queryCampaigns?: typeof queryCampaigns;
   getCampaign: typeof getCampaign;
   createCampaign: typeof createCampaign;
   updateCampaign: typeof updateCampaign;
   deleteCampaign: typeof deleteCampaign;
+  deleteRecipient: typeof deleteCampaignRecipient;
   listRecipients: typeof listCampaignRecipients;
   scheduleCampaign: typeof scheduleCampaign;
   cancelCampaign: typeof cancelCampaign;
@@ -190,6 +215,7 @@ export type MarketingCampaignHttpDependencies = {
   runWorker: typeof runMarketingWorker;
   processWebhook: typeof processResendWebhook;
   listSegments: typeof listSegments;
+  querySegments?: typeof querySegments;
   getSegment: typeof getSegment;
   createSegment: typeof createSegment;
   updateSegment: typeof updateSegment;
@@ -199,6 +225,7 @@ export type MarketingCampaignHttpDependencies = {
   getCampaignAnalytics: typeof getCampaignAnalytics;
   getSegmentAnalytics: typeof getSegmentAnalytics;
   listWorkflows: typeof listWorkflows;
+  queryWorkflows?: typeof queryWorkflows;
   getWorkflow: typeof getWorkflow;
   createWorkflow: typeof createWorkflow;
   updateWorkflow: typeof updateWorkflow;
@@ -226,6 +253,23 @@ async function parseJsonObject(request: Request) {
 
 async function campaignId(context?: CampaignRouteContext) {
   return context ? (await context.params).id : "";
+}
+
+function collectionParams(request: Request) {
+  const searchParams = new URL(request.url).searchParams;
+  const page = Math.max(1, Number.parseInt(searchParams.get("page") ?? "1", 10) || 1);
+  const pageSize = Math.min(100, Math.max(1, Number.parseInt(searchParams.get("pageSize") ?? "20", 10) || 20));
+  return {
+    page,
+    pageSize,
+    search: searchParams.get("search")?.trim() || undefined,
+    status: searchParams.get("status")?.trim() || null,
+  };
+}
+
+function hasCollectionParams(request: Request) {
+  const params = new URL(request.url).searchParams;
+  return ["page", "pageSize", "search", "status"].some((key) => params.has(key));
 }
 
 async function requireStaff(
@@ -256,17 +300,19 @@ function withStaff(
   ) => Promise<Response>,
 ) {
   return async (request: Request, context?: CampaignRouteContext) => {
+    const startedAt = requestStartedAt();
     const access = await requireStaff(dependencies);
-    if (isResponse(access)) return access;
+    if (isResponse(access)) return appendServerTiming(access, [{ name: "app", durationMs: elapsedMs(startedAt) }]);
     try {
-      return await action(
+      const response = await action(
         dependencies.createServiceClient(),
         access,
         request,
         context,
       );
+      return appendServerTiming(response, [{ name: "app", durationMs: elapsedMs(startedAt) }]);
     } catch (error) {
-      return marketingErrorResponse(error, contextName);
+      return appendServerTiming(marketingErrorResponse(error, contextName), [{ name: "app", durationMs: elapsedMs(startedAt) }]);
     }
   };
 }
@@ -310,12 +356,85 @@ export function createMarketingCampaignHttpHandlers(
   const topicsGet = withStaff(
     dependencies,
     "marketing.topics.list",
-    async (supabase) => json(await dependencies.listTopics(supabase as never, { activeOnly: true })),
+    async (supabase) => json(await dependencies.listTopics(supabase as never)),
+  );
+  const topicsPost = withStaff(
+    dependencies,
+    "marketing.topics.create",
+    async (supabase, _access, request) => {
+      const payload = await parseJsonObject(request);
+      if (!payload || typeof payload.slug !== "string" || typeof payload.label !== "string") {
+        return json(publicError("INVALID_INPUT", "Topic slug and label are required."), { status: 400 });
+      }
+      return json(await dependencies.createTopic(supabase as never, {
+        slug: payload.slug,
+        label: payload.label,
+        description: typeof payload.description === "string" ? payload.description : null,
+        position: typeof payload.position === "number" ? payload.position : undefined,
+      }), { status: 201 });
+    },
+  );
+  const topicsOrderPost = withStaff(
+    dependencies,
+    "marketing.topics.reorder",
+    async (supabase, _access, request) => {
+      const payload = await parseJsonObject(request);
+      if (!payload || !Array.isArray(payload.topicIds)
+        || !payload.topicIds.every((id) => typeof id === "string" && id.length > 0)) {
+        return json(publicError("INVALID_INPUT", "A valid topic order is required."), { status: 400 });
+      }
+      if (!dependencies.reorderTopics) {
+        return json(publicError("NOT_IMPLEMENTED", "Topic reordering is not available."), { status: 501 });
+      }
+      return json(await dependencies.reorderTopics(supabase as never, payload.topicIds));
+    },
+  );
+  const topicPatch = withStaff(
+    dependencies,
+    "marketing.topics.update",
+    async (supabase, _access, request, context) => {
+      const payload = await parseJsonObject(request);
+      if (!payload) {
+        return json(publicError("INVALID_INPUT", "A topic update is required."), { status: 400 });
+      }
+      const hasUpdate = typeof payload.label === "string"
+        || payload.description === null
+        || typeof payload.description === "string"
+        || typeof payload.isActive === "boolean"
+        || typeof payload.position === "number";
+      if (!hasUpdate) {
+        return json(publicError("INVALID_INPUT", "A valid topic update is required."), { status: 400 });
+      }
+      const result = await dependencies.updateTopic(
+        supabase as never,
+        await campaignId(context),
+        {
+          ...(typeof payload.label === "string" ? { label: payload.label } : {}),
+          ...(payload.description === null || typeof payload.description === "string"
+            ? { description: payload.description }
+            : {}),
+          ...(typeof payload.isActive === "boolean" ? { isActive: payload.isActive } : {}),
+          ...(typeof payload.position === "number" ? { position: payload.position } : {}),
+        },
+      );
+      return json(result);
+    },
+  );
+  const topicDelete = withStaff(
+    dependencies,
+    "marketing.topics.delete",
+    async (supabase, _access, _request, context) => {
+      const id = await campaignId(context);
+      await dependencies.deleteTopic(supabase as never, id);
+      return json({ data: { deletedId: id } });
+    },
   );
   const segmentsGet = withStaff(
     dependencies,
     "marketing.segments.list",
-    async (supabase) => json(await dependencies.listSegments(supabase as never)),
+    async (supabase, _access, request) => json(dependencies.querySegments && hasCollectionParams(request)
+      ? await dependencies.querySegments(supabase as never, collectionParams(request))
+      : await dependencies.listSegments(supabase as never)),
   );
   const segmentsPost = withStaff(
     dependencies,
@@ -379,8 +498,9 @@ export function createMarketingCampaignHttpHandlers(
     dependencies,
     "marketing.segments.delete",
     async (supabase, _access, _request, context) => {
-      await dependencies.deleteSegment(supabase as never, await campaignId(context));
-      return new Response(null, { status: 204 });
+      const id = await campaignId(context);
+      await dependencies.deleteSegment(supabase as never, id);
+      return json({ data: { deletedId: id } });
     },
   );
   const segmentPreviewPost = withStaff(
@@ -414,7 +534,9 @@ export function createMarketingCampaignHttpHandlers(
   const campaignsGet = withStaff(
     dependencies,
     "marketing.campaigns.list",
-    async (supabase) => json(await dependencies.listCampaigns(supabase as never)),
+    async (supabase, _access, request) => json(dependencies.queryCampaigns && hasCollectionParams(request)
+      ? await dependencies.queryCampaigns(supabase as never, collectionParams(request) as never)
+      : await dependencies.listCampaigns(supabase as never)),
   );
   const campaignsPost = withStaff(
     dependencies,
@@ -475,8 +597,9 @@ export function createMarketingCampaignHttpHandlers(
     dependencies,
     "marketing.campaigns.delete",
     async (supabase, _access, _request, context) => {
-      await dependencies.deleteCampaign(supabase as never, await campaignId(context));
-      return new Response(null, { status: 204 });
+      const id = await campaignId(context);
+      await dependencies.deleteCampaign(supabase as never, id);
+      return json({ data: { deletedId: id } });
     },
   );
   const recipientsGet = withStaff(
@@ -485,6 +608,16 @@ export function createMarketingCampaignHttpHandlers(
     async (supabase, _access, _request, context) => json(
       await dependencies.listRecipients(supabase as never, await campaignId(context)),
     ),
+  );
+  const recipientDelete = withStaff(
+    dependencies,
+    "marketing.campaigns.recipients.delete",
+    async (supabase, _access, _request, context) => {
+      const params = await context!.params;
+      if (!params.recipientId) return json(publicError("INVALID_INPUT", "recipientId is required."), { status: 400 });
+      await dependencies.deleteRecipient(supabase as never, params.id, params.recipientId);
+      return json({ data: { deletedId: params.recipientId } });
+    },
   );
   const schedulePost = withStaff(
     dependencies,
@@ -616,7 +749,9 @@ export function createMarketingCampaignHttpHandlers(
   const workflowsGet = withStaff(
     dependencies,
     "marketing.workflows.list",
-    async (supabase) => json(await dependencies.listWorkflows(supabase)),
+    async (supabase, _access, request) => json(dependencies.queryWorkflows && hasCollectionParams(request)
+      ? await dependencies.queryWorkflows(supabase, collectionParams(request) as never)
+      : await dependencies.listWorkflows(supabase)),
   );
   const workflowsPost = withStaff(
     dependencies,
@@ -693,8 +828,9 @@ export function createMarketingCampaignHttpHandlers(
     dependencies,
     "marketing.workflows.delete",
     async (supabase, _access, _request, context) => {
-      await dependencies.deleteWorkflow(supabase, await campaignId(context));
-      return new Response(null, { status: 204 });
+      const id = await campaignId(context);
+      await dependencies.deleteWorkflow(supabase, id);
+      return json({ data: { deletedId: id } });
     },
   );
   const workflowActivatePost = withStaff(
@@ -812,6 +948,10 @@ export function createMarketingCampaignHttpHandlers(
 
   return {
     topicsGet,
+    topicsPost,
+    topicsOrderPost,
+    topicPatch,
+    topicDelete,
     segmentsGet,
     segmentsPost,
     segmentGet,
@@ -824,6 +964,7 @@ export function createMarketingCampaignHttpHandlers(
     campaignPatch,
     campaignDelete,
     recipientsGet,
+    recipientDelete,
     schedulePost,
     cancelPost,
     sendPost,

@@ -1,6 +1,6 @@
 "use client";
 
-import { BarChart2, Filter, Plus, Search, UserRound, Users } from "lucide-react";
+import { BarChart2, Building2, Filter, Plus, Search, UserRound, Users } from "lucide-react";
 import type { ShellContextualAction, ShellModuleRegistration } from "@brightweblabs/app-shell";
 
 export const crmModuleRegistration: ShellModuleRegistration<ShellContextualAction> = {
@@ -13,6 +13,7 @@ export const crmModuleRegistration: ShellModuleRegistration<ShellContextualActio
       icon: Users,
       children: [
         { href: "/crm", label: "Contactos", icon: UserRound },
+        { href: "/crm/organizations", label: "Organizações", icon: Building2 },
         // No Marketing entry here. module-marketing registers its own nav group
         // at /marketing, and it depends on crm — not the reverse. Advertising a
         // marketing route from crm inverted that dependency and 404'd in both
@@ -24,6 +25,7 @@ export const crmModuleRegistration: ShellModuleRegistration<ShellContextualActio
   ],
   toolbarRoutes: [
     { surface: "crm-report", match: { prefixes: ["/crm/report"] } },
+    { surface: "crm-organizations", match: { exact: ["/crm/organizations"] } },
     { surface: "crm", match: { exact: ["/crm"] } },
   ],
   toolbarActions: {

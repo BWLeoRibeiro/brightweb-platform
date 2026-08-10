@@ -19,6 +19,7 @@ import type {
 import {
   buildProjectsDashboardData,
   buildTasksDashboardData,
+  getTasksDashboardData,
 } from "../packages/module-projects/src/dashboard.ts";
 import {
   createProjectsDashboardGetHandler,
@@ -99,6 +100,10 @@ test("Projects dashboard handler returns a full payload accepted by the real par
     generatedAt,
     portfolioStats: oldStatsPayload,
     overdueProjects: [project],
+    attentionProjects: [project],
+    attentionTotal: 1,
+    milestones: [{ id: "milestone-1", projectId: project.id, projectName: project.name, projectCode: project.code, title: "Release", status: "in_progress", targetDate: "2026-07-25" }],
+    milestonesNext7Days: [{ id: "milestone-week-1", projectId: project.id, projectName: project.name, projectCode: project.code, title: "Weekly release", status: "pending", targetDate: "2026-07-26" }],
     dueNext7Days: 0,
     withoutOwner: 0,
     blockedTasks: 1,
@@ -114,7 +119,11 @@ test("Projects dashboard handler returns a full payload accepted by the real par
   assert.equal(parsed.error, null);
   assert.equal(parsed.data?.kpis.projectsActive, 1);
   assert.equal(parsed.data?.kpis.projectBlockedTasks, 1);
+  assert.equal(parsed.data?.kpis.projectsAttention, 1);
   assert.equal(parsed.data?.projects.overdue[0]?.name, "Platform");
+  assert.equal(parsed.data?.projects.attention[0]?.attentionReason, "overdue");
+  assert.equal(parsed.data?.projects.milestones[0]?.title, "Release");
+  assert.equal(parsed.data?.projects.milestonesNext7Days?.[0]?.title, "Weekly release");
 });
 
 test("CRM dashboard handler turns the live stats shape into non-zero parser-safe data", async () => {
@@ -149,6 +158,60 @@ test("CRM dashboard handler turns the live stats shape into non-zero parser-safe
   assert.equal(parsed.data?.crm.recentContacts[0]?.company, "Compiler Works");
 });
 
+test("CRM dashboard exposes at most the five most recently added contacts", () => {
+  const contacts = Array.from({ length: 7 }, (_, index) => ({
+    ...contact,
+    id: `contact-${index + 1}`,
+    first_name: `Contact ${index + 1}`,
+  }));
+
+  const data = buildCrmDashboardOverviewData({
+    generatedAt,
+    stats: { total: contacts.length, byStatus: { lead: contacts.length, qualified: 0, proposal: 0, won: 0, lost: 0 } },
+    contacts,
+    recentChanges: [],
+    newLast7Days: contacts.length,
+    newLast30Days: contacts.length,
+    newLastYear: contacts.length,
+    unassignedContacts: 0,
+  });
+
+  assert.equal(data.crm.recentContacts.length, 5);
+  assert.deepEqual(
+    data.crm.recentContacts.map((recentContact) => recentContact.id),
+    ["contact-1", "contact-2", "contact-3", "contact-4", "contact-5"],
+  );
+});
+
+test("CRM dashboard builds exactly twelve ordered monthly contact points across year boundaries", () => {
+  const data = buildCrmDashboardOverviewData({
+    generatedAt: "2026-07-24T12:00:00.000Z",
+    stats: { total: 5, byStatus: { lead: 5, qualified: 0, proposal: 0, won: 0, lost: 0 } },
+    contacts: [],
+    recentChanges: [],
+    newLast7Days: 2,
+    newLast30Days: 2,
+    newLastYear: 5,
+    unassignedContacts: 0,
+    createdDatesLastYear: [
+      "2025-08-01T09:00:00.000Z",
+      "2025-12-12T09:00:00.000Z",
+      "2026-01-03T09:00:00.000Z",
+      "2026-07-01T09:00:00.000Z",
+      "2026-07-20T09:00:00.000Z",
+    ],
+  });
+
+  assert.deepEqual(data.crm.monthlyNewContacts, [
+    { month: "2025-08", count: 1 }, { month: "2025-09", count: 0 },
+    { month: "2025-10", count: 0 }, { month: "2025-11", count: 0 },
+    { month: "2025-12", count: 1 }, { month: "2026-01", count: 1 },
+    { month: "2026-02", count: 0 }, { month: "2026-03", count: 0 },
+    { month: "2026-04", count: 0 }, { month: "2026-05", count: 0 },
+    { month: "2026-06", count: 0 }, { month: "2026-07", count: 2 },
+  ]);
+});
+
 test("Tasks dashboard handler returns assigned task rollups accepted by the real parser", async () => {
   const data = buildTasksDashboardData({
     generatedAt,
@@ -169,21 +232,77 @@ test("Tasks dashboard handler returns assigned task rollups accepted by the real
       milestoneId: null,
       updatedAt: generatedAt,
     }],
+    attentionTotal: 1,
+    attentionTasks: [{
+      id: "task-1",
+      projectId: project.id,
+      projectName: project.name,
+      projectCode: project.code,
+      title: "Ship the dashboard",
+      status: "in_progress",
+      priority: "high",
+      dueDate: "2026-07-25",
+      blockedReason: null,
+      milestoneId: null,
+      updatedAt: generatedAt,
+    }],
+    page: 1,
+    pageSize: 50,
   });
   let requestedProfileId: string | undefined;
+  let requestedOptions: { page?: number; pageSize?: number } | undefined;
   const handler = createTasksDashboardGetHandler({
     getAccess: async () => ({ ok: true, supabase: {}, profileId: "profile-1", role: "admin" }),
-    getTasksDashboardData: async (_supabase: unknown, profileId: string | undefined) => {
+    getTasksDashboardData: async (_supabase: unknown, profileId: string | undefined, _now: Date, options: { page?: number; pageSize?: number }) => {
       requestedProfileId = profileId;
+      requestedOptions = options;
       return data;
     },
   } as never);
-  const response = await handler(new Request("https://example.test/api/dashboard/tasks"));
+  const response = await handler(new Request("https://example.test/api/dashboard/tasks?page=3&pageSize=25"));
   const parsed = parseDashboardTasksResponse(await response.json());
 
   assert.equal(response.status, 200);
   assert.equal(requestedProfileId, "profile-1");
+  assert.deepEqual(requestedOptions, { page: 3, pageSize: 25 });
   assert.equal(parsed.error, null);
   assert.equal(parsed.data?.kpis.total, 1);
   assert.equal(parsed.data?.tasks[0]?.title, "Ship the dashboard");
+});
+
+test("task dashboard returns exact counts for pagination and attention summaries", async () => {
+  const countModes: Array<string | undefined> = [];
+  const excludedStatuses: string[] = [];
+  const supabase = {
+    from(table: string) {
+      assert.equal(table, "project_tasks");
+      const result = { data: [], count: 0, error: null };
+      const query = {
+        select(_columns: string, options?: { count?: string }) {
+          if (options?.count) countModes.push(options.count);
+          return query;
+        },
+        neq(column: string, value: string) {
+          if (column === "status") excludedStatuses.push(value);
+          return query;
+        },
+        eq() { return query; },
+        gte() { return query; },
+        lte() { return query; },
+        lt() { return query; },
+        or() { return query; },
+        order() { return query; },
+        limit() { return query; },
+        range() { return query; },
+        then(resolve: (value: typeof result) => unknown) {
+          return Promise.resolve(resolve(result));
+        },
+      };
+      return query;
+    },
+  };
+
+  await getTasksDashboardData(supabase as never, undefined, new Date(generatedAt));
+  assert.deepEqual(countModes, ["exact", "exact", "exact", "exact", "exact"]);
+  assert.ok(excludedStatuses.filter((status) => status === "blocked").length >= 2);
 });

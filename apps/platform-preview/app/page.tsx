@@ -29,11 +29,11 @@ export default function HomePage() {
               </p>
               <div className="starter-stat-grid">
                 <div>
-                  <span className="stat-number text-metric-display">{config.enabledModules.length}</span>
+                  <span className="stat-number text-kpi">{config.enabledModules.length}</span>
                   <p className="text-body muted">active module previews</p>
                 </div>
                 <div>
-                  <span className="stat-number text-metric-display">{configuredEnvCount}</span>
+                  <span className="stat-number text-kpi">{configuredEnvCount}</span>
                   <p className="text-body muted">configured env keys</p>
                 </div>
               </div>

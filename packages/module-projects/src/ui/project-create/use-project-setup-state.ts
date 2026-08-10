@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { defaultProjectsUiDictionary } from "../dictionary";
 import { PROJECT_MEMBER_ROLE_LABELS_PT, type ProjectMemberRole } from "../../contracts";
+import { parseProjectBoardApiError } from "../project-board-response-parser";
 
 type ProjectMemberOption = {
   profileId: string;
@@ -59,7 +60,7 @@ export function useProjectSetupState() {
 
       const membersPayload = await membersResponse.json();
       if (!membersResponse.ok) {
-        const message = typeof membersPayload?.error === "string" ? membersPayload.error : defaultProjectsUiDictionary.team.setupLoadMembersError;
+        const message = parseProjectBoardApiError(membersPayload, defaultProjectsUiDictionary.team.setupLoadMembersError);
         throw new Error(message);
       }
 

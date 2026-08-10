@@ -76,7 +76,7 @@ export async function AccountPage({ projectsSlot }: { projectsSlot?: ReactNode }
               {initials}
             </div>
             <div>
-              <p className="mb-1 text-label font-bold uppercase tracking-widest" style={{ color: "var(--account-identity-muted)" }}>
+              <p className="mb-1 text-label font-bold" style={{ color: "var(--account-identity-muted)" }}>
                 {defaultAccountUiDictionary.identity.kicker}
               </p>
               <h1 className="font-display text-heading-2 font-bold leading-none" style={{ color: "var(--account-identity-foreground)" }}>
@@ -105,7 +105,7 @@ export async function AccountPage({ projectsSlot }: { projectsSlot?: ReactNode }
           <article className="rounded-2xl border p-5" style={{ borderColor: "var(--border)", background: "var(--card)" }}>
             <div className="mb-4 flex items-center gap-2">
               <UserCircle2 className="size-3.5 text-muted-foreground" />
-              <h2 className="text-meta font-bold uppercase tracking-widest text-muted-foreground">
+              <h2 className="text-label font-bold text-muted-foreground">
                 {defaultAccountUiDictionary.profile.title}
               </h2>
             </div>
@@ -120,14 +120,14 @@ export async function AccountPage({ projectsSlot }: { projectsSlot?: ReactNode }
           <article className="rounded-2xl border p-5" style={{ borderColor: "var(--border)", background: "var(--card)" }}>
             <div className="mb-4 flex items-center gap-2">
               <KeyRound className="size-3.5 text-muted-foreground" />
-              <h2 className="text-meta font-bold uppercase tracking-widest text-muted-foreground">
+              <h2 className="text-label font-bold text-muted-foreground">
                 {defaultAccountUiDictionary.security.title}
               </h2>
             </div>
 
             <div className="space-y-3">
               <div className="rounded-xl px-3 py-2.5" style={{ background: "var(--muted)" }}>
-                <p className="mb-0.5 text-label font-semibold uppercase tracking-wide text-muted-foreground">
+                <p className="mb-0.5 text-label font-semibold text-muted-foreground">
                   {defaultAccountUiDictionary.security.email}
                 </p>
                 <p className="truncate text-body font-semibold">{user.email ?? defaultAccountUiDictionary.profile.emptyValue}</p>
@@ -135,7 +135,7 @@ export async function AccountPage({ projectsSlot }: { projectsSlot?: ReactNode }
 
               {profileData.updatedAt ? (
                 <div className="rounded-xl px-3 py-2.5" style={{ background: "var(--muted)" }}>
-                  <p className="mb-0.5 text-label font-semibold uppercase tracking-wide text-muted-foreground">
+                  <p className="mb-0.5 text-label font-semibold text-muted-foreground">
                     {defaultAccountUiDictionary.security.updatedAt}
                   </p>
                   <p className="text-body font-semibold">{formatDate(profileData.updatedAt)}</p>

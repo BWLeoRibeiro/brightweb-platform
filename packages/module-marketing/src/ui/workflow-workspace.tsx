@@ -1,5 +1,7 @@
 "use client";
 
+import { StyledSelect } from "@brightweblabs/ui";
+
 import {
   ChevronDown,
   ChevronUp,
@@ -25,8 +27,10 @@ import {
   SheetDescription,
   SheetHeader,
   SheetTitle,
+  Skeleton,
 } from "@brightweblabs/ui";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { createLatestRequestController, isAbortError } from "@brightweblabs/infra/request-observability";
 import { toast } from "sonner";
 import { useMarketingUiClient } from "./context";
 import type {
@@ -195,11 +199,15 @@ function isNodeValid(node: DraftNode) {
 export type WorkflowWorkspaceProps = {
   initialWorkflows: MarketingWorkflow[];
   dictionary: MarketingUiDictionary;
+  createRequest?: number;
+  onMutated?: () => void;
 };
 
 export function WorkflowWorkspace({
   initialWorkflows,
   dictionary,
+  createRequest = 0,
+  onMutated,
 }: WorkflowWorkspaceProps) {
   const client = useMarketingUiClient();
   const [workflows, setWorkflows] = useState(initialWorkflows);
@@ -207,9 +215,16 @@ export function WorkflowWorkspace({
   const [form, setForm] = useState<WorkflowForm>(emptyForm);
   const [nodes, setNodes] = useState<DraftNode[]>([]);
   const [runs, setRuns] = useState<MarketingWorkflowRun[]>([]);
+  const [runsLoadState, setRunsLoadState] = useState<"pending" | "fulfilled" | "rejected">("fulfilled");
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
   const [addType, setAddType] = useState<MarketingWorkflowNodeType>("send_email");
+  const workflowLoadGeneration = useRef(0);
+  const editorGenerationRef = useRef(0);
+  const workflowRequestRef = useRef(createLatestRequestController());
+  const handledCreateRequestRef = useRef(createRequest);
+
+  useEffect(() => setWorkflows(initialWorkflows), [initialWorkflows]);
 
   const triggerLabel = useMemo(() => {
     if (form.triggerType === "contact_subscribed") {
@@ -241,34 +256,65 @@ export function WorkflowWorkspace({
   };
 
   const beginCreate = () => {
+    editorGenerationRef.current += 1;
+    workflowRequestRef.current.abort();
+    workflowLoadGeneration.current += 1;
     setActive(null);
     setForm(emptyForm);
     setNodes([]);
     setRuns([]);
+    setRunsLoadState("fulfilled");
+    setBusy(null);
     setOpen(true);
   };
 
+  useEffect(() => {
+    if (createRequest === handledCreateRequestRef.current) return;
+    handledCreateRequestRef.current = createRequest;
+    beginCreate();
+  }, [createRequest]);
+
   const openWorkflow = async (workflow: MarketingWorkflow) => {
+    editorGenerationRef.current += 1;
+    const latest = workflowRequestRef.current.begin();
+    const generation = ++workflowLoadGeneration.current;
     setActive(workflow);
     setForm(toForm(workflow));
     setNodes(workflow.nodes.map(toDraftNode));
     setRuns([]);
+    setRunsLoadState("pending");
     setOpen(true);
     setBusy("load");
     try {
       const [detail, recentRuns] = await Promise.all([
-        client.getWorkflow(workflow.id),
-        client.listWorkflowRuns(workflow.id),
+        client.getWorkflow(workflow.id, { signal: latest.signal }),
+        client.listWorkflowRuns(workflow.id, { signal: latest.signal }),
       ]);
-      replaceWorkflow(detail);
+      if (!latest.isCurrent() || generation !== workflowLoadGeneration.current) return;
+      replaceWorkflow({ ...detail, runCount: recentRuns.length, countsKnown: true });
       setForm(toForm(detail));
       setNodes(detail.nodes.map(toDraftNode));
       setRuns(recentRuns);
+      setRunsLoadState("fulfilled");
     } catch (error) {
+      if (isAbortError(error) || !latest.isCurrent() || generation !== workflowLoadGeneration.current) return;
+      setRunsLoadState("rejected");
       toast.error(error instanceof Error ? error.message : dictionary.feedback.genericError);
     } finally {
-      setBusy(null);
+      const current = latest.isCurrent();
+      latest.finish();
+      if (current && generation === workflowLoadGeneration.current) setBusy(null);
     }
+  };
+
+  useEffect(() => () => workflowRequestRef.current.abort(), []);
+
+  const handleOpenChange = (nextOpen: boolean) => {
+    if (!nextOpen) {
+      workflowRequestRef.current.abort();
+      editorGenerationRef.current += 1;
+    }
+    setOpen(nextOpen);
   };
 
   const updateNode = (key: string, patch: Partial<DraftNode>) => {
@@ -287,9 +333,10 @@ export function WorkflowWorkspace({
 
   const save = async () => {
     if (!form.name.trim() || !form.triggerValue.trim() || nodes.some((node) => !isNodeValid(node))) {
-      toast.error(dictionary.feedback.required);
+      toast.error(dictionary.feedback.workflowRequired ?? dictionary.feedback.required);
       return;
     }
+    const editorGeneration = editorGenerationRef.current;
     setBusy("save");
     try {
       const saved = active
@@ -299,65 +346,69 @@ export function WorkflowWorkspace({
         saved.id,
         nodes.map((node, index) => toNodeInput(node, index)),
       );
+      if (editorGeneration !== editorGenerationRef.current) return;
       const complete = { ...saved, nodes: savedNodes, nodeCount: savedNodes.length };
       replaceWorkflow(complete);
       setNodes(savedNodes.map(toDraftNode));
+      onMutated?.();
       toast.success(active ? dictionary.workflows.saved : dictionary.workflows.created);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : dictionary.feedback.genericError);
+      if (editorGeneration === editorGenerationRef.current) toast.error(error instanceof Error ? error.message : dictionary.feedback.genericError);
     } finally {
-      setBusy(null);
+      if (editorGeneration === editorGenerationRef.current) setBusy(null);
     }
   };
 
   const runStatusAction = async (action: "activate" | "pause") => {
     if (!active) return;
+    const editorGeneration = editorGenerationRef.current;
     setBusy(action);
     try {
       const updated = action === "activate"
         ? await client.activateWorkflow(active.id)
         : await client.pauseWorkflow(active.id);
+      if (editorGeneration !== editorGenerationRef.current) return;
       replaceWorkflow({ ...updated, nodes: updated.nodes.length ? updated.nodes : active.nodes });
+      onMutated?.();
       toast.success(
         action === "activate" ? dictionary.workflows.activated : dictionary.workflows.paused,
       );
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : dictionary.feedback.genericError);
+      if (editorGeneration === editorGenerationRef.current) toast.error(error instanceof Error ? error.message : dictionary.feedback.genericError);
     } finally {
-      setBusy(null);
+      if (editorGeneration === editorGenerationRef.current) setBusy(null);
     }
   };
 
   const removeWorkflow = async () => {
     if (!active) return;
+    if (active.status !== "draft") return;
+    if (!window.confirm(`Eliminar definitivamente o fluxo “${active.name}”?`)) return;
+    const editorGeneration = editorGenerationRef.current;
     setBusy("delete");
     try {
       await client.deleteWorkflow(active.id);
+      if (editorGeneration !== editorGenerationRef.current) return;
       setWorkflows((current) => current.filter((item) => item.id !== active.id));
       setOpen(false);
+      onMutated?.();
       toast.success(dictionary.workflows.deleted);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : dictionary.feedback.genericError);
+      if (editorGeneration === editorGenerationRef.current) toast.error(error instanceof Error ? error.message : dictionary.feedback.genericError);
     } finally {
-      setBusy(null);
+      if (editorGeneration === editorGenerationRef.current) setBusy(null);
     }
   };
 
   return (
     <>
       <section className="space-y-6" aria-labelledby="marketing-workflows-title">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <p className="marketing-kicker">{dictionary.workflows.eyebrow}</p>
-            <h2 id="marketing-workflows-title" className="text-heading-3 font-semibold">
-              {dictionary.workflows.title}
-            </h2>
-            <p className="mt-1 text-body text-muted-foreground">{dictionary.workflows.subtitle}</p>
-          </div>
-          <Button type="button" onClick={beginCreate}>
-            <Plus className="size-4" />
-            {dictionary.workflows.newWorkflow}
-          </Button>
+        <div>
+          <p className="marketing-kicker">{dictionary.workflows.eyebrow}</p>
+          <h2 id="marketing-workflows-title" className="text-heading-3 font-semibold">
+            {dictionary.workflows.title}
+          </h2>
+          <p className="mt-1 text-body text-muted-foreground">{dictionary.workflows.subtitle}</p>
         </div>
 
         {workflows.length === 0 ? (
@@ -367,29 +418,21 @@ export function WorkflowWorkspace({
                 <Workflow className="size-5" />
               </div>
               <div>
-                <h3 className="font-semibold">{dictionary.workflows.emptyTitle}</h3>
+                <h3 className="text-title">{dictionary.workflows.emptyTitle}</h3>
                 <p className="mt-1 max-w-[28rem] text-body text-muted-foreground">
                   {dictionary.workflows.emptyDescription}
                 </p>
               </div>
-              <Button type="button" onClick={beginCreate}>
-                <Plus className="size-4" />
-                {dictionary.workflows.newWorkflow}
-              </Button>
             </CardContent>
           </Card>
         ) : (
           <div className="grid gap-3 lg:grid-cols-2">
             {workflows.map((workflow) => (
-              <button
-                type="button"
-                key={workflow.id}
-                onClick={() => void openWorkflow(workflow)}
-                className="rounded-xl border bg-card p-5 text-left text-card-foreground transition-colors hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              >
+              <Card key={workflow.id} asChild variant="interactive" density="default">
+                <button type="button" onClick={() => void openWorkflow(workflow)} className="p-5 text-left">
                 <div className="flex items-start justify-between gap-4">
                   <div className="min-w-0">
-                    <h3 className="truncate font-semibold">{workflow.name}</h3>
+                    <h3 className="truncate text-title">{workflow.name}</h3>
                     <p className="mt-1 truncate text-body text-muted-foreground">
                       {dictionary.workflows.triggers[workflow.triggerType]}
                     </p>
@@ -398,17 +441,18 @@ export function WorkflowWorkspace({
                     {dictionary.workflows.statuses[workflow.status]}
                   </Badge>
                 </div>
-                <div className="mt-5 flex gap-4 text-meta text-muted-foreground">
-                  <span>{dictionary.workflows.nodeCount(workflow.nodeCount)}</span>
-                  <span>{dictionary.workflows.runCount(workflow.runCount)}</span>
+                <div className="text-data mt-5 flex gap-4 text-meta text-muted-foreground">
+                  <span>{workflow.countsKnown === false ? "—" : dictionary.workflows.nodeCount(workflow.nodeCount)}</span>
+                  <span>{workflow.countsKnown === false ? "—" : dictionary.workflows.runCount(workflow.runCount)}</span>
                 </div>
-              </button>
+                </button>
+              </Card>
             ))}
           </div>
         )}
       </section>
 
-      <Sheet open={open} onOpenChange={setOpen}>
+      <Sheet open={open} onOpenChange={handleOpenChange}>
         <SheetContent className="w-full overflow-y-auto sm:max-w-[56rem]">
           <SheetHeader>
             <SheetDescription>
@@ -440,7 +484,7 @@ export function WorkflowWorkspace({
               </div>
               <div className="space-y-2">
                 <Label htmlFor="workflow-trigger">{dictionary.workflows.fields.triggerType}</Label>
-                <select
+                <StyledSelect
                   id="workflow-trigger"
                   value={form.triggerType}
                   onChange={(event) => setForm((current) => ({
@@ -453,7 +497,7 @@ export function WorkflowWorkspace({
                   {(Object.keys(dictionary.workflows.triggers) as MarketingWorkflowTriggerType[]).map((type) => (
                     <option value={type} key={type}>{dictionary.workflows.triggers[type]}</option>
                   ))}
-                </select>
+                </StyledSelect>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="workflow-trigger-value">{triggerLabel.label}</Label>
@@ -471,11 +515,11 @@ export function WorkflowWorkspace({
             <section className="space-y-4">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
                 <div>
-                  <h3 className="font-semibold">{dictionary.workflows.steps.title}</h3>
+                  <h3 className="text-heading-4">{dictionary.workflows.steps.title}</h3>
                   <p className="text-body text-muted-foreground">{dictionary.workflows.steps.subtitle}</p>
                 </div>
                 <div className="flex gap-2">
-                  <select
+                  <StyledSelect
                     value={addType}
                     onChange={(event) => setAddType(event.target.value as MarketingWorkflowNodeType)}
                     aria-label={dictionary.workflows.steps.add}
@@ -484,7 +528,7 @@ export function WorkflowWorkspace({
                     {(Object.keys(dictionary.workflows.steps.types) as MarketingWorkflowNodeType[]).map((type) => (
                       <option value={type} key={type}>{dictionary.workflows.steps.types[type]}</option>
                     ))}
-                  </select>
+                  </StyledSelect>
                   <Button
                     type="button"
                     variant="outline"
@@ -514,10 +558,10 @@ export function WorkflowWorkspace({
                                 : <Tag className="size-4" />}
                           </div>
                           <div className="min-w-0 flex-1">
-                            <p className="text-meta font-semibold uppercase tracking-wide text-muted-foreground">
+                            <p className="text-label font-semibold text-muted-foreground">
                               {dictionary.workflows.steps.step(index + 1)}
                             </p>
-                            <p className="font-semibold">{dictionary.workflows.steps.types[node.type]}</p>
+                            <p className="text-title">{dictionary.workflows.steps.types[node.type]}</p>
                           </div>
                           <Button
                             type="button"
@@ -543,7 +587,10 @@ export function WorkflowWorkspace({
                             type="button"
                             variant="ghost"
                             size="icon"
-                            onClick={() => setNodes((current) => current.filter((item) => item.key !== node.key))}
+                            onClick={() => {
+                              if (node.id && !window.confirm("Remover este passo guardado do fluxo?")) return;
+                              setNodes((current) => current.filter((item) => item.key !== node.key));
+                            }}
                             aria-label={dictionary.workflows.steps.remove}
                           >
                             <Trash2 className="size-4" />
@@ -605,7 +652,7 @@ export function WorkflowWorkspace({
                               <Label htmlFor={`workflow-unit-${node.key}`}>
                                 {dictionary.workflows.steps.unit}
                               </Label>
-                              <select
+                              <StyledSelect
                                 id={`workflow-unit-${node.key}`}
                                 value={node.durationUnit}
                                 onChange={(event) => updateNode(node.key, {
@@ -616,7 +663,7 @@ export function WorkflowWorkspace({
                                 <option value="minutes">{dictionary.workflows.steps.units.minutes}</option>
                                 <option value="hours">{dictionary.workflows.steps.units.hours}</option>
                                 <option value="days">{dictionary.workflows.steps.units.days}</option>
-                              </select>
+                              </StyledSelect>
                             </div>
                           </div>
                         ) : (
@@ -644,10 +691,20 @@ export function WorkflowWorkspace({
                 <Separator />
                 <section className="space-y-4">
                   <div>
-                    <h3 className="font-semibold">{dictionary.workflows.runs.title}</h3>
+                    <h3 className="text-heading-4">{dictionary.workflows.runs.title}</h3>
                     <p className="text-body text-muted-foreground">{dictionary.workflows.runs.subtitle}</p>
                   </div>
-                  {runs.length === 0 ? (
+                  {runsLoadState === "pending" ? (
+                    <div className="space-y-2" aria-busy="true" aria-label={dictionary.workflows.runs.title}>
+                      <Skeleton className="h-12 w-full rounded-xl" />
+                      <Skeleton className="h-12 w-full rounded-xl" />
+                      <Skeleton className="h-12 w-full rounded-xl" />
+                    </div>
+                  ) : runsLoadState === "rejected" ? (
+                    <div role="alert" className="rounded-xl border border-destructive/30 bg-destructive/10 p-6 text-center text-body text-destructive">
+                      {dictionary.feedback.genericError}
+                    </div>
+                  ) : runs.length === 0 ? (
                     <div className="rounded-xl border border-dashed p-6 text-center text-body text-muted-foreground">
                       {dictionary.workflows.runs.empty}
                     </div>
@@ -666,7 +723,7 @@ export function WorkflowWorkspace({
                           {runs.map((run) => (
                             <tr key={run.id}>
                               <td className="px-4 py-3">
-                                <p className="font-semibold">{run.contactName || run.contactEmail || "—"}</p>
+                                <p className="text-body font-semibold">{run.contactName || run.contactEmail || "—"}</p>
                                 {run.contactName && run.contactEmail ? (
                                   <p className="text-meta text-muted-foreground">{run.contactEmail}</p>
                                 ) : null}
@@ -676,10 +733,10 @@ export function WorkflowWorkspace({
                                   {dictionary.workflows.runs.statuses[run.status]}
                                 </Badge>
                               </td>
-                              <td className="px-4 py-3">
+                              <td className="px-4 py-3 text-data">
                                 {run.currentStep === null ? "—" : run.currentStep + 1}
                               </td>
-                              <td className="px-4 py-3">{formatDateTime(run.nextRunAt, dictionary.locale)}</td>
+                              <td className="px-4 py-3 text-data">{formatDateTime(run.nextRunAt, dictionary.locale)}</td>
                             </tr>
                           ))}
                         </tbody>
@@ -717,16 +774,18 @@ export function WorkflowWorkspace({
                         {dictionary.workflows.activate}
                       </Button>
                     )}
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      disabled={busy !== null}
-                      onClick={() => void removeWorkflow()}
-                      className="text-destructive hover:text-destructive"
-                    >
-                      <Trash2 className="size-4" />
-                      {dictionary.workflows.delete}
-                    </Button>
+                    {active.status === "draft" ? (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        disabled={busy !== null}
+                        onClick={() => void removeWorkflow()}
+                        className="text-destructive hover:text-destructive"
+                      >
+                        <Trash2 className="size-4" />
+                        {dictionary.workflows.delete}
+                      </Button>
+                    ) : null}
                   </>
                 ) : null}
               </div>

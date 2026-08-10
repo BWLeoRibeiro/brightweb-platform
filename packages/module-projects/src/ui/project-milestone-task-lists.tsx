@@ -82,9 +82,8 @@ const taskGroupHeaderTone: Record<TaskGroupKey, { header: string; label: string 
   },
 };
 
-// Explicit label styling (11px/600/uppercase) so the per-group tone color wins
-// deterministically over the shared text-label text-muted-foreground utility's muted color.
-const TASK_GROUP_LABEL_BASE = "text-label font-semibold uppercase tracking-[var(--type-tracking-060)]";
+// Keep urgency labels compact without forcing a shouty all-caps treatment.
+const TASK_GROUP_LABEL_BASE = "text-label font-semibold";
 
 // How many tasks the detail-page bento previews before deferring to the board.
 const PREVIEW_TASK_LIMIT = 7;
@@ -151,7 +150,7 @@ function formatWeekday(value: string | null | undefined) {
   if (!value) return "-";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "-";
-  return new Intl.DateTimeFormat("pt-PT", { weekday: "short" }).format(date).replace(".", "").toUpperCase();
+  return new Intl.DateTimeFormat("pt-PT", { weekday: "short" }).format(date).replace(".", "");
 }
 
 function formatDayOfMonth(value: string | null | undefined) {
@@ -380,7 +379,7 @@ export function ProjectMilestonesAndTasksLists({
   return (
     <TooltipProvider>
       <>
-        <ProjectSurfaceCard className="is-light flex h-full flex-col">
+        <ProjectSurfaceCard variant="light" className="flex h-full flex-col">
           <ProjectSurfaceSectionHeader
             icon={Flag}
             title={dictionary.detail.milestones}
@@ -428,7 +427,7 @@ export function ProjectMilestonesAndTasksLists({
                   >
                     {hasDate ? (
                       <>
-                        <span className="block text-micro text-[length:var(--text-ui-nano)] font-bold leading-none tracking-[var(--type-tracking-040)] opacity-70">
+                        <span className="block text-micro text-[length:var(--text-ui-nano)] font-bold leading-none opacity-70">
                           {formatWeekday(milestone.targetDate)}
                         </span>
                         <span className={`${MONO} block text-body-lg font-extrabold leading-none`}>
@@ -438,7 +437,7 @@ export function ProjectMilestonesAndTasksLists({
                     ) : (
                       <>
                         <CalendarOff className="size-4 opacity-60" />
-                        <span className="block text-micro text-[length:var(--text-ui-nano)] font-semibold uppercase tracking-[var(--type-tracking-040)] opacity-70">{dictionary.detail.noDateShort}</span>
+                        <span className="block text-micro text-[length:var(--text-ui-nano)] font-semibold opacity-70">{dictionary.detail.noDateShort}</span>
                       </>
                     )}
                   </div>
@@ -453,7 +452,7 @@ export function ProjectMilestonesAndTasksLists({
                             className="w-16 bg-[color:var(--project-ui-color-29)]"
                             fillClassName={isProgressComplete ? "bg-[color:var(--project-state-active)]" : "bg-[color:var(--accent)]"}
                           />
-                          <span className={`${MONO} text-meta text-muted-foreground tabular-nums text-foreground/70`}>{progress.done}/{progress.total}</span>
+                          <span className={`${MONO} text-meta text-muted-foreground text-foreground/70`}>{progress.done}/{progress.total}</span>
                         </span>
                       ) : (
                         <span className="text-micro text-muted-foreground shrink-0 text-foreground-muted-accessible">{dictionary.detail.noTasksLowercase}</span>
@@ -478,7 +477,7 @@ export function ProjectMilestonesAndTasksLists({
           </div>
         </ProjectSurfaceCard>
 
-        <ProjectSurfaceCard className="is-light flex h-full flex-col xl:col-span-2">
+        <ProjectSurfaceCard variant="light" className="flex h-full flex-col xl:col-span-2">
           <ProjectSurfaceSectionHeader
             icon={ListChecks}
             title={dictionary.detail.tasks}

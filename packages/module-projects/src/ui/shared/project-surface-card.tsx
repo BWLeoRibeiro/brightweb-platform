@@ -1,23 +1,21 @@
 import type { LucideIcon } from "lucide-react";
 import type { HTMLAttributes, ReactNode } from "react";
+import { Card } from "@brightweblabs/ui";
 import { canonicalTitleClassName } from "./typography";
 import { cn } from "../utils";
 
 type ProjectSurfaceCardProps = HTMLAttributes<HTMLElement> & {
   children: ReactNode;
+  variant?: "default" | "light";
 };
 
-export function ProjectSurfaceCard({ children, className, ...props }: ProjectSurfaceCardProps) {
+export function ProjectSurfaceCard({ children, className, variant = "default", ...props }: ProjectSurfaceCardProps) {
   return (
-    <article
-      {...props}
-      className={cn(
-        "project-surface-card",
-        className,
-      )}
-    >
-      {children}
-    </article>
+    <Card asChild variant={variant} density="default" motion="enter">
+      <article {...props} className={cn("project-surface-card", className)}>
+        {children}
+      </article>
+    </Card>
   );
 }
 

@@ -7,10 +7,12 @@ import { useWindowEventBridge } from "./window-events";
 
 type ProjectEditSheetLazyProps = {
   projectId: string;
+  projectRole?: "admin" | "owner" | "contributor" | "observer";
   initial?: {
     name: string;
     code: string | null;
     status: string;
+    startDate: string | null;
     targetDate: string | null;
     cancellationReason: string | null;
     summary: string | null;

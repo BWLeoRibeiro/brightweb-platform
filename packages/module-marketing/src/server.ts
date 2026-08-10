@@ -15,6 +15,9 @@ import { enqueueWorkflowRunsForTrigger } from "./workflows";
 
 type QueryClient = {
   from: (table: string) => any;
+  rpc: (name: string, parameters: Record<string, unknown>) => Promise<{
+    error: { message?: string } | null;
+  }>;
 };
 
 type TopicRow = {
@@ -107,6 +110,113 @@ export async function listTopics(
   const { data, error } = await query;
   throwIfError(error);
   return ((data ?? []) as TopicRow[]).map(topicFromRow);
+}
+
+export type CreateMarketingTopicInput = {
+  slug: string;
+  label: string;
+  description?: string | null;
+  position?: number;
+};
+
+export type UpdateMarketingTopicInput = Partial<
+  Pick<CreateMarketingTopicInput, "label" | "description" | "position">
+> & {
+  isActive?: boolean;
+};
+
+const TOPIC_SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+const TOPIC_COLUMNS = "id,slug,label,description,is_active,position,created_at,updated_at";
+
+function topicPayload(input: CreateMarketingTopicInput | UpdateMarketingTopicInput) {
+  const payload: Record<string, unknown> = {};
+  if ("slug" in input && input.slug !== undefined) payload.slug = input.slug.trim();
+  if (input.label !== undefined) payload.label = input.label.trim();
+  if (input.description !== undefined) payload.description = input.description?.trim() || null;
+  if (input.position !== undefined) payload.position = input.position;
+  if ("isActive" in input && input.isActive !== undefined) payload.is_active = input.isActive;
+  return payload;
+}
+
+function validateTopicInput(input: CreateMarketingTopicInput | UpdateMarketingTopicInput) {
+  if (input.label !== undefined && !input.label.trim()) {
+    throw new Error("Topic label is required.");
+  }
+  if ("slug" in input && input.slug !== undefined && !TOPIC_SLUG_PATTERN.test(input.slug.trim())) {
+    throw new Error("Topic slug must use lowercase letters, numbers, and hyphens only.");
+  }
+  if (input.position !== undefined && (!Number.isInteger(input.position) || input.position < 0)) {
+    throw new Error("Topic position must be a non-negative integer.");
+  }
+}
+
+export async function createTopic(
+  supabase: unknown,
+  input: CreateMarketingTopicInput,
+): Promise<MarketingTopic> {
+  validateTopicInput(input);
+  if (!input.slug?.trim()) throw new Error("Topic slug is required.");
+  if (!input.label?.trim()) throw new Error("Topic label is required.");
+  const { data, error } = await client(supabase)
+    .from("marketing_topics")
+    .insert(topicPayload(input))
+    .select(TOPIC_COLUMNS)
+    .single();
+  if (error?.code === "23505") throw new Error("Topic slug already exists.");
+  throwIfError(error);
+  return topicFromRow(data as TopicRow);
+}
+
+export async function updateTopic(
+  supabase: unknown,
+  id: string,
+  input: UpdateMarketingTopicInput,
+): Promise<MarketingTopic> {
+  validateTopicInput(input);
+  const { data, error } = await client(supabase)
+    .from("marketing_topics")
+    .update(topicPayload(input))
+    .eq("id", id)
+    .select(TOPIC_COLUMNS)
+    .maybeSingle();
+  throwIfError(error);
+  if (!data) throw new Error("Topic not found.");
+  return topicFromRow(data as TopicRow);
+}
+
+export async function deleteTopic(supabase: unknown, id: string): Promise<void> {
+  const { count, error: campaignError } = await client(supabase)
+    .from("marketing_campaigns")
+    .select("id", { count: "exact", head: true })
+    .eq("topic_id", id);
+  throwIfError(campaignError);
+  if ((count ?? 0) > 0) {
+    throw new Error("Topic is used by campaigns and must be deactivated instead.");
+  }
+  const { data, error } = await client(supabase)
+    .from("marketing_topics")
+    .delete()
+    .eq("id", id)
+    .select("id");
+  if (error?.code === "23503") {
+    throw new Error("Topic is used by campaigns and must be deactivated instead.");
+  }
+  throwIfError(error);
+  if (!(data ?? []).some((row: { id?: string }) => row.id === id)) throw new Error("Topic not found.");
+}
+
+export async function reorderTopics(
+  supabase: unknown,
+  topicIds: string[],
+): Promise<MarketingTopic[]> {
+  if (topicIds.length === 0 || new Set(topicIds).size !== topicIds.length) {
+    throw new Error("Topic order must contain unique topic IDs.");
+  }
+  const { error } = await client(supabase).rpc("reorder_marketing_topics", {
+    p_topic_ids: topicIds,
+  });
+  throwIfError(error);
+  return listTopics(supabase);
 }
 
 export async function getContactSubscriptions(

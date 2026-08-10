@@ -3,16 +3,52 @@
    Unlayered, these beat @layer utilities and e.g. p-0 on the CRM table card
    silently loses to the default card padding. */
 @layer components {
+  .card-root,
   .surface-card {
     border-radius: var(--radius-card);
     border: 1px solid var(--border-hairline);
     background: var(--surface-card);
-    padding: var(--surface-card-padding);
-    animation: surface-fade-in 640ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+    color: var(--card-foreground);
+    box-shadow: var(--dashboard-shadow-sm);
   }
 
+  .card-root[data-variant="light"],
   .surface-card.is-light {
     background: var(--surface-card-light);
+  }
+
+  .card-root[data-variant="elevated"] {
+    box-shadow: var(--dashboard-shadow-md);
+  }
+
+  .card-root[data-variant="interactive"] {
+    cursor: pointer;
+    transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+  }
+
+  .card-root[data-variant="interactive"]:hover,
+  .card-root[data-variant="interactive"]:focus-visible,
+  .card-root[data-variant="interactive"]:focus-within {
+    border-color: var(--border-selection);
+    box-shadow: var(--dashboard-shadow-md);
+    transform: translateY(-1px);
+  }
+
+  .card-root[data-variant="interactive"]:focus-visible,
+  .card-root[data-variant="interactive"]:focus-within {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+
+  .card-root[data-variant="insight"] {
+    overflow: hidden;
+    border-color: transparent;
+    background: var(--card);
+    box-shadow: none;
+  }
+
+  .card-enter {
+    animation: surface-fade-in 640ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
   }
 
   /* A near-black panel has strong figure/ground in light mode. In dark mode it
@@ -120,6 +156,14 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .card-root,
+  .surface-card {
+    animation: none;
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+
   .skeleton-ghost::after {
     display: none;
   }
@@ -138,10 +182,10 @@
   border-radius: var(--radius-pill);
   background: var(--brand-surface-tint);
   color: var(--brand-accent);
-  font-size: var(--text-ui-label);
-  font-weight: var(--font-weight-bold);
-  letter-spacing: var(--type-tracking-040);
-  text-transform: uppercase;
+  font-size: var(--text-meta);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--type-tracking-normal);
+  text-transform: none;
 }
 
 .status {

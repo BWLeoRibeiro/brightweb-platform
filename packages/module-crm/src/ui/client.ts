@@ -1,12 +1,14 @@
-import type { CrmContactsListParams } from "../data";
+import type { CrmContactsListParams, CrmOrganizationsListParams } from "../data";
 import type { CrmContactStatus } from "../server";
 import { readPublicError } from "@brightweblabs/infra/robustness";
-import type { CrmContactFormInput, CrmOrganizationWriteInput, CrmUiClient } from "./types";
+import { observedFetch } from "@brightweblabs/infra/request-observability";
+import type { CrmContactFormInput, CrmOrganizationAccess, CrmOrganizationWriteInput, CrmUiClient, CrmUiClientOptions } from "./types";
 import {
   parseCrmContactWriteResponse,
   parseCrmContactsResponse,
   parseCrmDeleteOrStatusResponse,
   parseCrmOrganizationWriteResponse,
+  parseCrmOrganizationsListResponse,
   parseCrmOrganizationsResponse,
   parseCrmOwnersResponse,
   parseCrmReportResponse,
@@ -41,8 +43,12 @@ function organizationPayload(input: CrmOrganizationWriteInput) {
     budgetRange: input.budget_range,
     websiteUrl: input.website_url,
     addressLine1: input.address,
+    addressLine2: input.addressLine2,
+    zipCode: input.zipCode,
+    country: input.country,
     taxIdentifierValue: input.taxIdentifierValue,
     primaryContactId: input.primary_contact_id,
+    invitations: input.invitations,
   };
 }
 
@@ -50,12 +56,13 @@ export function createCrmUiClient(
   basePath = "/api/crm",
   fetcher: typeof fetch = fetch,
   organizationsBasePath = "/api/organizations",
+  options: CrmUiClientOptions = {},
 ): CrmUiClient {
   const endpoint = (path: string) => `${basePath.replace(/\/$/, "")}/${path}`;
   const organizationsRoot = organizationsBasePath.replace(/\/$/, "");
 
   return {
-    async listContacts(params: CrmContactsListParams = {}) {
+    async listContacts(params: CrmContactsListParams = {}, requestOptions = {}) {
       const query = new URLSearchParams();
       if (params.page) query.set("page", String(params.page));
       if (params.pageSize) query.set("pageSize", String(params.pageSize));
@@ -64,18 +71,46 @@ export function createCrmUiClient(
       if (params.organizationId) query.set("organizationId", params.organizationId);
       if (params.ownerProfileId) query.set("ownerProfileId", params.ownerProfileId);
       if (params.sort) query.set("sort", params.sort);
-      return parseCrmContactsResponse(await readPayload(await fetcher(`${endpoint("contacts")}?${query.toString()}`)));
+      return parseCrmContactsResponse(await readPayload(await observedFetch(
+        fetcher,
+        `${endpoint("contacts")}?${query.toString()}`,
+        { signal: requestOptions.signal },
+        { domain: "crm", operation: "contacts.list", observer: options.onRequestMetric },
+      )));
     },
-    async getStats() {
-      return parseCrmStatsResponse(await readPayload(await fetcher(endpoint("stats"))));
+    async getStats(requestOptions = {}) {
+      return parseCrmStatsResponse(await readPayload(await observedFetch(fetcher, endpoint("stats"), { signal: requestOptions.signal }, { domain: "crm", operation: "stats.get", observer: options.onRequestMetric })));
     },
-    async listOwners() {
-      return parseCrmOwnersResponse(await readPayload(await fetcher(endpoint("owners"))));
+    async listOwners(requestOptions = {}) {
+      return parseCrmOwnersResponse(await readPayload(await observedFetch(fetcher, endpoint("owners"), { signal: requestOptions.signal }, { domain: "crm", operation: "owners.list", observer: options.onRequestMetric })));
     },
-    async listOrganizations() {
+    async listOrganizations(requestOptions = {}) {
       return parseCrmOrganizationsResponse(
-        await readPayload(await fetcher(`${endpoint("organizations")}?pageSize=100`)),
+        await readPayload(await observedFetch(fetcher, `${endpoint("organizations")}?pageSize=100`, { signal: requestOptions.signal }, { domain: "crm", operation: "organizations.summary", observer: options.onRequestMetric })),
       );
+    },
+    async queryOrganizations(params: CrmOrganizationsListParams = {}, requestOptions = {}) {
+      const query = new URLSearchParams();
+      if (params.page) query.set("page", String(params.page));
+      if (params.pageSize) query.set("pageSize", String(params.pageSize));
+      if (params.search) query.set("search", params.search);
+      return parseCrmOrganizationsListResponse(await readPayload(await observedFetch(
+        fetcher,
+        `${endpoint("organizations")}?${query.toString()}`,
+        { signal: requestOptions.signal },
+        { domain: "crm", operation: "organizations.list", observer: options.onRequestMetric },
+      )));
+    },
+    async getOrganization(organizationId, requestOptions = {}) {
+      const result = parseCrmOrganizationsListResponse(await readPayload(await observedFetch(
+        fetcher,
+        `${endpoint("organizations")}?page=1&pageSize=100`,
+        { signal: requestOptions.signal },
+        { domain: "crm", operation: "organizations.get", observer: options.onRequestMetric },
+      )));
+      const organization = result.items.find((item) => item.id === organizationId);
+      if (!organization) throw new Error("Organização não encontrada.");
+      return organization;
     },
     async createOrganization(input) {
       return parseCrmOrganizationWriteResponse(
@@ -95,15 +130,87 @@ export function createCrmUiClient(
         })),
       );
     },
-    async listTimeline(contactId?: string) {
+    async deleteOrganization(organizationId) {
+      await readPayload(await fetcher(`${organizationsRoot}/${encodeURIComponent(organizationId)}`, {
+        method: "DELETE",
+      }));
+    },
+    async listOrganizationInvitations(organizationId) {
+      const payload = await readPayload(await fetcher(
+        `${organizationsRoot}/${encodeURIComponent(organizationId)}/invitations`,
+      ));
+      const data = payload && typeof payload === "object" && "data" in payload
+        ? (payload as { data?: unknown }).data
+        : null;
+      const invitations = data && typeof data === "object" && "invitations" in data
+        ? (data as { invitations?: unknown }).invitations
+        : [];
+      return Array.isArray(invitations) ? invitations.flatMap((item) => {
+        if (!item || typeof item !== "object") return [];
+        const record = item as Record<string, unknown>;
+        if (typeof record.id !== "string" || typeof record.email !== "string") return [];
+        return [{ id: record.id, email: record.email, role: record.role === "admin" ? "admin" as const : "member" as const }];
+      }) : [];
+    },
+    async revokeOrganizationInvitation(organizationId, invitationId) {
+      await readPayload(await fetcher(
+        `${organizationsRoot}/${encodeURIComponent(organizationId)}/invitations/${encodeURIComponent(invitationId)}`,
+        { method: "DELETE" },
+      ));
+    },
+    async getOrganizationAccess(organizationId, requestOptions = {}) {
+      const query = requestOptions.includeHistory ? "?status=all" : "";
+      const payload = await readPayload(await fetcher(
+        `${organizationsRoot}/${encodeURIComponent(organizationId)}/invitations${query}`,
+        { signal: requestOptions.signal },
+      ));
+      const data = payload && typeof payload === "object" && "data" in payload
+        ? (payload as { data?: unknown }).data
+        : null;
+      if (!data || typeof data !== "object") return { members: [], invitations: [] };
+      const record = data as Record<string, unknown>;
+      return {
+        members: Array.isArray(record.members) ? record.members : [],
+        invitations: Array.isArray(record.invitations) ? record.invitations : [],
+      } as CrmOrganizationAccess;
+    },
+    async inviteOrganizationMember(organizationId, input) {
+      await readPayload(await fetcher(`${organizationsRoot}/${encodeURIComponent(organizationId)}/invitations`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ invitations: [input] }),
+      }));
+    },
+    async updateOrganizationMemberRole(organizationId, profileId, role) {
+      await readPayload(await fetcher(`${organizationsRoot}/${encodeURIComponent(organizationId)}/members/${encodeURIComponent(profileId)}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ role }),
+      }));
+    },
+    async removeOrganizationMember(organizationId, profileId) {
+      await readPayload(await fetcher(`${organizationsRoot}/${encodeURIComponent(organizationId)}/members/${encodeURIComponent(profileId)}`, {
+        method: "DELETE",
+      }));
+    },
+    async listTimeline(contactId?: string, requestOptions = {}) {
       const query = new URLSearchParams();
       if (contactId) query.set("contactId", contactId);
       return parseCrmTimelineResponse(
-        await readPayload(await fetcher(`${endpoint("timeline")}?${query.toString()}`)),
+        await readPayload(await observedFetch(fetcher, `${endpoint("timeline")}?${query.toString()}`, { signal: requestOptions.signal }, { domain: "crm", operation: "timeline.list", observer: options.onRequestMetric })),
       );
     },
-    async getReport() {
-      return parseCrmReportResponse(await readPayload(await fetcher(endpoint("report"))));
+    async queryTimeline(params = {}, requestOptions = {}) {
+      const query = new URLSearchParams();
+      if (params.contactId) query.set("contactId", params.contactId);
+      if (params.search) query.set("search", params.search);
+      if (params.limit) query.set("limit", String(params.limit));
+      return parseCrmTimelineResponse(
+        await readPayload(await observedFetch(fetcher, `${endpoint("timeline")}?${query.toString()}`, { signal: requestOptions.signal }, { domain: "crm", operation: "timeline.query", observer: options.onRequestMetric })),
+      );
+    },
+    async getReport(requestOptions = {}) {
+      return parseCrmReportResponse(await readPayload(await observedFetch(fetcher, endpoint("report"), { signal: requestOptions.signal }, { domain: "crm", operation: "report.get", observer: options.onRequestMetric })));
     },
     async createContact(input) {
       return parseCrmContactWriteResponse(await readPayload(await fetcher(endpoint("contacts"), {

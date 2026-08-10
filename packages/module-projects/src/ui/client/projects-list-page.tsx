@@ -2,6 +2,7 @@ import Link from "next/link";
 import { connection } from "next/server";
 import { ArrowLeft, ArrowRight, FolderKanban } from "lucide-react";
 import { requireServerPageAccess } from "@brightweblabs/core-auth/server";
+import { Card } from "@brightweblabs/ui";
 import { listAccountProjects } from "../../account-projects";
 import { clientProjectsDictionary } from "./dictionary";
 import { ProjectListCard } from "./project-list-card";
@@ -26,14 +27,15 @@ export async function ClientProjectsListPage() {
 
   // TODO(projects-realtime): mount the account projects refresher when the app shell supports it.
   return (
-    <section
-      className="client-projects-panel panel preview-glass-card"
-      style={{
-        borderTopColor: "var(--project-client-accent)",
-        borderTopWidth: "3px",
-      }}
-    >
-      <div className="panel-inner space-y-6">
+    <Card asChild variant="elevated">
+      <section
+        className="client-projects-panel panel preview-glass-card"
+        style={{
+          borderTopColor: "var(--project-client-accent)",
+          borderTopWidth: "3px",
+        }}
+      >
+        <div className="panel-inner space-y-6">
         <header className="flex flex-wrap items-start justify-between gap-3">
           <div className="space-y-1">
             <span className="eyebrow">{dictionary.kicker}</span>
@@ -63,32 +65,32 @@ export async function ClientProjectsListPage() {
         {projects.items.length > 0 ? (
           <div className="flex items-stretch gap-0 overflow-hidden rounded-xl border border-border/60 bg-background/40">
             <div className="flex-1 border-r border-border/60 px-4 py-3 text-center">
-              <p className="font-display text-heading-2 font-bold leading-none tabular-nums">
+              <p className="text-kpi text-[length:var(--text-heading-2)] font-bold">
                 {projects.items.length}
               </p>
-              <p className="mt-1.5 text-label uppercase tracking-wide text-muted-foreground">
+              <p className="mt-1.5 text-label text-muted-foreground">
                 {dictionary.total}
               </p>
             </div>
             <div className="flex-1 border-r border-border/60 px-4 py-3 text-center">
               <p
-                className="font-display text-heading-2 font-bold leading-none tabular-nums"
+                className="text-kpi text-[length:var(--text-heading-2)] font-bold"
                 style={{ color: "var(--project-health-on-track)" }}
               >
                 {activeCount}
               </p>
-              <p className="mt-1.5 text-label uppercase tracking-wide text-muted-foreground">
+              <p className="mt-1.5 text-label text-muted-foreground">
                 {dictionary.active}
               </p>
             </div>
             <div className="flex-1 px-4 py-3 text-center">
               <p
-                className="font-display text-heading-2 font-bold leading-none tabular-nums"
+                className="text-kpi text-[length:var(--text-heading-2)] font-bold"
                 style={{ color: "var(--project-health-on-track)" }}
               >
                 {onTrackCount}
               </p>
-              <p className="mt-1.5 text-label uppercase tracking-wide text-muted-foreground">
+              <p className="mt-1.5 text-label text-muted-foreground">
                 {dictionary.onTime}
               </p>
             </div>
@@ -119,7 +121,8 @@ export async function ClientProjectsListPage() {
             <ProjectListCard key={project.id} project={project} isStaff={isStaff} />
           ))}
         </div>
-      </div>
-    </section>
+        </div>
+      </section>
+    </Card>
   );
 }

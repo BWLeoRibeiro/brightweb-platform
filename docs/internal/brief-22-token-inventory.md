@@ -60,7 +60,6 @@ Brief 23 adds `--project-hero-base` and `--project-hero-shadow` to the theme and
 | `--toast-info-text` | L3 | `color-mix(in srgb, var(--secondary) 70%, var(--foreground))` | — | `packages/ui/src/components/sonner.tsx` |
 | `--toast-info-border` | L3 | `color-mix(in srgb, var(--secondary) 30%, var(--background))` | — | `packages/ui/src/components/sonner.tsx` |
 | `--shadow-accent-control` | L3 | `0 4px 14px color-mix(in srgb, var(--brand-accent) 26%, transparent)` | — | `packages/ui/src/components/button-variants.ts` |
-| `--shadow-toolbar-control` | L3 | `0 4px 14px rgba(91, 197, 242, 0.26)` | — | `packages/app-shell/src/components/toolbar-shared.tsx` |
 | `--shadow-toolbar-popover` | L3 | `0 18px 44px rgba(10, 21, 26, 0.16), 0 2px 10px rgba(10, 21, 26, 0.08)` | — | `packages/module-crm/src/ui/toolbar-controls.tsx` |
 | `--shadow-tooltip` | L3 | `0 14px 34px var(--elevate-3)` | — | `packages/ui/src/components/tooltip.tsx` |
 | `--shadow-dialog` | L3 | `0 24px 64px var(--elevate-3)` | — | `packages/ui/src/components/alert-dialog.tsx` |

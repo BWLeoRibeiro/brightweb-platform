@@ -7,6 +7,7 @@ const repoRoot = path.resolve(new URL("..", import.meta.url).pathname);
 const packagesSourceRoot = path.join(repoRoot, "packages");
 const previewSourceRoot = path.join(repoRoot, "apps", "platform-preview", "app");
 const uiSourceRoot = path.join(repoRoot, "packages", "ui", "src");
+const uiEmailSourceRoot = path.join(uiSourceRoot, "email");
 const appShellSourceRoot = path.join(repoRoot, "packages", "app-shell", "src");
 const crmUiSourceRoot = path.join(repoRoot, "packages", "module-crm", "src", "ui");
 const adminUiSourceRoot = path.join(repoRoot, "packages", "module-admin", "src", "ui");
@@ -81,7 +82,9 @@ function unlayeredCascadeSensitiveClassRules(source: string) {
 }
 
 test("ui source follows the BrightWeb typography and color hygiene rules", async () => {
-  const files = await sourcesAt(uiSourceRoot);
+  // Transactional email clients require literal inline colors; keep that
+  // exception contained to the dedicated email template directory.
+  const files = (await sourcesAt(uiSourceRoot)).filter(({ filePath }) => !filePath.startsWith(uiEmailSourceRoot));
   assertPatternAbsent(files, /\bfont-medium\b/, "font-medium is not part of the loaded weight ladder");
   assertPatternAbsent(files, /#[0-9a-f]{3,8}\b|rgba?\(|color-mix\(/i, "raw color recipes must be represented by theme tokens");
 });
@@ -151,11 +154,50 @@ test("shared buttons transition explicit properties and respect reduced motion",
   assert.match(source, /motion-reduce:transition-none/);
 });
 
+test("default and brand buttons share the flat Projects action contract", async () => {
+  const source = await readFile(path.join(uiSourceRoot, "components/button-variants.ts"), "utf8");
+  const defaultVariant = source.match(/default:\s*\n?\s*"([^"]+)"/)?.[1];
+  const brandVariant = source.match(/brand:\s*\n?\s*"([^"]+)"/)?.[1];
+
+  assert.ok(defaultVariant);
+  assert.ok(brandVariant);
+  for (const variant of [defaultVariant, brandVariant]) {
+    assert.match(variant, /border-transparent/);
+    assert.match(variant, /bg-\[color:var\(--surface-button-brand\)\]/);
+    assert.doesNotMatch(variant, /shadow/);
+  }
+  assert.match(defaultVariant, /text-\[color:var\(--foreground-button-brand\)\]/);
+  assert.match(brandVariant, /!text-\[color:var\(--foreground-button-brand\)\]/);
+});
+
+test("standard package toolbar actions use the shared Button primitive", async () => {
+  const relativePaths = [
+    "packages/app-shell/src/components/app-header.tsx",
+    "packages/module-admin/src/ui/toolbar-controls.tsx",
+    "packages/module-crm/src/ui/toolbar-controls.tsx",
+    "packages/module-marketing/src/ui/toolbar-controls.tsx",
+    "packages/module-projects/src/ui/toolbar-controls.tsx",
+  ];
+  const files = await Promise.all(relativePaths.map(async (relativePath) => ({
+    relativePath,
+    source: await readFile(path.join(repoRoot, relativePath), "utf8"),
+  })));
+
+  for (const { relativePath, source } of files) {
+    assert.match(source, /<Button\b/, `${relativePath} must use the shared Button primitive`);
+    assert.doesNotMatch(
+      source,
+      /<button\b[^>]*className=[^>]*(?:bg-\[color:var\(--accent\)\]|font-extrabold)/,
+      `${relativePath} must not recreate standard toolbar action styling on a native button`,
+    );
+  }
+});
+
 test("segmented controls expose selection, visible focus, and reduced Framer motion", async () => {
-  const dashboard = await readFile(path.join(appShellSourceRoot, "dashboard/dashboard-client.tsx"), "utf8");
+  const pillTabs = await readFile(path.join(appShellSourceRoot, "components/pill-tabs.tsx"), "utf8");
   const admin = await readFile(path.join(adminUiSourceRoot, "admin-users.tsx"), "utf8");
 
-  for (const source of [dashboard, admin]) {
+  for (const source of [pillTabs, admin]) {
     assert.match(source, /useReducedMotion\(\)/);
     assert.match(source, /aria-pressed=\{(?:active|isActive)\}/);
     assert.match(source, /focus-visible:ring-2/);
@@ -176,6 +218,7 @@ test("reduced motion is static across theme entrances, sheets, modules, and auth
   assert.match(base, /@media \(prefers-reduced-motion: reduce\)[\s\S]*animation-duration:\s*0ms !important/);
   assert.match(base, /@media \(prefers-reduced-motion: reduce\)[\s\S]*animation-iteration-count:\s*1 !important/);
   assert.match(surfaces, /@media \(prefers-reduced-motion: reduce\)[\s\S]*\.skeleton-ghost::after\s*\{\s*display:\s*none/);
+  assert.match(surfaces, /@media \(prefers-reduced-motion: reduce\)[\s\S]*\.card-root[\s\S]*animation:\s*none[\s\S]*opacity:\s*1[\s\S]*transform:\s*none/);
   assert.doesNotMatch(surfaces, /skeleton-breathe/);
   assert.match(sheet, /motion-reduce:animate-none/);
   assert.match(sheet, /motion-reduce:transform-none/);
@@ -183,7 +226,6 @@ test("reduced motion is static across theme entrances, sheets, modules, and auth
   for (const [source, selector] of [
     [adminTokens, String.raw`\.admin-dashboard-reveal`],
     [projectTokens, String.raw`\.dashboard-reveal`],
-    [projectTokens, String.raw`\.project-surface-card`],
   ]) {
     assert.match(source, new RegExp(`@media \\(prefers-reduced-motion: reduce\\)[\\s\\S]*${selector}[\\s\\S]*animation:\\s*none[\\s\\S]*opacity:\\s*1[\\s\\S]*transform:\\s*none`));
   }
@@ -307,7 +349,7 @@ test("package CSS layer guard allows tokens and flags unsafe class recipes", () 
 test("every canonical typography utility used by package UI exists in theme typography", async () => {
   const files = [...await sourcesAt(uiSourceRoot), ...await sourcesAt(appShellSourceRoot), ...await sourcesAt(adminUiSourceRoot), ...await sourcesAt(crmUiSourceRoot), ...await sourcesAt(projectsUiSourceRoot), ...await sourcesAt(marketingUiSourceRoot)];
   const typography = await readFile(typographyPath, "utf8");
-  const canonicalRole = /(?<![-\w])text-(?:heading-[1-4]|title|body-lg|body|meta|label|micro|metric(?:-display|-lg)?)(?![-\w])/g;
+  const canonicalRole = /(?<![-\w])text-(?:heading-[1-4]|title|body-lg|body|meta|label|micro|kpi(?:-lg)?|data(?:-sm)?|metric(?:-display|-lg)?)(?![-\w])/g;
   const providedUtilities = new Set(Array.from(typography.matchAll(/@utility\s+(text-(?!ui-)[a-z0-9-]+)/g), (match) => match[1]));
   const usedUtilities = new Set(files.flatMap(({ source }) => Array.from(source.matchAll(canonicalRole), (match) => match[0])));
   const missing = Array.from(usedUtilities).filter((utility) => !providedUtilities.has(utility)).sort();
@@ -323,6 +365,7 @@ test("package UI does not add new legacy or raw named typography classes", async
       /(?<!--)\bportal-(?:title(?:-sm)?|heading|panel-title|subhead|card-title|body|meta|label|micro|metric(?:-display|-xl)?)\b/g,
       /(?<![-\w])(?:heading-2|paragraph-(?:large|small|mini))(?![-\w])/g,
       /(?<![-\w])text-(?:xs|sm|base|lg|xl|[2-9]xl)(?![-\w])/g,
+      /(?<![-\w])text-metric(?:-display|-lg)?(?![-\w])/g,
     ];
     return patterns.flatMap((pattern) => Array.from(source.matchAll(pattern), (match) => `${path.relative(repoRoot, filePath)}:${source.slice(0, match.index).split("\n").length} ${match[0]}`));
   });

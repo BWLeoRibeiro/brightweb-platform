@@ -1,5 +1,7 @@
 "use client";
 
+import { StyledSelect } from "@brightweblabs/ui";
+
 import { Trash2, Users } from "lucide-react";
 import type { ReactNode } from "react";
 import {
@@ -33,8 +35,6 @@ const defaultColumns: CrmTableColumnConfig[] = [
   { key: "updated" },
 ];
 
-const CRM_TABLE_SURFACE =
-  "rounded-[var(--radius-card)] border border-border-hairline bg-[color:var(--project-surface-primary)] shadow-none";
 const CRM_TABLE_DIVIDERS = "[&_tr]:border-[color:var(--hairline)]";
 // Percentages are table-layout constraints whose sum leaves a fixed 5% selection column.
 const columnWidth: Record<CrmTableColumnKey, string> = {
@@ -66,6 +66,7 @@ export type CrmContactsTableProps = {
   onSelectedIdsChange?: (ids: string[]) => void;
   onParamsChange?: (params: CrmContactsListParams) => void;
   onRowClick?: (contact: CrmContact) => void;
+  onOrganizationClick?: (organizationId: string) => void;
   onBulkStatus?: (contactIds: string[]) => void;
   onBulkDelete?: (contactIds: string[]) => void;
   onQuickStatus?: (contact: CrmContact, status: CrmStageConfig["value"]) => void;
@@ -85,6 +86,7 @@ export function CrmContactsTable({
   onSelectedIdsChange,
   onParamsChange,
   onRowClick,
+  onOrganizationClick,
   onBulkStatus,
   onBulkDelete,
   onQuickStatus,
@@ -110,7 +112,15 @@ export function CrmContactsTable({
           <p className="truncate text-meta leading-tight text-[color:var(--muted-foreground)]">{contact.email ?? contact.phone ?? dictionary.table.noContact}</p>
         </div>
       );
-      case "organization": return contact.organizations?.name ?? dictionary.table.unavailable;
+      case "organization": return contact.organization_id && contact.organizations?.name && onOrganizationClick ? (
+        <button
+          type="button"
+          className="max-w-full truncate text-left text-[color:var(--foreground-accent-link)] underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--ring)]"
+          onClick={(event) => { event.stopPropagation(); onOrganizationClick(contact.organization_id!); }}
+        >
+          {contact.organizations.name}
+        </button>
+      ) : contact.organizations?.name ?? dictionary.table.unavailable;
       case "owner": return owner?.label ?? dictionary.table.unavailable;
       case "status": return stage ? (
         <DropdownMenu>
@@ -133,7 +143,7 @@ export function CrmContactsTable({
   };
 
   return (
-    <SurfaceCard className={`${CRM_TABLE_SURFACE} scroll-mt-28 flex h-[calc(100dvh-var(--crm-table-viewport-offset))] min-h-[var(--crm-table-min-height)] min-w-0 w-full max-w-full flex-col overflow-hidden p-0`}>
+    <SurfaceCard isLight density="none" motion="none" aria-busy={loading} className={`scroll-mt-28 h-[calc(100dvh-var(--crm-table-viewport-offset))] min-h-[var(--crm-table-min-height)] min-w-0 w-full max-w-full overflow-hidden bg-[color:var(--project-surface-primary)] !p-0 shadow-none transition-opacity duration-150 motion-reduce:transition-none ${loading && data.items.length > 0 ? "opacity-60" : ""}`}>
       {showToolbar ? <div className="flex flex-wrap items-center gap-3 border-b border-hairline p-4">
         <SearchField
           value={params.search ?? ""}
@@ -143,27 +153,27 @@ export function CrmContactsTable({
           aria-label={dictionary.table.searchPlaceholder}
           className="max-w-[28rem]"
         />
-        <select
+        <StyledSelect
           value={params.status ?? ""}
           onChange={(event) => updateParams({ status: event.target.value || null, page: 1 })}
           aria-label={dictionary.table.allSegments}
-          className="h-10 rounded-[var(--radius-control)] border border-hairline bg-card px-3 text-meta text-foreground"
+          className="h-10 w-auto min-w-40 rounded-[var(--radius-control)] border border-hairline bg-card px-3 text-body text-foreground"
         >
           <option value="">{dictionary.table.allSegments}</option>
           {resolvedStages.map((stage) => <option key={stage.value} value={stage.value}>{stage.label}</option>)}
-        </select>
-        <select
+        </StyledSelect>
+        <StyledSelect
           value={params.sort ?? "date_desc"}
           onChange={(event) => updateParams({ sort: event.target.value as CrmContactSort, page: 1 })}
           aria-label={dictionary.table.organizeBy}
-          className="h-10 rounded-[var(--radius-control)] border border-hairline bg-card px-3 text-meta text-foreground"
+          className="h-10 w-auto min-w-44 rounded-[var(--radius-control)] border border-hairline bg-card px-3 text-body text-foreground"
         >
           <option value="date_desc">{dictionary.table.sortNewest}</option>
           <option value="name">{dictionary.table.sortName}</option>
           <option value="company">{dictionary.table.sortCompany}</option>
           <option value="status_grouped">{dictionary.table.sortStatusGrouped ?? dictionary.toolbar.status}</option>
           <option value="source_grouped">{dictionary.table.sortSourceGrouped ?? "Origem (agrupado A → Z)"}</option>
-        </select>
+        </StyledSelect>
         {selectedIds.length > 0 ? (
           <div className="ml-auto flex items-center gap-3 rounded-[var(--radius-card)] border border-hairline bg-muted px-3 py-2">
             <span className="text-meta font-semibold text-foreground">{dictionary.table.selectedCount(selectedIds.length)}</span>
@@ -179,7 +189,7 @@ export function CrmContactsTable({
 
       <Table containerClassName="overflow-x-hidden" className={`${data.total === 0 ? "h-full table-fixed" : "table-fixed"} ${CRM_TABLE_DIVIDERS}`}>
         <TableHeader>
-          <TableRow className="border-b border-[color:var(--hairline-strong)] bg-[color:var(--elevate-2)] hover:bg-[color:var(--elevate-2)] [&_th]:align-middle [&_th]:text-micro [&_th]:text-[color:var(--foreground)]">
+          <TableRow className="border-b border-[color:var(--hairline-strong)] bg-[color:var(--elevate-2)] hover:bg-[color:var(--elevate-2)] [&_th]:align-middle [&_th]:text-[color:var(--foreground)]">
             <TableHead className="h-[var(--table-header-height)] w-[5%] px-[var(--table-cell-padding-x)]">
               <Checkbox
                 checked={allSelected}
@@ -212,7 +222,7 @@ export function CrmContactsTable({
                     className="h-3.5 w-3.5 rounded border border-border-strong"
                   />
                 </TableCell>
-                {visibleColumns.map((column) => <TableCell key={column.key} className={`max-w-0 px-[var(--table-cell-padding-x)] py-[var(--table-cell-padding-y)] text-body text-[color:var(--muted-foreground)] ${columnVisibility[column.key] ?? ""} ${column.key === "organization" || column.key === "owner" ? "truncate" : ""}`}>{renderCell(column, contact)}</TableCell>)}
+                {visibleColumns.map((column) => <TableCell key={column.key} className={`max-w-0 px-[var(--table-cell-padding-x)] py-[var(--table-cell-padding-y)] ${column.key === "updated" ? "text-data-sm font-normal text-muted-foreground" : "text-body text-[color:var(--muted-foreground)]"} ${columnVisibility[column.key] ?? ""} ${column.key === "organization" || column.key === "owner" ? "truncate" : ""}`}>{renderCell(column, contact)}</TableCell>)}
                 {renderRowActions ? <TableCell className="px-4 py-2" onClick={(event) => event.stopPropagation()}>{renderRowActions(contact)}</TableCell> : null}
               </TableRow>
             );

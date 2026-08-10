@@ -18,6 +18,7 @@ import {
   Users,
 } from "lucide-react";
 import { requireProjectReadAccess } from "@brightweblabs/core-auth/server";
+import { Card } from "@brightweblabs/ui";
 import type { MilestoneStatus, ProjectLinkKind } from "../../contracts";
 import {
   getClientProjectHealth,
@@ -64,19 +65,21 @@ function getInitials(label: string): string {
 
 function ErrorPage({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <section className="client-projects-panel panel preview-glass-card">
-      <div className="panel-inner space-y-4">
-        <Link
-          href="/account/projetos"
-          className="inline-flex items-center gap-2 text-body font-semibold text-primary hover:underline"
-        >
-          <ArrowLeft className="size-4" />
-          {clientProjectsDictionary.detail.back}
-        </Link>
-        <h1 className="text-heading-2 font-semibold">{title}</h1>
-        {children}
-      </div>
-    </section>
+    <Card asChild variant="elevated">
+      <section className="client-projects-panel panel preview-glass-card">
+        <div className="panel-inner space-y-4">
+          <Link
+            href="/account/projetos"
+            className="inline-flex items-center gap-2 text-body font-semibold text-primary hover:underline"
+          >
+            <ArrowLeft className="size-4" />
+            {clientProjectsDictionary.detail.back}
+          </Link>
+          <h1 className="text-heading-2 font-semibold">{title}</h1>
+          {children}
+        </div>
+      </section>
+    </Card>
   );
 }
 
@@ -158,11 +161,12 @@ export async function ClientProjectDetailPage({
   });
 
   return (
-    <section
-      className="client-projects-panel panel preview-glass-card"
-      style={{ borderTopColor: healthVar, borderTopWidth: "3px" }}
-    >
-      <div className="panel-inner space-y-6">
+    <Card asChild variant="elevated">
+      <section
+        className="client-projects-panel panel preview-glass-card"
+        style={{ borderTopColor: healthVar, borderTopWidth: "3px" }}
+      >
+        <div className="panel-inner space-y-6">
         <Link
           href="/account/projetos"
           className="inline-flex items-center gap-1.5 text-body font-semibold text-muted-foreground transition-colors hover:text-foreground motion-reduce:transition-none"
@@ -189,7 +193,7 @@ export async function ClientProjectDetailPage({
 
           <div>
             {project.code ? (
-              <p className="mb-0.5 select-all font-mono text-label text-muted-foreground/60">
+              <p className="text-data mb-0.5 select-all text-micro tracking-normal text-muted-foreground/60">
                 {project.code}
               </p>
             ) : null}
@@ -207,6 +211,7 @@ export async function ClientProjectDetailPage({
             icon={<CalendarDays className="size-4" />}
             label={dictionary.projectDeadline}
             value={formatClientProjectDate(project.targetDate)}
+            valueClassName="text-data"
             accent={overdue ? "var(--project-health-off-track)" : undefined}
             note={overdue ? clientProjectsDictionary.common.delayed : undefined}
           />
@@ -219,6 +224,7 @@ export async function ClientProjectDetailPage({
                 ? `${project.milestoneStats.achieved} / ${project.milestoneStats.total}`
                 : "—"
             }
+            valueClassName="text-data"
             note={
               project.milestoneStats.delayed > 0
                 ? dictionary.delayedMilestones(project.milestoneStats.delayed)
@@ -247,6 +253,7 @@ export async function ClientProjectDetailPage({
                 ? formatClientProjectDate(data.nextMilestone.targetDate)
                 : undefined
             }
+            noteClassName={data.nextMilestone?.targetDate ? "text-data" : undefined}
             accent={
               data.nextMilestone
               && isClientProjectDateOverdue(data.nextMilestone.targetDate)
@@ -371,7 +378,7 @@ export async function ClientProjectDetailPage({
                       <p className="truncate text-body font-semibold leading-none">
                         {member.label}
                       </p>
-                      <p className="mt-0.5 truncate text-label text-muted-foreground">
+                      <p className="mt-0.5 truncate text-meta text-muted-foreground">
                         {getMemberDisplayLabel(member.role, colorRole)}
                         {member.email ? ` · ${member.email}` : ""}
                       </p>
@@ -399,14 +406,15 @@ export async function ClientProjectDetailPage({
             </ul>
           </section>
         ) : null}
-      </div>
-    </section>
+        </div>
+      </section>
+    </Card>
   );
 }
 
 function SectionHeading({ icon, children }: { icon: ReactNode; children: ReactNode }) {
   return (
-    <h2 className="flex items-center gap-2 text-body font-semibold uppercase tracking-wide text-muted-foreground">
+    <h2 className="flex items-center gap-2 text-label font-semibold text-muted-foreground">
       {icon}
       {children}
     </h2>
@@ -420,6 +428,8 @@ function StatCard({
   note,
   accent,
   progress,
+  valueClassName = "",
+  noteClassName = "",
 }: {
   icon: ReactNode;
   label: string;
@@ -427,15 +437,17 @@ function StatCard({
   note?: string;
   accent?: string;
   progress?: { pct: number; color: string };
+  valueClassName?: string;
+  noteClassName?: string;
 }) {
   return (
-    <div className="space-y-1.5 rounded-xl border border-border/60 bg-background/60 px-3.5 py-3">
+    <Card variant="light" density="compact" className="space-y-1.5 bg-background/60 px-3.5 py-3 shadow-none">
       <div className="flex items-center gap-1.5 text-meta text-muted-foreground">
         <span style={accent ? { color: accent } : undefined}>{icon}</span>
         {label}
       </div>
       <p
-        className="text-body-lg font-semibold leading-none tabular-nums"
+        className={`text-body-lg font-semibold leading-none ${valueClassName}`}
         style={accent ? { color: accent } : undefined}
       >
         {value}
@@ -450,7 +462,7 @@ function StatCard({
       ) : null}
       {note ? (
         <p
-          className="text-micro leading-none"
+          className={`text-micro leading-none ${noteClassName}`}
           style={
             accent
               ? { color: accent }
@@ -460,6 +472,6 @@ function StatCard({
           {note}
         </p>
       ) : null}
-    </div>
+    </Card>
   );
 }

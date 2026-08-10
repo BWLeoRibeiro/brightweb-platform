@@ -22,7 +22,6 @@ import { createAuthUiClient } from "@brightweblabs/core-auth/ui";
 import "@brightweblabs/app-shell/dashboard.css";
 import "@brightweblabs/module-crm/tokens.css";
 import "@brightweblabs/module-projects/tokens.css";
-import { Toaster } from "@brightweblabs/ui";
 
 import { getModuleToolbarControls } from "../../config/module-toolbar-controls";
 import { getStarterShellConfig } from "../../config/shell";
@@ -39,20 +38,23 @@ export type ShellViewer = {
 const authClient = createAuthUiClient();
 export function PreviewShellLayoutClient({
   children,
+  pathnameOverride,
   viewer,
-}: Readonly<{ children: ReactNode; viewer: ShellViewer }>) {
+}: Readonly<{ children: ReactNode; pathnameOverride?: string; viewer: ShellViewer }>) {
   return (
     <ShellActionsProvider>
-      <PreviewShellLayoutInner viewer={viewer}>{children}</PreviewShellLayoutInner>
+      <PreviewShellLayoutInner pathnameOverride={pathnameOverride} viewer={viewer}>{children}</PreviewShellLayoutInner>
     </ShellActionsProvider>
   );
 }
 
 function PreviewShellLayoutInner({
   children,
+  pathnameOverride,
   viewer,
-}: Readonly<{ children: ReactNode; viewer: ShellViewer }>) {
-  const pathname = usePathname();
+}: Readonly<{ children: ReactNode; pathnameOverride?: string; viewer: ShellViewer }>) {
+  const livePathname = usePathname();
+  const pathname = pathnameOverride ?? livePathname;
   const router = useRouter();
   const { shellPreview: config, toolbarRoutes, toolbarActions } = useMemo(
     () => getStarterShellConfig(),
@@ -73,7 +75,6 @@ function PreviewShellLayoutInner({
   } = useShellNavState({ pathname, groups: shellGroups });
   const notifications = useShellNotifications({ enabled: viewer.isStaff });
   const isAdminSurface = pathname === "/admin" || pathname.startsWith("/admin/");
-  const usesToasts = isAdminSurface || pathname === "/account";
   const shellNavItems = [
     ...config.primaryNav,
     ...(config.adminNavItem ? [config.adminNavItem] : []),
@@ -176,7 +177,6 @@ function PreviewShellLayoutInner({
     >
       <ShellRealtimeBridge viewer={viewer} />
       {children}
-      {usesToasts ? <Toaster /> : null}
     </AppShellFrame>
   );
 }

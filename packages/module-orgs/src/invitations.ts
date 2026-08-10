@@ -55,7 +55,7 @@ export type OrganizationMemberView = {
 
 export type EnsureCrmContact = (
   profileId: string,
-  options: { source: string; serviceClient: SupabaseClient },
+  options: { source: string; organizationId?: string | null; serviceClient: SupabaseClient },
 ) => Promise<{ success: boolean; contactId?: string; error?: string }>;
 
 export async function logOrganizationActivity(
@@ -296,12 +296,14 @@ export async function inviteOrganizationMembers(
   }
 
   const pendingRows: Array<Record<string, unknown>> = [];
+  const resolvedProfilesByEmail = new Map<string, string>();
   let directAssignments = 0;
   let updatedExistingMembers = 0;
   let unchangedExistingMembers = 0;
   for (const invite of normalized) {
     const member = memberByEmail.get(invite.email);
     if (member) {
+      resolvedProfilesByEmail.set(invite.email, member.profileId);
       if (member.role === invite.role) unchangedExistingMembers += 1;
       else {
         const { error } = await supabase.from("organization_members").update({ role: invite.role })
@@ -319,6 +321,7 @@ export async function inviteOrganizationMembers(
         role: invite.role,
       }, { onConflict: "organization_id,profile_id" });
       if (error) throw new Error(error.message);
+      resolvedProfilesByEmail.set(invite.email, profileId);
       directAssignments += 1;
       continue;
     }
@@ -339,6 +342,17 @@ export async function inviteOrganizationMembers(
   if (directAssignments > 0 || updatedExistingMembers > 0) {
     await syncOrganizationPrimaryContactFromAdmins(supabase, organizationId);
   }
+  if (resolvedProfilesByEmail.size > 0) {
+    const acceptedAt = new Date().toISOString();
+    await Promise.all(Array.from(resolvedProfilesByEmail, async ([email, profileId]) => {
+      const { error } = await supabase.from("organization_invitations").update({
+        status: "accepted",
+        accepted_at: acceptedAt,
+        accepted_by_profile_id: profileId,
+      }).eq("organization_id", organizationId).eq("invited_email", email).eq("status", "pending");
+      if (error) throw new Error(error.message);
+    }));
+  }
   if (pendingRows.length > 0) {
     const { error } = await supabase.from("organization_invitations").upsert(pendingRows, {
       onConflict: "organization_id,invited_email",
@@ -347,7 +361,7 @@ export async function inviteOrganizationMembers(
     if (error) throw new Error(error.message);
     const { data: inserted, error: selectError } = await supabase
       .from("organization_invitations")
-      .select("id, invited_email, role")
+      .select("id, invited_email, role, expires_at")
       .eq("organization_id", organizationId)
       .in("invited_email", pendingRows.map((row) => String(row.invited_email)))
       .eq("status", "pending");
@@ -359,6 +373,7 @@ export async function inviteOrganizationMembers(
         organizationName,
         invitedEmail: String(invitation.invited_email),
         role: invitation.role === "admin" ? "admin" : "member",
+        expiresAt: typeof invitation.expires_at === "string" ? invitation.expires_at : undefined,
       }),
     })));
     const failedIds = deliveries.filter((result) => !result.delivered).map((result) => result.id);
@@ -390,10 +405,12 @@ export async function revokeOrganizationInvitation(
   organizationId: string,
   invitationId: string,
 ): Promise<void> {
-  const { error } = await supabase.from("organization_invitations")
+  const { data, error } = await supabase.from("organization_invitations")
     .update({ status: "revoked", revoked_at: new Date().toISOString() })
-    .eq("id", invitationId).eq("organization_id", organizationId).eq("status", "pending");
+    .eq("id", invitationId).eq("organization_id", organizationId).eq("status", "pending")
+    .select("id");
   if (error) throw new Error(error.message);
+  if (!(data ?? []).some((row) => row.id === invitationId)) throw new Error("Convite pendente não encontrado.");
 }
 
 export async function acceptOrganizationInvitation(
@@ -424,6 +441,7 @@ export async function acceptOrganizationInvitation(
 
   const acceptedContact = await params.ensureCrmContactForProfile(params.profileId, {
     source: "organization_invitation_accept",
+    organizationId: invitation.organization_id,
     serviceClient: supabase,
   });
   if (!acceptedContact.success) {

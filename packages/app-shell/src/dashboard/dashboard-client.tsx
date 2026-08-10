@@ -1,8 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { createContext, useContext, useEffect, useMemo, useState, type CSSProperties } from "react";
-import { motion, useReducedMotion } from "motion/react";
+import { createContext, useContext, useEffect, useMemo, useRef, useState, type CSSProperties, type RefObject } from "react";
 import {
   AlertTriangle,
   ArrowUpRight,
@@ -12,27 +11,29 @@ import {
   ChevronDown,
   CircleDot,
   Flag,
+  Plus,
   Users,
 } from "lucide-react";
 
-import { Skeleton } from "@brightweblabs/ui";
-import type { DashboardAssignedTask, DashboardCrmData, DashboardCrmRecentContact, DashboardDataClient, DashboardInitialData, DashboardProjectComponents, DashboardProjectItem, DashboardProjectsData, DashboardSection, DashboardSurfaceContribution, DashboardTasksData } from "./types";
+import { Card, Skeleton } from "@brightweblabs/ui";
+import type { DashboardAssignedTask, DashboardCrmData, DashboardCrmRecentContact, DashboardDataClient, DashboardInitialData, DashboardProjectAttentionItem, DashboardProjectComponents, DashboardProjectItem, DashboardProjectMilestone, DashboardProjectsData, DashboardSection, DashboardSurfaceContribution, DashboardTaskAttentionState, DashboardTasksData } from "./types";
 import { useDashboardData, type DashboardState } from "./use-dashboard-data";
 import { defaultDashboardDictionary, type DashboardDictionary } from "./dictionary";
-import { DashboardActionLink as PortalActionLink, DashboardSectionHeading as PortalSectionHeading, dashboardCardTitleClassName as CARD_TITLE, dashboardLabelClassName as LABEL, dashboardMonoTabularClassName as MONO } from "./primitives";
+import { DashboardActionLink as PortalActionLink, DashboardCountPill, DashboardEmptyState, DashboardSectionHeading as PortalSectionHeading, QuickCreateAction, dashboardCardTitleClassName as CARD_TITLE, dashboardLabelClassName as LABEL, dashboardMonoTabularClassName as MONO } from "./primitives";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@brightweblabs/ui";
 import { cn } from "../lib/utils";
+import { PillTabs } from "../components/pill-tabs";
 
 
 const ProjectComponentsContext = createContext<DashboardProjectComponents | null>(null);
 const DashboardDictionaryContext = createContext<DashboardDictionary>(defaultDashboardDictionary);
 function useProjectComponents() { return useContext(ProjectComponentsContext); }
 function useDashboardDictionary() { return useContext(DashboardDictionaryContext); }
-function ProjectSummaryCard({ project }: { project: DashboardProjectItem }) { const value = useProjectComponents(); return value ? <value.ProjectSummaryCard project={project} /> : null; }
-function ProjectSummaryCardSkeleton() { const value = useProjectComponents(); return value ? <value.ProjectSummaryCardSkeleton /> : null; }
-function TaskDueMeta(props: { dueDate: string | null; isOverdue?: boolean; className?: string }) { const value = useProjectComponents(); return value ? <value.TaskDueMeta {...props} /> : null; }
-function TaskPriorityTag({ task }: { task: Pick<DashboardAssignedTask, "status" | "priority"> }) { const value = useProjectComponents(); return value ? <value.TaskPriorityTag task={task} /> : null; }
-function TaskStatusTag({ task }: { task: Pick<DashboardAssignedTask, "status" | "blockedReason"> }) { const value = useProjectComponents(); return value ? <value.TaskStatusTag task={task} /> : null; }
+function useProjectBaseHref() { return useProjectComponents()?.projectBaseHref ?? "/projects"; }
+function useTasksBaseHref() { const value = useProjectComponents(); return value?.tasksBaseHref ?? value?.projectBaseHref ?? "/projects"; }
+function projectHref(baseHref: string, projectId?: string) { return projectId ? `${baseHref}/${projectId}` : baseHref; }
+function ProjectAttentionCard({ project, rank }: { project: DashboardProjectAttentionItem; rank: number }) { const value = useProjectComponents(); return value?.ProjectAttentionCard ? <value.ProjectAttentionCard project={project} rank={rank} /> : value ? <value.ProjectSummaryCard project={project} /> : null; }
+function DashboardTaskListRow(props: { task: DashboardAssignedTask; href: string; attentionState?: DashboardTaskAttentionState; attentionLabel?: string }) { const value = useProjectComponents(); return value ? <value.DashboardTaskRow {...props} /> : null; }
 
 /* ──────────────────────────────────────────────────────────────────
    V6 — real data. Welcome → hero 4-card grid →
@@ -45,8 +46,6 @@ function TaskStatusTag({ task }: { task: Pick<DashboardAssignedTask, "status" | 
 type TabKey = "overview" | "projects" | "clients" | "tasks";
 
 /* ─── Shared tokens ──────────────────────────────────────────────── */
-
-const SURFACE = "dashboard-surface";
 
 type VisualTone = "on" | "watch" | "risk" | "accent";
 
@@ -66,7 +65,8 @@ function getGreeting(h: number, dictionary: DashboardDictionary) {
 }
 
 function formatFullDate(d: Date, dictionary: DashboardDictionary) {
-  const dow = new Intl.DateTimeFormat("pt-PT", { weekday: "long" }).format(d);
+  const weekday = new Intl.DateTimeFormat("pt-PT", { weekday: "long" }).format(d);
+  const dow = weekday.charAt(0).toLocaleUpperCase("pt-PT") + weekday.slice(1);
   const month = new Intl.DateTimeFormat("pt-PT", { month: "long" }).format(d);
   return `${dow}, ${d.getDate()} ${dictionary.date.joiner} ${month}`;
 }
@@ -78,10 +78,17 @@ function formatShortDate(iso: string | null | undefined) {
   return new Intl.DateTimeFormat("pt-PT", { day: "2-digit", month: "short" }).format(d);
 }
 
+function formatDayMonth(iso: string | null | undefined) {
+  if (!iso) return "–";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "–";
+  return new Intl.DateTimeFormat("pt-PT", { day: "2-digit", month: "2-digit", timeZone: "UTC" }).format(d);
+}
+
 function formatWeekday(iso: string) {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "";
-  return new Intl.DateTimeFormat("pt-PT", { weekday: "short" }).format(d).replace(".", "").toUpperCase();
+  return new Intl.DateTimeFormat("pt-PT", { weekday: "short" }).format(d).replace(".", "");
 }
 
 function initialsOf(name: string | null | undefined, fallback = "?") {
@@ -90,10 +97,6 @@ function initialsOf(name: string | null | undefined, fallback = "?") {
   if (parts.length === 0) return fallback;
   if (parts.length === 1) return parts[0]!.slice(0, 2).toUpperCase();
   return (parts[0]![0]! + parts[parts.length - 1]![0]!).toUpperCase();
-}
-
-function codeOf(p: Pick<DashboardProjectItem, "id" | "code">) {
-  return p.code ?? p.id.slice(0, 8).toUpperCase();
 }
 
 function healthToTone(h: DashboardProjectItem["health"]): VisualTone {
@@ -110,15 +113,65 @@ function isDueThisWeek(iso: string | null) {
   return t >= now && t <= now + 7 * 24 * 60 * 60 * 1000;
 }
 
+type UpcomingMilestoneDay = {
+  dateKey: string;
+  weekday: string;
+  fullDate: string;
+  isToday: boolean;
+  count: number;
+  milestones: DashboardProjectMilestone[];
+};
+
+function calendarDateKey(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+export function buildUpcomingMilestoneDays(
+  milestones: DashboardProjectMilestone[],
+  now = new Date(),
+): UpcomingMilestoneDay[] {
+  const milestonesByDate = new Map<string, DashboardProjectMilestone[]>();
+  for (const milestone of milestones) {
+    const dateKey = /^\d{4}-\d{2}-\d{2}/.exec(milestone.targetDate)?.[0];
+    if (!dateKey) continue;
+    const items = milestonesByDate.get(dateKey);
+    if (items) items.push(milestone);
+    else milestonesByDate.set(dateKey, [milestone]);
+  }
+
+  const start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  return Array.from({ length: 7 }, (_, index) => {
+    const date = new Date(start);
+    date.setDate(start.getDate() + index);
+    const dateKey = calendarDateKey(date);
+    const milestonesForDay = milestonesByDate.get(dateKey) ?? [];
+    const formattedDate = new Intl.DateTimeFormat("pt-PT", { weekday: "long", day: "numeric", month: "long" }).format(date);
+    return {
+      dateKey,
+      weekday: new Intl.DateTimeFormat("pt-PT", { weekday: "short" }).format(date).replace(".", "").slice(0, 3),
+      fullDate: formattedDate.charAt(0).toLocaleUpperCase("pt-PT") + formattedDate.slice(1),
+      isToday: index === 0,
+      count: milestonesForDay.length,
+      milestones: milestonesForDay,
+    };
+  });
+}
+
 /* ─── Welcome + Tabs ─────────────────────────────────────────────── */
 
-/* Hero metrics — "featured + compact" (V5): one large primary number plus two
-   compact stat rows. Surfaces sit on --project-hero-surface-raised. */
-function HeroMetricMini({ value, label, tone }: { value: number; label: string; tone: "risk" | "on" }) {
-  const dot = tone === "risk" ? "var(--project-risk-overdue)" : "var(--project-state-active)";
+function HeroMetricMini({ value, label, tone }: { value: number; label: string; tone: "risk" | "on" | "neutral" }) {
+  const dot = tone === "risk"
+    ? "var(--project-risk-overdue)"
+    : tone === "on"
+      ? "var(--project-state-active)"
+      : "var(--project-hero-subtle)";
   return (
-    <div
-      className="flex items-center justify-between gap-4 rounded-[var(--radius-card)] border px-4 py-2.5"
+    <Card
+      density="compact"
+      className="flex-row items-center justify-between gap-4 px-4 py-2.5 shadow-none"
       style={{ borderColor: "var(--project-hero-border)", background: "var(--project-hero-surface-raised)" }}
     >
       <span className="inline-flex items-center gap-2 text-meta" style={{ color: "var(--project-hero-muted)" }}>
@@ -126,35 +179,38 @@ function HeroMetricMini({ value, label, tone }: { value: number; label: string; 
         {label}
       </span>
       <span
-        className="font-display text-heading-3 text-[length:var(--text-ui-dashboard-card-title)] font-extrabold leading-none tracking-[var(--type-tracking-n030)]"
+        className="text-kpi text-[length:var(--text-ui-dashboard-card-title)] font-extrabold leading-none tracking-[var(--type-tracking-n030)]"
         style={{ color: "var(--project-hero-foreground)" }}
       >
         {value}
       </span>
-    </div>
+    </Card>
   );
 }
 
 function HeroMetrics({ activeProjects, overdueProjects, newLeads }: { activeProjects: number; overdueProjects: number; newLeads: number }) {
   const dictionary = useDashboardDictionary();
   return (
-    <div className="flex shrink-0 items-stretch gap-3">
-      <div
-        className="flex min-w-[150px] flex-col justify-center rounded-[var(--radius-card)] border px-5 py-4"
+    <div className="grid w-full min-w-0 grid-cols-1 gap-3 sm:grid-cols-2 lg:w-auto lg:min-w-[330px]">
+      <Card
+        density="default"
+        className="min-w-[150px] justify-center px-5 py-4 shadow-none"
         style={{ borderColor: "var(--project-hero-border)", background: "var(--project-hero-surface-raised)" }}
       >
         <span
-          className="font-display text-metric-lg text-[length:var(--text-ui-dashboard-metric)] font-black leading-[var(--type-leading-090)] tracking-[var(--type-tracking-n050)]"
-          style={{ color: "var(--accent)" }}
+          className="text-kpi-lg text-[length:var(--text-ui-dashboard-metric)] font-black leading-[var(--type-leading-090)] tracking-[var(--type-tracking-n050)]"
+          style={{ color: "var(--project-hero-foreground)" }}
         >
           {activeProjects}
         </span>
         <span className="mt-1.5 text-meta" style={{ color: "var(--project-hero-muted)" }}>
-          {dictionary.welcome.activeProjects}
+          {activeProjects === 1
+            ? (dictionary.welcome.activeProjectOne ?? dictionary.welcome.activeProjects.replace(/^projetos ativos$/, "projeto ativo"))
+            : (dictionary.welcome.activeProjectMany ?? dictionary.welcome.activeProjects)}
         </span>
-      </div>
+      </Card>
       <div className="flex flex-col justify-between gap-3">
-        <HeroMetricMini value={overdueProjects} label={dictionary.welcome.overdueProjects} tone="risk" />
+        <HeroMetricMini value={overdueProjects} label={dictionary.welcome.overdueProjects} tone={overdueProjects > 0 ? "risk" : "neutral"} />
         <HeroMetricMini value={newLeads} label={dictionary.welcome.newLeads} tone="on" />
       </div>
     </div>
@@ -164,6 +220,7 @@ function HeroMetrics({ activeProjects, overdueProjects, newLeads }: { activeProj
 function WelcomeHeader({
   name,
   urgentCount,
+  unownedProjects,
   errors,
   activeProjects,
   overdueProjects,
@@ -171,6 +228,7 @@ function WelcomeHeader({
 }: {
   name: string;
   urgentCount: number;
+  unownedProjects: number;
   errors: string[];
   activeProjects: number;
   overdueProjects: number;
@@ -181,6 +239,7 @@ function WelcomeHeader({
   const greeting = now ? getGreeting(now.getHours(), dictionary) : dictionary.greeting.fallback;
   const dateLabel = now ? formatFullDate(now, dictionary) : dictionary.greeting.loadingDate;
   const time = now ? now.toLocaleTimeString("pt-PT", { hour: "2-digit", minute: "2-digit" }) : "--:--";
+  const allAttentionIsMissingOwners = unownedProjects > 0 && urgentCount === unownedProjects;
 
   useEffect(() => {
     const update = () => setNow(new Date());
@@ -191,7 +250,6 @@ function WelcomeHeader({
 
   return (
     <header className="brand-panel relative overflow-hidden rounded-[var(--radius-panel)] p-6 text-[color:var(--project-hero-foreground)] md:p-8">
-      {/* brand glow */}
       <div
         aria-hidden
         className="pointer-events-none absolute -right-24 -top-28 h-80 w-80 rounded-full blur-3xl opacity-100 dark:opacity-40"
@@ -206,16 +264,16 @@ function WelcomeHeader({
       <div className="relative flex flex-col gap-7 lg:flex-row lg:items-end lg:justify-between">
         <div className="min-w-0 lg:flex-1">
           <p
-            className="inline-flex items-center gap-2 text-label font-semibold uppercase tracking-[var(--type-tracking-160)]"
+            className="inline-flex items-center gap-2 text-meta font-semibold"
             style={{ color: "var(--project-hero-muted)" }}
           >
             <CalendarDays className="h-3.5 w-3.5" style={{ color: "var(--accent)" }} />
-            <span className="capitalize">{dateLabel}</span>
+            <span className="text-data">{dateLabel}</span>
             <span className="opacity-40">·</span>
-            <span>{time}</span>
+            <span className="text-data">{time}</span>
           </p>
 
-          <h1 className="font-display mt-4 text-heading-1 text-[length:var(--text-ui-dashboard-title)] font-extrabold leading-[var(--type-leading-102)] tracking-[var(--type-tracking-n035)] md:text-heading-1 text-[length:var(--text-ui-dashboard-title-lg)]">
+          <h1 className="font-display mt-4 text-heading-1 text-[length:var(--text-ui-dashboard-title)] font-extrabold leading-[var(--type-leading-102)] tracking-[var(--type-tracking-n035)] md:text-[length:var(--text-ui-dashboard-title-lg)]">
             {greeting}
             {name ? (
               <>
@@ -227,8 +285,15 @@ function WelcomeHeader({
             .
           </h1>
 
-          <p className="mt-3 max-w-[32rem] text-title" style={{ color: "var(--project-hero-muted)" }}>
-            {urgentCount > 0 ? (
+          <p className="mt-3 max-w-[32rem] text-body-lg" style={{ color: "var(--project-hero-muted)" }}>
+            {allAttentionIsMissingOwners ? (
+              <>
+                <span className="font-semibold" style={{ color: "var(--project-hero-foreground)" }}>
+                  {unownedProjects} {unownedProjects === 1 ? (dictionary.welcome.projectOne ?? "projeto") : (dictionary.welcome.projectMany ?? "projetos")}
+                </span>{" "}
+                {unownedProjects === 1 ? (dictionary.welcome.needsOwnerOne ?? "precisa de responsável.") : (dictionary.welcome.needsOwnerMany ?? "precisam de responsável.")}
+              </>
+            ) : urgentCount > 0 ? (
               <>
                 <span className="font-semibold" style={{ color: "var(--project-hero-foreground)" }}>
                   {urgentCount} {urgentCount === 1 ? dictionary.welcome.urgentOne : dictionary.welcome.urgentMany}
@@ -245,7 +310,7 @@ function WelcomeHeader({
               {errors.map((error) => (
                 <span
                   key={error}
-                  className="dashboard-error inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-label font-semibold"
+                  className="dashboard-error inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-meta font-semibold leading-snug"
                 >
                   <AlertTriangle className="h-3 w-3" />
                   {error}
@@ -255,7 +320,6 @@ function WelcomeHeader({
           ) : null}
         </div>
 
-        {/* Hero stat strip */}
         <HeroMetrics activeProjects={activeProjects} overdueProjects={overdueProjects} newLeads={newLeads} />
       </div>
     </header>
@@ -264,8 +328,6 @@ function WelcomeHeader({
 
 function TabsRow({ value, onChange, sections }: { value: TabKey; onChange: (v: TabKey) => void; sections: DashboardSection[] }) {
   const dictionary = useDashboardDictionary();
-  const prefersReducedMotion = useReducedMotion();
-  const [hovered, setHovered] = useState<TabKey | null>(null);
   const tabs: { key: TabKey; label: string }[] = [
     { key: "overview", label: dictionary.tabs.overview },
     ...(sections.includes("projects") ? [{ key: "projects" as const, label: dictionary.tabs.projects }] : []),
@@ -273,106 +335,47 @@ function TabsRow({ value, onChange, sections }: { value: TabKey; onChange: (v: T
     ...(sections.includes("tasks") ? [{ key: "tasks" as const, label: dictionary.tabs.tasks }] : []),
   ];
 
-  return (
-    <div
-      className="inline-flex items-center gap-1 rounded-full border border-[color:var(--border)] bg-[color:var(--card)] p-1"
-      onMouseLeave={() => setHovered(null)}
-    >
-      {tabs.map((t) => {
-        const active = t.key === value;
-        const isHovered = hovered === t.key && !active;
-        return (
-          <motion.button
-            key={t.key}
-            type="button"
-            onClick={() => onChange(t.key)}
-            onMouseEnter={() => setHovered(t.key)}
-            onFocus={() => setHovered(t.key)}
-            whileTap={prefersReducedMotion ? undefined : { scale: 0.95 }}
-            transition={prefersReducedMotion ? { duration: 0 } : { type: "spring", stiffness: 500, damping: 32 }}
-            aria-pressed={active}
-            className="relative rounded-full px-4 py-1.5 text-body text-[length:var(--text-ui-action)] font-semibold outline-none transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-[color:var(--ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--background)] motion-reduce:transition-none"
-            style={{
-              color: active
-                ? "var(--accent-foreground)"
-                : isHovered
-                  ? "var(--foreground)"
-                  : "var(--muted-foreground)",
-            }}
-          >
-            {isHovered && (
-              <motion.span
-                layoutId={prefersReducedMotion ? undefined : "dashboard-tab-hover"}
-                aria-hidden
-                className="absolute inset-0 rounded-full"
-                style={{ background: "var(--dashboard-tab-hover)" }}
-                transition={prefersReducedMotion ? { duration: 0 } : { type: "spring", stiffness: 520, damping: 38 }}
-              />
-            )}
-            {active && (
-              <motion.span
-                layoutId={prefersReducedMotion ? undefined : "dashboard-tab-active"}
-                aria-hidden
-                className="absolute inset-0 rounded-full shadow-[var(--dashboard-tab-shadow)]"
-                style={{ background: "var(--accent)" }}
-                transition={prefersReducedMotion ? { duration: 0 } : { type: "spring", stiffness: 420, damping: 34 }}
-              />
-            )}
-            <span className="relative z-10">{t.label}</span>
-          </motion.button>
-        );
-      })}
-    </div>
-  );
+  return <PillTabs ariaLabel="Dashboard" items={tabs.map((tab) => ({ value: tab.key, label: tab.label }))} value={value} onValueChange={onChange} />;
 }
 
 /* ─── Hero cards ─────────────────────────────────────────────────── */
 
 type KpiBreakdownItem = { label: string; tone: VisualTone; value: number };
 
-/* Proportion bar (KPI variation F): a segmented bar visualizing the relative
-   mix of the breakdown values, plus a two-column legend. Empty/zero values
-   leave a flat track — a natural empty state. */
 function KpiBreakdownBar({ items }: { items: KpiBreakdownItem[] }) {
-  const total = items.reduce((sum, i) => sum + Math.max(0, i.value), 0);
+  const total = items.reduce((sum, item) => sum + Math.max(0, item.value), 0);
 
   return (
     <div className="mt-5">
       <TooltipProvider delayDuration={80}>
-        <div
-          className="flex h-2 overflow-hidden rounded-full"
-          style={{ background: "var(--dashboard-breakdown-track)" }}
-        >
-          {total > 0 &&
-            items.map((i) =>
-              i.value > 0 ? (
-                <Tooltip key={i.label}>
-                  <TooltipTrigger asChild>
-                    <span
-                      className="h-full cursor-default transition-[filter] duration-150 first:rounded-l-full last:rounded-r-full hover:brightness-110"
-                      style={{ width: `${(i.value / total) * 100}%`, background: TONE_COLOR[i.tone] }}
-                    />
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <span className="flex items-center gap-2">
-                      <span className="h-2 w-2 rounded-[2px]" style={{ background: TONE_COLOR[i.tone] }} />
-                      <span className="capitalize">{i.label}</span>
-                      <span className="font-bold tabular-nums">{i.value}</span>
-                    </span>
-                  </TooltipContent>
-                </Tooltip>
-              ) : null,
-            )}
+        <div className="flex h-2 overflow-hidden rounded-full" style={{ background: "var(--dashboard-breakdown-track)" }}>
+          {total > 0 && items.map((item) => item.value > 0 ? (
+            <Tooltip key={item.label}>
+              <TooltipTrigger asChild>
+                <span
+                  className="h-full cursor-default transition-[filter] duration-150 first:rounded-l-full last:rounded-r-full hover:brightness-110"
+                  style={{ width: `${(item.value / total) * 100}%`, background: TONE_COLOR[item.tone] }}
+                />
+              </TooltipTrigger>
+              <TooltipContent>
+                <span className="flex items-center gap-2">
+                  <span className="h-2 w-2 rounded-[2px]" style={{ background: TONE_COLOR[item.tone] }} />
+                  <span className="capitalize">{item.label}</span>
+                  <span className="text-data font-bold">{item.value}</span>
+                </span>
+              </TooltipContent>
+            </Tooltip>
+          ) : null)}
         </div>
       </TooltipProvider>
       <div className="mt-3.5 grid grid-cols-2 gap-x-6 gap-y-1.5">
-        {items.map((i) => (
-          <div key={i.label} className="flex items-center justify-between gap-2 text-meta">
+        {items.map((item) => (
+          <div key={item.label} className="flex items-center justify-between gap-2 text-meta">
             <span className="flex min-w-0 items-center gap-2 text-[color:var(--muted-foreground)]">
-              <span className="h-1.5 w-1.5 shrink-0 rounded-[2px]" style={{ background: TONE_COLOR[i.tone] }} />
-              <span className="truncate">{i.label}</span>
+              <span className="h-1.5 w-1.5 shrink-0 rounded-[2px]" style={{ background: TONE_COLOR[item.tone] }} />
+              <span className="truncate">{item.label}</span>
             </span>
-            <span className={`${MONO} text-body text-[length:var(--text-ui-action)] font-bold text-[color:var(--foreground)]`}>{i.value}</span>
+            <span className={`${MONO} text-body text-[length:var(--text-ui-action)] font-bold text-[color:var(--foreground)]`}>{item.value}</span>
           </div>
         ))}
       </div>
@@ -380,84 +383,81 @@ function KpiBreakdownBar({ items }: { items: KpiBreakdownItem[] }) {
   );
 }
 
-function ProjectsKpiCard({ projects }: { projects: DashboardProjectsData | null }) {
+function ProjectsKpiCard({ projects, isLoading }: { projects: DashboardProjectsData | null; isLoading: boolean }) {
   const dictionary = useDashboardDictionary();
-  const k = projects?.kpis;
-  const active = k?.projectsActive ?? 0;
-  const atRisk = k?.projectsAtRisk ?? 0;
-  const overdue = k?.projectsOverdue ?? 0;
-  const due7 = k?.projectsDueNext7Days ?? 0;
-  const noOwner = k?.projectsWithoutOwner ?? 0;
-
+  const projectBaseHref = useProjectBaseHref();
+  const kpis = projects?.kpis;
+  const showLoading = isLoading && !projects;
   return (
-    <Link
-      href="/projects"
-      prefetch={false}
-      className={`${SURFACE} group relative flex flex-col overflow-hidden p-6 transition hover:border-[color:var(--accent)]/40 hover:shadow-[var(--dashboard-shadow-lg)]`}
-    >
-      <span aria-hidden className="absolute inset-y-0 left-0 w-[3px]" style={{ background: "var(--accent)" }} />
+    <Card asChild variant="interactive" density="default">
+      <Link href={projectBaseHref} prefetch={false} className="group relative overflow-hidden p-6">
+      <span aria-hidden className="absolute inset-y-0 left-0 w-[3px] bg-[color:var(--accent)]" />
       <div className="flex items-center justify-between">
-        <span
-          className="flex h-9 w-9 items-center justify-center rounded-full"
-          style={{ background: "var(--dashboard-accent-soft)", color: "var(--accent)" }}
-        >
-          <BriefcaseBusiness className="h-4 w-4" />
+        <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[color:var(--dashboard-accent-soft)] text-[color:var(--accent)]">
+          <BriefcaseBusiness aria-hidden className="h-4 w-4" />
         </span>
         <span className={LABEL}>{dictionary.projects.title}</span>
       </div>
-      <div className="mt-4 flex items-baseline gap-2">
-        <span className="text-metric-lg text-foreground">{active}</span>
-        <span className="text-body font-semibold text-[color:var(--muted-foreground)]">{dictionary.projects.active}</span>
-      </div>
-      <KpiBreakdownBar
-        items={[
-          { label: dictionary.projects.atRisk, tone: "watch", value: atRisk },
-          { label: dictionary.projects.overdue, tone: "risk", value: overdue },
-          { label: dictionary.projects.dueSevenDays, tone: "accent", value: due7 },
-          { label: dictionary.projects.noOwner, tone: "on", value: noOwner },
-        ]}
-      />
-    </Link>
+      {showLoading ? (
+        <div className="mt-4 space-y-5" aria-hidden="true">
+          <Skeleton className="h-10 w-28 rounded-lg" />
+          <Skeleton className="h-14 w-full rounded-lg" />
+        </div>
+      ) : (
+        <>
+          <div className="mt-4 flex items-baseline gap-2">
+            <span className="text-kpi-lg text-foreground">{kpis?.projectsActive ?? 0}</span>
+            <span className="text-body font-semibold text-[color:var(--muted-foreground)]">{dictionary.projects.active}</span>
+          </div>
+          <KpiBreakdownBar items={[
+            { label: dictionary.projects.atRisk, tone: "watch", value: kpis?.projectsAtRisk ?? 0 },
+            { label: dictionary.projects.overdue, tone: "risk", value: kpis?.projectsOverdue ?? 0 },
+            { label: dictionary.projects.dueSevenDays, tone: "accent", value: kpis?.projectsDueNext7Days ?? 0 },
+            { label: dictionary.projects.noOwner, tone: "watch", value: kpis?.projectsWithoutOwner ?? 0 },
+          ]} />
+        </>
+      )}
+      </Link>
+    </Card>
   );
 }
 
-function CrmKpiCard({ crm }: { crm: DashboardCrmData | null }) {
+function CrmKpiCard({ crm, isLoading }: { crm: DashboardCrmData | null; isLoading: boolean }) {
   const dictionary = useDashboardDictionary();
-  const k = crm?.kpis;
-  const b = crm?.crm.statusBreakdown;
-  const total = k?.crmTotalContacts ?? 0;
-  const newly = k?.crmNewLast7Days ?? 0;
-  const unassigned = k?.crmUnassignedContacts ?? 0;
-
+  const kpis = crm?.kpis;
+  const breakdown = crm?.crm.statusBreakdown;
+  const showLoading = isLoading && !crm;
   return (
-    <Link
-      href="/crm"
-      className={`${SURFACE} group relative flex flex-col overflow-hidden p-6 transition hover:border-[color:var(--accent)]/40 hover:shadow-[var(--dashboard-shadow-lg)]`}
-    >
-      <span
-        aria-hidden
-        className="absolute inset-y-0 left-0 w-[3px]"
-        style={{ background: "var(--dashboard-neutral-rule)" }}
-      />
+    <Card asChild variant="interactive" density="default">
+      <Link href="/crm" prefetch={false} className="group relative overflow-hidden p-6">
+      <span aria-hidden className="absolute inset-y-0 left-0 w-[3px] bg-[color:var(--dashboard-neutral-rule)]" />
       <div className="flex items-center justify-between">
         <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[color:var(--muted)] text-[color:var(--muted-foreground)]">
-          <Users className="h-4 w-4" />
+          <Users aria-hidden className="h-4 w-4" />
         </span>
         <span className={LABEL}>{dictionary.crm.title}</span>
       </div>
-      <div className="mt-4 flex items-baseline gap-2">
-        <span className="text-metric-lg text-foreground">{total}</span>
-        <span className="text-body font-semibold text-[color:var(--muted-foreground)]">{dictionary.crm.contacts}</span>
-      </div>
-      <KpiBreakdownBar
-        items={[
-          { label: dictionary.crm.newSevenDays, tone: "on", value: newly },
-          { label: dictionary.crm.noOwner, tone: "watch", value: unassigned },
-          { label: dictionary.crm.proposals, tone: "accent", value: b?.proposal ?? 0 },
-          { label: dictionary.crm.won, tone: "on", value: b?.won ?? 0 },
-        ]}
-      />
-    </Link>
+      {showLoading ? (
+        <div className="mt-4 space-y-5" aria-hidden="true">
+          <Skeleton className="h-10 w-28 rounded-lg" />
+          <Skeleton className="h-14 w-full rounded-lg" />
+        </div>
+      ) : (
+        <>
+          <div className="mt-4 flex items-baseline gap-2">
+            <span className="text-kpi-lg text-foreground">{kpis?.crmTotalContacts ?? 0}</span>
+            <span className="text-body font-semibold text-[color:var(--muted-foreground)]">{dictionary.crm.contacts}</span>
+          </div>
+          <KpiBreakdownBar items={[
+            { label: dictionary.crm.newSevenDays, tone: "on", value: kpis?.crmNewLast7Days ?? 0 },
+            { label: dictionary.crm.noOwner, tone: "watch", value: kpis?.crmUnassignedContacts ?? 0 },
+            { label: dictionary.crm.proposals, tone: "accent", value: breakdown?.proposal ?? 0 },
+            { label: dictionary.crm.won, tone: "on", value: breakdown?.won ?? 0 },
+          ]} />
+        </>
+      )}
+      </Link>
+    </Card>
   );
 }
 
@@ -467,7 +467,8 @@ type TaskRow = {
   id: string;
   code: string;
   name: string;
-  group: "due" | "risk" | "flight";
+  group: "blocked" | "overdue" | "today" | "soon" | "later";
+  task: DashboardAssignedTask;
   status: DashboardAssignedTask["status"];
   priority: DashboardAssignedTask["priority"];
   blockedReason: string | null;
@@ -479,19 +480,31 @@ type TaskRow = {
 // tasks bento (project-milestone-task-lists): overdue red, due-soon amber, in
 // flight a quiet neutral.
 const GROUP_HEADER_TONE: Record<TaskRow["group"], { header: string; label: string; dot: string }> = {
-  risk: {
+  blocked: {
+    header:
+      "bg-[color:var(--dashboard-task-risk-bg)] hover:bg-[color:var(--dashboard-task-risk-hover)]",
+    label: "text-[color:var(--project-state-blocked-strong)]",
+    dot: "bg-[color:var(--project-state-blocked)]",
+  },
+  overdue: {
     header:
       "bg-[color:var(--dashboard-task-risk-bg)] hover:bg-[color:var(--dashboard-task-risk-hover)]",
     label: "text-[color:var(--project-risk-overdue-strong)]",
     dot: "bg-[color:var(--project-risk-overdue)]",
   },
-  due: {
+  today: {
     header:
       "bg-[color:var(--dashboard-task-due-bg)] hover:bg-[color:var(--dashboard-task-due-hover)]",
     label: "text-[color:var(--project-risk-at-risk-strong)]",
     dot: "bg-[color:var(--project-risk-at-risk)]",
   },
-  flight: {
+  soon: {
+    header:
+      "bg-[color:var(--dashboard-task-due-bg)] hover:bg-[color:var(--dashboard-task-due-hover)]",
+    label: "text-[color:var(--project-risk-at-risk-strong)]",
+    dot: "bg-[color:var(--project-risk-at-risk)]",
+  },
+  later: {
     header:
       "bg-[color:var(--dashboard-task-flight-bg)] hover:bg-[color:var(--dashboard-task-flight-hover)]",
     label: "text-[color:var(--muted-foreground)]",
@@ -499,33 +512,45 @@ const GROUP_HEADER_TONE: Record<TaskRow["group"], { header: string; label: strin
   },
 };
 
-// Explicit label styling (11px/600/uppercase) so the per-group tone color wins
-// over the shared muted text-label text-muted-foreground color.
-const TASK_GROUP_LABEL_BASE = "text-label font-semibold uppercase tracking-[var(--type-tracking-060)]";
+// Keep urgency labels compact without forcing a shouty all-caps treatment.
+const TASK_GROUP_LABEL_BASE = "text-label font-semibold";
 
-function groupFromTask(task: DashboardAssignedTask): TaskRow["group"] {
-  if (task.status === "blocked") return "risk";
-  if (!task.dueDate) return "flight";
-  const t = new Date(task.dueDate).getTime();
-  if (Number.isNaN(t)) return "flight";
-  const now = Date.now();
-  if (t < now) return "risk";
-  if (t <= now + 7 * 24 * 60 * 60 * 1000) return "due";
-  return "flight";
+function dateOnly(value: string | Date) {
+  const date = typeof value === "string" ? new Date(value) : value;
+  return Number.isNaN(date.getTime()) ? null : date.toISOString().slice(0, 10);
 }
 
-function buildTasks(tasks: DashboardTasksData | null): TaskRow[] {
+function attentionStateFromTask(task: DashboardAssignedTask, generatedAt: string): DashboardTaskAttentionState | null {
+  if (task.status === "blocked") return "blocked";
+  if (!task.dueDate) return null;
+  const today = dateOnly(generatedAt);
+  if (!today) return null;
+  const next = new Date(`${today}T00:00:00.000Z`);
+  next.setUTCDate(next.getUTCDate() + 7);
+  const next7Days = next.toISOString().slice(0, 10);
+  if (task.dueDate < today) return "overdue";
+  if (task.dueDate === today) return "today";
+  if (task.dueDate <= next7Days) return "soon";
+  return null;
+}
+
+function groupFromTask(task: DashboardAssignedTask, generatedAt: string): TaskRow["group"] {
+  return attentionStateFromTask(task, generatedAt) ?? "later";
+}
+
+function buildTasks(tasks: DashboardTasksData | null, projectBaseHref: string): TaskRow[] {
   if (!tasks) return [];
   return tasks.tasks.map((task) => ({
     id: `task-${task.id}`,
     code: task.projectCode ?? task.projectName.slice(0, 12).toUpperCase(),
     name: task.title,
-    group: groupFromTask(task),
+    group: groupFromTask(task, tasks.generatedAt),
+    task,
     status: task.status,
     priority: task.priority,
     blockedReason: task.blockedReason,
     dueDate: task.dueDate,
-    href: `/projects/${task.projectId}`,
+    href: projectHref(projectBaseHref, task.projectId),
   }));
 }
 
@@ -533,25 +558,37 @@ function TasksTable({
   rows,
   title,
   isLoading,
+  total,
+  hasMore = false,
+  isLoadingMore = false,
+  onLoadMore,
+  createHref,
   className = "",
   bodyClassName = "",
 }: {
   rows: TaskRow[];
   title?: string;
   isLoading: boolean;
+  total?: number;
+  hasMore?: boolean;
+  isLoadingMore?: boolean;
+  onLoadMore?: () => void;
+  createHref: string;
   className?: string;
   bodyClassName?: string;
 }) {
   const dictionary = useDashboardDictionary();
-  const groups: TaskRow["group"][] = ["risk", "due", "flight"];
+  const groups: TaskRow["group"][] = ["blocked", "overdue", "today", "soon", "later"];
   const groupLabel: Record<TaskRow["group"], string> = {
-    risk: dictionary.tasks.overdue,
-    due: dictionary.tasks.dueThisWeek,
-    flight: dictionary.tasks.inProgress,
+    blocked: dictionary.tasks.blocked,
+    overdue: dictionary.tasks.overdue,
+    today: dictionary.tasks.dueToday,
+    soon: dictionary.tasks.dueThisWeek,
+    later: dictionary.tasks.later,
   };
 
   return (
-    <div className={`${SURFACE} flex min-h-0 flex-col overflow-hidden ${className}`}>
+    <Card className={`min-h-0 overflow-hidden ${className}`}>
       <header className="flex shrink-0 items-center justify-between border-b border-[color:var(--border)] px-5 py-4">
         <div className="flex items-center gap-3">
           <span className="project-section-icon">
@@ -565,13 +602,11 @@ function TasksTable({
         {isLoading && rows.length === 0 ? (
           <Skeleton className="h-[26px] w-16 rounded-full" />
         ) : (
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-[color:var(--accent)]/30 bg-[color:var(--accent)]/10 px-2.5 py-1 text-label font-bold text-[color:var(--accent)]">
-            {rows.length} {dictionary.tasks.active}
-          </span>
+          <DashboardCountPill count={total ?? rows.length} label={dictionary.tasks.active} tone="accent" />
         )}
       </header>
 
-      <div className={`min-h-0 ${bodyClassName}`}>
+      <div className={`min-h-0 flex-1 ${bodyClassName}`}>
         {isLoading && rows.length === 0 ? (
           // Mirror the loaded layout (tinted group header + two-line rows) so the
           // swap from skeleton to content stays geometrically stable — no jump.
@@ -595,15 +630,17 @@ function TasksTable({
             ))}
           </div>
         ) : rows.length === 0 ? (
-          <div className="flex h-full flex-col items-center justify-center gap-3 px-6 py-10 text-center">
-            <span className="flex h-11 w-11 items-center justify-center rounded-full bg-[color:var(--muted)] text-[color:var(--muted-foreground)]">
-              <CheckCircle2 className="h-5 w-5" />
-            </span>
-            <div>
-              <p className="text-body font-semibold text-[color:var(--foreground)]">{dictionary.tasks.allClear}</p>
-              <p className="mt-0.5 text-meta text-[color:var(--muted-foreground)]">{dictionary.tasks.urgentEmpty}</p>
-            </div>
-          </div>
+          <DashboardEmptyState
+            icon={(
+              <span className="flex h-11 w-11 items-center justify-center rounded-full bg-[color:var(--muted)] text-[color:var(--muted-foreground)]">
+                <CheckCircle2 aria-hidden className="h-5 w-5" />
+              </span>
+            )}
+            title={dictionary.tasks.allClear}
+            description={dictionary.tasks.createEmptyDescription}
+          >
+            <TaskQuickCreateAction href={createHref} label={dictionary.tasks.addNew} />
+          </DashboardEmptyState>
         ) : (
           groups.map((g) => {
             const gr = rows.filter((r) => r.group === g);
@@ -619,53 +656,40 @@ function TasksTable({
                   <span className={`${MONO} text-micro text-[color:var(--muted-foreground)]`}>{gr.length}</span>
                 </div>
                 {gr.map((r) => (
-                  <Link
+                  <DashboardTaskListRow
                     key={r.id}
+                    task={r.task}
                     href={r.href}
-                    prefetch={false}
-                    className="group relative flex w-full flex-col gap-1 border-t border-[color:var(--border)] px-5 py-2.5 text-left transition first:border-t-0 hover:bg-[color:var(--dashboard-task-row-hover)]"
-                  >
-                    {/* Primary: title + due date */}
-                    <div className="flex min-w-0 items-start gap-2">
-                      <p className="text-body text-foreground min-w-0 flex-1 font-semibold leading-snug line-clamp-2" title={r.name}>
-                        {r.name}
-                      </p>
-                      <TaskDueMeta
-                        dueDate={r.dueDate}
-                        isOverdue={r.group === "risk"}
-                        className="whitespace-nowrap pt-0.5"
-                      />
-                    </div>
-
-                    {/* Secondary: signal tags */}
-                    <div className="mt-0.5 flex min-w-0 flex-wrap items-center gap-1.5">
-                      <TaskPriorityTag task={{ priority: r.priority, status: r.status }} />
-                      <TaskStatusTag task={{ status: r.status, blockedReason: r.blockedReason }} />
-                      <span
-                        className={`${MONO} ml-auto max-w-[8rem] truncate text-label text-[color:var(--muted-foreground)]`}
-                        title={r.code}
-                      >
-                        {r.code}
-                      </span>
-                    </div>
-                  </Link>
+                    attentionState={r.group === "later" ? undefined : r.group}
+                    attentionLabel={r.group === "later" || r.group === "blocked" ? undefined : groupLabel[r.group]}
+                  />
                 ))}
               </section>
             );
           })
         )}
       </div>
-    </div>
+      {hasMore ? (
+        <div className="flex shrink-0 justify-center border-t border-[color:var(--border)] px-5 py-3">
+          <button
+            type="button"
+            onClick={onLoadMore}
+            disabled={isLoadingMore}
+            className="text-body rounded-[var(--radius-control)] border border-[color:var(--border)] bg-[color:var(--card)] px-3 py-2 font-semibold text-[color:var(--foreground)] transition hover:border-[color:var(--accent)] disabled:cursor-wait disabled:opacity-60"
+          >
+            {isLoadingMore ? dictionary.tasks.loadingMore : dictionary.tasks.loadMore}
+          </button>
+        </div>
+      ) : null}
+    </Card>
   );
 }
 
 /* ─── Milestones panel ───────────────────────────────────────────── */
 
-type Milestone = {
-  projectId: string;
+type Milestone = DashboardProjectMilestone & {
   day: string;
   date: string;
-  title: string;
   code: string;
   highlight?: boolean;
 };
@@ -673,17 +697,15 @@ type Milestone = {
 function buildMilestones(projects: DashboardProjectsData | null): Milestone[] {
   if (!projects) return [];
   const rows: Milestone[] = [];
-  for (const p of projects.projects.overdue) {
-    if (!p.targetDate) continue;
-    const d = new Date(p.targetDate);
+  for (const milestone of projects.projects.milestones) {
+    const d = new Date(milestone.targetDate);
     if (Number.isNaN(d.getTime())) continue;
     rows.push({
-      projectId: p.id,
-      day: formatWeekday(p.targetDate),
+      ...milestone,
+      day: formatWeekday(milestone.targetDate),
       date: String(d.getDate()).padStart(2, "0"),
-      title: p.name,
-      code: codeOf(p),
-      highlight: isDueThisWeek(p.targetDate),
+      code: milestone.projectCode ?? milestone.projectId.slice(0, 8).toUpperCase(),
+      highlight: isDueThisWeek(milestone.targetDate),
     });
   }
   return rows.slice(0, 6);
@@ -691,6 +713,7 @@ function buildMilestones(projects: DashboardProjectsData | null): Milestone[] {
 
 function MilestonesPanel({ items, isLoading = false, className = "" }: { items: Milestone[]; isLoading?: boolean; className?: string }) {
   const dictionary = useDashboardDictionary();
+  const projectBaseHref = useProjectBaseHref();
   return (
     <div className={`brand-panel relative flex min-h-0 flex-col overflow-hidden rounded-[var(--radius-card)] p-6 text-[color:var(--project-hero-foreground)] ${className}`}>
       <div
@@ -709,10 +732,10 @@ function MilestonesPanel({ items, isLoading = false, className = "" }: { items: 
           <h2 className="text-title font-semibold tracking-tight">{dictionary.milestones.title}</h2>
         </div>
         <span
-          className="rounded-full border px-2 py-0.5 text-micro font-bold tracking-widest"
+          className="rounded-full border px-2 py-0.5 text-micro font-bold"
           style={{ borderColor: "var(--project-hero-border)", color: "var(--project-hero-muted)" }}
         >
-          {items.length ? `${items.length}` : dictionary.milestones.emptyBadge}
+          {items.length ? <span className="text-data">{items.length}</span> : dictionary.milestones.emptyBadge}
         </span>
       </div>
       {isLoading && items.length === 0 ? (
@@ -745,9 +768,9 @@ function MilestonesPanel({ items, isLoading = false, className = "" }: { items: 
       ) : (
         <ul className="relative mt-5 min-h-0 flex-1 space-y-1.5 overflow-hidden">
           {items.map((m) => (
-            <li key={`${m.projectId}-${m.date}`}>
+            <li key={m.id}>
               <Link
-                href={`/projects/${m.projectId}`}
+                href={projectHref(projectBaseHref, m.projectId)}
                 prefetch={false}
                 className="group relative flex items-center gap-3 rounded-[var(--radius-card)] py-1.5 pl-2 pr-3"
               >
@@ -763,7 +786,7 @@ function MilestonesPanel({ items, isLoading = false, className = "" }: { items: 
                         }
                   }
                 >
-                  <span className="block text-micro text-[length:var(--text-ui-nano-lg)] font-bold leading-none tracking-[var(--type-tracking-080)] opacity-80">
+                  <span className="block text-micro text-[length:var(--text-ui-nano-lg)] font-bold leading-none opacity-80">
                     {m.day}
                   </span>
                   <span className={`${MONO} block text-heading-4 font-extrabold leading-none`}>
@@ -772,8 +795,8 @@ function MilestonesPanel({ items, isLoading = false, className = "" }: { items: 
                 </div>
                 <div className="relative min-w-0 flex-1">
                   <p className="truncate text-body text-[length:var(--text-ui-action)] font-semibold">{m.title}</p>
-                  <p className={`${MONO} truncate text-label`} style={{ color: "var(--project-hero-muted)" }}>
-                    {m.code}
+                  <p className="truncate text-meta" style={{ color: "var(--project-hero-muted)" }}>
+                    {m.projectName} · <span className={MONO}>{m.code}</span>
                   </p>
                 </div>
                 <ArrowUpRight className="relative h-3.5 w-3.5 shrink-0 opacity-0 transition group-hover:opacity-70" />
@@ -788,56 +811,277 @@ function MilestonesPanel({ items, isLoading = false, className = "" }: { items: 
 
 /* ─── Projects tab ───────────────────────────────────────────────── */
 
-function ProjectsView({ projects, isLoading }: { projects: DashboardProjectsData | null; isLoading: boolean }) {
+export function buildProjectQuickCreateHref(baseHref: string) {
+  const url = new URL(baseHref, "http://dashboard.local");
+  url.searchParams.set("create", "project");
+  return `${url.pathname}${url.search}${url.hash}`;
+}
+
+export function ProjectQuickCreateAction({
+  href,
+  label,
+}: {
+  href: string;
+  label: string;
+}) {
+  return (
+    <QuickCreateAction
+      href={buildProjectQuickCreateHref(href)}
+      label={label}
+    />
+  );
+}
+
+function PortfolioHealthCard({
+  openProjects,
+  onTrackCount,
+  attentionCount,
+  milestoneDays,
+  isLoading,
+}: {
+  openProjects: number;
+  onTrackCount: number;
+  attentionCount: number;
+  milestoneDays: UpcomingMilestoneDay[];
+  isLoading: boolean;
+}) {
   const dictionary = useDashboardDictionary();
+  const attentionLabel = attentionCount === 1
+    ? dictionary.projects.needsAttentionOne
+    : dictionary.projects.needsAttentionMany;
+  const milestonesDueThisWeek = milestoneDays.reduce((sum, day) => sum + day.count, 0);
+  const healthStatus = openProjects === 0
+    ? {
+        label: dictionary.projects.healthStatusEmpty ?? "Sem projetos",
+        dotClassName: "bg-[color:var(--project-hero-subtle)]",
+        textClassName: "text-[color:var(--project-hero-subtle)]",
+      }
+    : attentionCount > 0
+      ? {
+          label: dictionary.projects.healthStatusAttention ?? "Requer atenção",
+          dotClassName: "bg-[color:var(--project-risk-at-risk)]",
+          textClassName: "text-[color:var(--project-hero-foreground)]",
+        }
+      : {
+          label: dictionary.projects.healthStatusOnTrack ?? "No rumo",
+          dotClassName: "bg-[color:var(--brand-lime,var(--project-state-active))]",
+          textClassName: "text-[color:var(--project-hero-foreground)]",
+        };
+
+  return (
+    <aside
+      className="dashboard-projects-health brand-panel overflow-hidden rounded-[var(--radius-card)] p-6 text-[color:var(--project-hero-foreground)]"
+      aria-labelledby="dashboard-project-health-title"
+    >
+      <span
+        aria-hidden
+        className="pointer-events-none absolute -left-16 -top-16 h-48 w-48 rounded-full bg-[color:var(--dashboard-milestone-glow)] blur-3xl opacity-100 dark:opacity-40"
+      />
+
+      <div className="relative flex items-center justify-between gap-4">
+        <div className="flex min-w-0 items-center gap-3">
+          <span
+            className="flex h-[1.875rem] w-[1.875rem] shrink-0 items-center justify-center rounded-full bg-[color:var(--dashboard-milestone-icon)] text-[color:var(--accent)]"
+          >
+            <CircleDot aria-hidden className="size-3.5" />
+          </span>
+          <h2 id="dashboard-project-health-title" className="truncate text-title font-semibold tracking-tight">
+            {dictionary.projects.healthTitle ?? "Resumo"}
+          </h2>
+        </div>
+        {isLoading ? (
+          <Skeleton className="h-6 w-24 shrink-0 rounded-full bg-[color:var(--project-hero-surface-raised)]" />
+        ) : (
+          <span
+            className={`inline-flex shrink-0 items-center gap-1.5 rounded-full border border-[color:var(--project-hero-border)] bg-[color:var(--project-hero-surface-raised)] px-2.5 py-1 text-micro font-semibold ${healthStatus.textClassName}`}
+            data-health-status
+          >
+            <span aria-hidden className={`h-1.5 w-1.5 rounded-full ${healthStatus.dotClassName}`} />
+            {healthStatus.label}
+          </span>
+        )}
+      </div>
+
+      <div className="relative mt-7 flex flex-wrap items-baseline gap-x-2 gap-y-1">
+        <strong className="text-kpi-lg text-[color:var(--project-hero-foreground)]">{isLoading ? "–" : openProjects}</strong>
+        <span className="text-body text-[color:var(--project-hero-muted)]">{dictionary.projects.openProjects}</span>
+      </div>
+
+      <div
+        className="relative mt-6 flex h-2 overflow-hidden rounded-full bg-[color:var(--project-hero-surface-raised)]"
+        role="img"
+        aria-label={`${onTrackCount} ${dictionary.projects.onTrack}; ${attentionCount} ${attentionLabel}`}
+      >
+        {onTrackCount > 0 ? (
+          <span className="h-full min-w-1 bg-[color:var(--brand-lime,var(--project-state-active))] first:rounded-l-full last:rounded-r-full" style={{ flex: onTrackCount }} />
+        ) : null}
+        {attentionCount > 0 ? (
+          <span className="h-full min-w-1 bg-[color:var(--project-risk-at-risk)] first:rounded-l-full last:rounded-r-full" style={{ flex: attentionCount }} />
+        ) : null}
+      </div>
+
+      <div className="relative mt-4 space-y-2.5">
+        <div className="flex items-center justify-between gap-4 text-label">
+          <span className={cn("inline-flex items-center gap-2", onTrackCount === 0 ? "text-[color:var(--project-hero-subtle)]" : "text-[color:var(--project-hero-muted)]")}>
+            <span aria-hidden className="h-2 w-2 rounded-full bg-[color:var(--brand-lime,var(--project-state-active))]" />
+            {dictionary.projects.onTrack}
+          </span>
+          <strong className={cn("text-data-sm", onTrackCount === 0 ? "text-[color:var(--project-hero-subtle)]" : "text-[color:var(--project-hero-foreground)]")}>{onTrackCount}</strong>
+        </div>
+        <div className="flex items-center justify-between gap-4 text-label">
+          <span className={cn("inline-flex items-center gap-2", attentionCount === 0 ? "text-[color:var(--project-hero-subtle)]" : "text-[color:var(--project-hero-foreground)]")}>
+            <span aria-hidden className="h-2 w-2 rounded-full bg-[color:var(--project-risk-at-risk)]" />
+            {attentionLabel}
+          </span>
+          <strong className={cn("text-data-sm", attentionCount === 0 ? "text-[color:var(--project-hero-subtle)]" : "text-[color:var(--project-hero-foreground)]")}>{attentionCount}</strong>
+        </div>
+      </div>
+
+      <div className="relative my-6 border-t border-[color:var(--project-hero-border)]" />
+
+      <div className="relative">
+        <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+          <strong className="text-kpi-lg text-[color:var(--project-hero-foreground)]">{isLoading ? "–" : milestonesDueThisWeek}</strong>
+          <span className="text-body text-[color:var(--project-hero-muted)]">
+            {milestonesDueThisWeek === 1
+              ? (dictionary.projects.milestonePlannedOne ?? "meta prevista")
+              : (dictionary.projects.milestonePlannedMany ?? dictionary.projects.milestonesWithDate ?? "metas previstas")}
+          </span>
+        </div>
+        <span className="mt-1.5 block text-meta text-[color:var(--project-hero-subtle)]">
+          {dictionary.projects.withinNextSevenDays ?? "nos próximos 7 dias"}
+        </span>
+
+        <div className="relative mt-5">
+          <span aria-hidden className="absolute inset-x-4 top-3.5 h-px bg-[color:var(--project-hero-border)]" />
+          <TooltipProvider delayDuration={80}>
+            <ol className="relative grid grid-cols-7 gap-1" aria-label={`${milestonesDueThisWeek} ${milestonesDueThisWeek === 1 ? dictionary.projects.milestoneOne : dictionary.projects.milestoneMany}`}>
+              {milestoneDays.map((day) => {
+                const label = day.isToday ? (dictionary.projects.today ?? "Hoje") : day.weekday;
+                const markerClassName = "relative flex h-7 w-7 items-center justify-center rounded-full text-data-sm";
+                return (
+                  <li key={day.dateKey} className="flex min-w-0 flex-col items-center gap-2">
+                    {day.count > 0 ? (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button
+                            type="button"
+                            className={`${markerClassName} touch-manipulation bg-[color:var(--accent)] text-[color:var(--accent-foreground)] transition-[filter,box-shadow] hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--project-hero-foreground)]`}
+                            aria-label={`${day.fullDate}: ${day.count} ${day.count === 1 ? dictionary.projects.milestoneOne : dictionary.projects.milestoneMany}. ${day.milestones.map((milestone) => `${milestone.title}, ${milestone.projectName}`).join("; ")}`}
+                          >
+                            {day.count}
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent side="top" className="w-64 p-3">
+                          <p className="text-label">{day.fullDate} · {day.count} {day.count === 1 ? dictionary.projects.milestoneOne : dictionary.projects.milestoneMany}</p>
+                          <ul className="mt-2 space-y-2">
+                            {day.milestones.map((milestone) => (
+                              <li key={milestone.id}>
+                                <p className="text-meta">{milestone.title}</p>
+                                <p className="text-micro text-[color:var(--muted-foreground)]">{milestone.projectName}</p>
+                              </li>
+                            ))}
+                          </ul>
+                        </TooltipContent>
+                      </Tooltip>
+                    ) : (
+                      <span
+                        className={`${markerClassName} border border-[color:var(--project-hero-border)] bg-[color:var(--project-hero-surface-raised)] text-[color:var(--project-hero-subtle)]`}
+                        aria-label={`${label}: 0`}
+                      >
+                        <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-current" />
+                      </span>
+                    )}
+                    <span className={cn("truncate text-micro", day.count > 0 ? "text-[color:var(--project-hero-muted)]" : "text-[color:var(--project-hero-subtle)]")}>{label}</span>
+                  </li>
+                );
+              })}
+            </ol>
+          </TooltipProvider>
+        </div>
+      </div>
+    </aside>
+  );
+}
+
+export function ProjectsView({ projects, isLoading }: { projects: DashboardProjectsData | null; isLoading: boolean }) {
+  const dictionary = useDashboardDictionary();
+  const projectBaseHref = useProjectBaseHref();
   const kpis = projects?.kpis;
-  const list = projects?.projects.overdue ?? [];
+  const attention = projects?.projects.attention ?? [];
+  const milestoneDays = buildUpcomingMilestoneDays(
+    projects?.projects.milestonesNext7Days ?? projects?.projects.milestones ?? [],
+  );
+  const openProjects = (kpis?.projectsOnTrack ?? 0) + (kpis?.projectsAttention ?? 0);
+  const hiddenAttentionCount = Math.max(0, (kpis?.projectsAttention ?? 0) - attention.length);
+  const onTrackCount = Math.max(0, kpis?.projectsOnTrack ?? 0);
+  const attentionCount = Math.max(0, kpis?.projectsAttention ?? 0);
 
   return (
     <div className="space-y-6">
       <PortalSectionHeading
-        title={dictionary.projects.attentionTitle}
-        subtitle={
-          <>
-            <span className={`${MONO} font-semibold text-[color:var(--project-risk-overdue-strong)]`}>
-              {kpis?.projectsOverdue ?? 0}
-            </span>{" "}
-            {dictionary.projects.overdue}
-            <span className="mx-1.5 opacity-50">·</span>
-            <span className={`${MONO} font-semibold text-[color:var(--project-risk-at-risk-strong)]`}>
-              {kpis?.projectsAtRisk ?? 0}
-            </span>{" "}
-            {dictionary.projects.atRisk}
-            <span className="mx-1.5 opacity-50">·</span>
-            <span className={`${MONO} font-semibold text-[color:var(--accent)]`}>
-              {kpis?.projectsDueNext7Days ?? 0}
-            </span>{" "}
-            {dictionary.projects.dueInSevenDays}
-          </>
-        }
+        title={dictionary.projects.stateTitle}
+        subtitle={dictionary.projects.stateSubtitle}
         action={
-          <PortalActionLink href="/projects" prefetch={false}>
-            {dictionary.projects.viewAll}
-            <ArrowUpRight className="h-3.5 w-3.5" />
-          </PortalActionLink>
+          <div className="flex flex-wrap items-center gap-2">
+            <PortalActionLink href={projectBaseHref} prefetch={false}>
+              {dictionary.projects.viewAll}
+              <ArrowUpRight className="h-3.5 w-3.5" />
+            </PortalActionLink>
+            <ProjectQuickCreateAction
+              href={projectBaseHref}
+              label={dictionary.projects.addNew ?? "Novo projeto"}
+            />
+          </div>
         }
       />
 
-      {isLoading && list.length === 0 ? (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          {[0, 1, 2, 3].map((i) => (
-            <ProjectSummaryCardSkeleton key={i} />
-          ))}
-        </div>
-      ) : list.length === 0 ? (
-        <p className="text-body text-[color:var(--muted-foreground)]">{dictionary.projects.noneNeedAttention(kpis?.projectsActive ?? 0)}</p>
-      ) : (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          {list.map((project) => (
-            <ProjectSummaryCard key={project.id} project={project} />
-          ))}
-        </div>
-      )}
+      <div className="dashboard-projects-grid">
+        <PortfolioHealthCard
+          openProjects={openProjects}
+          onTrackCount={onTrackCount}
+          attentionCount={attentionCount}
+          milestoneDays={milestoneDays}
+          isLoading={isLoading && !projects}
+        />
+
+        <Card asChild>
+          <section className="dashboard-projects-attention overflow-hidden" aria-labelledby="dashboard-project-attention">
+          <div className="flex min-h-16 items-center justify-between border-b border-[color:var(--border)] px-5 py-4">
+            <h3 id="dashboard-project-attention" className={CARD_TITLE}>{dictionary.projects.attentionQueueTitle}</h3>
+            <DashboardCountPill count={kpis?.projectsAttention ?? 0} tone="warning" />
+          </div>
+
+          {isLoading && attention.length === 0 ? (
+            <div>
+              {[0, 1, 2].map((index) => <Skeleton key={index} className="h-32 border-b border-[color:var(--border)] last:border-b-0" rounded="0" />)}
+            </div>
+          ) : attention.length === 0 ? (
+            <DashboardEmptyState
+              className="min-h-64 flex-1 bg-[color:var(--project-surface-secondary)]"
+              icon={(
+                <span className="flex h-11 w-11 items-center justify-center rounded-full bg-[color:var(--project-health-on-track)] text-[color:var(--primary-foreground)]">
+                  <CheckCircle2 aria-hidden className="h-5 w-5" />
+                </span>
+              )}
+              title={dictionary.projects.allOnTrackTitle}
+              description={dictionary.projects.allOnTrackDescription(kpis?.projectsActive ?? 0)}
+            />
+          ) : (
+            <div>
+              {attention.map((project, index) => <ProjectAttentionCard key={project.id} project={project} rank={index + 1} />)}
+              {hiddenAttentionCount > 0 ? (
+                <div className="flex justify-center border-t border-[color:var(--border)] px-5 py-3">
+                  <Link href={projectBaseHref} prefetch={false} className="text-meta font-semibold text-[color:var(--primary)] hover:underline">
+                    {dictionary.projects.moreAttention(hiddenAttentionCount)}
+                  </Link>
+                </div>
+              ) : null}
+            </div>
+          )}
+          </section>
+        </Card>
+      </div>
     </div>
   );
 }
@@ -849,7 +1093,7 @@ type TagMeta = { label: string; color: string; strong: string };
 function Tag({ meta }: { meta: TagMeta }) {
   return (
     <span
-      className="tint-soft inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-micro font-bold uppercase tracking-[var(--type-tracking-080)]"
+      className="tint-soft inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-micro font-bold"
       style={{ ["--tint" as string]: meta.color, ["--tint-strong" as string]: meta.strong }}
     >
       <span className="dashboard-status-dot h-1.5 w-1.5 rounded-full" />
@@ -870,40 +1114,204 @@ function crmStatusMeta(status: string, dictionary: DashboardDictionary): TagMeta
   return values[status] ?? values.lead!;
 }
 
-function PeriodTile({
-  label,
-  value,
-  isLoading,
-  accent,
-}: {
-  label: string;
-  value: number;
-  isLoading: boolean;
-  accent?: boolean;
-}) {
+function formatMonthShort(isoMonth: string) {
+  const d = new Date(`${isoMonth}-01T00:00:00Z`);
+  if (Number.isNaN(d.getTime())) return isoMonth;
+  return new Intl.DateTimeFormat("pt-PT", { month: "short", timeZone: "UTC" }).format(d).replace(".", "");
+}
+
+function formatMonthLong(isoMonth: string) {
+  const d = new Date(`${isoMonth}-01T00:00:00Z`);
+  if (Number.isNaN(d.getTime())) return isoMonth;
+  return new Intl.DateTimeFormat("pt-PT", { month: "long", timeZone: "UTC" }).format(d);
+}
+
+function RhythmSparkline({ series, ariaLabel }: { series: { month: string; count: number }[]; ariaLabel: string }) {
   const dictionary = useDashboardDictionary();
+  const max = Math.max(1, ...series.map((p) => p.count));
+  const w = 320;
+  const h = 84;
+  const chartTop = 6;
+  const chartBottom = h - 4;
+  const step = series.length > 1 ? w / (series.length - 1) : w;
+  const coordinates = series.map((p, i) => ({
+    x: i * step,
+    y: chartBottom - (p.count / max) * (chartBottom - chartTop),
+  }));
+  const points = coordinates.map(({ x, y }) => `${x.toFixed(1)},${y.toFixed(1)}`).join(" ");
+  const area = coordinates.length > 0
+    ? `M 0 ${chartBottom} L ${points.replaceAll(",", " ")} L ${w} ${chartBottom} Z`
+    : "";
+  const current = coordinates[coordinates.length - 1];
+  const visibleMonths = series
+    .map((point, index) => ({ point, index, x: coordinates[index]!.x }))
+    .filter(({ index }) => index % 2 === 0 || index === series.length - 1);
+
   return (
-    <div className={`relative overflow-hidden ${SURFACE} flex flex-col p-6`}>
-      {accent && (
-        <span
-          aria-hidden
-          className="absolute right-0 top-0 h-20 w-20 rounded-full blur-2xl"
-          style={{ background: "var(--dashboard-period-glow)" }}
-        />
-      )}
-      <span className={LABEL}>{label}</span>
-      <div className="relative mt-4 flex items-baseline gap-2">
-        <span
-          className="text-metric-display text-foreground"
-          style={accent ? { color: "var(--accent)" } : undefined}
-        >
-          {isLoading ? "–" : value}
-        </span>
-        <span className="text-body font-semibold text-[color:var(--muted-foreground)]">
-          {value === 1 ? dictionary.clients.newOne : dictionary.clients.newMany}
-        </span>
+    <div className="mt-7 min-w-0" role="group" aria-label={ariaLabel}>
+      <TooltipProvider delayDuration={80}>
+        <div className="relative h-[5.25rem] w-full">
+          <svg aria-hidden viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" className="absolute inset-0 h-full w-full overflow-visible">
+            <defs>
+              <linearGradient id="dashboard-rhythm-fill" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="var(--dashboard-rhythm-accent)" stopOpacity="0.34" />
+                <stop offset="100%" stopColor="var(--dashboard-rhythm-accent)" stopOpacity="0" />
+              </linearGradient>
+            </defs>
+            <path d={area} fill="url(#dashboard-rhythm-fill)" />
+            <polyline
+              points={points}
+              fill="none"
+              stroke="var(--dashboard-rhythm-accent)"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              vectorEffect="non-scaling-stroke"
+            />
+            {current ? (
+              <circle
+                cx={current.x}
+                cy={current.y}
+                r="4"
+                fill="var(--dashboard-rhythm-accent)"
+                stroke="var(--project-hero-surface-raised)"
+                strokeWidth="2"
+                vectorEffect="non-scaling-stroke"
+              />
+            ) : null}
+          </svg>
+          {coordinates.map(({ x, y }, index) => {
+            const point = series[index]!;
+            const countLabel = point.count === 1 ? dictionary.clients.one : dictionary.clients.many;
+            const tooltipLabel = `${formatMonthLong(point.month)} · ${point.count} ${countLabel}`;
+            return (
+              <Tooltip key={point.month}>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    aria-label={tooltipLabel}
+                    className="group absolute z-10 flex size-5 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--dashboard-rhythm-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--project-hero-surface-raised)]"
+                    style={{ left: `${(x / w) * 100}%`, top: `${(y / h) * 100}%` }}
+                  >
+                    <span className="size-2 rounded-full bg-[color:var(--dashboard-rhythm-accent)] opacity-0 shadow-[0_0_0_2px_var(--project-hero-surface-raised)] transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <span className={MONO}>{tooltipLabel}</span>
+                </TooltipContent>
+              </Tooltip>
+            );
+          })}
+        </div>
+      </TooltipProvider>
+      <div className={`${MONO} relative mt-2 h-3 text-micro text-[color:var(--project-hero-subtle)]`}>
+        {visibleMonths.map(({ point, index, x }) => (
+          <span
+            key={point.month}
+            data-rhythm-month-label={point.month}
+            className="absolute top-0 whitespace-nowrap"
+            style={{
+              left: `${(x / w) * 100}%`,
+              transform: index === 0 ? "none" : index === series.length - 1 ? "translateX(-100%)" : "translateX(-50%)",
+            }}
+          >
+            {formatMonthShort(point.month)}
+          </span>
+        ))}
       </div>
     </div>
+  );
+}
+
+function RhythmPeriodRow({ label, value, isLoading }: { label: string; value: number; isLoading: boolean }) {
+  return (
+    <div className="flex items-baseline justify-between gap-6">
+      <span className="text-meta text-[color:var(--project-hero-muted)]">{label}</span>
+      <span className={`${MONO} text-body font-bold text-[color:var(--project-hero-foreground)]`}>{isLoading ? "–" : value}</span>
+    </div>
+  );
+}
+
+function RhythmCard({ crm, isLoading }: { crm: DashboardCrmData | null; isLoading: boolean }) {
+  const dictionary = useDashboardDictionary();
+  const kpis = crm?.kpis;
+  const series = crm?.crm.monthlyNewContacts ?? [];
+  const monthValue = series.length > 0 ? series[series.length - 1]!.count : kpis?.crmNewLast30Days ?? 0;
+  const previousMonth = series.length > 1 ? series[series.length - 2]!.count : null;
+  const delta = previousMonth === null ? null : monthValue - previousMonth;
+  const rhythmStatus = delta === null
+    ? dictionary.clients.rhythmNoHistory ?? "Sem histórico"
+    : delta > 0
+      ? dictionary.clients.rhythmGrowing ?? "A crescer"
+      : delta < 0
+        ? dictionary.clients.rhythmDeclining ?? "A diminuir"
+        : dictionary.clients.rhythmStable ?? "Estável";
+  const currentContactLabel = monthValue === 1 ? dictionary.clients.one : dictionary.clients.many;
+  const previousContactLabel = previousMonth === 1 ? dictionary.clients.one : dictionary.clients.many;
+  const rhythmSummary = `${dictionary.clients.thisMonth ?? "Este mês"}: ${monthValue} ${currentContactLabel}; ${dictionary.clients.vsPreviousMonth ?? "vs. mês anterior"}: ${previousMonth ?? 0} ${previousContactLabel}.`;
+  return (
+    <aside className="brand-panel dashboard-rhythm-card overflow-hidden rounded-[var(--radius-card)] p-6 text-[color:var(--project-hero-foreground)]" aria-labelledby="dashboard-client-rhythm-title">
+      <span
+        aria-hidden
+        className="pointer-events-none absolute -left-16 -top-16 h-48 w-48 rounded-full bg-[color:var(--dashboard-milestone-glow)] blur-3xl opacity-100 dark:opacity-40"
+      />
+      <div className="relative flex items-center justify-between gap-4">
+        <div className="flex min-w-0 items-center gap-3">
+          <span
+            className="flex h-[1.875rem] w-[1.875rem] shrink-0 items-center justify-center rounded-full bg-[color:var(--dashboard-milestone-icon)] text-[color:var(--dashboard-rhythm-accent)]"
+          >
+            <CircleDot aria-hidden className="size-3.5" />
+          </span>
+          <h2 id="dashboard-client-rhythm-title" className="truncate text-title font-semibold tracking-tight">{dictionary.clients.rhythmTitle ?? "Resumo"}</h2>
+        </div>
+        <span className="shrink-0 rounded-full border border-[color:var(--project-hero-border)] px-2.5 py-1 text-micro font-semibold text-[color:var(--project-hero-muted)]">
+          {rhythmStatus}
+        </span>
+      </div>
+
+      <div className="relative mt-7 flex flex-wrap items-baseline gap-x-2 gap-y-1">
+        <span className="text-kpi-lg leading-none text-[color:var(--project-hero-foreground)]">
+          {isLoading ? "–" : monthValue}
+        </span>
+        <span className="text-body font-semibold text-[color:var(--project-hero-muted)]">
+          {monthValue === 1 ? dictionary.clients.newOne : dictionary.clients.newMany}
+        </span>
+      </div>
+      {delta !== null && !isLoading ? (
+        <span
+          className="relative mt-3 inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-micro font-semibold"
+          style={delta > 0
+            ? { borderColor: "var(--dashboard-rhythm-trend-border, var(--project-hero-border))", color: "var(--dashboard-rhythm-accent)" }
+            : { borderColor: "var(--project-hero-border)", color: "var(--project-hero-muted)" }}
+        >
+          {delta > 0 ? `↑ +${delta}` : delta < 0 ? `↓ ${delta}` : "– 0"} {dictionary.clients.vsPreviousMonth ?? "vs. mês anterior"}
+        </span>
+      ) : null}
+
+      {series.length > 0 ? <RhythmSparkline series={series} ariaLabel={rhythmSummary} /> : null}
+
+      <div className="relative mt-6 flex flex-col gap-3 border-t border-[color:var(--project-hero-border)] pt-5">
+        <RhythmPeriodRow label={dictionary.clients.lastSevenDays} value={kpis?.crmNewLast7Days ?? 0} isLoading={isLoading} />
+        <RhythmPeriodRow label={dictionary.clients.lastThirtyDays} value={kpis?.crmNewLast30Days ?? 0} isLoading={isLoading} />
+        <RhythmPeriodRow label={dictionary.clients.lastTwelveMonths} value={kpis?.crmNewLastYear ?? 0} isLoading={isLoading} />
+      </div>
+    </aside>
+  );
+}
+
+function AddContactCard() {
+  const dictionary = useDashboardDictionary();
+  return (
+    <Link
+      href="/crm?create=contact"
+      prefetch={false}
+      className="flex min-h-[9.25rem] w-full flex-col items-center justify-center gap-2 rounded-[var(--radius-card)] border border-dashed border-[color:var(--border)] p-4 text-meta font-semibold text-[color:var(--muted-foreground)] transition-colors hover:border-[color:var(--accent)] hover:text-[color:var(--accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-current"
+    >
+      <span className="flex h-9 w-9 items-center justify-center rounded-full border border-current">
+        <Plus className="h-4 w-4" strokeWidth={2} />
+      </span>
+      {dictionary.clients.addNew ?? "Novo contacto"}
+    </Link>
   );
 }
 
@@ -911,17 +1319,17 @@ function ContactCard({ c }: { c: DashboardCrmRecentContact }) {
   const dictionary = useDashboardDictionary();
   const meta = crmStatusMeta(c.status, dictionary);
   return (
-    <Link
-      href={`/crm?contact=${c.id}`}
-      className={`${SURFACE} group flex w-full flex-col p-4 transition hover:border-[color:var(--accent)]/40 hover:shadow-[var(--dashboard-shadow-md)] sm:w-[280px]`}
-    >
+    <Card asChild variant="interactive" density="compact">
+      <Link href={`/crm?contact=${encodeURIComponent(c.id)}`} prefetch={false} className="group relative w-full p-5">
+        <span
+          aria-hidden
+          className="absolute right-3 top-3 flex h-7 w-7 items-center justify-center rounded-full border border-[color:var(--border)] text-[color:var(--foreground-accent-link)] opacity-0 transition group-hover:opacity-100 group-focus-visible:opacity-100"
+        >
+          <ArrowUpRight className="h-3.5 w-3.5" />
+        </span>
       <div className="flex items-center gap-3">
         <span
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-meta font-bold"
-          style={{
-            background: "var(--dashboard-client-avatar)",
-            color: "var(--role-client-strong)",
-          }}
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[color:var(--dashboard-client-avatar)] text-meta font-bold text-[color:var(--role-client-strong)]"
           aria-hidden
         >
           {initialsOf(c.name)}
@@ -931,23 +1339,23 @@ function ContactCard({ c }: { c: DashboardCrmRecentContact }) {
           <p className="truncate text-meta text-[color:var(--muted-foreground)]">{c.company ?? "—"}</p>
         </div>
       </div>
-      <div className="mt-4 flex items-center justify-between border-t border-[color:var(--border)] pt-3 text-label text-[color:var(--muted-foreground)]">
+      <div className="mt-5 flex flex-wrap items-center justify-between gap-2 border-t border-[color:var(--border)] pt-3 text-meta text-[color:var(--muted-foreground)]">
         <Tag meta={meta} />
         <span className="inline-flex items-center gap-1.5">
-          <CalendarDays className="h-3.5 w-3.5 opacity-70" strokeWidth={1.75} />
-          <span>{dictionary.clients.lastChange}</span>
+          <CalendarDays aria-hidden className="h-3.5 w-3.5 opacity-70" strokeWidth={1.75} />
+          <span>{c.createdAt ? (dictionary.clients.addedOn ?? dictionary.clients.lastChange) : dictionary.clients.lastChange}</span>
           <span className={`${MONO} font-semibold text-[color:var(--foreground)]`}>
-            {formatShortDate(c.lastChangedAt)}
+            {c.createdAt ? formatDayMonth(c.createdAt) : formatShortDate(c.lastChangedAt)}
           </span>
         </span>
       </div>
-    </Link>
+      </Link>
+    </Card>
   );
 }
 
-function ClientsView({ crm, isLoading }: { crm: DashboardCrmData | null; isLoading: boolean }) {
+export function ClientsView({ crm, isLoading }: { crm: DashboardCrmData | null; isLoading: boolean }) {
   const dictionary = useDashboardDictionary();
-  const kpis = crm?.kpis;
   const contacts = crm?.crm.recentContacts ?? [];
   const tilesLoading = isLoading && !crm;
 
@@ -957,83 +1365,427 @@ function ClientsView({ crm, isLoading }: { crm: DashboardCrmData | null; isLoadi
         title={dictionary.clients.title}
         subtitle={dictionary.clients.subtitle}
         action={
-          <PortalActionLink href="/crm">
-            {dictionary.clients.viewAll}
-            <ArrowUpRight className="h-3.5 w-3.5" />
-          </PortalActionLink>
+          <div className="flex flex-wrap items-center gap-2">
+            <PortalActionLink href="/crm" prefetch={false}>
+              {dictionary.clients.viewAll}
+              <ArrowUpRight className="h-3.5 w-3.5" />
+            </PortalActionLink>
+            <QuickCreateAction
+              href="/crm?create=contact"
+              label={dictionary.clients.addNew ?? "Novo contacto"}
+            />
+          </div>
         }
       />
 
-      <section className="grid grid-cols-1 gap-4 md:grid-cols-3">
-        <PeriodTile
-          label={dictionary.clients.lastSevenDays}
-          value={kpis?.crmNewLast7Days ?? 0}
-          isLoading={tilesLoading}
-          accent
-        />
-        <PeriodTile
-          label={dictionary.clients.lastThirtyDays}
-          value={kpis?.crmNewLast30Days ?? 0}
-          isLoading={tilesLoading}
-        />
-        <PeriodTile
-          label={dictionary.clients.lastTwelveMonths}
-          value={kpis?.crmNewLastYear ?? 0}
-          isLoading={tilesLoading}
-        />
-      </section>
-
-      <section className="space-y-3">
-        <div className="flex items-end justify-between">
-          <h3 className={CARD_TITLE}>{dictionary.clients.recentTitle}</h3>
-          <span className="text-label text-[color:var(--muted-foreground)]">
-            {contacts.length} {contacts.length === 1 ? dictionary.clients.one : dictionary.clients.many}
-          </span>
-        </div>
+      <div className="dashboard-clients-grid">
+        <Card asChild>
+        <section className="min-w-0 overflow-hidden" aria-labelledby="dashboard-recent-contacts">
+          <header className="flex min-h-16 items-center justify-between gap-4 border-b border-[color:var(--border)] px-5 py-4">
+            <h3 id="dashboard-recent-contacts" className={CARD_TITLE}>{dictionary.clients.recentTitle}</h3>
+            {tilesLoading ? <Skeleton className="h-7 w-24 rounded-full" /> : (
+              <DashboardCountPill
+                count={contacts.length}
+                label={contacts.length === 1 ? dictionary.clients.one : dictionary.clients.many}
+                tone="neutral"
+              />
+            )}
+          </header>
         {isLoading && contacts.length === 0 ? (
-          <div className="flex flex-wrap gap-4">
+          <div className="dashboard-contacts-list p-5">
             {[0, 1, 2, 3].map((i) => (
-              <div
+              <Card
               key={i}
-              className={`${SURFACE} flex h-32 w-full flex-col justify-between p-4 sm:w-[280px]`}
+              density="compact"
+              className="h-[9.25rem] w-full justify-between p-5"
             >
               <div className="flex items-center gap-3">
-                <Skeleton rounded="50%" className="h-9 w-9 shrink-0" />
+                <Skeleton rounded="50%" className="h-10 w-10 shrink-0" />
                 <div className="flex flex-1 flex-col gap-1.5">
                   <Skeleton rounded="999px" className="h-[0.6rem] w-[60%]" />
                   <Skeleton rounded="999px" className="h-[0.5rem] w-[80%]" />
                 </div>
               </div>
               <Skeleton rounded="999px" className="h-[0.5rem] w-[45%]" />
-            </div>
+            </Card>
             ))}
           </div>
         ) : contacts.length === 0 ? (
-          <p className="text-body text-[color:var(--muted-foreground)]">{dictionary.clients.noRecent}</p>
+          <div className="dashboard-contacts-list flex-1 p-5">
+            <DashboardEmptyState
+              className="min-h-64 min-[1081px]:col-span-2"
+              icon={(
+                <span className="flex h-11 w-11 items-center justify-center rounded-full bg-[color:var(--muted)] text-[color:var(--muted-foreground)]">
+                  <Users aria-hidden className="h-5 w-5" />
+                </span>
+              )}
+              title={dictionary.clients.recentTitle}
+              description={dictionary.clients.noRecent}
+            >
+              <AddContactCard />
+            </DashboardEmptyState>
+          </div>
         ) : (
-          <div className="flex flex-wrap gap-4">
+          <div className="dashboard-contacts-list p-5">
             {contacts.map((c) => (
               <ContactCard key={c.id} c={c} />
             ))}
+            <AddContactCard />
           </div>
         )}
-      </section>
+        </section>
+        </Card>
+        <RhythmCard crm={crm} isLoading={tilesLoading} />
+      </div>
     </div>
   );
 }
 
 /* ─── Actions tab ────────────────────────────────────────────────── */
 
-function TasksView({ rows, isLoading }: { rows: TaskRow[]; isLoading: boolean }) {
-  const dictionary = useDashboardDictionary();
+export function buildTaskQuickCreateHref(baseHref: string) {
+  const url = new URL(baseHref, "http://dashboard.local");
+  url.searchParams.set("create", "task");
+  return `${url.pathname}${url.search}${url.hash}`;
+}
+
+function TaskQuickCreateAction({ href, label }: { href: string; label: string }) {
+  return <QuickCreateAction href={buildTaskQuickCreateHref(href)} label={label} />;
+}
+
+type UpcomingTaskDay = {
+  dateKey: string;
+  weekday: string;
+  fullDate: string;
+  isToday: boolean;
+  count: number;
+  tasks: DashboardAssignedTask[];
+};
+
+function uniquePulseTasks(tasks: DashboardTasksData | null) {
+  const byId = new Map<string, DashboardAssignedTask>();
+  for (const task of tasks?.attention.tasks ?? []) byId.set(task.id, task);
+  for (const task of tasks?.tasks ?? []) byId.set(task.id, task);
+  return Array.from(byId.values());
+}
+
+export function buildUpcomingTaskDays(
+  tasks: DashboardAssignedTask[],
+  generatedAt = new Date().toISOString(),
+): UpcomingTaskDay[] {
+  const tasksByDate = new Map<string, DashboardAssignedTask[]>();
+  for (const task of tasks) {
+    const dateKey = task.dueDate ? /^\d{4}-\d{2}-\d{2}/.exec(task.dueDate)?.[0] : null;
+    if (!dateKey) continue;
+    const items = tasksByDate.get(dateKey);
+    if (items) items.push(task);
+    else tasksByDate.set(dateKey, [task]);
+  }
+
+  const startKey = dateOnly(generatedAt) ?? dateOnly(new Date())!;
+  const start = new Date(`${startKey}T00:00:00.000Z`);
+  return Array.from({ length: 7 }, (_, index) => {
+    const date = new Date(start);
+    date.setUTCDate(start.getUTCDate() + index);
+    const dateKey = date.toISOString().slice(0, 10);
+    const dueTasks = tasksByDate.get(dateKey) ?? [];
+    const formattedDate = new Intl.DateTimeFormat("pt-PT", {
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+      timeZone: "UTC",
+    }).format(date);
+    return {
+      dateKey,
+      weekday: new Intl.DateTimeFormat("pt-PT", { weekday: "short", timeZone: "UTC" }).format(date).replace(".", "").slice(0, 3),
+      fullDate: formattedDate.charAt(0).toLocaleUpperCase("pt-PT") + formattedDate.slice(1),
+      isToday: index === 0,
+      count: dueTasks.length,
+      tasks: dueTasks,
+    };
+  });
+}
+
+function TasksPulseLegendRow({ label, value, color }: { label: string; value: number; color: string }) {
+  const isEmpty = value === 0;
   return (
-    <div className="space-y-4">
+    <div className="flex items-center justify-between gap-4 text-label">
+      <span className={cn("inline-flex min-w-0 items-center gap-2", isEmpty ? "text-[color:var(--project-hero-subtle)]" : "text-[color:var(--project-hero-muted)]")}>
+        <span aria-hidden className="h-2 w-2 shrink-0 rounded-full" style={{ background: color }} />
+        <span className="truncate">{label}</span>
+      </span>
+      <strong className={cn("text-data-sm", isEmpty ? "text-[color:var(--project-hero-subtle)]" : "text-[color:var(--project-hero-foreground)]")}>{value}</strong>
+    </div>
+  );
+}
+
+function TasksPulseCard({ tasks, isLoading }: { tasks: DashboardTasksData | null; isLoading: boolean }) {
+  const dictionary = useDashboardDictionary();
+  const kpis = tasks?.kpis;
+  const pulseTasks = uniquePulseTasks(tasks);
+  const todayKey = tasks ? dateOnly(tasks.generatedAt) : null;
+  const visibleDueToday = todayKey
+    ? pulseTasks.filter((task) => task.status !== "blocked" && task.dueDate && dateOnly(task.dueDate) === todayKey).length
+    : 0;
+  const blocked = kpis?.blocked ?? 0;
+  const overdue = kpis?.overdue ?? 0;
+  const dueThisWeek = kpis?.dueThisWeek ?? 0;
+  const dueToday = Math.min(visibleDueToday, dueThisWeek);
+  const thisWeekAfterToday = Math.max(0, dueThisWeek - dueToday);
+  const later = Math.max(0, (kpis?.total ?? 0) - blocked - overdue - dueThisWeek);
+  const needsAction = blocked + overdue + dueToday;
+  const upcomingDays = buildUpcomingTaskDays(pulseTasks, tasks?.generatedAt);
+  const upcomingTotal = upcomingDays.reduce((sum, day) => sum + day.count, 0);
+  const composition = [
+    { label: dictionary.tasks.blocked, value: blocked, color: "var(--project-risk-at-risk)" },
+    { label: dictionary.tasks.overdue, value: overdue, color: "var(--project-risk-overdue)" },
+    { label: dictionary.tasks.dueToday, value: dueToday, color: "var(--accent)" },
+    { label: dictionary.tasks.dueThisWeek, value: thisWeekAfterToday, color: "var(--brand-lime,var(--project-state-active))" },
+    { label: dictionary.tasks.later, value: later, color: "var(--project-hero-subtle)" },
+  ];
+  const compositionAriaLabel = composition.map((item) => `${item.label}: ${item.value}`).join("; ");
+  const statusLabel = needsAction > 0 ? dictionary.tasks.pulseStatusAttention : dictionary.tasks.pulseStatusClear;
+
+  return (
+    <aside
+      className="brand-panel dashboard-tasks-pulse overflow-hidden rounded-[var(--radius-card)] p-6 text-[color:var(--project-hero-foreground)]"
+      aria-labelledby="dashboard-tasks-pulse-title"
+    >
+      <span aria-hidden className="pointer-events-none absolute -left-16 -top-16 h-48 w-48 rounded-full bg-[color:var(--dashboard-milestone-glow)] blur-3xl opacity-100 dark:opacity-40" />
+      <div className="relative flex items-center justify-between gap-4">
+        <div className="flex min-w-0 items-center gap-3">
+          <span className="flex h-[1.875rem] w-[1.875rem] shrink-0 items-center justify-center rounded-full bg-[color:var(--dashboard-milestone-icon)] text-[color:var(--accent)]">
+            <CircleDot aria-hidden className="size-3.5" />
+          </span>
+          <h2 id="dashboard-tasks-pulse-title" className="truncate text-title font-semibold tracking-tight">{dictionary.tasks.pulseTitle}</h2>
+        </div>
+        {isLoading ? (
+          <Skeleton className="h-6 w-20 shrink-0 rounded-full bg-[color:var(--project-hero-surface-raised)]" />
+        ) : (
+          <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-[color:var(--project-hero-border)] bg-[color:var(--project-hero-surface-raised)] px-2.5 py-1 text-micro font-semibold text-[color:var(--project-hero-muted)]">
+            <span aria-hidden className={cn("h-1.5 w-1.5 rounded-full", needsAction > 0 ? "bg-[color:var(--project-risk-overdue)]" : "bg-[color:var(--brand-lime,var(--project-state-active))]")} />
+            {statusLabel}
+          </span>
+        )}
+      </div>
+
+      {isLoading ? (
+        <div className="relative mt-7" aria-hidden="true">
+          <div className="flex items-end gap-2"><Skeleton className="h-10 w-12 rounded-lg bg-[color:var(--project-hero-surface-raised)]" /><Skeleton className="mb-1 h-4 w-32 rounded-full bg-[color:var(--project-hero-surface-raised)]" /></div>
+          <Skeleton className="mt-6 h-2 w-full rounded-full bg-[color:var(--project-hero-surface-raised)]" />
+          <div className="mt-4 space-y-2.5">{[0, 1, 2, 3, 4].map((index) => <Skeleton key={index} className="h-4 w-full rounded-full bg-[color:var(--project-hero-surface-raised)]" />)}</div>
+          <div className="my-6 border-t border-[color:var(--project-hero-border)]" />
+          <div className="grid grid-cols-7 gap-1">{Array.from({ length: 7 }, (_, index) => <Skeleton key={index} className="mx-auto h-10 w-7 rounded-full bg-[color:var(--project-hero-surface-raised)]" />)}</div>
+          <div className="mt-6 space-y-3 border-t border-[color:var(--project-hero-border)] pt-5">{[0, 1, 2].map((index) => <Skeleton key={index} className="h-4 w-full rounded-full bg-[color:var(--project-hero-surface-raised)]" />)}</div>
+        </div>
+      ) : (
+        <>
+          <div className="relative mt-7 flex flex-wrap items-baseline gap-x-2 gap-y-1">
+            <strong className="text-kpi-lg text-[color:var(--project-hero-foreground)]">{needsAction}</strong>
+            <span className="text-body font-semibold text-[color:var(--project-hero-muted)]">{dictionary.tasks.needsAction}</span>
+          </div>
+
+          <div className="relative mt-6 flex h-2 overflow-hidden rounded-full bg-[color:var(--project-hero-surface-raised)]" role="img" aria-label={`${dictionary.tasks.compositionLabel}. ${compositionAriaLabel}`}>
+            {composition.map((item) => item.value > 0 ? (
+              <span key={item.label} className="h-full min-w-1 first:rounded-l-full last:rounded-r-full" style={{ flex: item.value, background: item.color }} />
+            ) : null)}
+          </div>
+          <div className="relative mt-4 space-y-2.5">
+            {composition.map((item) => <TasksPulseLegendRow key={item.label} {...item} />)}
+          </div>
+
+          <div className="relative my-6 border-t border-[color:var(--project-hero-border)]" />
+
+          <div className="relative">
+            <span className="text-label font-semibold text-[color:var(--project-hero-muted)]">{dictionary.projects.nextSevenDays}</span>
+            <TooltipProvider delayDuration={80}>
+              <ol className="relative mt-4 grid grid-cols-7 gap-1" aria-label={`${upcomingTotal} ${upcomingTotal === 1 ? dictionary.tasks.taskDueOne : dictionary.tasks.tasksDueMany} ${dictionary.projects.withinNextSevenDays}`}>
+                {upcomingDays.map((day) => {
+                  const dayLabel = day.isToday ? dictionary.tasks.today : day.weekday;
+                  const markerClassName = "relative flex h-8 w-7 items-center justify-center rounded-full text-data-sm";
+                  return (
+                    <li key={day.dateKey} className="flex min-w-0 flex-col items-center gap-2">
+                      {day.count > 0 ? (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <button type="button" className={`${markerClassName} touch-manipulation bg-[color:var(--accent)] text-[color:var(--accent-foreground)] transition-[filter,box-shadow] hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--project-hero-foreground)]`} aria-label={`${day.fullDate}: ${day.count} ${day.count === 1 ? dictionary.tasks.taskDueOne : dictionary.tasks.tasksDueMany}. ${day.tasks.map((task) => `${task.title}, ${task.projectName}`).join("; ")}`}>
+                              {day.count}
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent side="top" className="w-64 p-3">
+                            <p className="text-label">{day.fullDate} · {day.count} {day.count === 1 ? dictionary.tasks.one : dictionary.tasks.many}</p>
+                            <ul className="mt-2 space-y-2">
+                              {day.tasks.map((task) => <li key={task.id}><p className="text-meta">{task.title}</p><p className="text-micro text-[color:var(--muted-foreground)]">{task.projectName}</p></li>)}
+                            </ul>
+                          </TooltipContent>
+                        </Tooltip>
+                      ) : (
+                        <span className={`${markerClassName} border border-[color:var(--project-hero-border)] bg-[color:var(--project-hero-surface-raised)] text-[color:var(--project-hero-subtle)]`} aria-label={`${day.fullDate}: 0`}>
+                          <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-current" />
+                        </span>
+                      )}
+                      <span className={cn("truncate text-micro", day.count > 0 ? "text-[color:var(--project-hero-muted)]" : "text-[color:var(--project-hero-subtle)]")}>{dayLabel}</span>
+                    </li>
+                  );
+                })}
+              </ol>
+            </TooltipProvider>
+          </div>
+
+          <div className="relative mt-6 flex flex-col gap-3 border-t border-[color:var(--project-hero-border)] pt-5">
+            <RhythmPeriodRow label={dictionary.tasks.dueThisWeek} value={dueThisWeek} isLoading={false} />
+            <RhythmPeriodRow label={dictionary.tasks.overdue} value={overdue} isLoading={false} />
+            <RhythmPeriodRow label={dictionary.tasks.openTotal} value={kpis?.total ?? 0} isLoading={false} />
+          </div>
+        </>
+      )}
+    </aside>
+  );
+}
+
+function TasksView({
+  rows,
+  tasks,
+  isLoading,
+  isLoadingMore,
+  onLoadMore,
+}: {
+  rows: TaskRow[];
+  tasks: DashboardTasksData | null;
+  isLoading: boolean;
+  isLoadingMore: boolean;
+  onLoadMore: () => void;
+}) {
+  const dictionary = useDashboardDictionary();
+  const tasksBaseHref = useTasksBaseHref();
+  const showLoading = isLoading && !tasks;
+  return (
+    <div className="space-y-6">
       <PortalSectionHeading
         title={dictionary.tasks.title}
-        subtitle={`${rows.length} ${rows.length === 1 ? dictionary.tasks.one : dictionary.tasks.many} · ${dictionary.tasks.groupedByUrgencyLower}`}
+        subtitle={dictionary.tasks.subtitle}
+        action={(
+          <div className="flex flex-wrap items-center gap-2">
+            <PortalActionLink href={tasksBaseHref} prefetch={false}>
+              {dictionary.tasks.viewAllAction}
+              <ArrowUpRight className="h-3.5 w-3.5" />
+            </PortalActionLink>
+            <TaskQuickCreateAction href={tasksBaseHref} label={dictionary.tasks.addNew} />
+          </div>
+        )}
       />
-      <TasksTable rows={rows} title={dictionary.tasks.all} isLoading={isLoading} />
+      <div className="dashboard-tasks-grid">
+        <TasksTable
+          rows={rows}
+          title={dictionary.tasks.all}
+          isLoading={isLoading}
+          total={tasks?.kpis.total}
+          hasMore={tasks?.pagination.hasMore}
+          isLoadingMore={isLoadingMore}
+          onLoadMore={onLoadMore}
+          createHref={tasksBaseHref}
+        />
+        <TasksPulseCard tasks={tasks} isLoading={showLoading} />
+      </div>
     </div>
+  );
+}
+
+function useAttentionPreviewCapacity(cardRef: RefObject<HTMLDivElement | null>) {
+  const [capacity, setCapacity] = useState(3);
+  useEffect(() => {
+    const update = () => {
+      const cardTop = cardRef.current?.getBoundingClientRect().top ?? 0;
+      setCapacity(getAttentionPreviewCapacity(window.innerWidth, window.innerHeight, cardTop));
+    };
+    update();
+    const observer = new ResizeObserver(update);
+    if (cardRef.current) observer.observe(cardRef.current);
+    window.addEventListener("resize", update, { passive: true });
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", update);
+    };
+  }, [cardRef]);
+  return capacity;
+}
+
+export function getAttentionPreviewCapacity(viewportWidth: number, viewportHeight: number, cardTop = 0) {
+  if (viewportWidth < 640) return 3;
+  const availableHeight = viewportHeight - Math.max(0, cardTop) - 24;
+  const wholeRows = Math.floor((availableHeight - 130) / 72);
+  return Math.max(3, Math.min(6, wholeRows));
+}
+
+function AttentionTasksCard({
+  tasks,
+  isLoading,
+  onViewAll,
+}: {
+  tasks: DashboardTasksData | null;
+  isLoading: boolean;
+  onViewAll: () => void;
+}) {
+  const dictionary = useDashboardDictionary();
+  const projectBaseHref = useProjectBaseHref();
+  const cardRef = useRef<HTMLDivElement>(null);
+  const capacity = useAttentionPreviewCapacity(cardRef);
+  const attentionTasks = tasks?.attention.tasks ?? [];
+  const visibleTasks = attentionTasks.slice(0, capacity);
+  const hiddenCount = Math.max(0, (tasks?.attention.total ?? 0) - visibleTasks.length);
+  const labels: Record<DashboardTaskAttentionState, string> = {
+    blocked: dictionary.tasks.blocked,
+    overdue: dictionary.tasks.overdue,
+    today: dictionary.tasks.dueToday,
+    soon: dictionary.tasks.dueThisWeek,
+  };
+
+  return (
+    <Card ref={cardRef} className="min-h-0 overflow-hidden lg:col-span-2 lg:col-start-1 lg:row-start-2">
+      <header className="flex min-h-[4.875rem] shrink-0 items-center justify-between border-b border-[color:var(--border)] px-5 py-4">
+        <div className="flex items-center gap-3">
+          <span className="project-section-icon"><CircleDot className="size-3.5" /></span>
+          <div>
+            <h2 className={CARD_TITLE}>{dictionary.tasks.title}</h2>
+            <p className="text-meta text-[color:var(--muted-foreground)]">{dictionary.tasks.attentionSubtitle}</p>
+          </div>
+        </div>
+        {isLoading && !tasks ? <Skeleton className="h-[26px] w-20 rounded-full" /> : (
+          <DashboardCountPill count={tasks?.kpis.total ?? 0} label={dictionary.tasks.active} tone="accent" />
+        )}
+      </header>
+
+      {isLoading && !tasks ? (
+        <div>{Array.from({ length: capacity }, (_, index) => <Skeleton key={index} className="mx-5 my-3 h-12" />)}</div>
+      ) : visibleTasks.length === 0 ? (
+        <DashboardEmptyState
+          className="min-h-52"
+          icon={(
+            <span className="flex h-11 w-11 items-center justify-center rounded-full bg-[color:var(--muted)] text-[color:var(--muted-foreground)]">
+              <CheckCircle2 aria-hidden className="h-5 w-5" />
+            </span>
+          )}
+          title={dictionary.tasks.allClear}
+          description={dictionary.tasks.urgentEmpty}
+        />
+      ) : (
+        <div>
+          {visibleTasks.map((task) => {
+            const attentionState = attentionStateFromTask(task, tasks!.generatedAt);
+            return <DashboardTaskListRow key={task.id} task={task} href={projectHref(projectBaseHref, task.projectId)} attentionState={attentionState ?? undefined} attentionLabel={attentionState ? labels[attentionState] : undefined} />;
+          })}
+        </div>
+      )}
+
+      <footer className="mt-auto flex min-h-[3.25rem] shrink-0 items-center justify-between gap-3 border-t border-[color:var(--border)] px-5 py-3">
+        <span className="text-meta text-[color:var(--muted-foreground)]">
+          {hiddenCount > 0 ? dictionary.tasks.moreAttention(hiddenCount) : dictionary.tasks.attentionVisible}
+        </span>
+        <button type="button" onClick={onViewAll} className="text-body shrink-0 font-semibold text-[color:var(--accent)] hover:underline">
+          {dictionary.tasks.viewAll} →
+        </button>
+      </footer>
+    </Card>
   );
 }
 
@@ -1041,32 +1793,22 @@ function TasksView({ rows, isLoading }: { rows: TaskRow[]; isLoading: boolean })
 
 function OverviewView({
   data,
-  taskRows,
   milestones,
   sections,
+  onViewAllTasks,
 }: {
   data: DashboardState;
-  taskRows: TaskRow[];
   milestones: Milestone[];
   sections: DashboardSection[];
+  onViewAllTasks: () => void;
 }) {
-  const overviewTaskRows = taskRows.slice(0, 5);
   const overviewMilestones = milestones.slice(0, 5);
 
-  /* Bento (Idea C): two KPI cards (top-left + top-mid), tasks spanning the
-     bottom-left, and the milestones brand panel as a tall tile anchoring the
-     full-height right column. Equal-height rows: row 1 = KPI cards (stretch to
-     match), row 2 = tasks panel; the milestones tile spans both rows. */
   return (
     <section className="grid grid-cols-1 gap-4 lg:grid-cols-3 lg:grid-rows-[auto_minmax(0,1fr)] lg:[grid-auto-flow:dense]">
-      {sections.includes("projects") ? <ProjectsKpiCard projects={data.projects} /> : null}
-      {sections.includes("crm") ? <CrmKpiCard crm={data.crm} /> : null}
-      {sections.includes("tasks") ? <TasksTable
-        rows={overviewTaskRows}
-        isLoading={data.tasks === null && (data.isProjectsLoading || data.isCrmLoading || data.isTasksLoading)}
-        className="lg:col-span-2 lg:col-start-1 lg:row-start-2 h-[340px]"
-        bodyClassName="flex-1 overflow-hidden"
-      /> : null}
+      {sections.includes("projects") ? <ProjectsKpiCard projects={data.projects} isLoading={data.isProjectsLoading} /> : null}
+      {sections.includes("crm") ? <CrmKpiCard crm={data.crm} isLoading={data.isCrmLoading} /> : null}
+      {sections.includes("tasks") ? <AttentionTasksCard tasks={data.tasks} isLoading={data.tasks === null && data.isTasksLoading} onViewAll={onViewAllTasks} /> : null}
       {sections.includes("projects") ? <MilestonesPanel
         items={overviewMilestones}
         isLoading={data.isProjectsLoading && milestones.length === 0}
@@ -1090,14 +1832,15 @@ export type AppDashboardProps = {
 export function AppDashboard({ client, contributions, initialData, viewerFirstName, dictionary = defaultDashboardDictionary, onNotify }: AppDashboardProps) {
   const sections = useMemo(() => Array.from(new Set(contributions.flatMap((contribution) => contribution.sections))), [contributions]);
   const projectComponents = contributions.find((contribution) => contribution.projectComponents)?.projectComponents ?? null;
+  const projectBaseHref = projectComponents?.projectBaseHref ?? "/projects";
   const [tab, setTab] = useState<TabKey>("overview");
   const data = useDashboardData({ client, initialData, sections, messages: dictionary.data, onNotify });
 
-  const taskRows = useMemo(() => buildTasks(data.tasks), [data.tasks]);
+  const taskRows = useMemo(() => buildTasks(data.tasks, projectBaseHref), [data.tasks, projectBaseHref]);
   const milestones = useMemo(() => buildMilestones(data.projects), [data.projects]);
 
   const urgentCount =
-    (data.tasks?.kpis.overdue ?? 0) + (data.tasks?.kpis.blocked ?? 0) + (data.projects?.kpis.projectsAtRisk ?? 0);
+    (data.tasks?.kpis.overdue ?? 0) + (data.tasks?.kpis.blocked ?? 0) + (data.projects?.kpis.projectsAttention ?? 0);
 
   return (
     <DashboardDictionaryContext.Provider value={dictionary}>
@@ -1116,6 +1859,7 @@ export function AppDashboard({ client, contributions, initialData, viewerFirstNa
         <WelcomeHeader
           name={viewerFirstName ?? ""}
           urgentCount={urgentCount}
+          unownedProjects={data.projects?.kpis.projectsWithoutOwner ?? 0}
           errors={sections.flatMap((section) => data.errors[section] ? [data.errors[section]] : [])}
           activeProjects={data.projects?.kpis.projectsActive ?? 0}
           overdueProjects={data.projects?.kpis.projectsOverdue ?? 0}
@@ -1134,11 +1878,19 @@ export function AppDashboard({ client, contributions, initialData, viewerFirstNa
 
         <div className="mt-3">
           {tab === "overview" && (
-            <OverviewView data={data} taskRows={taskRows} milestones={milestones} sections={sections} />
+            <OverviewView data={data} milestones={milestones} sections={sections} onViewAllTasks={() => setTab("tasks")} />
           )}
           {tab === "projects" && sections.includes("projects") ? <ProjectsView projects={data.projects} isLoading={data.isProjectsLoading} /> : null}
           {tab === "clients" && sections.includes("crm") ? <ClientsView crm={data.crm} isLoading={data.isCrmLoading} /> : null}
-          {tab === "tasks" && sections.includes("tasks") ? <TasksView rows={taskRows} isLoading={data.isTasksLoading} /> : null}
+          {tab === "tasks" && sections.includes("tasks") ? (
+            <TasksView
+              rows={taskRows}
+              tasks={data.tasks}
+              isLoading={data.isTasksLoading}
+              isLoadingMore={data.isTasksLoadingMore}
+              onLoadMore={data.loadMoreTasks}
+            />
+          ) : null}
         </div>
       </div>
     </div>

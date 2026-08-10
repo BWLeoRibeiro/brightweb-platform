@@ -5,9 +5,11 @@ import test from "node:test";
 import ts from "typescript";
 
 import type { ProjectDashboardData, ProjectLink } from "../packages/module-projects/src/types.ts";
+import { ptProjectActivityDictionary } from "../packages/module-projects/src/activity-messages.ts";
 import { listAccountProjects } from "../packages/module-projects/src/account-projects.ts";
 import {
   createProjectsAssignableProfilesGetHandler,
+  createProjectsActivityGetHandler,
   createProjectsDeleteHandler,
   createProjectsLinksDeleteHandler,
   createProjectsLinksPatchHandler,
@@ -25,12 +27,172 @@ import {
 } from "../packages/module-projects/src/http.ts";
 import { getClientProjectHealth } from "../packages/module-projects/src/server.ts";
 import { defaultProjectsUiDictionary } from "../packages/module-projects/src/ui/dictionary.ts";
+import { clientProjectsDictionary } from "../packages/module-projects/src/ui/client/dictionary.ts";
+import { defaultDashboardDictionary } from "../packages/app-shell/src/dashboard/dictionary.ts";
 import { resolveProjectsNavigation } from "../packages/module-projects/src/ui/navigation.ts";
 import { parseProjectBoardApiError, parseTaskListPayload } from "../packages/module-projects/src/ui/project-board-response-parser.ts";
 import { parseProjectDashboardPayload, parseProjectLinksPayload, projectDetailDataReducer } from "../packages/module-projects/src/ui/project-detail-data-provider.tsx";
 import { createProjectsModuleRegistration } from "../packages/module-projects/src/registration.ts";
+import {
+  getCompactCollectionPreview,
+  hasCompactCollectionOverflow,
+} from "../packages/module-projects/src/ui/shared/compact-collection-model.ts";
+import { formatNaturalDisplayName } from "../packages/module-projects/src/ui/shared/natural-display-name.ts";
 
-const project = { id: "project-1", organizationId: "org-1", organizationName: "MQ", organizationOwnerLabel: null, organizationOwnerEmail: null, organizationOwnerPhone: null, name: "Projeto", code: "MQ-1", status: "active", health: "on_track", ownerProfileId: null, ownerLabel: null, ownerEmail: null, ownerPhone: null, activatedAt: null, targetDate: null, completedAt: null, cancellationReason: null, summary: null, createdAt: "2026-01-01T00:00:00.000Z", updatedAt: "2026-01-01T00:00:00.000Z", taskStats: { total: 0, done: 0, overdue: 0, blocked: 0 }, milestoneStats: { total: 0, achieved: 0, delayed: 0 } } satisfies ProjectDashboardData["project"];
+function collectDictionaryStrings(value: unknown): string[] {
+  if (typeof value === "string") return [value];
+  if (!value || typeof value !== "object") return [];
+  return Object.values(value).flatMap(collectDictionaryStrings);
+}
+
+test("project-facing Portuguese copy consistently calls milestones metas", () => {
+  const visibleCopy = collectDictionaryStrings({
+    projects: defaultProjectsUiDictionary,
+    clientProjects: clientProjectsDictionary,
+    activity: ptProjectActivityDictionary,
+    dashboardMilestones: defaultDashboardDictionary.milestones,
+  });
+
+  assert.equal(visibleCopy.some((label) => /milestone|marcos?/i.test(label)), false);
+  assert.equal(defaultProjectsUiDictionary.detail.milestones, "Metas");
+  assert.equal(defaultProjectsUiDictionary.forms.newMilestone, "Nova meta");
+  assert.equal(clientProjectsDictionary.list.milestones(1, 2), "1/2 metas");
+  assert.equal(defaultDashboardDictionary.milestones.emptyDescription, "Metas com data aparecem aqui.");
+});
+
+test("project clipboard feedback is localized and action-specific", () => {
+  assert.equal(defaultProjectsUiDictionary.detail.copyProjectId, "Copiar ID do projeto");
+  assert.equal(defaultProjectsUiDictionary.messages.projectIdCopied, "ID do projeto copiado.");
+  assert.equal(
+    defaultProjectsUiDictionary.messages.projectIdCopyError,
+    "Não foi possível copiar o ID do projeto.",
+  );
+});
+
+test("project summary cards use native navigation without swallowing their copy action", () => {
+  const source = readFileSync(
+    join(process.cwd(), "packages/module-projects/src/ui/shared/project-summary-card.tsx"),
+    "utf8",
+  );
+
+  assert.match(source, /<Card asChild variant="interactive">/);
+  assert.match(source, /<Link[\s\S]*href=\{projectHref\}[\s\S]*prefetch=\{false\}/);
+  assert.match(source, /className="after:absolute after:inset-0/);
+  assert.match(source, /<button[\s\S]*onClick=\{copyProjectId\}/);
+  assert.match(source, /event\.preventDefault\(\)[\s\S]*event\.stopPropagation\(\)/);
+  assert.doesNotMatch(source, /role="link"|useRouter|onKeyDown=\{openProjectFromKeyboard\}/);
+});
+
+test("project detail hero only renders selected project dates and combines complete ranges", () => {
+  const heroSource = readFileSync(
+    join(process.cwd(), "packages/module-projects/src/ui/project-detail-hero.tsx"),
+    "utf8",
+  );
+
+  assert.match(heroSource, /const hasStartDate = Boolean\(project\.startDate\)/);
+  assert.match(heroSource, /const hasTargetDate = Boolean\(project\.targetDate\)/);
+  assert.match(heroSource, /\{hasStartDate \|\| hasTargetDate \? \(/);
+  assert.match(heroSource, /hasBothProjectDates[\s\S]*dictionary\.detail\.projectDates/);
+  assert.match(heroSource, /ProjectHeroDate label=\{dictionary\.detail\.projectStartShort\}/);
+  assert.match(heroSource, /ProjectHeroDate label=\{dictionary\.detail\.projectEndShort\}/);
+  assert.match(heroSource, /xl:divide-x/);
+  assert.match(heroSource, /grid-cols-\[auto_minmax\(2\.5rem,1fr\)_auto\]/);
+  assert.equal(defaultProjectsUiDictionary.detail.projectManager, "Gestor do projeto");
+  assert.equal(defaultProjectsUiDictionary.detail.projectDates, "Período do projeto");
+  assert.equal(defaultProjectsUiDictionary.detail.projectStartDate, "Data de início");
+  assert.equal(defaultProjectsUiDictionary.detail.projectDueDate, "Prazo do projeto");
+});
+
+test("compact collection previews preserve the 0/1/2/3 boundary and gate overflow at 4+", () => {
+  for (const count of [0, 1, 2, 3, 4, 9]) {
+    const items = Array.from({ length: count }, (_, index) => index);
+    assert.deepEqual(getCompactCollectionPreview(items), items.slice(0, 3));
+    assert.equal(hasCompactCollectionOverflow(count), count >= 4);
+  }
+});
+
+test("Projects compact cards use natural three-row previews, viewer expansion, and reduced-motion reveals", () => {
+  const uiRoot = join(process.cwd(), "packages/module-projects/src/ui");
+  const cardSources = [
+    "project-recent-activity.tsx",
+    "project-detail-team-card.tsx",
+    "project-links-card.tsx",
+  ].map((file) => readFileSync(join(uiRoot, file), "utf8"));
+  const sharedSource = readFileSync(join(uiRoot, "shared/compact-collection.tsx"), "utf8");
+  const skeletonSource = readFileSync(join(uiRoot, "shared/compact-collection-skeleton.tsx"), "utf8");
+
+  for (const source of cardSources) {
+    assert.match(source, /getCompactCollectionPreview/);
+    assert.match(source, /CompactCollectionHeaderActions/);
+    assert.doesNotMatch(source, /h-\[17\.75rem\]|transition-\[padding\]/);
+  }
+  assert.match(sharedSource, /motion-safe:animate-in[\s\S]*motion-safe:fade-in-0[\s\S]*motion-safe:slide-in-from-bottom-1[\s\S]*motion-safe:duration-200/);
+  assert.match(sharedSource, /^"use client";/);
+  assert.match(skeletonSource, /CompactCollectionContentSkeleton[\s\S]*min-h-\[3\.25rem\]/);
+});
+
+test("Projects activity endpoint keeps the legacy array response and exposes bounded pagination", async () => {
+  const pageCalls: unknown[] = [];
+  let legacyCalls = 0;
+  const handler = createProjectsActivityGetHandler({
+    getAccess: async () => ({ ok: true, supabase: {} }),
+    listActivity: async () => {
+      legacyCalls += 1;
+      return [];
+    },
+    queryActivity: async (_supabase: unknown, projectId: string, query: unknown) => {
+      pageCalls.push({ projectId, query });
+      return { items: [], page: 2, pageSize: 3, total: 7, totalPages: 3 };
+    },
+  } as never);
+
+  const pagedResponse = await handler(
+    new Request("https://example.test/api/projects/project-1/activity?page=2&pageSize=3"),
+    { params: Promise.resolve({ id: "project-1" }) },
+  );
+  assert.equal(pagedResponse.status, 200);
+  assert.deepEqual(pageCalls, [{ projectId: "project-1", query: { page: 2, pageSize: 3 } }]);
+  assert.deepEqual(await pagedResponse.json(), { items: [], page: 2, pageSize: 3, total: 7, totalPages: 3 });
+
+  const legacyResponse = await handler(
+    new Request("https://example.test/api/projects/project-1/activity"),
+    { params: Promise.resolve({ id: "project-1" }) },
+  );
+  assert.equal(legacyResponse.status, 200);
+  assert.equal(legacyCalls, 1);
+  assert.deepEqual(await legacyResponse.json(), []);
+});
+
+test("Projects portfolio cancels stale requests and debounces only search", () => {
+  const controller = readFileSync(join(process.cwd(), "packages/module-projects/src/ui/projects-portfolio/use-projects-portfolio-controller.ts"), "utf8");
+  const client = readFileSync(join(process.cwd(), "packages/module-projects/src/ui/client.ts"), "utf8");
+  const list = readFileSync(join(process.cwd(), "packages/module-projects/src/ui/projects-portfolio/projects-portfolio-list.tsx"), "utf8");
+  assert.match(controller, /signal: controller\.signal/);
+  assert.match(controller, /setIsLoading\(true\)[\s\S]*window\.setTimeout\(\(\) => \{[\s\S]*setDebouncedSearch/);
+  assert.doesNotMatch(controller, /setTimeout\(\(\) => \{\s*void loadProjects/);
+  assert.match(client, /signal: requestOptions\.signal/);
+  assert.match(list, /aria-busy=\{isLoading\}/);
+});
+
+test("create-project organization choices never present unresolved or failed data as empty", () => {
+  const source = readFileSync(join(process.cwd(), "packages/module-projects/src/ui/create-project-sheet.tsx"), "utf8");
+  assert.match(source, /organizationsLoadState[^\n]*"idle" \| "pending" \| "fulfilled" \| "rejected"/);
+  assert.match(source, /setOrganizationsLoadState\("pending"\)[\s\S]*requestRaw/);
+  assert.match(source, /isLoadingOrganizations \?[\s\S]*loadingOrganizations[\s\S]*organizationsLoadState === "rejected"[\s\S]*loadOrganizationsError[\s\S]*hasOrganizations/);
+  assert.match(source, /role="alert"[\s\S]*loadOrganizationsError/);
+  assert.match(source, /size="icon"[\s\S]*aria-label=\{dictionary\.projectCreate\.newOrganization\}[\s\S]*<Plus className="size-4" \/>/);
+  assert.match(source, /<OrganizationCreateSheet[\s\S]*onSubmit=\{handleCreateOrganization\}/);
+  assert.match(source, /requestRaw\("\/api\/organizations"/);
+  assert.doesNotMatch(source, /requestRaw\("\/api\/projects\/organizations"/);
+  assert.match(source, /createdOrganizationRef\.current = created;[\s\S]*flushSync\(\(\) => \{[\s\S]*setOrganizationOptions\(\(current\) => upsertOrganizationOption\(current, created\)\)[\s\S]*setOrganizationId\(created\.id\)/);
+  assert.match(source, /handleOrganizationSheetOpenChange[\s\S]*createdOrganizationRef\.current[\s\S]*setOrganizationId\(created\.id\)/);
+  assert.match(source, /performProjectCancel[\s\S]*resetProjectForm\(organizationOptions, defaultOrganizationIdRef\.current\)[\s\S]*setOpen\(false\)/);
+  assert.match(source, /if \(!defaultOrganizationIdRef\.current && nextOrganizations\[0\]\?\.id\)/);
+  assert.match(source, /latestCreatedOrganizationRef\.current[\s\S]*reconcileLoadedOrganizationOptions\(nextOrganizations, latestCreated\)/);
+  assert.match(source, /onOpenChange=\{handleOrganizationSheetOpenChange\}/);
+});
+
+const project = { id: "project-1", organizationId: "org-1", organizationName: "MQ", organizationOwnerLabel: null, organizationOwnerEmail: null, organizationOwnerPhone: null, name: "Projeto", code: "MQ-1", status: "active", health: "on_track", ownerProfileId: null, ownerLabel: null, ownerEmail: null, ownerPhone: null, activatedAt: null, startDate: null, targetDate: null, completedAt: null, cancellationReason: null, summary: null, createdAt: "2026-01-01T00:00:00.000Z", updatedAt: "2026-01-01T00:00:00.000Z", taskStats: { total: 0, done: 0, overdue: 0, blocked: 0 }, milestoneStats: { total: 0, achieved: 0, delayed: 0 } } satisfies ProjectDashboardData["project"];
 const link = { id: "link-1", projectId: "project-1", label: "Drive", url: "https://example.com", visibility: "staff", kind: "drive", createdAt: project.createdAt, updatedAt: project.updatedAt } satisfies ProjectLink;
 const dashboard = { project, members: [], milestones: [], tasks: [], links: [link], activity: [] } satisfies ProjectDashboardData;
 
@@ -111,6 +273,7 @@ test("client project health enforces client link visibility in the query and res
     owner_profile_id: null,
     owner: null,
     activated_at: null,
+    start_date: null,
     target_date: null,
     completed_at: null,
     cancellation_reason: null,
@@ -311,12 +474,35 @@ test("Projects detail reducer replaces links without changing the dashboard reco
   assert.deepEqual(projectDetailDataReducer(dashboard, { type: "replace-links", links }), { ...dashboard, links });
 });
 
-test("Projects board parser accepts task lists and preserves API errors", () => {
+test("Projects board parser accepts task lists and reads only public API errors", () => {
   const task = { id: "task-1", projectId: project.id, milestoneId: null, title: "Board task", description: null, status: "todo", health: "on_track", priority: "medium", assigneeProfileId: null, assigneeLabel: null, reporterProfileId: null, reporterLabel: null, dueDate: null, position: 1, blockedReason: null, createdAt: project.createdAt, updatedAt: project.updatedAt } as const;
   assert.deepEqual(parseTaskListPayload({ data: [task] }), [task]);
   assert.equal(parseTaskListPayload({ data: [{ id: "task-1" }] }), null);
-  assert.equal(parseProjectBoardApiError({ error: "Move rejected" }, "Fallback"), "Move rejected");
+  assert.equal(
+    parseProjectBoardApiError({ error: { code: "MOVE_REJECTED", message: "Move rejected" } }, "Fallback"),
+    "Move rejected",
+  );
+  assert.equal(parseProjectBoardApiError({ error: "Raw internal detail" }, "Fallback"), "Fallback");
   assert.equal(parseProjectBoardApiError({}, "Fallback"), "Fallback");
+});
+
+test("Projects UI request failures consistently read the public error envelope", () => {
+  const uiRoot = join(process.cwd(), "packages/module-projects/src/ui");
+  const consumers = [
+    "create-project-sheet.tsx",
+    "project-edit-sheet.tsx",
+    "project-detail-create-sheets/project-link-create-sheet.tsx",
+    "project-links-card.tsx",
+    "project-members-edit-sheet.tsx",
+    "project-status-quick-action.tsx",
+    "project-create/use-project-setup-state.ts",
+  ];
+
+  for (const consumer of consumers) {
+    const source = readFileSync(join(uiRoot, consumer), "utf8");
+    assert.match(source, /parseProjectBoardApiError\(/, `${consumer} must read public errors`);
+    assert.doesNotMatch(source, /typeof [a-zA-Z]+\?\.error === "string"/, `${consumer} must not expose raw errors`);
+  }
 });
 
 test("Projects UI ships Portuguese defaults and configurable shell registration", () => {
@@ -407,6 +593,62 @@ test("Projects package UI contains the literal list/detail translation and no ra
   assert.doesNotMatch(source, /#[0-9a-f]{3,8}\b|rgba?\(|color-mix\(/i);
   assert.doesNotMatch(source, /\bfont-medium\b/);
   for (const symbol of ["ProjectsPage", "ProjectDetailPage", "ProjectsToolbarControls", "ProjectDetailDataProvider", "ProjectBoardKanban", "ProjectTasksPage", "ProjectBoardLoading"]) assert.match(readFileSync(join(root, "index.ts"), "utf8"), new RegExp(symbol.replace("ProjectsToolbarControls", "toolbar-controls").replace("ProjectDetailDataProvider", "project-detail-data-provider").replace("ProjectsPage", "projects-page").replace("ProjectDetailPage", "project-detail-page").replace("ProjectBoardKanban", "project-board-kanban").replace("ProjectTasksPage", "project-tasks-page").replace("ProjectBoardLoading", "project-board-loading")));
+});
+
+test("dashboard attention cards use the canonical editorial attention-row recipe", () => {
+  const card = readFileSync(
+    join(process.cwd(), "packages/module-projects/src/ui/shared/dashboard-project-attention-card.tsx"),
+    "utf8",
+  );
+  const projectTokens = readFileSync(join(process.cwd(), "packages/module-projects/tokens.css"), "utf8");
+  const dashboard = readFileSync(join(process.cwd(), "packages/app-shell/src/dashboard/dashboard-client.tsx"), "utf8");
+  const dashboardStyles = readFileSync(join(process.cwd(), "packages/app-shell/src/dashboard/dashboard.css"), "utf8");
+
+  assert.match(card, /className="project-attention-row group/);
+  assert.match(card, /import "\.\.\/\.\.\/\.\.\/tokens\.css"/);
+  assert.match(card, /<ProjectPill[\s\S]*size="normal"[\s\S]*dotClassName="project-attention-pill-dot"/);
+  assert.match(card, /className="project-attention-company">\{formatNaturalDisplayName\(project\.organizationName\)\}/);
+  assert.match(card, /className="project-attention-title">\{formatNaturalDisplayName\(project\.name\)\}/);
+  assert.match(card, /<strong>\{reason\}<\/strong> \{detail\}/);
+  assert.match(card, /project\.attentionReason !== "without_owner"/);
+  assert.match(card, /project\.ownerLabel \? \(/);
+  assert.match(card, /dictionary\.dashboard\.defineDeadline/);
+  assert.match(card, /<CalendarDays aria-hidden className="project-attention-date-icon/);
+  assert.match(card, /<span aria-hidden className="project-attention-arrow">/);
+  assert.doesNotMatch(card, /text-label[^\n]*organizationName|monoTabularClassName/);
+  assert.match(projectTokens, /\.project-attention-row \{[\s\S]*grid-template-columns: 2\.125rem minmax\(0, 1\.18fr\) minmax\(11\.875rem, 0\.86fr\) 1\.75rem/);
+  assert.match(projectTokens, /\.project-attention-company \{[\s\S]*font-size: var\(--text-meta\)[\s\S]*text-transform: none[\s\S]*white-space: nowrap/);
+  assert.match(projectTokens, /\.project-attention-date \{[\s\S]*font-size: var\(--text-ui-fine\)/);
+  assert.match(projectTokens, /@media \(max-width: 650px\)[\s\S]*\.project-attention-meta \{ grid-column: 2 \/ 4/);
+  assert.match(projectTokens, /@media \(prefers-reduced-motion: reduce\)/);
+  assert.match(dashboard, /className="dashboard-projects-grid"/);
+  assert.match(dashboard, /<PortfolioHealthCard[\s\S]*<Card asChild>/);
+  assert.match(dashboard, /<DashboardCountPill count=\{kpis\?\.projectsAttention \?\? 0\} tone="warning"/);
+  assert.doesNotMatch(dashboardStyles, /dashboard-attention-count/);
+  assert.match(dashboardStyles, /@media \(min-width: 1081px\)[\s\S]*grid-template-columns: minmax\(0, 1fr\) 23\.75rem/);
+  assert.equal(defaultProjectsUiDictionary.dashboard.badges.withoutOwner, "Por atribuir");
+  assert.equal(defaultProjectsUiDictionary.dashboard.defineDeadline, "Definir prazo");
+});
+
+test("dashboard organization names normalize only legacy all-caps values", () => {
+  assert.equal(formatNaturalDisplayName("ZZ TESTE PLATAFORMA (APAGAR)"), "ZZ Teste Plataforma (Apagar)");
+  assert.equal(formatNaturalDisplayName("MQ CONSULTORIA DE NEGÓCIOS"), "MQ Consultoria de Negócios");
+  assert.equal(formatNaturalDisplayName("BSCork"), "BSCork");
+  assert.equal(formatNaturalDisplayName("iServices"), "iServices");
+});
+
+test("Projects board toolbar waits for authoritative page actions", () => {
+  const root = join(process.cwd(), "packages/module-projects/src/ui");
+  const toolbar = readFileSync(join(root, "project-board-toolbar-controls.tsx"), "utf8");
+  const milestoneHook = readFileSync(join(root, "hooks/use-project-board-milestone-events.ts"), "utf8");
+  const taskMount = readFileSync(join(root, "project-detail-create-sheets/project-detail-create-sheets-mount.tsx"), "utf8");
+
+  assert.match(toolbar, /useShellActionReady\(PROJECTS_EVENTS\.setBoardMilestone\)/);
+  assert.match(toolbar, /useShellActionReady\(PROJECTS_EVENTS\.openNewTask\)/);
+  assert.match(toolbar, /disabled=\{!milestoneActionReady\}/);
+  assert.match(toolbar, /disabled=\{!newTaskActionReady\}/);
+  assert.match(milestoneHook, /useShellAction<ProjectsBoardSetMilestoneDetail>\(PROJECTS_EVENTS\.setBoardMilestone/);
+  assert.match(taskMount, /useShellAction\(PROJECTS_EVENTS\.openNewTask/);
 });
 
 test("Projects UI barrel exposes only the supported documented component families", () => {

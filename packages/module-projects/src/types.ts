@@ -67,6 +67,7 @@ export type ProjectTask = {
   assigneeLabel: string | null;
   reporterProfileId: string | null;
   reporterLabel: string | null;
+  startDate: string | null;
   dueDate: string | null;
   position: number;
   blockedReason: string | null;
@@ -95,6 +96,14 @@ export type ProjectActivityItem = {
   payload: Record<string, unknown>;
 };
 
+export type ProjectActivityPage = {
+  items: ProjectActivityItem[];
+  page: number;
+  pageSize: number;
+  total: number;
+  totalPages: number;
+};
+
 export type ProjectDashboardData = {
   project: ProjectListItem;
   members: ProjectMember[];
@@ -102,6 +111,8 @@ export type ProjectDashboardData = {
   tasks: ProjectTask[];
   links: ProjectLink[];
   activity: ProjectActivityItem[];
+  /** Exact total when the dashboard supplied an authoritative activity preview. */
+  activityTotal?: number;
 };
 
 export type CreateProjectInput = {
@@ -110,6 +121,7 @@ export type CreateProjectInput = {
   code?: string | null;
   status?: ProjectStatus;
   ownerProfileId?: string | null;
+  startDate?: string | null;
   targetDate?: string | null;
   cancellationReason?: string | null;
   summary?: string | null;
@@ -134,6 +146,7 @@ export type UpdateProjectInput = {
   code?: string | null;
   status?: ProjectStatus;
   ownerProfileId?: string | null;
+  startDate?: string | null;
   targetDate?: string | null;
   cancellationReason?: string | null;
   summary?: string | null;
@@ -147,6 +160,7 @@ export type CreateProjectTaskInput = {
   priority?: TaskPriority;
   assigneeProfileId?: string | null;
   reporterProfileId?: string | null;
+  startDate?: string | null;
   dueDate?: string | null;
   blockedReason?: string | null;
 };
@@ -159,6 +173,7 @@ export type UpdateProjectTaskInput = {
   priority?: TaskPriority;
   assigneeProfileId?: string | null;
   reporterProfileId?: string | null;
+  startDate?: string | null;
   dueDate?: string | null;
   position?: number;
   blockedReason?: string | null;

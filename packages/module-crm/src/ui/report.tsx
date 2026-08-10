@@ -2,23 +2,24 @@
 
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { ArrowLeft, ArrowUpRight, BarChart3, Building2, CircleDashed, Sparkles, TrendingUp, UserRound } from "lucide-react";
-import { Badge, Button, SectionHeading, Skeleton, SurfaceCard } from "@brightweblabs/ui";
+import { Badge, Button, Card, SectionHeading, Skeleton, SurfaceCard } from "@brightweblabs/ui";
 
 import type { CrmReportData } from "../data";
 import { createCrmUiClient } from "./client";
 import { defaultCrmUiDictionary, resolveCrmStages } from "./dictionary";
 import type { CrmReportSlots, CrmStageConfig, CrmUiClient, CrmUiDictionary } from "./types";
 
-export const CRM_SURFACE_CLASS_NAME = "rounded-[var(--radius-card)] border border-hairline bg-card shadow-none";
+/** @deprecated Compose report surfaces with Card or SurfaceCard instead. */
+export const CRM_SURFACE_CLASS_NAME = "card-root";
 
 type DistributionItem = { key: string; label: string; count: number; share: number; badge?: ReactNode; token?: string };
 
 function HeroMetric({ label, value, metricLabel }: { label: string; value: string | number; metricLabel: string }) {
   return (
-    <div className="flex min-w-[var(--report-stat-min-width)] flex-1 flex-col justify-center rounded-[var(--radius-card)] border border-hairline bg-card/10 px-4 py-3">
+    <Card density="compact" className="min-w-[var(--report-stat-min-width)] flex-1 justify-center bg-card/10 px-4 py-3 text-current shadow-none">
       <p className="text-label text-current/65">{label}</p>
-      <p className="mt-2 flex items-baseline gap-1.5"><span className="font-mono text-heading-1 font-semibold tabular-nums">{value}</span><span className="text-meta text-current/65">{metricLabel}</span></p>
-    </div>
+      <p className="mt-2 flex items-baseline gap-1.5"><span className="text-kpi text-[length:var(--text-heading-1)] font-semibold">{value}</span><span className="text-meta text-current/65">{metricLabel}</span></p>
+    </Card>
   );
 }
 
@@ -27,20 +28,20 @@ function DistributionList({ items, emptyLabel }: { items: DistributionItem[]; em
   return (
     <div className="grid gap-2.5">
       {items.map((item) => (
-        <div key={item.key} className="rounded-[var(--radius-card)] border border-hairline bg-elevate-1 p-3">
+        <Card key={item.key} variant="light" density="compact" className="bg-elevate-1 shadow-none">
           <div className="flex items-center justify-between gap-3">
             <div className="flex min-w-0 items-center gap-2">{item.badge}<p className="truncate text-body font-semibold text-foreground">{item.label}</p></div>
-            <div className="text-right"><p className="text-body font-semibold text-foreground">{item.count}</p><p className="text-meta text-muted-foreground">{item.share}%</p></div>
+            <div className="text-right"><p className="text-data text-[length:var(--text-body)] font-semibold leading-[var(--type-leading-normal)] text-foreground">{item.count}</p><p className="text-data text-[length:var(--text-meta)] leading-[var(--type-leading-140)] text-muted-foreground">{item.share}%</p></div>
           </div>
           <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-elevate-3"><div className="h-full rounded-full bg-primary" style={{ width: `${Math.max(item.share, item.count > 0 ? 6 : 0)}%`, backgroundColor: item.token ? `var(${item.token})` : undefined }} /></div>
-        </div>
+        </Card>
       ))}
     </div>
   );
 }
 
 function MetricCard({ label, value }: { label: string; value: number | string }) {
-  return <div className="rounded-[var(--radius-card)] border border-hairline bg-elevate-1 p-3"><p className="text-label text-muted-foreground">{label}</p><p className="mt-1 font-mono text-heading-2 font-semibold tabular-nums text-foreground">{value}</p></div>;
+  return <Card variant="light" density="compact" className="bg-elevate-1 shadow-none"><p className="text-label text-muted-foreground">{label}</p><p className="mt-1 text-kpi text-[length:var(--text-heading-2)] font-semibold text-foreground">{value}</p></Card>;
 }
 
 export type CrmReportProps = {
@@ -64,7 +65,7 @@ export function CrmReport({ data, dictionary = defaultCrmUiDictionary, stages, b
             <div className="flex items-center justify-between gap-3"><p className="inline-flex items-center gap-2 text-label text-current/65"><BarChart3 className="size-3.5 text-accent" aria-hidden />{dictionary.report.eyebrow}</p><Button href={backHref} variant="outline" size="sm" className="border-current/25 bg-current/10 text-current hover:bg-current/15 lg:hidden"><ArrowLeft className="size-3.5" aria-hidden />{dictionary.report.back}</Button></div>
             <h1 className="mt-4 text-heading-1">{dictionary.report.titlePrefix} <span className="text-accent">{dictionary.report.titleAccent}</span></h1>
             <p className="mt-3 text-body text-current/70"><span className="font-semibold text-current">{data.summary.qualifiedContacts}</span> {dictionary.report.qualified}<span className="mx-1.5 opacity-40">·</span><span className="font-semibold text-current">{data.summary.wonContacts}</span> {dictionary.report.won}<span className="mx-1.5 opacity-40">·</span><span className="font-semibold text-current">{data.summary.lostContacts}</span> {dictionary.report.lost}</p>
-            <p className="mt-2 text-meta text-current/65">{dictionary.report.updated} {new Intl.DateTimeFormat(dictionary.locale, { dateStyle: "medium", timeStyle: "short" }).format(new Date(data.generatedAt))}</p>
+            <p className="mt-2 text-meta text-current/65">{dictionary.report.updated} <span className="text-data">{new Intl.DateTimeFormat(dictionary.locale, { dateStyle: "medium", timeStyle: "short" }).format(new Date(data.generatedAt))}</span></p>
             <Button href={backHref} variant="outline" size="sm" className="mt-5 hidden border-current/25 bg-current/10 text-current hover:bg-current/15 lg:inline-flex"><ArrowLeft className="size-3.5" aria-hidden />{dictionary.report.back}</Button>
           </div>
           <div className="flex shrink-0 flex-wrap gap-3 lg:flex-nowrap">
@@ -86,7 +87,7 @@ export function CrmReport({ data, dictionary = defaultCrmUiDictionary, stages, b
       </section>
       <section className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
         <SurfaceCard className="p-5"><SectionHeading icon={Building2} title={dictionary.report.organizationTitle} subtitle={dictionary.report.organizationSubtitle} /><div className="mt-4 grid gap-3"><div className="grid gap-2.5 md:grid-cols-3"><MetricCard label={dictionary.report.totalOrganizations} value={data.organizationCoverage.totalOrganizations} /><MetricCard label={dictionary.report.withContacts} value={data.organizationCoverage.organizationsWithContacts} /><MetricCard label={dictionary.report.coverage} value={`${data.organizationCoverage.share}%`} /></div><div className="rounded-[var(--radius-card)] border border-dashed border-hairline bg-elevate-1 px-4 py-3.5"><p className="text-body font-semibold text-foreground">{dictionary.report.withoutContacts(data.organizationCoverage.organizationsWithoutContacts)}</p><p className="mt-1 text-meta text-muted-foreground">{dictionary.report.coverageHint}</p></div></div></SurfaceCard>
-        <SurfaceCard className="p-5"><SectionHeading icon={BarChart3} title={dictionary.report.topOrganizations} subtitle={dictionary.report.topOrganizationsSubtitle} /><div className="mt-4 grid gap-2.5">{data.organizationCoverage.topOrganizations.length === 0 ? <p className="text-meta text-muted-foreground">{dictionary.report.noOrganizations}</p> : data.organizationCoverage.topOrganizations.map((organization) => <div key={organization.organizationId} className="rounded-[var(--radius-card)] border border-hairline bg-elevate-1 p-3"><div className="flex items-start justify-between gap-3"><div className="min-w-0"><p className="truncate text-body font-semibold text-foreground">{organization.name}</p><p className="truncate text-meta text-muted-foreground">{organization.industry ?? dictionary.report.noIndustry}</p></div><Badge variant="outline">{organization.contactCount}</Badge></div>{organization.websiteUrl ? <a href={organization.websiteUrl} target="_blank" rel="noreferrer" className="mt-2 inline-flex max-w-full items-center gap-1 text-meta text-muted-foreground hover:text-foreground"><span className="truncate">{organization.websiteUrl}</span><ArrowUpRight className="size-3" aria-hidden /></a> : <p className="mt-2 text-meta text-muted-foreground">{dictionary.report.noWebsite}</p>}</div>)}</div></SurfaceCard>
+        <SurfaceCard className="p-5"><SectionHeading icon={BarChart3} title={dictionary.report.topOrganizations} subtitle={dictionary.report.topOrganizationsSubtitle} /><div className="mt-4 grid gap-2.5">{data.organizationCoverage.topOrganizations.length === 0 ? <p className="text-meta text-muted-foreground">{dictionary.report.noOrganizations}</p> : data.organizationCoverage.topOrganizations.map((organization) => <Card key={organization.organizationId} variant="light" density="compact" className="bg-elevate-1 shadow-none"><div className="flex items-start justify-between gap-3"><div className="min-w-0"><p className="truncate text-body font-semibold text-foreground">{organization.name}</p><p className="truncate text-meta text-muted-foreground">{organization.industry ?? dictionary.report.noIndustry}</p></div><Badge variant="outline" className="text-data-sm">{organization.contactCount}</Badge></div>{organization.websiteUrl ? <a href={organization.websiteUrl} target="_blank" rel="noreferrer" className="mt-2 inline-flex max-w-full items-center gap-1 text-meta text-muted-foreground hover:text-foreground"><span className="truncate">{organization.websiteUrl}</span><ArrowUpRight className="size-3" aria-hidden /></a> : <p className="mt-2 text-meta text-muted-foreground">{dictionary.report.noWebsite}</p>}</Card>)}</div></SurfaceCard>
       </section>
       {slots?.afterDistributions}
     </div>

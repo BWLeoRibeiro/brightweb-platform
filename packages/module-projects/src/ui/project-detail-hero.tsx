@@ -12,8 +12,7 @@ import { ProjectProgressBar, getCompletionPercent } from "./shared/project-progr
 import { PROJECT_RISK_META, resolveProjectRisk } from "./shared/project-risk";
 import type { ProjectListItem } from "../types";
 import { formatProjectDate, truncateProjectSummary } from "./shared/formatters";
-import { ArrowUpRight, Building2, CalendarDays, ListChecks, UserRound } from "lucide-react";
-import type { LucideIcon } from "lucide-react";
+import { ArrowUpRight } from "lucide-react";
 import { useRouter } from "next/navigation";
 import type { ReactNode } from "react";
 import { useProjectsNavigation, useProjectsUiDictionary } from "./context";
@@ -24,10 +23,10 @@ type ProjectDetailHeroProps = {
 };
 
 type ProjectHeroFactProps = {
-  icon: LucideIcon;
   label: string;
   children: ReactNode;
   meta?: ReactNode;
+  className?: string;
   /** When set, the leading icon slot is replaced by the person's initials avatar. */
   avatarLabel?: string | null;
   /** Role bucket that tints the avatar (e.g. "manager" for the gestor). */
@@ -38,24 +37,43 @@ const HERO_CONTACT_ICON_LINK_CLASS = "project-hero-contact-icon";
 const HERO_NEUTRAL_ACTION_CLASS =
   "border-white/25 bg-white/10 text-white shadow-none hover:border-white/40 hover:bg-white/16 hover:text-white";
 
-function ProjectHeroFact({ icon: Icon, label, children, meta, avatarLabel, avatarRoleColor }: ProjectHeroFactProps) {
+function ProjectHeroFact({ label, children, meta, className = "", avatarLabel, avatarRoleColor }: ProjectHeroFactProps) {
   return (
-    <div className="flex min-w-0 flex-row gap-x-2">
+    <div className={`flex min-w-0 flex-row gap-x-2 ${className}`}>
       {avatarLabel ? (
         <ProjectOwnerAvatar label={avatarLabel} size="md" roleColor={avatarRoleColor} />
-      ) : (
-        <span className="flex size-8 items-center justify-center rounded-full border border-[color:var(--project-hero-border)] bg-white/[0.06] text-[color:var(--project-hero-muted)]">
-          <Icon className="size-3.5" />
-        </span>
-      )}
+      ) : null}
       <div className="min-w-0 flex-1">
-        <p className="text-micro font-semibold uppercase tracking-[var(--type-tracking-160)] text-[color:var(--project-hero-subtle)]">{label}</p>
+        <p className="text-meta font-semibold text-[color:var(--project-hero-subtle)]">{label}</p>
         <div className="mt-1 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-body font-semibold leading-snug text-[color:var(--project-hero-foreground)]">
           {children}
         </div>
         {meta ? <div className="mt-0.5 text-meta leading-snug text-[color:var(--project-hero-muted)]">{meta}</div> : null}
       </div>
     </div>
+  );
+}
+
+function ProjectHeroDate({
+  label,
+  value,
+  tone,
+  align = "start",
+}: {
+  label: string;
+  value: string;
+  tone?: string;
+  align?: "start" | "end";
+}) {
+  return (
+    <span className={`min-w-0 ${align === "end" ? "text-right" : "text-left"}`}>
+      <span className="sr-only">
+        {label}
+      </span>
+      <span className="text-data block whitespace-nowrap tabular-nums" style={tone ? { color: tone } : undefined}>
+        {formatProjectDate(value)}
+      </span>
+    </span>
   );
 }
 
@@ -134,10 +152,14 @@ function ProjectHeroFactGrid({
   const isComplete = completion >= 100;
   const risk = resolveProjectRisk(project);
   const deadlineTone = risk ? PROJECT_RISK_META[risk].var : undefined;
+  const hasStartDate = Boolean(project.startDate);
+  const hasTargetDate = Boolean(project.targetDate);
+  const hasBothProjectDates = hasStartDate && hasTargetDate;
+  const hasProjectDates = hasStartDate || hasTargetDate;
 
   return (
-    <div className="grid gap-x-8 gap-y-5 sm:grid-cols-2 xl:grid-cols-4">
-      <ProjectHeroFact icon={UserRound} label={dictionary.detail.projectManager} avatarLabel={project.ownerLabel} avatarRoleColor="manager">
+    <div className={`grid items-center gap-x-8 gap-y-5 sm:grid-cols-2 xl:gap-x-0 xl:divide-x xl:divide-[color:var(--project-hero-border)] ${hasProjectDates ? "xl:grid-cols-[0.95fr_0.95fr_1.45fr_1fr]" : "xl:grid-cols-[1fr_1fr_1.1fr]"}`}>
+      <ProjectHeroFact className="xl:pr-8" label={dictionary.detail.projectManager} avatarLabel={project.ownerLabel} avatarRoleColor="manager">
         {project.ownerLabel ?? <span className="font-normal italic text-[color:var(--project-hero-muted)]">{dictionary.detail.unassigned}</span>}
         <ContactActionButtons
           label={project.ownerLabel}
@@ -150,7 +172,7 @@ function ProjectHeroFactGrid({
       </ProjectHeroFact>
 
       <ProjectHeroFact
-        icon={Building2}
+        className="xl:px-8"
         label={dictionary.detail.organizationOwner}
         avatarLabel={project.organizationOwnerLabel}
         avatarRoleColor="client"
@@ -167,23 +189,45 @@ function ProjectHeroFactGrid({
         />
       </ProjectHeroFact>
 
-      <ProjectHeroFact icon={CalendarDays} label={dictionary.detail.projectDueDate}>
-        <span style={deadlineTone ? { color: deadlineTone } : undefined}>{formatProjectDate(project.targetDate)}</span>
-      </ProjectHeroFact>
+      {hasStartDate || hasTargetDate ? (
+        <ProjectHeroFact
+          className="xl:px-8"
+          label={hasBothProjectDates
+            ? dictionary.detail.projectDates
+            : hasStartDate
+              ? dictionary.detail.projectStartDate
+              : dictionary.detail.projectDueDate}
+        >
+          {hasBothProjectDates ? (
+            <span className="grid w-full min-w-0 grid-cols-[auto_minmax(2.5rem,1fr)_auto] items-center gap-3">
+              <ProjectHeroDate label={dictionary.detail.projectStartShort} value={project.startDate!} />
+              <span
+                aria-hidden="true"
+                className="relative h-px bg-white/20 before:absolute before:left-0 before:top-1/2 before:size-1.5 before:-translate-y-1/2 before:rounded-full before:bg-white/50 after:absolute after:right-0 after:top-1/2 after:size-1.5 after:-translate-y-1/2 after:rounded-full after:bg-white/50"
+              />
+              <ProjectHeroDate label={dictionary.detail.projectEndShort} value={project.targetDate!} tone={deadlineTone} align="end" />
+            </span>
+          ) : (
+            <span className="text-data tabular-nums" style={hasTargetDate && deadlineTone ? { color: deadlineTone } : undefined}>
+              {formatProjectDate(hasStartDate ? project.startDate : project.targetDate)}
+            </span>
+          )}
+        </ProjectHeroFact>
+      ) : null}
 
       <ProjectHeroFact
-        icon={ListChecks}
+        className="xl:pl-8"
         label={dictionary.detail.tasks}
         meta={project.taskStats.overdue > 0 ? `${project.taskStats.overdue} atrasada${project.taskStats.overdue !== 1 ? "s" : ""}` : null}
       >
-        <span className="flex w-full items-center gap-2" title={dictionary.detail.completionTitle(completion)}>
+        <span className="flex w-full items-center gap-3" title={dictionary.detail.completionTitle(completion)}>
           <ProjectProgressBar
             completed={project.taskStats.done}
             total={project.taskStats.total}
             className="flex-1 bg-white/15"
             fillClassName={isComplete ? "bg-[color:var(--project-state-active)]" : "bg-[color:var(--accent)]"}
           />
-          <span className="shrink-0 font-mono tabular-nums text-[color:var(--project-hero-foreground)]">
+          <span className="text-data shrink-0 text-[color:var(--project-hero-foreground)]">
             {project.taskStats.done}/{project.taskStats.total}
           </span>
         </span>
@@ -205,10 +249,10 @@ export function ProjectDetailHero({ canOpenEditProject, canViewOrganization }: P
         <div className="flex flex-wrap items-start justify-between gap-5">
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-              <span className="rounded-[var(--radius)] border border-[color:var(--project-hero-border)] bg-white/[0.06] px-1.5 py-0.5 font-mono text-micro font-semibold uppercase tracking-[var(--type-tracking-100)] text-[color:var(--project-hero-muted)]">
+              <span className="text-data rounded-[var(--radius)] border border-[color:var(--project-hero-border)] bg-white/[0.06] px-1.5 py-0.5 text-micro font-semibold text-[color:var(--project-hero-muted)]">
                 {projectReference}
               </span>
-              <p className="truncate text-label font-semibold uppercase tracking-[var(--type-tracking-160)] text-[color:var(--project-hero-muted)]">{project.organizationName}</p>
+              <p className="truncate text-label font-semibold text-[color:var(--project-hero-muted)]">{project.organizationName}</p>
             </div>
             <h1
               className="text-heading-1 text-foreground text-[length:var(--text-ui-title-sm)] mt-2 [text-wrap:pretty] md:text-heading-1 text-[length:var(--text-ui-preview-card-title)]"
@@ -225,7 +269,7 @@ export function ProjectDetailHero({ canOpenEditProject, canViewOrganization }: P
 
         {isCanceledProject ? (
           <div className="mt-5 rounded-[var(--radius-card)] border border-[color:var(--project-ui-color-04)] bg-[color:var(--project-ui-color-05)] px-4 py-3">
-            <p className="text-micro font-semibold uppercase tracking-[var(--type-tracking-180)] text-[color:var(--project-ui-color-06)]">{dictionary.detail.cancellationReason}</p>
+            <p className="text-meta font-semibold text-[color:var(--project-ui-color-06)]">{dictionary.detail.cancellationReason}</p>
             <p className="mt-1 text-body text-[color:var(--project-ui-color-07)]">{project.cancellationReason ?? dictionary.detail.noCancellationReason}</p>
           </div>
         ) : null}

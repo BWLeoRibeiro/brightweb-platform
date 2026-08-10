@@ -1,28 +1,61 @@
+"use client";
+
 import * as React from "react";
+import { Slot } from "@radix-ui/react-slot";
 import { cva, type VariantProps } from "class-variance-authority";
 
 import { cn } from "../lib/utils";
 
-const cardVariants = cva("bg-card text-card-foreground flex flex-col rounded-xl shadow-sm", {
+const cardVariants = cva("card-root flex flex-col text-card-foreground", {
   variants: {
     variant: {
-      default: "border border-border",
-      /** Insight/blog card: borderless, overflow-hidden; hover lift handled by motion on parent */
-      insight: "!border-0 border-transparent shadow-none overflow-hidden bg-card rounded-xl",
+      default: "",
+      light: "",
+      elevated: "",
+      interactive: "",
+      /** Insight/blog card: the canonical borderless media-card treatment. */
+      insight: "",
+    },
+    density: {
+      none: "",
+      compact: "p-3",
+      default: "p-5",
+    },
+    motion: {
+      none: "",
+      enter: "card-enter",
     },
   },
   defaultVariants: {
     variant: "default",
+    density: "none",
+    motion: "none",
   },
 });
 
+export type CardProps = React.ComponentProps<"div"> & VariantProps<typeof cardVariants> & {
+  asChild?: boolean;
+};
+
 function Card({
+  asChild = false,
   className,
   variant = "default",
+  density = "none",
+  motion = "none",
   ...props
-}: React.ComponentProps<"div"> & VariantProps<typeof cardVariants>) {
+}: CardProps) {
+  const Component = asChild ? Slot : "div";
+
   return (
-    <div data-slot="card" data-variant={variant} className={cn(cardVariants({ variant, className }))} {...props} />
+    <Component
+      data-slot="card"
+      data-variant={variant}
+      data-density={density}
+      data-motion={motion}
+      className={cn(cardVariants({ variant, density, motion, className }))}
+      {...props}
+    />
   );
 }
 
@@ -65,4 +98,4 @@ function CardFooter({ className, ...props }: React.ComponentProps<"div">) {
   return <div data-slot="card-footer" className={cn("flex items-center [.border-t]:pt-6", className)} {...props} />;
 }
 
-export { Card, CardHeader, CardFooter, CardTitle, CardAction, CardDescription, CardContent };
+export { Card, cardVariants, CardHeader, CardFooter, CardTitle, CardAction, CardDescription, CardContent };

@@ -18,6 +18,10 @@ function isNullableString(value: unknown): value is string | null {
   return value === null || isString(value);
 }
 
+function isOptionalNullableString(value: unknown): value is string | null | undefined {
+  return value === undefined || isNullableString(value);
+}
+
 function isCount(value: unknown): value is number {
   return typeof value === "number" && Number.isSafeInteger(value) && value >= 0;
 }
@@ -43,6 +47,23 @@ function isDashboardProjectItem(value: unknown) {
     && hasCounts(value.taskStats, ["total", "done", "overdue", "blocked"]);
 }
 
+function isDashboardProjectAttentionItem(value: unknown) {
+  return isRecord(value)
+    && isDashboardProjectItem(value)
+    && isOneOf(value.attentionReason, ["overdue", "at_risk", "blocked_tasks", "without_owner", "due_soon"]);
+}
+
+function isDashboardProjectMilestone(value: unknown) {
+  return isRecord(value)
+    && isString(value.id)
+    && isString(value.projectId)
+    && isString(value.projectName)
+    && isNullableString(value.projectCode)
+    && isString(value.title)
+    && isOneOf(value.status, ["pending", "in_progress", "delayed"])
+    && isString(value.targetDate);
+}
+
 function isDashboardProjectsData(value: unknown): value is DashboardProjectsData {
   return isRecord(value)
     && isString(value.generatedAt)
@@ -53,10 +74,19 @@ function isDashboardProjectsData(value: unknown): value is DashboardProjectsData
       "projectsDueNext7Days",
       "projectsWithoutOwner",
       "projectBlockedTasks",
+      "projectsAttention",
+      "projectsOnTrack",
     ])
     && isRecord(value.projects)
     && Array.isArray(value.projects.overdue)
-    && value.projects.overdue.every(isDashboardProjectItem);
+    && value.projects.overdue.every(isDashboardProjectItem)
+    && Array.isArray(value.projects.attention)
+    && value.projects.attention.every(isDashboardProjectAttentionItem)
+    && Array.isArray(value.projects.milestones)
+    && value.projects.milestones.every(isDashboardProjectMilestone)
+    && (value.projects.milestonesNext7Days === undefined
+      || (Array.isArray(value.projects.milestonesNext7Days)
+        && value.projects.milestonesNext7Days.every(isDashboardProjectMilestone)));
 }
 
 function isDashboardCrmRecentChange(value: unknown) {
@@ -75,7 +105,15 @@ function isDashboardCrmRecentContact(value: unknown) {
     && isString(value.name)
     && isNullableString(value.company)
     && isString(value.status)
-    && isString(value.lastChangedAt);
+    && isString(value.lastChangedAt)
+    && isOptionalNullableString(value.createdAt);
+}
+
+function isDashboardCrmMonthlyPoint(value: unknown) {
+  return isRecord(value)
+    && typeof value.month === "string"
+    && /^\d{4}-(?:0[1-9]|1[0-2])$/.test(value.month)
+    && isCount(value.count);
 }
 
 function isDashboardCrmData(value: unknown): value is DashboardCrmData {
@@ -93,7 +131,10 @@ function isDashboardCrmData(value: unknown): value is DashboardCrmData {
     && Array.isArray(value.crm.recentChanges)
     && value.crm.recentChanges.every(isDashboardCrmRecentChange)
     && Array.isArray(value.crm.recentContacts)
-    && value.crm.recentContacts.every(isDashboardCrmRecentContact);
+    && value.crm.recentContacts.every(isDashboardCrmRecentContact)
+    && (value.crm.monthlyNewContacts === undefined
+      || (Array.isArray(value.crm.monthlyNewContacts)
+        && value.crm.monthlyNewContacts.every(isDashboardCrmMonthlyPoint)));
 }
 
 function isDashboardAssignedTask(value: unknown) {
@@ -116,7 +157,17 @@ function isDashboardTasksData(value: unknown): value is DashboardTasksData {
     && isString(value.generatedAt)
     && hasCounts(value.kpis, ["total", "dueThisWeek", "overdue", "blocked"])
     && Array.isArray(value.tasks)
-    && value.tasks.every(isDashboardAssignedTask);
+    && value.tasks.every(isDashboardAssignedTask)
+    && isRecord(value.attention)
+    && isCount(value.attention.total)
+    && Array.isArray(value.attention.tasks)
+    && value.attention.tasks.every(isDashboardAssignedTask)
+    && isRecord(value.pagination)
+    && isCount(value.pagination.page)
+    && value.pagination.page >= 1
+    && isCount(value.pagination.pageSize)
+    && value.pagination.pageSize >= 1
+    && typeof value.pagination.hasMore === "boolean";
 }
 
 function readErrorMessage(value: unknown): string | null {

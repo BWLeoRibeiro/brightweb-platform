@@ -25,6 +25,7 @@ import {
 } from "@brightweblabs/ui";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@brightweblabs/ui";
 import { cn } from "./utils";
+import { parseProjectBoardApiError } from "./project-board-response-parser";
 
 type ProjectStatusQuickActionProps = {
   className?: string;
@@ -96,7 +97,7 @@ export function ProjectStatusQuickAction({
       });
       const payload = await response.json();
       if (!response.ok) {
-        throw new Error(typeof payload?.error === "string" ? payload.error : dictionary.statusAction.updateError);
+        throw new Error(parseProjectBoardApiError(payload, dictionary.statusAction.updateError));
       }
 
       setCancellationReason(nextStatus === "canceled" ? normalizedReason : "");

@@ -2,12 +2,12 @@
 
 import type { ProjectsUiClient } from "./types";
 
-type CreateProjectInput = { organizationId: string; name: string; code?: string; status: string; targetDate?: string; cancellationReason?: string; summary?: string };
+type CreateProjectInput = { organizationId: string; name: string; code?: string; status: string; startDate?: string; targetDate?: string; cancellationReason?: string; summary?: string };
 type CreateMilestoneInput = { title: string; status: string; targetDate?: string };
-type CreateTaskInput = { title: string; description?: string; status: string; priority: string; milestoneId?: string; assigneeProfileId?: string; dueDate?: string; blockedReason?: string };
+type CreateTaskInput = { title: string; description?: string; status: string; priority: string; milestoneId?: string; assigneeProfileId?: string; startDate?: string; dueDate?: string; blockedReason?: string };
 type CreateLinkInput = { label: string; url: string; kind: string; visibility: string };
 type UpdateMilestoneInput = { title: string; status: string; targetDate: string };
-type UpdateTaskInput = { title: string; description: string; status: string; priority: string; milestoneId: string; assigneeProfileId: string; dueDate: string; blockedReason: string };
+type UpdateTaskInput = { title: string; description: string; status: string; priority: string; milestoneId: string; assigneeProfileId: string; startDate?: string; dueDate: string; blockedReason: string };
 
 export async function createProject(client: ProjectsUiClient, input: CreateProjectInput) { return client.createProject(input as Parameters<ProjectsUiClient["createProject"]>[0]); }
 export async function createMilestone(client: ProjectsUiClient, projectId: string, input: CreateMilestoneInput) { return { data: await client.createMilestone(projectId, input as Parameters<ProjectsUiClient["createMilestone"]>[1]) }; }

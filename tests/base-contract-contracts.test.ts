@@ -11,7 +11,11 @@ import { listAdminUsers } from "../packages/module-admin/src/users-data.ts";
 import {
   getProjectPortfolioStats,
   listProjects,
+  PROJECT_HEALTH_STATES,
 } from "../packages/module-projects/src/data.ts";
+import {
+  parseProjectsListRequest,
+} from "../packages/module-projects/src/http.ts";
 import {
   listOrgAdminProjectsByProfile,
   listProjects as listProjectsFromServer,
@@ -41,11 +45,13 @@ type SelectOptions = { count?: string; head?: boolean };
 type SelectSpy = (context: { table: string; columns: string; options?: SelectOptions }) => void;
 type RangeSpy = (context: { table: string; from: number; to: number }) => void;
 type OrderSpy = (context: { table: string; field: string; ascending: boolean }) => void;
+type OrSpy = (context: { table: string; referencedTable?: string }) => void;
 type FakeSupabaseOptions = {
   selectErrorFactory?: SelectErrorFactory;
   selectSpy?: SelectSpy;
   rangeSpy?: RangeSpy;
   orderSpy?: OrderSpy;
+  orSpy?: OrSpy;
   defaultSelectLimit?: number;
 };
 
@@ -154,9 +160,11 @@ class FakeQuery {
     return this;
   }
 
-  or(expression: string, options?: { foreignTable?: string }) {
+  or(expression: string, options?: { foreignTable?: string; referencedTable?: string }) {
+    const referencedTable = options?.referencedTable ?? options?.foreignTable;
+    this.options.orSpy?.({ table: this.table, referencedTable });
     const clauses = expression.split(",").map((clause) => clause.trim()).filter(Boolean);
-    this.filters.push((row) => clauses.some((clause) => evaluateClause(row, clause, options?.foreignTable)));
+    this.filters.push((row) => clauses.some((clause) => evaluateClause(row, clause, referencedTable)));
     return this;
   }
 
@@ -220,12 +228,14 @@ function patternToNeedle(pattern: string) {
   return pattern.replaceAll("%", "").toLowerCase();
 }
 
-function evaluateClause(row: Row, clause: string, foreignTable?: string) {
+function evaluateClause(row: Row, clause: string, referencedTable?: string) {
   const match = clause.match(/^([A-Za-z0-9_]+)\.(ilike|eq)\.(.+)$/);
   if (!match) return false;
 
   const [, field, operator, rawValue] = match;
-  const target = foreignTable === "profiles" ? normalizeProfile(getFieldValue(row, "profile")) : row;
+  const target = referencedTable === "profiles" || referencedTable === "profile"
+    ? normalizeProfile(getFieldValue(row, "profile"))
+    : row;
   const value = getFieldValue(target ?? row, field);
 
   if (operator === "eq") {
@@ -250,7 +260,7 @@ function compareValues(left: unknown, right: unknown, ascending: boolean) {
   return String(left).localeCompare(String(right)) * direction;
 }
 
-function createAdminSupabase() {
+function createAdminSupabase(options: { selectColumnsLog?: string[]; referencedTablesLog?: string[] } = {}) {
   return new FakeSupabase({
     user_role_assignments: [
       {
@@ -293,6 +303,15 @@ function createAdminSupabase() {
         },
       },
     ],
+  }, {
+    selectSpy: ({ table, columns }) => {
+      if (table === "user_role_assignments") options.selectColumnsLog?.push(columns);
+    },
+    orSpy: ({ table, referencedTable }) => {
+      if (table === "user_role_assignments" && referencedTable) {
+        options.referencedTablesLog?.push(referencedTable);
+      }
+    },
   });
 }
 
@@ -529,24 +548,26 @@ function createCrmSupabase() {
         profile: [{ id: "owner-3", first_name: "Client", last_name: "User", email: "client@example.com" }],
       },
     ],
-    crm_status_log: [
+    app_activity_events: [
       {
         id: "status-1",
-        contact_id: "contact-1",
-        previous_status: "lead",
-        new_status: "qualified",
-        reason: "Discovery complete",
-        changed_at: "2026-03-10T12:00:00.000Z",
-        changed_by_user_id: "user-owner-1",
+        domain: "crm",
+        entity_id: "contact-1",
+        event_type: "crm_contact_status_changed",
+        actor_profile_id: "profile-1",
+        summary: "Estado alterado",
+        payload: { contact_name: "Ana Silva", reason: "Discovery complete", changes: { status: { from: "lead", to: "qualified" } } },
+        created_at: "2026-03-10T12:00:00.000Z",
       },
       {
         id: "status-2",
-        contact_id: "contact-3",
-        previous_status: null,
-        new_status: "lead",
-        reason: null,
-        changed_at: "2026-03-09T12:00:00.000Z",
-        changed_by_user_id: null,
+        domain: "crm",
+        entity_id: "contact-3",
+        event_type: "crm_contact_status_changed",
+        actor_profile_id: null,
+        summary: "Estado alterado",
+        payload: { contact_name: "Bruno Matos", changes: { status: { from: null, to: "lead" } } },
+        created_at: "2026-03-09T12:00:00.000Z",
       },
     ],
     profiles: [
@@ -571,7 +592,8 @@ function createCrmSupabase() {
 }
 
 type CreateProjectsSupabaseOptions = {
-  aggregateReadErrorTable?: "project_tasks" | "project_milestones";
+  aggregateReadErrorTable?: "project_task_stats" | "project_milestones";
+  simulateMissingTaskStatsView?: boolean;
   includePhoneData?: boolean;
   simulateMissingProfilesPhone?: boolean;
   projectSelectColumnsLog?: string[];
@@ -679,12 +701,34 @@ function createProjectsSupabase(options: CreateProjectsSupabaseOptions = {}) {
         organizations: [{ name: "Archive Org", primary_contact: [] }],
         owner: [owner3],
       },
+      {
+        id: "project-5",
+        organization_id: "org-5",
+        name: "Canceled Archive",
+        code: "CAN",
+        status: "canceled",
+        health: "off_track",
+        owner_profile_id: "owner-3",
+        activated_at: iso(today),
+        target_date: iso(inTenDays),
+        completed_at: null,
+        cancellation_reason: "Canceled by agreement",
+        summary: "Canceled",
+        created_at: "2026-01-05T12:00:00.000Z",
+        updated_at: "2026-03-06T12:00:00.000Z",
+        organizations: [{ name: "Archive Org", primary_contact: [] }],
+        owner: [owner3],
+      },
     ],
     project_tasks: [
       { id: "task-1", project_id: "project-1", status: "todo", due_date: iso(yesterday) },
       { id: "task-2", project_id: "project-1", status: "blocked", due_date: iso(inThreeDays) },
       { id: "task-3", project_id: "project-1", status: "done", due_date: iso(today) },
       { id: "task-4", project_id: "project-3", status: "todo", due_date: iso(yesterday) },
+    ],
+    project_task_stats: [
+      { project_id: "project-1", total: 3, done: 1, overdue: 1, blocked: 1 },
+      { project_id: "project-3", total: 1, done: 0, overdue: 1, blocked: 0 },
     ],
     project_milestones: [
       { id: "milestone-1", project_id: "project-1", status: "achieved" },
@@ -696,6 +740,9 @@ function createProjectsSupabase(options: CreateProjectsSupabaseOptions = {}) {
     ],
   }, {
     selectErrorFactory: ({ table, columns }) => {
+      if (table === "project_task_stats" && options.simulateMissingTaskStatsView) {
+        return { message: "Could not find the table 'public.project_task_stats' in the schema cache" };
+      }
       if (table === options.aggregateReadErrorTable) {
         return { message: `${table} provider unavailable` };
       }
@@ -713,8 +760,10 @@ function createProjectsSupabase(options: CreateProjectsSupabaseOptions = {}) {
 }
 
 test("listAdminUsers applies search, role filtering, and pagination", async () => {
+  const selectColumnsLog: string[] = [];
+  const referencedTablesLog: string[] = [];
   const result = await listAdminUsers({
-    supabase: createAdminSupabase() as never,
+    supabase: createAdminSupabase({ selectColumnsLog, referencedTablesLog }) as never,
     search: "ana",
     roleFilter: "admin",
     page: 1,
@@ -725,6 +774,12 @@ test("listAdminUsers applies search, role filtering, and pagination", async () =
   assert.equal(result.data[0]?.profileId, "profile-1");
   assert.equal(result.pagination.total, 1);
   assert.equal(result.pagination.totalPages, 1);
+  assert.match(
+    selectColumnsLog[0] ?? "",
+    /profile:profiles!user_role_assignments_profile_id_fkey!inner\(/,
+    "profile search must inner-join before exact count and pagination",
+  );
+  assert.deepEqual(referencedTablesLog, ["profile"], "profile search must target the embedded relation alias");
 });
 
 test("admin handler helpers parse requests and return JSON envelopes", async () => {
@@ -745,6 +800,8 @@ test("admin handler helpers parse requests and return JSON envelopes", async () 
   });
   const getResponse = await getHandler(new Request("https://example.com/api/admin/users?page=2"));
   assert.equal(getResponse.status, 200);
+  assert.match(getResponse.headers.get("server-timing") ?? "", /db;dur=\d+\.\d, app;dur=\d+\.\d/);
+  assert.ok(Number(getResponse.headers.get("content-length")) > 0);
   assert.deepEqual(await getResponse.json(), {
     data: [],
     pagination: { page: 2, pageSize: 10, total: 0, totalPages: 1 },
@@ -776,6 +833,7 @@ test("admin handler helpers parse requests and return JSON envelopes", async () 
 
 test("listProjects and getProjectPortfolioStats preserve stable project behavior", async () => {
   const supabase = createProjectsSupabase();
+  const timingPhases: string[] = [];
   const stats = await getProjectPortfolioStats(supabase as never);
   assert.deepEqual(stats, {
     total: 3,
@@ -790,7 +848,7 @@ test("listProjects and getProjectPortfolioStats preserve stable project behavior
     page: 1,
     pageSize: 10,
     dueWindow: "all",
-  });
+  }, { onTiming: (metric) => timingPhases.push(metric.phase) });
 
   assert.equal(result.total, 1);
   assert.equal(result.items.length, 1);
@@ -799,7 +857,52 @@ test("listProjects and getProjectPortfolioStats preserve stable project behavior
   assert.equal(result.items[0]?.ownerPhone, "911");
   assert.deepEqual(result.items[0]?.taskStats, { total: 3, done: 1, overdue: 1, blocked: 1 });
   assert.deepEqual(result.items[0]?.milestoneStats, { total: 2, achieved: 1, delayed: 1 });
-  assert.equal(result.items[0]?.health, "at_risk");
+  assert.equal(result.items[0]?.health, "on_track");
+  assert.deepEqual(timingPhases, ["query", "enrichment"]);
+});
+
+test("Projects distinguishes an absent status from the explicit all filter", async () => {
+  assert.equal(parseProjectsListRequest("https://example.com/api/projects").status, undefined);
+  assert.equal(parseProjectsListRequest("https://example.com/api/projects?status=all").status, "all");
+  assert.equal(parseProjectsListRequest("https://example.com/api/projects?status=completed").status, "completed");
+
+  for (const read of [listProjects, listProjectsFromServer]) {
+    const open = await read(createProjectsSupabase() as never, { page: 1, pageSize: 10 });
+    const all = await read(createProjectsSupabase() as never, { page: 1, pageSize: 10, status: "all" });
+
+    assert.equal(open.total, 3, "an absent status keeps the default open portfolio");
+    assert.deepEqual(open.items.map((project) => project.status).sort(), ["active", "active", "planned"]);
+    assert.equal(all.total, 5, "explicit all includes completed and canceled projects");
+    assert.deepEqual(all.items.map((project) => project.status).sort(), [
+      "active",
+      "active",
+      "canceled",
+      "completed",
+      "planned",
+    ]);
+  }
+});
+
+test("Projects collection health filters preserve deadline-derived off-track behavior", async () => {
+  const expectedIds = {
+    on_track: ["project-1", "project-2", "project-4"],
+    at_risk: ["project-3"],
+    off_track: ["project-3"],
+  } as const;
+
+  for (const read of [listProjects, listProjectsFromServer]) {
+    for (const health of PROJECT_HEALTH_STATES) {
+      const result = await read(createProjectsSupabase() as never, {
+        status: "all",
+        health,
+        page: 1,
+        pageSize: 10,
+      });
+
+      assert.deepEqual(result.items.map((project) => project.id).sort(), [...expectedIds[health]].sort());
+      assert.equal(result.total, expectedIds[health].length);
+    }
+  }
 });
 
 test("listProjects retries without profile phone when schema does not include profiles.phone", async () => {
@@ -846,7 +949,7 @@ test("project aggregate enrichment propagates task and milestone provider errors
   ];
 
   for (const reader of aggregateReaders) {
-    for (const table of ["project_tasks", "project_milestones"] as const) {
+    for (const table of ["project_task_stats", "project_milestones"] as const) {
       await assert.rejects(
         reader.run(createProjectsSupabase({ aggregateReadErrorTable: table })),
         new RegExp(`${table} provider unavailable`),
@@ -856,7 +959,22 @@ test("project aggregate enrichment propagates task and milestone provider errors
   }
 });
 
-test("every Projects enrichment reader orders paginated task and milestone rows by primary key", async () => {
+test("project readers fall back to paginated task aggregation before the task-stats migration is applied", async () => {
+  const aggregateReaders = [
+    (supabase: FakeSupabase) => listProjects(supabase as never, { page: 1, pageSize: 10 }),
+    (supabase: FakeSupabase) => listProjectsFromServer(supabase as never, { page: 1, pageSize: 10 }),
+    (supabase: FakeSupabase) => listOrgAdminProjectsByProfile(supabase as never, "profile-admin"),
+  ];
+
+  for (const read of aggregateReaders) {
+    const result = await read(createProjectsSupabase({ simulateMissingTaskStatsView: true }));
+    const items = Array.isArray(result) ? result : result.items;
+    const project = items.find((item) => item.id === "project-1");
+    assert.deepEqual(project?.taskStats, { total: 3, done: 1, overdue: 1, blocked: 1 });
+  }
+});
+
+test("every Projects enrichment reader orders paginated milestone rows by primary key", async () => {
   const aggregateReaders = [
     (supabase: FakeSupabase) => listProjects(supabase as never, { page: 1, pageSize: 10 }),
     (supabase: FakeSupabase) => listProjectsFromServer(supabase as never, { page: 1, pageSize: 10 }),
@@ -867,17 +985,16 @@ test("every Projects enrichment reader orders paginated task and milestone rows 
     const enrichmentOrders: Array<{ table: string; field: string; ascending: boolean }> = [];
     await read(createProjectsSupabase({
       orderSpy: (order) => {
-        if (["project_tasks", "project_milestones"].includes(order.table)) enrichmentOrders.push(order);
+        if (order.table === "project_milestones") enrichmentOrders.push(order);
       },
     }));
     assert.deepEqual(enrichmentOrders, [
-      { table: "project_tasks", field: "id", ascending: true },
       { table: "project_milestones", field: "id", ascending: true },
     ]);
   }
 });
 
-test("listProjects deterministically pages shuffled task and milestone enrichment without gaps or duplicates", async () => {
+test("listProjects reads grouped task stats and pages milestone enrichment without gaps or duplicates", async () => {
   const pageTwoTaskCount = 7;
   const pageTwoMilestoneCount = 5;
   const shuffle = <T>(rows: T[]) => [...rows.filter((_, index) => index % 2 === 1).reverse(), ...rows.filter((_, index) => index % 2 === 0).reverse()];
@@ -917,6 +1034,13 @@ test("listProjects deterministically pages shuffled task and milestone enrichmen
       },
     ],
     project_tasks: taskRows,
+    project_task_stats: [{
+      project_id: "project-1",
+      total: 1000 + pageTwoTaskCount,
+      done: pageTwoTaskCount,
+      overdue: 0,
+      blocked: 0,
+    }],
     project_milestones: milestoneRows,
   }, {
     // Mirror PostgREST's implicit 1000-row cap so an unpaged query would truncate.
@@ -941,10 +1065,7 @@ test("listProjects deterministically pages shuffled task and milestone enrichmen
     achieved: 1000,
     delayed: pageTwoMilestoneCount,
   });
-  assert.deepEqual(taskRangeCalls, [
-    { from: 0, to: 999 },
-    { from: 1000, to: 1999 },
-  ]);
+  assert.deepEqual(taskRangeCalls, []);
   assert.deepEqual(milestoneRangeCalls, [
     { from: 0, to: 999 },
     { from: 1000, to: 1999 },
@@ -986,6 +1107,13 @@ test("CRM stable helpers return filtered, paginated, and summarized results", as
       won: 0,
       lost: 0,
     },
+    activity: {
+      qualifiedLast30Days: 0,
+      wonLast30Days: 0,
+      newLast7Days: 0,
+      newLast30Days: 0,
+      newLastYear: 3,
+    },
   });
 
   const owners = await listCrmOwnerOptions(supabase as never);
@@ -1015,6 +1143,9 @@ test("CRM stable helpers return filtered, paginated, and summarized results", as
       changed_by_user_id: "user-owner-1",
       contact_label: "Ana Silva",
       changed_by_label: "Sara Costa",
+      event_type: "crm_contact_status_changed",
+      summary: "Estado alterado",
+      payload: { contact_name: "Ana Silva", reason: "Discovery complete", changes: { status: { from: "lead", to: "qualified" } } },
     },
     {
       id: "status-2",
@@ -1026,8 +1157,33 @@ test("CRM stable helpers return filtered, paginated, and summarized results", as
       changed_by_user_id: null,
       contact_label: "Bruno Matos",
       changed_by_label: null,
+      event_type: "crm_contact_status_changed",
+      summary: "Estado alterado",
+      payload: { contact_name: "Bruno Matos", changes: { status: { from: null, to: "lead" } } },
     },
   ]);
+});
+
+test("CRM timeline keeps deletion activity after the contact row is gone", async () => {
+  const supabase = new FakeSupabase({
+    app_activity_events: [{
+      id: "delete-1",
+      domain: "crm",
+      entity_id: "deleted-contact",
+      event_type: "crm_contact_deleted",
+      actor_profile_id: "profile-1",
+      summary: "Contacto CRM eliminado.",
+      payload: { contact_name: "Deleted Person", contact_ids: ["deleted-contact"], contact_count: 1 },
+      created_at: new Date().toISOString(),
+    }],
+    profiles: [{ id: "profile-1", user_id: "user-1", first_name: "Sara", last_name: "Costa" }],
+  });
+
+  const [entry] = await listCrmStatusTimeline(supabase as never);
+  assert.equal(entry?.event_type, "crm_contact_deleted");
+  assert.equal(entry?.contact_id, "deleted-contact");
+  assert.equal(entry?.contact_label, "Deleted Person");
+  assert.equal(entry?.changed_by_label, "Sara Costa");
 });
 
 test("CRM status stats use head count queries so totals are not capped at 1000 rows", async () => {
@@ -1057,6 +1213,13 @@ test("CRM status stats use head count queries so totals are not capped at 1000 r
       won: 0,
       lost: 0,
     },
+    activity: {
+      qualifiedLast30Days: 0,
+      wonLast30Days: 0,
+      newLast7Days: 0,
+      newLast30Days: 0,
+      newLastYear: 0,
+    },
   });
   assert.equal(selectCalls.some((call) => call.table === "crm_contacts" && call.columns === "status"), false);
   assert.equal(
@@ -1067,6 +1230,54 @@ test("CRM status stats use head count queries so totals are not capped at 1000 r
     selectCalls.every((call) => call.table !== "crm_contacts" || call.options?.count === "exact"),
     true,
   );
+});
+
+test("CRM uses aggregate RPCs and canonical activity events for timeline search", async () => {
+  const calls: Array<{ name: string; params?: Record<string, unknown> }> = [];
+  const activitySupabase = new FakeSupabase({
+    app_activity_events: [{
+      id: "00000000-0000-0000-0000-000000000001",
+      domain: "crm",
+      entity_id: "00000000-0000-0000-0000-000000000002",
+      event_type: "crm_contact_status_changed",
+      actor_profile_id: null,
+      summary: "Estado alterado",
+      payload: { contact_name: "Ana Silva", changes: { status: { from: "lead", to: "qualified" } } },
+      created_at: "2026-07-30T10:00:00.000Z",
+    }],
+  });
+  const supabase = {
+    async rpc(name: string, params?: Record<string, unknown>) {
+      calls.push({ name, params });
+      if (name === "get_crm_contact_stats") return { data: [{
+        total_count: 9,
+        lead_count: 1,
+        qualified_count: 2,
+        proposal_count: 3,
+        won_count: 2,
+        lost_count: 1,
+        qualified_last_30_days: 4,
+        won_last_30_days: 2,
+        new_last_7_days: 3,
+        new_last_30_days: 6,
+        new_last_year: 9,
+      }], error: null };
+      return { data: [], error: null };
+    },
+    from(table: string) { return activitySupabase.from(table); },
+  };
+
+  const stats = await getCrmContactStatusStats(supabase as never);
+  const timeline = await listCrmStatusTimeline(supabase as never, {
+    search: "Ana",
+    limit: 25,
+    since: "2026-07-29T00:00:00.000Z",
+  });
+  assert.equal(stats.total, 9);
+  assert.equal(stats.activity?.newLast30Days, 6);
+  assert.equal(timeline[0]?.contact_label, "Ana Silva");
+  assert.deepEqual(calls.map((call) => call.name), ["get_crm_contact_stats"]);
+  assert.equal(timeline[0]?.event_type, "crm_contact_status_changed");
 });
 
 test("CRM handler helpers parse params and return JSON envelopes", async () => {
@@ -1111,6 +1322,8 @@ test("CRM handler helpers parse params and return JSON envelopes", async () => {
     new Request("https://example.com/api/crm/contacts?page=2&pageSize=25&search=ana&status=lead"),
   );
   assert.equal(contactsResponse.status, 200);
+  assert.match(contactsResponse.headers.get("server-timing") ?? "", /db;dur=\d+\.\d, app;dur=\d+\.\d/);
+  assert.ok(Number(contactsResponse.headers.get("content-length")) > 0);
   assert.deepEqual(receivedContactsParams, {
     page: 2,
     pageSize: 25,

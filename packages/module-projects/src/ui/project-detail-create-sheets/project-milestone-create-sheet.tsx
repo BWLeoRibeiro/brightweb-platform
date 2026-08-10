@@ -1,5 +1,7 @@
 "use client";
 
+import { StyledSelect } from "@brightweblabs/ui";
+
 import { useProjectsUiClient, useProjectsUiDictionary } from "../context";
 import { useMemo, useState, type FormEvent } from "react";
 import { format } from "date-fns";
@@ -18,7 +20,7 @@ import { PROJECTS_EVENTS } from "../events";
 import { createMilestone } from "../project-ui-actions";
 import { parseIsoDate, toIsoDate } from "./date-utils";
 import { Button } from "@brightweblabs/ui";
-import { Calendar } from "@brightweblabs/ui";
+import { ProjectCalendar as Calendar } from "../shared/project-calendar";
 import { Input } from "@brightweblabs/ui";
 import { Popover, PopoverContent, PopoverTrigger } from "@brightweblabs/ui";
 import {
@@ -102,7 +104,7 @@ export function ProjectMilestoneCreateSheet({ projectId, initialOpen = false }: 
               </div>
               <div>
                 <label className={sheetFieldLabelClassName} htmlFor="milestone-create-status">{dictionary.forms.status}</label>
-                <select
+                <StyledSelect
                   id="milestone-create-status"
                   value={status}
                   onChange={(event) => setStatus(event.target.value)}
@@ -112,7 +114,7 @@ export function ProjectMilestoneCreateSheet({ projectId, initialOpen = false }: 
                   <option value="in_progress">{dictionary.status.in_progress}</option>
                   <option value="achieved">{dictionary.status.achieved}</option>
                   <option value="delayed">{dictionary.status.delayed}</option>
-                </select>
+                </StyledSelect>
               </div>
               <div>
                 <label className={sheetFieldLabelClassName} htmlFor="milestone-create-date">{dictionary.create.targetDateOptional}</label>

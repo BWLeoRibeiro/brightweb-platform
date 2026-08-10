@@ -93,6 +93,7 @@ function isProjectItem(value: unknown): value is ProjectListItem {
     && isNullableString(value.ownerEmail)
     && isNullableString(value.ownerPhone)
     && isNullableString(value.activatedAt)
+    && isNullableString(value.startDate)
     && isNullableString(value.targetDate)
     && isNullableString(value.completedAt)
     && isNullableString(value.cancellationReason)
@@ -149,6 +150,7 @@ function isProjectTask(value: unknown): value is ProjectTask {
     && isNullableString(value.assigneeLabel)
     && isNullableString(value.reporterProfileId)
     && isNullableString(value.reporterLabel)
+    && isNullableString(value.startDate)
     && isNullableString(value.dueDate)
     && isNumber(value.position)
     && isNullableString(value.blockedReason)
@@ -214,6 +216,7 @@ function parseProjectDashboardData(value: unknown): ProjectDashboardData | null 
     tasks: value.tasks,
     links: value.links,
     activity: value.activity,
+    ...(isNumber(value.activityTotal) ? { activityTotal: value.activityTotal } : {}),
   };
 }
 

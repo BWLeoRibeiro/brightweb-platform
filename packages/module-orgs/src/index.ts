@@ -2,9 +2,12 @@ export {
   ORGANIZATIONS_DEFAULT_PAGE_SIZE,
   ORGANIZATIONS_MAX_PAGE_SIZE,
   createOrganization,
+  deleteOrganization,
   listOrganizationMembers,
   listOrganizations,
+  removeOrganizationMember,
   setOrganizationMemberRole,
+  updateOrganizationMemberRole,
   updateOrganization,
   type CreateOrganizationInput,
   type Organization,
@@ -17,8 +20,11 @@ export {
 } from "./data";
 export {
   handleOrganizationInvitationDeleteRequest,
+  handleOrganizationDeleteRequest,
   handleOrganizationInvitationsGetRequest,
   handleOrganizationInvitationsPostRequest,
+  handleOrganizationMemberDeleteRequest,
+  handleOrganizationMemberPatchRequest,
   handleOrganizationPatchRequest,
   handleOrganizationsPostRequest,
 } from "./handlers";

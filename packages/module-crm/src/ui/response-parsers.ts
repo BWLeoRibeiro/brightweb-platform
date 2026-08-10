@@ -2,6 +2,7 @@ import type {
   CrmContact,
   CrmContactStatusStats,
   CrmContactsListResult,
+  CrmOrganizationsListResult,
   CrmOwnerOption,
   CrmReportData,
   CrmStatusLog,
@@ -73,7 +74,21 @@ export function parseCrmStatsResponse(value: unknown): CrmContactStatusStats {
   const byStatus = Object.fromEntries(
     Object.entries(rawByStatus).map(([status, count]) => [status, number(count, "CRM stats")]),
   );
-  return { total: number(payload.total, "CRM stats"), byStatus };
+  const activityValue = payload.activity;
+  const activity = activityValue && typeof activityValue === "object" && !Array.isArray(activityValue)
+    ? record(activityValue, "CRM stats activity")
+    : null;
+  return {
+    total: number(payload.total, "CRM stats"),
+    byStatus,
+    ...(activity ? { activity: {
+      qualifiedLast30Days: number(activity.qualifiedLast30Days, "CRM stats activity"),
+      wonLast30Days: number(activity.wonLast30Days, "CRM stats activity"),
+      newLast7Days: number(activity.newLast7Days, "CRM stats activity"),
+      newLast30Days: number(activity.newLast30Days, "CRM stats activity"),
+      newLastYear: number(activity.newLastYear, "CRM stats activity"),
+    } } : {}),
+  };
 }
 
 export function parseCrmOwnersResponse(value: unknown): CrmOwnerOption[] {
@@ -111,8 +126,43 @@ function parseOrganization(value: unknown): CrmOrganization {
 }
 
 export function parseCrmOrganizationsResponse(value: unknown): CrmOrganization[] {
+  return parseCrmOrganizationsListResponse(value).items;
+}
+
+export function parseCrmOrganizationsListResponse(value: unknown): CrmOrganizationsListResult {
   const payload = record(value, "CRM organizations");
-  return array(payload.items, parseOrganization, "CRM organizations");
+  return {
+    items: array(payload.items, (organizationValue) => {
+      const item = record(organizationValue, "CRM organization");
+      const primaryContact = item.primary_contact == null
+        ? null
+        : record(item.primary_contact, "CRM organization primary contact");
+      return {
+        id: string(item.id, "CRM organization"),
+        name: string(item.name, "CRM organization"),
+        industry: nullableString(item.industry, "CRM organization"),
+        company_size: nullableString(item.company_size, "CRM organization"),
+        budget_range: nullableString(item.budget_range, "CRM organization"),
+        website_url: nullableString(item.website_url, "CRM organization"),
+        address: nullableString(item.address, "CRM organization"),
+        taxIdentifierValue: nullableString(item.taxIdentifierValue, "CRM organization"),
+        taxIdentifierKind: nullableString(item.taxIdentifierKind, "CRM organization"),
+        taxIdentifierCountryCode: nullableString(item.taxIdentifierCountryCode, "CRM organization"),
+        primary_contact_id: nullableString(item.primary_contact_id, "CRM organization"),
+        primary_contact: primaryContact == null ? null : {
+          id: string(primaryContact.id, "CRM organization primary contact"),
+          first_name: nullableString(primaryContact.first_name, "CRM organization primary contact"),
+          last_name: nullableString(primaryContact.last_name, "CRM organization primary contact"),
+          email: nullableString(primaryContact.email, "CRM organization primary contact"),
+        },
+        created_at: string(item.created_at, "CRM organization"),
+      };
+    }, "CRM organizations"),
+    page: number(payload.page, "CRM organizations"),
+    pageSize: number(payload.pageSize, "CRM organizations"),
+    total: number(payload.total, "CRM organizations"),
+    totalPages: number(payload.totalPages, "CRM organizations"),
+  };
 }
 
 export function parseCrmOrganizationWriteResponse(value: unknown): CrmOrganization {
@@ -132,6 +182,9 @@ function parseTimelineItem(value: unknown): CrmStatusLog {
     changed_by_user_id: nullableString(item.changed_by_user_id, "CRM timeline item"),
     changed_by_label: nullableString(item.changed_by_label, "CRM timeline item"),
     contact_label: string(item.contact_label, "CRM timeline item"),
+    event_type: item.event_type === undefined ? undefined : string(item.event_type, "CRM timeline item") as CrmStatusLog["event_type"],
+    summary: item.summary === undefined ? undefined : string(item.summary, "CRM timeline item"),
+    payload: item.payload === undefined ? undefined : record(item.payload, "CRM timeline item payload"),
   };
 }
 
@@ -234,7 +287,10 @@ export function parseCrmBulkWriteResponse(value: unknown): void {
   const summary = record(data.summary, "CRM bulk summary");
   number(summary.requested, "CRM bulk summary");
   number(summary.succeeded, "CRM bulk summary");
-  number(summary.failed, "CRM bulk summary");
+  const failed = number(summary.failed, "CRM bulk summary");
+  if (failed > 0) {
+    throw new Error(`${failed} ${failed === 1 ? "item não foi alterado" : "itens não foram alterados"}. Atualize a lista e tente novamente.`);
+  }
 }
 
 export function parseCrmDeleteOrStatusResponse(value: unknown): void {

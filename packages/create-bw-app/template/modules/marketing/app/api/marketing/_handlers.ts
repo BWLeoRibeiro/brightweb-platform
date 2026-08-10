@@ -58,6 +58,18 @@ export function marketingSegmentsPost(request: Request) {
 export function marketingTopicsGet(request: Request) {
   return handlers.topicsGet(request);
 }
+export function marketingTopicsPost(request: Request) {
+  return handlers.topicsPost(request);
+}
+export function marketingTopicsOrderPost(request: Request) {
+  return handlers.topicsOrderPost(request);
+}
+export function marketingTopicPatch(request: Request, context: IdRouteContext) {
+  return handlers.topicPatch(request, context);
+}
+export function marketingTopicDelete(request: Request, context: IdRouteContext) {
+  return handlers.topicDelete(request, context);
+}
 export function marketingWebhookPost(request: Request) {
   return handlers.webhookPost(request);
 }
@@ -90,6 +102,9 @@ export function marketingCampaignCancelPost(request: Request, context: IdRouteCo
 }
 export function marketingCampaignRecipientsGet(request: Request, context: IdRouteContext) {
   return handlers.recipientsGet(request, context);
+}
+export function marketingCampaignRecipientDelete(request: Request, context: { params: Promise<{ id: string; recipientId: string }> }) {
+  return handlers.recipientDelete(request, context);
 }
 export function marketingCampaignRetryPost(request: Request, context: IdRouteContext) {
   return handlers.retryPost(request, context);

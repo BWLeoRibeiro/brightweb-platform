@@ -8,13 +8,63 @@
   --dashboard-danger-foreground: var(--project-risk-overdue-strong);
 }
 
-.dashboard-surface {
-  border-radius: var(--radius-card);
-  border: 1px solid var(--border);
-  background: var(--card);
-  box-shadow: var(--dashboard-shadow-sm);
-}
-
 .dashboard-status-dot { background: var(--tint); }
+  .dashboard-projects-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "health"
+      "attention";
+    align-items: start;
+    gap: 1rem;
+  }
+  .dashboard-projects-attention { grid-area: attention; }
+  .dashboard-projects-health {
+    grid-area: health;
+    position: relative;
+  }
+  .dashboard-clients-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-items: start;
+    gap: 1rem;
+  }
+  .dashboard-tasks-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-items: start;
+    gap: 1rem;
+  }
+  .dashboard-tasks-pulse {
+    order: -1;
+    position: relative;
+  }
+  .dashboard-rhythm-card {
+    --dashboard-rhythm-accent: var(--brand-lime, var(--project-state-active));
+    order: -1;
+    position: relative;
+  }
+  .dashboard-contacts-list {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1rem;
+  }
+  @media (min-width: 1081px) {
+    .dashboard-projects-grid {
+      grid-template-columns: minmax(0, 1fr) 23.75rem;
+      grid-template-areas: "attention health";
+    }
+    .dashboard-projects-health {
+      position: sticky;
+      top: 1.5rem;
+    }
+    .dashboard-clients-grid { grid-template-columns: minmax(0, 1fr) 23.75rem; }
+    .dashboard-clients-grid > :first-child { align-self: stretch; }
+    .dashboard-tasks-grid { grid-template-columns: minmax(0, 1fr) 25rem; }
+    .dashboard-tasks-grid > :first-child { align-self: stretch; }
+    .dashboard-tasks-pulse { order: initial; position: sticky; top: 1.5rem; }
+    .dashboard-contacts-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .dashboard-rhythm-card { order: initial; position: sticky; top: 1.5rem; }
+  }
   .dashboard-error { border-color: var(--dashboard-danger-border); background: var(--dashboard-danger-soft); color: var(--dashboard-danger-foreground); }
 }

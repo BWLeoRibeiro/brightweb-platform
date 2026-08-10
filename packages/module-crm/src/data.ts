@@ -49,11 +49,22 @@ export type CrmStatusLog = {
   changed_by_user_id: string | null;
   changed_by_label: string | null;
   contact_label: string;
+  /** Canonical activity metadata. Optional to preserve the existing public shape. */
+  event_type?: "crm_contact_status_changed" | "crm_contact_deleted";
+  summary?: string;
+  payload?: Record<string, unknown>;
 };
 
 export type CrmContactStatusStats = {
   total: number;
   byStatus: Record<string, number>;
+  activity?: {
+    qualifiedLast30Days: number;
+    wonLast30Days: number;
+    newLast7Days: number;
+    newLast30Days: number;
+    newLastYear: number;
+  };
 };
 
 export type CrmReportData = {
@@ -106,6 +117,8 @@ export type CrmStatusTimelineParams = {
   since?: Date | string;
   limit?: number;
   contactId?: string;
+  search?: string;
+  eventTypes?: Array<"crm_contact_status_changed" | "crm_contact_deleted">;
 };
 
 export type CrmStatusTimelineData = CrmStatusLog[];
@@ -149,9 +162,18 @@ type CrmOwnerAssignment = {
     | null;
 };
 
-type RawCrmStatusLog = Omit<CrmStatusLog, "changed_by_label" | "contact_label">;
+type RawCrmTimelineEvent = {
+  id: string;
+  entity_id: string | null;
+  created_at: string;
+  event_type: "crm_contact_status_changed" | "crm_contact_deleted";
+  actor_profile_id: string | null;
+  summary: string;
+  payload: Record<string, unknown> | null;
+};
 
-type CrmChangedByProfile = {
+type CrmTimelineActorProfile = {
+  id: string;
   user_id: string | null;
   first_name: string | null;
   last_name: string | null;
@@ -296,27 +318,67 @@ export async function listCrmContacts(
 export async function getCrmContactStatusStats(
   supabase: SupabaseClient,
 ): Promise<CrmContactStatusStats> {
-  const [totalResult, ...statusResults] = await Promise.all([
-    supabase.from("crm_contacts").select("id", { count: "exact", head: true }),
-    ...CRM_CONTACT_STATUSES.map((status) =>
-      supabase
-        .from("crm_contacts")
-        .select("id", { count: "exact", head: true })
-        .eq("status", status),
-    ),
-  ]);
-
-  const aggregateError = [totalResult, ...statusResults].find((result) => result.error)?.error;
-  if (aggregateError) {
-    throw new Error(aggregateError.message);
+  if (typeof supabase.rpc === "function") {
+    const { data, error } = await supabase.rpc("get_crm_contact_stats");
+    if (!error) {
+      const row = Array.isArray(data) ? data[0] : data;
+      if (!row || typeof row !== "object") {
+        return { total: 0, byStatus: {}, activity: { qualifiedLast30Days: 0, wonLast30Days: 0, newLast7Days: 0, newLast30Days: 0, newLastYear: 0 } };
+      }
+      const value = row as Record<string, unknown>;
+      return {
+        total: Number(value.total_count ?? 0),
+        byStatus: {
+          lead: Number(value.lead_count ?? 0),
+          qualified: Number(value.qualified_count ?? 0),
+          proposal: Number(value.proposal_count ?? 0),
+          won: Number(value.won_count ?? 0),
+          lost: Number(value.lost_count ?? 0),
+        },
+        activity: {
+          qualifiedLast30Days: Number(value.qualified_last_30_days ?? 0),
+          wonLast30Days: Number(value.won_last_30_days ?? 0),
+          newLast7Days: Number(value.new_last_7_days ?? 0),
+          newLast30Days: Number(value.new_last_30_days ?? 0),
+          newLastYear: Number(value.new_last_year ?? 0),
+        },
+      };
+    }
+    if (error.code !== "42883" && error.code !== "PGRST202") {
+      throw new Error(error.message);
+    }
   }
 
+  // Compatibility path for applications that upgraded the package before
+  // applying the accompanying database migration.
+  const now = Date.now();
+  const since = (days: number) => new Date(now - days * 86_400_000).toISOString();
+  const [totalResult, ...remainingResults] = await Promise.all([
+    supabase.from("crm_contacts").select("id", { count: "exact", head: true }),
+    ...CRM_CONTACT_STATUSES.map((status) => supabase.from("crm_contacts").select("id", { count: "exact", head: true }).eq("status", status)),
+    supabase.from("crm_status_log").select("id", { count: "exact", head: true }).eq("new_status", "qualified").gte("changed_at", since(30)),
+    supabase.from("crm_status_log").select("id", { count: "exact", head: true }).eq("new_status", "won").gte("changed_at", since(30)),
+    supabase.from("crm_contacts").select("id", { count: "exact", head: true }).gte("created_at", since(7)),
+    supabase.from("crm_contacts").select("id", { count: "exact", head: true }).gte("created_at", since(30)),
+    supabase.from("crm_contacts").select("id", { count: "exact", head: true }).gte("created_at", since(365)),
+  ]);
+  const statusResults = remainingResults.slice(0, CRM_CONTACT_STATUSES.length);
+  const activityResults = remainingResults.slice(CRM_CONTACT_STATUSES.length);
+  const aggregateError = [totalResult, ...remainingResults].find((result) => result.error)?.error;
+  if (aggregateError) throw new Error(aggregateError.message);
   return {
     total: totalResult.count ?? 0,
     byStatus: CRM_CONTACT_STATUSES.reduce<Record<string, number>>((acc, status, index) => {
       acc[status] = statusResults[index]?.count ?? 0;
       return acc;
     }, {}),
+    activity: {
+      qualifiedLast30Days: activityResults[0]?.count ?? 0,
+      wonLast30Days: activityResults[1]?.count ?? 0,
+      newLast7Days: activityResults[2]?.count ?? 0,
+      newLast30Days: activityResults[3]?.count ?? 0,
+      newLastYear: activityResults[4]?.count ?? 0,
+    },
   };
 }
 
@@ -381,66 +443,77 @@ export async function listCrmStatusTimeline(
 ): Promise<CrmStatusTimelineData> {
   const limit = normalizeLimit(params.limit, CRM_STATUS_TIMELINE_DEFAULT_LIMIT, CRM_STATUS_TIMELINE_MAX_LIMIT);
   const since = normalizeSince(params.since);
-  let query = supabase
-    .from("crm_status_log")
-    .select("id, contact_id, previous_status, new_status, reason, changed_at, changed_by_user_id")
-    .gte("changed_at", since)
-    .order("changed_at", { ascending: false });
+  const search = params.search?.trim().toLocaleLowerCase();
+  const eventTypes = params.eventTypes?.length
+    ? params.eventTypes
+    : ["crm_contact_status_changed", "crm_contact_deleted"];
 
-  if (params.contactId?.trim()) query = query.eq("contact_id", params.contactId.trim());
-  const { data, error } = await query.limit(limit);
+  let query = supabase
+    .from("app_activity_events")
+    .select("id, entity_id, created_at, event_type, actor_profile_id, summary, payload")
+    .eq("domain", "crm")
+    .in("event_type", eventTypes)
+    .gte("created_at", since)
+    .order("created_at", { ascending: false });
+
+  if (params.contactId?.trim()) query = query.eq("entity_id", params.contactId.trim());
+  const { data, error } = await query.limit(search ? CRM_STATUS_TIMELINE_MAX_LIMIT : limit);
 
   if (error) {
     throw new Error(error.message);
   }
 
-  const statusLog = (data ?? []) as RawCrmStatusLog[];
-  const contactIds = Array.from(new Set(statusLog.map((entry) => entry.contact_id).filter(Boolean)));
-  const changedByIds = Array.from(
-    new Set(statusLog.map((entry) => entry.changed_by_user_id).filter((value): value is string => Boolean(value))),
+  const events = (data ?? []) as RawCrmTimelineEvent[];
+  const actorProfileIds = Array.from(
+    new Set(events.map((entry) => entry.actor_profile_id).filter((value): value is string => Boolean(value))),
   );
 
-  const contactMap = new Map<string, string>();
-  if (contactIds.length > 0) {
-    const { data: contacts, error: contactsError } = await supabase
-      .from("crm_contacts")
-      .select("id, first_name, last_name, email")
-      .in("id", contactIds);
-
-    if (contactsError) {
-      throw new Error(contactsError.message);
-    }
-
-    ((contacts ?? []) as Array<Pick<CrmContact, "id" | "first_name" | "last_name" | "email">>).forEach((contact) => {
-      contactMap.set(contact.id, buildContactDisplayName(contact));
-    });
-  }
-
-  const changedByMap = new Map<string, string>();
-  if (changedByIds.length > 0) {
+  const actorMap = new Map<string, { userId: string | null; label: string | null }>();
+  if (actorProfileIds.length > 0) {
     const { data: changedByProfiles, error: changedByProfilesError } = await supabase
       .from("profiles")
-      .select("user_id, first_name, last_name")
-      .in("user_id", changedByIds);
+      .select("id, user_id, first_name, last_name")
+      .in("id", actorProfileIds);
 
     if (changedByProfilesError) {
       throw new Error(changedByProfilesError.message);
     }
 
-    ((changedByProfiles ?? []) as CrmChangedByProfile[]).forEach((profile) => {
-      const userId = profile.user_id;
-      const label = buildProfileDisplayName(profile);
-      if (userId && label) {
-        changedByMap.set(userId, label);
-      }
+    ((changedByProfiles ?? []) as CrmTimelineActorProfile[]).forEach((profile) => {
+      actorMap.set(profile.id, { userId: profile.user_id, label: buildProfileDisplayName(profile) });
     });
   }
 
-  return statusLog.map((entry) => ({
-    ...entry,
-    contact_label: contactMap.get(entry.contact_id) ?? "Contacto",
-    changed_by_label: entry.changed_by_user_id ? (changedByMap.get(entry.changed_by_user_id) ?? null) : null,
-  }));
+  const entries = events.map<CrmStatusLog>((event) => {
+    const payload = event.payload ?? {};
+    const changes = payload.changes && typeof payload.changes === "object" ? payload.changes as Record<string, unknown> : {};
+    const status = changes.status && typeof changes.status === "object" ? changes.status as Record<string, unknown> : {};
+    const actor = event.actor_profile_id ? actorMap.get(event.actor_profile_id) : undefined;
+    return {
+      id: event.id,
+      contact_id: event.entity_id ?? (typeof payload.contact_id === "string" ? payload.contact_id : ""),
+      previous_status: typeof status.from === "string" ? status.from : null,
+      new_status: typeof status.to === "string" ? status.to : "",
+      reason: typeof payload.reason === "string" ? payload.reason : null,
+      changed_at: event.created_at,
+      changed_by_user_id: actor?.userId ?? null,
+      changed_by_label: actor?.label ?? null,
+      contact_label: typeof payload.contact_name === "string" && payload.contact_name.trim() ? payload.contact_name : "Contacto",
+      event_type: event.event_type,
+      summary: event.summary,
+      payload,
+    };
+  });
+
+  if (!search) return entries;
+  return entries.filter((entry) => [
+    entry.contact_label,
+    entry.changed_by_label,
+    entry.reason,
+    entry.summary,
+    entry.previous_status,
+    entry.new_status,
+  ].filter((value): value is string => Boolean(value)).join(" ").toLocaleLowerCase().includes(search)).slice(0, limit);
 }
 
 function reportPercentage(value: number, total: number) {
@@ -463,7 +536,11 @@ export async function getCrmReportData(supabase: SupabaseClient): Promise<CrmRep
       .select("id, name, industry, website_url")
       .order("created_at", { ascending: false })
       .limit(CRM_REPORT_MAX_RECORDS + 1),
-    listCrmStatusTimeline(supabase, { limit: 12, since: "1970-01-01T00:00:00.000Z" }),
+    listCrmStatusTimeline(supabase, {
+      limit: 12,
+      since: "1970-01-01T00:00:00.000Z",
+      eventTypes: ["crm_contact_status_changed"],
+    }),
   ]);
 
   if (contactsResult.error) throw new Error(contactsResult.error.message);

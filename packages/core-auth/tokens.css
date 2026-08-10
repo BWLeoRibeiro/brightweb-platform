@@ -288,10 +288,10 @@
   border-radius: var(--radius-pill);
   background: color-mix(in srgb, var(--accent) 12%, transparent);
   color: var(--accent);
-  font-size: var(--text-label);
-  font-weight: var(--font-weight-bold);
-  letter-spacing: var(--type-tracking-040);
-  text-transform: uppercase;
+  font-size: var(--text-meta);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--type-tracking-normal);
+  text-transform: none;
 }
 
 .auth-divider-line {

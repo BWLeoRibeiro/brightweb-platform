@@ -52,7 +52,7 @@ function crmInfrastructureError(context: string, error: unknown): Error {
 
 export async function ensureCrmContactForProfile(
   profileId: string,
-  options?: { source?: string; serviceClient?: SupabaseClient },
+  options?: { source?: string; organizationId?: string | null; serviceClient?: SupabaseClient },
 ): Promise<CrmContactProfileResult> {
   try {
     const serviceClient = options?.serviceClient ?? createServiceRoleClient();
@@ -86,6 +86,7 @@ export async function ensureCrmContactForProfile(
         phone: null,
         status: "lead",
         source: options?.source ?? "profile_link",
+        organization_id: options?.organizationId ?? null,
         owner_id: null,
       }).select("id").single();
       if (insertError) {
@@ -95,8 +96,13 @@ export async function ensureCrmContactForProfile(
       return { success: true, contactId: inserted.id };
     }
     if (!existing.profile_id || existing.profile_id === profile.id) {
+      const payload: Record<string, unknown> = {
+        profile_id: profile.id,
+        updated_at: new Date().toISOString(),
+      };
+      if (options?.organizationId !== undefined) payload.organization_id = options.organizationId;
       const { error: updateError } = await serviceClient.from("crm_contacts")
-        .update({ profile_id: profile.id, updated_at: new Date().toISOString() })
+        .update(payload)
         .eq("id", existing.id);
       if (updateError) {
         console.error("[crm.profile-sync.update]", updateError);

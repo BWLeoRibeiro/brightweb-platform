@@ -10,7 +10,7 @@
 //   accepts access tokens it issued, so a broken cookie/token pipeline fails here.
 // - GET/HEAD/POST /rest/v1/:table  -> canned rows from fixtures.mjs. `head:true`
 //   count queries arrive as HEAD requests and are answered with an empty body and
-//   a real Content-Range. Only `eq.` / `is.null` filters are applied; all other
+//   a real Content-Range. `eq.`, `neq.`, `in.`, and `is.null` filters are applied; all other
 //   operators are ignored (rows pass through), which keeps counts deterministic.
 // - POST/GET /rest/v1/rpc/current_global_role -> "admin" (the only RPC on the
 //   generated app's read path; see packages/core-auth/src/server.ts).
@@ -86,8 +86,8 @@ function readJsonBody(request) {
   });
 }
 
-// Apply only the deterministic subset of PostgREST filters: `column=eq.value`
-// and `column=is.null`. Everything else (neq, gte, lte, lt, in, not.*, or,
+// Apply only the deterministic subset of PostgREST filters: equality,
+// inequality, membership, and null checks. Everything else (gte, lte, lt, not.*, or,
 // embedded-table params, order, ...) intentionally passes rows through.
 const RESERVED_PARAMS = new Set(["select", "order", "limit", "offset", "on_conflict", "columns", "apikey", "or", "and"]);
 
@@ -98,6 +98,9 @@ function filterRows(rows, searchParams) {
     if (value.startsWith("eq.")) {
       const expected = value.slice(3);
       filtered = filtered.filter((row) => String(row[key]) === expected);
+    } else if (value.startsWith("neq.")) {
+      const expected = value.slice(4);
+      filtered = filtered.filter((row) => String(row[key]) !== expected);
     } else if (value === "is.null") {
       filtered = filtered.filter((row) => row[key] === null || row[key] === undefined);
     } else if (value.startsWith("in.(") && value.endsWith(")")) {
@@ -295,6 +298,20 @@ export async function startSupabaseStub({ log = () => {} } = {}) {
             new_role_code: assignment.role_code,
             reason: payload.p_reason,
           }]);
+        }).catch((error) => sendJson(response, 400, { message: String(error) }));
+        return undefined;
+      }
+      if (rpcName === "delete_marketing_campaign_safely" && method === "POST") {
+        void readJsonBody(request).then((payload) => {
+          const index = tables.marketing_campaigns.findIndex(
+            (row) => row.id === payload?.p_campaign_id,
+          );
+          if (index < 0) return sendJson(response, 200, "not_found");
+          if (!["draft", "canceled"].includes(tables.marketing_campaigns[index].status)) {
+            return sendJson(response, 200, "invalid_status");
+          }
+          tables.marketing_campaigns.splice(index, 1);
+          return sendJson(response, 200, "deleted");
         }).catch((error) => sendJson(response, 400, { message: String(error) }));
         return undefined;
       }

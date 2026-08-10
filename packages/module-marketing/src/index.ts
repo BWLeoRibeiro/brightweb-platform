@@ -14,10 +14,12 @@ export {
   cancelCampaign,
   createCampaign,
   deleteCampaign,
+  deleteCampaignRecipient,
   expandCampaignRecipients,
   getCampaign,
   listCampaignRecipients,
   listCampaigns,
+  queryCampaigns,
   retryCampaignFailures,
   scheduleCampaign,
   sendCampaignNow,
@@ -28,6 +30,8 @@ export type {
   CampaignStatus,
   CreateCampaignInput,
   MarketingCampaign,
+  MarketingCampaignListParams,
+  MarketingCampaignListResult,
   UpdateCampaignInput,
 } from "./campaigns";
 export {
@@ -50,6 +54,7 @@ export {
   deleteSegment,
   getSegment,
   listSegments,
+  querySegments,
   previewSegment,
   resolveSegmentContacts,
   updateSegment,
@@ -57,6 +62,8 @@ export {
 export type {
   CreateSegmentInput,
   MarketingSegment,
+  MarketingSegmentListParams,
+  MarketingSegmentListResult,
   MarketingSegmentRule,
   SegmentContact,
   UpdateSegmentInput,
@@ -86,6 +93,7 @@ export {
   getWorkflow,
   listWorkflowRuns,
   listWorkflows,
+  queryWorkflows,
   pauseWorkflow,
   processDueWorkflowRuns,
   scanActivityTriggers,
@@ -95,6 +103,8 @@ export {
 export type {
   CreateWorkflowInput,
   MarketingWorkflow,
+  MarketingWorkflowListParams,
+  MarketingWorkflowListResult,
   MarketingWorkflowNode,
   MarketingWorkflowWithNodes,
   UpdateWorkflowInput,
@@ -107,16 +117,24 @@ export { processResendWebhook } from "./webhooks";
 export type { ResendWebhookResult } from "./webhooks";
 export {
   createMarketingServiceClient,
+  createTopic,
+  deleteTopic,
   ensureContactSettings,
   getContactSubscriptions,
   isEmailable,
   isSuppressed,
   listTopics,
+  reorderTopics,
   resolveByUnsubscribeToken,
   setSubscription,
   suppress,
   unsubscribeAll,
   unsubscribeTopic,
+  updateTopic,
+} from "./server";
+export type {
+  CreateMarketingTopicInput,
+  UpdateMarketingTopicInput,
 } from "./server";
 export type {
   ConsentSource,
@@ -132,6 +150,7 @@ export { MarketingPage } from './marketing-page';
 export {
   MarketingClient,
   MarketingUiProvider,
+  TopicWorkspace,
   WorkflowWorkspace,
   createMarketingUiClient,
   defaultMarketingUiDictionary,

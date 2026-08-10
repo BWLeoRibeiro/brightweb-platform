@@ -52,6 +52,7 @@
       "project_members",
       "project_milestones",
       "project_tasks",
+      "project_task_stats",
       "project_links",
       "project_status_log",
       "is_project_org_admin",

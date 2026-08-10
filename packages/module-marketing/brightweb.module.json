@@ -46,6 +46,7 @@
       "marketing_contact_tags",
       "marketing_worker_cursors",
       "claim_marketing_workflow_runs",
+      "reorder_marketing_topics",
       "process_marketing_resend_webhook",
       "set_marketing_updated_at"
     ]

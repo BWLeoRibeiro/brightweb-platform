@@ -1,5 +1,7 @@
 "use client";
 
+import { StyledSelect } from "@brightweblabs/ui";
+
 import { useEffect, useState, type FormEvent } from "react";
 import {
   AlertDialog,
@@ -64,9 +66,9 @@ export function CrmStatusDialog({ open, contactIds, initialStatus = "lead", dict
           <div className="mt-5 grid gap-4">
             <Field>
               <FieldLabel htmlFor="crm-new-status">{dictionary.statusDialog.status}</FieldLabel>
-              <select id="crm-new-status" value={status} onChange={(event) => setStatus(event.target.value as CrmContactStatus)} className="h-11 w-full rounded-xl border border-foreground/15 bg-foreground/5 px-3 text-body text-foreground outline-none focus:border-primary focus:ring-3 focus:ring-primary/40">
+              <StyledSelect id="crm-new-status" value={status} onChange={(event) => setStatus(event.target.value as CrmContactStatus)} className="h-11 w-full rounded-xl border border-foreground/15 bg-foreground/5 px-3 text-body text-foreground outline-none focus:border-primary focus:ring-3 focus:ring-primary/40">
                 {resolvedStages.map((stage) => <option key={stage.value} value={stage.value}>{stage.label}</option>)}
-              </select>
+              </StyledSelect>
             </Field>
             <Field className={status === "lost" ? "rounded-[var(--radius-card)] border border-[color:var(--crm-stage-lost)] bg-[color:var(--surface-danger-subtle)] p-4" : undefined}>
               <FieldLabel htmlFor="crm-status-reason">{dictionary.statusDialog.reason}</FieldLabel>

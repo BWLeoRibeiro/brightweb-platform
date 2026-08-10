@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { Toaster } from "@brightweblabs/ui/sonner";
 import { cn } from "../lib/utils";
 import styles from "./shell-surfaces.module.css";
 
@@ -9,9 +10,11 @@ export type AppShellFrameProps = {
   children: ReactNode;
   collapsed?: boolean;
   className?: string;
+  /** Shared toast region. Pass null to disable or a custom node to replace it. */
+  toaster?: ReactNode;
 };
 
-export function AppShellFrame({ sidebar, header, mobileNav, children, collapsed = false, className }: AppShellFrameProps) {
+export function AppShellFrame({ sidebar, header, mobileNav, children, collapsed = false, className, toaster = <Toaster /> }: AppShellFrameProps) {
   return (
     <div className={cn(styles.shellRoot, className)}>
       <div className={cn(styles.shellDesktopFrame, collapsed && styles.shellDesktopFrameCollapsed)}>
@@ -22,6 +25,7 @@ export function AppShellFrame({ sidebar, header, mobileNav, children, collapsed 
           <main className={styles.mainContent}>{children}</main>
         </div>
       </div>
+      {toaster}
     </div>
   );
 }

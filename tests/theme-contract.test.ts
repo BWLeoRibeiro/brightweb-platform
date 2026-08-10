@@ -69,7 +69,7 @@ const tokenizedVisualContract = [
   "--text-ui-report-title-lg", "--text-ui-calendar", "--text-ui-report-metric",
   "--radius-swatch", "--radius-pill", "--radius-scrollbar", "--surface-overlay", "--surface-overlay-strong", "--surface-tooltip", "--surface-badge-tint",
   "--surface-button-soft", "--surface-button-soft-hover", "--border-button-soft-hover",
-  "--surface-button-brand", "--foreground-accent-link",
+  "--surface-button-brand", "--foreground-button-brand", "--foreground-accent-link",
   "--surface-selection", "--border-selection", "--surface-pagination-active", "--border-pagination-active",
   "--surface-danger-subtle", "--surface-account-team", "--surface-account-client", "--surface-account",
   "--surface-account-hover", "--account-presence", "--account-presence-size", "--row-hover-sweep",
@@ -77,7 +77,7 @@ const tokenizedVisualContract = [
   "--scrollbar-thumb-hover", "--toast-success-bg", "--toast-success-border", "--toast-warning-bg",
   "--toast-warning-text", "--toast-warning-border", "--toast-error-bg", "--toast-error-border",
   "--toast-info-bg", "--toast-info-text", "--toast-info-border", "--shadow-accent-control",
-  "--shadow-toolbar-control", "--shadow-toolbar-popover", "--shadow-tooltip", "--shadow-dialog",
+  "--shadow-toolbar-popover", "--shadow-tooltip", "--shadow-dialog",
   "--shadow-phone-dropdown", "--report-hero-glow", "--report-hero-rule", "--shell-frame-offset",
   "--shell-sidebar-width", "--shell-sidebar-collapsed-width", "--shell-sidebar-toggle-offset",
   "--shell-sidebar-toggle-size", "--shell-sidebar-toggle-inset", "--shell-brand-height",
@@ -165,7 +165,8 @@ test("canonical typography roles expose complete color-independent recipes and c
   const roles = [
     "text-heading-1", "text-heading-2", "text-heading-3", "text-heading-4",
     "text-title", "text-body-lg", "text-body", "text-meta", "text-label",
-    "text-micro", "text-metric", "text-metric-display", "text-metric-lg",
+    "text-micro", "text-kpi", "text-kpi-lg", "text-data-sm",
+    "text-metric", "text-metric-display", "text-metric-lg",
   ] as const;
   const utilities = new Map(Array.from(
     typography.matchAll(/@utility\s+(text-(?!ui-)[a-z0-9-]+)\s*\{([^{}]*)\}/g),
@@ -186,9 +187,19 @@ test("canonical typography roles expose complete color-independent recipes and c
   for (const role of ["text-heading-2", "text-heading-3", "text-heading-4", "text-title"]) {
     assert.match(utilities.get(role)!, /text-wrap:\s*pretty;/);
   }
-  for (const role of ["text-metric", "text-metric-display", "text-metric-lg"]) {
+  for (const role of ["text-kpi", "text-kpi-lg", "text-data", "text-data-sm", "text-metric", "text-metric-display", "text-metric-lg"]) {
     assert.match(utilities.get(role)!, /font-variant-numeric:\s*tabular-nums;/);
   }
+  assert.match(utilities.get("text-kpi")!, /font-family:\s*var\(--font-display\);/);
+  assert.match(utilities.get("text-kpi-lg")!, /font-family:\s*var\(--font-display\);/);
+  assert.match(utilities.get("text-data")!, /font-family:\s*var\(--font-mono\);/);
+  assert.match(utilities.get("text-data-sm")!, /font-family:\s*var\(--font-mono\);/);
+  assert.match(utilities.get("text-metric")!, /font-family:\s*var\(--font-mono\);/);
+  assert.match(utilities.get("text-metric-display")!, /font-family:\s*var\(--font-display\);/);
+  assert.match(utilities.get("text-metric-lg")!, /font-family:\s*var\(--font-display\);/);
+  assert.match(utilities.get("text-label")!, /text-transform:\s*none;/);
+  assert.match(utilities.get("text-label")!, /letter-spacing:\s*var\(--type-tracking-normal\);/);
+  assert.doesNotMatch(utilities.get("text-label")!, /type-tracking-(?:wide|\d)/);
 
   const aliases = new Map([
     ["--text-ui-title", "--text-heading-1"],
@@ -254,6 +265,26 @@ test("accessible muted foreground meets WCAG AA in default and MQ light/dark the
   }
 });
 
+test("brand buttons keep an explicit accessible foreground in every packaged theme", async () => {
+  for (const file of ["src/tokens.css", "themes/mq.css"]) {
+    const css = await read(file);
+    const root = scopedCustomProperties(css, ":root");
+    const darkOverrides = scopedCustomProperties(css, ":root.dark");
+    for (const [mode, overrides] of [["light", new Map<string, string>()], ["dark", darkOverrides]] as const) {
+      const properties = new Map([...root, ...overrides]);
+      const accent = resolveHex(properties, "--brand-accent");
+      const foreground = resolveHex(properties, "--brand-accent-foreground");
+      const pageForeground = resolveHex(properties, "--foreground");
+      const buttonSurface = composite(accent, pageForeground, 0.84);
+
+      assert.ok(
+        contrastRatio(foreground, buttonSurface) >= 4.5,
+        `${file} ${mode} brand button text must meet 4.5:1 on its fill`,
+      );
+    }
+  }
+});
+
 test("project risk and health aliases match MQ in light and dark themes", async () => {
   const tokens = await read("src/tokens.css");
   const sharedAliases = new Map([
@@ -277,7 +308,7 @@ test("tokenized package visuals have defaults and live consumers", async () => {
   const tokensCss = await read("src/tokens.css");
   const defaults = customProperties(tokensCss.slice(0, tokensCss.indexOf("/* Dark mode")));
   const packageRoots = ["app-shell", "module-crm", "theme", "ui"];
-  const packageSources = (await Promise.all(packageRoots.map(async (packageName) => {
+  const packageSources = `${(await Promise.all(packageRoots.map(async (packageName) => {
     const root = path.join(repoRoot, "packages", packageName, "src");
     const files: string[] = [];
     async function visit(directory: string) {
@@ -289,7 +320,9 @@ test("tokenized package visuals have defaults and live consumers", async () => {
     }
     await visit(root);
     return files.join("\n");
-  }))).join("\n");
+  }))).join("\n")}\n${await fs.readFile(path.join(repoRoot, "packages/module-admin/tokens.css"), "utf8")}`;
+
+  assert.match(tokensCss, /--foreground-button-brand:\s*var\(--brand-accent-foreground\);/);
 
   for (const token of tokenizedVisualContract) {
     assert.ok(defaults.has(token), `${token} must have a neutral default in tokens.css`);

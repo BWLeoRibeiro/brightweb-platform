@@ -1,6 +1,7 @@
 import { requireServerPageAccess } from "@brightweblabs/core-auth/server";
 import {
   getProjectDashboard,
+  getProjectAccess,
   getProjectsPortfolioPageData,
 } from "@brightweblabs/module-projects";
 import {
@@ -37,18 +38,25 @@ export async function ProjectsServerMount() {
 
 async function getInitialProject(params: Promise<{ projectId: string }>) {
   const { projectId } = await params;
-  const { supabase } = await requireServerPageAccess();
-  return getProjectDashboard(supabase, projectId);
+  const { supabase, profileId, role } = await requireServerPageAccess();
+  const [initialData, access] = await Promise.all([
+    getProjectDashboard(supabase, projectId),
+    getProjectAccess(supabase, projectId, profileId, role),
+  ]);
+  return { initialData, access };
 }
 
 export async function ProjectDetailServerMount({ params }: { params: Promise<{ projectId: string }> }) {
-  return <ProjectDetailPageLiveMount initialData={await getInitialProject(params)} navigation={navigation} />;
+  const { initialData, access } = await getInitialProject(params);
+  return <ProjectDetailPageLiveMount initialData={initialData} projectRole={access.projectRole} permissions={access.permissions} navigation={navigation} />;
 }
 
 export async function ProjectBoardServerMount({ params }: { params: Promise<{ projectId: string }> }) {
-  return <ProjectBoardPageLiveMount initialData={await getInitialProject(params)} navigation={navigation} />;
+  const { initialData, access } = await getInitialProject(params);
+  return <ProjectBoardPageLiveMount initialData={initialData} projectRole={access.projectRole} permissions={access.permissions} navigation={navigation} />;
 }
 
 export async function ProjectTasksServerMount({ params }: { params: Promise<{ projectId: string }> }) {
-  return <ProjectTasksPageLiveMount initialData={await getInitialProject(params)} navigation={navigation} />;
+  const { initialData, access } = await getInitialProject(params);
+  return <ProjectTasksPageLiveMount initialData={initialData} projectRole={access.projectRole} permissions={access.permissions} navigation={navigation} />;
 }

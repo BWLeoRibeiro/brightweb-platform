@@ -135,12 +135,12 @@ export function ProjectsPortfolioStats({
                   <div className={cn("mb-4 flex w-fit items-center justify-center rounded-xl p-1.5", stat.iconWrapCn)}>
                     <Icon className={cn("size-4", stat.iconCn)} />
                   </div>
-                  <p className={cn("text-heading-1 font-semibold tracking-tight", stat.valueCn)}>
+                  <p className={cn("text-kpi text-[length:var(--text-heading-1)] font-semibold", stat.valueCn)}>
                     {stat.value.toLocaleString("pt-PT")}
                   </p>
                   <div className="mt-1 flex items-baseline justify-between gap-1">
                     <p className={cn("text-meta font-semibold", stat.labelCn)}>{stat.label}</p>
-                    <span className={cn("text-micro font-semibold tabular-nums", stat.pctCn)}>{stat.pct}%</span>
+                    <span className={cn("text-data text-micro font-semibold", stat.pctCn)}>{stat.pct}%</span>
                   </div>
                   <p className={cn("mt-0.5 text-micro", stat.descCn)}>{stat.description}</p>
                   <div className="mt-3 h-0.5 overflow-hidden rounded-full bg-black/8 dark:bg-white/8">

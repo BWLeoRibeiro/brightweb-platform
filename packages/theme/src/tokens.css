@@ -72,6 +72,7 @@
   --type-tracking-180: 0.18em;
 
   --brand-accent: #4a7dbd;
+  --brand-accent-foreground: #ffffff;
   --brand-accent-soft: #7196c4;
   --brand-ink: #111827;
   --brand-neutral-500: #64748b;
@@ -191,11 +192,14 @@
   --text-body-lg: 1rem;
   --text-body: 0.875rem;
   --text-meta: 0.75rem;
-  --text-label: 0.6875rem;
+  --text-label: 0.75rem;
   --text-micro: 0.625rem;
   --text-metric: 2.75rem;
   --text-metric-display: var(--text-metric);
   --text-metric-lg: 3.5rem;
+  --text-kpi: var(--text-metric);
+  --text-kpi-lg: var(--text-metric-lg);
+  --text-data-sm: var(--text-meta);
 
   /* Compatibility and contextual scales retain their current rendered sizes. */
   --text-ui-nano: 0.4375rem;
@@ -255,6 +259,7 @@
   --surface-button-soft-hover: color-mix(in srgb, var(--foreground) 7%, var(--card));
   --border-button-soft-hover: color-mix(in srgb, var(--foreground) 16%, transparent);
   --surface-button-brand: color-mix(in srgb, var(--brand-accent) 84%, var(--foreground));
+  --foreground-button-brand: var(--brand-accent-foreground);
   --foreground-accent-link: color-mix(in srgb, var(--brand-accent) 45%, var(--foreground));
   --surface-selection: color-mix(in srgb, var(--accent) 12%, var(--card));
   --border-selection: color-mix(in srgb, var(--accent) 40%, var(--hairline));
@@ -285,7 +290,6 @@
   --toast-info-border: color-mix(in srgb, var(--secondary) 30%, var(--background));
 
   --shadow-accent-control: 0 4px 14px color-mix(in srgb, var(--brand-accent) 26%, transparent);
-  --shadow-toolbar-control: 0 4px 14px rgba(91, 197, 242, 0.26);
   --shadow-toolbar-popover: 0 18px 44px rgba(10, 21, 26, 0.16), 0 2px 10px rgba(10, 21, 26, 0.08);
   --shadow-tooltip: 0 14px 34px var(--elevate-3);
   --shadow-dialog: 0 24px 64px var(--elevate-3);
@@ -448,6 +452,7 @@
   --dashboard-milestone-empty: color-mix(in srgb, var(--project-hero-foreground) 10%, transparent);
   --dashboard-milestone-date: color-mix(in srgb, var(--project-hero-foreground) 8%, transparent);
   --dashboard-period-glow: color-mix(in srgb, var(--accent) 22%, transparent);
+  --dashboard-rhythm-trend-border: color-mix(in srgb, var(--brand-lime, var(--accent)) 45%, transparent);
   --dashboard-client-avatar: color-mix(in srgb, var(--role-client) 18%, var(--card));
   --dashboard-local-muted-foreground: color-mix(in srgb, var(--foreground) 62%, transparent);
   --dashboard-local-border: color-mix(in srgb, var(--foreground) 14%, transparent);
@@ -488,6 +493,7 @@
 .theme-dark {
   color-scheme: dark;
   --brand-accent: #79a8df;
+  --brand-accent-foreground: #0b1220;
   --brand-accent-soft: #9bbce2;
   --brand-ink: #0b1220;
   --brand-neutral-500: #9aa9bc;

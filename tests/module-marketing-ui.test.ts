@@ -1,8 +1,11 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import test from "node:test";
 
 import { createMarketingCampaignHttpHandlers } from "../packages/module-marketing/src/http.ts";
 import { createMarketingUiClient } from "../packages/module-marketing/src/ui/client.ts";
+import { defaultMarketingUiDictionary } from "../packages/module-marketing/src/ui/dictionary.ts";
 
 const campaign = {
   id: "campaign/1",
@@ -31,6 +34,9 @@ const topic = {
   label: "News",
   description: null,
   isActive: true,
+  position: 0,
+  createdAt: "2026-07-26T10:00:00.000Z",
+  updatedAt: "2026-07-26T10:00:00.000Z",
 };
 
 const segment = {
@@ -90,6 +96,100 @@ const queue = {
   skipped: 0,
 };
 
+test("marketing validation feedback names the action that needs attention", () => {
+  assert.equal(
+    defaultMarketingUiDictionary.feedback.campaignRequired,
+    "Preenche o nome, o assunto, o tópico e o conteúdo do email.",
+  );
+  assert.equal(
+    defaultMarketingUiDictionary.feedback.testEmailRequired,
+    "Indica o destinatário do email de teste.",
+  );
+  assert.equal(
+    defaultMarketingUiDictionary.feedback.topicRequired,
+    "Preenche os campos obrigatórios do tópico.",
+  );
+  assert.equal(
+    defaultMarketingUiDictionary.feedback.workflowRequired,
+    "Preenche o nome, configura o evento inicial e completa todos os passos da automação.",
+  );
+  assert.equal(
+    defaultMarketingUiDictionary.feedback.segmentNameRequired,
+    "Indica o nome do segmento.",
+  );
+
+  const root = join(process.cwd(), "packages/module-marketing/src/ui");
+  const campaignSource = readFileSync(join(root, "marketing-client.tsx"), "utf8");
+  assert.match(campaignSource, /feedback\.campaignRequired \?\? dictionary\.feedback\.required/);
+  assert.match(campaignSource, /feedback\.testEmailRequired \?\? dictionary\.feedback\.required/);
+  assert.match(readFileSync(join(root, "topic-workspace.tsx"), "utf8"), /feedback\.topicRequired \?\? dictionary\.feedback\.required/);
+  assert.match(readFileSync(join(root, "workflow-workspace.tsx"), "utf8"), /feedback\.workflowRequired \?\? dictionary\.feedback\.required/);
+  assert.match(readFileSync(join(root, "segment-workspace.tsx"), "utf8"), /feedback\.segmentNameRequired \?\? dictionary\.segments\.fields\.name/);
+});
+
+test("marketing editors distinguish pending, unavailable, and fulfilled-empty collections", () => {
+  const campaignSource = readFileSync(join(process.cwd(), "packages/module-marketing/src/ui/marketing-client.tsx"), "utf8");
+  const workflowSource = readFileSync(join(process.cwd(), "packages/module-marketing/src/ui/workflow-workspace.tsx"), "utf8");
+  const segmentSource = readFileSync(join(process.cwd(), "packages/module-marketing/src/ui/segment-workspace.tsx"), "utf8");
+
+  assert.match(campaignSource, /setRecipientsLoadState\("pending"\)[\s\S]*setEditorOpen\(true\)/);
+  assert.match(campaignSource, /loadState === "pending"[\s\S]*loadState === "rejected"[\s\S]*recipients\.length === 0/);
+  assert.match(campaignSource, /generation !== campaignLoadGeneration\.current/);
+
+  assert.match(workflowSource, /setRunsLoadState\("pending"\)[\s\S]*setOpen\(true\)/);
+  assert.match(workflowSource, /runsLoadState === "pending"[\s\S]*runsLoadState === "rejected"[\s\S]*runs\.length === 0/);
+  assert.match(workflowSource, /generation !== workflowLoadGeneration\.current/);
+
+  assert.match(segmentSource, /setPreviewLoadState\("pending"\)[\s\S]*window\.setTimeout/);
+  assert.match(segmentSource, /previewLoadState === "pending" && !previewHasData[\s\S]*previewLoadState === "rejected" && !previewHasData[\s\S]*preview\.sample\.length === 0/);
+});
+
+test("marketing collection controls use registered actions and authoritative queries", () => {
+  const toolbarSource = readFileSync(join(process.cwd(), "packages/module-marketing/src/ui/toolbar-controls.tsx"), "utf8");
+  const clientSource = readFileSync(join(process.cwd(), "packages/module-marketing/src/ui/marketing-client.tsx"), "utf8");
+  const registrationSource = readFileSync(join(process.cwd(), "packages/module-marketing/src/registration.ts"), "utf8");
+
+  assert.match(
+    clientSource,
+    /initialLoadedViewsRef\.current\.delete\(collectionView\)[\s\S]*setCollectionLoading\(false\);[\s\S]*return;/,
+  );
+
+  assert.match(toolbarSource, /useShellActionsReady/);
+  assert.match(toolbarSource, /disabled=\{!ready\}/);
+  assert.match(toolbarSource, /Procurar campanhas/);
+  assert.match(toolbarSource, /Limpar/);
+  assert.match(toolbarSource, /Aplicar/);
+  assert.match(clientSource, /useShellAction[\s\S]*MARKETING_EVENTS\.setSearch/);
+  assert.match(clientSource, /window\.setTimeout[\s\S]*180/);
+  assert.match(clientSource, /client\.queryCampaigns/);
+  assert.match(clientSource, /client\.querySegments/);
+  assert.match(clientSource, /client\.queryWorkflows/);
+  assert.match(registrationSource, /surface: "marketing"[\s\S]*exact: \["\/marketing"\]/);
+});
+
+test("marketing workspace delegates page chrome to the shell and keeps one primary collection action", () => {
+  const clientSource = readFileSync(join(process.cwd(), "packages/module-marketing/src/ui/marketing-client.tsx"), "utf8");
+  const segmentSource = readFileSync(join(process.cwd(), "packages/module-marketing/src/ui/segment-workspace.tsx"), "utf8");
+  const workflowSource = readFileSync(join(process.cwd(), "packages/module-marketing/src/ui/workflow-workspace.tsx"), "utf8");
+  const stylesheet = readFileSync(join(process.cwd(), "packages/module-marketing/marketing.css"), "utf8");
+
+  assert.doesNotMatch(clientSource, /className="marketing-hero"/);
+  assert.match(clientSource, /className="marketing-view-nav"/);
+  assert.match(clientSource, /className="marketing-campaign-columns"/);
+  assert.doesNotMatch(clientSource, /marketing-ledger-heading[\s\S]{0,600}<Button onClick=\{beginCreate\}/);
+  assert.doesNotMatch(segmentSource, /marketing-ledger-heading[\s\S]{0,600}<Button onClick=\{beginCreate\}/);
+  assert.doesNotMatch(workflowSource, /marketing-workflows-title[\s\S]{0,600}<Button type="button" onClick=\{beginCreate\}/);
+  assert.doesNotMatch(clientSource, /campaigns\.length === 0[\s\S]{0,600}<Button onClick=\{beginCreate\}/);
+  assert.doesNotMatch(segmentSource, /segments\.length === 0[\s\S]{0,600}<Button onClick=\{beginCreate\}/);
+  assert.doesNotMatch(workflowSource, /workflows\.length === 0[\s\S]{0,800}<Button type="button" onClick=\{beginCreate\}>/);
+  assert.match(clientSource, /marketing-action-card marketing-action-primary/);
+  assert.match(clientSource, /className="marketing-action-alternatives"/);
+  assert.match(clientSource, /initialCollectionsLoaded/);
+  assert.match(clientSource, /collectionFailed && campaigns\.length === 0/);
+  assert.match(clientSource, /dictionary\.page\.loadError/);
+  assert.doesNotMatch(stylesheet, /\.marketing-hero\s*\{/);
+});
+
 test("marketing UI client methods match the exported HTTP handler contract", async () => {
   const dependencyCalls: Array<[string, unknown]> = [];
   const dependencies = {
@@ -105,6 +205,14 @@ test("marketing UI client methods match the exported HTTP handler contract", asy
     webhookSecret: "webhook-secret",
     publicAppUrl: "https://example.test",
     listTopics: async () => [topic],
+    createTopic: async (_client: unknown, input: unknown) => {
+      dependencyCalls.push(["createTopic", input]);
+      return topic;
+    },
+    updateTopic: async (_client: unknown, id: string, input: unknown) => {
+      dependencyCalls.push(["updateTopic", { id, input }]);
+      return topic;
+    },
     listCampaigns: async () => [campaign],
     getCampaign: async (_client: unknown, id: string) => {
       dependencyCalls.push(["getCampaign", id]);
@@ -260,6 +368,10 @@ test("marketing UI client methods match the exported HTTP handler contract", asy
     const context = { params: { id } };
 
     if (method === "GET" && route === "topics") return handlers.topicsGet(request);
+    if (method === "POST" && route === "topics") return handlers.topicsPost(request);
+    if (parts[0] === "topics" && parts.length === 2 && method === "PATCH") {
+      return handlers.topicPatch(request, context);
+    }
     if (route === "campaigns" && method === "GET") return handlers.campaignsGet(request);
     if (route === "campaigns" && method === "POST") return handlers.campaignsPost(request);
     if (parts[0] === "campaigns" && parts.length === 2 && method === "GET") {
@@ -356,6 +468,7 @@ test("marketing UI client methods match the exported HTTP handler contract", asy
   };
 
   assert.equal((await client.listCampaigns())[0]?.id, campaign.id);
+  assert.equal((await client.queryCampaigns({ page: 2, pageSize: 20, search: "launch", status: "draft" })).items[0]?.id, campaign.id);
   assert.equal((await client.getCampaign(campaign.id)).id, campaign.id);
   assert.equal((await client.createCampaign(campaignInput)).id, campaign.id);
   assert.equal((await client.updateCampaign(campaign.id, { subject: "Updated" })).id, campaign.id);
@@ -367,7 +480,10 @@ test("marketing UI client methods match the exported HTTP handler contract", asy
   await client.sendTest(campaign.id, "test@example.com");
   assert.equal((await client.listRecipients(campaign.id))[0]?.contactId, "contact-1");
   assert.equal((await client.listTopics())[0]?.id, topic.id);
+  assert.equal((await client.createTopic({ slug: "news", label: "News" })).id, topic.id);
+  assert.equal((await client.updateTopic(topic.id, { label: "Notícias" })).id, topic.id);
   assert.equal((await client.listSegments())[0]?.id, segment.id);
+  assert.equal((await client.querySegments({ page: 1, pageSize: 20, search: "readers" })).items[0]?.id, segment.id);
   assert.equal((await client.getSegment(segment.id)).id, segment.id);
   assert.equal((await client.createSegment(segmentInput)).id, segment.id);
   assert.equal((await client.updateSegment(segment.id, { description: "Updated" })).id, segment.id);
@@ -378,6 +494,7 @@ test("marketing UI client methods match the exported HTTP handler contract", asy
   assert.equal((await client.getCampaignAnalytics(campaign.id)).campaignId, campaign.id);
   assert.equal((await client.getSegmentAnalytics(segment.id)).segmentId, segment.id);
   assert.equal((await client.listWorkflows())[0]?.id, workflow.id);
+  assert.equal((await client.queryWorkflows({ page: 1, pageSize: 20, search: "welcome", status: "active" })).items[0]?.id, workflow.id);
   assert.equal((await client.getWorkflow(workflow.id)).id, workflow.id);
   assert.equal((await client.createWorkflow(workflowInput)).id, workflow.id);
   assert.equal((await client.updateWorkflow(workflow.id, { description: "Updated" })).id, workflow.id);
@@ -402,6 +519,7 @@ test("marketing UI client methods match the exported HTTP handler contract", asy
 
   assert.deepEqual(requests, [
     "GET /campaigns",
+    "GET /campaigns?page=2&pageSize=20&search=launch&status=draft",
     "GET /campaigns/campaign%2F1",
     "POST /campaigns",
     "PATCH /campaigns/campaign%2F1",
@@ -413,7 +531,10 @@ test("marketing UI client methods match the exported HTTP handler contract", asy
     "POST /campaigns/campaign%2F1/test",
     "GET /campaigns/campaign%2F1/recipients",
     "GET /topics",
+    "POST /topics",
+    "PATCH /topics/topic-1",
     "GET /segments",
+    "GET /segments?page=1&pageSize=20&search=readers",
     "GET /segments/segment%2F1",
     "POST /segments",
     "PATCH /segments/segment%2F1",
@@ -424,6 +545,7 @@ test("marketing UI client methods match the exported HTTP handler contract", asy
     "GET /analytics/campaigns/campaign%2F1",
     "GET /analytics/segments/segment%2F1",
     "GET /workflows",
+    "GET /workflows?page=1&pageSize=20&search=welcome&status=active",
     "GET /workflows/workflow%2F1",
     "POST /workflows",
     "PATCH /workflows/workflow%2F1",

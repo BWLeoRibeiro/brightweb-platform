@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createServiceRoleClient } from "@brightweblabs/infra/server";
-import { fetchAllRows } from "./data";
+import { fetchAllRows, getProjectTaskStats } from "./data";
 import {
   type CreateProjectInput,
   type CreateProjectOrganizationInput,
@@ -13,6 +13,7 @@ import {
   type ProjectLink,
   type ProjectListItem,
   type ProjectActivityItem,
+  type ProjectActivityPage,
   type ProjectMilestone,
   type ProjectMember,
   type ProjectMemberColor,
@@ -26,8 +27,8 @@ import {
 
 const ORGANIZATION_ADDRESS_SEPARATOR = " | ";
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
-const PROJECT_SELECT_COLUMNS = "id, organization_id, name, code, status, health, owner_profile_id, activated_at, target_date, completed_at, cancellation_reason, summary, created_at, updated_at, organizations(name, primary_contact:profiles!organizations_primary_contact_id_fkey(first_name, last_name, email)), owner:profiles!projects_owner_profile_id_fkey(first_name, last_name, email)";
-const PROJECT_SELECT_COLUMNS_LEGACY = "id, organization_id, name, code, status, health, owner_profile_id, activated_at, target_date, completed_at, summary, created_at, updated_at, organizations(name, primary_contact:profiles!organizations_primary_contact_id_fkey(first_name, last_name, email)), owner:profiles!projects_owner_profile_id_fkey(first_name, last_name, email)";
+const PROJECT_SELECT_COLUMNS = "id, organization_id, name, code, status, health, owner_profile_id, activated_at, start_date, target_date, completed_at, cancellation_reason, summary, created_at, updated_at, organizations(name, primary_contact:profiles!organizations_primary_contact_id_fkey(first_name, last_name, email)), owner:profiles!projects_owner_profile_id_fkey(first_name, last_name, email)";
+const PROJECT_SELECT_COLUMNS_LEGACY = "id, organization_id, name, code, status, health, owner_profile_id, activated_at, start_date, target_date, completed_at, summary, created_at, updated_at, organizations(name, primary_contact:profiles!organizations_primary_contact_id_fkey(first_name, last_name, email)), owner:profiles!projects_owner_profile_id_fkey(first_name, last_name, email)";
 
 function createProjectsServiceRoleClient() {
   return createServiceRoleClient();
@@ -136,6 +137,9 @@ export function isProjectsSchemaMissingError(error: unknown): boolean {
     || message.includes("relation \"public.projects\" does not exist")
     || message.includes("relation \"project_tasks\" does not exist")
     || message.includes("relation \"public.project_tasks\" does not exist")
+    || message.includes("could not find the table 'public.project_task_stats' in the schema cache")
+    || message.includes("relation \"project_task_stats\" does not exist")
+    || message.includes("relation \"public.project_task_stats\" does not exist")
     || message.includes("column projects.cancellation_reason does not exist")
   );
 }
@@ -298,6 +302,7 @@ function normalizeProjectRow(row: Record<string, unknown>): ProjectListItem {
     ownerEmail: typeof owner?.email === "string" ? owner.email : null,
     ownerPhone: typeof owner?.phone === "string" ? owner.phone : null,
     activatedAt: toDateString(row.activated_at),
+    startDate: toDateString(row.start_date),
     targetDate: toDateString(row.target_date),
     completedAt: toDateString(row.completed_at),
     cancellationReason: typeof row.cancellation_reason === "string" ? row.cancellation_reason : null,
@@ -363,6 +368,8 @@ export async function listProjects(
   const pageSize = params.pageSize ?? 20;
   const from = (page - 1) * pageSize;
   const to = from + pageSize - 1;
+  const today = new Date();
+  const todayDate = today.toISOString().slice(0, 10);
 
   const runProjectsListQuery = (columns: string) => {
     let query = supabase
@@ -371,13 +378,16 @@ export async function listProjects(
       .order("updated_at", { ascending: false })
       .range(from, to);
 
-    if (!params.status) query = query.not("status", "in", "(completed,canceled)");
-    if (params.status) query = query.eq("status", params.status);
+    if (params.status === undefined || params.status === null) {
+      query = query.not("status", "in", "(completed,canceled)");
+    } else if (params.status !== "all") {
+      query = query.eq("status", params.status);
+    }
     if (params.health === "at_risk") {
       query = query.or("health.eq.at_risk,status.eq.blocked");
     } else if (params.health === "off_track") {
       query = query
-        .lt("target_date", new Date().toISOString().slice(0, 10))
+        .lt("target_date", todayDate)
         .not("status", "in", "(completed,canceled)");
     } else if (params.health) {
       query = query.eq("health", params.health);
@@ -392,7 +402,7 @@ export async function listProjects(
 
     if (params.dueWindow === "overdue") {
       query = query
-        .lt("target_date", new Date().toISOString().slice(0, 10))
+        .lt("target_date", todayDate)
         .not("status", "in", "(completed,canceled)");
     }
 
@@ -423,32 +433,16 @@ export async function listProjects(
     const ids = items.map((item) => item.id);
 
     const [
-      { data: taskRows, error: taskRowsError },
+      statsByProject,
       { data: milestoneRows, error: milestoneRowsError },
     ] = await Promise.all([
-      fetchAllRows((from, to) =>
-        supabase.from("project_tasks").select("project_id, status, due_date").in("project_id", ids).order("id", { ascending: true }).range(from, to),
-      ),
+      getProjectTaskStats(supabase, ids),
       fetchAllRows((from, to) =>
         supabase.from("project_milestones").select("project_id, status").in("project_id", ids).order("id", { ascending: true }).range(from, to),
       ),
     ]);
 
-    const enrichmentError = taskRowsError ?? milestoneRowsError;
-    if (enrichmentError) throw new Error(enrichmentError.message);
-
-    const today = new Date().toISOString().slice(0, 10);
-    const statsByProject = new Map<string, ProjectListItem["taskStats"]>();
-    for (const row of taskRows ?? []) {
-      const projectId = typeof row.project_id === "string" ? row.project_id : "";
-      if (!projectId) continue;
-      const current = statsByProject.get(projectId) ?? { total: 0, done: 0, overdue: 0, blocked: 0 };
-      current.total += 1;
-      if (row.status === "done") current.done += 1;
-      if (row.status === "blocked") current.blocked += 1;
-      if (typeof row.due_date === "string" && row.due_date < today && row.status !== "done") current.overdue += 1;
-      statsByProject.set(projectId, current);
-    }
+    if (milestoneRowsError) throw new Error(milestoneRowsError.message);
 
     const milestoneStatsByProject = new Map<string, ProjectListItem["milestoneStats"]>();
     for (const row of milestoneRows ?? []) {
@@ -464,7 +458,6 @@ export async function listProjects(
     items.forEach((item) => {
       item.taskStats = statsByProject.get(item.id) ?? item.taskStats;
       item.milestoneStats = milestoneStatsByProject.get(item.id) ?? item.milestoneStats;
-      item.health = deriveProjectHealth(item);
     });
   }
 
@@ -582,32 +575,16 @@ export async function listOrgAdminProjectsByProfile(
     const ids = items.map((item) => item.id);
 
     const [
-      { data: taskRows, error: taskRowsError },
+      statsByProject,
       { data: milestoneRows, error: milestoneRowsError },
     ] = await Promise.all([
-      fetchAllRows((from, to) =>
-        supabase.from("project_tasks").select("project_id, status, due_date").in("project_id", ids).order("id", { ascending: true }).range(from, to),
-      ),
+      getProjectTaskStats(supabase, ids),
       fetchAllRows((from, to) =>
         supabase.from("project_milestones").select("project_id, status").in("project_id", ids).order("id", { ascending: true }).range(from, to),
       ),
     ]);
 
-    const enrichmentError = taskRowsError ?? milestoneRowsError;
-    if (enrichmentError) throw new Error(enrichmentError.message);
-
-    const today = new Date().toISOString().slice(0, 10);
-    const statsByProject = new Map<string, ProjectListItem["taskStats"]>();
-    for (const row of taskRows ?? []) {
-      const projectId = typeof row.project_id === "string" ? row.project_id : "";
-      if (!projectId) continue;
-      const current = statsByProject.get(projectId) ?? { total: 0, done: 0, overdue: 0, blocked: 0 };
-      current.total += 1;
-      if (row.status === "done") current.done += 1;
-      if (row.status === "blocked") current.blocked += 1;
-      if (typeof row.due_date === "string" && row.due_date < today && row.status !== "done") current.overdue += 1;
-      statsByProject.set(projectId, current);
-    }
+    if (milestoneRowsError) throw new Error(milestoneRowsError.message);
 
     const milestoneStatsByProject = new Map<string, ProjectListItem["milestoneStats"]>();
     for (const row of milestoneRows ?? []) {
@@ -653,6 +630,7 @@ function normalizeTaskRow(row: Record<string, unknown>): ProjectTask {
     assigneeLabel: profileLabel(assignee?.first_name, assignee?.last_name, assignee?.email),
     reporterProfileId: typeof row.reporter_profile_id === "string" ? row.reporter_profile_id : null,
     reporterLabel: profileLabel(reporter?.first_name, reporter?.last_name, reporter?.email),
+    startDate: toDateString(row.start_date),
     dueDate: toDateString(row.due_date),
     position: typeof row.position === "number" ? row.position : 0,
     blockedReason: typeof row.blocked_reason === "string" ? row.blocked_reason : null,
@@ -696,7 +674,7 @@ export async function listProjectTasks(supabase: SupabaseClient, projectId: stri
   const { data, error } = await supabase
     .from("project_tasks")
     .select(
-      "id, project_id, milestone_id, title, description, status, priority, assignee_profile_id, reporter_profile_id, due_date, position, blocked_reason, created_at, updated_at, assignee:profiles!project_tasks_assignee_profile_id_fkey(first_name, last_name, email), reporter:profiles!project_tasks_reporter_profile_id_fkey(first_name, last_name, email)",
+      "id, project_id, milestone_id, title, description, status, priority, assignee_profile_id, reporter_profile_id, start_date, due_date, position, blocked_reason, created_at, updated_at, assignee:profiles!project_tasks_assignee_profile_id_fkey(first_name, last_name, email), reporter:profiles!project_tasks_reporter_profile_id_fkey(first_name, last_name, email)",
     )
     .eq("project_id", projectId)
     .order("position", { ascending: true })
@@ -799,7 +777,7 @@ export async function getProjectDashboard(
   projectId: string,
   options?: { clientVisibleOnly?: boolean },
 ): Promise<ProjectDashboardData> {
-  const [data, tasks, milestones, links, members] = await Promise.all([
+  const [data, tasks, milestones, links, members, activity] = await Promise.all([
     getProjectDashboardProjectRow(supabase, projectId),
     listProjectTasks(supabase, projectId),
     listProjectMilestones(supabase, projectId),
@@ -807,6 +785,9 @@ export async function getProjectDashboard(
       clientVisibleOnly: options?.clientVisibleOnly,
     }),
     listProjectMembers(supabase, projectId),
+    options?.clientVisibleOnly
+      ? Promise.resolve({ items: [], page: 1, pageSize: 3, total: 0, totalPages: 1 })
+      : queryProjectActivity(supabase, projectId, { page: 1, pageSize: 3 }),
   ]);
 
   const projectRecord = toRecord(data);
@@ -827,7 +808,8 @@ export async function getProjectDashboard(
     milestones,
     tasks,
     links,
-    activity: [],
+    activity: activity.items,
+    activityTotal: activity.total,
   };
 }
 
@@ -840,43 +822,10 @@ type ActivityEventRow = {
   actor_profile_id: string | null;
 };
 
-export async function listProjectActivity(
+async function hydrateProjectActivityRows(
   supabase: SupabaseClient,
-  projectId: string,
+  rows: ActivityEventRow[],
 ): Promise<ProjectActivityItem[]> {
-  const [payloadProjectEvents, directProjectEvents] = await Promise.all([
-    supabase
-      .from("app_activity_events")
-      .select("id, created_at, event_type, summary, payload, actor_profile_id")
-      .eq("domain", "projects")
-      .filter("payload->>project_id", "eq", projectId)
-      .order("created_at", { ascending: false })
-      .limit(50),
-    supabase
-      .from("app_activity_events")
-      .select("id, created_at, event_type, summary, payload, actor_profile_id")
-      .eq("domain", "projects")
-      .eq("entity_table", "projects")
-      .eq("entity_id", projectId)
-      .order("created_at", { ascending: false })
-      .limit(50),
-  ]);
-
-  if (payloadProjectEvents.error) throw new Error(payloadProjectEvents.error.message);
-  if (directProjectEvents.error) throw new Error(directProjectEvents.error.message);
-
-  const rowsById = new Map<string, ActivityEventRow>();
-  for (const row of [
-    ...((payloadProjectEvents.data ?? []) as ActivityEventRow[]),
-    ...((directProjectEvents.data ?? []) as ActivityEventRow[]),
-  ]) {
-    rowsById.set(String(row.id), row);
-  }
-
-  const rows = Array.from(rowsById.values())
-    .sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)))
-    .slice(0, 50);
-
   // Every profile referenced anywhere — the actor plus the member profiles named
   // in member_*/project_members_synced payloads — resolved in one query so the
   // feed can speak people by name instead of leaving raw ids or "Sistema".
@@ -944,8 +893,87 @@ export async function listProjectActivity(
   });
 }
 
+export async function queryProjectActivity(
+  supabase: SupabaseClient,
+  projectId: string,
+  query: { page?: number; pageSize?: number } = {},
+): Promise<ProjectActivityPage> {
+  const page = Math.max(1, Math.floor(query.page ?? 1));
+  const pageSize = Math.min(100, Math.max(1, Math.floor(query.pageSize ?? 50)));
+  const from = (page - 1) * pageSize;
+  const to = from + pageSize - 1;
+  const columns = "id, created_at, event_type, summary, payload, actor_profile_id";
+
+  // Activity can identify a project through the canonical payload or the legacy
+  // direct entity columns. Query both safely, then subtract their exact overlap.
+  const [payloadProjectEvents, directProjectEvents, overlappingEvents] = await Promise.all([
+    supabase
+      .from("app_activity_events")
+      .select(columns, { count: "exact" })
+      .eq("domain", "projects")
+      .filter("payload->>project_id", "eq", projectId)
+      .order("created_at", { ascending: false })
+      .range(0, to),
+    supabase
+      .from("app_activity_events")
+      .select(columns, { count: "exact" })
+      .eq("domain", "projects")
+      .eq("entity_table", "projects")
+      .eq("entity_id", projectId)
+      .order("created_at", { ascending: false })
+      .range(0, to),
+    supabase
+      .from("app_activity_events")
+      .select("id", { count: "exact", head: true })
+      .eq("domain", "projects")
+      .filter("payload->>project_id", "eq", projectId)
+      .eq("entity_table", "projects")
+      .eq("entity_id", projectId),
+  ]);
+
+  if (payloadProjectEvents.error) throw new Error(payloadProjectEvents.error.message);
+  if (directProjectEvents.error) throw new Error(directProjectEvents.error.message);
+  if (overlappingEvents.error) throw new Error(overlappingEvents.error.message);
+
+  const rowsById = new Map<string, ActivityEventRow>();
+  for (const row of [
+    ...((payloadProjectEvents.data ?? []) as ActivityEventRow[]),
+    ...((directProjectEvents.data ?? []) as ActivityEventRow[]),
+  ]) {
+    rowsById.set(String(row.id), row);
+  }
+
+  const rows = Array.from(rowsById.values())
+    .sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)))
+    .slice(from, to + 1);
+  const total = Math.max(
+    0,
+    (payloadProjectEvents.count ?? 0)
+      + (directProjectEvents.count ?? 0)
+      - (overlappingEvents.count ?? 0),
+  );
+
+  return {
+    items: await hydrateProjectActivityRows(supabase, rows),
+    page,
+    pageSize,
+    total,
+    totalPages: Math.max(1, Math.ceil(total / pageSize)),
+  };
+}
+
+export async function listProjectActivity(
+  supabase: SupabaseClient,
+  projectId: string,
+): Promise<ProjectActivityItem[]> {
+  return (await queryProjectActivity(supabase, projectId)).items;
+}
+
 export async function createProject(supabase: SupabaseClient, input: CreateProjectInput) {
   const cancellationReason = input.cancellationReason?.trim() || null;
+  if (input.startDate && input.targetDate && input.targetDate < input.startDate) {
+    throw new Error("A data alvo não pode ser anterior à data de início.");
+  }
   if (input.status === "canceled" && !cancellationReason) {
     throw new Error("Indica o motivo do cancelamento.");
   }
@@ -977,6 +1005,7 @@ export async function createProject(supabase: SupabaseClient, input: CreateProje
       taskStats: { total: 0, done: 0, overdue: 0, blocked: 0 },
     }),
     owner_profile_id: input.ownerProfileId ?? null,
+    start_date: input.startDate ?? null,
     target_date: input.targetDate ?? null,
     cancellation_reason: input.status === "canceled" ? cancellationReason : null,
     summary: input.summary?.trim() || null,
@@ -1040,6 +1069,21 @@ export async function updateProject(supabase: SupabaseClient, projectId: string,
   const payload: Record<string, unknown> = {};
   const cancellationReason = input.cancellationReason?.trim() || null;
 
+  if (typeof input.startDate !== "undefined" || typeof input.targetDate !== "undefined") {
+    const { data: currentDates, error: datesError } = await supabase
+      .from("projects")
+      .select("start_date, target_date")
+      .eq("id", projectId)
+      .maybeSingle<{ start_date: string | null; target_date: string | null }>();
+    if (datesError) throw new Error(datesError.message);
+    if (!currentDates) throw new Error("Projeto não encontrado.");
+    const nextStartDate = typeof input.startDate === "undefined" ? currentDates.start_date : input.startDate || null;
+    const nextTargetDate = typeof input.targetDate === "undefined" ? currentDates.target_date : input.targetDate || null;
+    if (nextStartDate && nextTargetDate && nextTargetDate < nextStartDate) {
+      throw new Error("A data alvo não pode ser anterior à data de início.");
+    }
+  }
+
   if (input.status === "canceled" && !cancellationReason) {
     throw new Error("Indica o motivo do cancelamento.");
   }
@@ -1048,6 +1092,7 @@ export async function updateProject(supabase: SupabaseClient, projectId: string,
   if (typeof input.code !== "undefined") payload.code = input.code?.trim() || null;
   if (typeof input.status !== "undefined") payload.status = input.status;
   if (typeof input.ownerProfileId !== "undefined") payload.owner_profile_id = input.ownerProfileId || null;
+  if (typeof input.startDate !== "undefined") payload.start_date = input.startDate || null;
   if (typeof input.targetDate !== "undefined") payload.target_date = input.targetDate || null;
   if (typeof input.cancellationReason !== "undefined") payload.cancellation_reason = cancellationReason;
   if (typeof input.status !== "undefined" && input.status !== "canceled") payload.cancellation_reason = null;
@@ -1115,12 +1160,14 @@ export async function deleteProject(supabase: SupabaseClient, projectId: string,
     ...(organizationMembers ?? []).map((member) => member.profile_id),
   ].filter((profileId): profileId is string => typeof profileId === "string" && profileId.length > 0)));
 
-  const { error: deleteError } = await supabase
+  const { data: deletedRows, error: deleteError } = await supabase
     .from("projects")
     .delete()
-    .eq("id", projectId);
+    .eq("id", projectId)
+    .select("id");
 
   if (deleteError) throw new Error(deleteError.message);
+  if (!deletedRows?.some((row) => row.id === projectId)) throw new Error("Projeto não encontrado.");
 
   await logProjectActivityEvent({
     eventType: "projects.project.deleted",
@@ -1136,6 +1183,63 @@ export async function deleteProject(supabase: SupabaseClient, projectId: string,
       visible_profile_ids: visibleProfileIds,
     },
   });
+}
+
+export type ProjectAccessRole = "admin" | "owner" | "contributor" | "observer";
+
+export async function getProjectAccess(
+  supabase: SupabaseClient,
+  projectId: string,
+  profileId: string,
+  globalRole: string | null,
+): Promise<{
+  projectRole: ProjectAccessRole;
+  permissions: {
+    canOpenEditProject: boolean;
+    canEditProjectItems: boolean;
+    canCreateProjectLinks: boolean;
+    canManageProjectLinks: boolean;
+    canManageMembers: boolean;
+    canViewOrganization: boolean;
+  };
+}> {
+  const { data: project, error: projectError } = await supabase
+    .from("projects")
+    .select("id, owner_profile_id")
+    .eq("id", projectId)
+    .maybeSingle<{ id: string; owner_profile_id: string | null }>();
+  if (projectError) throw new Error(projectError.message);
+  if (!project) throw new Error("Projeto não encontrado.");
+
+  let projectRole: ProjectAccessRole = "observer";
+  if (globalRole === "admin") {
+    projectRole = "admin";
+  } else if (project.owner_profile_id === profileId) {
+    projectRole = "owner";
+  } else {
+    const { data: membership, error: membershipError } = await supabase
+      .from("project_members")
+      .select("role")
+      .eq("project_id", projectId)
+      .eq("profile_id", profileId)
+      .maybeSingle<{ role: "owner" | "contributor" | "observer" }>();
+    if (membershipError) throw new Error(membershipError.message);
+    if (membership?.role) projectRole = membership.role;
+  }
+
+  const canManageProject = projectRole === "admin" || projectRole === "owner";
+  const canContribute = canManageProject || projectRole === "contributor";
+  return {
+    projectRole,
+    permissions: {
+      canOpenEditProject: true,
+      canEditProjectItems: canContribute,
+      canCreateProjectLinks: canContribute,
+      canManageProjectLinks: canContribute,
+      canManageMembers: canManageProject,
+      canViewOrganization: true,
+    },
+  };
 }
 
 async function nextPosition(supabase: SupabaseClient, table: "project_tasks" | "project_milestones", projectId: string) {
@@ -1157,6 +1261,9 @@ export async function createProjectTask(supabase: SupabaseClient, projectId: str
   if (status === "blocked" && !blockedReason) {
     throw new Error("Motivo de bloqueio é obrigatório quando a tarefa está bloqueada.");
   }
+  if (input.startDate && input.dueDate && input.dueDate < input.startDate) {
+    throw new Error("A data limite não pode ser anterior à data de início.");
+  }
   const payload = {
     project_id: projectId,
     title: input.title.trim(),
@@ -1166,6 +1273,7 @@ export async function createProjectTask(supabase: SupabaseClient, projectId: str
     priority: input.priority ?? "medium",
     assignee_profile_id: input.assigneeProfileId ?? null,
     reporter_profile_id: input.reporterProfileId ?? null,
+    start_date: input.startDate ?? null,
     due_date: input.dueDate ?? null,
     blocked_reason: status === "blocked" ? blockedReason : null,
     position,
@@ -1175,7 +1283,7 @@ export async function createProjectTask(supabase: SupabaseClient, projectId: str
     .from("project_tasks")
     .insert(payload)
     .select(
-      "id, project_id, milestone_id, title, description, status, priority, assignee_profile_id, reporter_profile_id, due_date, position, blocked_reason, created_at, updated_at, assignee:profiles!project_tasks_assignee_profile_id_fkey(first_name, last_name, email), reporter:profiles!project_tasks_reporter_profile_id_fkey(first_name, last_name, email)",
+      "id, project_id, milestone_id, title, description, status, priority, assignee_profile_id, reporter_profile_id, start_date, due_date, position, blocked_reason, created_at, updated_at, assignee:profiles!project_tasks_assignee_profile_id_fkey(first_name, last_name, email), reporter:profiles!project_tasks_reporter_profile_id_fkey(first_name, last_name, email)",
     )
     .single();
   if (error) throw new Error(error.message);
@@ -1191,6 +1299,20 @@ export async function updateProjectTask(
   taskId: string,
   input: UpdateProjectTaskInput,
 ) {
+  if (typeof input.startDate !== "undefined" || typeof input.dueDate !== "undefined") {
+    const { data: currentDates, error: currentDatesError } = await supabase
+      .from("project_tasks")
+      .select("start_date, due_date")
+      .eq("id", taskId)
+      .eq("project_id", projectId)
+      .maybeSingle<{ start_date: string | null; due_date: string | null }>();
+    if (currentDatesError) throw new Error(currentDatesError.message);
+    const startDate = typeof input.startDate === "undefined" ? currentDates?.start_date ?? null : input.startDate || null;
+    const dueDate = typeof input.dueDate === "undefined" ? currentDates?.due_date ?? null : input.dueDate || null;
+    if (startDate && dueDate && dueDate < startDate) {
+      throw new Error("A data limite não pode ser anterior à data de início.");
+    }
+  }
   const nextStatus = typeof input.status !== "undefined" ? input.status : null;
   const nextBlockedReason = typeof input.blockedReason !== "undefined" ? input.blockedReason?.trim() || null : undefined;
   if (nextStatus === "blocked") {
@@ -1222,6 +1344,7 @@ export async function updateProjectTask(
   if (typeof input.priority !== "undefined") payload.priority = input.priority;
   if (typeof input.assigneeProfileId !== "undefined") payload.assignee_profile_id = input.assigneeProfileId || null;
   if (typeof input.reporterProfileId !== "undefined") payload.reporter_profile_id = input.reporterProfileId || null;
+  if (typeof input.startDate !== "undefined") payload.start_date = input.startDate || null;
   if (typeof input.dueDate !== "undefined") payload.due_date = input.dueDate || null;
   if (typeof input.position === "number") payload.position = input.position;
   if (typeof nextBlockedReason !== "undefined") payload.blocked_reason = nextBlockedReason;
@@ -1282,13 +1405,15 @@ export async function updateProjectMilestone(
 }
 
 export async function deleteProjectMilestone(supabase: SupabaseClient, projectId: string, milestoneId: string) {
-  const { error } = await supabase
+  const { data: deletedRows, error } = await supabase
     .from("project_milestones")
     .delete()
     .eq("id", milestoneId)
-    .eq("project_id", projectId);
+    .eq("project_id", projectId)
+    .select("id");
 
   if (error) throw new Error(error.message);
+  if (!deletedRows?.some((row) => row.id === milestoneId)) throw new Error("Meta não encontrada.");
   await syncProjectHealth(supabase, projectId);
   return listProjectMilestones(supabase, projectId);
 }
@@ -1377,25 +1502,29 @@ export async function updateProjectLink(
 }
 
 export async function deleteProjectTask(supabase: SupabaseClient, projectId: string, taskId: string) {
-  const { error } = await supabase
+  const { data: deletedRows, error } = await supabase
     .from("project_tasks")
     .delete()
     .eq("id", taskId)
-    .eq("project_id", projectId);
+    .eq("project_id", projectId)
+    .select("id");
 
   if (error) throw new Error(error.message);
+  if (!deletedRows?.some((row) => row.id === taskId)) throw new Error("Tarefa não encontrada.");
   await syncProjectHealth(supabase, projectId);
   return listProjectTasks(supabase, projectId);
 }
 
 export async function deleteProjectLink(supabase: SupabaseClient, projectId: string, linkId: string) {
-  const { error } = await supabase
+  const { data: deletedRows, error } = await supabase
     .from("project_links")
     .delete()
     .eq("id", linkId)
-    .eq("project_id", projectId);
+    .eq("project_id", projectId)
+    .select("id");
 
   if (error) throw new Error(error.message);
+  if (!deletedRows?.some((row) => row.id === linkId)) throw new Error("Ligação não encontrada.");
   return listProjectLinks(supabase, projectId);
 }
 
@@ -1581,55 +1710,15 @@ export async function syncProjectMembers(
   }
   const finalMembersToPersist = Array.from(membersByProfile.values());
   const selectedOwnerProfileId = finalMembersToPersist.find((member) => member.role === "owner")?.profile_id ?? null;
-  const ownerNeedsUpdate = (project.owner_profile_id ?? null) !== selectedOwnerProfileId;
-  const { data: existingMembers, error: existingMembersError } = await supabase
-    .from("project_members")
-    .select("profile_id, role")
-    .eq("project_id", projectId);
-
-  if (existingMembersError) throw new Error(existingMembersError.message);
-
-  const existingByProfile = new Map(
-    (existingMembers ?? [])
-      .map((member) => {
-        const profileId = typeof member.profile_id === "string" ? member.profile_id : "";
-        const role = typeof member.role === "string" ? member.role : "";
-        return [profileId, role] as const;
-      })
-      .filter(([profileId]) => profileId.length > 0),
-  );
-  const nextByProfile = new Map(
-    finalMembersToPersist.map((member) => [member.profile_id, member.role] as const),
-  );
-  const membersAreUnchanged =
-    existingByProfile.size === nextByProfile.size
-    && Array.from(nextByProfile.entries()).every(([profileId, role]) => existingByProfile.get(profileId) === role);
-
-  if (membersAreUnchanged && !ownerNeedsUpdate) {
-    return listProjectMembers(supabase, projectId);
-  }
-
-  const { error: clearError } = await supabase
-    .from("project_members")
-    .delete()
-    .eq("project_id", projectId);
-
-  if (clearError) throw new Error(clearError.message);
-
-  if (finalMembersToPersist.length > 0) {
-    const { error: insertError } = await supabase
-      .from("project_members")
-      .insert(finalMembersToPersist);
-    if (insertError) throw new Error(insertError.message);
-  }
-
-  if (ownerNeedsUpdate) {
-    const { error: ownerUpdateError } = await supabase
-      .from("projects")
-      .update({ owner_profile_id: selectedOwnerProfileId })
-      .eq("id", projectId);
-    if (ownerUpdateError) throw new Error(ownerUpdateError.message);
-  }
+  const { error: syncError } = await supabase.rpc("sync_project_members_exact", {
+    p_project_id: projectId,
+    p_members: finalMembersToPersist.map((member) => ({
+      profile_id: member.profile_id,
+      role: member.role,
+    })),
+    p_owner_profile_id: selectedOwnerProfileId,
+  });
+  if (syncError) throw new Error(syncError.message);
 
   return listProjectMembers(supabase, projectId);
 }

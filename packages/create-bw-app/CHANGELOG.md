@@ -1,5 +1,96 @@
 # create-bw-app
 
+## 0.24.9
+
+### Patch Changes
+
+- Keep the baked-in BrightWeb package compatibility map aligned with the access-management and transactional-email patch releases.
+
+## 0.24.8
+
+### Patch Changes
+
+- 9063aaa: Add client invitations tied to organizations, a CRM organization access page, invitation history, safe organization member role/removal operations, and shared branded invitation and authentication email designs. New CRM starters mount the organization detail route and organization member API handlers.
+
+## 0.24.7
+
+### Patch Changes
+
+- b083ca3: Mount the shared Sonner toaster from every app shell by default, with an escape hatch for custom or disabled toast regions. Remove duplicate route-scoped toaster mounts from generated apps, localize project clipboard feedback, use warning severity for partial admin role changes, add context-specific marketing validation messages, and read Project UI failures only from the public error envelope.
+
+## 0.24.6
+
+### Patch Changes
+
+- 69eb6d5: Replace the clipped dashboard task preview with a responsive attention queue that ranks blocked, overdue, due-today, and due-soon work by priority and deadline. Add honest task totals, paginated full-task loading beyond 100 items, and a Projects-owned canonical dashboard task row. Update generated dashboard clients to request subsequent task pages.
+
+## 0.24.5
+
+### Patch Changes
+
+- 558f1c1: Keep installed module versions in the BrightWeb app manifest synchronized during `bw upgrade`, including before dependencies have been installed locally.
+
+## 0.24.4
+
+### Patch Changes
+
+- 6efe637: Include the new project and task start-date migrations in generated apps and in the standard BrightWeb upgrade path.
+
+## 0.24.3
+
+### Patch Changes
+
+- ce3a271: Make project detail collections use natural three-item previews with truthful counts, viewer-accessible full sheets, one-row loading states, and paginated server-provided activity data.
+
+## 0.24.2
+
+### Patch Changes
+
+- 9e14f38: Keep scaffold manifest hashes current when `bw upgrade` rewrites generator-managed route files.
+
+## 0.24.1
+
+### Patch Changes
+
+- 59af9a7: Ensure `bw upgrade --refresh-starters` installs, refreshes, and tracks deletion routes introduced after an application's original scaffold.
+
+## 0.24.0
+
+### Minor Changes
+
+- 9518642: Add lifecycle-safe deletion UI and APIs for projects, organizations, CRM records, marketing resources, recipients, invitations, and per-user notification dismissal. Generated applications now include the required routes, permission wiring, and database migration.
+
+## 0.23.3
+
+### Patch Changes
+
+- Keep installed module versions in the BrightWeb app manifest synchronized when `bw upgrade` finds package dependencies already current.
+
+## 0.23.2
+
+### Patch Changes
+
+- Mount project-board toolbar controls in generated apps and gate milestone and task actions on authoritative page readiness.
+
+## 0.23.1
+
+### Patch Changes
+
+- 623a114: Include core migrations during full `bw upgrade` runs even though core is represented by the migration cursor rather than the optional module map.
+
+## 0.23.0
+
+### Minor Changes
+
+- Standardize faster cancellable, observable latest-request behavior across collection surfaces; add authoritative CRM organization and joined timeline search plus aggregate dashboard metrics; add paginated Marketing search, filters, create actions, toolbar registration, and lazy analytics loading; preserve useful rows while requests refresh; and scaffold database indexes for contains-search and common filters.
+
+## 0.22.2
+
+### Patch Changes
+
+- 2312a99: Add staff-facing consent-topic creation, editing, activation, and ordering with scaffolded API routes. Aggregate project task counters in a security-invoker database view and use a planned count for the unfiltered task-dashboard total to keep portfolio and dashboard reads scalable.
+- Update generated platform applications to use the compatible BrightWeb request-performance release set.
+
 ## 0.22.1
 
 ### Patch Changes

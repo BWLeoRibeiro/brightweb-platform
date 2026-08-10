@@ -23,6 +23,7 @@ export {
   AppSheetBody,
   AppSheetFooter,
   AppSheetHeader,
+  SheetSelect,
   SheetSection,
   sheetAccentTextareaClassName,
   sheetBodyClassName,
@@ -40,7 +41,7 @@ export {
   sheetShellClassName,
   sheetViewControlClassName,
 } from "./components/app-sheet";
-export type { AppSheetHeaderProps } from "./components/app-sheet";
+export type { AppSheetHeaderProps, SheetSelectOption, SheetSelectProps } from "./components/app-sheet";
 export { AppShellFrame } from "./components/app-shell-frame";
 export type { AppShellFrameProps } from "./components/app-shell-frame";
 export { AccountMenu } from "./components/account-menu";
@@ -70,6 +71,8 @@ export type { ShellActionsProviderProps } from "./lib/shell-actions";
 export { ShellActionRegistry } from "./lib/shell-action-registry";
 export type { ShellActionAliases, ShellActionHandler } from "./lib/shell-action-registry";
 export { MobileNav } from "./components/mobile-nav";
+export { PillTabs } from "./components/pill-tabs";
+export type { PillTabItem, PillTabsProps } from "./components/pill-tabs";
 export { ThemeMenu } from "./components/theme-menu";
 export * from "./theme/index";
 export {

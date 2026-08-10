@@ -1,5 +1,11 @@
 import { requireOrganizationManageAccess, requireOrganizationsStaffAccess } from "./access";
-import { createOrganization, updateOrganization } from "./data";
+import {
+  createOrganization,
+  deleteOrganization,
+  removeOrganizationMember,
+  updateOrganization,
+  updateOrganizationMemberRole,
+} from "./data";
 import {
   inviteOrganizationMembers,
   logOrganizationActivity,
@@ -9,7 +15,9 @@ import {
 } from "./invitations";
 import {
   createOrganizationInvitationDeleteHandler,
+  createOrganizationDeleteHandler,
   createOrganizationInvitationsHandler,
+  createOrganizationMemberMutationHandlers,
   createOrganizationPatchHandler,
   createOrganizationsPostHandler,
 } from "./http";
@@ -19,6 +27,7 @@ const writeDependencies = {
   getManageAccess: requireOrganizationManageAccess,
   createOrganization,
   updateOrganization,
+  deleteOrganization,
   inviteMembers: inviteOrganizationMembers,
   logActivity: logOrganizationActivity,
 };
@@ -34,9 +43,19 @@ const invitationDependencies = {
 
 export const handleOrganizationsPostRequest = createOrganizationsPostHandler(writeDependencies);
 export const handleOrganizationPatchRequest = createOrganizationPatchHandler(writeDependencies);
+export const handleOrganizationDeleteRequest = createOrganizationDeleteHandler(writeDependencies);
 
 const invitationHandlers = createOrganizationInvitationsHandler(invitationDependencies);
 export const handleOrganizationInvitationsGetRequest = invitationHandlers.GET;
 export const handleOrganizationInvitationsPostRequest = invitationHandlers.POST;
 export const handleOrganizationInvitationDeleteRequest =
   createOrganizationInvitationDeleteHandler(invitationDependencies);
+
+const memberMutationHandlers = createOrganizationMemberMutationHandlers({
+  getManageAccess: requireOrganizationManageAccess,
+  updateMemberRole: updateOrganizationMemberRole,
+  removeMember: removeOrganizationMember,
+  logActivity: logOrganizationActivity,
+});
+export const handleOrganizationMemberPatchRequest = memberMutationHandlers.PATCH;
+export const handleOrganizationMemberDeleteRequest = memberMutationHandlers.DELETE;

@@ -3,6 +3,8 @@ import test from "node:test";
 import {
   aggregateMarketingMetrics,
   emptyMarketingMetrics,
+  getCampaignAnalytics,
+  getMarketingOverview,
 } from "../packages/module-marketing/src/analytics";
 
 test("marketing analytics dedupe engagement events to unique recipients", () => {
@@ -65,4 +67,45 @@ test("marketing analytics uses sent as the engagement base before delivery event
 
 test("empty marketing analytics return stable zero counts and rates", () => {
   assert.deepEqual(aggregateMarketingMetrics(0, []), emptyMarketingMetrics());
+});
+
+test("marketing analytics use aggregate RPCs instead of transferring event history", async () => {
+  const calls: string[] = [];
+  const aggregate = {
+    sent_count: 10,
+    delivered_count: 8,
+    opened_count: 4,
+    clicked_count: 2,
+    unsubscribed_count: 1,
+    bounced_count: 1,
+    complained_count: 0,
+    raw_sent_count: 10,
+    raw_delivered_count: 8,
+    raw_opened_count: 6,
+    raw_clicked_count: 3,
+    raw_unsubscribed_count: 1,
+    raw_bounced_count: 1,
+    raw_complained_count: 0,
+    queued_count: 2,
+    sending_count: 1,
+    recipient_sent_count: 7,
+    failed_count: 0,
+    suppressed_count: 0,
+    skipped_count: 0,
+  };
+  const supabase = {
+    async rpc(name: string) {
+      calls.push(name);
+      return { data: [aggregate], error: null };
+    },
+    from() {
+      throw new Error("raw analytics queries must not run when RPCs are installed");
+    },
+  };
+
+  const overview = await getMarketingOverview(supabase, { sinceDays: 30 });
+  const campaign = await getCampaignAnalytics(supabase, "campaign-1");
+  assert.equal(overview.openRate, 50);
+  assert.equal(campaign.queue.sent, 7);
+  assert.deepEqual(calls, ["get_marketing_overview_metrics", "get_marketing_campaign_metrics"]);
 });

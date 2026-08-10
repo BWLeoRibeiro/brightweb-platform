@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { Activity, Clock3, Expand } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { Activity, Clock3, RefreshCw } from "lucide-react";
 import {
   sheetBodyClassName,
   sheetShellClassName,
@@ -11,23 +11,27 @@ import { ActivityChangeRows } from "./shared/activity-change-rows";
 import { monoTabularClassName as MONO } from "./shared/typography";
 import { ProjectOwnerAvatar } from "./shared/project-owner-avatar";
 import { ProjectSurfaceSectionHeader } from "./shared/project-surface-card";
-import { SectionIconButton } from "./shared/section-icon-button";
 import {
+  CompactCollectionHeaderActions,
+  compactCollectionRevealClassName,
+} from "./shared/compact-collection";
+import { getCompactCollectionPreview } from "./shared/compact-collection-model";
+import {
+  Button,
   Sheet,
   SheetContent,
 } from "@brightweblabs/ui";
-import { TooltipProvider } from "@brightweblabs/ui";
 import { toActivityChanges } from "@brightweblabs/ui/activity-format";
 import { ActivityMessage } from "@brightweblabs/ui";
 import { activityActorName, composeProjectMessage } from "../activity-messages";
 import type { ProjectActivityItem } from "../types";
-import { useProjectsUiDictionary } from "./context";
+import { useProjectsUiClient, useProjectsUiDictionary } from "./context";
 
 type ProjectRecentActivityProps = {
+  projectId: string;
   activity: ProjectActivityItem[];
+  total: number;
 };
-
-const PREVIEW_ITEMS = 5;
 
 function formatDateTime(value: string | null) {
   if (!value) return "-";
@@ -64,10 +68,63 @@ function ActivityRow({ item, showDetails = false }: { item: ProjectActivityItem;
   );
 }
 
-export function ProjectRecentActivity({ activity }: ProjectRecentActivityProps) {
+export function ProjectRecentActivity({ projectId, activity, total }: ProjectRecentActivityProps) {
+  const client = useProjectsUiClient();
   const dictionary = useProjectsUiDictionary();
   const [isSheetOpen, setSheetOpen] = useState(false);
-  const previewItems = activity.slice(0, PREVIEW_ITEMS);
+  const [fullActivity, setFullActivity] = useState(activity);
+  const [fullPage, setFullPage] = useState(1);
+  const [fullTotal, setFullTotal] = useState(total);
+  const [isLoadingFull, setLoadingFull] = useState(false);
+  const [hasFullError, setHasFullError] = useState(false);
+  const previewItems = getCompactCollectionPreview(activity);
+
+  useEffect(() => {
+    if (isSheetOpen) return;
+    setFullActivity(activity);
+    setFullTotal(total);
+    setFullPage(1);
+  }, [activity, isSheetOpen, total]);
+
+  const loadFullPage = useCallback(async (page: number, append: boolean) => {
+    setLoadingFull(true);
+    setHasFullError(false);
+    try {
+      const result = client.queryProjectActivity
+        ? await client.queryProjectActivity(projectId, { page, pageSize: 50 })
+        : await client.listProjectActivity(projectId).then((items) => ({
+          items,
+          page: 1,
+          pageSize: items.length || 1,
+          total: items.length,
+          totalPages: 1,
+        }));
+      setFullActivity((current) => {
+        if (!append) return result.items;
+        const itemsById = new Map(current.map((item) => [item.id, item]));
+        result.items.forEach((item) => itemsById.set(item.id, item));
+        return Array.from(itemsById.values());
+      });
+      setFullPage(result.page);
+      setFullTotal(result.total);
+    } catch {
+      setHasFullError(true);
+    } finally {
+      setLoadingFull(false);
+    }
+  }, [client, projectId]);
+
+  const handleSheetChange = (open: boolean) => {
+    setSheetOpen(open);
+    if (!open) return;
+    if (total <= activity.length) {
+      setFullActivity(activity);
+      setFullTotal(total);
+      setFullPage(1);
+      return;
+    }
+    void loadFullPage(1, false);
+  };
 
   return (
     <>
@@ -75,40 +132,56 @@ export function ProjectRecentActivity({ activity }: ProjectRecentActivityProps) 
         icon={Clock3}
         title={dictionary.detail.recentActivity}
         subtitle={dictionary.detail.recentActivitySubtitle}
-        rightSlot={(
-          <TooltipProvider>
-            <SectionIconButton icon={Expand} label={dictionary.detail.expandActivity} onClick={() => setSheetOpen(true)} />
-          </TooltipProvider>
-        )}
+        rightSlot={<CompactCollectionHeaderActions total={total} collectionLabel={dictionary.detail.recentActivity} expandLabel={dictionary.detail.expandActivity} onExpand={() => handleSheetChange(true)} />}
       />
 
       {activity.length === 0 ? (
-        <p className="text-meta text-muted-foreground mt-4 px-1 py-2">{dictionary.detail.noActivity}</p>
+        <p className={`${compactCollectionRevealClassName} text-meta text-muted-foreground mt-4 px-1 py-2`}>{dictionary.detail.noActivity}</p>
       ) : (
-        <ul className="portal-scroll mt-4 h-[17.75rem] rounded-[var(--radius-card)] border border-[color:var(--border)]">
+        <ul className={`${compactCollectionRevealClassName} mt-4 overflow-hidden rounded-[var(--radius-card)] border border-[color:var(--border)]`}>
           {previewItems.map((item) => (
             <ActivityRow key={item.id} item={item} />
           ))}
         </ul>
       )}
 
-      <Sheet open={isSheetOpen} onOpenChange={setSheetOpen}>
+      <Sheet open={isSheetOpen} onOpenChange={handleSheetChange}>
         <SheetContent className={sheetShellClassName}>
           <AppSheetHeader
             icon={Activity}
             title={<>{dictionary.detail.fullActivity}</>}
             description={<>{dictionary.detail.fullActivityDescription}</>}
           />
-          <div className={sheetBodyClassName}>
-            {activity.length === 0 ? (
+          <div className={sheetBodyClassName} aria-busy={isLoadingFull} aria-live="polite">
+            {fullActivity.length === 0 && !isLoadingFull && !hasFullError ? (
               <p className="text-meta text-muted-foreground px-1 py-2">{dictionary.detail.noActivity}</p>
-            ) : (
+            ) : fullActivity.length > 0 ? (
               <ul className="overflow-hidden rounded-[var(--radius-card)] border border-[color:var(--border)]">
-                {activity.map((item) => (
+                {fullActivity.map((item) => (
                   <ActivityRow key={item.id} item={item} showDetails />
                 ))}
               </ul>
-            )}
+            ) : null}
+            {hasFullError ? (
+              <div className="mt-3 flex items-center gap-3" role="alert">
+                <p className="text-meta text-destructive">{dictionary.detail.activityError}</p>
+                <Button type="button" variant="outline" size="sm" onClick={() => void loadFullPage(fullPage, false)}>
+                  <RefreshCw className="size-4" aria-hidden="true" />
+                  {dictionary.actions.retry}
+                </Button>
+              </div>
+            ) : null}
+            {fullActivity.length < fullTotal ? (
+              <Button
+                type="button"
+                variant="outline"
+                className="mt-4 w-full"
+                disabled={isLoadingFull}
+                onClick={() => void loadFullPage(fullPage + 1, true)}
+              >
+                {isLoadingFull ? dictionary.detail.loading : dictionary.detail.loadMoreActivity}
+              </Button>
+            ) : null}
           </div>
         </SheetContent>
       </Sheet>

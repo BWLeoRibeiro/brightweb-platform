@@ -1,5 +1,108 @@
 # dev-docs
 
+## 0.0.23
+
+### Patch Changes
+
+- Updated dependencies [7e53c23]
+  - @brightweblabs/ui@1.5.3
+
+## 0.0.22
+
+### Patch Changes
+
+- Updated dependencies [9063aaa]
+  - @brightweblabs/ui@1.5.2
+
+## 0.0.21
+
+### Patch Changes
+
+- @brightweblabs/ui@1.5.1
+
+## 0.0.20
+
+### Patch Changes
+
+- Updated dependencies [cc7d41c]
+  - @brightweblabs/ui@1.5.0
+
+## 0.0.19
+
+### Patch Changes
+
+- Updated dependencies [1de7902]
+  - @brightweblabs/ui@1.4.11
+
+## 0.0.18
+
+### Patch Changes
+
+- @brightweblabs/ui@1.4.10
+
+## 0.0.17
+
+### Patch Changes
+
+- Updated dependencies [db5a6ab]
+  - @brightweblabs/ui@1.4.9
+
+## 0.0.16
+
+### Patch Changes
+
+- Updated dependencies [fa591ab]
+  - @brightweblabs/ui@1.4.8
+
+## 0.0.15
+
+### Patch Changes
+
+- Updated dependencies [5b75161]
+  - @brightweblabs/ui@1.4.7
+
+## 0.0.14
+
+### Patch Changes
+
+- Updated dependencies [29ae3b0]
+  - @brightweblabs/ui@1.4.6
+
+## 0.0.13
+
+### Patch Changes
+
+- Updated dependencies [05e0902]
+- Updated dependencies [05e0902]
+  - @brightweblabs/ui@1.4.5
+
+## 0.0.12
+
+### Patch Changes
+
+- @brightweblabs/ui@1.4.4
+
+## 0.0.11
+
+### Patch Changes
+
+- Updated dependencies [9547657]
+  - @brightweblabs/ui@1.4.3
+
+## 0.0.10
+
+### Patch Changes
+
+- Updated dependencies
+  - @brightweblabs/ui@1.4.2
+
+## 0.0.9
+
+### Patch Changes
+
+- Updated dependencies [f12ce99]
+  - @brightweblabs/ui@1.4.1
+
 ## 0.0.8
 
 ### Patch Changes

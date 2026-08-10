@@ -1,13 +1,18 @@
 import { readPublicError } from "@brightweblabs/infra/robustness";
+import { observedFetch, type UiRequestMetricObserver } from "@brightweblabs/infra/request-observability";
 import type {
   MarketingCampaign,
   MarketingCampaignInput,
   MarketingCampaignRecipient,
+  MarketingCollectionResult,
   MarketingTopic,
+  MarketingTopicInput,
+  MarketingTopicUpdate,
   MarketingSegment,
   MarketingSegmentInput,
   MarketingSegmentPreview,
   MarketingUiClient,
+  MarketingRequestOptions,
   MarketingWorkflow,
   MarketingWorkflowInput,
   MarketingWorkflowNode,
@@ -36,7 +41,7 @@ function asRecord(value: unknown): Record<string, unknown> {
 
 function unwrap<T>(payload: unknown, key: string): T {
   const record = asRecord(payload);
-  return (record[key] ?? record.data ?? payload) as T;
+  return (record[key] ?? record.items ?? record.data ?? payload) as T;
 }
 
 function parseCampaign(payload: unknown): MarketingCampaign {
@@ -46,6 +51,27 @@ function parseCampaign(payload: unknown): MarketingCampaign {
 function parseCampaigns(payload: unknown): MarketingCampaign[] {
   const campaigns = unwrap<unknown[]>(payload, "campaigns");
   return Array.isArray(campaigns) ? campaigns.map(parseCampaign) : [];
+}
+
+function parseCollection<T>(payload: unknown, parseItems: (value: unknown) => T[]): MarketingCollectionResult<T> {
+  const record = asRecord(payload);
+  const items = parseItems(record.items ?? record.data ?? payload);
+  return {
+    items,
+    page: Number(record.page ?? 1),
+    pageSize: Number(record.pageSize ?? items.length),
+    total: Number(record.total ?? items.length),
+    totalPages: Number(record.totalPages ?? 1),
+  };
+}
+
+function collectionQuery(query: { page?: number; pageSize?: number; search?: string; status?: string | null } = {}) {
+  const params = new URLSearchParams();
+  if (query.page) params.set("page", String(query.page));
+  if (query.pageSize) params.set("pageSize", String(query.pageSize));
+  if (query.search) params.set("search", query.search);
+  if (query.status) params.set("status", query.status);
+  return params.toString();
 }
 
 function parseRecipients(payload: unknown): MarketingCampaignRecipient[] {
@@ -113,6 +139,9 @@ function parseWorkflow(payload: unknown): MarketingWorkflow {
     nodes,
     nodeCount: Number(row.nodeCount ?? row.node_count ?? nodes.length),
     runCount: Number(row.runCount ?? row.run_count ?? 0),
+    countsKnown: row.countsKnown === false || row.counts_known === false
+      ? false
+      : ("nodeCount" in row || "node_count" in row || "runCount" in row || "run_count" in row || rawNodes.length > 0),
     createdAt: String(row.createdAt ?? row.created_at ?? ""),
     updatedAt: String(row.updatedAt ?? row.updated_at ?? ""),
   };
@@ -172,6 +201,7 @@ function parseWorkflowRuns(payload: unknown): MarketingWorkflowRun[] {
 export function createMarketingUiClient(
   basePath = "/api/marketing",
   fetcher: typeof fetch = fetch,
+  options: { onRequestMetric?: UiRequestMetricObserver } = {},
 ): MarketingUiClient {
   const root = basePath.replace(/\/$/, "");
   const endpoint = (path: string) => `${root}/${path}`;
@@ -180,55 +210,55 @@ export function createMarketingUiClient(
     headers: body === undefined ? undefined : { "content-type": "application/json" },
     body: body === undefined ? undefined : JSON.stringify(body),
   });
+  const request = (path: string, operation: string, init?: RequestInit, requestOptions?: MarketingRequestOptions) => observedFetch(
+    fetcher,
+    endpoint(path),
+    { ...init, signal: requestOptions?.signal ?? init?.signal },
+    { domain: "marketing", operation, observer: options.onRequestMetric },
+  );
   const campaignAction = async (campaignId: string, action: string, body?: unknown) =>
     parseCampaign(
       await readPayload(
-        await fetcher(
-          endpoint(`campaigns/${encodeURIComponent(campaignId)}/${action}`),
-          json("POST", body),
-        ),
+        await request(`campaigns/${encodeURIComponent(campaignId)}/${action}`, `campaigns.${action}`, json("POST", body)),
       ),
     );
   const workflowAction = async (workflowId: string, action: "activate" | "pause") =>
     parseWorkflow(
       await readPayload(
-        await fetcher(
-          endpoint(`workflows/${encodeURIComponent(workflowId)}/${action}`),
-          json("POST"),
-        ),
+        await request(`workflows/${encodeURIComponent(workflowId)}/${action}`, `workflows.${action}`, json("POST")),
       ),
     );
 
   return {
-    async listCampaigns() {
-      return parseCampaigns(await readPayload(await fetcher(endpoint("campaigns"))));
+    async listCampaigns(requestOptions) {
+      return parseCampaigns(await readPayload(await request("campaigns", "campaigns.list", undefined, requestOptions)));
     },
-    async getCampaign(campaignId) {
+    async queryCampaigns(query = {}, requestOptions) {
+      return parseCollection(
+        await readPayload(await request(`campaigns?${collectionQuery(query)}`, "campaigns.query", undefined, requestOptions)),
+        (value) => parseCampaigns({ campaigns: value }),
+      );
+    },
+    async getCampaign(campaignId, requestOptions) {
       return parseCampaign(
-        await readPayload(await fetcher(endpoint(`campaigns/${encodeURIComponent(campaignId)}`))),
+        await readPayload(await request(`campaigns/${encodeURIComponent(campaignId)}`, "campaigns.get", undefined, requestOptions)),
       );
     },
     async createCampaign(input: MarketingCampaignInput) {
       return parseCampaign(
-        await readPayload(await fetcher(endpoint("campaigns"), json("POST", input))),
+        await readPayload(await request("campaigns", "campaigns.create", json("POST", input))),
       );
     },
     async updateCampaign(campaignId, input) {
       return parseCampaign(
         await readPayload(
-          await fetcher(
-            endpoint(`campaigns/${encodeURIComponent(campaignId)}`),
-            json("PATCH", input),
-          ),
+          await request(`campaigns/${encodeURIComponent(campaignId)}`, "campaigns.update", json("PATCH", input)),
         ),
       );
     },
     async deleteCampaign(campaignId) {
       await readPayload(
-        await fetcher(
-          endpoint(`campaigns/${encodeURIComponent(campaignId)}`),
-          json("DELETE"),
-        ),
+        await request(`campaigns/${encodeURIComponent(campaignId)}`, "campaigns.delete", json("DELETE")),
       );
     },
     sendCampaign(campaignId) {
@@ -245,106 +275,136 @@ export function createMarketingUiClient(
     },
     async sendTest(campaignId, email) {
       await readPayload(
-        await fetcher(
-          endpoint(`campaigns/${encodeURIComponent(campaignId)}/test`),
-          json("POST", { toEmail: email }),
-        ),
+        await request(`campaigns/${encodeURIComponent(campaignId)}/test`, "campaigns.test", json("POST", { toEmail: email })),
       );
     },
-    async listRecipients(campaignId) {
+    async listRecipients(campaignId, requestOptions) {
       return parseRecipients(
         await readPayload(
-          await fetcher(endpoint(`campaigns/${encodeURIComponent(campaignId)}/recipients`)),
+          await request(`campaigns/${encodeURIComponent(campaignId)}/recipients`, "campaigns.recipients", undefined, requestOptions),
         ),
       );
     },
-    async listTopics() {
-      return parseTopics(await readPayload(await fetcher(endpoint("topics"))));
+    async deleteRecipient(campaignId, recipientId) {
+      await readPayload(await request(
+        `campaigns/${encodeURIComponent(campaignId)}/recipients/${encodeURIComponent(recipientId)}`,
+        "campaigns.recipients.delete",
+        json("DELETE"),
+      ));
     },
-    async listSegments() {
-      return parseSegments(await readPayload(await fetcher(endpoint("segments"))));
+    async listTopics(requestOptions) {
+      return parseTopics(await readPayload(await request("topics", "topics.list", undefined, requestOptions)));
     },
-    async getSegment(segmentId) {
+    async createTopic(input: MarketingTopicInput) {
+      return unwrap<MarketingTopic>(
+        await readPayload(await request("topics", "topics.create", json("POST", input))),
+        "topic",
+      );
+    },
+    async updateTopic(topicId: string, input: MarketingTopicUpdate) {
+      return unwrap<MarketingTopic>(
+        await readPayload(
+          await request(`topics/${encodeURIComponent(topicId)}`, "topics.update", json("PATCH", input)),
+        ),
+        "topic",
+      );
+    },
+    async deleteTopic(topicId: string) {
+      await readPayload(
+        await request(`topics/${encodeURIComponent(topicId)}`, "topics.delete", json("DELETE")),
+      );
+    },
+    async reorderTopics(topicIds: string[]) {
+      return parseTopics(
+        await readPayload(await request("topics/order", "topics.reorder", json("POST", { topicIds }))),
+      );
+    },
+    async listSegments(requestOptions) {
+      return parseSegments(await readPayload(await request("segments", "segments.list", undefined, requestOptions)));
+    },
+    async querySegments(query = {}, requestOptions) {
+      return parseCollection(
+        await readPayload(await request(`segments?${collectionQuery(query)}`, "segments.query", undefined, requestOptions)),
+        (value) => parseSegments({ segments: value }),
+      );
+    },
+    async getSegment(segmentId, requestOptions) {
       return parseSegment(
-        await readPayload(await fetcher(endpoint(`segments/${encodeURIComponent(segmentId)}`))),
+        await readPayload(await request(`segments/${encodeURIComponent(segmentId)}`, "segments.get", undefined, requestOptions)),
       );
     },
     async createSegment(input: MarketingSegmentInput) {
       return parseSegment(
-        await readPayload(await fetcher(endpoint("segments"), json("POST", input))),
+        await readPayload(await request("segments", "segments.create", json("POST", input))),
       );
     },
     async updateSegment(segmentId, input) {
       return parseSegment(
         await readPayload(
-          await fetcher(
-            endpoint(`segments/${encodeURIComponent(segmentId)}`),
-            json("PATCH", input),
-          ),
+          await request(`segments/${encodeURIComponent(segmentId)}`, "segments.update", json("PATCH", input)),
         ),
       );
     },
     async deleteSegment(segmentId) {
-      const response = await fetcher(
-        endpoint(`segments/${encodeURIComponent(segmentId)}`),
-        json("DELETE"),
-      );
+      const response = await request(`segments/${encodeURIComponent(segmentId)}`, "segments.delete", json("DELETE"));
       if (!response.ok) await readPayload(response);
     },
-    async previewSegment(rule, limit = 8, segmentId) {
+    async previewSegment(rule, limit = 8, segmentId, requestOptions) {
       return await readPayload(
-        await fetcher(
-          endpoint(segmentId
+        await request(
+          segmentId
             ? `segments/${encodeURIComponent(segmentId)}/preview`
-            : "segments/preview"),
+            : "segments/preview",
+          "segments.preview",
           json("POST", { rule, limit }),
+          requestOptions,
         ),
       ) as MarketingSegmentPreview;
     },
-    async getOverview(sinceDays) {
+    async getOverview(sinceDays, requestOptions) {
       const query = typeof sinceDays === "number" ? `?sinceDays=${sinceDays}` : "";
       return await readPayload(
-        await fetcher(endpoint(`analytics/overview${query}`)),
+        await request(`analytics/overview${query}`, "analytics.overview", undefined, requestOptions),
       ) as MarketingOverviewMetrics;
     },
-    async getCampaignAnalytics(campaignId) {
+    async getCampaignAnalytics(campaignId, requestOptions) {
       return await readPayload(
-        await fetcher(endpoint(`analytics/campaigns/${encodeURIComponent(campaignId)}`)),
+        await request(`analytics/campaigns/${encodeURIComponent(campaignId)}`, "analytics.campaign", undefined, requestOptions),
       ) as MarketingCampaignAnalytics;
     },
-    async getSegmentAnalytics(segmentId) {
+    async getSegmentAnalytics(segmentId, requestOptions) {
       return await readPayload(
-        await fetcher(endpoint(`analytics/segments/${encodeURIComponent(segmentId)}`)),
+        await request(`analytics/segments/${encodeURIComponent(segmentId)}`, "analytics.segment", undefined, requestOptions),
       ) as MarketingSegmentAnalytics;
     },
-    async listWorkflows() {
-      return parseWorkflows(await readPayload(await fetcher(endpoint("workflows"))));
+    async listWorkflows(requestOptions) {
+      return parseWorkflows(await readPayload(await request("workflows", "workflows.list", undefined, requestOptions)));
     },
-    async getWorkflow(workflowId) {
+    async queryWorkflows(query = {}, requestOptions) {
+      return parseCollection(
+        await readPayload(await request(`workflows?${collectionQuery(query)}`, "workflows.query", undefined, requestOptions)),
+        (value) => parseWorkflows({ workflows: value }),
+      );
+    },
+    async getWorkflow(workflowId, requestOptions) {
       return parseWorkflow(
-        await readPayload(await fetcher(endpoint(`workflows/${encodeURIComponent(workflowId)}`))),
+        await readPayload(await request(`workflows/${encodeURIComponent(workflowId)}`, "workflows.get", undefined, requestOptions)),
       );
     },
     async createWorkflow(input: MarketingWorkflowInput) {
       return parseWorkflow(
-        await readPayload(await fetcher(endpoint("workflows"), json("POST", input))),
+        await readPayload(await request("workflows", "workflows.create", json("POST", input))),
       );
     },
     async updateWorkflow(workflowId, input) {
       return parseWorkflow(
         await readPayload(
-          await fetcher(
-            endpoint(`workflows/${encodeURIComponent(workflowId)}`),
-            json("PATCH", input),
-          ),
+          await request(`workflows/${encodeURIComponent(workflowId)}`, "workflows.update", json("PATCH", input)),
         ),
       );
     },
     async deleteWorkflow(workflowId) {
-      const response = await fetcher(
-        endpoint(`workflows/${encodeURIComponent(workflowId)}`),
-        json("DELETE"),
-      );
+      const response = await request(`workflows/${encodeURIComponent(workflowId)}`, "workflows.delete", json("DELETE"));
       if (!response.ok) await readPayload(response);
     },
     activateWorkflow(workflowId) {
@@ -356,17 +416,14 @@ export function createMarketingUiClient(
     async saveWorkflowNodes(workflowId, nodes: MarketingWorkflowNodeInput[]) {
       return parseWorkflowNodes(
         await readPayload(
-          await fetcher(
-            endpoint(`workflows/${encodeURIComponent(workflowId)}/nodes`),
-            json("PUT", { nodes }),
-          ),
+          await request(`workflows/${encodeURIComponent(workflowId)}/nodes`, "workflows.nodes.save", json("PUT", { nodes })),
         ),
       );
     },
-    async listWorkflowRuns(workflowId) {
+    async listWorkflowRuns(workflowId, requestOptions) {
       return parseWorkflowRuns(
         await readPayload(
-          await fetcher(endpoint(`workflows/${encodeURIComponent(workflowId)}/runs`)),
+          await request(`workflows/${encodeURIComponent(workflowId)}/runs`, "workflows.runs", undefined, requestOptions),
         ),
       );
     },

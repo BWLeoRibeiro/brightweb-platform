@@ -5,6 +5,8 @@ import type { ShellContextualAction, ShellModuleRegistration } from "@brightwebl
 import { ProjectSummaryCard } from "./ui/shared/project-summary-card";
 import { ProjectSummaryCardSkeleton } from "./ui/shared/project-summary-card-skeleton";
 import { TaskDueMeta, TaskPriorityTag, TaskStatusTag } from "./ui/shared/task-tags";
+import { DashboardTaskRow } from "./ui/shared/dashboard-task-row";
+import { DashboardProjectAttentionCard } from "./ui/shared/dashboard-project-attention-card";
 
 export function createProjectsModuleRegistration(baseHref = "/projetos"): ShellModuleRegistration<ShellContextualAction> { return {
   key: "projects",
@@ -31,7 +33,7 @@ export function createProjectsModuleRegistration(baseHref = "/projetos"): ShellM
   dashboardContribution: {
     key: "projects",
     sections: ["projects", "tasks"],
-    projectComponents: { ProjectSummaryCard, ProjectSummaryCardSkeleton, TaskDueMeta, TaskPriorityTag, TaskStatusTag },
+    projectComponents: { projectBaseHref: baseHref, ProjectSummaryCard, ProjectSummaryCardSkeleton, ProjectAttentionCard: DashboardProjectAttentionCard, TaskDueMeta, TaskPriorityTag, TaskStatusTag, DashboardTaskRow },
   },
 }; }
 

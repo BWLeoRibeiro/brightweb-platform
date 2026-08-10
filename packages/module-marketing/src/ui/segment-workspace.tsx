@@ -1,5 +1,7 @@
 "use client";
 
+import { StyledSelect } from "@brightweblabs/ui";
+
 import { Filter, Plus, Trash2, Users } from "lucide-react";
 import {
   Badge,
@@ -14,8 +16,10 @@ import {
   SheetDescription,
   SheetHeader,
   SheetTitle,
+  Skeleton,
 } from "@brightweblabs/ui";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { createLatestRequestController, isAbortError } from "@brightweblabs/infra/request-observability";
 import { toast } from "sonner";
 import { useMarketingUiClient } from "./context";
 import type {
@@ -51,60 +55,84 @@ export function SegmentWorkspace({
   topics,
   dictionary,
   onSegmentsChange,
+  createRequest = 0,
+  onMutated,
 }: {
   segments: MarketingSegment[];
   topics: MarketingTopic[];
   dictionary: MarketingUiDictionary;
   onSegmentsChange: (segments: MarketingSegment[]) => void;
+  createRequest?: number;
+  onMutated?: () => void;
 }) {
   const client = useMarketingUiClient();
   const [active, setActive] = useState<MarketingSegment | null>(null);
   const [form, setForm] = useState<SegmentForm>(emptyForm);
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [previewing, setPreviewing] = useState(false);
+  const [previewLoadState, setPreviewLoadState] = useState<"pending" | "fulfilled" | "rejected">("pending");
+  const [previewHasData, setPreviewHasData] = useState(false);
   const [preview, setPreview] = useState<MarketingSegmentPreview>({
     count: 0,
     sample: [],
   });
+  const previewRequestRef = useRef(createLatestRequestController());
+  const editorGenerationRef = useRef(0);
+  const handledCreateRequestRef = useRef(createRequest);
 
   useEffect(() => {
     if (!open) return;
-    let cancelled = false;
+    previewRequestRef.current.abort();
+    setPreviewLoadState("pending");
     const timer = window.setTimeout(() => {
-      setPreviewing(true);
-      void client.previewSegment(form.rule, 8, active?.id)
+      const latest = previewRequestRef.current.begin();
+      void client.previewSegment(form.rule, 8, active?.id, { signal: latest.signal })
         .then((result) => {
-          if (!cancelled) setPreview(result);
+          if (latest.isCurrent()) {
+            setPreview(result);
+            setPreviewHasData(true);
+            setPreviewLoadState("fulfilled");
+          }
         })
         .catch((error) => {
-          if (!cancelled) {
+          if (latest.isCurrent() && !isAbortError(error)) {
+            setPreviewLoadState("rejected");
             toast.error(
               error instanceof Error ? error.message : dictionary.feedback.genericError,
             );
           }
         })
-        .finally(() => {
-          if (!cancelled) setPreviewing(false);
-        });
+        .finally(() => latest.finish());
     }, 300);
     return () => {
-      cancelled = true;
       window.clearTimeout(timer);
+      previewRequestRef.current.abort();
     };
   }, [active?.id, client, dictionary.feedback.genericError, form.rule, open]);
 
   const beginCreate = () => {
+    editorGenerationRef.current += 1;
     setActive(null);
     setForm(emptyForm);
     setPreview({ count: 0, sample: [] });
+    setPreviewHasData(false);
+    setPreviewLoadState("pending");
     setOpen(true);
   };
 
+  useEffect(() => {
+    if (createRequest === handledCreateRequestRef.current) return;
+    handledCreateRequestRef.current = createRequest;
+    beginCreate();
+  }, [createRequest]);
+
   const beginEdit = (segment: MarketingSegment) => {
+    editorGenerationRef.current += 1;
     setActive(segment);
     setForm(formFromSegment(segment));
     setPreview({ count: 0, sample: [] });
+    setPreviewHasData(false);
+    setPreviewLoadState("pending");
     setOpen(true);
   };
 
@@ -126,9 +154,10 @@ export function SegmentWorkspace({
 
   const save = async () => {
     if (!form.name.trim()) {
-      toast.error(dictionary.segments.fields.name);
+      toast.error(dictionary.feedback.segmentNameRequired ?? dictionary.segments.fields.name);
       return;
     }
+    const editorGeneration = editorGenerationRef.current;
     setBusy(true);
     try {
       const input = {
@@ -139,6 +168,7 @@ export function SegmentWorkspace({
       const saved = active
         ? await client.updateSegment(active.id, input)
         : await client.createSegment(input);
+      if (editorGeneration !== editorGenerationRef.current) return;
       onSegmentsChange(
         active
           ? segments.map((segment) => segment.id === saved.id ? saved : segment)
@@ -146,32 +176,37 @@ export function SegmentWorkspace({
       );
       setActive(saved);
       setForm(formFromSegment(saved));
+      onMutated?.();
       toast.success(
         active ? dictionary.segments.saved : dictionary.segments.created,
       );
     } catch (error) {
-      toast.error(
+      if (editorGeneration === editorGenerationRef.current) toast.error(
         error instanceof Error ? error.message : dictionary.feedback.genericError,
       );
     } finally {
-      setBusy(false);
+      if (editorGeneration === editorGenerationRef.current) setBusy(false);
     }
   };
 
   const remove = async () => {
     if (!active) return;
+    if (!window.confirm(`Eliminar definitivamente o segmento “${active.name}”?`)) return;
+    const editorGeneration = editorGenerationRef.current;
     setBusy(true);
     try {
       await client.deleteSegment(active.id);
+      if (editorGeneration !== editorGenerationRef.current) return;
       onSegmentsChange(segments.filter((segment) => segment.id !== active.id));
       setOpen(false);
+      onMutated?.();
       toast.success(dictionary.segments.deleted);
     } catch (error) {
-      toast.error(
+      if (editorGeneration === editorGenerationRef.current) toast.error(
         error instanceof Error ? error.message : dictionary.feedback.genericError,
       );
     } finally {
-      setBusy(false);
+      if (editorGeneration === editorGenerationRef.current) setBusy(false);
     }
   };
 
@@ -187,20 +222,12 @@ export function SegmentWorkspace({
                 {dictionary.segments.subtitle}
               </p>
             </div>
-            <Button onClick={beginCreate}>
-              <Plus aria-hidden="true" />
-              {dictionary.segments.newSegment}
-            </Button>
           </div>
           {segments.length === 0 ? (
             <div className="marketing-empty">
               <div className="marketing-empty-icon"><Filter aria-hidden="true" /></div>
               <h2>{dictionary.segments.emptyTitle}</h2>
               <p>{dictionary.segments.emptyDescription}</p>
-              <Button onClick={beginCreate} variant="outline">
-                <Plus aria-hidden="true" />
-                {dictionary.segments.newSegment}
-              </Button>
             </div>
           ) : (
             <div className="marketing-campaign-list">
@@ -216,16 +243,16 @@ export function SegmentWorkspace({
                       <Filter />
                     </span>
                     <span className="min-w-0">
-                      <strong>{segment.name}</strong>
+                      <strong className="text-title">{segment.name}</strong>
                       <small>{segment.description || dictionary.segments.anyTopicHint}</small>
                     </span>
                   </span>
-                  <span className="marketing-row-topic">
+                  <span className="marketing-row-topic text-data">
                     {segment.rule.topicIds?.length
                       ? dictionary.segments.topicCount(segment.rule.topicIds.length)
                       : dictionary.segments.engagementTypes.any}
                   </span>
-                  <span className="marketing-row-date">
+                  <span className="marketing-row-date text-data">
                     {new Intl.DateTimeFormat(dictionary.locale).format(
                       new Date(segment.updatedAt),
                     )}
@@ -237,7 +264,13 @@ export function SegmentWorkspace({
         </CardContent>
       </Card>
 
-      <Sheet open={open} onOpenChange={setOpen}>
+      <Sheet open={open} onOpenChange={(nextOpen) => {
+        if (!nextOpen) {
+          previewRequestRef.current.abort();
+          editorGenerationRef.current += 1;
+        }
+        setOpen(nextOpen);
+      }}>
         <SheetContent className="marketing-editor" side="right">
           <SheetHeader className="marketing-editor-header">
             <div>
@@ -366,7 +399,7 @@ export function SegmentWorkspace({
                 <Label htmlFor="segment-engagement-type">
                   {dictionary.segments.fields.engagementType}
                 </Label>
-                <select
+                <StyledSelect
                   className="marketing-select"
                   id="segment-engagement-type"
                   value={form.rule.engagementType ?? ""}
@@ -379,7 +412,7 @@ export function SegmentWorkspace({
                   <option value="">{dictionary.segments.engagementTypes.any}</option>
                   <option value="opened">{dictionary.segments.engagementTypes.opened}</option>
                   <option value="clicked">{dictionary.segments.engagementTypes.clicked}</option>
-                </select>
+                </StyledSelect>
               </div>
               <label className="marketing-field flex-row items-center gap-3 self-end rounded-lg border p-3">
                 <Checkbox
@@ -399,17 +432,29 @@ export function SegmentWorkspace({
                 <div>
                   <p className="marketing-kicker">{dictionary.segments.previewTitle}</p>
                   <p className="text-body text-muted-foreground">
-                    {previewing
+                    {previewLoadState === "pending"
                       ? dictionary.segments.previewLoading
-                      : `${preview.count} ${dictionary.segments.previewCount}`}
+                      : previewLoadState === "rejected" && !previewHasData
+                        ? dictionary.feedback.genericError
+                        : `${preview.count} ${dictionary.segments.previewCount}`}
                   </p>
                 </div>
-                <Badge variant="outline">
+                <Badge variant="outline" className="text-data-sm">
                   <Users aria-hidden="true" className="mr-1 size-3.5" />
-                  {preview.count}
+                  {(previewLoadState === "pending" || previewLoadState === "rejected") && !previewHasData ? "—" : preview.count}
                 </Badge>
               </div>
-              {preview.sample.length === 0 ? (
+              {previewLoadState === "pending" && !previewHasData ? (
+                <div className="space-y-2" aria-busy="true" aria-label={dictionary.segments.previewLoading}>
+                  <Skeleton className="h-12 w-full rounded-lg" />
+                  <Skeleton className="h-12 w-full rounded-lg" />
+                  <Skeleton className="h-12 w-full rounded-lg" />
+                </div>
+              ) : previewLoadState === "rejected" && !previewHasData ? (
+                <p role="alert" className="rounded-lg border border-destructive/30 bg-destructive/10 p-4 text-body text-destructive">
+                  {dictionary.feedback.genericError}
+                </p>
+              ) : preview.sample.length === 0 ? (
                 <p className="rounded-lg border border-dashed p-4 text-body text-muted-foreground">
                   {dictionary.segments.previewEmpty}
                 </p>

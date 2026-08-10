@@ -74,11 +74,8 @@ test("every first-party dashboard section has a tracked scaffold endpoint and cl
       );
 
       const method = `get${section[0]!.toUpperCase()}${section.slice(1)}`;
-      assert.match(
-        dashboardClient,
-        new RegExp(`${method}:\\s*\\(\\)\\s*=>\\s*getJson\\("/api/dashboard/${section}"\\)`),
-        `Dashboard section "${section}" from ${moduleDefinition.key} has no matching ${method} client method.`,
-      );
+      assert.match(dashboardClient, new RegExp(`${method}:\\s*\\(options`), `Dashboard section "${section}" from ${moduleDefinition.key} has no matching ${method} client method.`);
+      assert.match(dashboardClient, new RegExp(`/api/dashboard/${section}`), `Dashboard section "${section}" from ${moduleDefinition.key} has no matching endpoint.`);
     }
   }
 });

@@ -12,10 +12,28 @@ import {
 } from "../packages/module-admin/src/http.ts";
 import { createOrganization } from "../packages/module-orgs/src/data.ts";
 import {
+  addOrganizationCreateInvitation,
+  buildOrganizationCreateSheetInput,
+} from "../packages/module-orgs/src/ui/organization-create-sheet.tsx";
+import {
   createOrganizationInvitationsHandler,
   createOrganizationsPostHandler,
 } from "../packages/module-orgs/src/http.ts";
 import { createCrmUiClient } from "../packages/module-crm/src/ui/client.ts";
+
+test("shared organization creation normalizes invitations and preserves the submitted payload", () => {
+  const first = addOrganizationCreateInvitation([], { email: "  ADA@Example.COM ", role: "admin" });
+  assert.deepEqual(first, { valid: true, invitations: [{ email: "ada@example.com", role: "admin" }] });
+  assert.deepEqual(addOrganizationCreateInvitation(first.invitations, { email: "ada@example.com", role: "member" }), first);
+  assert.deepEqual(
+    addOrganizationCreateInvitation(first.invitations, { email: "invalid", role: "member" }),
+    { valid: false, invitations: first.invitations },
+  );
+  assert.deepEqual(
+    buildOrganizationCreateSheetInput({ name: "Analytical Engines" }, first.invitations),
+    { name: "Analytical Engines", invitations: first.invitations },
+  );
+});
 
 test("organization writes use MQ field normalization and preserve ownership fields", async () => {
   let inserted: Record<string, unknown> | null = null;
@@ -216,6 +234,7 @@ test("CRM client maps its organization form contract to the MQ organization API"
     company_size: "10-50",
     address: "Rua 1",
     taxIdentifierValue: "123",
+    invitations: [{ email: "member@example.com", role: "member" }],
   });
   assert.equal(created.id, "org-1");
   assert.equal(calls[0]?.url, "/api/organizations");
@@ -224,6 +243,7 @@ test("CRM client maps its organization form contract to the MQ organization API"
     companySize: "10-50",
     addressLine1: "Rua 1",
     taxIdentifierValue: "123",
+    invitations: [{ email: "member@example.com", role: "member" }],
   });
 });
 

@@ -16,6 +16,13 @@ type CrmToolbarState = {
   sort: CrmContactSort;
 };
 
+type CrmOrganizationsToolbarState = {
+  search: string;
+  industry: string | null;
+  sort: "name" | "industry" | "location";
+  industries: string[];
+};
+
 export type CrmToolbarSearchChipProps = {
   value: string;
   onChange: (value: string) => void;
@@ -47,28 +54,28 @@ export function CrmToolbarFiltersPill({ status, sort, stages, dictionary = defau
   return (
     <Popover open={open} onOpenChange={(next) => next ? begin() : setOpen(false)}>
       <PopoverTrigger asChild>
-        <button type="button" disabled={disabled} className="inline-flex h-9 items-center gap-2 whitespace-nowrap rounded-[var(--radius-control)] border border-[color:var(--hairline-strong)] bg-[color:var(--elevate-1)] px-3 text-body text-[length:var(--text-ui-action)] font-extrabold text-[color:var(--foreground)] transition-colors hover:border-[color:var(--border-strong)] hover:bg-[color:var(--surface-hover)] disabled:cursor-not-allowed disabled:opacity-60">
-          <Filter className="size-[var(--toolbar-icon-size)] text-[color:var(--muted-foreground)]" aria-hidden />
+        <Button type="button" variant="outline" disabled={disabled}>
+          <Filter data-icon="inline-start" className="text-[color:var(--muted-foreground)]" aria-hidden />
           {dictionary.toolbar.filters}
-          {activeCount > 0 ? <span className="inline-flex size-5 items-center justify-center rounded-full bg-[color:var(--surface-button-brand)] text-micro text-accent-foreground">{activeCount}</span> : null}
-        </button>
+          {activeCount > 0 ? <span className="inline-flex size-5 items-center justify-center rounded-full bg-[color:var(--surface-button-brand)] text-data-sm text-accent-foreground">{activeCount}</span> : null}
+        </Button>
       </PopoverTrigger>
       <PopoverContent align="end" collisionPadding={12} className="w-[min(var(--toolbar-popover-width),calc(100vw-2rem))] rounded-[var(--radius-toolbar-popover)] border-[color:var(--hairline)] bg-[color:var(--popover)] p-4 shadow-[var(--shadow-toolbar-popover)]">
         <div className="mb-3 flex items-center justify-between">
           <span className="text-body text-[length:var(--text-ui-action)] font-extrabold text-[color:var(--foreground)]">{dictionary.toolbar.filters}</span>
-          <button type="button" className="p-0 text-meta font-bold text-[color:var(--muted-foreground)] underline-offset-2 hover:text-[color:var(--foreground)] hover:underline" onClick={() => { setDraftStatus(null); setDraftSort("date_desc"); }}>{dictionary.toolbar.clear}</button>
+          <Button type="button" variant="link" size="link" className="text-meta text-[color:var(--muted-foreground)]" onClick={() => { setDraftStatus(null); setDraftSort("date_desc"); }}>{dictionary.toolbar.clear}</Button>
         </div>
         <div className="grid gap-3">
           <div>
-            <span className="mb-2 block text-micro font-extrabold uppercase tracking-[var(--type-tracking-100)] text-[color:var(--muted-foreground)]">{dictionary.toolbar.status}</span>
+            <span className="mb-2 block text-label text-[color:var(--muted-foreground)]">{dictionary.toolbar.status}</span>
             <div className="flex flex-wrap gap-2">
               {[{ value: null, label: dictionary.table.allSegments }, ...resolvedStages.map((stage) => ({ value: stage.value, label: stage.label }))].map((option) => (
-                <button key={option.value ?? "all"} type="button" className={`inline-flex h-[var(--toolbar-chip-height)] items-center rounded-full border px-3 text-meta text-[length:var(--text-ui-chip)] font-semibold ${draftStatus === option.value ? "border-[color:var(--border-selection)] bg-[color:var(--surface-selection)] text-[color:var(--foreground)]" : "border-[color:var(--hairline)] bg-[color:var(--elevate-1)] text-[color:var(--foreground)]"}`} onClick={() => setDraftStatus(option.value)}>{option.label}</button>
+                <button key={option.value ?? "all"} type="button" className={`inline-flex h-[var(--toolbar-chip-height)] cursor-pointer items-center rounded-full border px-3 text-meta text-[length:var(--text-ui-chip)] font-semibold ${draftStatus === option.value ? "border-[color:var(--border-selection)] bg-[color:var(--surface-selection)] text-[color:var(--foreground)]" : "border-[color:var(--hairline)] bg-[color:var(--elevate-1)] text-[color:var(--foreground)]"}`} onClick={() => setDraftStatus(option.value)}>{option.label}</button>
               ))}
             </div>
           </div>
           <div>
-            <span className="mb-2 block text-micro font-extrabold uppercase tracking-[var(--type-tracking-100)] text-[color:var(--muted-foreground)]">{dictionary.toolbar.organize}</span>
+            <span className="mb-2 block text-label text-[color:var(--muted-foreground)]">{dictionary.toolbar.organize}</span>
             <div className="flex flex-wrap gap-2">
               {([
                 ["date_desc", dictionary.table.sortNewest],
@@ -76,26 +83,25 @@ export function CrmToolbarFiltersPill({ status, sort, stages, dictionary = defau
                 ["company", dictionary.table.sortCompany],
                 ["status_grouped", dictionary.table.sortStatusGrouped ?? dictionary.toolbar.status],
                 ["source_grouped", dictionary.table.sortSourceGrouped ?? "Origem (agrupado A → Z)"],
-              ] as const).map(([value, label]) => <button key={value} type="button" className={`inline-flex h-[var(--toolbar-chip-height)] items-center rounded-full border px-3 text-meta text-[length:var(--text-ui-chip)] font-semibold ${draftSort === value ? "border-[color:var(--border-selection)] bg-[color:var(--surface-selection)] text-[color:var(--foreground)]" : "border-[color:var(--hairline)] bg-[color:var(--elevate-1)] text-[color:var(--foreground)]"}`} onClick={() => setDraftSort(value)}>{label}</button>)}
+              ] as const).map(([value, label]) => <button key={value} type="button" className={`inline-flex h-[var(--toolbar-chip-height)] cursor-pointer items-center rounded-full border px-3 text-meta text-[length:var(--text-ui-chip)] font-semibold ${draftSort === value ? "border-[color:var(--border-selection)] bg-[color:var(--surface-selection)] text-[color:var(--foreground)]" : "border-[color:var(--hairline)] bg-[color:var(--elevate-1)] text-[color:var(--foreground)]"}`} onClick={() => setDraftSort(value)}>{label}</button>)}
             </div>
           </div>
         </div>
-        <div className="mt-4"><Button type="button" variant="brand" className="h-9 w-full rounded-[var(--radius-control)] text-body text-[length:var(--text-ui-action)]" onClick={() => { onApply(draftStatus, draftSort); setOpen(false); }}>{dictionary.toolbar.apply}</Button></div>
+        <div className="mt-4"><Button type="button" className="w-full" onClick={() => { onApply(draftStatus, draftSort); setOpen(false); }}>{dictionary.toolbar.apply}</Button></div>
       </PopoverContent>
     </Popover>
   );
 }
 
-export type CrmToolbarCreateMenuProps = { dictionary?: CrmUiDictionary };
+export type CrmToolbarCreateMenuProps = { dictionary?: CrmUiDictionary; primary?: "contact" | "organization" };
 
-export function CrmToolbarCreateMenu({ dictionary = defaultCrmUiDictionary }: CrmToolbarCreateMenuProps) {
+export function CrmToolbarCreateMenu({ dictionary = defaultCrmUiDictionary, primary = "contact" }: CrmToolbarCreateMenuProps) {
   const dispatchShellAction = useShellActionDispatch();
   const createContactReady = useShellActionReady(CRM_UI_EVENTS.createContact);
   const createOrganizationReady = useShellActionReady(CRM_UI_EVENTS.createOrganization);
-  return <TooltipProvider><ToolbarNewMenu id="crm-create-menu" icon={Plus} label={dictionary.toolbar.create} tooltip={dictionary.toolbar.create} disabled={!createContactReady || !createOrganizationReady} items={[
-    { icon: UserPlus, label: dictionary.toolbar.newContact, disabled: !createContactReady, onSelect: () => dispatchShellAction(CRM_UI_EVENTS.createContact) },
-    { icon: Building2, label: dictionary.toolbar.newOrganization, disabled: !createOrganizationReady, onSelect: () => dispatchShellAction(CRM_UI_EVENTS.createOrganization) },
-  ]} /></TooltipProvider>;
+  const contactItem = { icon: UserPlus, label: dictionary.toolbar.newContact, disabled: !createContactReady, onSelect: () => dispatchShellAction(CRM_UI_EVENTS.createContact) };
+  const organizationItem = { icon: Building2, label: dictionary.toolbar.newOrganization, disabled: !createOrganizationReady, onSelect: () => dispatchShellAction(CRM_UI_EVENTS.createOrganization) };
+  return <TooltipProvider><ToolbarNewMenu id="crm-create-menu" icon={Plus} label={dictionary.toolbar.create} tooltip={dictionary.toolbar.create} disabled={!createContactReady && !createOrganizationReady} items={primary === "organization" ? [organizationItem, contactItem] : [contactItem, organizationItem]} /></TooltipProvider>;
 }
 
 export type CrmToolbarControlsProps = { dictionary?: CrmUiDictionary; stages?: CrmStageConfig[] };
@@ -118,6 +124,52 @@ export function CrmToolbarControls({ dictionary = defaultCrmUiDictionary, stages
       <CrmToolbarSearchChip value={state.search} disabled={!filtersReady} dictionary={dictionary} onChange={(search) => { setState((current) => ({ ...current, search })); dispatchShellAction(CRM_UI_EVENTS.setSearch, { search }); }} />
       <CrmToolbarFiltersPill status={state.status} sort={state.sort} disabled={!filtersReady} stages={stages} dictionary={dictionary} onApply={(status, sort) => { setState((current) => ({ ...current, status, sort })); dispatchShellAction(CRM_UI_EVENTS.selectSegment, { status }); dispatchShellAction(CRM_UI_EVENTS.setSort, { sort }); }} />
       <CrmToolbarCreateMenu dictionary={dictionary} />
+    </div>
+  );
+}
+
+export function CrmOrganizationsToolbarControls({ dictionary = defaultCrmUiDictionary }: { dictionary?: CrmUiDictionary }) {
+  const dispatchShellAction = useShellActionDispatch();
+  const filtersReady = useShellActionsReady([CRM_UI_EVENTS.organizationSetSearch, CRM_UI_EVENTS.organizationSetFilters]);
+  const [state, setState] = useState<CrmOrganizationsToolbarState>({ search: "", industry: null, sort: "name", industries: [] });
+  const [open, setOpen] = useState(false);
+  const [draftIndustry, setDraftIndustry] = useState<string | null>(null);
+  const [draftSort, setDraftSort] = useState<CrmOrganizationsToolbarState["sort"]>("name");
+  const activeCount = (state.industry ? 1 : 0) + (state.sort !== "name" ? 1 : 0);
+
+  useEffect(() => {
+    const handleState = (event: Event) => setState((current) => ({ ...current, ...(event as CustomEvent<Partial<CrmOrganizationsToolbarState>>).detail }));
+    window.addEventListener(CRM_UI_EVENTS.organizationState, handleState);
+    return () => window.removeEventListener(CRM_UI_EVENTS.organizationState, handleState);
+  }, []);
+
+  const beginFilters = () => {
+    setDraftIndustry(state.industry);
+    setDraftSort(state.sort);
+    setOpen(true);
+  };
+
+  return (
+    <div className="flex min-w-max flex-wrap items-center gap-2">
+      <ToolbarSearchField value={state.search} onChange={(search) => { setState((current) => ({ ...current, search })); dispatchShellAction(CRM_UI_EVENTS.organizationSetSearch, { search }); }} disabled={!filtersReady} placeholder={dictionary.organizations.searchPlaceholder} />
+      <Popover open={open} onOpenChange={(next) => next ? beginFilters() : setOpen(false)}>
+        <PopoverTrigger asChild>
+          <Button type="button" variant="outline" disabled={!filtersReady}>
+            <Filter data-icon="inline-start" className="text-[color:var(--muted-foreground)]" aria-hidden />
+            {dictionary.toolbar.filters}
+            {activeCount > 0 ? <span className="inline-flex size-5 items-center justify-center rounded-full bg-[color:var(--surface-button-brand)] text-data-sm text-accent-foreground">{activeCount}</span> : null}
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent align="end" collisionPadding={12} className="w-[min(var(--toolbar-popover-width),calc(100vw-2rem))] rounded-[var(--radius-toolbar-popover)] border-[color:var(--hairline)] bg-[color:var(--popover)] p-4 shadow-[var(--shadow-toolbar-popover)]">
+          <div className="mb-3 flex items-center justify-between"><span className="text-body font-extrabold text-[color:var(--foreground)]">{dictionary.toolbar.filters}</span><Button type="button" variant="link" size="link" className="text-meta text-[color:var(--muted-foreground)]" onClick={() => { setDraftIndustry(null); setDraftSort("name"); }}>{dictionary.toolbar.clear}</Button></div>
+          <div className="grid gap-3">
+            <div><span className="mb-2 block text-label text-[color:var(--muted-foreground)]">Indústria</span><div className="flex flex-wrap gap-2">{[{ value: null, label: "Todas" }, ...state.industries.map((industry) => ({ value: industry, label: industry }))].map((option) => <button key={option.value ?? "all"} type="button" className={`inline-flex h-[var(--toolbar-chip-height)] cursor-pointer items-center rounded-full border px-3 text-meta font-semibold ${draftIndustry === option.value ? "border-[color:var(--border-selection)] bg-[color:var(--surface-selection)] text-[color:var(--foreground)]" : "border-[color:var(--hairline)] bg-[color:var(--elevate-1)] text-[color:var(--foreground)]"}`} onClick={() => setDraftIndustry(option.value)}>{option.label}</button>)}</div></div>
+            <div><span className="mb-2 block text-label text-[color:var(--muted-foreground)]">Organizar por</span><div className="flex flex-wrap gap-2">{([['name', 'Nome'], ['industry', 'Indústria'], ['location', 'Localização']] as const).map(([value, label]) => <button key={value} type="button" className={`inline-flex h-[var(--toolbar-chip-height)] cursor-pointer items-center rounded-full border px-3 text-meta font-semibold ${draftSort === value ? "border-[color:var(--border-selection)] bg-[color:var(--surface-selection)] text-[color:var(--foreground)]" : "border-[color:var(--hairline)] bg-[color:var(--elevate-1)] text-[color:var(--foreground)]"}`} onClick={() => setDraftSort(value)}>{label}</button>)}</div></div>
+          </div>
+          <div className="mt-4"><Button type="button" className="w-full" onClick={() => { const filters = { industry: draftIndustry, sort: draftSort }; setState((current) => ({ ...current, ...filters })); dispatchShellAction(CRM_UI_EVENTS.organizationSetFilters, filters); setOpen(false); }}>{dictionary.toolbar.apply}</Button></div>
+        </PopoverContent>
+      </Popover>
+      <CrmToolbarCreateMenu dictionary={dictionary} primary="organization" />
     </div>
   );
 }

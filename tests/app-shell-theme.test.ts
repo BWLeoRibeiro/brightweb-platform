@@ -10,6 +10,18 @@ import {
   resolveTheme,
   subscribeToSystemTheme,
 } from "../packages/app-shell/src/theme/theme-controller.ts";
+import { ThemeScript } from "../packages/app-shell/src/theme/theme-script.tsx";
+
+test("theme script remains server-renderable without a client-only Next.js boundary", () => {
+  const element = ThemeScript({ defaultTheme: "light", nonce: "test-nonce" });
+
+  assert.equal(element.type, "script");
+  assert.equal(element.props.nonce, "test-nonce");
+  assert.equal(element.props.suppressHydrationWarning, true);
+  assert.deepEqual(element.props.dangerouslySetInnerHTML, {
+    __html: getThemeBootstrapScript("light"),
+  });
+});
 
 test("theme modes resolve light, dark, and system consistently", () => {
   assert.equal(resolveTheme("light", "dark"), "light");

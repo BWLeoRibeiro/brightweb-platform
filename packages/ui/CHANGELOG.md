@@ -1,5 +1,111 @@
 # @brightweblabs/ui
 
+## 1.5.3
+
+### Patch Changes
+
+- 7e53c23: Use authentication-specific recipient and closing copy in all generated authentication and security email templates while preserving invitation wording for invitation emails.
+
+## 1.5.2
+
+### Patch Changes
+
+- 9063aaa: Add client invitations tied to organizations, a CRM organization access page, invitation history, safe organization member role/removal operations, and shared branded invitation and authentication email designs. New CRM starters mount the organization detail route and organization member API handlers.
+
+## 1.5.1
+
+### Patch Changes
+
+- Updated dependencies [60232ce]
+  - @brightweblabs/theme@0.8.2
+
+## 1.5.0
+
+### Minor Changes
+
+- cc7d41c: Standardize application surfaces on a single polymorphic Card recipe with explicit visual, density, and motion variants. Migrate dashboard and module cards to the shared foundation, preserve native link behavior for interactive project cards, and make dashboard project-card styling independent of route-level stylesheet loading.
+
+### Patch Changes
+
+- Updated dependencies [cc7d41c]
+  - @brightweblabs/theme@0.8.1
+
+## 1.4.11
+
+### Patch Changes
+
+- 1de7902: Remove the remaining presentational uppercase and expanded letter spacing from shared project references, attention ranks, menu shortcuts, and avatars. Structured values keep their source casing without CSS forcing it.
+
+## 1.4.10
+
+### Patch Changes
+
+- Updated dependencies [ef36f3d]
+  - @brightweblabs/theme@0.8.0
+
+## 1.4.9
+
+### Patch Changes
+
+- db5a6ab: Render phone country calling codes as fixed, non-selectable prefixes so users can only edit the subscriber number, while preserving full E.164 values for controlled and native form submissions.
+
+## 1.4.8
+
+### Patch Changes
+
+- fa591ab: Allow dropdown calendars to navigate up to 25 years beyond the current year by default while preserving consumer-provided date boundaries.
+
+## 1.4.7
+
+### Patch Changes
+
+- 5b75161: Add optional task and project start dates with date-range validation, introduce an accessible BrightWeb selector with a fully styled popup across all package UI dropdowns, and organize task, CRM contact, CRM organization, and project creation sheets into consistent semantic sections.
+
+## 1.4.6
+
+### Patch Changes
+
+- 29ae3b0: Preserve semantic button foregrounds when canonical typography classes are merged, pair brand button fills with a dedicated brand foreground token, and migrate the project danger zone from hardcoded Rose colors to shared semantic danger tokens.
+- Updated dependencies [29ae3b0]
+  - @brightweblabs/theme@0.7.4
+
+## 1.4.5
+
+### Patch Changes
+
+- 05e0902: Standardize platform actions on the flat Projects button treatment and migrate shell and module toolbars to the shared Button primitive.
+- 05e0902: Add semantic KPI and structured-data typography roles, then align headings,
+  labels, metadata, controls, and numeric values with their intended shared roles.
+- Updated dependencies [05e0902]
+  - @brightweblabs/theme@0.7.3
+
+## 1.4.4
+
+### Patch Changes
+
+- Updated dependencies [360f518]
+  - @brightweblabs/theme@0.7.2
+
+## 1.4.3
+
+### Patch Changes
+
+- 9547657: Show the pointer cursor consistently for enabled shared buttons and module toolbar controls.
+
+## 1.4.2
+
+### Patch Changes
+
+- Keep the branded button foreground token from being removed when consumers add toolbar typography utilities.
+
+## 1.4.1
+
+### Patch Changes
+
+- f12ce99: Pair brand button surfaces with a dedicated foreground token so client accent palettes retain readable action labels.
+- Updated dependencies [f12ce99]
+  - @brightweblabs/theme@0.7.1
+
 ## 1.4.0
 
 ### Minor Changes

@@ -3,6 +3,7 @@ import {
   publicError,
   sanitizePublicError,
 } from "@brightweblabs/infra/robustness";
+import { appendServerTiming, elapsedMs, requestStartedAt } from "@brightweblabs/infra/request-observability";
 import {
   isMilestoneStatus,
   isProjectHealth,
@@ -36,6 +37,7 @@ import {
   deleteProjectTask,
   getProjectDashboard,
   listProjectActivity,
+  queryProjectActivity,
   listProjectAssignableProfiles,
   syncProjectMembers,
   updateProject,
@@ -57,12 +59,13 @@ import type {
 } from "./types";
 
 export function json(body: unknown, init?: ResponseInit) {
-  return new Response(JSON.stringify(body), {
+  const payload = JSON.stringify(body);
+  const headers = new Headers(init?.headers);
+  headers.set("content-type", "application/json; charset=utf-8");
+  headers.set("content-length", String(new TextEncoder().encode(payload).byteLength));
+  return new Response(payload, {
     ...init,
-    headers: {
-      "content-type": "application/json; charset=utf-8",
-      ...(init?.headers ?? {}),
-    },
+    headers,
   });
 }
 
@@ -91,6 +94,7 @@ export type ProjectsHttpDependencies = {
   getTasksDashboardData: typeof getTasksDashboardData;
   getDashboard: typeof getProjectDashboard;
   listActivity: typeof listProjectActivity;
+  queryActivity: typeof queryProjectActivity;
   listAssignableProfiles: typeof listProjectAssignableProfiles;
   createOrganization: typeof createProjectOrganization;
   createProject: typeof createProject;
@@ -124,7 +128,7 @@ export function parseProjectsListRequest(request: Request | URL | string): ListP
     page: parsePositiveInt(url.searchParams.get("page"), 1, 10_000),
     pageSize: parsePositiveInt(url.searchParams.get("pageSize"), 20, 100),
     search: url.searchParams.get("search")?.trim() ?? "",
-    status: isProjectStatus(status) ? status : null,
+    status: status === "all" ? "all" : isProjectStatus(status) ? status : undefined,
     health: isProjectHealth(health) ? health : null,
     organizationId: url.searchParams.get("organizationId")?.trim() || null,
     ownerProfileId: url.searchParams.get("ownerProfileId")?.trim() || null,
@@ -211,15 +215,21 @@ function withUserAccess(
   action: ProjectsAction,
 ) {
   return async (request: Request, context?: ProjectsRequestContext) => {
+    const startedAt = requestStartedAt();
     const access = await dependencies.getAccess();
     if (!access.ok) {
-      return json(publicError("ACCESS_DENIED", access.error), { status: access.status });
+      return appendServerTiming(json(publicError("ACCESS_DENIED", access.error), { status: access.status }), [
+        { name: "app", durationMs: elapsedMs(startedAt) },
+      ]);
     }
 
     try {
-      return await action(access, request, context);
+      const response = await action(access, request, context);
+      return appendServerTiming(response, [{ name: "app", durationMs: elapsedMs(startedAt) }]);
     } catch (error) {
-      return projectsErrorResponse(error, errorContext);
+      return appendServerTiming(projectsErrorResponse(error, errorContext), [
+        { name: "app", durationMs: elapsedMs(startedAt) },
+      ]);
     }
   };
 }
@@ -329,6 +339,7 @@ const projectFields = [
   "code",
   "status",
   "ownerProfileId",
+  "startDate",
   "targetDate",
   "cancellationReason",
   "summary",
@@ -338,6 +349,7 @@ const projectValidators: Record<(typeof projectFields)[number], FieldValidator> 
   code: nullableString,
   status: isProjectStatus,
   ownerProfileId: nullableString,
+  startDate: nullableString,
   targetDate: nullableString,
   cancellationReason: nullableString,
   summary: nullableString,
@@ -378,6 +390,7 @@ const taskFields = [
   "priority",
   "assigneeProfileId",
   "reporterProfileId",
+  "startDate",
   "dueDate",
   "position",
   "blockedReason",
@@ -390,6 +403,7 @@ const taskValidators: Record<(typeof taskFields)[number], FieldValidator> = {
   priority: isTaskPriority,
   assigneeProfileId: nullableString,
   reporterProfileId: nullableString,
+  startDate: nullableString,
   dueDate: nullableString,
   position: isFiniteNumber,
   blockedReason: nullableString,
@@ -414,11 +428,16 @@ const linkValidators: Record<(typeof linkFields)[number], FieldValidator> = {
 
 export function createProjectsGetHandler(dependencies: ProjectsHttpDependencies) {
   return withUserAccess(dependencies, "projects.list", async (access, request) => {
+    const timings = new Map<string, number>();
     const result = await dependencies.listProjects(
       access.supabase as never,
       parseProjectsListRequest(request),
+      { onTiming: (metric) => timings.set(metric.phase, metric.durationMs) },
     );
-    return json(result);
+    return appendServerTiming(json(result), [
+      { name: "db", durationMs: timings.get("query") ?? 0 },
+      { name: "enrich", durationMs: timings.get("enrichment") ?? 0 },
+    ]);
   });
 }
 
@@ -435,11 +454,17 @@ export function createProjectsDashboardOverviewGetHandler(dependencies: Projects
 }
 
 export function createTasksDashboardGetHandler(dependencies: ProjectsHttpDependencies) {
-  return withUserAccessWithoutContext(dependencies, "projects.tasks-dashboard", async (access) => {
+  return withUserAccessWithoutContext(dependencies, "projects.tasks-dashboard", async (access, request) => {
+    const url = new URL(request.url);
     return json({
       data: await dependencies.getTasksDashboardData(
         access.supabase as never,
         access.profileId,
+        new Date(),
+        {
+          page: parsePositiveInt(url.searchParams.get("page"), 1, 10_000),
+          pageSize: parsePositiveInt(url.searchParams.get("pageSize"), 50, 100),
+        },
       ),
     });
   });
@@ -453,8 +478,15 @@ export function createProjectsDashboardGetHandler(dependencies: ProjectsHttpDepe
 }
 
 export function createProjectsActivityGetHandler(dependencies: ProjectsHttpDependencies) {
-  return withUserAccess(dependencies, "projects.activity", async (access, _request, context) => {
+  return withUserAccess(dependencies, "projects.activity", async (access, request, context) => {
     const { id } = await getRouteParams(context);
+    const url = new URL(request.url);
+    if (url.searchParams.has("page") || url.searchParams.has("pageSize")) {
+      return json(await dependencies.queryActivity(access.supabase as never, id, {
+        page: parsePositiveInt(url.searchParams.get("page"), 1, 10_000),
+        pageSize: parsePositiveInt(url.searchParams.get("pageSize"), 50, 100),
+      }));
+    }
     return json(await dependencies.listActivity(access.supabase as never, id));
   });
 }
@@ -544,7 +576,7 @@ export function createProjectsDeleteHandler(dependencies: ProjectsHttpDependenci
       id,
       access.profileId ?? null,
     );
-    return new Response(null, { status: 204 });
+    return json({ data: { deletedId: id } });
   });
 }
 

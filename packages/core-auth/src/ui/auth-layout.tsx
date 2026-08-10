@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { Card } from "@brightweblabs/ui";
 import { useAuthUi } from "./context";
 import type { AuthLayoutVariant } from "./types";
 // Owns the .auth-layout* rules used below. Until this import existed, tokens.css
@@ -69,10 +70,12 @@ export function AuthCard({
   className?: string;
 }) {
   return (
-    <div className={`auth-vessel relative w-full max-w-[440px] overflow-hidden ${className}`}>
-      <div className="auth-vessel__wash" aria-hidden="true" />
-      <div className="auth-vessel__content">{children}</div>
-    </div>
+    <Card asChild variant="elevated">
+      <div className={`auth-vessel relative w-full max-w-[440px] overflow-hidden ${className}`}>
+        <div className="auth-vessel__wash" aria-hidden="true" />
+        <div className="auth-vessel__content">{children}</div>
+      </div>
+    </Card>
   );
 }
 

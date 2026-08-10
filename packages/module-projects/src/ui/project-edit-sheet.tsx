@@ -1,11 +1,13 @@
 "use client";
 
+import { StyledSelect } from "@brightweblabs/ui";
+
 import { useProjectsUiClient, useProjectsUiDictionary } from "./context";
 import { useProjectsNavigation } from "./context";
 import { useEffect, useMemo, useState, type MouseEvent } from "react";
 import { format } from "date-fns";
 import { useRouter } from "next/navigation";
-import { CalendarIcon, FolderKanban, Loader2, Save } from "lucide-react";
+import { CalendarIcon, FolderKanban, Save } from "lucide-react";
 import { toast } from "sonner";
 import {
   sheetBodyClassName,
@@ -22,7 +24,8 @@ import {
 } from "./shared/sheet-section";
 import { cn } from "./utils";
 import { Button } from "@brightweblabs/ui";
-import { Calendar } from "@brightweblabs/ui";
+import { ProjectCalendar as Calendar } from "./shared/project-calendar";
+import { parseProjectBoardApiError } from "./project-board-response-parser";
 import { Field, FieldContent, FieldGroup, FieldLabel } from "@brightweblabs/ui";
 import {
   AlertDialog,
@@ -44,6 +47,7 @@ type ProjectEditInitial = {
   name: string;
   code: string | null;
   status: string;
+  startDate: string | null;
   targetDate: string | null;
   cancellationReason: string | null;
   summary: string | null;
@@ -51,6 +55,7 @@ type ProjectEditInitial = {
 
 type ProjectEditSheetProps = {
   projectId: string;
+  projectRole?: ProjectRole;
   initial?: ProjectEditInitial;
   initialOpen?: boolean;
 };
@@ -59,6 +64,7 @@ type FormState = {
   name: string;
   code: string;
   status: string;
+  startDate: string;
   targetDate: string;
   cancellationReason: string;
   summary: string;
@@ -69,14 +75,15 @@ function toFormState(initial: ProjectEditInitial): FormState {
     name: initial.name,
     code: initial.code ?? "",
     status: initial.status,
+    startDate: initial.startDate ?? "",
     targetDate: initial.targetDate ?? "",
     cancellationReason: initial.cancellationReason ?? "",
     summary: initial.summary ?? "",
   };
 }
 
-const allEditableFields = ["name", "code", "status", "targetDate", "cancellationReason", "summary"] as const;
-const contributorEditableFields = ["summary", "targetDate"] as const;
+const allEditableFields = ["name", "code", "status", "startDate", "targetDate", "cancellationReason", "summary"] as const;
+const contributorEditableFields = ["summary", "startDate", "targetDate"] as const;
 
 function toIsoDate(value?: Date): string {
   if (!value) return "";
@@ -93,7 +100,7 @@ function parseIsoDate(value: string): Date | undefined {
 }
 
 export function ProjectEditSheet({
-  projectId, initial: initialProp, initialOpen = false }: ProjectEditSheetProps) {
+  projectId, projectRole = "observer", initial: initialProp, initialOpen = false }: ProjectEditSheetProps) {
   const client = useProjectsUiClient();
   const dictionary = useProjectsUiDictionary();
   const navigation = useProjectsNavigation();
@@ -107,6 +114,7 @@ export function ProjectEditSheet({
         name: project.name,
         code: project.code,
         status: project.status,
+        startDate: project.startDate,
         targetDate: project.targetDate,
         cancellationReason: project.cancellationReason,
         summary: project.summary,
@@ -117,6 +125,7 @@ export function ProjectEditSheet({
       name: initialProp?.name ?? "",
       code: initialProp?.code ?? null,
       status: initialProp?.status ?? "planned",
+      startDate: initialProp?.startDate ?? null,
       targetDate: initialProp?.targetDate ?? null,
       cancellationReason: initialProp?.cancellationReason ?? null,
       summary: initialProp?.summary ?? null,
@@ -126,18 +135,19 @@ export function ProjectEditSheet({
     initialProp?.code,
     initialProp?.name,
     initialProp?.status,
+    initialProp?.startDate,
     initialProp?.summary,
     initialProp?.targetDate,
     project?.cancellationReason,
     project?.code,
     project?.name,
     project?.status,
+    project?.startDate,
     project?.summary,
     project?.targetDate,
   ]);
   const [open, setOpen] = useState(initialOpen);
-  const [role, setRole] = useState<ProjectRole | null>(null);
-  const [isLoadingRole, setIsLoadingRole] = useState(false);
+  const role = projectRole;
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isDeleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -153,43 +163,6 @@ export function ProjectEditSheet({
     return () => window.removeEventListener(PROJECTS_EVENTS.openEditProject, handleOpen);
   }, []);
 
-  useEffect(() => {
-    if (!open) return;
-    let isMounted = true;
-    const controller = new AbortController();
-
-    const run = async () => {
-      setIsLoadingRole(true);
-      try {
-        const response = await client.requestRaw(`/api/projects/${projectId}/access`, {
-          cache: "no-store",
-          signal: controller.signal,
-        });
-        const payload = await response.json();
-        if (!response.ok) throw new Error(typeof payload?.error === "string" ? payload.error : dictionary.projectEdit.permissionError);
-        if (!isMounted) return;
-        const nextRole = payload?.data?.projectRole;
-        if (nextRole === "admin" || nextRole === "owner" || nextRole === "contributor" || nextRole === "observer") {
-          setRole(nextRole);
-        } else {
-          setRole("observer");
-        }
-      } catch (error) {
-        if (!isMounted) return;
-        setRole("observer");
-        toast.error(error instanceof Error ? error.message : dictionary.projectEdit.validatePermissionError);
-      } finally {
-        if (isMounted) setIsLoadingRole(false);
-      }
-    };
-
-    void run();
-    return () => {
-      isMounted = false;
-      controller.abort();
-    };
-  }, [open, projectId]);
-
   const editableFields = useMemo(() => {
     if (role === "admin" || role === "owner") return allEditableFields;
     if (role === "contributor") return contributorEditableFields;
@@ -198,14 +171,16 @@ export function ProjectEditSheet({
 
   const canEditAnyField = editableFields.length > 0;
   const editing = canEditAnyField;
-  const canDeleteProject = role === "admin";
+  const canDeleteProject = role === "admin" || role === "owner";
   const controlClass = (field: (typeof allEditableFields)[number]) =>
     isFieldEditable(field) ? sheetEditControlClassName : sheetViewControlClassName;
   const textareaClass = (field: (typeof allEditableFields)[number]) =>
     isFieldEditable(field)
       ? "w-full rounded-xl border border-[color:var(--project-ui-color-01)] bg-[color:var(--card)] px-3 py-2 text-body text-foreground placeholder:text-foreground/35 focus:border-[color:var(--accent)] focus:outline-none focus:ring-[3px] focus:ring-[color:var(--project-ui-color-10)] disabled:cursor-not-allowed disabled:opacity-55"
       : "w-full resize-none bg-transparent p-0 text-body text-foreground placeholder:text-foreground/35 disabled:opacity-100";
+  const startDateValue = useMemo(() => parseIsoDate(form.startDate), [form.startDate]);
   const targetDateValue = useMemo(() => parseIsoDate(form.targetDate), [form.targetDate]);
+  const isDateRangeValid = !form.startDate || !form.targetDate || form.targetDate >= form.startDate;
 
   const setField = (key: keyof FormState, value: string) => {
     setForm((current) => ({ ...current, [key]: value }));
@@ -219,6 +194,10 @@ export function ProjectEditSheet({
       toast.error("Indica o motivo do cancelamento.");
       return;
     }
+    if (!isDateRangeValid) {
+      toast.error(dictionary.projectEdit.invalidDateRange);
+      return;
+    }
 
     setIsSaving(true);
     try {
@@ -226,6 +205,7 @@ export function ProjectEditSheet({
       if (isFieldEditable("name")) payload.name = form.name;
       if (isFieldEditable("code")) payload.code = form.code;
       if (isFieldEditable("status")) payload.status = form.status;
+      if (isFieldEditable("startDate")) payload.startDate = form.startDate;
       if (isFieldEditable("targetDate")) payload.targetDate = form.targetDate;
       if (isFieldEditable("cancellationReason")) payload.cancellationReason = form.cancellationReason;
       if (isFieldEditable("summary")) payload.summary = form.summary;
@@ -235,9 +215,9 @@ export function ProjectEditSheet({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-      const result = await response.json();
+      const result = await response.json().catch(() => null);
       if (!response.ok) {
-        const message = typeof result?.error === "string" ? result.error : dictionary.projectEdit.saveError;
+        const message = parseProjectBoardApiError(result, dictionary.projectEdit.saveError);
         throw new Error(message);
       }
       const didApplyDashboard = detailActions?.applyDashboardPayload(result) ?? false;
@@ -261,7 +241,7 @@ export function ProjectEditSheet({
       const response = await client.requestRaw(`/api/projects/${projectId}`, { method: "DELETE" });
       const result = await response.json();
       if (!response.ok) {
-        const message = typeof result?.error === "string" ? result.error : dictionary.projectEdit.deleteError;
+        const message = parseProjectBoardApiError(result, dictionary.projectEdit.deleteError);
         throw new Error(message);
       }
 
@@ -283,16 +263,11 @@ export function ProjectEditSheet({
         <AppSheetHeader
           icon={FolderKanban}
           editing={editing}
-          eyebrow={isLoadingRole ? undefined : editing ? dictionary.board.editEyebrow : dictionary.board.viewEyebrow}
+          eyebrow={editing ? dictionary.board.editEyebrow : dictionary.board.viewEyebrow}
           title={<>{dictionary.forms.editProject}</>}
           description={
             <span className="flex items-center gap-1.5">
-              {isLoadingRole ? (
-                <>
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  {dictionary.projectEdit.validating}
-                </>
-              ) : role === "observer" ? (
+              {role === "observer" ? (
                 dictionary.projectEdit.readOnly
               ) : (
                 dictionary.projectEdit.description
@@ -382,7 +357,7 @@ export function ProjectEditSheet({
                   {dictionary.forms.status}
                 </FieldLabel>
                 <FieldContent>
-                  <select
+                  <StyledSelect
                     id="project-edit-status"
                     className={cn(controlClass("status"), "text-foreground outline-none")}
                     value={form.status}
@@ -398,58 +373,67 @@ export function ProjectEditSheet({
                     <option value="blocked">{dictionary.badge.status.blocked}</option>
                     <option value="completed">{dictionary.badge.status.completed}</option>
                     <option value="canceled">{dictionary.badge.status.canceled}</option>
-                  </select>
+                  </StyledSelect>
                 </FieldContent>
               </Field>
 
-              <Field className="gap-1.5 px-4 py-2">
-                <FieldLabel className={sheetFieldLabelClassName} htmlFor="project-edit-target-date">
-                  {dictionary.projectEdit.targetDate}
-                </FieldLabel>
-                <FieldContent>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        id="project-edit-target-date"
-                        type="button"
-                        variant="ghost"
-                        disabled={!isFieldEditable("targetDate")}
-                        className={cn(
-                          "h-9 w-full justify-start rounded-lg px-2.5 text-body disabled:cursor-not-allowed disabled:opacity-55",
-                          isFieldEditable("targetDate")
-                            ? "border border-[color:var(--project-ui-color-01)] bg-[color:var(--card)] hover:bg-[color:var(--card)]"
-                            : "border-0 bg-transparent hover:bg-transparent",
-                          targetDateValue ? "text-foreground" : "text-foreground/45",
-                        )}
-                      >
-                        <CalendarIcon className="mr-1.5 h-3.5 w-3.5" />
-                        {targetDateValue ? format(targetDateValue, "dd/MM/yyyy") : dictionary.create.selectDate}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        captionLayout="dropdown"
-                        className="rounded-lg border"
-                        selected={targetDateValue}
-                        onSelect={(date) => setField("targetDate", toIsoDate(date))}
-                        disabled={!isFieldEditable("targetDate")}
-                        initialFocus
-                      />
-                    </PopoverContent>
-                  </Popover>
-                </FieldContent>
-              </Field>
             </FieldGroup>
           </SheetSection>
 
+          <SheetSection title={dictionary.board.calendarSection} editing={editing}>
+            <FieldGroup className={cn("grid gap-0 px-0 py-1 sm:grid-cols-2", !editing && "divide-y divide-black/6 dark:divide-white/8 sm:divide-y-0")}>
+              {([
+                { field: "startDate", id: "project-edit-start-date", label: dictionary.projectEdit.startDate, value: startDateValue },
+                { field: "targetDate", id: "project-edit-target-date", label: dictionary.projectEdit.targetDate, value: targetDateValue },
+              ] as const).map((dateField) => (
+                <Field key={dateField.field} className="gap-1.5 px-4 py-2">
+                  <FieldLabel className={sheetFieldLabelClassName} htmlFor={dateField.id}>{dateField.label}</FieldLabel>
+                  <FieldContent>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          id={dateField.id}
+                          type="button"
+                          variant="ghost"
+                          disabled={!isFieldEditable(dateField.field)}
+                          className={cn(
+                            "h-9 w-full justify-start rounded-lg px-2.5 text-body disabled:cursor-not-allowed disabled:opacity-55",
+                            isFieldEditable(dateField.field)
+                              ? "border border-[color:var(--project-ui-color-01)] bg-[color:var(--card)] hover:bg-[color:var(--card)]"
+                              : "border-0 bg-transparent hover:bg-transparent",
+                            dateField.value ? "text-foreground" : "text-foreground/45",
+                          )}
+                        >
+                          <CalendarIcon className="mr-1.5 h-3.5 w-3.5" />
+                          {dateField.value ? format(dateField.value, "dd/MM/yyyy") : dictionary.create.selectDate}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          captionLayout="dropdown"
+                          className="rounded-lg border"
+                          selected={dateField.value}
+                          onSelect={(date) => setField(dateField.field, toIsoDate(date))}
+                          disabled={!isFieldEditable(dateField.field)}
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </FieldContent>
+                </Field>
+              ))}
+            </FieldGroup>
+            {!isDateRangeValid ? <p role="alert" className="px-4 pb-3 text-meta text-semantic-danger-strong">{dictionary.projectEdit.invalidDateRange}</p> : null}
+          </SheetSection>
+
           {canDeleteProject ? (
-            <div className="overflow-hidden rounded-2xl border border-rose-300/60 bg-rose-50/45 dark:border-rose-500/30 dark:bg-rose-500/10">
-              <div className="bg-rose-500 px-4 py-2.5">
-                <p className="text-label font-semibold uppercase tracking-widest text-white/90">{dictionary.projectEdit.dangerZone}</p>
+            <div className="overflow-hidden rounded-2xl border border-semantic-danger/30 bg-[color:var(--surface-danger-subtle)]">
+              <div className="bg-semantic-danger px-4 py-2.5">
+                <p className="text-label font-semibold text-on-fill-danger">{dictionary.projectEdit.dangerZone}</p>
               </div>
               <div className="space-y-3 px-4 py-3">
-                <p className="text-meta text-rose-700/90 dark:text-rose-200/90">
+                <p className="text-meta text-semantic-danger-strong">
                   {dictionary.projectEdit.dangerDescription}
                 </p>
                 <Button
@@ -469,7 +453,7 @@ export function ProjectEditSheet({
         <SheetFooter className={`${sheetFooterClassName} ${editing ? "flex-row" : ""} gap-2`}>
           {editing ? (
             <>
-              <Button type="button" className="flex-1" onClick={handleSave} disabled={!canEditAnyField || isSaving || isDeleting}>
+              <Button type="button" className="flex-1" onClick={handleSave} disabled={!canEditAnyField || !isDateRangeValid || isSaving || isDeleting}>
                 <Save className="mr-2 h-4 w-4" />
                 {isSaving ? dictionary.actions.saving : dictionary.actions.save}
               </Button>

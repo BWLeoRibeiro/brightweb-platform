@@ -60,9 +60,14 @@ export {
 export {
   buildProjectsDashboardData,
   buildTasksDashboardData,
+  getDashboardProjectAttentionReason,
+  getDashboardTaskAttentionState,
   getProjectsDashboardData,
   getTasksDashboardData,
+  rankDashboardAttentionTasks,
+  rankDashboardAttentionProjects,
   type ProjectsDashboardSnapshot,
+  type TasksDashboardOptions,
   type TasksDashboardSnapshot,
 } from "./dashboard";
 export {
@@ -78,8 +83,10 @@ export {
   getProjectPortfolioStats,
   getClientProjectHealth,
   getProjectDashboard,
+  getProjectAccess,
   isProjectsSchemaMissingError,
   listProjectActivity,
+  queryProjectActivity,
   listProjects,
   listOrgAdminProjectsByProfile,
   listProjectAssignableProfiles,
@@ -92,6 +99,7 @@ export {
   updateProjectLink,
   updateProjectMilestone,
   updateProjectTask,
+  type ProjectAccessRole,
 } from "./server";
 export {
   handleProjectsActivityGetRequest,
@@ -124,6 +132,7 @@ export type {
   CreateProjectOrganizationInput,
   CreateProjectTaskInput,
   ProjectActivityItem,
+  ProjectActivityPage,
   ProjectAssignableProfile,
   ProjectDashboardData,
   ProjectLink,
@@ -168,7 +177,7 @@ export async function getProjectsPortfolioPageData(): Promise<ProjectsPortfolioP
   try {
     [portfolioStats, result] = await Promise.all([
       getProjectPortfolioStats(supabase),
-      listProjects(supabase, { page: 1, pageSize: 9, dueWindow: "all" }),
+      listProjects(supabase, { page: 1, pageSize: 9, dueWindow: "all", status: "all" }),
     ]);
   } catch (error) {
     if (isProjectsSchemaMissingError(error)) {

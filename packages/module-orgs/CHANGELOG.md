@@ -1,5 +1,237 @@
 # @brightweblabs/module-orgs
 
+## 0.6.1
+
+### Patch Changes
+
+- Updated dependencies [7e53c23]
+  - @brightweblabs/core-auth@0.10.11
+  - @brightweblabs/ui@1.5.3
+  - @brightweblabs/app-shell@0.15.9
+
+## 0.6.0
+
+### Minor Changes
+
+- 9063aaa: Add client invitations tied to organizations, a CRM organization access page, invitation history, safe organization member role/removal operations, and shared branded invitation and authentication email designs. New CRM starters mount the organization detail route and organization member API handlers.
+
+### Patch Changes
+
+- Updated dependencies [9063aaa]
+  - @brightweblabs/core-auth@0.10.10
+  - @brightweblabs/ui@1.5.2
+  - @brightweblabs/app-shell@0.15.8
+
+## 0.5.7
+
+### Patch Changes
+
+- Updated dependencies [973f7e1]
+  - @brightweblabs/app-shell@0.15.7
+
+## 0.5.6
+
+### Patch Changes
+
+- Updated dependencies [612fe63]
+  - @brightweblabs/app-shell@0.15.6
+
+## 0.5.5
+
+### Patch Changes
+
+- Updated dependencies [60232ce]
+  - @brightweblabs/app-shell@0.15.5
+  - @brightweblabs/ui@1.5.1
+  - @brightweblabs/core-auth@0.10.9
+
+## 0.5.4
+
+### Patch Changes
+
+- Updated dependencies [d6795af]
+  - @brightweblabs/app-shell@0.15.4
+
+## 0.5.3
+
+### Patch Changes
+
+- Updated dependencies [95a44ed]
+  - @brightweblabs/app-shell@0.15.3
+
+## 0.5.2
+
+### Patch Changes
+
+- Updated dependencies [fb3bb21]
+  - @brightweblabs/app-shell@0.15.2
+
+## 0.5.1
+
+### Patch Changes
+
+- Updated dependencies [ce90992]
+  - @brightweblabs/app-shell@0.15.1
+
+## 0.5.0
+
+### Minor Changes
+
+- 94e10d3: Use one shared organization-creation sheet in CRM and Projects, including optional member invitations. Contact and project drafts now resume with the newly created organization selected, and both use the same compact, accessible plus button.
+
+### Patch Changes
+
+- Updated dependencies [94e10d3]
+- Updated dependencies [94e10d3]
+- Updated dependencies [94e10d3]
+  - @brightweblabs/app-shell@0.15.0
+
+## 0.4.12
+
+### Patch Changes
+
+- Updated dependencies [cc7d41c]
+  - @brightweblabs/app-shell@0.14.4
+  - @brightweblabs/core-auth@0.10.8
+
+## 0.4.11
+
+### Patch Changes
+
+- @brightweblabs/app-shell@0.14.3
+- @brightweblabs/core-auth@0.10.7
+
+## 0.4.10
+
+### Patch Changes
+
+- Updated dependencies [ac5871e]
+- Updated dependencies [ef36f3d]
+  - @brightweblabs/app-shell@0.14.2
+  - @brightweblabs/core-auth@0.10.6
+
+## 0.4.9
+
+### Patch Changes
+
+- Updated dependencies [9fc9ee5]
+  - @brightweblabs/app-shell@0.14.1
+  - @brightweblabs/core-auth@0.10.5
+
+## 0.4.8
+
+### Patch Changes
+
+- Updated dependencies [b083ca3]
+  - @brightweblabs/app-shell@0.14.0
+
+## 0.4.7
+
+### Patch Changes
+
+- Updated dependencies [b065163]
+  - @brightweblabs/app-shell@0.13.0
+  - @brightweblabs/core-auth@0.10.4
+
+## 0.4.6
+
+### Patch Changes
+
+- Updated dependencies [69eb6d5]
+  - @brightweblabs/app-shell@0.12.0
+
+## 0.4.5
+
+### Patch Changes
+
+- Updated dependencies [da843d7]
+  - @brightweblabs/app-shell@0.11.5
+
+## 0.4.4
+
+### Patch Changes
+
+- Updated dependencies [4ba15c1]
+  - @brightweblabs/app-shell@0.11.4
+
+## 0.4.3
+
+### Patch Changes
+
+- Updated dependencies [5b75161]
+- Updated dependencies [5b75161]
+  - @brightweblabs/app-shell@0.11.3
+  - @brightweblabs/core-auth@0.10.3
+
+## 0.4.2
+
+### Patch Changes
+
+- @brightweblabs/app-shell@0.11.2
+- @brightweblabs/core-auth@0.10.2
+
+## 0.4.1
+
+### Patch Changes
+
+- Updated dependencies [05e0902]
+- Updated dependencies [05e0902]
+  - @brightweblabs/app-shell@0.11.1
+  - @brightweblabs/core-auth@0.10.1
+
+## 0.4.0
+
+### Minor Changes
+
+- 9518642: Add lifecycle-safe deletion UI and APIs for projects, organizations, CRM records, marketing resources, recipients, invitations, and per-user notification dismissal. Generated applications now include the required routes, permission wiring, and database migration.
+
+### Patch Changes
+
+- Updated dependencies [9518642]
+  - @brightweblabs/app-shell@0.11.0
+  - @brightweblabs/core-auth@0.10.0
+
+## 0.3.20
+
+### Patch Changes
+
+- Updated dependencies [360f518]
+  - @brightweblabs/app-shell@0.10.3
+  - @brightweblabs/core-auth@0.9.5
+
+## 0.3.19
+
+### Patch Changes
+
+- Updated dependencies [9547657]
+  - @brightweblabs/app-shell@0.10.2
+  - @brightweblabs/core-auth@0.9.4
+
+## 0.3.18
+
+### Patch Changes
+
+- @brightweblabs/app-shell@0.10.1
+- @brightweblabs/core-auth@0.9.3
+
+## 0.3.17
+
+### Patch Changes
+
+- Updated dependencies
+  - @brightweblabs/infra@0.7.0
+  - @brightweblabs/app-shell@0.10.0
+  - @brightweblabs/core-auth@0.9.2
+
+## 0.3.16
+
+### Patch Changes
+
+- Updated dependencies
+  - @brightweblabs/infra@0.6.0
+  - @brightweblabs/app-shell@0.9.3
+  - @brightweblabs/core-auth@0.9.1
+
 ## 0.3.15
 
 ### Patch Changes

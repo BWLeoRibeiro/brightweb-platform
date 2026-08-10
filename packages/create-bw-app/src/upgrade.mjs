@@ -33,11 +33,18 @@ export async function upgradeBrightwebApp(moduleKey, argvOptions = {}, runtimeOp
   plan.starterFilesMissing = Array.from(new Set([...plan.starterFilesMissing, ...missing]));
 
   const catalog = await loadModuleCatalog({ targetDir, workspaceRoot });
+  for (const entry of Object.values(catalog)) {
+    const targetVersion = plan.targetVersions?.[entry.packageName];
+    if (targetVersion) entry.version = cleanVersion(targetVersion) || entry.version;
+  }
   for (const update of plan.packageUpdates) {
     const key = Object.keys(catalog).find((candidate) => catalog[candidate].packageName === update.packageName);
     if (key) catalog[key].version = cleanVersion(update.to) || catalog[key].version;
   }
-  const moduleKeys = moduleKey ? [moduleKey] : Object.keys(appManifest.modules);
+  const installedMigrationKeys = Object.keys(appManifest.migrationCursor ?? {}).filter((key) => catalog[key]);
+  const moduleKeys = moduleKey
+    ? [moduleKey]
+    : Array.from(new Set([...installedMigrationKeys, ...Object.keys(appManifest.modules)]));
   const uncursored = [];
   for (const key of moduleKeys) {
     if (appManifest.migrationCursor?.[key] == null && (await getModuleMigrations(key, catalog[key])).length > 0) uncursored.push(key);
@@ -56,15 +63,27 @@ export async function upgradeBrightwebApp(moduleKey, argvOptions = {}, runtimeOp
   }
   await applyMigrationWrites(migrationPlan.writes);
   appManifest.migrationCursor = migrationPlan.nextCursor;
-  for (const update of plan.packageUpdates) {
-    const key = Object.keys(catalog).find((candidate) => catalog[candidate].packageName === update.packageName);
-    if (key && appManifest.modules[key]) appManifest.modules[key].version = cleanVersion(update.to) || appManifest.modules[key].version;
+  for (const [key, entry] of Object.entries(appManifest.modules)) {
+    const packageName = catalog[key]?.packageName;
+    if (catalog[key]?.packageRoot || plan.targetVersions?.[packageName]) entry.version = catalog[key].version;
   }
-  for (const relativePath of plan.starterFilesToRefresh || []) {
+  for (const write of plan.fileWrites) {
+    const relativePath = write.relativePath;
+    const existingRecord = appManifest.scaffoldFiles[relativePath];
+    if (!existingRecord && write.type !== "starter") continue;
     const targetPath = resolveSafeRelativePath(targetDir, relativePath, "Manifest scaffold file path");
-    if (!protectedPaths.has(relativePath) && appManifest.scaffoldFiles[relativePath] && await pathExists(targetPath)) {
-      appManifest.scaffoldFiles[relativePath].hash = await hashFile(targetPath);
-      appManifest.scaffoldFiles[relativePath].status = "current";
+    if (write.type === "starter" && protectedPaths.has(relativePath)) continue;
+    if (!(await pathExists(targetPath))) continue;
+    const hash = await hashFile(targetPath);
+    if (existingRecord) {
+      existingRecord.hash = hash;
+      existingRecord.status = "current";
+    } else {
+      appManifest.scaffoldFiles[relativePath] = {
+        module: write.moduleKey || "platform-base",
+        hash,
+        status: "current",
+      };
     }
   }
   await writeAppManifest(targetDir, appManifest);

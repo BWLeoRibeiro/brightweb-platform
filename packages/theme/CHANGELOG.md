@@ -1,5 +1,48 @@
 # @brightweblabs/theme
 
+## 0.8.2
+
+### Patch Changes
+
+- 60232ce: Restructure the Contactos dashboard into a responsive recent-contact grid and sticky Resumo card, with aligned monthly labels, accessible point tooltips, and preserved empty-state behavior.
+
+## 0.8.1
+
+### Patch Changes
+
+- cc7d41c: Standardize application surfaces on a single polymorphic Card recipe with explicit visual, density, and motion variants. Migrate dashboard and module cards to the shared foundation, preserve native link behavior for interactive project cards, and make dashboard project-card styling independent of route-level stylesheet loading.
+
+## 0.8.0
+
+### Minor Changes
+
+- ef36f3d: Replace the oversized, uppercase, widely tracked label treatment with compact sentence-case typography across shared portal surfaces. Keep monospace and uppercase styling only for structured data such as project codes and initials.
+
+## 0.7.4
+
+### Patch Changes
+
+- 29ae3b0: Preserve semantic button foregrounds when canonical typography classes are merged, pair brand button fills with a dedicated brand foreground token, and migrate the project danger zone from hardcoded Rose colors to shared semantic danger tokens.
+
+## 0.7.3
+
+### Patch Changes
+
+- 05e0902: Add semantic KPI and structured-data typography roles, then align headings,
+  labels, metadata, controls, and numeric values with their intended shared roles.
+
+## 0.7.2
+
+### Patch Changes
+
+- 360f518: Remove the elevated shadow from primary header toolbar actions so application navigation bars use a flat, consistent surface.
+
+## 0.7.1
+
+### Patch Changes
+
+- f12ce99: Pair brand button surfaces with a dedicated foreground token so client accent palettes retain readable action labels.
+
 ## 0.7.0
 
 ### Minor Changes

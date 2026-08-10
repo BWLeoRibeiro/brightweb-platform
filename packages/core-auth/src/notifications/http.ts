@@ -163,4 +163,35 @@ export function createNotificationsPostHandler(dependencies: NotificationHttpDep
   };
 }
 
+export function createNotificationsDeleteHandler(dependencies: NotificationHttpDependencies) {
+  return async function handleNotificationsDeleteRequest(request: Request): Promise<Response> {
+    const access = await dependencies.getAccess();
+    if (!access.ok) return json({ error: access.error }, access.status);
+    const body = await request.json().catch(() => null);
+    const record = body && typeof body === "object" && !Array.isArray(body) ? body as Record<string, unknown> : null;
+    const requestedIds = [
+      ...(typeof record?.eventId === "string" ? [record.eventId] : []),
+      ...(Array.isArray(record?.eventIds) ? record.eventIds.filter((value): value is string => typeof value === "string") : []),
+    ];
+    const eventIds = Array.from(new Set(requestedIds.map((value) => value.trim()).filter(Boolean)));
+    if (eventIds.length === 0 || eventIds.length > MAX_LIMIT) {
+      return json({ error: `Between 1 and ${MAX_LIMIT} event IDs are required.` }, 400);
+    }
+    try {
+      const client = dependencies.getServiceClient();
+      const results = await Promise.all(eventIds.map((eventId) => client.rpc("dismiss_current_notifications", {
+        p_profile_id: access.profileId,
+        p_activity_event_id: eventId,
+      })));
+      const error = results.find((result) => result.error)?.error;
+      if (error) throw new Error(error.message);
+      const dismissed = results.reduce((total, result) => total + (typeof result.data === "number" ? result.data : 0), 0);
+      return json({ data: { dismissed } });
+    } catch (error) {
+      console.error("[core-auth.notifications.delete]", error);
+      return json({ error: "Não foi possível dispensar as notificações." }, 503);
+    }
+  };
+}
+
 export { resolveSeenAt as resolveNotificationSeenAt };

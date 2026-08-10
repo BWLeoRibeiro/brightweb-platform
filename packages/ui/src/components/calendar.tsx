@@ -16,6 +16,8 @@ import { cn } from "../lib/utils"
 import { Button } from "./button"
 import { buttonVariants, type ButtonVariantProps } from "./button-variants"
 
+const DEFAULT_FUTURE_YEAR_RANGE = 25
+
 function Calendar({
   className,
   classNames,
@@ -29,6 +31,21 @@ function Calendar({
   buttonVariant?: ButtonVariantProps["variant"]
 }) {
   const defaultClassNames = getDefaultClassNames()
+  const hasYearDropdown =
+    captionLayout === "dropdown" || captionLayout === "dropdown-years"
+  const hasExplicitEndMonth =
+    props.endMonth !== undefined ||
+    props.toMonth !== undefined ||
+    props.toYear !== undefined
+  const defaultEndMonth =
+    hasYearDropdown && !hasExplicitEndMonth
+      ? new Date(
+          (props.today ?? new Date()).getFullYear() +
+            DEFAULT_FUTURE_YEAR_RANGE,
+          11,
+          31
+        )
+      : undefined
 
   return (
     <DayPicker
@@ -176,6 +193,7 @@ function Calendar({
         ...components,
       }}
       {...props}
+      endMonth={props.endMonth ?? defaultEndMonth}
     />
   )
 }

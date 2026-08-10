@@ -1,5 +1,7 @@
 "use client";
 
+import { StyledSelect } from "@brightweblabs/ui";
+
 import { useProjectsUiClient, useProjectsUiDictionary } from "./context";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { format } from "date-fns";
@@ -36,7 +38,7 @@ import {
   AlertDialogTitle,
 } from "@brightweblabs/ui";
 import { Button } from "@brightweblabs/ui";
-import { Calendar } from "@brightweblabs/ui";
+import { ProjectCalendar as Calendar } from "./shared/project-calendar";
 import { Input } from "@brightweblabs/ui";
 import { Popover, PopoverContent, PopoverTrigger } from "@brightweblabs/ui";
 import {
@@ -77,6 +79,7 @@ type TaskFormState = {
   priority: string;
   milestoneId: string;
   assigneeProfileId: string;
+  startDate: string;
   dueDate: string;
   blockedReason: string;
 };
@@ -145,9 +148,11 @@ export function ProjectMilestonesAndTasksCards({
   const [taskPriority, setTaskPriority] = useState("medium");
   const [taskMilestoneId, setTaskMilestoneId] = useState("");
   const [taskAssigneeProfileId, setTaskAssigneeProfileId] = useState("");
+  const [taskStartDate, setTaskStartDate] = useState("");
   const [taskDueDate, setTaskDueDate] = useState("");
   const [taskBlockedReason, setTaskBlockedReason] = useState("");
   const milestoneTargetDateValue = useMemo(() => parseIsoDate(milestoneTargetDate), [milestoneTargetDate]);
+  const taskStartDateValue = useMemo(() => parseIsoDate(taskStartDate), [taskStartDate]);
   const taskDueDateValue = useMemo(() => parseIsoDate(taskDueDate), [taskDueDate]);
   const isTaskBlocked = taskStatus === "blocked";
 
@@ -197,6 +202,7 @@ export function ProjectMilestonesAndTasksCards({
       setTaskPriority(refreshedTask.priority);
       setTaskMilestoneId(refreshedTask.milestoneId ?? "");
       setTaskAssigneeProfileId(refreshedTask.assigneeProfileId ?? "");
+      setTaskStartDate(refreshedTask.startDate ?? "");
       setTaskDueDate(refreshedTask.dueDate ?? "");
       setTaskBlockedReason(refreshedTask.blockedReason ?? "");
     }
@@ -226,6 +232,7 @@ export function ProjectMilestonesAndTasksCards({
           priority: taskPriority,
           milestoneId: taskMilestoneId,
           assigneeProfileId: taskAssigneeProfileId,
+          startDate: taskStartDate,
           dueDate: taskDueDate,
           blockedReason: taskBlockedReason,
         }),
@@ -240,6 +247,7 @@ export function ProjectMilestonesAndTasksCards({
     taskMilestoneId,
     taskMode,
     taskPriority,
+    taskStartDate,
     taskStatus,
     taskTitle,
   ]);
@@ -304,6 +312,10 @@ export function ProjectMilestonesAndTasksCards({
   const submitTask = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!editingTask || taskMode !== "edit" || isSavingTask || !taskTitle.trim() || !isTaskEditDirty) return;
+    if (taskStartDate && taskDueDate && taskDueDate < taskStartDate) {
+      toast.error(dictionary.board.invalidDateRange);
+      return;
+    }
     setIsSavingTask(true);
 
     try {
@@ -314,6 +326,7 @@ export function ProjectMilestonesAndTasksCards({
         priority: taskPriority,
         milestoneId: taskMilestoneId,
         assigneeProfileId: taskAssigneeProfileId,
+        startDate: taskStartDate,
         dueDate: taskDueDate,
         blockedReason: isTaskBlocked ? taskBlockedReason : "",
       });
@@ -426,7 +439,7 @@ export function ProjectMilestonesAndTasksCards({
                   {milestoneMode === "view" ? (
                     <p className={sheetViewValueClassName}>{milestoneStatusLabels[milestoneStatus] ?? "—"}</p>
                   ) : (
-                  <select
+                  <StyledSelect
                     id="milestone-edit-status"
                     value={milestoneStatus}
                     onChange={(event) => setMilestoneStatus(event.target.value)}
@@ -436,7 +449,7 @@ export function ProjectMilestonesAndTasksCards({
                     <option value="in_progress">{dictionary.status.in_progress}</option>
                     <option value="achieved">{dictionary.status.achieved}</option>
                     <option value="delayed">{dictionary.status.delayed}</option>
-                  </select>
+                  </StyledSelect>
                   )}
                 </div>
                 <div>
@@ -571,7 +584,7 @@ export function ProjectMilestonesAndTasksCards({
           />
           <form onSubmit={submitTask} className="flex min-h-0 flex-1 flex-col">
             <div className={`${sheetBodyClassName} space-y-4`}>
-              <SheetSection title={dictionary.board.task} editing={taskMode !== "view"} bodyClassName="space-y-3 px-4 py-3">
+              <SheetSection title={dictionary.board.contentSection} editing={taskMode !== "view"} bodyClassName="space-y-3 px-4 py-3">
               {taskMode === "edit" ? (
                 <div>
                   <label className={sheetFieldLabelClassName} htmlFor="task-edit-title">{dictionary.forms.title}</label>
@@ -600,6 +613,8 @@ export function ProjectMilestonesAndTasksCards({
                   />
                 )}
               </div>
+              </SheetSection>
+              <SheetSection title={dictionary.board.executionSection} editing={taskMode !== "view"} bodyClassName="space-y-3 px-4 py-3">
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
                   <label className={sheetFieldLabelClassName} htmlFor="task-edit-status">{dictionary.forms.status}</label>
@@ -608,7 +623,7 @@ export function ProjectMilestonesAndTasksCards({
                       <TaskStatusTag task={{ status: taskStatus as ProjectTask["status"], blockedReason: taskBlockedReason }} />
                     </div>
                   ) : (
-                    <select
+                    <StyledSelect
                       id="task-edit-status"
                       value={taskStatus}
                       onChange={(event) => setTaskStatus(event.target.value)}
@@ -618,7 +633,7 @@ export function ProjectMilestonesAndTasksCards({
                       <option value="in_progress">{dictionary.board.columns.in_progress}</option>
                       <option value="blocked">{dictionary.board.columns.blocked}</option>
                       <option value="done">{dictionary.board.columns.done}</option>
-                    </select>
+                    </StyledSelect>
                   )}
                 </div>
                 <div>
@@ -628,7 +643,7 @@ export function ProjectMilestonesAndTasksCards({
                       <TaskPriorityTag task={{ priority: taskPriority as ProjectTask["priority"], status: taskStatus as ProjectTask["status"] }} />
                     </div>
                   ) : (
-                    <select
+                    <StyledSelect
                       id="task-edit-priority"
                       value={taskPriority}
                       onChange={(event) => setTaskPriority(event.target.value)}
@@ -638,10 +653,18 @@ export function ProjectMilestonesAndTasksCards({
                       <option value="medium">{dictionary.board.priority.medium}</option>
                       <option value="high">{dictionary.board.priority.high}</option>
                       <option value="urgent">{dictionary.board.priority.urgent}</option>
-                    </select>
+                    </StyledSelect>
                   )}
                 </div>
               </div>
+              {isTaskBlocked ? (
+                <div>
+                  <label className={sheetFieldLabelClassName} htmlFor="task-edit-blocked">{dictionary.forms.blockedReason}</label>
+                  {taskMode === "view" ? <p className="mt-1.5 rounded-md border border-amber-500/25 bg-amber-500/10 px-3 py-2 text-body text-amber-700 dark:text-amber-400">{taskBlockedReason.trim() || dictionary.board.noBlockedReason}</p> : <Input id="task-edit-blocked" value={taskBlockedReason} onChange={(event) => setTaskBlockedReason(event.target.value)} required className={cn(sheetEditControlClassName, "mt-1.5")} />}
+                </div>
+              ) : null}
+              </SheetSection>
+              <SheetSection title={dictionary.board.planningSection} editing={taskMode !== "view"} bodyClassName="space-y-3 px-4 py-3">
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
                   <label className={sheetFieldLabelClassName} htmlFor="task-edit-milestone">{dictionary.create.milestoneOptional}</label>
@@ -650,7 +673,7 @@ export function ProjectMilestonesAndTasksCards({
                       {milestones.find((milestone) => milestone.id === taskMilestoneId)?.title ?? dictionary.board.noMilestone}
                     </p>
                   ) : (
-                    <select
+                    <StyledSelect
                       id="task-edit-milestone"
                       value={taskMilestoneId}
                       onChange={(event) => setTaskMilestoneId(event.target.value)}
@@ -662,7 +685,7 @@ export function ProjectMilestonesAndTasksCards({
                           {milestone.title}
                         </option>
                       ))}
-                    </select>
+                    </StyledSelect>
                   )}
                 </div>
                 <div>
@@ -672,7 +695,7 @@ export function ProjectMilestonesAndTasksCards({
                       {memberOptions.find((member) => member.profileId === taskAssigneeProfileId)?.label ?? dictionary.board.noAssignee}
                     </p>
                   ) : (
-                    <select
+                    <StyledSelect
                       id="task-edit-assignee"
                       value={taskAssigneeProfileId}
                       onChange={(event) => setTaskAssigneeProfileId(event.target.value)}
@@ -684,9 +707,16 @@ export function ProjectMilestonesAndTasksCards({
                           {member.label}
                         </option>
                       ))}
-                    </select>
+                    </StyledSelect>
                   )}
                 </div>
+              </div>
+              </SheetSection>
+              <SheetSection title={dictionary.board.calendarSection} editing={taskMode !== "view"} bodyClassName="px-4 py-3">
+              <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <label className={sheetFieldLabelClassName} htmlFor="task-edit-start">{dictionary.create.startDateOptional}</label>
+                {taskMode === "view" ? <p className={sheetViewValueClassName}>{taskStartDateValue ? format(taskStartDateValue, "dd/MM/yyyy") : dictionary.board.noDate}</p> : <Popover><PopoverTrigger asChild><Button id="task-edit-start" type="button" variant="ghost" className={cn("mt-1.5 h-9 w-full justify-start px-2.5 text-body", "rounded-lg border border-[color:var(--project-ui-color-01)] bg-[color:var(--card)] hover:bg-[color:var(--card)]", taskStartDateValue ? "text-foreground" : "text-foreground/45")}><CalendarIcon className="mr-2 h-4 w-4" />{taskStartDateValue ? format(taskStartDateValue, "dd/MM/yyyy") : dictionary.create.selectDate}</Button></PopoverTrigger><PopoverContent className="w-auto p-0" align="start"><Calendar mode="single" captionLayout="dropdown" className="rounded-lg border" selected={taskStartDateValue} onSelect={(date) => setTaskStartDate(toIsoDate(date))} initialFocus /></PopoverContent></Popover>}
               </div>
               <div>
                 <label className={sheetFieldLabelClassName} htmlFor="task-edit-due">{dictionary.create.dueDateOptional}</label>
@@ -724,24 +754,8 @@ export function ProjectMilestonesAndTasksCards({
                   </Popover>
                 )}
               </div>
-              {isTaskBlocked ? (
-                <div>
-                  <label className={sheetFieldLabelClassName} htmlFor="task-edit-blocked">{dictionary.forms.blockedReason}</label>
-                  {taskMode === "view" ? (
-                    <p className="mt-1.5 rounded-md border border-amber-500/25 bg-amber-500/10 px-3 py-2 text-body text-amber-700 dark:text-amber-400">
-                      {taskBlockedReason.trim() || dictionary.board.noBlockedReason}
-                    </p>
-                  ) : (
-                    <Input
-                      id="task-edit-blocked"
-                      value={taskBlockedReason}
-                      onChange={(event) => setTaskBlockedReason(event.target.value)}
-                      required
-                      className={cn(sheetEditControlClassName, "mt-1.5")}
-                    />
-                  )}
-                </div>
-              ) : null}
+              </div>
+              {taskMode === "edit" && taskStartDate && taskDueDate && taskDueDate < taskStartDate ? <p className="mt-2 text-meta text-[color:var(--destructive)]">{dictionary.board.invalidDateRange}</p> : null}
               </SheetSection>
               {taskMode === "edit" ? (
                 <Button
@@ -771,6 +785,7 @@ export function ProjectMilestonesAndTasksCards({
                         priority: taskPriority,
                         milestoneId: taskMilestoneId,
                         assigneeProfileId: taskAssigneeProfileId,
+                        startDate: taskStartDate,
                         dueDate: taskDueDate,
                         blockedReason: taskBlockedReason,
                       });
@@ -786,7 +801,7 @@ export function ProjectMilestonesAndTasksCards({
                   <Button
                     type="submit"
                     className="flex-1"
-                    disabled={isSavingTask || !taskTitle.trim() || !isTaskEditDirty || (isTaskBlocked && !taskBlockedReason.trim())}
+                    disabled={isSavingTask || !taskTitle.trim() || !isTaskEditDirty || (isTaskBlocked && !taskBlockedReason.trim()) || Boolean(taskStartDate && taskDueDate && taskDueDate < taskStartDate)}
                   >
                     <Save className="mr-2 h-4 w-4" />
                     {isSavingTask ? dictionary.actions.saving : dictionary.actions.save}

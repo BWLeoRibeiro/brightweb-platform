@@ -308,12 +308,12 @@ async function main() {
     // Markers must exist in the SSR payload (client components render their
     // initial state on the server): the viewer's name comes from the stub's
     // profiles table via the shell layout, "Website Redesign" is a fixture
-    // project server-rendered by ProjectsServerMount, and "Relatório CRM"
-    // comes from the CRM dashboard dictionary.
+    // project server-rendered by ProjectsServerMount, and "A carregar contactos"
+    // is the deliberate CRM collection loading state rendered before hydration.
     const pageChecks = [
       { pathname: "/dashboard", marker: "Ana Silva" },
       { pathname: "/projetos", marker: "Website Redesign" },
-      { pathname: "/crm", marker: "Relatório CRM" },
+      { pathname: "/crm", marker: "A carregar contactos" },
       { pathname: "/admin/users", marker: "Administração" },
       { pathname: "/marketing", marker: "Campanhas" },
     ];
@@ -352,6 +352,12 @@ async function main() {
       );
       parsedByPath[pathname] = data;
     }
+
+    const projectDashboardData = parsedByPath["/api/dashboard/projects"];
+    assert(
+      projectDashboardData.projects.milestones.every((milestone) => milestone.status !== "achieved"),
+      "projects dashboard excludes achieved milestones from the upcoming metas contract",
+    );
 
     // 9. HEAD exact-count contract: the CRM "total contacts" KPI is derived
     //    from a `head:true` count whose only transport is the Content-Range
@@ -414,7 +420,11 @@ async function main() {
     const campaignRead = await authedFetch(`/api/marketing/campaigns/${createdCampaign.id}`);
     assert(campaignRead.status === 200, "Marketing API reads the mutated draft campaign");
     const campaignDelete = await authedFetch(`/api/marketing/campaigns/${createdCampaign.id}`, { method: "DELETE" });
-    assert(campaignDelete.status === 204, "Marketing API deletes the local draft campaign");
+    const campaignDeletePayload = await campaignDelete.json();
+    assert(
+      campaignDelete.status === 200 && campaignDeletePayload.data?.deletedId === createdCampaign.id,
+      "Marketing API deletes the local draft campaign",
+    );
     const deletedCampaignRead = await authedFetch(`/api/marketing/campaigns/${createdCampaign.id}`);
     assert(deletedCampaignRead.status === 404, "deleted Marketing draft is absent on a subsequent read");
 

@@ -34,7 +34,7 @@ export async function ClientProjectsPreview() {
     <div>
       <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h2 className="font-display text-body-lg font-bold">{dictionary.title}</h2>
+          <h2 className="text-heading-4">{dictionary.title}</h2>
           {projects.items.length > 0 ? (
             <div className="mt-1 flex flex-wrap items-center gap-3">
               {(Object.entries(healthCounts) as [ProjectHealth, number][]).map(
@@ -47,7 +47,7 @@ export async function ClientProjectsPreview() {
                       className="size-1.5 shrink-0 rounded-full"
                       style={{ background: CLIENT_PROJECT_HEALTH_VAR[health] }}
                     />
-                    {count} {CLIENT_PROJECT_PREVIEW_HEALTH_LABELS[health]}
+                    <span className="text-data">{count}</span> {CLIENT_PROJECT_PREVIEW_HEALTH_LABELS[health]}
                   </span>
                 ),
               )}
@@ -172,10 +172,10 @@ export function ProjectRow({
           </span>
         </div>
 
-        <h3 className="truncate text-body font-semibold leading-snug">{project.name}</h3>
-        <p className="mt-0.5 text-label text-muted-foreground">
+        <h3 className="truncate text-title">{project.name}</h3>
+        <p className="mt-0.5 text-meta text-muted-foreground">
           {project.organizationName}
-          {project.targetDate ? ` · ${formatClientProjectDate(project.targetDate)}` : ""}
+          {project.targetDate ? <> · <span className="text-data">{formatClientProjectDate(project.targetDate)}</span></> : null}
         </p>
 
         {progressPct !== null ? (
@@ -190,7 +190,7 @@ export function ProjectRow({
               />
             </div>
             <span
-              className="shrink-0 text-micro font-bold tabular-nums"
+              className="text-data shrink-0 text-micro font-bold"
               style={{ color: healthVar }}
             >
               {progressPct}%

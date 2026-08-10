@@ -44,15 +44,17 @@ export function ToolbarSearchField({
         )}
       />
       {value ? (
-        <button
+        <Button
           type="button"
+          variant="ghost"
+          size="icon-xs"
           disabled={disabled}
           aria-label={clearLabel}
-          className="absolute right-2 inline-flex size-6 items-center justify-center rounded-full text-[color:var(--muted-foreground)] transition-colors hover:bg-[color:var(--surface-hover)] hover:text-[color:var(--foreground)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--ring)] disabled:cursor-not-allowed disabled:opacity-60"
+          className="absolute right-2 rounded-full text-[color:var(--muted-foreground)]"
           onClick={() => onChange("")}
         >
-          <X className="size-3.5" aria-hidden />
-        </button>
+          <X aria-hidden />
+        </Button>
       ) : null}
     </div>
   );
@@ -85,11 +87,10 @@ export function ToolbarNewMenu({ id, icon: Icon, label = "Novo", tooltip, items,
               variant="brand"
               id={id}
               disabled={disabled}
-              className="h-9 px-3 text-body text-[length:var(--text-ui-action)] shadow-[var(--shadow-toolbar-control)]"
             >
-              <Icon className="size-3.5" />
+              <Icon data-icon="inline-start" />
               {label}
-              <ChevronDown className="size-3.5 opacity-70" />
+              <ChevronDown data-icon="inline-end" className="opacity-70" />
             </Button>
           </DropdownMenuTrigger>
         </TooltipTrigger>
@@ -116,17 +117,19 @@ export function ToolbarFilterToggle({ expanded, onToggle }: ToolbarFilterToggleP
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <button
+        <Button
           type="button"
+          variant="outline"
+          size="icon-lg"
           onClick={onToggle}
           className={cn(
-            "inline-flex h-10 w-10 items-center justify-center rounded-full border border-hairline-strong bg-popover text-foreground/75 transition-colors hover:border-border-strong hover:bg-surface-hover hover:text-foreground",
+            "rounded-full text-foreground/75",
             expanded && "hidden",
           )}
           aria-label={expanded ? "Colapsar filtros" : "Expandir filtros"}
         >
-          <ListFilter className="size-3.5" />
-        </button>
+          <ListFilter />
+        </Button>
       </TooltipTrigger>
       <TooltipContent>{expanded ? "Colapsar filtros" : "Expandir filtros"}</TooltipContent>
     </Tooltip>
@@ -150,14 +153,16 @@ export function ToolbarFiltersPill({ expanded, onCollapse, children }: ToolbarFi
       {expanded ? (
         <Tooltip>
           <TooltipTrigger asChild>
-            <button
+            <Button
               type="button"
+              variant="outline"
+              size="icon-sm"
               onClick={onCollapse}
-              className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-hairline-strong bg-popover text-foreground/75 transition-colors hover:border-border-strong hover:bg-surface-hover hover:text-foreground"
+              className="rounded-full text-foreground/75"
               aria-label="Colapsar filtros"
             >
-              <ListFilter className="size-3.5" />
-            </button>
+              <ListFilter />
+            </Button>
           </TooltipTrigger>
           <TooltipContent>Colapsar filtros</TooltipContent>
         </Tooltip>
@@ -184,7 +189,7 @@ export function ToolbarDropdownChip({ id, icon: Icon, label, tooltip, items }: T
             <button
               type="button"
               id={id}
-              className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border border-hairline bg-elevate-1 px-3 py-1.5 text-meta font-semibold text-foreground/75 transition-colors hover:border-hairline-strong hover:bg-elevate-3 hover:text-foreground"
+              className="inline-flex cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-full border border-hairline bg-elevate-1 px-3 py-1.5 text-meta font-semibold text-foreground/75 transition-colors hover:border-hairline-strong hover:bg-elevate-3 hover:text-foreground"
             >
               <Icon className="size-3.5" />
               {label}
@@ -234,17 +239,19 @@ export function ToolbarSearchRefreshPill({
       />
       <Tooltip>
         <TooltipTrigger asChild>
-          <button
+          <Button
             type="button"
+            variant="outline"
+            size="icon-sm"
             onClick={onRefresh}
             disabled={isRefreshing}
             aria-label={refreshAriaLabel}
-            className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-hairline bg-elevate-1 text-foreground/75 transition-colors hover:border-hairline-strong hover:bg-elevate-3 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-60"
+            className="rounded-full text-foreground/75"
           >
             <div className={cn(isRefreshing && "animate-spin [animation-direction:reverse]")}>
-              <RotateCcw className="size-3.5" />
+              <RotateCcw />
             </div>
-          </button>
+          </Button>
         </TooltipTrigger>
         <TooltipContent>{refreshTooltip}</TooltipContent>
       </Tooltip>

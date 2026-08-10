@@ -1,18 +1,18 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { Children, isValidElement, type ReactNode } from "react";
 import { format } from "date-fns";
 import { CalendarIcon } from "lucide-react";
 import { SheetSection } from "../shared/app-sheet";
 import {
   sheetDatePickerButtonClassName,
-  sheetEditControlClassName,
   sheetFieldLabelClassName,
 } from "../shared/sheet-section";
+import { SheetSelect } from "@brightweblabs/app-shell";
 import { cn } from "../utils";
 import { defaultProjectsUiDictionary } from "../dictionary";
 import { Button } from "@brightweblabs/ui";
-import { Calendar } from "@brightweblabs/ui";
+import { ProjectCalendar as Calendar } from "../shared/project-calendar";
 import { Field, FieldContent, FieldGroup, FieldLabel } from "@brightweblabs/ui";
 import { Popover, PopoverContent, PopoverTrigger } from "@brightweblabs/ui";
 
@@ -59,18 +59,21 @@ export function SelectField({
   children: ReactNode;
   className?: string;
 }) {
+  const options = Children.toArray(children).flatMap((child) => {
+    if (!isValidElement<{ value?: string; children?: ReactNode; disabled?: boolean }>(child) || child.type !== "option") return [];
+    return [{ value: child.props.value ?? "", label: child.props.children, disabled: child.props.disabled }];
+  });
+
   return (
     <Field className={className ?? "gap-1.5 px-4 py-2"}>
-      <FieldLabel className={sheetFieldLabelClassName}>{label}</FieldLabel>
+      <FieldLabel htmlFor={id} className={sheetFieldLabelClassName}>{label}</FieldLabel>
       <FieldContent>
-        <select
+        <SheetSelect
           id={id}
-          className={cn(sheetEditControlClassName, "text-foreground outline-none")}
           value={value}
-          onChange={(event) => onChange(event.target.value)}
-        >
-          {children}
-        </select>
+          onValueChange={onChange}
+          options={options}
+        />
       </FieldContent>
     </Field>
   );

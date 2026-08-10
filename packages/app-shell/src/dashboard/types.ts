@@ -2,8 +2,11 @@ import type { ComponentType } from "react";
 
 export type DashboardProjectStatus = "planned" | "active" | "blocked" | "completed" | "canceled";
 export type DashboardProjectHealth = "on_track" | "at_risk" | "off_track";
+export type DashboardProjectAttentionReason = "overdue" | "at_risk" | "blocked_tasks" | "without_owner" | "due_soon";
+export type DashboardProjectMilestoneStatus = "pending" | "in_progress" | "delayed";
 export type DashboardTaskStatus = "todo" | "in_progress" | "blocked" | "done";
 export type DashboardTaskPriority = "low" | "medium" | "high" | "urgent";
+export type DashboardTaskAttentionState = "blocked" | "overdue" | "today" | "soon";
 
 export type DashboardProjectItem = {
   id: string;
@@ -17,6 +20,20 @@ export type DashboardProjectItem = {
   taskStats: { total: number; done: number; overdue: number; blocked: number };
 };
 
+export type DashboardProjectAttentionItem = DashboardProjectItem & {
+  attentionReason: DashboardProjectAttentionReason;
+};
+
+export type DashboardProjectMilestone = {
+  id: string;
+  projectId: string;
+  projectName: string;
+  projectCode: string | null;
+  title: string;
+  status: DashboardProjectMilestoneStatus;
+  targetDate: string;
+};
+
 export type DashboardProjectsData = {
   generatedAt: string;
   kpis: {
@@ -26,8 +43,15 @@ export type DashboardProjectsData = {
     projectsDueNext7Days: number;
     projectsWithoutOwner: number;
     projectBlockedTasks: number;
+    projectsAttention: number;
+    projectsOnTrack: number;
   };
-  projects: { overdue: DashboardProjectItem[] };
+  projects: {
+    overdue: DashboardProjectItem[];
+    attention: DashboardProjectAttentionItem[];
+    milestones: DashboardProjectMilestone[];
+    milestonesNext7Days?: DashboardProjectMilestone[];
+  };
 };
 
 export type DashboardCrmStatusBreakdown = {
@@ -53,6 +77,13 @@ export type DashboardCrmRecentContact = {
   company: string | null;
   status: string;
   lastChangedAt: string;
+  createdAt?: string | null;
+};
+
+export type DashboardCrmMonthlyPoint = {
+  /** ISO year-month, e.g. "2026-08" */
+  month: string;
+  count: number;
 };
 
 export type DashboardCrmData = {
@@ -68,6 +99,7 @@ export type DashboardCrmData = {
     statusBreakdown: DashboardCrmStatusBreakdown;
     recentChanges: DashboardCrmRecentChange[];
     recentContacts: DashboardCrmRecentContact[];
+    monthlyNewContacts?: DashboardCrmMonthlyPoint[];
   };
 };
 
@@ -89,6 +121,15 @@ export type DashboardTasksData = {
   generatedAt: string;
   kpis: { total: number; dueThisWeek: number; overdue: number; blocked: number };
   tasks: DashboardAssignedTask[];
+  attention: {
+    total: number;
+    tasks: DashboardAssignedTask[];
+  };
+  pagination: {
+    page: number;
+    pageSize: number;
+    hasMore: boolean;
+  };
 };
 
 export type DashboardInitialData = {
@@ -101,20 +142,30 @@ export type DashboardDataClient = {
   /**
    * Optional aggregate optimization. Section clients remain the source of truth.
    */
-  getOverview?: () => Promise<unknown>;
-  getProjects: () => Promise<unknown>;
-  getCrm: () => Promise<unknown>;
-  getTasks: () => Promise<unknown>;
+  getOverview?: (options?: { signal?: AbortSignal }) => Promise<unknown>;
+  getProjects: (options?: { signal?: AbortSignal }) => Promise<unknown>;
+  getCrm: (options?: { signal?: AbortSignal }) => Promise<unknown>;
+  getTasks: (options?: { signal?: AbortSignal; page?: number; pageSize?: number }) => Promise<unknown>;
 };
 
 export type DashboardSection = "projects" | "crm" | "tasks";
 
 export type DashboardProjectComponents = {
+  projectBaseHref?: string;
+  /** Standalone task destination. Falls back to the project destination when omitted. */
+  tasksBaseHref?: string;
   ProjectSummaryCard: ComponentType<{ project: DashboardProjectItem }>;
   ProjectSummaryCardSkeleton: ComponentType;
+  ProjectAttentionCard?: ComponentType<{ project: DashboardProjectAttentionItem; rank: number }>;
   TaskDueMeta: ComponentType<{ dueDate: string | null; isOverdue?: boolean }>;
   TaskPriorityTag: ComponentType<{ task: Pick<DashboardAssignedTask, "status" | "priority"> }>;
   TaskStatusTag: ComponentType<{ task: Pick<DashboardAssignedTask, "status" | "blockedReason"> }>;
+  DashboardTaskRow: ComponentType<{
+    task: DashboardAssignedTask;
+    href: string;
+    attentionState?: DashboardTaskAttentionState;
+    attentionLabel?: string;
+  }>;
 };
 
 export type DashboardSurfaceContribution = {

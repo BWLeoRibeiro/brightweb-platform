@@ -153,9 +153,9 @@
   font-family: inherit;
 }
 .navbarTitle { display: flex; align-items: flex-end; gap: var(--space-xs); }
-.navbarKicker { display: block; font-size: var(--text-micro); font-weight: var(--font-weight-heavy); line-height: var(--type-leading-130); text-transform: uppercase; letter-spacing: var(--type-tracking-160); color: var(--accent); }
+.navbarKicker { display: block; font-size: var(--text-meta); font-weight: var(--font-weight-semibold); line-height: var(--type-leading-140); color: var(--accent); }
 .navbarTitle h1 { margin: 0; font-size: var(--text-ui-shell-title); font-weight: var(--font-weight-heavy); line-height: var(--type-leading-124); letter-spacing: var(--type-tracking-n025); white-space: nowrap; color: var(--shell-navbar-fg); }
-.navbarCount { font-size: var(--text-meta); font-weight: var(--font-weight-bold); color: var(--shell-navbar-muted); font-variant-numeric: tabular-nums; }
+.navbarCount { font-size: var(--text-meta); font-weight: var(--font-weight-bold); color: var(--shell-navbar-muted); }
 .navbarSpacer { flex: 1; }
 .navbarControls { display: flex; min-width: 0; align-items: center; gap: var(--space-xs); }
 .navbarDivider { width: 1px; height: var(--shell-header-divider-height); background: var(--shell-navbar-hairline); flex-shrink: 0; }
@@ -163,17 +163,11 @@
 .navbarCrumbs { display: inline-flex; align-items: center; gap: var(--space-xs); }
 .navbarCrumb { display: inline-flex; align-items: center; gap: var(--space-xs); }
 .navbarCrumbSeparator { color: var(--shell-navbar-muted); }
-.navbarCrumbLink { display: inline-flex; height: var(--toolbar-chip-height); align-items: center; gap: var(--space-2xs); border: 1px solid var(--shell-surface-border); border-radius: 999px; background: var(--card); padding: 0 var(--space-sm); color: var(--shell-navbar-muted); font-size: var(--text-ui-action); font-weight: var(--font-weight-bold); cursor: pointer; }
-.navbarCrumbLink:hover { border-color: var(--accent); color: var(--foreground); }
-.navbarContextAction { display: inline-flex; height: var(--toolbar-chip-height); align-items: center; gap: var(--space-xs); border: 1px solid var(--shell-surface-border); border-radius: var(--radius-control); background: var(--surface-button-soft); padding: 0 var(--space-sm); color: var(--foreground); font-size: var(--text-ui-action); font-weight: var(--font-weight-bold); cursor: pointer; }
-.navbarContextAction:hover { border-color: var(--border-button-soft-hover); background: var(--surface-button-soft-hover); }
-.navbarContextAction:focus-visible, .navbarCrumbLink:focus-visible, .navbarIconButton:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
-.navbarContextAction:disabled, .navbarCrumbLink:disabled { cursor: not-allowed; opacity: 0.6; }
-.navbarContextAction svg { width: var(--toolbar-icon-size); height: var(--toolbar-icon-size); }
+.navbarIconButton:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
 .navbarIconButton { position: relative; display: inline-flex; width: var(--toolbar-chip-height); height: var(--toolbar-chip-height); align-items: center; justify-content: center; border: 1px solid transparent; border-radius: 999px; background: transparent; color: var(--shell-control-muted); cursor: pointer; }
 .navbarIconButton:hover { border-color: var(--shell-surface-border); background: var(--shell-surface-hover); color: var(--foreground); }
 .navbarIconButton svg { width: var(--toolbar-icon-size); height: var(--toolbar-icon-size); }
-.navbarBellBadge { position: absolute; right: -0.25rem; top: -0.25rem; display: inline-flex; min-width: 1.125rem; height: 1.125rem; align-items: center; justify-content: center; border: 2px solid var(--card); border-radius: 999px; background: var(--badge-count-bg); padding-inline: var(--space-2xs); color: var(--badge-count-fg); font-size: var(--text-label); font-weight: var(--font-weight-heavy); line-height: var(--type-leading-none); }
+.navbarBellBadge { position: absolute; right: -0.25rem; top: -0.25rem; display: inline-flex; min-width: 1.125rem; height: 1.125rem; align-items: center; justify-content: center; border: 2px solid var(--card); border-radius: 999px; background: var(--badge-count-bg); padding-inline: var(--space-2xs); color: var(--badge-count-fg); font-family: var(--font-mono); font-size: var(--text-label); font-variant-numeric: tabular-nums; font-weight: var(--font-weight-heavy); line-height: var(--type-leading-none); }
 
 @media (max-width: 1023px) {
   .headerBar { top: 0; margin-bottom: 0; padding: var(--space-sm) var(--space-md) 0; }

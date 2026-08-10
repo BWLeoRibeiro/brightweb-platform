@@ -34,6 +34,7 @@ import type {
   ShellModuleRegistration,
   ShellToolbarRouteConfig,
 } from "../packages/app-shell/src/types.ts";
+import { createProjectsModuleRegistration } from "../packages/module-projects/src/registration.ts";
 
 function collectElementProps(node: ReactNode, elementType: unknown): Record<string, unknown>[] {
   const matches: Record<string, unknown>[] = [];
@@ -162,6 +163,45 @@ test("shell realtime retains MQ notification and surface-refresh parity", () => 
   assert.match(notificationsSource, /NOTIFICATIONS_REALTIME_REFRESH_EVENT/);
   assert.match(notificationsSource, /summaryRefreshQueuedRef/);
   assert.match(notificationsSource, /itemsRefreshQueuedRef/);
+  assert.match(notificationsSource, /createLatestRequestController/);
+  assert.match(notificationsSource, /observedFetch/);
+  assert.match(notificationsSource, /itemsRefreshQueuedRef\.current = false[\s\S]*summaryRefreshQueuedRef\.current = false[\s\S]*itemsControllerRef\.current\.abort/);
+});
+
+test("notification requests preserve open-menu and reconfiguration invariants", () => {
+  const source = readFileSync(
+    new URL("../packages/app-shell/src/use-shell-notifications.ts", import.meta.url),
+    "utf8",
+  );
+
+  assert.equal(
+    source.match(/setUnreadCount\(openRef\.current \? 0 : payload\.unreadCount\)/g)?.length,
+    2,
+  );
+  assert.match(
+    source,
+    /operation: "acknowledge"[\s\S]*\.catch\(\(\) => undefined\)[\s\S]*return loadSummary\(true\)/,
+  );
+  assert.match(source, /if \(summaryRequestRef\.current !== request\) return/);
+  assert.match(source, /if \(itemsRequestRef\.current !== request\) return/);
+  assert.match(source, /configurationGeneration !== configurationGenerationRef\.current/);
+  assert.match(source, /pendingAcknowledgementRef\.current = new Date\(\)\.toISOString\(\)/);
+  assert.match(source, /if \(acknowledgementRef\.current\) return/);
+  assert.match(source, /acknowledgementRef\.current !== request/);
+  assert.match(source, /pendingAcknowledgementRef\.current[\s\S]*flushAcknowledgement\(\)/);
+  assert.match(
+    source,
+    /if \(open\)[\s\S]*?return;[\s\S]*?itemsRefreshQueuedRef\.current = false;[\s\S]*?itemsControllerRef\.current\.abort\(\);[\s\S]*?itemsRequestRef\.current = null;[\s\S]*?setLoading\(false\);[\s\S]*?acknowledge\(\)/,
+  );
+  assert.match(
+    source,
+    /summaryControllerRef\.current\.abort\(\);[\s\S]*itemsRequestRef\.current = null;[\s\S]*summaryRequestRef\.current = null/,
+  );
+  assert.match(source, /if \(openRef\.current\) loadNotifications\(true\)/);
+  assert.match(
+    source,
+    /if \(!enabled\)[\s\S]*setNotifications\(\[\]\);[\s\S]*setUnreadCount\(0\);[\s\S]*setSeenAt\(null\);[\s\S]*setError\(null\)/,
+  );
 });
 
 test("lazy project creation surfaces register authoritative shell actions before mounting", () => {
@@ -383,6 +423,11 @@ test("builds dashboard contributions from enabled module registrations", () => {
     ],
   });
   assert.deepEqual(built.dashboardContributions.map((item) => item.sections), [["projects", "tasks"], ["crm"]]);
+});
+
+test("projects dashboard contribution carries the consumer route base", () => {
+  const registration = createProjectsModuleRegistration("/projetos");
+  assert.equal(registration.dashboardContribution?.projectComponents?.projectBaseHref, "/projetos");
 });
 
 test("renders every resolved module nav group in registration order", () => {
