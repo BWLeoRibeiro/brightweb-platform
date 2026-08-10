@@ -1,5 +1,18 @@
 # @brightweblabs/module-orgs
 
+## 0.6.0
+
+### Minor Changes
+
+- 9063aaa: Add client invitations tied to organizations, a CRM organization access page, invitation history, safe organization member role/removal operations, and shared branded invitation and authentication email designs. New CRM starters mount the organization detail route and organization member API handlers.
+
+### Patch Changes
+
+- Updated dependencies [9063aaa]
+  - @brightweblabs/core-auth@0.10.10
+  - @brightweblabs/ui@1.5.2
+  - @brightweblabs/app-shell@0.15.8
+
 ## 0.5.7
 
 ### Patch Changes
