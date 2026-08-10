@@ -1,5 +1,11 @@
 # @brightweblabs/ui
 
+## 1.5.3
+
+### Patch Changes
+
+- 7e53c23: Use authentication-specific recipient and closing copy in all generated authentication and security email templates while preserving invitation wording for invitation emails.
+
 ## 1.5.2
 
 ### Patch Changes

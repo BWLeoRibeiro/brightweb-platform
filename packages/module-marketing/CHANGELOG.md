@@ -1,5 +1,14 @@
 # @brightweblabs/module-marketing
 
+## 0.4.22
+
+### Patch Changes
+
+- Updated dependencies [7e53c23]
+  - @brightweblabs/core-auth@0.10.11
+  - @brightweblabs/ui@1.5.3
+  - @brightweblabs/app-shell@0.15.9
+
 ## 0.4.21
 
 ### Patch Changes
