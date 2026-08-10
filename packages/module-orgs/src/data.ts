@@ -288,3 +288,61 @@ export async function setOrganizationMemberRole(
   if (data.role !== "admin" && data.role !== "member") throw new Error("Invalid organization member role.");
   return data as OrganizationMember;
 }
+
+async function requireSafeOrganizationMemberMutation(
+  supabase: SupabaseClient,
+  organizationId: string,
+  profileId: string,
+): Promise<OrganizationMember> {
+  const { data: member, error } = await supabase
+    .from("organization_members")
+    .select("id, organization_id, profile_id, role, joined_at")
+    .eq("organization_id", organizationId)
+    .eq("profile_id", profileId)
+    .maybeSingle<OrganizationMember>();
+  if (error) throw new Error(error.message);
+  if (!member) throw new Error("Membro da organização não encontrado.");
+  return member;
+}
+
+async function assertOrganizationKeepsAdmin(
+  supabase: SupabaseClient,
+  organizationId: string,
+  member: OrganizationMember,
+): Promise<void> {
+  if (member.role !== "admin") return;
+  const { count, error } = await supabase
+    .from("organization_members")
+    .select("id", { count: "exact", head: true })
+    .eq("organization_id", organizationId)
+    .eq("role", "admin");
+  if (error) throw new Error(error.message);
+  if ((count ?? 0) <= 1) throw new Error("A organização deve manter pelo menos um Administrador.");
+}
+
+export async function updateOrganizationMemberRole(
+  supabase: SupabaseClient,
+  organizationId: string,
+  profileId: string,
+  role: OrganizationMemberRole,
+): Promise<OrganizationMember> {
+  const member = await requireSafeOrganizationMemberMutation(supabase, organizationId, profileId);
+  if (member.role === role) return member;
+  if (role === "member") await assertOrganizationKeepsAdmin(supabase, organizationId, member);
+  return setOrganizationMemberRole(supabase, organizationId, profileId, role);
+}
+
+export async function removeOrganizationMember(
+  supabase: SupabaseClient,
+  organizationId: string,
+  profileId: string,
+): Promise<void> {
+  const member = await requireSafeOrganizationMemberMutation(supabase, organizationId, profileId);
+  await assertOrganizationKeepsAdmin(supabase, organizationId, member);
+  const { error } = await supabase
+    .from("organization_members")
+    .delete()
+    .eq("organization_id", organizationId)
+    .eq("profile_id", profileId);
+  if (error) throw new Error(error.message);
+}

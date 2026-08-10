@@ -31,6 +31,7 @@
     "./chart": "./src/components/chart.tsx",
     "./checkbox": "./src/components/checkbox.tsx",
     "./dropdown-menu": "./src/components/dropdown-menu.tsx",
+    "./email/invitation": "./src/email/invitation.ts",
     "./empty-state": "./src/components/empty-state.tsx",
     "./field": "./src/components/field.tsx",
     "./input": "./src/components/input.tsx",

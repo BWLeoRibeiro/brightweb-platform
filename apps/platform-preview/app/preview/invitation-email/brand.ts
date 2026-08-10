@@ -1,0 +1,20 @@
+export const invitationEmailPreviewBrand = {
+  brandName: "BeGreen Consulting",
+  logoUrl: "/brand/logo-dark.svg",
+  portalUrl: "https://portal.begreen.com.pt",
+  palette: {
+    canvas: "#fdf7eb",
+    surface: "#ffffff",
+    header: "#125b48",
+    headerText: "#fdf7eb",
+    headerMutedText: "#d9e7df",
+    accent: "#a5dc5e",
+    text: "#04110e",
+    mutedText: "#52685f",
+    border: "#e2e8f0",
+    panel: "#eef5e8",
+    button: "#125b48",
+    buttonText: "#ffffff",
+    warning: "#eab034",
+  },
+} as const;

@@ -1,9 +1,7 @@
 "use client";
 
-import { StyledSelect } from "@brightweblabs/ui";
-
 import { useCallback, useEffect, useEffectEvent, useRef, useState } from "react";
-import { useShellAction } from "@brightweblabs/app-shell";
+import { AppSheetBody, AppSheetFooter, AppSheetHeader, SheetSection, SheetSelect, sheetEditControlClassName, sheetFieldLabelClassName, sheetShellClassName, useShellAction } from "@brightweblabs/app-shell";
 import { motion, useReducedMotion } from "motion/react";
 import { CalendarClock, RotateCw, Send, Trash2, Users } from "lucide-react";
 import { toast } from "sonner";
@@ -12,22 +10,24 @@ import {
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, Button, Checkbox, DropdownMenu,
   DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, Field, FieldContent, FieldDescription,
   FieldError, FieldLabel, Input, Skeleton, Table, TableBody, TableCell, TableHead, TableHeader,
-  TablePagination, TableRow, TableRowsSkeleton,
+  TablePagination, TableRow, TableRowsSkeleton, Sheet, SheetContent, StatusPill,
 } from "@brightweblabs/ui";
 import {
   ADMIN_EVENTS, dispatchAdminCustomEvent, dispatchAdminEvent, type AdminSetBulkRoleEventDetail,
-  type AdminSetRoleFilterEventDetail, type AdminSetSearchEventDetail,
+  type AdminInvitationStatusFilter, type AdminSetInvitationSearchEventDetail,
+  type AdminSetInvitationStatusFilterEventDetail, type AdminSetRoleFilterEventDetail,
+  type AdminSetSearchEventDetail,
 } from "../events";
 import type { AdminManagedRole, AdminUserRow, AdminUsersListResult } from "../users";
 import { createAdminUiClient } from "./client";
 import { defaultAdminUiDictionary } from "./dictionary";
 import { formatInvitationExpiry } from "./invitation-expiry";
 import { AdminRolePill } from "./role-pill";
-import type { AdminInviteRole, AdminUiClient, AdminUiDictionary, AdminUserInvitation, AdminUsersView } from "./types";
+import type { AdminInviteRole, AdminOrganizationOption, AdminUiClient, AdminUiDictionary, AdminUserInvitation, AdminUsersView } from "./types";
 
 type PendingRoleAction = { profileIds: string[]; newRole: AdminManagedRole; mode: "single" | "bulk" };
 const roleValues: AdminManagedRole[] = ["client", "staff", "admin"];
-const inviteRoleValues: AdminInviteRole[] = ["staff", "admin"];
+const inviteRoleValues: AdminInviteRole[] = ["client", "staff", "admin"];
 const defaultAdminUiClient = createAdminUiClient();
 
 function resolveAdminUsersPageSize(fallback: number) {
@@ -42,6 +42,27 @@ function formatAdminDate(value: string | null, locale: string, fallback = "-") {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
   return new Intl.DateTimeFormat(locale, { day: "2-digit", month: "2-digit", year: "numeric" }).format(date);
+}
+
+const invitationStatusToken: Record<AdminUserInvitation["status"], string> = {
+  pending: "--semantic-warning",
+  accepted: "--semantic-success",
+  expired: "--muted-foreground",
+  revoked: "--destructive",
+};
+
+function InvitationStatus({ invitation, dictionary }: { invitation: AdminUserInvitation; dictionary: AdminUiDictionary }) {
+  return (
+    <div className="flex min-w-0 flex-col items-start gap-1">
+      <StatusPill token={invitationStatusToken[invitation.status]}>{dictionary.invitations.statusLabels[invitation.status]}</StatusPill>
+      {invitation.status === "pending" ? (
+        <span className="text-data-sm inline-flex items-center gap-1.5 text-[color:var(--muted-foreground)]">
+          <CalendarClock className="size-3.5" />
+          {formatInvitationExpiry(invitation.expiresAt, dictionary.locale, dictionary)}
+        </span>
+      ) : null}
+    </div>
+  );
 }
 
 function getBulkRoleSelectionSummary(rows: AdminUserRow[], selectedIds: string[], bulkTargetRole: AdminManagedRole) {
@@ -77,6 +98,9 @@ export function AdminUsersClient({
   const [pageSize, setPageSize] = useState(() => resolveAdminUsersPageSize(initialUsers.pagination.pageSize));
   const [total, setTotal] = useState(initialUsers.pagination.total);
   const [activeView, setActiveView] = useState<AdminUsersView>("users");
+  const [invitationSearch, setInvitationSearch] = useState("");
+  const [invitationStatusFilter, setInvitationStatusFilter] = useState<AdminInvitationStatusFilter>("pending");
+  const [invitationPage, setInvitationPage] = useState(1);
   const [hoveredView, setHoveredView] = useState<AdminUsersView | null>(null);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [bulkTargetRole, setBulkTargetRole] = useState<AdminManagedRole>("staff");
@@ -84,7 +108,11 @@ export function AdminUsersClient({
   const [pendingRoleAction, setPendingRoleAction] = useState<PendingRoleAction | null>(null);
   const [reason, setReason] = useState("");
   const [inviteEmail, setInviteEmail] = useState("");
-  const [inviteRole, setInviteRole] = useState<AdminInviteRole>("staff");
+  const [invitePanelOpen, setInvitePanelOpen] = useState(false);
+  const [inviteRole, setInviteRole] = useState<AdminInviteRole>("client");
+  const [organizations, setOrganizations] = useState<AdminOrganizationOption[]>([]);
+  const [inviteOrganizationId, setInviteOrganizationId] = useState("");
+  const [inviteOrganizationRole, setInviteOrganizationRole] = useState<"admin" | "member">("member");
   const [inviteSubmitting, setInviteSubmitting] = useState(false);
   const [inviteLoading, setInviteLoading] = useState(false);
   const [pendingInvites, setPendingInvites] = useState<AdminUserInvitation[]>([]);
@@ -167,7 +195,7 @@ export function AdminUsersClient({
     try {
       const invitations = await client.listInvitations();
       if (generation === invitationsRequestGenerationRef.current) {
-        setPendingInvites(invitations.filter((invite) => invite.status === "pending"));
+        setPendingInvites(invitations);
       }
     } catch (error) {
       if (generation === invitationsRequestGenerationRef.current) {
@@ -194,6 +222,17 @@ export function AdminUsersClient({
     void loadUsers();
   }, [loadUsers]);
   useEffect(() => { void loadInvitations(); }, [loadInvitations]);
+  useEffect(() => {
+    let current = true;
+    void client.listOrganizations()
+      .then((items) => {
+        if (!current) return;
+        setOrganizations(items);
+        setInviteOrganizationId((value) => value || items[0]?.id || "");
+      })
+      .catch(() => { if (current) setOrganizations([]); });
+    return () => { current = false; };
+  }, [client]);
 
   const handleApplyBulk = useEffectEvent(() => {
     if (selectedIds.length === 0) { toast.error(dictionary.roleChange.selectRequired); return; }
@@ -210,6 +249,14 @@ export function AdminUsersClient({
     void loadUsers();
     if (activeView === "invites") void loadInvitations({ force: true });
   });
+  const handleOpenInvite = useEffectEvent(() => {
+    setActiveView("invites");
+    setInvitationStatusFilter("pending");
+    setInvitationPage(1);
+    setInviteFeedback(null);
+    setInviteFieldError(null);
+    setInvitePanelOpen(true);
+  });
 
   useShellAction<AdminSetSearchEventDetail | undefined>(ADMIN_EVENTS.setSearch, (detail) => setSearch(detail?.query ?? ""));
   useShellAction<AdminSetRoleFilterEventDetail | undefined>(ADMIN_EVENTS.setRoleFilter, (detail) => {
@@ -217,20 +264,43 @@ export function AdminUsersClient({
     setRoleFilter(detail?.role ?? "all");
     setPage(1);
   });
+  useShellAction<AdminSetInvitationSearchEventDetail | undefined>(ADMIN_EVENTS.setInvitationSearch, (detail) => {
+    setInvitationSearch(detail?.query ?? "");
+    setInvitationPage(1);
+  });
+  useShellAction<AdminSetInvitationStatusFilterEventDetail | undefined>(ADMIN_EVENTS.setInvitationStatusFilter, (detail) => {
+    setInvitationStatusFilter(detail?.status ?? "pending");
+    setInvitationPage(1);
+  });
   useShellAction<AdminSetBulkRoleEventDetail | undefined>(ADMIN_EVENTS.setBulkRole, (detail) => {
     if (detail?.role) setBulkTargetRole(detail.role);
   });
   useShellAction(ADMIN_EVENTS.applyBulk, () => handleApplyBulk());
+  useShellAction(ADMIN_EVENTS.openInvite, () => handleOpenInvite());
   useShellAction(ADMIN_EVENTS.refresh, () => handleRefresh());
 
   useEffect(() => {
     dispatchAdminCustomEvent(ADMIN_EVENTS.state, {
-      roleFilter, search, selectedCount: selectedIds.length, bulkRole: bulkTargetRole, isApplyingBulk: isSubmitting,
+      activeView, roleFilter, search, invitationSearch, invitationStatusFilter,
+      selectedCount: selectedIds.length, bulkRole: bulkTargetRole, isApplyingBulk: isSubmitting,
     });
-  }, [bulkTargetRole, isSubmitting, roleFilter, search, selectedIds.length]);
+  }, [activeView, bulkTargetRole, invitationSearch, invitationStatusFilter, isSubmitting, roleFilter, search, selectedIds.length]);
 
   const allOnPageSelected = rows.length > 0 && rows.every((row) => selectedIds.includes(row.profileId));
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const normalizedInvitationSearch = invitationSearch.trim().toLocaleLowerCase(dictionary.locale);
+  const filteredInvitations = pendingInvites.filter((invitation) => {
+    if (invitationStatusFilter !== "all" && invitation.status !== invitationStatusFilter) return false;
+    if (!normalizedInvitationSearch) return true;
+    return [invitation.email, invitation.organizationName ?? "", dictionary.roles[invitation.role]]
+      .some((value) => value.toLocaleLowerCase(dictionary.locale).includes(normalizedInvitationSearch));
+  });
+  const invitationTotalPages = Math.max(1, Math.ceil(filteredInvitations.length / pageSize));
+  const visibleInvitations = filteredInvitations.slice((invitationPage - 1) * pageSize, invitationPage * pageSize);
+
+  useEffect(() => {
+    setInvitationPage((current) => Math.min(current, invitationTotalPages));
+  }, [invitationTotalPages]);
   const setAllPageSelection = (checked: boolean) => setSelectedIds((current) => checked
     ? Array.from(new Set([...current, ...rows.map((row) => row.profileId)]))
     : current.filter((id) => !rows.some((row) => row.profileId === id)));
@@ -238,16 +308,27 @@ export function AdminUsersClient({
   const submitInvite = async () => {
     const email = inviteEmail.trim().toLowerCase();
     if (!email) { setInviteFieldError(dictionary.invitations.emailRequired); return; }
+    if (inviteRole === "client" && !inviteOrganizationId) { setInviteFieldError("Escolha uma organização para o Cliente."); return; }
     setInviteFieldError(null);
     setInviteFeedback(null);
     setInviteSubmitting(true);
     try {
-      const created = await client.inviteUser({ email, role: inviteRole });
+      const organization = organizations.find((item) => item.id === inviteOrganizationId);
+      const created = await client.inviteUser({
+        email,
+        role: inviteRole,
+        organizationId: inviteRole === "client" ? inviteOrganizationId : undefined,
+        organizationName: inviteRole === "client" ? organization?.name : undefined,
+        organizationRole: inviteRole === "client" ? inviteOrganizationRole : undefined,
+      });
       setPendingInvites((current) => [created, ...current.filter((invite) => invite.id !== created.id)]);
+      setInvitationPage(1);
       toast.success(dictionary.invitations.sent);
       setInviteFeedback(dictionary.invitations.sentTo?.(created.email) ?? dictionary.invitations.sent);
       setInviteEmail("");
-      setInviteRole("staff");
+      setInviteRole("client");
+      setInviteOrganizationRole("member");
+      setInvitePanelOpen(false);
     } catch (error) {
       const message = error instanceof Error ? error.message : dictionary.invitations.sendError;
       setInviteFieldError(message);
@@ -262,8 +343,8 @@ export function AdminUsersClient({
     const invitation = pendingRevoke;
     setRevokingInviteId(invitation.id);
     try {
-      await client.revokeInvitation(invitation.id);
-      setPendingInvites((current) => current.filter((invite) => invite.id !== invitation.id));
+      await client.revokeInvitation(invitation);
+      setPendingInvites((current) => current.map((invite) => invite.id === invitation.id ? { ...invite, status: "revoked" } : invite));
       toast.success(dictionary.invitations.revoked);
       setPendingRevoke(null);
     } catch (error) {
@@ -299,12 +380,12 @@ export function AdminUsersClient({
   const pendingLabel = pendingRoleAction ? dictionary.roles[pendingRoleAction.newRole] : "";
   const views = [
     { id: "users" as const, label: dictionary.views.users, count: total },
-    { id: "invites" as const, label: dictionary.views.invites, count: pendingInvites.length },
+    { id: "invites" as const, label: dictionary.views.invites, count: pendingInvites.filter((invite) => invite.status === "pending").length },
   ];
 
   return (
     <div className="mx-auto flex w-full max-w-[1480px] flex-col gap-6 pb-6 pt-0 md:pb-8">
-      <section className="admin-dashboard-reveal">
+      <section className="admin-dashboard-reveal flex items-center gap-4">
         <div className="inline-flex w-fit items-center gap-1 rounded-full border border-[color:var(--border)] bg-[color:var(--card)] p-1" onMouseLeave={() => setHoveredView(null)}>
           {views.map((view) => {
             const isActive = activeView === view.id;
@@ -322,47 +403,60 @@ export function AdminUsersClient({
       </section>
 
       {activeView === "invites" ? (
-        <div className="grid items-start gap-5 lg:grid-cols-[minmax(290px,0.72fr)_minmax(0,1.45fr)]">
-          <section className="admin-dashboard-reveal admin-table-surface overflow-hidden lg:sticky lg:top-4">
-            <div className="border-b border-[color:var(--border)] p-md lg:p-lg">
-              <div className="admin-section-icon mb-sm"><Send className="size-3.5" /></div>
-              <h2 className="text-title text-foreground">{dictionary.invitations.title}</h2>
-              <p className="mt-2xs text-body leading-relaxed text-[color:var(--muted-foreground)]">{dictionary.invitations.description}</p>
-            </div>
-            <form className="flex flex-col gap-md p-md lg:p-lg" aria-busy={inviteSubmitting} onSubmit={(event) => { event.preventDefault(); void submitInvite(); }}>
+        <div>
+          <Sheet open={invitePanelOpen} onOpenChange={setInvitePanelOpen}>
+            <SheetContent className={sheetShellClassName} showCloseButton={false} onInteractOutside={(event) => event.preventDefault()}>
+            <form className="flex min-h-0 flex-1 flex-col gap-0" aria-busy={inviteSubmitting} onSubmit={(event) => { event.preventDefault(); void submitInvite(); }}>
+              <AppSheetHeader icon={Send} editing eyebrow={dictionary.invitations.createEyebrow} title={dictionary.invitations.title} description={dictionary.invitations.description} />
+              <AppSheetBody>
               {inviteFeedback ? (
                 <div role="status" className="border-l-2 border-[color:var(--semantic-success)] bg-[color:var(--surface-status-success)] px-sm py-xs text-body text-[color:var(--semantic-success-strong)]">
                   {inviteFeedback}
                 </div>
               ) : null}
+              <SheetSection title={dictionary.invitations.identity} editing bodyClassName="space-y-3 px-4 py-3">
               <Field data-invalid={Boolean(inviteFieldError)}>
-                <FieldLabel htmlFor="admin-user-invite-email">{dictionary.invitations.emailLabel}</FieldLabel>
+                <FieldLabel htmlFor="admin-user-invite-email" className={sheetFieldLabelClassName}>{dictionary.invitations.emailLabel}</FieldLabel>
                 <FieldContent>
-                  <Input id="admin-user-invite-email" type="email" value={inviteEmail} onChange={(event) => { setInviteEmail(event.target.value); setInviteFieldError(null); setInviteFeedback(null); }} placeholder={dictionary.invitations.emailPlaceholder} autoComplete="email" disabled={inviteSubmitting} required aria-invalid={Boolean(inviteFieldError)} aria-describedby={inviteFieldError ? "admin-user-invite-email-error" : "admin-user-invite-hint"} />
+                  <Input id="admin-user-invite-email" name="email" type="email" value={inviteEmail} onChange={(event) => { setInviteEmail(event.target.value); setInviteFieldError(null); setInviteFeedback(null); }} placeholder={dictionary.invitations.emailPlaceholder} autoComplete="email" disabled={inviteSubmitting} required aria-invalid={Boolean(inviteFieldError)} aria-describedby={inviteFieldError ? "admin-user-invite-email-error" : "admin-user-invite-hint"} className={`${sheetEditControlClassName} mt-1.5`} />
                   <FieldError id="admin-user-invite-email-error">{inviteFieldError}</FieldError>
                 </FieldContent>
               </Field>
               <Field>
-                <FieldLabel htmlFor="admin-user-invite-role">{dictionary.invitations.roleLabel}</FieldLabel>
+                <FieldLabel htmlFor="admin-user-invite-role" className={sheetFieldLabelClassName}>{dictionary.invitations.roleLabel}</FieldLabel>
                 <FieldContent>
-                  <StyledSelect id="admin-user-invite-role" value={inviteRole} onChange={(event) => setInviteRole(event.target.value === "admin" ? "admin" : "staff")} disabled={inviteSubmitting} className="h-11 w-full rounded-[var(--radius)] border border-[color:var(--hairline-strong)] bg-[color:var(--elevate-1)] px-3 text-body text-[color:var(--foreground)] shadow-xs outline-none transition-[color,box-shadow] focus:border-[color:var(--accent)] focus:ring-[color:var(--ring)] focus:ring-[3px] disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50">
-                    {inviteRoleValues.map((role) => <option key={role} value={role}>{dictionary.roles[role]}</option>)}
-                  </StyledSelect>
+                  <SheetSelect id="admin-user-invite-role" name="role" className="mt-1.5" value={inviteRole} onValueChange={(role) => setInviteRole(role === "admin" ? "admin" : role === "staff" ? "staff" : "client")} disabled={inviteSubmitting} options={inviteRoleValues.map((role) => ({ value: role, label: dictionary.roles[role] }))} />
                   {dictionary.invitations.roleDescriptions?.[inviteRole] ? <FieldDescription>{dictionary.invitations.roleDescriptions[inviteRole]}</FieldDescription> : null}
                 </FieldContent>
               </Field>
-              <p id="admin-user-invite-hint" className="text-meta leading-relaxed text-[color:var(--muted-foreground)]">{dictionary.invitations.formHint}</p>
-              <Button type="submit" variant="brand" size="lg" disabled={inviteSubmitting} className="h-11 w-full"><Send className="size-4" />{inviteSubmitting ? dictionary.invitations.sending : dictionary.invitations.send}</Button>
+              </SheetSection>
+              {inviteRole === "client" ? (
+                <SheetSection title={dictionary.invitations.organizationTitle} editing bodyClassName="space-y-3 px-4 py-3">
+                  <p className="text-meta leading-relaxed text-[color:var(--muted-foreground)]">{dictionary.invitations.organizationDescription}</p>
+                  <Field>
+                    <FieldLabel htmlFor="admin-user-invite-organization" className={sheetFieldLabelClassName}>{dictionary.invitations.organizationLabel}</FieldLabel>
+                    <FieldContent><SheetSelect id="admin-user-invite-organization" name="organizationId" className="mt-1.5" value={inviteOrganizationId} onValueChange={setInviteOrganizationId} disabled={inviteSubmitting || organizations.length === 0} options={[{ value: "", label: dictionary.invitations.organizationPlaceholder }, ...organizations.map((organization) => ({ value: organization.id, label: organization.name }))]} /></FieldContent>
+                  </Field>
+                  <Field>
+                    <FieldLabel htmlFor="admin-user-invite-organization-role" className={sheetFieldLabelClassName}>{dictionary.invitations.organizationRoleLabel}</FieldLabel>
+                    <FieldContent><SheetSelect id="admin-user-invite-organization-role" name="organizationRole" className="mt-1.5" value={inviteOrganizationRole} onValueChange={(role) => setInviteOrganizationRole(role === "admin" ? "admin" : "member")} disabled={inviteSubmitting} options={[{ value: "member", label: dictionary.invitations.organizationRoles.member }, { value: "admin", label: dictionary.invitations.organizationRoles.admin }]} /></FieldContent>
+                  </Field>
+                </SheetSection>
+              ) : null}
+              <p id="admin-user-invite-hint" className="px-1 text-meta leading-relaxed text-[color:var(--muted-foreground)]">{dictionary.invitations.formHint}</p>
+              </AppSheetBody>
+              <AppSheetFooter className="flex-row"><Button type="submit" className="flex-1" disabled={inviteSubmitting}><Send className="mr-2 size-4" />{inviteSubmitting ? dictionary.invitations.sending : dictionary.invitations.send}</Button><Button type="button" variant="outline" className="flex-1" disabled={inviteSubmitting} onClick={() => setInvitePanelOpen(false)}>{dictionary.invitations.cancel}</Button></AppSheetFooter>
             </form>
-          </section>
+            </SheetContent>
+          </Sheet>
 
           <section className="admin-dashboard-reveal admin-table-surface min-w-0 overflow-hidden" aria-busy={inviteLoading}>
             <div className="flex items-center justify-between border-b border-[color:var(--border)] px-md py-sm">
               <div>
-                <h2 className="text-title text-foreground">{dictionary.invitations.pendingTitle}</h2>
+                <h2 className="text-title text-foreground">{invitationStatusFilter === "pending" ? dictionary.invitations.pendingTitle : dictionary.invitations.historyTitle}</h2>
                 {inviteLoading ? <p className="mt-1 text-meta text-[color:var(--muted-foreground)]">{dictionary.invitations.updating}</p> : null}
               </div>
-              <span className="text-data-sm text-[color:var(--muted-foreground)]">{pendingInvites.length}</span>
+              <span className="text-data-sm text-[color:var(--muted-foreground)]">{filteredInvitations.length}</span>
             </div>
 
             {inviteLoadError ? (
@@ -376,17 +470,17 @@ export function AdminUsersClient({
                 <div className="space-y-sm p-md md:hidden">
                   {inviteLoading && pendingInvites.length === 0 ? Array.from({ length: 3 }, (_, index) => (
                     <div key={index} className="space-y-3 border border-[color:var(--border)] p-sm"><Skeleton className="h-4 w-3/4" /><Skeleton className="h-6 w-24" /><Skeleton className="h-3 w-1/2" /></div>
-                  )) : pendingInvites.length === 0 ? (
-                    <div className="flex min-h-52 flex-col items-center justify-center gap-2 px-sm text-center text-[color:var(--muted-foreground)]"><div className="admin-section-icon"><Send className="size-3.5" /></div><p className="text-body font-semibold text-[color:var(--foreground)]">{dictionary.invitations.emptyTitle}</p><p className="max-w-[24rem] text-body">{dictionary.invitations.emptyHint}</p></div>
-                  ) : pendingInvites.map((invite) => (
+                  )) : filteredInvitations.length === 0 ? (
+                    <div className="flex min-h-52 flex-col items-center justify-center gap-2 px-sm text-center text-[color:var(--muted-foreground)]"><div className="admin-section-icon"><Send className="size-3.5" /></div><p className="text-body font-semibold text-[color:var(--foreground)]">{invitationStatusFilter === "pending" ? dictionary.invitations.emptyTitle : dictionary.invitations.historyEmptyTitle}</p><p className="max-w-[24rem] text-body">{invitationStatusFilter === "pending" ? dictionary.invitations.emptyHint : dictionary.invitations.historyEmptyHint}</p></div>
+                  ) : visibleInvitations.map((invite) => (
                     <article key={invite.id} className="border border-[color:var(--border)] bg-[color:var(--elevate-1)] p-sm">
                       <div className="flex items-start justify-between gap-sm">
-                        <div className="min-w-0"><p className="break-all text-body font-semibold text-[color:var(--foreground)]">{invite.email}</p><p className="mt-1 text-meta text-[color:var(--muted-foreground)]">{dictionary.invitations.columns.created}: <span className="text-data-sm">{formatAdminDate(invite.createdAt, dictionary.locale)}</span></p></div>
+                        <div className="min-w-0"><p className="break-all text-body font-semibold text-[color:var(--foreground)]">{invite.email}</p><p className="mt-1 text-meta text-[color:var(--muted-foreground)]">{invite.organizationName ? `${invite.organizationName} · ${invite.organizationRole === "admin" ? "Administrador" : "Membro"}` : "Acesso global"}</p></div>
                         <AdminRolePill role={invite.role} dictionary={dictionary} />
                       </div>
                       <div className="mt-sm flex items-center justify-between gap-sm border-t border-[color:var(--border)] pt-sm">
-                        <span className="text-data-sm inline-flex items-center gap-1.5 text-[color:var(--muted-foreground)]"><CalendarClock className="size-3.5" />{formatInvitationExpiry(invite.expiresAt, dictionary.locale, dictionary)}</span>
-                        <Button type="button" variant="ghost" size="sm" onClick={() => setPendingRevoke(invite)} disabled={revokingInviteId === invite.id} aria-label={dictionary.invitations.revoke(invite.email)} className="text-[color:var(--muted-foreground)] hover:text-[color:var(--destructive)]"><Trash2 className="size-4" />{dictionary.invitations.confirmRevoke ?? dictionary.invitations.columns.actions}</Button>
+                        <InvitationStatus invitation={invite} dictionary={dictionary} />
+                        {invite.status === "pending" ? <Button type="button" variant="ghost" size="sm" onClick={() => setPendingRevoke(invite)} disabled={revokingInviteId === invite.id} aria-label={dictionary.invitations.revoke(invite.email)} className="text-[color:var(--muted-foreground)] hover:text-[color:var(--destructive)]"><Trash2 className="size-4" />{dictionary.invitations.confirmRevoke ?? dictionary.invitations.columns.actions}</Button> : null}
                       </div>
                     </article>
                   ))}
@@ -401,20 +495,31 @@ export function AdminUsersClient({
                       <TableHead className="text-label text-muted-foreground w-[8%] px-4 text-right">{dictionary.invitations.columns.actions}</TableHead>
                     </TableRow></TableHeader>
                     <TableBody>
-                      {inviteLoading && pendingInvites.length === 0 ? <TableRowsSkeleton rows={4} columns={["text", "chip", "text", "text", "action"]} /> : pendingInvites.length === 0 ? (
-                        <TableRow className="border-[color:var(--border)]"><TableCell colSpan={5} className="h-40 text-center"><div className="flex flex-col items-center gap-2 text-[color:var(--muted-foreground)]"><div className="admin-section-icon"><Send className="size-3.5" /></div><p className="text-body font-semibold text-[color:var(--foreground)]">{dictionary.invitations.emptyTitle}</p><p className="text-body">{dictionary.invitations.emptyHint}</p></div></TableCell></TableRow>
-                      ) : pendingInvites.map((invite) => (
+                      {inviteLoading && pendingInvites.length === 0 ? <TableRowsSkeleton rows={4} columns={["text", "chip", "text", "text", "action"]} /> : filteredInvitations.length === 0 ? (
+                        <TableRow className="border-[color:var(--border)]"><TableCell colSpan={5} className="h-40 text-center"><div className="flex flex-col items-center gap-2 text-[color:var(--muted-foreground)]"><div className="admin-section-icon"><Send className="size-3.5" /></div><p className="text-body font-semibold text-[color:var(--foreground)]">{invitationStatusFilter === "pending" ? dictionary.invitations.emptyTitle : dictionary.invitations.historyEmptyTitle}</p><p className="text-body">{invitationStatusFilter === "pending" ? dictionary.invitations.emptyHint : dictionary.invitations.historyEmptyHint}</p></div></TableCell></TableRow>
+                      ) : visibleInvitations.map((invite) => (
                         <TableRow key={invite.id} className="admin-row-hover border-[color:var(--border)] [&_td]:py-3">
                           <TableCell className="truncate px-4 text-body font-semibold text-[color:var(--foreground)]">{invite.email}</TableCell>
                           <TableCell className="px-4"><AdminRolePill role={invite.role} dictionary={dictionary} /></TableCell>
-                          <TableCell className="text-data-sm px-4 text-[color:var(--muted-foreground)]">{formatAdminDate(invite.createdAt, dictionary.locale)}</TableCell>
-                          <TableCell className="px-4"><span className="text-data-sm inline-flex items-center gap-1.5 text-[color:var(--muted-foreground)]"><CalendarClock className="size-3.5" />{formatInvitationExpiry(invite.expiresAt, dictionary.locale, dictionary)}</span></TableCell>
-                          <TableCell className="px-4 text-right"><Button type="button" variant="ghost" size="icon-sm" onClick={() => setPendingRevoke(invite)} disabled={revokingInviteId === invite.id} aria-label={dictionary.invitations.revoke(invite.email)} className="text-[color:var(--muted-foreground)] hover:text-[color:var(--destructive)]"><Trash2 className="size-4" /></Button></TableCell>
+                          <TableCell className="px-4"><div className="min-w-0"><p className="truncate text-body text-[color:var(--foreground)]">{invite.organizationName ?? "Acesso global"}</p><p className="truncate text-meta text-[color:var(--muted-foreground)]">{invite.organizationName ? (invite.organizationRole === "admin" ? "Administrador" : "Membro") : formatAdminDate(invite.createdAt, dictionary.locale)}</p></div></TableCell>
+                          <TableCell className="px-4"><InvitationStatus invitation={invite} dictionary={dictionary} /></TableCell>
+                          <TableCell className="px-4 text-right">{invite.status === "pending" ? <Button type="button" variant="ghost" size="icon-sm" onClick={() => setPendingRevoke(invite)} disabled={revokingInviteId === invite.id} aria-label={dictionary.invitations.revoke(invite.email)} className="text-[color:var(--muted-foreground)] hover:text-[color:var(--destructive)]"><Trash2 className="size-4" /></Button> : null}</TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
                   </Table>
                 </div>
+                {filteredInvitations.length > 0 ? (
+                  <TablePagination
+                    page={invitationPage}
+                    totalPages={invitationTotalPages}
+                    onPageChange={setInvitationPage}
+                    summary={dictionary.invitations.summary(visibleInvitations.length, filteredInvitations.length)}
+                    previousLabel={dictionary.pagination.previous}
+                    nextLabel={dictionary.pagination.next}
+                    pageLabel={dictionary.pagination.page}
+                  />
+                ) : null}
               </>
             )}
           </section>

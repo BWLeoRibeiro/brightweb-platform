@@ -34,6 +34,9 @@ The current public scaffold only generates `.env.local` for the `platform` templ
 | `SUPABASE_SECRET_DEFAULT_KEY` | server | `crm`, `projects`, `admin` | Privileged server key for admin, CRM, and projects actions. | The target Supabase project settings. |
 | `RESEND_API_KEY` | server | `admin` | API key used by app-owned email transport calls. | Your Resend account. |
 | `RESEND_FROM_TRANSACTIONAL` | server | `admin` | Sender identity for app-owned transactional flows. | A verified sender/domain in Resend. |
+| `EMAIL_BRAND_NAME` | server | optional | Brand name shown in transactional invitation emails. Falls back to the sender display name. | Your product or company name. |
+| `EMAIL_BRAND_LOGO_URL` | server | optional | Absolute or app-relative PNG logo used in transactional invitation emails. | A publicly reachable email-safe logo. |
+| `EMAIL_BRAND_COLOR_*` | server | optional | Semantic `#RRGGBB` colors used by invitation emails (`CANVAS`, `SURFACE`, `HEADER`, `HEADER_TEXT`, `HEADER_MUTED_TEXT`, `ACCENT`, `TEXT`, `MUTED_TEXT`, `BORDER`, `PANEL`, `BUTTON`, `BUTTON_TEXT`, and `WARNING`). Invalid values fall back safely. | Map the project's theme tokens to the email palette. |
 | `RESEND_FROM_MARKETING` | server | `admin` | Sender identity for app-owned marketing flows. | A verified sender/domain in Resend. |
 | `CONTACT_TO_EMAIL` | server | `admin` | Destination inbox for app-owned contact notifications. | Inbox address owned by the client. |
 | `RESEND_WEBHOOK_SECRET` | server | `admin` | Secret used to verify inbound Resend webhook signatures. | The webhook secret configured in Resend. |
@@ -52,6 +55,7 @@ The current public scaffold only generates `.env.local` for the `platform` templ
 
 - Auth email flows (`signUp`, resend confirmation, reset password) are Supabase-owned and use `supabase.auth.*`.
 - Auth provider and SMTP behavior are configured in Supabase Auth settings, not in the app transport layer.
+- Generate Supabase template files with `createAuthEmailTemplates`; pass the same semantic palette used by app-owned invitations so every account email stays on-brand.
 - App-owned transactional, contact, invite, and marketing flows should call Resend via `@brightweblabs/infra/server`.
 
 ## Generated platform config files

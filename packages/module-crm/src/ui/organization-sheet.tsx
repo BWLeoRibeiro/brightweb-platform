@@ -55,6 +55,7 @@ function hasOrganizationChanges(value: CrmOrganizationFormInput, organization?: 
 export type CrmOrganizationSheetProps = {
   open: boolean;
   organization?: CrmOrganization | null;
+  initialMode?: "view" | "edit";
   dictionary?: CrmUiDictionary;
   onOpenChange: (open: boolean) => void;
   onSubmit: (input: CrmOrganizationFormInput, organization?: CrmOrganization | null) => Promise<void> | void;
@@ -117,9 +118,9 @@ function mapCreateInput(input: OrganizationCreateSheetInput): CrmOrganizationFor
   };
 }
 
-function CrmOrganizationDetailSheet({ open, organization, dictionary = defaultCrmUiDictionary, onOpenChange, onSubmit, onDelete, listInvitations, onRevokeInvitation }: CrmOrganizationSheetProps & { organization: CrmOrganization }) {
+function CrmOrganizationDetailSheet({ open, organization, initialMode = "view", dictionary = defaultCrmUiDictionary, onOpenChange, onSubmit, onDelete, listInvitations, onRevokeInvitation }: CrmOrganizationSheetProps & { organization: CrmOrganization }) {
   const fieldId = useId();
-  const [mode, setMode] = useState<OrganizationMode>(organization ? "view" : "create");
+  const [mode, setMode] = useState<OrganizationMode>(initialMode);
   const [value, setValue] = useState(() => initialValue(organization));
   const [saving, setSaving] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -135,12 +136,12 @@ function CrmOrganizationDetailSheet({ open, organization, dictionary = defaultCr
   useEffect(() => {
     if (!open) return;
     setValue(initialValue(organization));
-    setMode(organization ? "view" : "create");
+    setMode(initialMode);
     setInvitations([]);
     setOperationError(null);
     setDeleteDialogOpen(false);
     setDeleteConfirmation("");
-  }, [open, organization]);
+  }, [initialMode, open, organization]);
 
   useEffect(() => {
     if (!open || !organization || !listInvitations) return;

@@ -66,6 +66,7 @@ export type CrmContactsTableProps = {
   onSelectedIdsChange?: (ids: string[]) => void;
   onParamsChange?: (params: CrmContactsListParams) => void;
   onRowClick?: (contact: CrmContact) => void;
+  onOrganizationClick?: (organizationId: string) => void;
   onBulkStatus?: (contactIds: string[]) => void;
   onBulkDelete?: (contactIds: string[]) => void;
   onQuickStatus?: (contact: CrmContact, status: CrmStageConfig["value"]) => void;
@@ -85,6 +86,7 @@ export function CrmContactsTable({
   onSelectedIdsChange,
   onParamsChange,
   onRowClick,
+  onOrganizationClick,
   onBulkStatus,
   onBulkDelete,
   onQuickStatus,
@@ -110,7 +112,15 @@ export function CrmContactsTable({
           <p className="truncate text-meta leading-tight text-[color:var(--muted-foreground)]">{contact.email ?? contact.phone ?? dictionary.table.noContact}</p>
         </div>
       );
-      case "organization": return contact.organizations?.name ?? dictionary.table.unavailable;
+      case "organization": return contact.organization_id && contact.organizations?.name && onOrganizationClick ? (
+        <button
+          type="button"
+          className="max-w-full truncate text-left text-[color:var(--foreground-accent-link)] underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--ring)]"
+          onClick={(event) => { event.stopPropagation(); onOrganizationClick(contact.organization_id!); }}
+        >
+          {contact.organizations.name}
+        </button>
+      ) : contact.organizations?.name ?? dictionary.table.unavailable;
       case "owner": return owner?.label ?? dictionary.table.unavailable;
       case "status": return stage ? (
         <DropdownMenu>

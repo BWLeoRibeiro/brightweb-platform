@@ -38,20 +38,23 @@ export type ShellViewer = {
 const authClient = createAuthUiClient();
 export function PreviewShellLayoutClient({
   children,
+  pathnameOverride,
   viewer,
-}: Readonly<{ children: ReactNode; viewer: ShellViewer }>) {
+}: Readonly<{ children: ReactNode; pathnameOverride?: string; viewer: ShellViewer }>) {
   return (
     <ShellActionsProvider>
-      <PreviewShellLayoutInner viewer={viewer}>{children}</PreviewShellLayoutInner>
+      <PreviewShellLayoutInner pathnameOverride={pathnameOverride} viewer={viewer}>{children}</PreviewShellLayoutInner>
     </ShellActionsProvider>
   );
 }
 
 function PreviewShellLayoutInner({
   children,
+  pathnameOverride,
   viewer,
-}: Readonly<{ children: ReactNode; viewer: ShellViewer }>) {
-  const pathname = usePathname();
+}: Readonly<{ children: ReactNode; pathnameOverride?: string; viewer: ShellViewer }>) {
+  const livePathname = usePathname();
+  const pathname = pathnameOverride ?? livePathname;
   const router = useRouter();
   const { shellPreview: config, toolbarRoutes, toolbarActions } = useMemo(
     () => getStarterShellConfig(),
