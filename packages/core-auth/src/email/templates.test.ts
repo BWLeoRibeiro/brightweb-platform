@@ -37,4 +37,9 @@ test("auth email templates cover every supported account flow", () => {
   assert.match(templates.phoneChanged.html, /\{\{ \.Phone \}\}/);
   assert.match(templates.mfaFactorEnrolled.html, /autentica(?:ç|&#231;)ão multifator/i);
   assert.match(templates.identityUnlinked.html, /Identidade removida/);
+  for (const template of Object.values(templates)) {
+    assert.match(template.html, /Esta mensagem foi enviada para/);
+    assert.doesNotMatch(template.html, /Este convite foi enviado para/);
+    assert.doesNotMatch(template.text, /Este convite foi enviado para/);
+  }
 });

@@ -35,6 +35,25 @@ test("invitation email creates an accessible branded HTML and text pair", () => 
   assert.doesNotMatch(email.html, /Verde & Filhos <Lda>/);
   assert.match(email.text, /Organização: Verde & Filhos <Lda>/);
   assert.match(email.text, /24 de agosto de 2026/);
+  assert.match(email.html, /Este convite foi enviado para ana@example\.com/);
+});
+
+test("transactional email can use non-invitation recipient wording", () => {
+  const email = buildInvitationEmail({
+    brandName: "BeGreen Consulting",
+    preheader: "A sua conta foi atualizada.",
+    eyebrow: "Aviso de segurança",
+    title: "Alteração concluída",
+    introduction: "A operação foi concluída.",
+    details: [{ label: "Estado", value: "Concluído" }],
+    recipientEmail: "ana@example.com",
+    recipientLabel: "Esta mensagem foi enviada para",
+    closingNote: "Se não reconhece esta mensagem, pode ignorá-la em segurança.",
+  });
+
+  assert.match(email.html, /Esta mensagem foi enviada para ana@example\.com/);
+  assert.match(email.text, /Esta mensagem foi enviada para ana@example\.com/);
+  assert.doesNotMatch(email.html, /convite/i);
 });
 
 test("email brand name follows the configured sender display name", () => {

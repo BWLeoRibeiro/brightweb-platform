@@ -35,6 +35,8 @@ export function createAuthEmailTemplates(brand: AuthEmailBrand): Record<AuthEmai
     logoUrl: brand.logoUrl,
     logoAlt: brand.brandName,
     palette: brand.palette,
+    recipientLabel: "Esta mensagem foi enviada para",
+    closingNote: "Se não reconhece esta mensagem, pode ignorá-la em segurança.",
   };
 
   return {

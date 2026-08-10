@@ -90,6 +90,7 @@ export type TransactionalEmailContent = {
   actionUrl?: string;
   expiresLabel?: string | null;
   recipientEmail?: string;
+  recipientLabel?: string;
   closingNote?: string;
   palette?: Partial<TransactionalEmailPalette>;
 };
@@ -131,6 +132,7 @@ export function buildTransactionalEmail(content: TransactionalEmailContent): Tra
   const hasAction = Boolean(actionLabel && actionUrl);
   const expiresLabel = content.expiresLabel ? escapeHtml(content.expiresLabel) : null;
   const recipientEmail = content.recipientEmail ? escapeHtml(content.recipientEmail) : null;
+  const recipientLabel = escapeHtml(content.recipientLabel ?? "Este convite foi enviado para");
   const closingNote = escapeHtml(content.closingNote ?? "Se não reconhece este convite, pode ignorar esta mensagem em segurança.");
   const detailRows = content.details.map((detail, index) => `
                     <tr>
@@ -198,7 +200,7 @@ export function buildTransactionalEmail(content: TransactionalEmailContent): Tra
               </td>
             </tr>
           </table>
-          <p style="margin:18px auto 0;max-width:540px;color:${palette.mutedText};font-size:11px;line-height:1.6;text-align:center;">${closingNote}${recipientEmail ? `<br>Este convite foi enviado para ${recipientEmail}.` : ""}</p>
+          <p style="margin:18px auto 0;max-width:540px;color:${palette.mutedText};font-size:11px;line-height:1.6;text-align:center;">${closingNote}${recipientEmail ? `<br>${recipientLabel} ${recipientEmail}.` : ""}</p>
         </td>
       </tr>
     </table>
@@ -207,7 +209,7 @@ export function buildTransactionalEmail(content: TransactionalEmailContent): Tra
 
   const detailText = content.details.map((detail) => `${detail.label}: ${detail.value}`).join("\n");
   const actionText = hasAction ? `\n\n${content.actionLabel}:\n${content.actionUrl}` : "";
-  const text = `${content.brandName}\n\n${content.title}\n\n${content.introduction}\n\n${detailText}${actionText}${content.expiresLabel ? `\n\nEste convite é válido até ${content.expiresLabel}.` : ""}\n\n${content.closingNote ?? "Se não reconhece este convite, pode ignorar esta mensagem em segurança."}${content.recipientEmail ? `\nEste convite foi enviado para ${content.recipientEmail}.` : ""}`;
+  const text = `${content.brandName}\n\n${content.title}\n\n${content.introduction}\n\n${detailText}${actionText}${content.expiresLabel ? `\n\nEste convite é válido até ${content.expiresLabel}.` : ""}\n\n${content.closingNote ?? "Se não reconhece este convite, pode ignorar esta mensagem em segurança."}${content.recipientEmail ? `\n${content.recipientLabel ?? "Este convite foi enviado para"} ${content.recipientEmail}.` : ""}`;
 
   return { html, text };
 }
