@@ -1,5 +1,11 @@
 # create-bw-app
 
+## 0.24.9
+
+### Patch Changes
+
+- Keep the baked-in BrightWeb package compatibility map aligned with the access-management and transactional-email patch releases.
+
 ## 0.24.8
 
 ### Patch Changes
