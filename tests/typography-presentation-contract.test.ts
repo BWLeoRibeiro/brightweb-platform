@@ -11,6 +11,10 @@ const tokenDefinitionFiles = new Set([
   path.join(packagesRoot, "theme", "src", "tokens.css"),
 ]);
 
+function isEmailTemplate(file: string): boolean {
+  return file.includes(`${path.sep}email${path.sep}`);
+}
+
 async function sourceFiles(directory: string): Promise<string[]> {
   const entries = await fs.readdir(directory, { withFileTypes: true });
   const nested = await Promise.all(entries.map(async (entry) => {
@@ -35,7 +39,9 @@ test("package components do not force uppercase or expanded tracking", async () 
   ];
 
   for (const file of await sourceFiles(packagesRoot)) {
-    if (tokenDefinitionFiles.has(file)) continue;
+    // Email presentation must be inlined because many inboxes cannot load the
+    // application typography system or preserve class-based styling.
+    if (tokenDefinitionFiles.has(file) || isEmailTemplate(file)) continue;
     const source = await fs.readFile(file, "utf8");
     if (bannedPresentation.some((pattern) => pattern.test(source))) {
       violations.push(path.relative(repoRoot, file));

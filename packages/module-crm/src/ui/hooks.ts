@@ -17,6 +17,9 @@ export const CRM_UI_EVENTS = {
   setSearch: "brightweb:crm:set-search",
   setSort: "brightweb:crm:set-sort",
   state: "brightweb:crm:state",
+  organizationSetSearch: "brightweb:crm:organizations:set-search",
+  organizationSetFilters: "brightweb:crm:organizations:set-filters",
+  organizationState: "brightweb:crm:organizations:state",
 } as const;
 
 export function useCrmDashboardController(initialData?: Partial<CrmDashboardData>, pageSize = 20) {

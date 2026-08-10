@@ -358,7 +358,7 @@ test("dashboard overview preserves the branded bento layout", () => {
   assert.match(clientSource, /<ProjectsKpiCard projects=\{data\.projects\} isLoading=\{data\.isProjectsLoading\}/);
   assert.match(clientSource, /<CrmKpiCard crm=\{data\.crm\} isLoading=\{data\.isCrmLoading\}/);
   assert.match(clientSource, /lg:col-start-3 lg:row-start-1 lg:row-span-2 lg:h-full/);
-  assert.doesNotMatch(clientSource, /href=\{`\/crm\?contact=/);
+  assert.match(clientSource, /href=\{`\/crm\?contact=\$\{encodeURIComponent\(c\.id\)\}`\}/);
   assert.doesNotMatch(stylesheet, /\.dashboard-briefing\s*\{/);
   assert.doesNotMatch(clientSource, /function ProjectsMilestonesList/);
   assert.match(clientSource, /function OverviewView[\s\S]*<MilestonesPanel/);
@@ -481,7 +481,7 @@ test("dashboard tabs share quick-create, count-pill, and empty-state primitives"
   assert.match(clientSource, /<div className=\{`min-h-0 flex-1 \$\{bodyClassName\}`\}>/);
   assert.match(clientSource, /dashboard-contacts-list flex-1 p-5/);
   assert.match(clientSource, /className="min-h-64 flex-1 bg-/);
-  assert.match(clientSource, /TODO\(dashboard-crm\): deep-link contact cards/);
+  assert.match(clientSource, /href=\{`\/crm\?contact=\$\{encodeURIComponent\(c\.id\)\}`\}/);
   assert.doesNotMatch(clientSource, /<Link[\s\S]{0,180}surface-button-brand[\s\S]{0,180}>\s*<Plus/);
 });
 

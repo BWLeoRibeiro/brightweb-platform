@@ -315,8 +315,38 @@ test("CRM shell toolbar controls are exported as independent surfaces", () => {
   assert.match(toolbarSource, /useShellActionsReady/);
   assert.match(toolbarSource, /createContactReady/);
   assert.match(toolbarSource, /createOrganizationReady/);
-  assert.match(toolbarSource, /disabled=\{!createContactReady \|\| !createOrganizationReady\}/);
+  assert.match(toolbarSource, /disabled=\{!createContactReady && !createOrganizationReady\}/);
+  assert.ok(crmModuleRegistration.toolbarRoutes?.some((route) => route.surface === "crm-organizations"));
+  const organizationWorkspaceSource = readFileSync(join(process.cwd(), "packages/module-crm/src/ui/organization-workspace-sheet.tsx"), "utf8");
+  assert.match(organizationWorkspaceSource, /<PillTabs ariaLabel="Organização"/);
+  assert.match(organizationWorkspaceSource, /label: `Membros · \$\{access\.members\.length\}`/);
+  assert.match(organizationWorkspaceSource, /Se já existir uma conta, o acesso é adicionado imediatamente/);
+  assert.match(organizationWorkspaceSource, /label: "Administrador"/);
+  assert.match(organizationWorkspaceSource, /onOpenContact\?\.\(contact\)/);
   assert.equal(defaultCrmUiDictionary.table.searchPlaceholder, "Procurar contactos…");
+});
+
+test("CRM organization links hand off from Contacts to the canonical Organizations workspace", () => {
+  const dashboardSource = readFileSync(join(process.cwd(), "packages/module-crm/src/ui/dashboard.tsx"), "utf8");
+  const organizationsSource = readFileSync(join(process.cwd(), "packages/module-crm/src/ui/organizations-page.tsx"), "utf8");
+  assert.match(dashboardSource, /organizationsHref: "\/crm\/organizations"/);
+  assert.match(dashboardSource, /contactsHref: "\/crm"/);
+  assert.match(dashboardSource, /\?organization=\$\{encodeURIComponent\(organizationId\)\}/);
+  assert.doesNotMatch(dashboardSource, /CrmOrganizationWorkspaceSheet/);
+  assert.doesNotMatch(dashboardSource, /<CrmOrganizationSheet/);
+  assert.match(dashboardSource, /searchParams\.set\("create", "organization"\)/);
+  assert.match(dashboardSource, /searchParams\.get\("contact"\)/);
+  assert.match(dashboardSource, /searchParams\.set\("contact", contact\.id\)/);
+  assert.match(organizationsSource, /searchParams\.get\("organization"\)/);
+  assert.match(organizationsSource, /searchParams\.set\("organization", organization\.id\)/);
+  assert.match(organizationsSource, /searchParams\.get\("create"\) !== "organization"/);
+  assert.match(organizationsSource, /CRM_UI_EVENTS\.createContact/);
+  assert.match(organizationsSource, /searchParams\.set\("create", "contact"\)/);
+  assert.match(organizationsSource, /onOpenContact=\{openContact\}/);
+  const contactsTableSource = readFileSync(join(process.cwd(), "packages/module-crm/src/ui/contacts-table.tsx"), "utf8");
+  assert.match(contactsTableSource, /onOrganizationClick\(contact\.organization_id!\)/);
+  const dashboardClientSource = readFileSync(join(process.cwd(), "packages/app-shell/src/dashboard/dashboard-client.tsx"), "utf8");
+  assert.match(dashboardClientSource, /\/crm\?contact=\$\{encodeURIComponent\(c\.id\)\}/);
 });
 
 test("CRM list requests debounce only search and expose pending state immediately", () => {
@@ -403,4 +433,8 @@ test("CRM UI files use canonical package typography utilities", () => {
 test("CRM controller hooks and host event contract are exported", () => {
   for (const hook of [useCrmDashboardController, useCrmDataSync, useCrmDerivedState, useCrmContactActions, useCrmOrganizationActions, useCrmBulkActions, useCrmMutations, useCrmWindowEvents]) assert.equal(typeof hook, "function");
   assert.equal(CRM_UI_EVENTS.openTimeline, "brightweb:crm:open-timeline");
+});
+
+test("CRM organization search uses the shared Portuguese verb", () => {
+  assert.equal(defaultCrmUiDictionary.organizations.searchPlaceholder, "Procurar organizações…");
 });

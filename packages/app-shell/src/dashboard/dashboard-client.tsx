@@ -1320,8 +1320,7 @@ function ContactCard({ c }: { c: DashboardCrmRecentContact }) {
   const meta = crmStatusMeta(c.status, dictionary);
   return (
     <Card asChild variant="interactive" density="compact">
-      {/* TODO(dashboard-crm): deep-link contact cards */}
-      <Link href="/crm" prefetch={false} className="group relative w-full p-5">
+      <Link href={`/crm?contact=${encodeURIComponent(c.id)}`} prefetch={false} className="group relative w-full p-5">
         <span
           aria-hidden
           className="absolute right-3 top-3 flex h-7 w-7 items-center justify-center rounded-full border border-[color:var(--border)] text-[color:var(--foreground-accent-link)] opacity-0 transition group-hover:opacity-100 group-focus-visible:opacity-100"

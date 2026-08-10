@@ -63,6 +63,7 @@ export type ShellPathMatcher = {
 export type ShellToolbarSurface =
   | "dashboard"
   | "crm"
+  | "crm-organizations"
   | "crm-report"
   | "admin-users"
   | "admin-marketing"

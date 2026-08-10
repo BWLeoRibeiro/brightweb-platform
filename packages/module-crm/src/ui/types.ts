@@ -60,6 +60,30 @@ export type CrmOrganizationWriteInput = Omit<CrmOrganization, "id" | "created_at
   invitations?: Array<{ email: string; role: "admin" | "member" }>;
 };
 
+export type CrmOrganizationMember = {
+  id: string;
+  profileId: string;
+  role: "admin" | "member";
+  joinedAt: string;
+  label: string;
+  email: string | null;
+};
+
+export type CrmOrganizationInvitation = {
+  id: string;
+  organizationId: string;
+  email: string;
+  role: "admin" | "member";
+  status: "pending" | "accepted" | "revoked" | "expired";
+  createdAt: string;
+  expiresAt: string;
+};
+
+export type CrmOrganizationAccess = {
+  members: CrmOrganizationMember[];
+  invitations: CrmOrganizationInvitation[];
+};
+
 /** @deprecated Use CrmOrganization. */
 export type CrmOrganizationOption = CrmOrganization;
 
@@ -316,11 +340,16 @@ export type CrmUiClient = {
   listOwners: (options?: { signal?: AbortSignal }) => Promise<CrmOwnerOption[]>;
   listOrganizations: (options?: { signal?: AbortSignal }) => Promise<CrmOrganization[]>;
   queryOrganizations?: (params?: CrmOrganizationsListParams, options?: { signal?: AbortSignal }) => Promise<CrmOrganizationsListResult>;
+  getOrganization: (organizationId: string, options?: { signal?: AbortSignal }) => Promise<CrmOrganization>;
   createOrganization: (input: CrmOrganizationWriteInput) => Promise<CrmOrganization>;
   updateOrganization: (organizationId: string, input: CrmOrganizationWriteInput) => Promise<CrmOrganization>;
   deleteOrganization: (organizationId: string) => Promise<void>;
   listOrganizationInvitations: (organizationId: string) => Promise<Array<{ id: string; email: string; role: "admin" | "member" }>>;
   revokeOrganizationInvitation: (organizationId: string, invitationId: string) => Promise<void>;
+  getOrganizationAccess: (organizationId: string, options?: { includeHistory?: boolean; signal?: AbortSignal }) => Promise<CrmOrganizationAccess>;
+  inviteOrganizationMember: (organizationId: string, input: { email: string; role: "admin" | "member" }) => Promise<void>;
+  updateOrganizationMemberRole: (organizationId: string, profileId: string, role: "admin" | "member") => Promise<void>;
+  removeOrganizationMember: (organizationId: string, profileId: string) => Promise<void>;
   listTimeline: (contactId?: string, options?: { signal?: AbortSignal }) => Promise<CrmStatusLog[]>;
   queryTimeline?: (params?: { contactId?: string; search?: string; limit?: number }, options?: { signal?: AbortSignal }) => Promise<CrmStatusLog[]>;
   getReport: (options?: { signal?: AbortSignal }) => Promise<CrmReportData>;
@@ -353,4 +382,8 @@ export type CrmReportSlots = {
 export type CrmNavigationConfig = {
   reportHref?: string;
   marketingHref?: string;
+  contactsHref?: string;
+  organizationsHref?: string;
+  contactHref?: (contactId: string) => string | null;
+  organizationHref?: (organizationId: string) => string | null;
 };

@@ -2,7 +2,7 @@ import type { CrmContactsListParams, CrmOrganizationsListParams } from "../data"
 import type { CrmContactStatus } from "../server";
 import { readPublicError } from "@brightweblabs/infra/robustness";
 import { observedFetch } from "@brightweblabs/infra/request-observability";
-import type { CrmContactFormInput, CrmOrganizationWriteInput, CrmUiClient, CrmUiClientOptions } from "./types";
+import type { CrmContactFormInput, CrmOrganizationAccess, CrmOrganizationWriteInput, CrmUiClient, CrmUiClientOptions } from "./types";
 import {
   parseCrmContactWriteResponse,
   parseCrmContactsResponse,
@@ -101,6 +101,17 @@ export function createCrmUiClient(
         { domain: "crm", operation: "organizations.list", observer: options.onRequestMetric },
       )));
     },
+    async getOrganization(organizationId, requestOptions = {}) {
+      const result = parseCrmOrganizationsListResponse(await readPayload(await observedFetch(
+        fetcher,
+        `${endpoint("organizations")}?page=1&pageSize=100`,
+        { signal: requestOptions.signal },
+        { domain: "crm", operation: "organizations.get", observer: options.onRequestMetric },
+      )));
+      const organization = result.items.find((item) => item.id === organizationId);
+      if (!organization) throw new Error("Organização não encontrada.");
+      return organization;
+    },
     async createOrganization(input) {
       return parseCrmOrganizationWriteResponse(
         await readPayload(await fetcher(organizationsRoot, {
@@ -146,6 +157,41 @@ export function createCrmUiClient(
         `${organizationsRoot}/${encodeURIComponent(organizationId)}/invitations/${encodeURIComponent(invitationId)}`,
         { method: "DELETE" },
       ));
+    },
+    async getOrganizationAccess(organizationId, requestOptions = {}) {
+      const query = requestOptions.includeHistory ? "?status=all" : "";
+      const payload = await readPayload(await fetcher(
+        `${organizationsRoot}/${encodeURIComponent(organizationId)}/invitations${query}`,
+        { signal: requestOptions.signal },
+      ));
+      const data = payload && typeof payload === "object" && "data" in payload
+        ? (payload as { data?: unknown }).data
+        : null;
+      if (!data || typeof data !== "object") return { members: [], invitations: [] };
+      const record = data as Record<string, unknown>;
+      return {
+        members: Array.isArray(record.members) ? record.members : [],
+        invitations: Array.isArray(record.invitations) ? record.invitations : [],
+      } as CrmOrganizationAccess;
+    },
+    async inviteOrganizationMember(organizationId, input) {
+      await readPayload(await fetcher(`${organizationsRoot}/${encodeURIComponent(organizationId)}/invitations`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ invitations: [input] }),
+      }));
+    },
+    async updateOrganizationMemberRole(organizationId, profileId, role) {
+      await readPayload(await fetcher(`${organizationsRoot}/${encodeURIComponent(organizationId)}/members/${encodeURIComponent(profileId)}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ role }),
+      }));
+    },
+    async removeOrganizationMember(organizationId, profileId) {
+      await readPayload(await fetcher(`${organizationsRoot}/${encodeURIComponent(organizationId)}/members/${encodeURIComponent(profileId)}`, {
+        method: "DELETE",
+      }));
     },
     async listTimeline(contactId?: string, requestOptions = {}) {
       const query = new URLSearchParams();

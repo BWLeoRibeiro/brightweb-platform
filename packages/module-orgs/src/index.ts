@@ -5,7 +5,9 @@ export {
   deleteOrganization,
   listOrganizationMembers,
   listOrganizations,
+  removeOrganizationMember,
   setOrganizationMemberRole,
+  updateOrganizationMemberRole,
   updateOrganization,
   type CreateOrganizationInput,
   type Organization,
@@ -21,6 +23,8 @@ export {
   handleOrganizationDeleteRequest,
   handleOrganizationInvitationsGetRequest,
   handleOrganizationInvitationsPostRequest,
+  handleOrganizationMemberDeleteRequest,
+  handleOrganizationMemberPatchRequest,
   handleOrganizationPatchRequest,
   handleOrganizationsPostRequest,
 } from "./handlers";

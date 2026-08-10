@@ -1,5 +1,11 @@
 import { requireOrganizationManageAccess, requireOrganizationsStaffAccess } from "./access";
-import { createOrganization, deleteOrganization, updateOrganization } from "./data";
+import {
+  createOrganization,
+  deleteOrganization,
+  removeOrganizationMember,
+  updateOrganization,
+  updateOrganizationMemberRole,
+} from "./data";
 import {
   inviteOrganizationMembers,
   logOrganizationActivity,
@@ -11,6 +17,7 @@ import {
   createOrganizationInvitationDeleteHandler,
   createOrganizationDeleteHandler,
   createOrganizationInvitationsHandler,
+  createOrganizationMemberMutationHandlers,
   createOrganizationPatchHandler,
   createOrganizationsPostHandler,
 } from "./http";
@@ -43,3 +50,12 @@ export const handleOrganizationInvitationsGetRequest = invitationHandlers.GET;
 export const handleOrganizationInvitationsPostRequest = invitationHandlers.POST;
 export const handleOrganizationInvitationDeleteRequest =
   createOrganizationInvitationDeleteHandler(invitationDependencies);
+
+const memberMutationHandlers = createOrganizationMemberMutationHandlers({
+  getManageAccess: requireOrganizationManageAccess,
+  updateMemberRole: updateOrganizationMemberRole,
+  removeMember: removeOrganizationMember,
+  logActivity: logOrganizationActivity,
+});
+export const handleOrganizationMemberPatchRequest = memberMutationHandlers.PATCH;
+export const handleOrganizationMemberDeleteRequest = memberMutationHandlers.DELETE;

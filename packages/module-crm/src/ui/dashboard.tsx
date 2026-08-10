@@ -12,8 +12,7 @@ import { CrmDashboardSidebar } from "./dashboard-sidebar";
 import { CrmDeleteDialog } from "./delete-dialog";
 import { defaultCrmUiDictionary, resolveCrmStages } from "./dictionary";
 import { CRM_UI_EVENTS } from "./hooks";
-import { CrmOrganizationsBrowser } from "./organizations-browser";
-import { CrmOrganizationSheet, type CrmOrganizationFormInput } from "./organization-sheet";
+import type { CrmOrganizationFormInput } from "./organization-sheet";
 import { CrmStatusDialog } from "./status-dialog";
 import { CrmTimelineBrowser } from "./timeline-browser";
 import { CrmReportBanner, type CrmReportBannerSummary } from "./report-banner";
@@ -21,6 +20,11 @@ import type { CrmContactFormInput, CrmDashboardData, CrmDashboardSlots, CrmNavig
 
 const emptyContacts: CrmContactsListResult = { items: [], page: 1, pageSize: 20, total: 0, totalPages: 1 };
 const emptyStats: CrmContactStatusStats = { total: 0, byStatus: {} };
+const defaultCrmNavigation: CrmNavigationConfig = {
+  reportHref: "/crm/report",
+  contactsHref: "/crm",
+  organizationsHref: "/crm/organizations",
+};
 
 type SummaryResourceKey = "stats" | "owners" | "organizations" | "timeline";
 type SummaryResourceState = { status: "pending" | "fulfilled" | "rejected"; hasData: boolean };
@@ -44,7 +48,7 @@ export type CrmDashboardProps = {
   pageSize?: number;
 };
 
-export function CrmDashboard({ client: providedClient, initialData, dictionary = defaultCrmUiDictionary, columns, organizationFields, slots, stages, navigation = { reportHref: "/crm/report" }, pageSize = 20 }: CrmDashboardProps) {
+export function CrmDashboard({ client: providedClient, initialData, dictionary = defaultCrmUiDictionary, columns, organizationFields, slots, stages, navigation = defaultCrmNavigation, pageSize = 20 }: CrmDashboardProps) {
   const client = useMemo(() => providedClient ?? createCrmUiClient(), [providedClient]);
   const resolvedStages = resolveCrmStages(dictionary, stages);
   const [params, setParams] = useState<CrmContactsListParams>({ page: 1, pageSize, sort: "date_desc" });
@@ -74,9 +78,6 @@ export function CrmDashboard({ client: providedClient, initialData, dictionary =
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [timelineOpen, setTimelineOpen] = useState(false);
   const [contactTimelineOpen, setContactTimelineOpen] = useState(false);
-  const [organizationsOpen, setOrganizationsOpen] = useState(false);
-  const [organizationSheetOpen, setOrganizationSheetOpen] = useState(false);
-  const [editingOrganization, setEditingOrganization] = useState<CrmOrganization | null>(null);
   const skippedInitialContacts = useRef(Boolean(initialData?.contacts));
   const contactsRequestGeneration = useRef(0);
   const contactsRequestAbort = useRef<AbortController | null>(null);
@@ -98,6 +99,18 @@ export function CrmDashboard({ client: providedClient, initialData, dictionary =
     url.searchParams.delete("create");
     window.history.replaceState(window.history.state, "", `${url.pathname}${url.search}${url.hash}`);
   }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || contacts.items.length === 0) return;
+    const contactId = new URL(window.location.href).searchParams.get("contact");
+    if (!contactId) return;
+    const contact = contacts.items.find((item) => item.id === contactId);
+    if (!contact) return;
+    setEditingContact(contact);
+    setContactOrganizationToSelect(null);
+    setContactDialogOpen(true);
+    void loadContactTimeline(contact.id);
+  }, [contacts.items]);
 
   const requestParams = useMemo<CrmContactsListParams>(() => ({
     page: params.page,
@@ -225,7 +238,18 @@ export function CrmDashboard({ client: providedClient, initialData, dictionary =
     void loadContacts(requestParams);
   }, [loadContacts, requestParams]);
   const refresh = async () => { await Promise.all([loadContacts({ ...params, search: params.search?.trim() || undefined }), loadSummary()]); };
-  const openContact = (contact: CrmContact) => {
+  const selectContact = (contact: CrmContact | null) => {
+    if (typeof window !== "undefined") {
+      const url = new URL(window.location.href);
+      if (contact) url.searchParams.set("contact", contact.id);
+      else url.searchParams.delete("contact");
+      window.history.replaceState(window.history.state, "", `${url.pathname}${url.search}${url.hash}`);
+    }
+    if (!contact) {
+      setContactDialogOpen(false);
+      setEditingContact(null);
+      return;
+    }
     setEditingContact(contact);
     setContactOrganizationToSelect(null);
     setContactDialogOpen(true);
@@ -242,8 +266,18 @@ export function CrmDashboard({ client: providedClient, initialData, dictionary =
   };
   const openDelete = (ids: string[]) => { setDeleteTargets(ids); setDeleteDialogOpen(true); };
   const deleteContacts = async (ids: string[]) => { await client.deleteContacts(ids); setSelectedIds([]); setContactDialogOpen(false); await refresh(); };
-  const openOrganization = (organization: CrmOrganization) => { setEditingOrganization(organization); setOrganizationsOpen(false); setOrganizationSheetOpen(true); };
-  const createOrganization = () => { setEditingOrganization(null); setOrganizationsOpen(false); setOrganizationSheetOpen(true); };
+  const openOrganizationId = (organizationId: string) => {
+    const collectionHref = navigation.organizationsHref ?? "/crm/organizations";
+    const href = navigation.organizationHref?.(organizationId) ?? `${collectionHref}?organization=${encodeURIComponent(organizationId)}`;
+    window.location.assign(href);
+  };
+  const openOrganization = (organization: CrmOrganization) => openOrganizationId(organization.id);
+  const openOrganizations = () => window.location.assign(navigation.organizationsHref ?? "/crm/organizations");
+  const createOrganization = () => {
+    const url = new URL(navigation.organizationsHref ?? "/crm/organizations", window.location.origin);
+    url.searchParams.set("create", "organization");
+    window.location.assign(`${url.pathname}${url.search}${url.hash}`);
+  };
   const saveOrganization = async (input: CrmOrganizationFormInput, current?: CrmOrganization | null) => {
     const saved = current
       ? await client.updateOrganization(current.id, input)
@@ -257,12 +291,6 @@ export function CrmDashboard({ client: providedClient, initialData, dictionary =
     const saved = await saveOrganization(input);
     setContactOrganizationToSelect(saved);
     return saved;
-  };
-  const deleteOrganization = async (organization: CrmOrganization) => {
-    await client.deleteOrganization(organization.id);
-    setOrganizations((items) => items.filter((item) => item.id !== organization.id));
-    setEditingOrganization(null);
-    await refresh();
   };
   const contactsByOrganization = useMemo(() => {
     const counts = new Map<string, number>();
@@ -308,18 +336,16 @@ export function CrmDashboard({ client: providedClient, initialData, dictionary =
       {slots?.aboveTable}
       <section className="grid w-full items-start gap-6 md:grid-cols-3">
         <div className="min-w-0 space-y-4 overflow-hidden md:col-span-2">
-          <CrmContactsTable data={contacts} params={params} owners={owners} loading={loading} dictionary={dictionary} stages={resolvedStages} columns={columns} selectedIds={selectedIds} onSelectedIdsChange={setSelectedIds} onParamsChange={setParams} onRowClick={openContact} onBulkStatus={(ids) => openStatus(ids)} onBulkDelete={openDelete} onQuickStatus={(contact, status) => openStatus([contact.id], status)} renderRowActions={slots?.rowActions} showToolbar={false} />
+          <CrmContactsTable data={contacts} params={params} owners={owners} loading={loading} dictionary={dictionary} stages={resolvedStages} columns={columns} selectedIds={selectedIds} onSelectedIdsChange={setSelectedIds} onParamsChange={setParams} onRowClick={selectContact} onOrganizationClick={openOrganizationId} onBulkStatus={(ids) => openStatus(ids)} onBulkDelete={openDelete} onQuickStatus={(contact, status) => openStatus([contact.id], status)} renderRowActions={slots?.rowActions} showToolbar={false} />
         </div>
-        <div className="min-w-0 md:col-span-1">{slots?.sidebarTop}<CrmDashboardSidebar timelineEntries={timeline} organizations={organizations} contactsByOrganization={contactsByOrganization} isRefreshing={summaryResourceStates.timeline.status === "pending" && !summaryResourceStates.timeline.hasData} isLoadingOrganizations={summaryResourceStates.organizations.status === "pending" && !summaryResourceStates.organizations.hasData} timelineUnavailable={summaryResourceStates.timeline.status === "rejected" && !summaryResourceStates.timeline.hasData} organizationsUnavailable={summaryResourceStates.organizations.status === "rejected" && !summaryResourceStates.organizations.hasData} dictionary={dictionary} onOpenTimeline={() => setTimelineOpen(true)} onOpenOrganizations={() => setOrganizationsOpen(true)} onOpenOrganization={openOrganization} />{slots?.sidebarBottom}</div>
+        <div className="min-w-0 md:col-span-1">{slots?.sidebarTop}<CrmDashboardSidebar timelineEntries={timeline} organizations={organizations} contactsByOrganization={contactsByOrganization} isRefreshing={summaryResourceStates.timeline.status === "pending" && !summaryResourceStates.timeline.hasData} isLoadingOrganizations={summaryResourceStates.organizations.status === "pending" && !summaryResourceStates.organizations.hasData} timelineUnavailable={summaryResourceStates.timeline.status === "rejected" && !summaryResourceStates.timeline.hasData} organizationsUnavailable={summaryResourceStates.organizations.status === "rejected" && !summaryResourceStates.organizations.hasData} dictionary={dictionary} onOpenTimeline={() => setTimelineOpen(true)} onOpenOrganizations={openOrganizations} onOpenOrganization={openOrganization} />{slots?.sidebarBottom}</div>
       </section>
       {slots?.reportBanner ?? (navigation.reportHref ? <CrmReportBanner summary={reportSummary} href={navigation.reportHref} loading={(loading && !contactsHasData) || (summaryResourceStates.timeline.status === "pending" && !summaryResourceStates.timeline.hasData)} unavailable={(contactsLoadFailed && !contactsHasData) || (summaryResourceStates.timeline.status === "rejected" && !summaryResourceStates.timeline.hasData)} dictionary={dictionary} /> : null)}
-      <CrmContactDialog open={contactDialogOpen} contact={editingContact} organizations={organizations} owners={owners} organizationsLoading={summaryResourceStates.organizations.status === "pending" && !summaryResourceStates.organizations.hasData} ownersLoading={summaryResourceStates.owners.status === "pending" && !summaryResourceStates.owners.hasData} organizationsUnavailable={summaryResourceStates.organizations.status === "rejected" && !summaryResourceStates.organizations.hasData} ownersUnavailable={summaryResourceStates.owners.status === "rejected" && !summaryResourceStates.owners.hasData} dictionary={dictionary} stages={resolvedStages} onOpenChange={setContactDialogOpen} onSubmit={saveContact} onCreateOrganization={createOrganizationForContact} organizationToSelect={contactOrganizationToSelect} onOrganizationSelectionApplied={(organizationId) => setContactOrganizationToSelect((current) => current?.id === organizationId ? null : current)} onTimeline={(contact) => { setEditingContact(contact); setContactDialogOpen(false); setContactTimelineOpen(true); }} onDelete={(contact) => { setContactDialogOpen(false); openDelete([contact.id]); }} />
+      <CrmContactDialog open={contactDialogOpen} contact={editingContact} organizations={organizations} owners={owners} organizationsLoading={summaryResourceStates.organizations.status === "pending" && !summaryResourceStates.organizations.hasData} ownersLoading={summaryResourceStates.owners.status === "pending" && !summaryResourceStates.owners.hasData} organizationsUnavailable={summaryResourceStates.organizations.status === "rejected" && !summaryResourceStates.organizations.hasData} ownersUnavailable={summaryResourceStates.owners.status === "rejected" && !summaryResourceStates.owners.hasData} dictionary={dictionary} stages={resolvedStages} onOpenChange={(open) => { if (!open) selectContact(null); else setContactDialogOpen(true); }} onSubmit={saveContact} onCreateOrganization={createOrganizationForContact} organizationToSelect={contactOrganizationToSelect} onOrganizationSelectionApplied={(organizationId) => setContactOrganizationToSelect((current) => current?.id === organizationId ? null : current)} onTimeline={(contact) => { setEditingContact(contact); setContactDialogOpen(false); setContactTimelineOpen(true); }} onDelete={(contact) => { selectContact(null); openDelete([contact.id]); }} />
       <CrmStatusDialog open={statusDialogOpen} contactIds={statusTargets} initialStatus={statusInitial} dictionary={dictionary} stages={resolvedStages} onOpenChange={setStatusDialogOpen} onSubmit={saveStatus} />
       <CrmDeleteDialog open={deleteDialogOpen} contactIds={deleteTargets} dictionary={dictionary} onOpenChange={setDeleteDialogOpen} onConfirm={deleteContacts} />
       <CrmTimelineBrowser open={timelineOpen} entries={timeline} loading={summaryResourceStates.timeline.status === "pending" && !summaryResourceStates.timeline.hasData} unavailable={summaryResourceStates.timeline.status === "rejected" && !summaryResourceStates.timeline.hasData} dictionary={dictionary} onOpenChange={setTimelineOpen} queryTimeline={client.queryTimeline} />
       <CrmTimelineBrowser open={contactTimelineOpen} entries={contactTimeline} loading={timelineLoading} dictionary={dictionary} onOpenChange={setContactTimelineOpen} />
-      <CrmOrganizationsBrowser open={organizationsOpen} organizations={organizations} loading={summaryResourceStates.organizations.status === "pending" && !summaryResourceStates.organizations.hasData} unavailable={summaryResourceStates.organizations.status === "rejected" && !summaryResourceStates.organizations.hasData} contactsByOrganization={contactsByOrganization} fields={organizationFields} dictionary={dictionary} onOpenChange={setOrganizationsOpen} onSelect={openOrganization} queryOrganizations={client.queryOrganizations} />
-      <CrmOrganizationSheet open={organizationSheetOpen} organization={editingOrganization} dictionary={dictionary} onOpenChange={setOrganizationSheetOpen} onSubmit={async (input, organization) => { await saveOrganization(input, organization); }} onDelete={deleteOrganization} listInvitations={client.listOrganizationInvitations} onRevokeInvitation={client.revokeOrganizationInvitation} />
     </div>
   );
 }

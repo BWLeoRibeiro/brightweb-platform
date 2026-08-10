@@ -167,6 +167,7 @@ export const PLATFORM_STARTER_FILES = [
   "app/api/organizations/[id]/route.ts",
   "app/api/organizations/[id]/invitations/route.ts",
   "app/api/organizations/[id]/invitations/[invitationId]/route.ts",
+  "app/api/organizations/[id]/members/[profileId]/route.ts",
   "app/auth/callback/route.ts",
   "app/auth/cleanup/route.ts",
   "app/layout.tsx",

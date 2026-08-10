@@ -145,7 +145,7 @@ export const defaultCrmUiDictionary: CrmUiDictionary = {
     title: "Organizações",
     subtitle: "Últimas adicionadas",
     expand: "Ver todas as organizações",
-    searchPlaceholder: "Pesquisar organizações…",
+    searchPlaceholder: "Procurar organizações…",
     emptyTitle: "Nenhuma organização",
     emptyHint: "Sem resultados para esta pesquisa.",
     contactCount: (count) => `${count} contacto${count === 1 ? "" : "s"}`,

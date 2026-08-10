@@ -200,15 +200,16 @@ export function createOrganizationDeleteHandler(dependencies: OrganizationWriteD
 
 export function createOrganizationInvitationsHandler(dependencies: OrganizationInvitationDependencies) {
   return {
-    GET: async (_request: Request, context: { params: Promise<{ id: string }> }): Promise<Response> => {
+    GET: async (request: Request, context: { params: Promise<{ id: string }> }): Promise<Response> => {
       const { id } = await context.params;
       if (!id) return json({ error: "id é obrigatório." }, { status: 400 });
       const access = await dependencies.getManageAccess(id);
       if (!access.ok) return json({ error: access.error }, { status: access.status });
       try {
+        const includeHistory = new URL(request.url).searchParams.get("status") === "all";
         const [members, invitations] = await Promise.all([
           dependencies.listMembers(access.serviceSupabase, id),
-          dependencies.listInvitations(access.serviceSupabase, id, { status: "pending" }),
+          dependencies.listInvitations(access.serviceSupabase, id, includeHistory ? undefined : { status: "pending" }),
         ]);
         return json({ data: { members, invitations } });
       } catch (error) {
@@ -247,6 +248,64 @@ export function createOrganizationInvitationsHandler(dependencies: OrganizationI
           },
         });
         return json({ data: { invitations: result.invitations, inviteSummary: result.summary } }, { status: 201 });
+      } catch (error) {
+        return organizationError(error);
+      }
+    },
+  };
+}
+
+type OrganizationMemberMutationDependencies = {
+  getManageAccess: OrganizationInvitationDependencies["getManageAccess"];
+  updateMemberRole: (
+    supabase: SupabaseClient,
+    organizationId: string,
+    profileId: string,
+    role: "admin" | "member",
+  ) => Promise<unknown>;
+  removeMember: (supabase: SupabaseClient, organizationId: string, profileId: string) => Promise<void>;
+  logActivity: OrganizationInvitationDependencies["logActivity"];
+};
+
+export function createOrganizationMemberMutationHandlers(dependencies: OrganizationMemberMutationDependencies) {
+  return {
+    PATCH: async (request: Request, context: { params: Promise<{ id: string; profileId: string }> }): Promise<Response> => {
+      const { id, profileId } = await context.params;
+      if (!id || !profileId) return json({ error: "id e profileId são obrigatórios." }, { status: 400 });
+      const access = await dependencies.getManageAccess(id);
+      if (!access.ok) return json({ error: access.error }, { status: access.status });
+      const body = await readJsonObject(request);
+      const role = body?.role === "admin" ? "admin" : body?.role === "member" ? "member" : null;
+      if (!role) return json({ error: "Função inválida." }, { status: 400 });
+      try {
+        const member = await dependencies.updateMemberRole(access.serviceSupabase, id, profileId, role);
+        await dependencies.logActivity(access.serviceSupabase, {
+          actorProfileId: access.profileId,
+          organizationId: id,
+          eventType: "crm_organization_member_role_updated",
+          summary: "Função de membro da organização atualizada.",
+          payload: { organization_id: id, profile_id: profileId, role },
+        });
+        return json({ data: { member } });
+      } catch (error) {
+        return organizationError(error);
+      }
+    },
+    DELETE: async (_request: Request, context: { params: Promise<{ id: string; profileId: string }> }): Promise<Response> => {
+      const { id, profileId } = await context.params;
+      if (!id || !profileId) return json({ error: "id e profileId são obrigatórios." }, { status: 400 });
+      const access = await dependencies.getManageAccess(id);
+      if (!access.ok) return json({ error: access.error }, { status: access.status });
+      try {
+        await dependencies.removeMember(access.serviceSupabase, id, profileId);
+        await dependencies.logActivity(access.serviceSupabase, {
+          actorProfileId: access.profileId,
+          organizationId: id,
+          eventType: "crm_organization_member_removed",
+          summary: "Acesso à organização removido.",
+          payload: { organization_id: id, profile_id: profileId },
+        });
+        return json({ data: { success: true } });
       } catch (error) {
         return organizationError(error);
       }

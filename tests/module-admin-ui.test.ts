@@ -44,6 +44,56 @@ test("admin package exposes users, invitations, toolbar, loading, and tokens", a
   assert.match(registration, /admin-filters/);
 });
 
+test("admin keeps the view switch separate from the right-rail invitation form", async () => {
+  const component = await read("packages/module-admin/src/ui/admin-users.tsx");
+  const dictionary = await read("packages/module-admin/src/ui/dictionary.ts");
+
+  assert.match(component, /activeView === "invites"/);
+  assert.match(component, /setInvitePanelOpen\(true\)/);
+  assert.match(component, /useShellAction\(ADMIN_EVENTS\.openInvite/);
+  assert.match(component, /<Sheet open=\{invitePanelOpen\}/);
+  assert.match(component, /inviteRole === "client"/);
+  assert.match(component, /inviteOrganizationId/);
+  assert.match(dictionary, /invites: "Convites pendentes"/);
+  assert.match(dictionary, /open: "Convidar utilizador"/);
+});
+
+test("admin exposes the invite action in the shell toolbar", async () => {
+  const toolbar = await read("packages/module-admin/src/ui/toolbar-controls.tsx");
+  const events = await read("packages/module-admin/src/events.ts");
+
+  assert.match(events, /openInvite: "admin:open-invite"/);
+  assert.match(toolbar, /useShellActionReady\(ADMIN_EVENTS\.openInvite\)/);
+  assert.match(toolbar, /dispatchShellAction\(ADMIN_EVENTS\.openInvite\)/);
+  assert.match(toolbar, /dictionary\.invitations\.open/);
+});
+
+test("admin invitations have view-specific controls, explicit statuses, and pagination", async () => {
+  const component = await read("packages/module-admin/src/ui/admin-users.tsx");
+  const toolbar = await read("packages/module-admin/src/ui/toolbar-controls.tsx");
+  const dictionary = await read("packages/module-admin/src/ui/dictionary.ts");
+
+  assert.match(toolbar, /activeView === "invites" \? dictionary\.invitations\.searchPlaceholder/);
+  assert.match(toolbar, /ADMIN_EVENTS\.setInvitationStatusFilter/);
+  assert.match(component, /filteredInvitations/);
+  assert.match(component, /visibleInvitations/);
+  assert.match(component, /page=\{invitationPage\}/);
+  assert.match(component, /<InvitationStatus invitation=\{invite\}/);
+  assert.match(dictionary, /pending: "Pendente"/);
+  assert.match(dictionary, /searchPlaceholder: "Procurar convites…"/);
+  assert.match(dictionary, /pendingTitle: "Convites pendentes"/);
+  assert.match(dictionary, /historyTitle: "Histórico de convites"/);
+  assert.match(component, /invite\.status === "pending"/);
+  assert.match(component, /invitationStatusFilter === "pending" \? dictionary\.invitations\.pendingTitle/);
+});
+
+test("admin invitations read organizations from the CRM list response", async () => {
+  const client = await read("packages/module-admin/src/ui/client.ts");
+
+  assert.match(client, /const collection = data && typeof data === "object" \? data : payload/);
+  assert.match(client, /"items" in collection/);
+});
+
 test("preview mounts the live packaged admin page and routes", async () => {
   const overview = await read("apps/platform-preview/app/(shell)/admin/page.tsx");
   const users = await read("apps/platform-preview/app/(shell)/admin/users/page.tsx");
