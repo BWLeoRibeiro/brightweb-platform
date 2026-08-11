@@ -1,6 +1,7 @@
 import { AccountPage } from "@brightweblabs/core-auth";
 import { requireServerPageAccess } from "@brightweblabs/core-auth/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { Card, StatusPill } from "@brightweblabs/ui";
 import { Building2 } from "lucide-react";
 import { getClientProject, listClientOrganizations, listClientProjects } from "../../client-access";
 import type { ClientOrganizationMembership, ClientProjectsResult } from "../../client-contracts";
@@ -23,27 +24,29 @@ async function loadClientPortalData(supabase: SupabaseClient): Promise<ClientPro
 
 function ClientOrganizationMemberships({ organizations }: { organizations: ClientOrganizationMembership[] }) {
   return (
-    <article className="rounded-2xl border p-5" style={{ borderColor: "var(--border)", background: "var(--card)" }}>
-      <div className="mb-3 flex items-center gap-2">
-        <Building2 className="size-3.5 text-muted-foreground" />
-        <h2 className="text-label font-bold text-muted-foreground">{clientProjectsDictionary.profile.organizations}</h2>
-      </div>
-      {organizations.length === 0 ? (
-        <p className="text-body text-muted-foreground">{clientProjectsDictionary.profile.noOrganizations}</p>
-      ) : (
-        <ul className="divide-y divide-border/40">
-          {organizations.map((organization) => (
-            <li key={organization.id} className="flex items-center justify-between gap-4 py-3">
-              <span className="min-w-0 truncate text-body font-semibold">{organization.name}</span>
-              <span className="shrink-0 rounded-full bg-primary/10 px-2.5 py-1 text-micro font-semibold text-primary">
-                {organization.role === "admin" ? clientProjectsDictionary.portal.organizationAdmin : clientProjectsDictionary.portal.organizationMember}
-              </span>
-            </li>
-          ))}
-        </ul>
-      )}
-      <p className="mt-3 text-meta text-muted-foreground">{clientProjectsDictionary.profile.readOnlyMemberships}</p>
-    </article>
+    <Card asChild variant="light">
+      <article className="p-5 shadow-none">
+        <div className="mb-3 flex items-center gap-2">
+          <Building2 className="size-3.5 text-muted-foreground" />
+          <h2 className="text-label font-bold text-muted-foreground">{clientProjectsDictionary.profile.organizations}</h2>
+        </div>
+        {organizations.length === 0 ? (
+          <p className="text-body text-muted-foreground">{clientProjectsDictionary.profile.noOrganizations}</p>
+        ) : (
+          <ul className="divide-y divide-border/40">
+            {organizations.map((organization) => (
+              <li key={organization.id} className="flex items-center justify-between gap-4 py-3">
+                <span className="min-w-0 truncate text-body font-semibold">{organization.name}</span>
+                <StatusPill token="--role-client" className="shrink-0">
+                  {organization.role === "admin" ? clientProjectsDictionary.portal.organizationAdmin : clientProjectsDictionary.portal.organizationMember}
+                </StatusPill>
+              </li>
+            ))}
+          </ul>
+        )}
+        <p className="mt-3 text-meta text-muted-foreground">{clientProjectsDictionary.profile.readOnlyMemberships}</p>
+      </article>
+    </Card>
   );
 }
 

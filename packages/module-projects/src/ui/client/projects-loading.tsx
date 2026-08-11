@@ -2,15 +2,35 @@ import { SkeletonCard, SkeletonLine } from "@brightweblabs/ui";
 
 export function ClientProjectsListLoading() {
   return (
-    <div className="space-y-7" aria-hidden>
-      <div className="flex flex-wrap gap-2">
-        <SkeletonLine w="7rem" className="h-9 rounded-full" />
-        <SkeletonLine w="7rem" className="h-9 rounded-full" />
-        <SkeletonLine w="5rem" className="h-9 rounded-full" />
+    <div className="grid gap-4 md:grid-cols-2" aria-hidden>
+      <SkeletonCard className="h-72 shadow-none" lines={4} />
+      <SkeletonCard className="h-72 shadow-none" lines={4} />
+    </div>
+  );
+}
+
+function ProjectOverviewSkeleton() {
+  return (
+    <div className="grid overflow-hidden rounded-[var(--radius-card)] border border-border/70 lg:grid-cols-[minmax(0,1.08fr)_minmax(20rem,0.92fr)]">
+      <div className="flex min-h-80 flex-col p-6 sm:p-8">
+        <SkeletonLine w="8rem" className="h-7" />
+        <SkeletonLine w="18rem" className="mt-5 h-9" />
+        <SkeletonLine w="8rem" className="mt-4" />
+        <div className="mt-7 space-y-3">
+          <SkeletonLine w="90%" />
+          <SkeletonLine w="72%" />
+        </div>
+        <SkeletonLine w="10rem" className="mt-auto h-11 rounded-[var(--radius-control)]" />
       </div>
-      <div className="grid gap-4 md:grid-cols-2">
-        <SkeletonCard className="h-64" lines={3} />
-        <SkeletonCard className="h-64" lines={3} />
+      <div className="border-t border-border/65 bg-muted/20 p-6 sm:p-8 lg:border-l lg:border-t-0">
+        <SkeletonLine w="7rem" />
+        <SkeletonLine w="4rem" className="mt-2 h-8" />
+        <SkeletonLine w="100%" className="mt-4 h-1.5" />
+        <div className="mt-8 space-y-5 border-t border-border/60 pt-6">
+          <SkeletonLine w="8rem" />
+          <SkeletonLine w="80%" className="h-7" />
+          <SkeletonLine w="70%" className="h-7" />
+        </div>
       </div>
     </div>
   );
@@ -27,7 +47,7 @@ export function ClientPortalHomeLoading() {
           <SkeletonLine w="12rem" />
         </div>
       </header>
-      <SkeletonCard className="h-64 rounded-2xl border border-border/60 shadow-none" lines={4} />
+      <ProjectOverviewSkeleton />
     </div>
   );
 }

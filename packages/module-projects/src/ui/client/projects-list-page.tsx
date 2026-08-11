@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { connection } from "next/server";
 import { ArrowLeft } from "lucide-react";
 import { requireServerPageAccess } from "@brightweblabs/core-auth/server";
+import { Button } from "@brightweblabs/ui";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { listClientProjects } from "../../client-access";
 import { clientProjectsDictionary } from "./dictionary";
@@ -16,20 +17,22 @@ async function ClientProjectsListPageWithInternalHref(internalProjectsHref: stri
   const dictionary = clientProjectsDictionary.list;
 
   return (
-      <section className="space-y-8">
-          <header className="flex flex-wrap items-start justify-between gap-3">
-            <div className="space-y-1">
-              <span className="eyebrow text-primary">{dictionary.kicker}</span>
-              <h1 className="font-display text-heading-1 font-black leading-tight">{clientProjectsDictionary.safeUi.myProjects}</h1>
-              <p className="text-body text-muted-foreground">{clientProjectsDictionary.safeUi.pageDescription}</p>
-            </div>
-            <Link href="/account" className="inline-flex items-center gap-2 rounded-lg border border-border/70 bg-background/70 px-3 py-2 text-body font-semibold transition-colors hover:bg-background">
-              <ArrowLeft className="size-4" />
-              {dictionary.back}
-            </Link>
-          </header>
-          <ClientProjectsListClient initialProjects={initialProjects} />
-      </section>
+    <section className="space-y-8">
+      <header className="flex flex-wrap items-start justify-between gap-4">
+        <div className="space-y-2">
+          <span className="eyebrow text-primary">{dictionary.kicker}</span>
+          <h1 className="text-heading-1">{clientProjectsDictionary.safeUi.myProjects}</h1>
+          <p className="text-body text-muted-foreground">{clientProjectsDictionary.safeUi.pageDescription}</p>
+        </div>
+        <Button asChild variant="outline" className="min-h-11">
+          <Link href="/account">
+            <ArrowLeft className="size-4" />
+            {dictionary.back}
+          </Link>
+        </Button>
+      </header>
+      <ClientProjectsListClient initialProjects={initialProjects} />
+    </section>
   );
 }
 

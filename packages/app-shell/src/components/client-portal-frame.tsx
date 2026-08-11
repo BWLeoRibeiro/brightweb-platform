@@ -40,7 +40,7 @@ export function ClientPortalFrame({
     <div className="min-h-dvh bg-background text-foreground">
       <header className="sticky top-0 z-40 border-b border-border/65 bg-background/88 backdrop-blur-xl supports-[backdrop-filter]:bg-background/78">
         <div className="mx-auto flex h-[4.5rem] max-w-[76rem] items-center justify-between gap-6 px-4 sm:px-6 lg:px-8">
-          <Link href="/account" prefetch={false} className="flex min-w-0 items-center gap-3" aria-label={brand.ariaLabel}>
+          <Link href="/account" prefetch={false} className="flex min-h-11 min-w-0 items-center gap-3" aria-label={brand.ariaLabel}>
             <Image
               src={brand.collapsedLogo.src}
               alt={brand.alt}

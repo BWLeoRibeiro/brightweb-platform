@@ -11,7 +11,7 @@ import {
   RefreshCw,
   UserRound,
 } from "lucide-react";
-import { Button, Card } from "@brightweblabs/ui";
+import { Button, Card, EmptyState, InitialsAvatar, StatusPill } from "@brightweblabs/ui";
 import type {
   ClientOrganizationMembership,
   ClientProjectDetail,
@@ -22,6 +22,8 @@ import { clientProjectsDictionary } from "./dictionary";
 import { ProjectListCard } from "./project-list-card";
 import { ClientPortalHomeLoading } from "./projects-loading";
 import { formatClientProjectDate, resolveClientMetaPreview, resolveClientProjectDetailHref } from "./shared";
+import { ProjectStatusBadge } from "../project-state-badge";
+import { ProjectProgressBar } from "../shared/project-progress";
 
 type PortalState =
   | { status: "loading" }
@@ -38,20 +40,14 @@ function organizationRoleLabel(role: ClientOrganizationMembership["role"]) {
   return role === "admin" ? clientProjectsDictionary.portal.organizationAdmin : clientProjectsDictionary.portal.organizationMember;
 }
 
-function initials(value: string) {
-  return value.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]).join("").toUpperCase();
-}
-
 function OrganizationIdentity({ organization }: { organization: ClientOrganizationMembership }) {
   return (
     <div className="flex flex-wrap items-center gap-x-3 gap-y-2 border-y border-border/65 py-4 sm:border-y-0 sm:py-0">
-      <span className="font-display inline-flex size-9 shrink-0 items-center justify-center rounded-lg bg-[color:var(--project-hero-surface)] text-label font-bold text-[color:var(--project-hero-foreground)]">
-        {initials(organization.name)}
-      </span>
+      <InitialsAvatar label={organization.name} className="size-9" />
       <span className="text-body font-bold">{organization.name}</span>
-      <span className="rounded-full bg-primary/10 px-2.5 py-1 text-micro font-semibold text-primary">
+      <StatusPill token="--role-client">
         {organizationRoleLabel(organization.role)}
-      </span>
+      </StatusPill>
     </div>
   );
 }
@@ -82,27 +78,24 @@ function ProjectOverview({ project }: { project: ClientProjectDetail | ClientPro
 
   return (
     <Card asChild variant="light">
-      <article className="overflow-hidden border-border/70 bg-background/80 shadow-lg">
+      <article className="overflow-hidden border-border/70 bg-background/80 shadow-none">
         <div className="grid lg:grid-cols-[minmax(0,1.08fr)_minmax(20rem,0.92fr)]">
-          <div className="flex min-h-[24rem] flex-col p-6 sm:p-8 lg:p-10">
+          <div className="flex min-h-80 flex-col p-6 sm:p-8">
             <p className="eyebrow text-primary">{clientProjectsDictionary.portal.activeProject}</p>
-            <h2 className="font-display mt-4 text-heading-1 font-black leading-[var(--type-leading-096)] tracking-[var(--type-tracking-n040)] sm:text-[length:var(--text-ui-dashboard-title-lg)]">{project.name}</h2>
+            <h2 className="mt-4 text-heading-1">{project.name}</h2>
             <div className="mt-4 flex flex-wrap items-center gap-3 text-meta text-muted-foreground">
               {project.reference ? <span className="text-data font-semibold">{project.reference}</span> : null}
-              <span className="inline-flex items-center gap-1.5 font-semibold text-[color:var(--project-state-active-strong)]">
-                <span className="size-1.5 rounded-full bg-current" />
-                {clientProjectsDictionary.portal.statusLabels[project.status]}
-              </span>
+              <ProjectStatusBadge status={project.status} label={clientProjectsDictionary.portal.statusLabels[project.status]} size="small" />
             </div>
-            {project.clientSummary ? <p className="mt-7 max-w-[36rem] text-body leading-relaxed text-muted-foreground sm:text-[length:var(--text-ui-body-lg)]">{project.clientSummary}</p> : null}
-            <div className="mt-auto pt-10">
-              <Button asChild size="lg" className="group min-w-40 justify-between gap-5">
+            {project.clientSummary ? <p className="mt-6 max-w-[36rem] text-body-lg text-muted-foreground">{project.clientSummary}</p> : null}
+            <div className="mt-auto pt-8">
+              <Button asChild size="lg" className="group min-h-11 min-w-40 justify-between gap-5">
                 <Link href={href}>{clientProjectsDictionary.portal.openProject}<ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5 motion-reduce:transition-none" /></Link>
               </Button>
             </div>
           </div>
 
-          <div className="border-t border-border/65 bg-muted/20 p-6 sm:p-8 lg:border-l lg:border-t-0 lg:p-10">
+          <div className="border-t border-border/65 bg-muted/20 p-6 sm:p-8 lg:border-l lg:border-t-0">
             <div className="pb-6">
               <div className="flex items-end justify-between gap-4">
                 <div>
@@ -111,9 +104,7 @@ function ProjectOverview({ project }: { project: ClientProjectDetail | ClientPro
                 </div>
                 <span className="text-meta text-muted-foreground">{clientProjectsDictionary.portal.sharedMetas}</span>
               </div>
-              <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-border/70">
-                <div className="h-full rounded-full bg-primary transition-[width] duration-500 motion-reduce:transition-none" style={{ width: `${progress ?? 0}%` }} />
-              </div>
+              <ProjectProgressBar ariaLabel={clientProjectsDictionary.portal.progress} percent={progress} className="mt-4" trackClassName="bg-border/70" fillClassName="bg-primary motion-reduce:transition-none" />
             </div>
 
             <CurrentMetas metas={"metas" in project ? project.metas : project.metaPreview} />
@@ -188,8 +179,8 @@ export function ClientPortalHome({ firstName, initialData = null }: { firstName:
     <div className="space-y-9 sm:space-y-12">
       <header className="space-y-6">
         <div>
-          <h1 className="font-display text-heading-1 font-black leading-[var(--type-leading-096)] tracking-[var(--type-tracking-n040)] sm:text-[length:var(--text-ui-dashboard-title-lg)]">{clientProjectsDictionary.portal.greeting(displayName)}</h1>
-          <p className="mt-3 text-body text-muted-foreground sm:text-[length:var(--text-ui-body-lg)]">{clientProjectsDictionary.portal.homeDescription}</p>
+          <h1 className="text-heading-2">{clientProjectsDictionary.portal.greeting(displayName)}</h1>
+          <p className="mt-3 text-body-lg text-muted-foreground">{clientProjectsDictionary.portal.homeDescription}</p>
         </div>
         {singleOrganization ? <OrganizationIdentity organization={singleOrganization} /> : null}
       </header>
@@ -212,19 +203,23 @@ export function ClientPortalHome({ firstName, initialData = null }: { firstName:
         <section aria-labelledby="client-projects-title" className="space-y-5">
           <div className="flex flex-wrap items-end justify-between gap-3">
             <div><p className="eyebrow text-primary">{clientProjectsDictionary.portal.currentWork}</p><h2 id="client-projects-title" className="mt-1 text-heading-2 font-bold">{clientProjectsDictionary.portal.ongoingProjects}</h2></div>
-            <Link href="/account/projetos" className="inline-flex items-center gap-2 text-body font-bold text-primary hover:underline">{clientProjectsDictionary.portal.seeAllProjects}<ArrowRight className="size-4" /></Link>
+            <Link href="/account/projetos" className="inline-flex min-h-11 items-center gap-2 text-body font-bold text-primary hover:underline">{clientProjectsDictionary.portal.seeAllProjects}<ArrowRight className="size-4" /></Link>
           </div>
           <div className="grid gap-4 md:grid-cols-2">{ongoingProjects.slice(0, 4).map((project) => (
             <ProjectListCard key={project.id} project={project} showOrganizations={!singleOrganization} />
           ))}</div>
         </section>
       ) : (
-        <section className="rounded-2xl border border-border/65 bg-background/60 px-5 py-14 text-center sm:px-8">
-          <BriefcaseBusiness className="mx-auto size-9 text-muted-foreground/35" />
-          <h2 className="mt-4 text-title font-bold">{clientProjectsDictionary.portal.noOngoingProjects}</h2>
-          <p className="mx-auto mt-2 max-w-[30rem] text-body text-muted-foreground">{clientProjectsDictionary.portal.noOngoingProjectsDescription}</p>
-          <Button asChild variant="outline" className="mt-6"><Link href="/account/projetos">{clientProjectsDictionary.portal.seeProjectHistory}</Link></Button>
-        </section>
+        <Card asChild variant="light">
+          <section>
+            <EmptyState
+              icon={BriefcaseBusiness}
+              title={clientProjectsDictionary.portal.noOngoingProjects}
+              hint={clientProjectsDictionary.portal.noOngoingProjectsDescription}
+              action={<Button asChild variant="outline"><Link href="/account/projetos">{clientProjectsDictionary.portal.seeProjectHistory}</Link></Button>}
+            />
+          </section>
+        </Card>
       )}
     </div>
   );

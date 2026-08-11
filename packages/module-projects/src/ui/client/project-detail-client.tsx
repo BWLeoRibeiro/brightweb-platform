@@ -6,9 +6,11 @@ import { AlertCircle, ArrowLeft, CalendarDays, CheckCircle2, Circle, Clock, Clou
 import { Button, Card } from "@brightweblabs/ui";
 import type { ClientProjectDetail } from "../../client-contracts";
 import type { MilestoneStatus, ProjectLinkKind } from "../../contracts";
-import { CLIENT_MILESTONE_STATUS_CLASSES, CLIENT_MILESTONE_STATUS_LABELS, CLIENT_PROJECT_LINK_KIND_LABELS, CLIENT_PROJECT_STATUS_LABELS, CLIENT_PROJECT_STATUS_STYLES, clientProjectsDictionary } from "./dictionary";
+import { CLIENT_MILESTONE_STATUS_CLASSES, CLIENT_MILESTONE_STATUS_LABELS, CLIENT_PROJECT_LINK_KIND_LABELS, CLIENT_PROJECT_STATUS_LABELS, clientProjectsDictionary } from "./dictionary";
 import { formatClientProjectDate, isClientProjectDateOverdue } from "./shared";
 import { ClientProjectDetailLoading } from "./projects-loading";
+import { ProjectStatusBadge } from "../project-state-badge";
+import { ProjectProgressBar } from "../shared/project-progress";
 
 const META_ICONS: Record<MilestoneStatus, ReactNode> = {
   pending: <Circle className="size-3.5" />,
@@ -89,14 +91,14 @@ export function ClientProjectDetailClient({ projectId, initialProject }: { proje
 
   return (
     <article className="space-y-9">
-      <Link href="/account/projetos" className="inline-flex items-center gap-1.5 text-body font-semibold text-muted-foreground hover:text-foreground"><ArrowLeft className="size-4" />{clientProjectsDictionary.safeUi.projectsBack}</Link>
+      <Link href="/account/projetos" className="inline-flex min-h-11 items-center gap-1.5 text-body font-semibold text-muted-foreground hover:text-foreground"><ArrowLeft className="size-4" />{clientProjectsDictionary.safeUi.projectsBack}</Link>
 
       <header className="max-w-[52rem] space-y-3">
         <div className="flex flex-wrap items-center gap-3">
-          <span className={`inline-flex rounded-full px-2.5 py-0.5 text-label font-semibold ${CLIENT_PROJECT_STATUS_STYLES[project.status]}`}>{CLIENT_PROJECT_STATUS_LABELS[project.status]}</span>
+          <ProjectStatusBadge status={project.status} label={CLIENT_PROJECT_STATUS_LABELS[project.status]} size="small" />
           {project.reference ? <span className="text-data text-meta text-muted-foreground">{project.reference}</span> : null}
         </div>
-        <h1 className="font-display text-heading-1 font-black leading-[var(--type-leading-096)] tracking-[var(--type-tracking-n040)]">{project.name}</h1>
+        <h1 className="text-heading-1">{project.name}</h1>
         <p className="text-body text-muted-foreground">{project.organizations.map((organization) => organization.name).join(" · ")}</p>
       </header>
 
@@ -144,7 +146,7 @@ export function ClientProjectDetailClient({ projectId, initialProject }: { proje
           <Card variant="light" className="p-5 shadow-none">
             <p className="text-label font-semibold text-muted-foreground">{clientProjectsDictionary.safeUi.progress}</p>
             <p className="font-display mt-1 text-heading-2 font-black">{project.progress.percent ?? 0}%</p>
-            <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-muted"><div className="h-full rounded-full bg-primary" style={{ width: `${project.progress.percent ?? 0}%` }} /></div>
+            <ProjectProgressBar ariaLabel={clientProjectsDictionary.safeUi.progress} percent={project.progress.percent} className="mt-4" trackClassName="bg-muted" fillClassName="bg-primary" />
             <p className="mt-3 text-meta text-muted-foreground">{metas.filter((meta) => meta.status === "achieved").length} {clientProjectsDictionary.safeUi.of} {metas.length} {clientProjectsDictionary.safeUi.completedMetasLower}</p>
           </Card>
           <Card variant="light" className="p-5 shadow-none">
@@ -158,7 +160,7 @@ export function ClientProjectDetailClient({ projectId, initialProject }: { proje
             <Card variant="light" className="p-5 shadow-none">
               <h2 className="flex items-center gap-2 text-label font-semibold text-muted-foreground"><UserRound className="size-4" />{clientProjectsDictionary.safeUi.contact}</h2>
               <p className="mt-3 text-body font-bold">{project.clientContact.label}</p>
-              {project.clientContact.email ? <a href={`mailto:${project.clientContact.email}`} className="mt-1 block truncate text-meta text-primary hover:underline">{project.clientContact.email}</a> : null}
+              {project.clientContact.email ? <a href={`mailto:${project.clientContact.email}`} className="mt-1 inline-flex min-h-11 max-w-full items-center truncate text-meta text-primary hover:underline">{project.clientContact.email}</a> : null}
             </Card>
           ) : null}
         </aside>

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { BriefcaseBusiness, KeyRound, ShieldCheck, UserCircle2 } from "lucide-react";
+import { Button, Card, SectionHeading } from "@brightweblabs/ui";
 import { getCurrentAccountProfile, type AccountProfile } from "./account/profile";
 import { requireServerPageAccess } from "./server";
 import { AccountClient } from "./ui/account/account-client";
@@ -106,81 +107,78 @@ export async function AccountPage({
 
       <div className={`grid gap-5 ${showWorkAccess ? "lg:grid-cols-2" : "lg:grid-cols-[minmax(0,1fr)_minmax(18rem,0.72fr)]"}`}>
         <div className="space-y-4">
-          <article className="rounded-2xl border p-5" style={{ borderColor: "var(--border)", background: "var(--card)" }}>
-            <div className="mb-4 flex items-center gap-2">
-              <UserCircle2 className="size-3.5 text-muted-foreground" />
-              <h2 className="text-label font-bold text-muted-foreground">
-                {defaultAccountUiDictionary.profile.title}
-              </h2>
-            </div>
-            {!accountProfile.ok ? (
-              <div className="mb-4">
-                <AuthNotice>{defaultAccountUiDictionary.profile.loadError}</AuthNotice>
-              </div>
-            ) : null}
-            <AccountClient profile={profileData} />
-          </article>
+          <Card asChild variant="light">
+            <article className="p-5 shadow-none">
+              <SectionHeading className="mb-4" icon={UserCircle2} title={defaultAccountUiDictionary.profile.title} />
+              {!accountProfile.ok ? (
+                <div className="mb-4">
+                  <AuthNotice>{defaultAccountUiDictionary.profile.loadError}</AuthNotice>
+                </div>
+              ) : null}
+              <AccountClient profile={profileData} />
+            </article>
+          </Card>
         </div>
 
         <div className="space-y-4">
           {supplementaryContent}
-          {showWorkAccess ? <article className="rounded-2xl border p-5" style={{ borderColor: "var(--border)", background: "var(--card)" }}>
-            <div className="mb-3 flex items-center gap-2">
-              <BriefcaseBusiness className="size-3.5 text-muted-foreground" />
-              <h2 className="text-label font-bold text-muted-foreground">
-                {isClient
-                  ? defaultAccountUiDictionary.workAccess.clientTitle
-                  : defaultAccountUiDictionary.workAccess.internalTitle}
-              </h2>
-            </div>
-            <p className="text-body text-muted-foreground">
-              {isClient
-                ? defaultAccountUiDictionary.workAccess.clientDescription
-                : defaultAccountUiDictionary.workAccess.internalDescription}
-            </p>
-            <Link
-              href={isClient ? "/account/projetos" : internalProjectsHref}
-              className="mt-4 inline-flex items-center gap-2 rounded-xl border px-3 py-2.5 text-body font-semibold text-primary transition-colors hover:bg-muted"
-              style={{ borderColor: "var(--border)" }}
-            >
-              <BriefcaseBusiness className="size-3.5" />
-              {isClient
-                ? defaultAccountUiDictionary.workAccess.clientAction
-                : defaultAccountUiDictionary.workAccess.internalAction}
-            </Link>
-          </article> : null}
-
-          <article className="rounded-2xl border p-5" style={{ borderColor: "var(--border)", background: "var(--card)" }}>
-            <div className="mb-4 flex items-center gap-2">
-              <KeyRound className="size-3.5 text-muted-foreground" />
-              <h2 className="text-label font-bold text-muted-foreground">
-                {defaultAccountUiDictionary.security.title}
-              </h2>
-            </div>
-
-            <div className="space-y-3">
-              <div className="rounded-xl px-3 py-2.5" style={{ background: "var(--muted)" }}>
-                <p className="mb-0.5 text-label font-semibold text-muted-foreground">
-                  {defaultAccountUiDictionary.security.email}
+          {showWorkAccess ? (
+            <Card asChild variant="light">
+              <article className="p-5 shadow-none">
+                <SectionHeading
+                  className="mb-3"
+                  icon={BriefcaseBusiness}
+                  title={isClient
+                    ? defaultAccountUiDictionary.workAccess.clientTitle
+                    : defaultAccountUiDictionary.workAccess.internalTitle}
+                />
+                <p className="text-body text-muted-foreground">
+                  {isClient
+                    ? defaultAccountUiDictionary.workAccess.clientDescription
+                    : defaultAccountUiDictionary.workAccess.internalDescription}
                 </p>
-                <p className="truncate text-body font-semibold">{user.email ?? defaultAccountUiDictionary.profile.emptyValue}</p>
-              </div>
+                <Button asChild variant="outline" className="mt-4 min-h-11">
+                  <Link href={isClient ? "/account/projetos" : internalProjectsHref}>
+                    <BriefcaseBusiness className="size-3.5" />
+                    {isClient
+                      ? defaultAccountUiDictionary.workAccess.clientAction
+                      : defaultAccountUiDictionary.workAccess.internalAction}
+                  </Link>
+                </Button>
+              </article>
+            </Card>
+          ) : null}
 
-              {profileData.updatedAt ? (
+          <Card asChild variant="light">
+            <article className="p-5 shadow-none">
+              <SectionHeading className="mb-4" icon={KeyRound} title={defaultAccountUiDictionary.security.title} />
+
+              <div className="space-y-3">
                 <div className="rounded-xl px-3 py-2.5" style={{ background: "var(--muted)" }}>
                   <p className="mb-0.5 text-label font-semibold text-muted-foreground">
-                    {defaultAccountUiDictionary.security.updatedAt}
+                    {defaultAccountUiDictionary.security.email}
                   </p>
-                  <p className="text-body font-semibold">{formatDate(profileData.updatedAt)}</p>
+                  <p className="truncate text-body font-semibold">{user.email ?? defaultAccountUiDictionary.profile.emptyValue}</p>
                 </div>
-              ) : null}
 
-              <Link href="/forgot-password" className="flex items-center gap-2 rounded-xl px-3 py-2.5 text-body font-semibold text-muted-foreground transition-colors hover:bg-muted hover:text-primary">
-                <KeyRound className="size-3.5 shrink-0" />
-                {defaultAccountUiDictionary.security.changePassword}
-              </Link>
-            </div>
-          </article>
+                {profileData.updatedAt ? (
+                  <div className="rounded-xl px-3 py-2.5" style={{ background: "var(--muted)" }}>
+                    <p className="mb-0.5 text-label font-semibold text-muted-foreground">
+                      {defaultAccountUiDictionary.security.updatedAt}
+                    </p>
+                    <p className="text-body font-semibold">{formatDate(profileData.updatedAt)}</p>
+                  </div>
+                ) : null}
+
+                <Button asChild variant="ghost" className="min-h-11 w-full justify-start text-muted-foreground hover:text-primary">
+                  <Link href="/forgot-password">
+                    <KeyRound className="size-3.5 shrink-0" />
+                    {defaultAccountUiDictionary.security.changePassword}
+                  </Link>
+                </Button>
+              </div>
+            </article>
+          </Card>
         </div>
       </div>
     </div>

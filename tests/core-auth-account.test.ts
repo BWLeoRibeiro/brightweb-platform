@@ -195,7 +195,7 @@ test("account GET handler sanitizes profile read failures", async () => {
 test("profile-only account mode keeps self-editing and removes work access", async () => {
   const source = await readFile(path.join(process.cwd(), "packages/core-auth/src/account-page.tsx"), "utf8");
   const profileEditorIndex = source.indexOf("<AccountClient profile={profileData} />");
-  const workAccessConditionalIndex = source.indexOf("{showWorkAccess ? <article", profileEditorIndex);
+  const workAccessConditionalIndex = source.indexOf("{showWorkAccess ? (", profileEditorIndex);
 
   assert.ok(profileEditorIndex >= 0, "the personal profile editor must always render");
   assert.ok(

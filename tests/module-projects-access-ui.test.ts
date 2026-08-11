@@ -245,7 +245,8 @@ test("client loading states mirror the home, list and detail page geometries", (
   const listPage = source("client/projects-list-page.tsx");
   const detailPage = source("client/project-detail-page.tsx");
   assert.match(loading, /ClientPortalHomeLoading/);
-  assert.match(loading, /h-64 rounded-2xl/);
+  assert.match(loading, /ProjectOverviewSkeleton/);
+  assert.match(loading, /min-h-80/);
   assert.match(loading, /ClientProjectsListLoading/);
   assert.match(loading, /md:grid-cols-2/);
   assert.match(loading, /ClientProjectDetailLoading/);

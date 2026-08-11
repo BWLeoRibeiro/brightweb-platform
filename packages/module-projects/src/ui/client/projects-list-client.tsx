@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { FolderKanban } from "lucide-react";
-import { Button, SearchField } from "@brightweblabs/ui";
+import { Button, Card, EmptyState, SearchField } from "@brightweblabs/ui";
 import type { ClientProjectListItem, ClientProjectsResult } from "../../client-contracts";
 import { ProjectListCard } from "./project-list-card";
 import { ClientProjectsListLoading } from "./projects-loading";
@@ -89,10 +89,9 @@ export function ClientProjectsListClient({ initialProjects = null }: { initialPr
 
   if (projects.length === 0) {
     return (
-      <div className="rounded-2xl border border-border/60 bg-background/60 px-5 py-14 text-center">
-        <FolderKanban className="mx-auto mb-3 size-10 text-muted-foreground/30" />
-        <p className="text-body text-muted-foreground">{clientProjectsDictionary.safeUi.emptyProjects}</p>
-      </div>
+      <Card variant="light">
+        <EmptyState icon={FolderKanban} title={clientProjectsDictionary.safeUi.emptyProjects} />
+      </Card>
     );
   }
 
@@ -116,12 +115,9 @@ export function ClientProjectsListClient({ initialProjects = null }: { initialPr
       </div>
 
       {filtered.length === 0 ? (
-        <div className="rounded-xl border border-border/60 bg-background/60 px-4 py-10 text-center">
-          <FolderKanban className="mx-auto mb-3 size-10 text-muted-foreground/30" />
-          <p className="text-body text-muted-foreground">
-            {clientProjectsDictionary.safeUi.emptyFilteredProjects}
-          </p>
-        </div>
+        <Card variant="light">
+          <EmptyState icon={FolderKanban} title={clientProjectsDictionary.safeUi.emptyFilteredProjects} />
+        </Card>
       ) : (
         <div className="grid gap-3 md:grid-cols-2">
           {filtered.map((project) => <ProjectListCard key={project.id} project={project} />)}
