@@ -26,22 +26,42 @@ test("CRM creation sheets use entity-specific semantic sections", async () => {
   assert.match(organization, /organizations\.profile/);
 });
 
-test("project creation separates context, content, execution, and calendar", async () => {
-  const source = await read("packages/module-projects/src/ui/create-project-sheet.tsx");
+test("project creation follows project, internal team, client access, and review order", async () => {
+  const [source, dictionary] = await Promise.all([
+    read("packages/module-projects/src/ui/create-project-sheet.tsx"),
+    read("packages/module-projects/src/ui/project-access-dictionary.ts"),
+  ]);
   const headings = [
-    "dictionary.projectCreate.context",
-    "dictionary.board.contentSection",
-    "dictionary.board.executionSection",
-    "dictionary.board.calendarSection",
+    'title: "Projeto e organizações"',
+    'title: "Equipa interna"',
+    'title: "Acesso de clientes"',
+    'title: "Rever e criar"',
   ];
+  const wizardDictionary = dictionary.slice(dictionary.indexOf("wizard: {"));
   let previous = -1;
   for (const heading of headings) {
-    const index = source.indexOf(heading);
+    const index = wizardDictionary.indexOf(heading);
     assert.ok(index > previous, `${heading} should appear in semantic order`);
     previous = index;
   }
+
+  const wizardBody = source.slice(source.indexOf("<WizardProgress step={step}"));
+  const stepBranches = ["{step === 1 ? (", "{step === 2 ? (", "{step === 3 ? (", "{step === 4 ? ("];
+  previous = -1;
+  for (const branch of stepBranches) {
+    const index = wizardBody.indexOf(branch, previous + 1);
+    assert.ok(index > previous, `${branch} should render in wizard order`);
+    previous = index;
+  }
+
+  assert.match(source, /projectAccessDictionary\.wizard\.steps\.map/);
+  assert.match(source, /<WizardProgress step=\{step\}/);
+  assert.match(source, /participatingOrganizationIds/);
+  assert.match(source, /<ProjectClientAccessEditor/);
+  assert.match(source, /clientAccess: clientAccessDraftToPayload\(clientAccess\)/);
+  assert.match(source, /if \(step !== 4 \|\| isSubmitting/);
   assert.match(source, /projectForm\.startDate/);
-  assert.match(source, /projectEdit\.invalidDateRange/);
+  assert.match(source, /projectAccessDictionary\.wizard\.invalidDateRange/);
 });
 
 test("creation sheets use the shared styled selector popup", async () => {

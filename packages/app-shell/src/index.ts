@@ -44,6 +44,8 @@ export {
 export type { AppSheetHeaderProps, SheetSelectOption, SheetSelectProps } from "./components/app-sheet";
 export { AppShellFrame } from "./components/app-shell-frame";
 export type { AppShellFrameProps } from "./components/app-shell-frame";
+export { ClientPortalFrame } from "./components/client-portal-frame";
+export type { ClientPortalFrameProps } from "./components/client-portal-frame";
 export { AccountMenu } from "./components/account-menu";
 export {
   applyShellRegistrationOverrides,

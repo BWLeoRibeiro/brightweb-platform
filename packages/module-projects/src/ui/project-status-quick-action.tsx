@@ -35,6 +35,7 @@ type ProjectStatusQuickActionProps = {
 const statusOptions: ProjectStatus[] = [
   "planned",
   "active",
+  "paused",
   "blocked",
   "completed",
   "canceled",
@@ -45,6 +46,8 @@ const PROJECT_STATUS_MENU_HOVER_CLASSES: Record<ProjectStatus, string> = {
     "data-[highlighted]:border-[color:var(--project-ui-color-30)] data-[highlighted]:bg-[color:var(--project-ui-color-31)] data-[highlighted]:text-[color:var(--project-state-planned-strong)]",
   active:
     "data-[highlighted]:border-[color:var(--project-ui-color-32)] data-[highlighted]:bg-[color:var(--project-ui-color-33)] data-[highlighted]:text-[color:var(--project-state-active-strong)]",
+  paused:
+    "data-[highlighted]:border-[color:var(--project-ui-color-30)] data-[highlighted]:bg-[color:var(--project-ui-color-31)] data-[highlighted]:text-[color:var(--project-state-planned-strong)]",
   blocked:
     "data-[highlighted]:border-[color:var(--project-ui-color-34)] data-[highlighted]:bg-[color:var(--project-ui-color-35)] data-[highlighted]:text-[color:var(--project-state-blocked-strong)]",
   completed:

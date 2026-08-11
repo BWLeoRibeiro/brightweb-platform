@@ -1,1 +1,1 @@
-export { DashboardLiveMount as default } from "./dashboard-live-mount";
+export { DashboardPageMount as default } from "./dashboard-page-mount";

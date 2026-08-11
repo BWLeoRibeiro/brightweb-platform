@@ -146,6 +146,7 @@ export async function requireServerPageRoleAccess(
 ): Promise<{
   supabase: Awaited<ReturnType<typeof createServerSupabase>>;
   user: User;
+  profileId: string;
   role: GlobalRole;
 }> {
   const access = await requireServerUserAccess();
@@ -170,6 +171,7 @@ export async function requireServerPageRoleAccess(
   return {
     supabase: access.supabase,
     user: access.user,
+    profileId: access.profileId,
     role: access.role,
   };
 }
@@ -209,6 +211,17 @@ export function createProjectReadAccessGuard(
     }
     if (access.role === "admin") {
       return { ...access, role: access.role };
+    }
+
+    if (access.role === "client") {
+      const { data: canView, error: clientAccessError } = await access.supabase.rpc(
+        "can_current_client_view_project",
+        { target_project_id: projectId },
+      );
+      if (clientAccessError) return projectReadQueryError("clientAccess", clientAccessError);
+      return canView === true
+        ? { ...access, role: access.role }
+        : { ok: false, status: 404, error: "Projeto não encontrado." };
     }
 
     const serviceSupabase = dependencies.getServiceClient();
@@ -258,8 +271,7 @@ export function createProjectReadAccessGuard(
       if (organizationMembershipError) {
         return projectReadQueryError("organizationMembership", organizationMembershipError);
       }
-      // By design, every organization member can read every project in that organization.
-      if (organizationMembership?.role) {
+      if (organizationMembership?.role === "admin") {
         return { ...access, role: access.role };
       }
     }

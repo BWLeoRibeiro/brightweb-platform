@@ -12,14 +12,14 @@ export const crmModuleRegistration: ShellModuleRegistration<ShellContextualActio
       label: "CRM",
       icon: Users,
       children: [
-        { href: "/crm", label: "Contactos", icon: UserRound },
-        { href: "/crm/organizations", label: "Organizações", icon: Building2 },
+        { href: "/crm", label: "Contactos", icon: UserRound, visibility: "staff" },
+        { href: "/crm/organizations", label: "Organizações", icon: Building2, visibility: "staff" },
         // No Marketing entry here. module-marketing registers its own nav group
         // at /marketing, and it depends on crm — not the reverse. Advertising a
         // marketing route from crm inverted that dependency and 404'd in both
         // configurations: duplicated (and wrong) when marketing was enabled,
         // and pointing at a module the app did not have when it was not.
-        { href: "/crm/report", label: "Relatórios", icon: BarChart2 },
+        { href: "/crm/report", label: "Relatórios", icon: BarChart2, visibility: "staff" },
       ],
     },
   ],

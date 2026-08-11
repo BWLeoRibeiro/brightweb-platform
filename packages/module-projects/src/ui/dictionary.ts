@@ -207,6 +207,7 @@ export const defaultProjectsUiDictionary = {
   status: {
     planned: "A planear",
     active: "Ativo",
+    paused: "Em pausa",
     blocked: "Bloqueado",
     completed: "Concluído",
     canceled: "Cancelado",
@@ -466,11 +467,11 @@ export const defaultProjectsUiDictionary = {
     edit: "Editar equipa",
     viewAll: "Ver toda a equipa",
     fullDescription: "Todas as pessoas ligadas a este projeto.",
-    description: "Equipa interna assume qualquer papel; clientes entram como observadores.",
+    description: "Atribui funções apenas a staff e administradores. O acesso de clientes é gerido separadamente.",
     inProject: "Equipa neste projeto",
     noneAllocated: "Ainda ninguém alocado. Pesquisa abaixo para adicionar.",
     addPeople: "Adicionar pessoas",
-    searchPlaceholder: "Pesquisar equipa interna ou clientes por nome ou email",
+    searchPlaceholder: "Pesquisar staff ou administradores por nome ou email",
     searchHint: "Escreve um nome ou email para encontrar pessoas a adicionar.",
     noResults: (needle: string) => `Sem resultados para “${needle}”.`,
     resultLimit: (shown: number, total: number) => `A mostrar ${shown} de ${total}. Refina a pesquisa.`,
@@ -479,8 +480,13 @@ export const defaultProjectsUiDictionary = {
     setupPrepareError: "Não foi possível preparar a configuração avançada.",
     removeFromProject: "Remover do projeto",
   },
+  milestoneVisibility: {
+    client: "Visível para clientes",
+    staff: "Apenas equipa interna",
+    clientHint: "Inclui esta meta na versão partilhada do projeto.",
+  },
   badge: {
-    status: { planned: "Planeamento", active: "Ativo", blocked: "Bloqueado", completed: "Concluído", canceled: "Cancelado" },
+    status: { planned: "Planeamento", active: "Ativo", paused: "Em pausa", blocked: "Bloqueado", completed: "Concluído", canceled: "Cancelado" },
     health: { on_track: "Dentro do prazo", at_risk: "Em risco", off_track: "Fora do prazo" },
   },
   messages: {

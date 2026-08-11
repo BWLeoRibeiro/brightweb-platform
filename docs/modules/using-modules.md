@@ -47,7 +47,7 @@ That means BrightWeb module usage is primarily a package and wiring model. The s
 | `@brightweblabs/module-crm` | `handleCrmContactsGetRequest()`, `handleCrmOrganizationsGetRequest()`, `handleCrmStatsGetRequest()`, `handleCrmOwnersGetRequest()` | `stable` | Package-owned CRM GET handlers that can be mounted directly from Next.js routes. |
 | `@brightweblabs/module-crm` | `getCrmDashboardData()` | `starter` | Starter CRM dashboard payload for the scaffolded CRM page. |
 | `@brightweblabs/module-crm/registration` | `crmModuleRegistration` | `stable` | CRM app-shell navigation groups and toolbar registration. |
-| `@brightweblabs/module-projects` | `listProjects()`, `getProjectPortfolioStats()`, `getProjectDashboard()`, `listProjectTasks()`, `listProjectMilestones()`, `listProjectLinks()`, `getClientProjectHealth()` | `stable` | Reusable project portfolio, detail, and client-health helpers. |
+| `@brightweblabs/module-projects` | `listProjects()`, `getProjectPortfolioStats()`, `getProjectDashboard()`, `listProjectTasks()`, `listProjectMilestones()`, `listProjectLinks()`, `listClientProjects()`, `getClientProject()` | `stable` | Reusable internal project workspaces plus narrow client-safe account reads. |
 | `@brightweblabs/module-projects` | `createProject()`, `createProjectOrganization()`, `updateProject()`, `deleteProject()`, `createProjectTask()`, `updateProjectTask()`, `deleteProjectTask()`, `createProjectMilestone()`, `updateProjectMilestone()`, `deleteProjectMilestone()`, `createProjectLink()`, `updateProjectLink()`, `deleteProjectLink()`, `listProjectAssignableProfiles()`, `syncProjectMembers()`, `listOrgAdminProjectsByProfile()` | `stable` | App-owned project write flows and assignment helpers. |
 | `@brightweblabs/module-projects` | `getProjectsPortfolioPageData()` | `starter` | Starter portfolio payload for the scaffolded projects page. |
 | `@brightweblabs/module-projects/registration` | `projectsModuleRegistration` | `stable` | Projects app-shell navigation and toolbar registration. |
@@ -79,10 +79,10 @@ const portfolio = await getProjectsPortfolioPageData();
 ```
 
 ```tsx
-import { requireServerPageAccess } from "@brightweblabs/core-auth/server";
+import { requireServerPageRoleAccess } from "@brightweblabs/core-auth/server";
 
 export default async function ProjectPage({ params }: { params: { projectId: string } }) {
-  const { supabase } = await requireServerPageAccess();
+  const { supabase } = await requireServerPageRoleAccess(["admin", "staff"]);
   const { getProjectDashboard } = await import("@brightweblabs/module-projects");
   const project = await getProjectDashboard(supabase, params.projectId);
 
@@ -250,7 +250,7 @@ Auth email flows should stay on `supabase.auth.*` and Supabase Auth SMTP/project
 ### Projects
 
 - Build on `listProjects()` and `getProjectPortfolioStats()` when you need reusable project listing and metrics helpers.
-- Use `getProjectDashboard()` and `getClientProjectHealth()` for detail and client-facing project views.
+- Use `getProjectDashboard()` for internal detail views. Client-facing routes must use `listClientProjects()` and `getClientProject()`; never project the full internal dashboard into a client response.
 - Use the task, milestone, link, and member helpers when your app owns project write flows.
 - Treat `getProjectsPortfolioPageData()` as `starter` package glue; the scaffold ships no Projects page until package-owned UI exists.
 - Use `projectsModuleRegistration` when you want project navigation and toolbar behavior in the shell.

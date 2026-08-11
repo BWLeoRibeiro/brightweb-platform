@@ -11,7 +11,15 @@ import { DashboardProjectAttentionCard } from "./ui/shared/dashboard-project-att
 export function createProjectsModuleRegistration(baseHref = "/projetos"): ShellModuleRegistration<ShellContextualAction> { return {
   key: "projects",
   placement: "primary",
-  navItems: [{ href: baseHref, label: "Projetos", icon: BriefcaseBusiness }],
+  navItems: [
+    { href: baseHref, label: "Projetos", icon: BriefcaseBusiness, visibility: "staff" },
+    {
+      href: "/account/projetos",
+      label: "Os meus projetos",
+      icon: BriefcaseBusiness,
+      isVisible: (viewer) => !viewer.isStaff && !viewer.isAdmin,
+    },
+  ],
   toolbarRoutes: [
     { surface: "project-board", match: { includes: ["/tarefas", "/tasks", "/quadro"] } },
     { surface: "project-detail", match: { prefixes: [`${baseHref}/`] } },

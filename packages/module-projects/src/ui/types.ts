@@ -21,6 +21,7 @@ export type ProjectDetailPermissions = {
   canEditProjectItems: boolean;
   canCreateProjectLinks: boolean;
   canManageProjectLinks: boolean;
+  canManageClientContent: boolean;
   canManageMembers: boolean;
   canViewOrganization: boolean;
 };

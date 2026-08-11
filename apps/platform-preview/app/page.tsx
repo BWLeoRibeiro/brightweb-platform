@@ -1,7 +1,9 @@
 import Link from "next/link";
+import { requireServerPageRoleAccess } from "@brightweblabs/core-auth/server";
 import { getStarterClientConfig } from "../config/client";
 
-export default function HomePage() {
+export default async function HomePage() {
+  await requireServerPageRoleAccess(["admin", "staff"]);
   const config = getStarterClientConfig();
   const configuredEnvCount = config.envStatus.filter((item) => item.present).length;
 

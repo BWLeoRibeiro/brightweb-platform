@@ -214,6 +214,7 @@ export type AccountMenuProps = {
   links?: Partial<{
     staffDashboard: string;
     account: string;
+    profile: string;
     projects: string;
     home: string;
   }>;

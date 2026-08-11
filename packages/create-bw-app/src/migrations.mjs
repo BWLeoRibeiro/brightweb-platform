@@ -25,12 +25,28 @@ export async function getModuleMigrations(moduleKey, catalogEntry = {}) {
   for (const directory of candidates) {
     if (!(await pathExists(directory))) continue;
     const fileNames = (await fs.readdir(directory)).filter((fileName) => fileName.endsWith(".sql")).sort();
-    if (fileNames.length > 0) return fileNames.map((fileName) => ({ fileName, sourcePath: path.join(directory, fileName) }));
+    if (fileNames.length > 0) {
+      return Promise.all(fileNames.map(async (fileName) => {
+        const sourcePath = path.join(directory, fileName);
+        const source = await fs.readFile(sourcePath, "utf8");
+        return {
+          fileName,
+          sourcePath,
+          destructive: /^\s*--\s*bw-migration-safety:\s*destructive\s*$/im.test(source),
+        };
+      }));
+    }
   }
   return [];
 }
 
-export async function planMigrationAppends({ targetDir, moduleKeys, catalog, migrationCursor = {} }) {
+export async function planMigrationAppends({
+  targetDir,
+  moduleKeys,
+  catalog,
+  migrationCursor = {},
+  migrationUpperBounds = {},
+}) {
   const migrationsDir = await findAppMigrationsDirectory(targetDir);
   const existing = (await pathExists(migrationsDir))
     ? (await fs.readdir(migrationsDir)).filter((fileName) => fileName.endsWith(".sql")).sort()
@@ -40,11 +56,33 @@ export async function planMigrationAppends({ targetDir, moduleKeys, catalog, mig
     return Math.max(maximum, Number(match?.[1] || 0));
   }, 0);
   const writes = [];
+  const deferred = [];
   const nextCursor = { ...migrationCursor };
   for (const moduleKey of moduleKeys) {
     const migrations = await getModuleMigrations(moduleKey, catalog[moduleKey]);
     const cursor = migrationCursor[moduleKey];
-    const pending = cursor ? migrations.filter((entry) => entry.fileName > cursor) : migrations;
+    const upperBound = migrationUpperBounds[moduleKey];
+    let migrationsInScope = migrations;
+    if (upperBound) {
+      const upperBoundIndex = migrations.findIndex((entry) => entry.fileName === upperBound);
+      if (upperBoundIndex === -1) {
+        throw new Error(`Migration cutoff ${upperBound} does not exist for module ${moduleKey}.`);
+      }
+      if (cursor) {
+        const cursorIndex = migrations.findIndex((entry) => entry.fileName === cursor);
+        if (cursorIndex === -1) {
+          throw new Error(`Migration cutoff blocked: current cursor ${cursor} does not exist in the shipped ${moduleKey} migration history.`);
+        }
+        if (upperBoundIndex < cursorIndex) {
+          throw new Error(`Migration cutoff ${upperBound} is before the current ${moduleKey} cursor ${cursor}.`);
+        }
+      }
+      migrationsInScope = migrations.slice(0, upperBoundIndex + 1);
+      deferred.push(...migrations.slice(upperBoundIndex + 1).map((entry) => ({ moduleKey, ...entry })));
+    }
+    const pending = cursor
+      ? migrationsInScope.filter((entry) => entry.fileName > cursor)
+      : migrationsInScope;
     for (const entry of pending) {
       sequence += 1;
       const targetFileName = `${String(sequence).padStart(4, "0")}_${moduleKey}__${entry.fileName}`;
@@ -58,9 +96,9 @@ export async function planMigrationAppends({ targetDir, moduleKeys, catalog, mig
         content: `-- bw-module: ${moduleKey}@${version} ${entry.fileName}\n${source}`,
       });
     }
-    if (migrations.length > 0) nextCursor[moduleKey] = migrations.at(-1).fileName;
+    if (migrationsInScope.length > 0) nextCursor[moduleKey] = migrationsInScope.at(-1).fileName;
   }
-  return { writes, nextCursor };
+  return { writes, deferred, nextCursor };
 }
 
 export async function applyMigrationWrites(writes) {

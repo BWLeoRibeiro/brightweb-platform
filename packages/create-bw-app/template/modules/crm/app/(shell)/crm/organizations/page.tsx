@@ -1,3 +1,1 @@
-import { CrmOrganizationsPage } from "@brightweblabs/module-crm/ui";
-
-export default function OrganizationsPage() { return <CrmOrganizationsPage />; }
+export { CrmOrganizationsRoutePage as default } from "@brightweblabs/module-crm/routes";

@@ -23,6 +23,29 @@ pnpm install
 pnpm dev
 ```
 
+For a completely local Docker-backed Supabase stack, keep Docker Desktop
+running and use:
+
+```bash
+pnpm db:local:start
+pnpm db:local:seed
+pnpm dev:local
+```
+
+The local wrapper injects the CLI database credentials into the preview process
+and disables email delivery. It does not edit or consume the remote Supabase
+credentials in `.env.local`. The development administrator is
+`dev@brightweblabs.test` with password `BrightWebDev!36`.
+
+After changing migrations, rebuild and reset only the disposable local database:
+
+```bash
+pnpm db:local:reset
+pnpm db:local:seed
+```
+
+Stop the local services with `pnpm db:local:stop`.
+
 Current preview routes:
 
 - `/`

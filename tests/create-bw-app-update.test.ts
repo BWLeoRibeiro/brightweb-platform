@@ -384,6 +384,14 @@ test("projects scaffolding resolves organizations without CRM", async (t) => {
     "0020_projects__20260801122000_project_member_sync.sql",
     "0021_projects__20260804120000_project_task_start_date.sql",
     "0022_projects__20260804123000_project_start_date.sql",
+    "0023_projects__20260810120000_project_client_access.sql",
+    "0024_projects__20260811120000_project_client_access_expand.sql",
+    "0025_projects__20260811120500_project_member_sync_hardening.sql",
+    "0026_projects__20260811121000_project_client_access_enforcement.sql",
+    "0027_projects__20260811121500_project_client_organization_memberships.sql",
+    "0028_projects__20260811121700_project_client_meta_preview.sql",
+    "0029_projects__20260811122000_project_client_access_identity_cleanup.sql",
+    "0030_projects__20260811122500_remove_project_client_next_steps.sql",
   ]);
   assert.equal(migrations.some((fileName) => fileName.includes("_crm__")), false);
 
@@ -439,7 +447,7 @@ test("scaffolds only direct package mounts and no local component library", asyn
   await assert.rejects(fs.access(path.join(targetDir, "app", "page.tsx")));
   assert.match(
     await fs.readFile(path.join(targetDir, "app", "(shell)", "crm", "page.tsx"), "utf8"),
-    /return <CrmDashboard \/>/,
+    /CrmDashboardRoutePage as default.*@brightweblabs\/module-crm\/routes/,
   );
 });
 

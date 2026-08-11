@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import {
   AppHeader,
   AppShellFrame,
+  ClientPortalFrame,
   DesktopSidebar,
   MobileNav,
   ShellActionsProvider,
@@ -57,8 +58,8 @@ function PreviewShellLayoutInner({
   const pathname = pathnameOverride ?? livePathname;
   const router = useRouter();
   const { shellPreview: config, toolbarRoutes, toolbarActions } = useMemo(
-    () => getStarterShellConfig(),
-    [],
+    () => getStarterShellConfig({ isAdmin: viewer.isAdmin, isStaff: viewer.isStaff }),
+    [viewer.isAdmin, viewer.isStaff],
   );
   const shellGroups = useMemo<ShellNavStateGroup[]>(
     () => [
@@ -110,6 +111,30 @@ function PreviewShellLayoutInner({
     if (item.action) dispatchShellAction(item.action);
   };
 
+  const handleSignOut = async () => {
+    await authClient.signOutLocal();
+    router.replace("/login");
+    router.refresh();
+  };
+
+  if (!viewer.isStaff && !viewer.isAdmin) {
+    return (
+      <ClientPortalFrame
+        brand={config.brand}
+        pathname={pathname}
+        displayName={displayName}
+        onSignOut={handleSignOut}
+        user={{
+          email: viewer.email,
+          user_metadata: { first_name: viewer.firstName, last_name: viewer.lastName },
+        }}
+        userInitials={computeInitials(viewer.email, viewer.firstName ?? undefined, viewer.lastName ?? undefined)}
+      >
+        {children}
+      </ClientPortalFrame>
+    );
+  }
+
   return (
     <AppShellFrame
       collapsed={isSidebarCollapsed}
@@ -133,11 +158,7 @@ function PreviewShellLayoutInner({
           account={{
             displayName,
             isStaff: viewer.isStaff,
-            onSignOut: async () => {
-              await authClient.signOutLocal();
-              router.replace("/login");
-              router.refresh();
-            },
+            onSignOut: handleSignOut,
             onThemeChange: isAdminSurface ? () => {} : undefined,
             user: {
               email: viewer.email,

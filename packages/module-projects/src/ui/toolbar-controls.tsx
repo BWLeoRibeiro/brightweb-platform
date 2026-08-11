@@ -13,11 +13,12 @@ import {
 } from "./events";
 import { cn } from "./utils";
 
-const STATUS_KEYS: ProjectsStatusFilter[] = ["all", "planned", "active", "blocked", "completed", "canceled"];
+const STATUS_KEYS: ProjectsStatusFilter[] = ["all", "planned", "active", "paused", "blocked", "completed", "canceled"];
 const HEALTH_KEYS: ProjectsHealthFilter[] = ["all", "on_track", "at_risk", "off_track"];
 const STATUS_SWATCHES: Partial<Record<ProjectsStatusFilter, string>> = {
   planned: "var(--project-state-planned)",
   active: "var(--project-state-active)",
+  paused: "var(--project-state-planned)",
   blocked: "var(--project-state-blocked)",
   completed: "var(--project-state-completed)",
   canceled: "var(--project-state-canceled)",

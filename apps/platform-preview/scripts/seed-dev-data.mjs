@@ -2,6 +2,9 @@ import { createClient } from "@supabase/supabase-js";
 
 const DEFAULT_EMAIL = "dev@brightweblabs.test";
 const DEFAULT_PASSWORD = "BrightWebDev!36";
+const CLIENT_EMAIL = "orgadmin@bright-harbor.test";
+const CLIENT_PASSWORD = "BrightWebOrgAdmin!36";
+const CLIENT_PROJECT_REQUEST_ID = "36000000-0000-4000-8000-000000000026";
 
 const ORGANIZATIONS = [
   {
@@ -122,12 +125,13 @@ async function requireCount(promise, operation) {
 
 // GoTrue auth-admin calls. New-format secret keys (sb_secret_*) are rejected by
 // GoTrue when sent as `Authorization: Bearer` (it parses them as a JWT and fails
-// with bad_jwt/ES256). supabase-js sends the key as both apikey AND bearer, so we
-// call the admin endpoints directly with the apikey header only. PostgREST/DB
-// calls keep using supabase-js, which works with the secret key.
+// with bad_jwt/ES256), while the local Supabase CLI still returns a service-role
+// JWT that requires the bearer header. Support both key formats explicitly.
 async function authAdmin(path, { method = "GET", body } = {}) {
   const base = requiredEnv("NEXT_PUBLIC_SUPABASE_URL").replace(/\/$/, "");
   const secret = requiredEnv("SUPABASE_SECRET_DEFAULT_KEY");
+  const headers = { apikey: secret, "Content-Type": "application/json" };
+  if (secret.startsWith("eyJ")) headers.Authorization = `Bearer ${secret}`;
   // Some GoTrue replicas intermittently reject the new-format secret key with a
   // spurious bad_jwt/ES256 error (~20%). PostgREST and the login path are stable;
   // this only hits auth-admin ops, so retry transient bad_jwt failures.
@@ -135,7 +139,7 @@ async function authAdmin(path, { method = "GET", body } = {}) {
   for (let attempt = 1; attempt <= 8; attempt += 1) {
     const response = await fetch(`${base}/auth/v1${path}`, {
       method,
-      headers: { apikey: secret, "Content-Type": "application/json" },
+      headers,
       body: body ? JSON.stringify(body) : undefined,
     });
     const json = await response.json().catch(() => ({}));
@@ -158,6 +162,18 @@ async function findUserByEmail(email) {
     if (user || users.length < perPage) return user ?? null;
   }
   throw new Error("Could not finish searching Auth users after 10 pages.");
+}
+
+async function upsertAuthUser(email, password, firstName, lastName) {
+  const existing = await findUserByEmail(email);
+  const body = {
+    password,
+    email_confirm: true,
+    user_metadata: { first_name: firstName, last_name: lastName },
+  };
+  return existing
+    ? authAdmin(`/admin/users/${existing.id}`, { method: "PUT", body })
+    : authAdmin("/admin/users", { method: "POST", body: { ...body, email } });
 }
 
 async function main() {
@@ -187,27 +203,7 @@ async function main() {
     },
   );
 
-  let user = await findUserByEmail(email);
-  if (user) {
-    user = await authAdmin(`/admin/users/${user.id}`, {
-      method: "PUT",
-      body: {
-        password,
-        email_confirm: true,
-        user_metadata: { first_name: "Dev", last_name: "Admin" },
-      },
-    });
-  } else {
-    user = await authAdmin("/admin/users", {
-      method: "POST",
-      body: {
-        email,
-        password,
-        email_confirm: true,
-        user_metadata: { first_name: "Dev", last_name: "Admin" },
-      },
-    });
-  }
+  const user = await upsertAuthUser(email, password, "Dev", "Admin");
 
   const profile = await requireResult(
     supabase
@@ -251,6 +247,37 @@ async function main() {
     supabase.from("organizations").upsert(ORGANIZATIONS, { onConflict: "id" }),
     "Could not upsert seed organizations",
   );
+
+  const clientUser = await upsertAuthUser(CLIENT_EMAIL, CLIENT_PASSWORD, "Olívia", "Martins");
+  const clientProfile = await requireResult(
+    supabase
+      .from("profiles")
+      .upsert({ user_id: clientUser.id, email: CLIENT_EMAIL, first_name: "Olívia", last_name: "Martins" }, { onConflict: "user_id" })
+      .select("id")
+      .single(),
+    "Could not upsert seed client profile",
+  );
+  await requireResult(
+    supabase.from("roles").upsert({ code: "client", label: "Client" }, { onConflict: "code" }),
+    "Could not ensure client role",
+  );
+  await requireResult(
+    supabase.from("user_role_assignments").upsert({
+      profile_id: clientProfile.id,
+      role_code: "client",
+      assigned_by_profile_id: profile.id,
+      reason: "platform_preview_client_seed",
+    }, { onConflict: "profile_id" }),
+    "Could not assign seed client role",
+  );
+  await requireResult(
+    supabase.from("organization_members").upsert({
+      organization_id: ORGANIZATIONS[0].id,
+      profile_id: clientProfile.id,
+      role: "admin",
+    }, { onConflict: "organization_id,profile_id" }),
+    "Could not assign seed client organization",
+  );
   await requireResult(
     supabase
       .from("crm_contacts")
@@ -289,6 +316,50 @@ async function main() {
     "Could not upsert seed CRM status timeline",
   );
 
+  const authenticatedAdmin = createClient(
+    requiredEnv("NEXT_PUBLIC_SUPABASE_URL"),
+    requiredEnv("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY"),
+    { auth: { autoRefreshToken: false, persistSession: false, detectSessionInUrl: false } },
+  );
+  await requireResult(
+    authenticatedAdmin.auth.signInWithPassword({ email, password }),
+    "Could not authenticate seed admin",
+  );
+  const projectCreation = await requireResult(
+    authenticatedAdmin.rpc("create_project_with_client_access", {
+      p_request_id: CLIENT_PROJECT_REQUEST_ID,
+      p_project: {
+        primary_organization_id: ORGANIZATIONS[0].id,
+        name: "Portal Aurora",
+        code: "AUR-26",
+        status: "active",
+        start_date: "2026-07-01",
+        target_date: "2026-10-30",
+        client_summary: "Uma nova presença digital para apresentar a marca, os serviços e criar novas oportunidades.",
+        client_scope: "Estratégia, direção visual, design e desenvolvimento do novo portal.",
+        client_contact_profile_id: profile.id,
+      },
+      p_organization_ids: [ORGANIZATIONS[0].id],
+      p_members: [{ profile_id: profile.id, role: "owner" }],
+      p_client_access: { mode: "all_org_clients", organization_ids: [ORGANIZATIONS[0].id], profile_grants: [] },
+    }),
+    "Could not create seed client project",
+  );
+  const projectId = projectCreation?.[0]?.project_id;
+  if (!projectId) throw new Error("Seed client project did not return an id.");
+  await requireResult(
+    authenticatedAdmin.from("project_milestones").upsert({
+      id: "36000000-0000-4000-b000-000000000001",
+      project_id: projectId,
+      title: "Direção visual aprovada",
+      status: "in_progress",
+      target_date: "2026-08-18",
+      position: 1,
+      visibility: "client",
+    }, { onConflict: "id" }),
+    "Could not upsert seed client milestone",
+  );
+
   const [profiles, assignments, organizations, contacts, timeline] = await Promise.all([
     requireCount(
       supabase.from("profiles").select("id", { count: "exact", head: true }).eq("user_id", user.id),
@@ -314,6 +385,7 @@ async function main() {
 
   console.log("Development seed complete.");
   console.log(`User: ${email}`);
+  console.log(`Client: ${CLIENT_EMAIL}`);
   console.log(`Profiles: ${profiles}`);
   console.log(`Role assignments: ${assignments}`);
   console.log(`Organizations: ${organizations}`);

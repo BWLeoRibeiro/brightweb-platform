@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { ProjectSurfaceCard, ProjectSurfaceSectionHeader } from "./shared/project-surface-card";
+import { projectAccessDictionary } from "./project-access-dictionary";
 import { ContactActionButtons } from "./shared/contact-action-buttons";
 import { ProjectOwnerAvatar } from "./shared/project-owner-avatar";
 import { MemberRoleBadge } from "./shared/member-role-badge";
@@ -37,11 +38,15 @@ export function ProjectDetailTeamCard({ canManageMembers, memberColorRoles }: Pr
     const resolved = (memberColorRoles[profileId] ?? memberRoleToColorFallback(role)) as AvatarRoleColor;
     return resolved === "accent" ? "team" : resolved;
   };
-  // Surface the gestor first, then the client, then the rest of the team.
-  const colorRoleOrder: Record<RoleColor, number> = { manager: 0, client: 1, team: 2, admin: 3 };
-  const sortedMembers = [...members].sort((a, b) => {
+  // Client grants are deliberately separate from project_members. Filter any
+  // legacy client-coloured rows so this card remains an internal team surface.
+  const internalMembers = members.filter((member) => colorRoleFor(member.profileId, member.role) !== "client");
+  const colorRoleOrder: Record<Exclude<RoleColor, "client">, number> = { manager: 0, team: 1, admin: 2 };
+  const sortedMembers = [...internalMembers].sort((a, b) => {
+    const colorA = colorRoleFor(a.profileId, a.role) as Exclude<RoleColor, "client">;
+    const colorB = colorRoleFor(b.profileId, b.role) as Exclude<RoleColor, "client">;
     const orderDiff =
-      colorRoleOrder[colorRoleFor(a.profileId, a.role)] - colorRoleOrder[colorRoleFor(b.profileId, b.role)];
+      colorRoleOrder[colorA] - colorRoleOrder[colorB];
     if (orderDiff !== 0) return orderDiff;
     return a.label.localeCompare(b.label, "pt-PT", { sensitivity: "base" });
   });
@@ -93,13 +98,13 @@ export function ProjectDetailTeamCard({ canManageMembers, memberColorRoles }: Pr
     <ProjectSurfaceCard className="self-start">
       <ProjectSurfaceSectionHeader
         icon={Users}
-        title={dictionary.detail.allocatedTeam}
-        subtitle={dictionary.detail.allocatedTeamSubtitle}
-        rightSlot={<CompactCollectionHeaderActions total={sortedMembers.length} collectionLabel={dictionary.detail.allocatedTeam} expandLabel={dictionary.team.viewAll} onExpand={() => setAllTeamOpen(true)}>
+        title={projectAccessDictionary.detail.internalTeam}
+        subtitle={projectAccessDictionary.detail.internalTeamSubtitle}
+        rightSlot={<CompactCollectionHeaderActions total={sortedMembers.length} collectionLabel={projectAccessDictionary.detail.internalTeam} expandLabel={dictionary.team.viewAll} onExpand={() => setAllTeamOpen(true)}>
           {canManageMembers ? (
             <ProjectMembersEditSheetLazy
               projectId={project.id}
-              initialMembers={members.map((member) => ({ profileId: member.profileId, role: member.role }))}
+              initialMembers={internalMembers.map((member) => ({ profileId: member.profileId, role: member.role }))}
             />
           ) : null}
         </CompactCollectionHeaderActions>}
@@ -117,8 +122,8 @@ export function ProjectDetailTeamCard({ canManageMembers, memberColorRoles }: Pr
         <SheetContent className={sheetShellClassName}>
           <AppSheetHeader
             icon={Users}
-            title={<>{dictionary.detail.allocatedTeam}</>}
-            description={<>{dictionary.team.fullDescription}</>}
+            title={<>{projectAccessDictionary.detail.internalTeam}</>}
+            description={<>{projectAccessDictionary.detail.internalTeamDescription}</>}
           />
           <div className={sheetBodyClassName}>
             <ul className="overflow-hidden rounded-[var(--radius-card)] border border-[color:var(--border)]">

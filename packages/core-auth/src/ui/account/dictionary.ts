@@ -31,6 +31,14 @@ export const defaultAccountUiDictionary: AccountUiDictionary = {
     saveError: "Não foi possível guardar as alterações da conta.",
     emptyValue: "—",
   },
+  workAccess: {
+    clientTitle: "Organização e projetos",
+    internalTitle: "Acesso de trabalho",
+    clientDescription: "Consulta os projetos partilhados com a tua organização numa área dedicada.",
+    internalDescription: "Os projetos, tarefas e informação operacional permanecem separados das definições pessoais.",
+    clientAction: "Os meus projetos",
+    internalAction: "Abrir projetos",
+  },
   security: {
     title: "Acesso e segurança",
     email: "Email",

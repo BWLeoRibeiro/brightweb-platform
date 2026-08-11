@@ -58,6 +58,7 @@ type ProjectLinksCardProps = {
   projectId: string;
   canCreateItems: boolean;
   canManageItems: boolean;
+  canManageClientContent?: boolean;
 };
 
 type LinkFormState = {
@@ -151,10 +152,12 @@ function LinkVisibilityPill({ visibility }: { visibility: string }) {
 function ProjectLinkRows({
   links,
   canManageItems,
+  canManageClientContent,
   onEdit,
 }: {
   links: ProjectLink[];
   canManageItems: boolean;
+  canManageClientContent: boolean;
   onEdit: (link: ProjectLink) => void;
 }) {
   const dictionary = useProjectsUiDictionary();
@@ -194,7 +197,7 @@ function ProjectLinkRows({
           </div>
         </a>
         <div className="pointer-events-none absolute right-3 top-1/2 z-10 flex -translate-y-1/2 items-center gap-0.5 opacity-0 transition-opacity duration-200 motion-reduce:transition-none group-focus-within:opacity-100 group-hover:opacity-100">
-          {canManageItems ? (
+          {canManageItems && (link.visibility !== "client" || canManageClientContent) ? (
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
@@ -227,7 +230,7 @@ function ProjectLinkRows({
 }
 
 export function ProjectLinksCard({
-  projectId, canCreateItems, canManageItems }: ProjectLinksCardProps) {
+  projectId, canCreateItems, canManageItems, canManageClientContent = false }: ProjectLinksCardProps) {
   const client = useProjectsUiClient();
   const dictionary = useProjectsUiDictionary();
   const router = useRouter();
@@ -382,7 +385,7 @@ export function ProjectLinksCard({
           />
           <div className={`${compactCollectionRevealClassName} mt-4 overflow-hidden rounded-[var(--radius-card)] border border-[color:var(--border)]`}>
             {links.length === 0 ? <LinksEmptyState /> : null}
-            <ProjectLinkRows links={getCompactCollectionPreview(links)} canManageItems={canManageItems} onEdit={openEditLink} />
+            <ProjectLinkRows links={getCompactCollectionPreview(links)} canManageItems={canManageItems} canManageClientContent={canManageClientContent} onEdit={openEditLink} />
           </div>
         </ProjectSurfaceCard>
 
@@ -395,7 +398,7 @@ export function ProjectLinksCard({
             />
             <div className={sheetBodyClassName}>
               <div className="overflow-hidden rounded-[var(--radius-card)] border border-[color:var(--border)]">
-                <ProjectLinkRows links={links} canManageItems={canManageItems} onEdit={openEditLink} />
+                <ProjectLinkRows links={links} canManageItems={canManageItems} canManageClientContent={canManageClientContent} onEdit={openEditLink} />
               </div>
             </div>
           </SheetContent>
@@ -471,7 +474,7 @@ export function ProjectLinksCard({
                     <StyledSelect
                       value={linkVisibility}
                       onChange={(event) => setLinkVisibility(event.target.value)}
-                      disabled={linkMode === "view"}
+                      disabled={linkMode === "view" || !canManageClientContent}
                       className={cn(linkMode === "view" ? sheetViewControlClassName : sheetEditControlClassName, "mt-1.5 text-foreground outline-none")}
                     >
                       <option value="staff">{dictionary.create.internalTeam}</option>
@@ -496,7 +499,7 @@ export function ProjectLinksCard({
               </div>
               <SheetFooter className={`${sheetFooterClassName} flex-row gap-2`}>
                 {linkMode === "view" ? (
-                  canManageItems ? (
+                  canManageItems && (linkVisibility !== "client" || canManageClientContent) ? (
                     <Button
                       type="button"
                       className="w-full"

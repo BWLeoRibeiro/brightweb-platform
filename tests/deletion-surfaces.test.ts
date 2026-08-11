@@ -87,9 +87,14 @@ test("generated applications mount deletion routes and notification dismissal mi
   const organizationData = source("packages/module-orgs/src/data.ts");
   const marketingServer = source("packages/module-marketing/src/server.ts");
   const previewBoard = source("apps/platform-preview/app/(shell)/projects/[id]/board/page.tsx");
+  const generatedProjectMount = source(
+    "packages/create-bw-app/template/modules/projects/app/(shell)/projetos/projetos-server-mounts.tsx",
+  );
   assert.match(organizationData, /PGRST205/);
   assert.match(organizationData, /23503/);
   assert.match(marketingServer, /23503/);
   assert.match(previewBoard, /getProjectAccess/);
   assert.match(previewBoard, /permissions=\{access\.permissions\}/);
+  assert.match(generatedProjectMount, /requireServerPageRoleAccess\(\["admin", "staff"\]\)/);
+  assert.doesNotMatch(generatedProjectMount, /requireServerPageAccess/);
 });

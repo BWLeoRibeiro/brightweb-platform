@@ -16,7 +16,7 @@ export const PROJECTS_EVENTS = {
   setBoardMilestone: "projects:set-board-milestone",
 } as const;
 
-export type ProjectsStatusFilter = "all" | "planned" | "active" | "blocked" | "completed" | "canceled";
+export type ProjectsStatusFilter = "all" | "planned" | "active" | "paused" | "blocked" | "completed" | "canceled";
 export type ProjectsHealthFilter = "all" | "on_track" | "at_risk" | "off_track";
 
 export type ProjectsStateEventDetail = {

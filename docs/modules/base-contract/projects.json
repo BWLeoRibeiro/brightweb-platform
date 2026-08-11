@@ -632,10 +632,10 @@
     "packageName": "@brightweblabs/module-projects",
     "symbol": "getClientProjectHealth",
     "kind": "helper",
-    "status": "stable",
+    "status": "deprecated",
     "runtime": "server",
-    "summary": "Returns a client-facing project health summary.",
-    "auth": "signed-in user with project access required in the caller context",
+    "summary": "Adapts the dedicated client-safe project RPC to the legacy health-summary shape.",
+    "auth": "signed-in client with explicit project audience access required",
     "inputs": [
       {
         "name": "supabase",
@@ -653,11 +653,13 @@
     "outputs": [
       {
         "type": "ProjectClientHealth",
-        "description": "Client-facing project summary with client-visible links and next milestone."
+        "description": "Legacy-compatible summary containing only client-safe project fields, metas, and links."
       }
     ],
     "source": "packages/module-projects/src/server.ts",
-    "notes": []
+    "notes": [
+      "Use getClientProject() and the dedicated client DTO for new integrations."
+    ]
   },
   {
     "moduleKey": "projects",

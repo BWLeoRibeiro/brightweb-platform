@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createServiceRoleClient } from "@brightweblabs/infra/server";
 import { fetchAllRows, getProjectTaskStats } from "./data";
+import { getClientProject } from "./client-access";
 import {
   type CreateProjectInput,
   type CreateProjectOrganizationInput,
@@ -9,6 +10,7 @@ import {
   type CreateProjectTaskInput,
   type ListProjectsParams,
   type ProjectAssignableProfile,
+  type ProjectClientAccessSummary,
   type ProjectDashboardData,
   type ProjectLink,
   type ProjectListItem,
@@ -60,19 +62,6 @@ async function logProjectActivityEvent(input: {
   }
 }
 
-async function getOrganizationPrimaryContactId(supabase: SupabaseClient, organizationId: string): Promise<string | null> {
-  const { data: organization, error } = await supabase
-    .from("organizations")
-    .select("primary_contact_id")
-    .eq("id", organizationId)
-    .maybeSingle<{ primary_contact_id: string | null }>();
-
-  if (error) throw new Error(error.message);
-  return typeof organization?.primary_contact_id === "string" ? organization.primary_contact_id : null;
-}
-
-type OrganizationMemberRole = "admin" | "member";
-
 async function listOrganizationIdsForProfile(
   supabase: SupabaseClient,
   profileId: string,
@@ -86,47 +75,6 @@ async function listOrganizationIdsForProfile(
   return (data ?? [])
     .map((row) => (typeof row.organization_id === "string" ? row.organization_id : ""))
     .filter(Boolean);
-}
-
-async function listOrganizationMemberProfiles(
-  supabase: SupabaseClient,
-  organizationId: string,
-): Promise<Array<{
-  profile_id: string;
-  role: OrganizationMemberRole;
-  profile: {
-    first_name: string | null;
-    last_name: string | null;
-    email: string | null;
-  } | null;
-}>> {
-  const { data, error } = await supabase
-    .from("organization_members")
-    .select("profile_id, role, profile:profiles!organization_members_profile_id_fkey(first_name, last_name, email)")
-    .eq("organization_id", organizationId);
-
-  if (error) throw new Error(error.message);
-
-  return (data ?? []).flatMap((row) => {
-    const profileId = typeof row.profile_id === "string" ? row.profile_id : "";
-    const role = row.role === "admin" || row.role === "member" ? row.role : null;
-    if (!profileId || !role) return [];
-
-    const profileRaw = row.profile;
-    const profile = Array.isArray(profileRaw) ? profileRaw[0] ?? null : profileRaw ?? null;
-
-    return [{
-      profile_id: profileId,
-      role,
-      profile: profile
-        ? {
-          first_name: typeof profile.first_name === "string" ? profile.first_name : null,
-          last_name: typeof profile.last_name === "string" ? profile.last_name : null,
-          email: typeof profile.email === "string" ? profile.email : null,
-        }
-        : null,
-    }];
-  });
 }
 
 export function isProjectsSchemaMissingError(error: unknown): boolean {
@@ -293,6 +241,11 @@ function normalizeProjectRow(row: Record<string, unknown>): ProjectListItem {
     ),
     organizationOwnerEmail: typeof organizationPrimaryContact?.email === "string" ? organizationPrimaryContact.email : null,
     organizationOwnerPhone: typeof organizationPrimaryContact?.phone === "string" ? organizationPrimaryContact.phone : null,
+    participatingOrganizations: [{
+      id: String(row.organization_id),
+      name: typeof org?.name === "string" ? org.name : "Organização",
+      isPrimary: true,
+    }],
     name: typeof row.name === "string" ? row.name : "Projeto",
     code: typeof row.code === "string" ? row.code : null,
     status: String(row.status) as ProjectListItem["status"],
@@ -654,6 +607,7 @@ function normalizeMilestoneRow(row: Record<string, unknown>): ProjectMilestone {
     position: typeof row.position === "number" ? row.position : 0,
     createdAt: String(row.created_at),
     updatedAt: String(row.updated_at),
+    visibility: row.visibility === "client" ? "client" : "staff",
   };
 }
 
@@ -687,7 +641,7 @@ export async function listProjectTasks(supabase: SupabaseClient, projectId: stri
 export async function listProjectMilestones(supabase: SupabaseClient, projectId: string): Promise<ProjectMilestone[]> {
   const { data, error } = await supabase
     .from("project_milestones")
-    .select("id, project_id, title, status, target_date, completed_at, position, created_at, updated_at")
+    .select("id, project_id, title, status, target_date, completed_at, position, visibility, created_at, updated_at")
     .eq("project_id", projectId)
     .order("target_date", { ascending: true, nullsFirst: false })
     .order("position", { ascending: true })
@@ -751,6 +705,58 @@ async function listProjectMembers(supabase: SupabaseClient, projectId: string): 
   return normalizeMemberRows(data ?? []);
 }
 
+async function listProjectParticipatingOrganizations(
+  supabase: SupabaseClient,
+  projectId: string,
+): Promise<Array<{ id: string; name: string; isPrimary: boolean }>> {
+  const { data, error } = await supabase
+    .from("project_organizations")
+    .select("organization_id, is_primary, organization:organizations!project_organizations_organization_id_fkey(name)")
+    .eq("project_id", projectId)
+    .order("is_primary", { ascending: false });
+  if (error) throw new Error(error.message);
+  return (data ?? []).flatMap((row) => {
+    if (typeof row.organization_id !== "string") return [];
+    const rawOrganization = Array.isArray(row.organization) ? row.organization[0] : row.organization;
+    return [{
+      id: row.organization_id,
+      name: typeof rawOrganization?.name === "string" ? rawOrganization.name : "Organização",
+      isPrimary: row.is_primary === true,
+    }];
+  });
+}
+
+export async function getProjectClientAccessSummary(
+  supabase: SupabaseClient,
+  projectId: string,
+): Promise<ProjectClientAccessSummary> {
+  const { data, error } = await supabase.rpc("get_project_client_access_summary", {
+    target_project_id: projectId,
+  });
+  if (error) throw new Error(error.message);
+  const item = toRecord(data) ?? {};
+  const readiness = toRecord(item.content_readiness) ?? {};
+  return {
+    mode: String(item.mode ?? "hidden") as ProjectClientAccessSummary["mode"],
+    organizationNames: Array.isArray(item.organization_names)
+      ? item.organization_names.flatMap((name) => typeof name === "string" ? [name] : [])
+      : [],
+    organizationCount: typeof item.organization_count === "number" ? item.organization_count : 0,
+    selectedClientCount: typeof item.selected_client_count === "number" ? item.selected_client_count : 0,
+    contentReadiness: {
+      hasSummary: readiness.has_summary === true,
+      hasScope: readiness.has_scope === true,
+      hasContact: readiness.has_contact === true,
+      clientVisibleMilestoneCount: typeof readiness.client_visible_milestone_count === "number"
+        ? readiness.client_visible_milestone_count
+        : 0,
+      sharedDocumentCount: typeof readiness.shared_document_count === "number"
+        ? readiness.shared_document_count
+        : 0,
+    },
+  };
+}
+
 async function getProjectDashboardProjectRow(supabase: SupabaseClient, projectId: string): Promise<unknown> {
   let { data, error } = await supabase
     .from("projects")
@@ -775,24 +781,30 @@ async function getProjectDashboardProjectRow(supabase: SupabaseClient, projectId
 export async function getProjectDashboard(
   supabase: SupabaseClient,
   projectId: string,
+  /** @deprecated The dashboard is internal-only. Use getClientProject for client routes. */
   options?: { clientVisibleOnly?: boolean },
 ): Promise<ProjectDashboardData> {
-  const [data, tasks, milestones, links, members, activity] = await Promise.all([
+  if (options?.clientVisibleOnly) {
+    throw new Error("getProjectDashboard is internal-only. Use getClientProject for client-safe project data.");
+  }
+  const [data, tasks, milestones, links, members, activity, participatingOrganizations, clientAccessSummary] = await Promise.all([
     getProjectDashboardProjectRow(supabase, projectId),
     listProjectTasks(supabase, projectId),
     listProjectMilestones(supabase, projectId),
-    listProjectLinks(supabase, projectId, {
-      clientVisibleOnly: options?.clientVisibleOnly,
-    }),
+    listProjectLinks(supabase, projectId),
     listProjectMembers(supabase, projectId),
-    options?.clientVisibleOnly
-      ? Promise.resolve({ items: [], page: 1, pageSize: 3, total: 0, totalPages: 1 })
-      : queryProjectActivity(supabase, projectId, { page: 1, pageSize: 3 }),
+    queryProjectActivity(supabase, projectId, { page: 1, pageSize: 3 }),
+    listProjectParticipatingOrganizations(supabase, projectId),
+    getProjectClientAccessSummary(supabase, projectId),
   ]);
 
   const projectRecord = toRecord(data);
   if (!projectRecord) throw new Error("Projeto não encontrado.");
   const project = normalizeProjectRow(projectRecord);
+  project.participatingOrganizations = participatingOrganizations.length > 0
+    ? participatingOrganizations
+    : project.participatingOrganizations;
+  project.clientAccessSummary = clientAccessSummary;
   project.taskStats.total = tasks.length;
   project.taskStats.done = tasks.filter((task) => task.status === "done").length;
   project.taskStats.blocked = tasks.filter((task) => task.status === "blocked").length;
@@ -1199,6 +1211,7 @@ export async function getProjectAccess(
     canEditProjectItems: boolean;
     canCreateProjectLinks: boolean;
     canManageProjectLinks: boolean;
+    canManageClientContent: boolean;
     canManageMembers: boolean;
     canViewOrganization: boolean;
   };
@@ -1236,6 +1249,7 @@ export async function getProjectAccess(
       canEditProjectItems: canContribute,
       canCreateProjectLinks: canContribute,
       canManageProjectLinks: canContribute,
+      canManageClientContent: canManageProject,
       canManageMembers: canManageProject,
       canViewOrganization: true,
     },
@@ -1371,6 +1385,7 @@ export async function createProjectMilestone(supabase: SupabaseClient, projectId
       title: input.title.trim(),
       status: input.status ?? "pending",
       target_date: input.targetDate ?? null,
+      visibility: input.visibility ?? "staff",
       position,
     });
 
@@ -1392,6 +1407,7 @@ export async function updateProjectMilestone(
   if (typeof input.targetDate !== "undefined") payload.target_date = input.targetDate || null;
   if (typeof input.completedAt !== "undefined") payload.completed_at = input.completedAt || null;
   if (typeof input.position === "number") payload.position = input.position;
+  if (typeof input.visibility !== "undefined") payload.visibility = input.visibility;
 
   const { error } = await supabase
     .from("project_milestones")
@@ -1528,18 +1544,78 @@ export async function deleteProjectLink(supabase: SupabaseClient, projectId: str
   return listProjectLinks(supabase, projectId);
 }
 
+/** @deprecated Use getClientProject() and the dedicated client DTO. */
 export async function getClientProjectHealth(supabase: SupabaseClient, projectId: string) {
-  const data = await getProjectDashboard(supabase, projectId, {
-    clientVisibleOnly: true,
-  });
+  const safeProject = await getClientProject(supabase, projectId);
+  if (!safeProject) throw new Error("Projeto não encontrado.");
+
+  const milestones: ProjectMilestone[] = safeProject.metas.map((meta) => ({
+    id: meta.id,
+    projectId: safeProject.id,
+    title: meta.title,
+    status: meta.status,
+    health: meta.status === "delayed" ? "off_track" : "on_track",
+    targetDate: meta.targetDate,
+    completedAt: meta.completedAt,
+    position: meta.position,
+    visibility: "client",
+    createdAt: "",
+    updatedAt: meta.completedAt ?? meta.targetDate ?? "",
+  }));
+  const links: ProjectLink[] = safeProject.documents.map((document) => ({
+    id: document.id,
+    projectId: safeProject.id,
+    label: document.label,
+    url: document.url,
+    visibility: "client",
+    kind: document.kind,
+    createdAt: document.createdAt,
+    updatedAt: document.createdAt,
+  }));
+  const contact = safeProject.clientContact;
+  const project: ProjectListItem = {
+    id: safeProject.id,
+    organizationId: safeProject.organizations[0]?.id ?? "",
+    organizationName: safeProject.organizations[0]?.name ?? "Organização",
+    organizationOwnerLabel: null,
+    organizationOwnerEmail: null,
+    organizationOwnerPhone: null,
+    participatingOrganizations: safeProject.organizations.map((organization, index) => ({
+      ...organization,
+      isPrimary: index === 0,
+    })),
+    name: safeProject.name,
+    code: safeProject.reference,
+    status: safeProject.status,
+    health: ["blocked", "canceled"].includes(safeProject.status) ? "off_track" : "on_track",
+    ownerProfileId: contact?.profileId ?? null,
+    ownerLabel: contact?.label ?? null,
+    ownerEmail: contact?.email ?? null,
+    ownerPhone: null,
+    activatedAt: safeProject.startDate,
+    startDate: safeProject.startDate,
+    targetDate: safeProject.targetDate,
+    completedAt: safeProject.completedAt,
+    cancellationReason: null,
+    summary: safeProject.clientSummary,
+    createdAt: safeProject.startDate ?? "",
+    updatedAt: safeProject.completedAt ?? safeProject.targetDate ?? safeProject.startDate ?? "",
+    taskStats: { total: 0, done: 0, overdue: 0, blocked: 0 },
+    milestoneStats: {
+      total: milestones.length,
+      achieved: milestones.filter((milestone) => milestone.status === "achieved").length,
+      delayed: milestones.filter((milestone) => milestone.status === "delayed").length,
+    },
+  };
+
   return {
-    project: data.project,
-    members: data.members,
-    milestones: data.milestones,
-    links: data.links.filter((link) => link.visibility === "client"),
-    taskStats: data.project.taskStats,
+    project,
+    members: [] as ProjectMember[],
+    milestones,
+    links,
+    taskStats: project.taskStats,
     nextMilestone:
-      data.milestones
+      milestones
         .filter((milestone) => milestone.status !== "achieved")
         .toSorted((a, b) => (a.targetDate ?? "9999-12-31").localeCompare(b.targetDate ?? "9999-12-31"))[0] ?? null,
   };
@@ -1596,7 +1672,6 @@ export async function listProjectAssignableProfiles(
 
   const [
     { data: roleAssignments, error: roleAssignmentsError },
-    organizationMembers,
     projectMembers,
   ] = await Promise.all([
     supabase
@@ -1606,7 +1681,6 @@ export async function listProjectAssignableProfiles(
       )
       .in("role_code", ["staff", "admin"])
       .order("assigned_at", { ascending: false }),
-    listOrganizationMemberProfiles(supabase, project.organization_id),
     listProjectMembers(supabase, projectId),
   ]);
 
@@ -1633,20 +1707,7 @@ export async function listProjectAssignableProfiles(
     }];
   });
 
-  const orgOptions: ProjectAssignableProfile[] = (organizationMembers ?? []).flatMap((row) => {
-    const roleCode: ProjectAssignableProfile["organizationRole"] =
-      row.role === "admin" ? "org_admin" : "org_member";
-
-    return [{
-      profileId: row.profile_id,
-      label: profileLabel(row.profile?.first_name, row.profile?.last_name, row.profile?.email) ?? "Membro",
-      email: row.profile?.email ?? null,
-      organizationRole: roleCode,
-      projectRole: projectRoleByProfile.get(row.profile_id) ?? null,
-    }];
-  });
-
-  const options = [...internalOptions, ...orgOptions];
+  const options = internalOptions;
   const uniqueByProfile = new Map<string, ProjectAssignableProfile>();
   for (const option of options) {
     if (!uniqueByProfile.has(option.profileId)) uniqueByProfile.set(option.profileId, option);
@@ -1671,44 +1732,31 @@ export async function syncProjectMembers(
   if (projectError) throw new Error(projectError.message);
   if (!project?.id || !project.organization_id) throw new Error("Projeto não encontrado.");
 
-  const [{ data: internalRoles, error: internalRolesError }, orgMembers] = await Promise.all([
-    supabase
-      .from("user_role_assignments")
-      .select("profile_id, role_code")
-      .in("role_code", ["staff", "admin"]),
-    listOrganizationMemberProfiles(supabase, project.organization_id),
-  ]);
+  const { data: internalRoles, error: internalRolesError } = await supabase
+    .from("user_role_assignments")
+    .select("profile_id, role_code")
+    .in("role_code", ["staff", "admin"]);
 
   if (internalRolesError) throw new Error(internalRolesError.message);
-  const organizationLeaderProfileId = await getOrganizationPrimaryContactId(supabase, project.organization_id);
 
   const allowedProfileIds = new Set(
-    [
-      ...(internalRoles ?? [])
-        .map((row) => (typeof row.profile_id === "string" ? row.profile_id : ""))
-        .filter(Boolean),
-      ...(orgMembers ?? [])
-        .map((row) => row.profile_id)
-        .filter(Boolean),
-    ],
+    (internalRoles ?? [])
+      .map((row) => (typeof row.profile_id === "string" ? row.profile_id : ""))
+      .filter(Boolean),
   );
+  if (input.some((item) => !allowedProfileIds.has(item.profileId))) {
+    throw new Error("A equipa interna só pode incluir administradores e membros de staff.");
+  }
 
   const membersToPersist = input
-    .filter((item) => allowedProfileIds.has(item.profileId))
     .map((item) => ({
       project_id: projectId,
       profile_id: item.profileId,
       role: item.role,
     }));
-  const membersByProfile = new Map(membersToPersist.map((member) => [member.profile_id, member]));
-  if (organizationLeaderProfileId) {
-    membersByProfile.set(organizationLeaderProfileId, {
-      project_id: projectId,
-      profile_id: organizationLeaderProfileId,
-      role: "observer",
-    });
-  }
-  const finalMembersToPersist = Array.from(membersByProfile.values());
+  const finalMembersToPersist = Array.from(
+    new Map(membersToPersist.map((member) => [member.profile_id, member])).values(),
+  );
   const selectedOwnerProfileId = finalMembersToPersist.find((member) => member.role === "owner")?.profile_id ?? null;
   const { error: syncError } = await supabase.rpc("sync_project_members_exact", {
     p_project_id: projectId,

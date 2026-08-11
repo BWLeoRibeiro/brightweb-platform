@@ -6,5 +6,5 @@ export default async function AccountProjectDetailRoute({
   params: Promise<{ projectId: string }>;
 }) {
   const { projectId } = await params;
-  return <ClientProjectDetailPage projectId={projectId} />;
+  return <ClientProjectDetailPage projectId={projectId} internalProjectsHref="/projects" />;
 }

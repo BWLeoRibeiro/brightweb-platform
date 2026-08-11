@@ -56,7 +56,6 @@ test("project-facing Portuguese copy consistently calls milestones metas", () =>
   assert.equal(visibleCopy.some((label) => /milestone|marcos?/i.test(label)), false);
   assert.equal(defaultProjectsUiDictionary.detail.milestones, "Metas");
   assert.equal(defaultProjectsUiDictionary.forms.newMilestone, "Nova meta");
-  assert.equal(clientProjectsDictionary.list.milestones(1, 2), "1/2 metas");
   assert.equal(defaultDashboardDictionary.milestones.emptyDescription, "Metas com data aparecem aqui.");
 });
 
@@ -135,7 +134,7 @@ test("Projects activity endpoint keeps the legacy array response and exposes bou
   const pageCalls: unknown[] = [];
   let legacyCalls = 0;
   const handler = createProjectsActivityGetHandler({
-    getAccess: async () => ({ ok: true, supabase: {} }),
+    getAccess: async () => ({ ok: true, supabase: {}, profileId: "staff-1", role: "staff" }),
     listActivity: async () => {
       legacyCalls += 1;
       return [];
@@ -177,19 +176,21 @@ test("Projects portfolio cancels stale requests and debounces only search", () =
 test("create-project organization choices never present unresolved or failed data as empty", () => {
   const source = readFileSync(join(process.cwd(), "packages/module-projects/src/ui/create-project-sheet.tsx"), "utf8");
   assert.match(source, /organizationsLoadState[^\n]*"idle" \| "pending" \| "fulfilled" \| "rejected"/);
-  assert.match(source, /setOrganizationsLoadState\("pending"\)[\s\S]*requestRaw/);
-  assert.match(source, /isLoadingOrganizations \?[\s\S]*loadingOrganizations[\s\S]*organizationsLoadState === "rejected"[\s\S]*loadOrganizationsError[\s\S]*hasOrganizations/);
+  assert.match(source, /setOrganizationsLoadState\("pending"\)[\s\S]*client\.listOrganizations\(\{ signal: controller\.signal \}\)/);
+  assert.match(source, /isLoadingOrganizations\s*\?[\s\S]*loadingOrganizations[\s\S]*organizationsLoadState === "rejected"[\s\S]*loadOrganizationsError[\s\S]*hasOrganizations/);
   assert.match(source, /role="alert"[\s\S]*loadOrganizationsError/);
   assert.match(source, /size="icon"[\s\S]*aria-label=\{dictionary\.projectCreate\.newOrganization\}[\s\S]*<Plus className="size-4" \/>/);
   assert.match(source, /<OrganizationCreateSheet[\s\S]*onSubmit=\{handleCreateOrganization\}/);
   assert.match(source, /requestRaw\("\/api\/organizations"/);
   assert.doesNotMatch(source, /requestRaw\("\/api\/projects\/organizations"/);
-  assert.match(source, /createdOrganizationRef\.current = created;[\s\S]*flushSync\(\(\) => \{[\s\S]*setOrganizationOptions\(\(current\) => upsertOrganizationOption\(current, created\)\)[\s\S]*setOrganizationId\(created\.id\)/);
-  assert.match(source, /handleOrganizationSheetOpenChange[\s\S]*createdOrganizationRef\.current[\s\S]*setOrganizationId\(created\.id\)/);
-  assert.match(source, /performProjectCancel[\s\S]*resetProjectForm\(organizationOptions, defaultOrganizationIdRef\.current\)[\s\S]*setOpen\(false\)/);
+  assert.match(source, /createdOrganizationRef\.current = created;[\s\S]*flushSync\(\(\) => \{[\s\S]*setOrganizationOptions\(\(current\) => upsertOrganizationOption\(current, created\)\)[\s\S]*projectForm\.setOrganizationId\(created\.id\)/);
+  assert.match(source, /onOpenChange=\{\(next\) => \{[\s\S]*createdOrganizationRef\.current[\s\S]*projectForm\.setOrganizationId\(created\.id\)/);
+  assert.match(source, /resetWizard[\s\S]*resetProjectForm\(organizationOptions, defaultOrganizationIdRef\.current\)/);
+  assert.match(source, /requestClose[\s\S]*dirty[\s\S]*setDiscardDialogOpen\(true\)[\s\S]*performClose\(\)/);
   assert.match(source, /if \(!defaultOrganizationIdRef\.current && nextOrganizations\[0\]\?\.id\)/);
   assert.match(source, /latestCreatedOrganizationRef\.current[\s\S]*reconcileLoadedOrganizationOptions\(nextOrganizations, latestCreated\)/);
-  assert.match(source, /onOpenChange=\{handleOrganizationSheetOpenChange\}/);
+  assert.match(source, /additionalOrganizationIds[\s\S]*participatingOrganizationIds/);
+  assert.match(source, /disabled=\{!hasOrganizations \|\| !projectForm\.isFormValid\}/);
 });
 
 const project = { id: "project-1", organizationId: "org-1", organizationName: "MQ", organizationOwnerLabel: null, organizationOwnerEmail: null, organizationOwnerPhone: null, name: "Projeto", code: "MQ-1", status: "active", health: "on_track", ownerProfileId: null, ownerLabel: null, ownerEmail: null, ownerPhone: null, activatedAt: null, startDate: null, targetDate: null, completedAt: null, cancellationReason: null, summary: null, createdAt: "2026-01-01T00:00:00.000Z", updatedAt: "2026-01-01T00:00:00.000Z", taskStats: { total: 0, done: 0, overdue: 0, blocked: 0 }, milestoneStats: { total: 0, achieved: 0, delayed: 0 } } satisfies ProjectDashboardData["project"];
@@ -260,97 +261,40 @@ test("account projects adapter preserves schema and legacy-role fallbacks", asyn
   assert.equal(fallbackSchemaCalls, 2);
 });
 
-test("client project health enforces client link visibility in the query and result", async () => {
-  const linkFilters: Array<[string, unknown]> = [];
-  const databaseProject = {
-    id: project.id,
-    organization_id: project.organizationId,
-    organizations: { name: project.organizationName, primary_contact: null },
-    name: project.name,
-    code: project.code,
-    status: project.status,
-    health: project.health,
-    owner_profile_id: null,
-    owner: null,
-    activated_at: null,
-    start_date: null,
-    target_date: null,
-    completed_at: null,
-    cancellation_reason: null,
-    summary: null,
-    created_at: project.createdAt,
-    updated_at: project.updatedAt,
-  };
-  const clientLink = { ...link, id: "link-client", visibility: "client" };
-  const rowsByTable: Record<string, unknown[]> = {
-    projects: [databaseProject],
-    project_tasks: [],
-    project_milestones: [],
-    project_links: [
-      {
-        id: link.id,
-        project_id: link.projectId,
-        label: link.label,
-        url: link.url,
-        visibility: link.visibility,
-        kind: link.kind,
-        created_at: link.createdAt,
-        updated_at: link.updatedAt,
-      },
-      {
-        id: clientLink.id,
-        project_id: clientLink.projectId,
-        label: clientLink.label,
-        url: clientLink.url,
-        visibility: clientLink.visibility,
-        kind: clientLink.kind,
-        created_at: clientLink.createdAt,
-        updated_at: clientLink.updatedAt,
-      },
-    ],
-    project_members: [],
-  };
+test("legacy client project health adapts the safe RPC without internal leakage", async () => {
   const supabase = {
-    from(table: string) {
-      let rows = rowsByTable[table] ?? [];
-      const query = {
-        select() {
-          return query;
-        },
-        eq(column: string, value: unknown) {
-          if (table === "project_links") {
-            linkFilters.push([column, value]);
-            if (column === "visibility") {
-              rows = rows.filter((row) => (
-                typeof row === "object"
-                && row !== null
-                && (row as Record<string, unknown>)[column] === value
-              ));
-            }
-          }
-          return query;
-        },
-        order() {
-          return query;
-        },
-        maybeSingle() {
-          return Promise.resolve({ data: rows[0] ?? null, error: null });
-        },
-        then(resolve: (value: unknown) => unknown, reject: (reason: unknown) => unknown) {
-          return Promise.resolve({ data: rows, error: null }).then(resolve, reject);
-        },
+    rpc: async (name: string) => {
+      assert.equal(name, "get_current_client_project");
+      return {
+        data: [{
+          project_id: project.id,
+          name: "Portal cliente",
+          reference: "CLIENT-1",
+          status: "active",
+          start_date: "2026-08-01",
+          target_date: "2026-09-01",
+          client_summary: "Resumo aprovado",
+          client_contact: { profile_id: "staff-1", name: "Gestora", email: "gestora@example.test" },
+          organizations: [{ id: "org-1", name: "Cliente" }],
+          progress_percent: 50,
+          metas: [{ id: "meta-1", title: "Entrega", status: "in_progress", target_date: "2026-08-20", position: 1 }],
+          documents: [{ id: "doc-1", label: "Brief", url: "https://example.test/brief", kind: "doc", created_at: "2026-08-01" }],
+          summary: "NOTA INTERNA",
+          members: [{ profile_id: "internal-1", email: "internal@example.test" }],
+          tasks: [{ title: "Tarefa interna" }],
+        }],
+        error: null,
       };
-      return query;
     },
   };
-
   const result = await getClientProjectHealth(supabase as never, project.id);
-
-  assert.deepEqual(linkFilters, [
-    ["project_id", project.id],
-    ["visibility", "client"],
-  ]);
-  assert.deepEqual(result.links.map((item) => item.id), [clientLink.id]);
+  assert.equal(result.project.summary, "Resumo aprovado");
+  assert.deepEqual(result.members, []);
+  assert.equal(result.milestones[0]?.title, "Entrega");
+  assert.equal(result.links[0]?.visibility, "client");
+  assert.equal("tasks" in result, false);
+  assert.equal(JSON.stringify(result).includes("NOTA INTERNA"), false);
+  assert.equal(JSON.stringify(result).includes("internal@example.test"), false);
 });
 
 test("every Projects write handler rejects non-staff access before invoking data dependencies", async () => {

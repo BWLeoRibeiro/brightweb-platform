@@ -16,7 +16,7 @@ import { starterShellBrand } from "./shell-brand";
 const dashboardModuleRegistration: ShellModuleRegistration<ShellContextualAction> = {
   key: "dashboard",
   placement: "primary",
-  navItems: [{ href: "/dashboard", label: "Dashboard", icon: LayoutDashboard }],
+  navItems: [{ href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, visibility: "staff" }],
   toolbarRoutes: [{ surface: "dashboard", match: { exact: ["/dashboard"] } }],
 };
 
@@ -32,7 +32,7 @@ function getStarterModuleRegistrations() {
   return registrations;
 }
 
-export function getStarterShellConfig() {
+export function getStarterShellConfig(viewer = { isAdmin: true, isStaff: true }) {
   const enabledModules = getEnabledStarterModules();
   const shellRegistration: ClientAppShellRegistration<ShellContextualAction> = {
     brand: starterShellBrand,
@@ -46,10 +46,7 @@ export function getStarterShellConfig() {
   };
 
   const builtRegistration = buildClientAppShellRegistration(shellRegistration);
-  const shellPreview = resolveClientAppShellConfig(builtRegistration.shellConfig, {
-    isAdmin: true,
-    isStaff: true,
-  });
+  const shellPreview = resolveClientAppShellConfig(builtRegistration.shellConfig, viewer);
 
   return {
     enabledModules,

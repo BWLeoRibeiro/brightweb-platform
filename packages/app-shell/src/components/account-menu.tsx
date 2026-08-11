@@ -43,6 +43,7 @@ export function AccountMenu({
   const hrefs = {
     staffDashboard: links?.staffDashboard ?? "/dashboard",
     account: links?.account ?? "/account",
+    profile: links?.profile ?? "/account/perfil",
     projects: links?.projects ?? "/account/projetos",
     home: links?.home ?? "/",
   };
@@ -110,9 +111,9 @@ export function AccountMenu({
           </>
         ) : (
           <>
-            <DropdownMenuItem asChild><Link href={hrefs.account} prefetch={false} className="flex items-center gap-xs"><LayoutDashboard className="size-4" />O meu painel</Link></DropdownMenuItem>
+            <DropdownMenuItem asChild><Link href={hrefs.account} prefetch={false} className="flex items-center gap-xs"><House className="size-4" />O meu espaço</Link></DropdownMenuItem>
             <DropdownMenuItem asChild><Link href={hrefs.projects} prefetch={false} className="flex items-center gap-xs"><FolderKanban className="size-4" />Os meus projetos</Link></DropdownMenuItem>
-            <DropdownMenuItem asChild><Link href={hrefs.account} prefetch={false} className="flex items-center gap-xs"><User className="size-4" />Dados da conta</Link></DropdownMenuItem>
+            <DropdownMenuItem asChild><Link href={hrefs.profile} prefetch={false} className="flex items-center gap-xs"><User className="size-4" />Perfil e segurança</Link></DropdownMenuItem>
           </>
         )}
         <DropdownMenuItem asChild><Link href={hrefs.home} prefetch={false} className="flex items-center gap-xs"><House className="size-4" />Site principal</Link></DropdownMenuItem>
@@ -140,7 +141,7 @@ export function AccountMenu({
           </>
         ) : null}
         <DropdownMenuSeparator />
-        <DropdownMenuItem variant="destructive" onClick={onSignOut} className="gap-xs"><LogOut className="size-4" />Terminar Sessao</DropdownMenuItem>
+        <DropdownMenuItem variant="destructive" onClick={onSignOut} className="gap-xs"><LogOut className="size-4" />Terminar sessão</DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );

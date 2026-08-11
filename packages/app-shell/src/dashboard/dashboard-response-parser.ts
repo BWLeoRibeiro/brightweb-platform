@@ -40,7 +40,7 @@ function isDashboardProjectItem(value: unknown) {
     && isString(value.organizationName)
     && isString(value.name)
     && isNullableString(value.code)
-    && isOneOf(value.status, ["planned", "active", "blocked", "completed", "canceled"])
+    && isOneOf(value.status, ["planned", "active", "paused", "blocked", "completed", "canceled"])
     && isOneOf(value.health, ["on_track", "at_risk", "off_track"])
     && isNullableString(value.ownerLabel)
     && isNullableString(value.targetDate)

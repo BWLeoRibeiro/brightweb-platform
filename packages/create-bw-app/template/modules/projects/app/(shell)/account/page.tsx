@@ -1,1 +1,5 @@
-export { ClientAccountPage as default } from "@brightweblabs/module-projects";
+import { ClientAccountPage } from "@brightweblabs/module-projects";
+
+export default function Page() {
+  return <ClientAccountPage />;
+}

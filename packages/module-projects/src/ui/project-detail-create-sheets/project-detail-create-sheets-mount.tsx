@@ -16,6 +16,7 @@ type ProjectDetailCreateSheetsMountProps = {
   members?: MemberOption[];
   canCreateMilestonesAndTasks?: boolean;
   canCreateLinks?: boolean;
+  canManageClientContent?: boolean;
 };
 
 const ProjectMilestoneCreateSheetDynamic = dynamic(
@@ -33,14 +34,14 @@ const ProjectLinkCreateSheetDynamic = dynamic(
   { ssr: false },
 );
 
-function ProjectMilestoneCreateSheetLazy({ projectId }: { projectId: string }) {
+function ProjectMilestoneCreateSheetLazy({ projectId, canManageClientContent }: { projectId: string; canManageClientContent: boolean }) {
   const [shouldMount, setShouldMount] = useState(false);
 
   useWindowEventBridge(PROJECTS_EVENTS.openNewMilestone, () => {
     setShouldMount(true);
   }, { custom: false });
 
-  return shouldMount ? <ProjectMilestoneCreateSheetDynamic projectId={projectId} initialOpen /> : null;
+  return shouldMount ? <ProjectMilestoneCreateSheetDynamic projectId={projectId} canManageClientContent={canManageClientContent} initialOpen /> : null;
 }
 
 function ProjectTaskCreateSheetLazy({
@@ -68,14 +69,14 @@ function ProjectTaskCreateSheetLazy({
   ) : null;
 }
 
-function ProjectLinkCreateSheetLazy({ projectId }: { projectId: string }) {
+function ProjectLinkCreateSheetLazy({ projectId, canManageClientContent }: { projectId: string; canManageClientContent: boolean }) {
   const [shouldMount, setShouldMount] = useState(false);
 
   useWindowEventBridge(PROJECTS_EVENTS.openNewLink, () => {
     setShouldMount(true);
   }, { custom: false });
 
-  return shouldMount ? <ProjectLinkCreateSheetDynamic projectId={projectId} initialOpen /> : null;
+  return shouldMount ? <ProjectLinkCreateSheetDynamic projectId={projectId} canManageClientContent={canManageClientContent} initialOpen /> : null;
 }
 
 export function ProjectDetailCreateSheetsMount({
@@ -84,6 +85,7 @@ export function ProjectDetailCreateSheetsMount({
   members: memberProps = [],
   canCreateMilestonesAndTasks = true,
   canCreateLinks = true,
+  canManageClientContent = false,
 }: ProjectDetailCreateSheetsMountProps) {
   const detailData = useOptionalProjectDetailData();
   const milestoneOptions = detailData
@@ -95,11 +97,11 @@ export function ProjectDetailCreateSheetsMount({
 
   return (
     <>
-      {canCreateMilestonesAndTasks ? <ProjectMilestoneCreateSheetLazy projectId={projectId} /> : null}
+      {canCreateMilestonesAndTasks ? <ProjectMilestoneCreateSheetLazy projectId={projectId} canManageClientContent={canManageClientContent} /> : null}
       {canCreateMilestonesAndTasks ? (
         <ProjectTaskCreateSheetLazy projectId={projectId} milestones={milestoneOptions} members={memberOptions} />
       ) : null}
-      {canCreateLinks ? <ProjectLinkCreateSheetLazy projectId={projectId} /> : null}
+      {canCreateLinks ? <ProjectLinkCreateSheetLazy projectId={projectId} canManageClientContent={canManageClientContent} /> : null}
     </>
   );
 }

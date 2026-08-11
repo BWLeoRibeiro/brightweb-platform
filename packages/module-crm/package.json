@@ -20,6 +20,7 @@
   },
   "exports": {
     ".": "./src/index.ts",
+    "./routes": "./src/routes.tsx",
     "./ui": "./src/ui/index.ts",
     "./tokens.css": "./tokens.css",
     "./activity-messages": "./src/activity-messages.ts",

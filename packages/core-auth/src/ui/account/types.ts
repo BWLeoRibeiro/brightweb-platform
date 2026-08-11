@@ -34,6 +34,14 @@ export type AccountUiDictionary = {
     saveError: string;
     emptyValue: string;
   };
+  workAccess: {
+    clientTitle: string;
+    internalTitle: string;
+    clientDescription: string;
+    internalDescription: string;
+    clientAction: string;
+    internalAction: string;
+  };
   security: {
     title: string;
     email: string;

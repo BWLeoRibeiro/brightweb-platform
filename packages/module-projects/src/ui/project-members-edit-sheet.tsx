@@ -31,28 +31,19 @@ type ProjectMemberOption = {
   profileId: string;
   label: string;
   email: string | null;
-  organizationRole: "staff" | "admin" | "org_admin" | "org_member";
+  organizationRole: "staff" | "admin";
   projectRole: ProjectMemberRole | null;
 };
 
 const PROJECT_MEMBER_SCOPE_LABELS: Record<ProjectMemberOption["organizationRole"], string> = {
   admin: "BeGreen admin",
   staff: "BeGreen staff",
-  org_admin: defaultProjectsUiDictionary.people.clientAdmin,
-  org_member: defaultProjectsUiDictionary.people.client,
 };
 
 const MAX_ADD_RESULTS = 25;
 
-// Internal identities can receive any project role.
-// Client identities are read-only observers.
-function isInternalIdentity(role: ProjectMemberOption["organizationRole"]): boolean {
-  return role === "staff" || role === "admin";
-}
-
-// Internos entram como Colaborador; clientes como Observador (papel fixo).
-function defaultRoleFor(member: ProjectMemberOption): ProjectMemberRole {
-  return isInternalIdentity(member.organizationRole) ? "contributor" : "observer";
+function defaultRoleFor(): ProjectMemberRole {
+  return "contributor";
 }
 
 function MemberIdentity({ member }: { member: ProjectMemberOption }) {
@@ -77,22 +68,15 @@ function TeamMemberRow({ member, role, onRoleChange, onRemove }: TeamMemberRowPr
   return (
     <div className="flex items-center gap-2 rounded-xl border border-black/8 bg-background/70 px-3 py-2 dark:border-white/10">
       <MemberIdentity member={member} />
-      {isInternalIdentity(member.organizationRole) ? (
-        <StyledSelect
-          className="h-7 rounded-md border border-black/10 bg-background px-2 text-meta dark:border-white/10"
-          value={role}
-          onChange={(event) => onRoleChange(event.target.value as ProjectMemberRole)}
-        >
-          <option value="owner">{PROJECT_MEMBER_ROLE_LABELS_PT.owner}</option>
-          <option value="contributor">{PROJECT_MEMBER_ROLE_LABELS_PT.contributor}</option>
-          <option value="observer">{PROJECT_MEMBER_ROLE_LABELS_PT.observer}</option>
-        </StyledSelect>
-      ) : (
-        // Client role is fixed and cannot be changed.
-        <span className="inline-flex h-7 items-center rounded-md border border-black/8 bg-background/60 px-2 text-meta text-foreground/60 dark:border-white/10">
-          {PROJECT_MEMBER_ROLE_LABELS_PT.observer}
-        </span>
-      )}
+      <StyledSelect
+        className="h-7 rounded-md border border-black/10 bg-background px-2 text-meta dark:border-white/10"
+        value={role}
+        onChange={(event) => onRoleChange(event.target.value as ProjectMemberRole)}
+      >
+        <option value="owner">{PROJECT_MEMBER_ROLE_LABELS_PT.owner}</option>
+        <option value="contributor">{PROJECT_MEMBER_ROLE_LABELS_PT.contributor}</option>
+        <option value="observer">{PROJECT_MEMBER_ROLE_LABELS_PT.observer}</option>
+      </StyledSelect>
       <Button
         type="button"
         variant="ghost"
@@ -113,7 +97,7 @@ function AddResultRow({ member, onAdd }: { member: ProjectMemberOption; onAdd: (
       <MemberIdentity member={member} />
       <Button type="button" variant="outline" size="sm" className="shrink-0" onClick={onAdd}>
         <Plus className="mr-1 size-3.5" />
-        {PROJECT_MEMBER_ROLE_LABELS_PT[defaultRoleFor(member)]}
+        {PROJECT_MEMBER_ROLE_LABELS_PT[defaultRoleFor()]}
       </Button>
     </div>
   );
@@ -179,7 +163,8 @@ export function ProjectMembersEditSheet({
           throw new Error(message);
         }
 
-        const options = (Array.isArray(payload?.data) ? payload.data : []) as ProjectMemberOption[];
+        const options = ((Array.isArray(payload?.data) ? payload.data : []) as Array<ProjectMemberOption & { organizationRole: string }>)
+          .filter((option): option is ProjectMemberOption => option.organizationRole === "staff" || option.organizationRole === "admin");
         if (!isMounted) return;
 
         setMemberOptions(options);
@@ -188,11 +173,7 @@ export function ProjectMembersEditSheet({
             if (option.projectRole) acc[option.profileId] = option.projectRole;
             return acc;
           }, {});
-          if (Object.keys(fromApi).length > 0) return fromApi;
-          return initialMembers.reduce<Record<string, ProjectMemberRole>>((acc, member) => {
-            acc[member.profileId] = member.role;
-            return acc;
-          }, {});
+          return fromApi;
         });
       } catch (error) {
         if (!isMounted) return;
@@ -213,16 +194,12 @@ export function ProjectMembersEditSheet({
     return new Map(memberOptions.map((option) => [option.profileId, option]));
   }, [memberOptions]);
 
-  // Allocated people stay visible, internal identities first, then by name.
+  // Allocated internal people stay visible and are sorted by name.
   const teamMembers = useMemo(() => {
     return Object.keys(selectedMembers)
       .map((profileId) => optionsByProfile.get(profileId))
       .filter((option): option is ProjectMemberOption => Boolean(option))
-      .sort((a, b) => {
-        const internalDelta = Number(isInternalIdentity(b.organizationRole)) - Number(isInternalIdentity(a.organizationRole));
-        if (internalDelta !== 0) return internalDelta;
-        return a.label.localeCompare(b.label, "pt");
-      });
+      .sort((a, b) => a.label.localeCompare(b.label, "pt"));
   }, [optionsByProfile, selectedMembers]);
 
   // Addition candidates only appear after a search.
@@ -235,15 +212,11 @@ export function ProjectMembersEditSheet({
         member.label.toLowerCase().includes(needle)
         || (member.email ?? "").toLowerCase().includes(needle)
       ))
-      .sort((a, b) => {
-        const internalDelta = Number(isInternalIdentity(b.organizationRole)) - Number(isInternalIdentity(a.organizationRole));
-        if (internalDelta !== 0) return internalDelta;
-        return a.label.localeCompare(b.label, "pt");
-      });
+      .sort((a, b) => a.label.localeCompare(b.label, "pt"));
   }, [memberOptions, memberSearch, selectedMembers]);
 
   const addMember = (member: ProjectMemberOption) => {
-    setSelectedMembers((current) => ({ ...current, [member.profileId]: defaultRoleFor(member) }));
+    setSelectedMembers((current) => ({ ...current, [member.profileId]: defaultRoleFor() }));
   };
 
   const removeMember = (profileId: string) => {

@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { KeyRound, ShieldCheck, UserCircle2 } from "lucide-react";
 import type { ReactNode } from "react";
+import { BriefcaseBusiness, KeyRound, ShieldCheck, UserCircle2 } from "lucide-react";
 import { getCurrentAccountProfile, type AccountProfile } from "./account/profile";
 import { requireServerPageAccess } from "./server";
 import { AccountClient } from "./ui/account/account-client";
@@ -32,7 +32,15 @@ function getDisplayName(firstName: string, lastName: string, email: string | nul
   return full || email || defaultAccountUiDictionary.identity.fallbackName;
 }
 
-export async function AccountPage({ projectsSlot }: { projectsSlot?: ReactNode } = {}) {
+export async function AccountPage({
+  internalProjectsHref = "/projetos",
+  showWorkAccess = true,
+  supplementaryContent,
+}: {
+  internalProjectsHref?: string;
+  showWorkAccess?: boolean;
+  supplementaryContent?: ReactNode;
+} = {}) {
   const { profileId, supabase, user, role } = await requireServerPageAccess();
   const accountProfile = await getCurrentAccountProfile(supabase, user.id, user.email ?? null);
   if (!accountProfile.ok) {
@@ -96,11 +104,7 @@ export async function AccountPage({ projectsSlot }: { projectsSlot?: ReactNode }
         </div>
       </div>
 
-      <div className="grid gap-5 lg:grid-cols-[1fr_340px]">
-        <div>
-          {projectsSlot}
-        </div>
-
+      <div className={`grid gap-5 ${showWorkAccess ? "lg:grid-cols-2" : "lg:grid-cols-[minmax(0,1fr)_minmax(18rem,0.72fr)]"}`}>
         <div className="space-y-4">
           <article className="rounded-2xl border p-5" style={{ borderColor: "var(--border)", background: "var(--card)" }}>
             <div className="mb-4 flex items-center gap-2">
@@ -116,6 +120,35 @@ export async function AccountPage({ projectsSlot }: { projectsSlot?: ReactNode }
             ) : null}
             <AccountClient profile={profileData} />
           </article>
+        </div>
+
+        <div className="space-y-4">
+          {supplementaryContent}
+          {showWorkAccess ? <article className="rounded-2xl border p-5" style={{ borderColor: "var(--border)", background: "var(--card)" }}>
+            <div className="mb-3 flex items-center gap-2">
+              <BriefcaseBusiness className="size-3.5 text-muted-foreground" />
+              <h2 className="text-label font-bold text-muted-foreground">
+                {isClient
+                  ? defaultAccountUiDictionary.workAccess.clientTitle
+                  : defaultAccountUiDictionary.workAccess.internalTitle}
+              </h2>
+            </div>
+            <p className="text-body text-muted-foreground">
+              {isClient
+                ? defaultAccountUiDictionary.workAccess.clientDescription
+                : defaultAccountUiDictionary.workAccess.internalDescription}
+            </p>
+            <Link
+              href={isClient ? "/account/projetos" : internalProjectsHref}
+              className="mt-4 inline-flex items-center gap-2 rounded-xl border px-3 py-2.5 text-body font-semibold text-primary transition-colors hover:bg-muted"
+              style={{ borderColor: "var(--border)" }}
+            >
+              <BriefcaseBusiness className="size-3.5" />
+              {isClient
+                ? defaultAccountUiDictionary.workAccess.clientAction
+                : defaultAccountUiDictionary.workAccess.internalAction}
+            </Link>
+          </article> : null}
 
           <article className="rounded-2xl border p-5" style={{ borderColor: "var(--border)", background: "var(--card)" }}>
             <div className="mb-4 flex items-center gap-2">
