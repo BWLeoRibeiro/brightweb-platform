@@ -210,7 +210,7 @@ export function ClientPortalHome({ firstName, initialData = null }: { firstName:
 
       {organizations.length > 1 ? (
         <section aria-labelledby="client-organizations-title" className="space-y-4">
-          <div className="flex items-center gap-2"><Building2 className="size-4 text-primary" /><h2 id="client-organizations-title" className="text-title">{clientProjectsDictionary.portal.myOrganizations}</h2></div>
+          <div className="flex items-center gap-2"><Building2 className="size-4 text-primary" /><h2 id="client-organizations-title" className="text-title">{clientProjectsDictionary.portal.yourOrganizations}</h2></div>
           <div className="flex gap-3 overflow-x-auto pb-2">
             <button type="button" aria-pressed={selectedOrganizationId === "all"} onClick={() => setSelectedOrganizationId("all")} className={`min-w-fit rounded-xl border px-4 py-3 text-left transition-colors ${selectedOrganizationId === "all" ? "border-primary bg-primary/10" : "border-border/70 bg-background/70 hover:border-border"}`}><span className="text-body font-bold">{clientProjectsDictionary.portal.allOrganizations}</span></button>
             {organizations.map((organization) => (

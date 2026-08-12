@@ -51,7 +51,7 @@ export const clientProjectsDictionary = {
     organizationAdmin: "Administrador",
     organizationMember: "Membro",
     yourOrganization: "A tua organização",
-    myOrganizations: "As minhas organizações",
+    yourOrganizations: "As tuas organizações",
     allOrganizations: "Todas as organizações",
     activeProject: "Projeto em curso",
     currentWork: "Agora",
