@@ -253,7 +253,7 @@ test("client loading states mirror the home, list and detail page geometries", (
   assert.match(loading, /ClientProjectsListLoading/);
   assert.match(loading, /md:grid-cols-2/);
   assert.match(loading, /ClientProjectDetailLoading/);
-  assert.match(loading, /lg:grid-cols-\[minmax\(0,1fr\)_19rem\]/);
+  assert.match(loading, /max-w-\[52rem\]/);
   assert.match(accountRoute, /loadClientPortalData/);
   assert.match(listPage, /initialProjects=\{initialProjects\}/);
   assert.match(detailPage, /initialProject=\{initialProject\}/);

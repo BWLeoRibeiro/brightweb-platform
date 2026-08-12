@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { ArrowRight, CalendarDays, Flag, FolderKanban } from "lucide-react";
-import { Button, Card } from "@brightweblabs/ui";
+import { ArrowRight, CalendarDays, Flag } from "lucide-react";
+import { Card } from "@brightweblabs/ui";
 import type { ClientProjectListItem } from "../../client-contracts";
 import {
   CLIENT_PROJECT_STATUS_LABELS,
@@ -34,7 +34,7 @@ export function ProjectListCard({
 
   return (
     <Card asChild variant={emphasis ? "elevated" : "light"}>
-      <article className={`group relative overflow-hidden border-border/65 bg-background/75 transition-[border-color,background-color,box-shadow] hover:border-border hover:bg-background hover:shadow-[var(--dashboard-shadow-md)] motion-reduce:transition-none ${emphasis ? "min-h-80 before:absolute before:inset-x-0 before:top-0 before:h-1 before:bg-[color:var(--brand-accent)]" : ""}`}>
+      <article className={`group relative overflow-hidden border-border/65 bg-background/75 transition-[border-color,background-color,box-shadow] focus-within:ring-2 focus-within:ring-ring hover:border-border hover:bg-background hover:shadow-[var(--dashboard-shadow-md)] motion-reduce:transition-none ${emphasis ? "before:absolute before:inset-x-0 before:top-0 before:h-1 before:bg-[color:var(--brand-accent)]" : ""}`}>
         <div className={`flex flex-1 flex-col gap-4 ${emphasis ? "p-6 sm:p-8" : "p-5"}`}>
         <div className="flex items-center">
           <ProjectStatusBadge status={project.status} label={CLIENT_PROJECT_STATUS_LABELS[project.status]} size="small" />
@@ -42,11 +42,15 @@ export function ProjectListCard({
 
         <div>
           {project.reference ? (
-            <p className="text-data mb-0.5 select-all text-micro text-muted-foreground/60">
+            <p className="text-data mb-0.5 text-micro text-muted-foreground/60">
               {project.reference}
             </p>
           ) : null}
-          <h2 className={emphasis ? "font-display text-[length:var(--text-ui-dashboard-title)] font-black leading-[var(--type-leading-110)] tracking-[var(--type-tracking-n025)]" : "text-title"}>{project.name}</h2>
+          <h2 className={emphasis ? "font-display text-[length:var(--text-ui-dashboard-title)] font-black leading-[var(--type-leading-110)] tracking-[var(--type-tracking-n025)]" : "text-title"}>
+            <Link href={href} className="after:absolute after:inset-0 focus-visible:outline-none">
+              {project.name}
+            </Link>
+          </h2>
           {showOrganizations ? (
             <p className="mt-0.5 text-meta text-muted-foreground">{project.organizations.map((organization) => organization.name).join(" · ")}</p>
           ) : null}
@@ -57,7 +61,7 @@ export function ProjectListCard({
         ) : null}
 
         {metaPreview ? (
-          <div className={`border-y border-border/55 ${emphasis ? "my-1 py-4" : "py-3"}`}>
+          <div className={`border-t border-border/55 ${emphasis ? "my-1 pt-4" : "pt-3"}`}>
             <p className="text-micro font-semibold text-muted-foreground">{metaPreview.label}</p>
             <ul className="mt-2 space-y-1.5">
               {metaPreview.metas.map((meta) => (
@@ -71,48 +75,31 @@ export function ProjectListCard({
           </div>
         ) : null}
 
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-meta text-muted-foreground">
-          <span
-            className={`inline-flex items-center gap-1.5 ${overdue ? "font-semibold" : ""}`}
-            style={overdue ? { color: "var(--project-health-off-track)" } : undefined}
-          >
-            <CalendarDays aria-hidden className="size-3.5 shrink-0" />
-            <span className="text-data">{formatClientProjectDate(project.targetDate)}</span>
-            {overdue ? <span className="text-micro">({clientProjectsDictionary.common.delayed})</span> : null}
-          </span>
-
-          <span className="inline-flex items-center gap-1.5">
-            <Flag aria-hidden className="size-3.5 shrink-0" />
-            {project.progress.percent !== null
-              ? clientProjectsDictionary.safeUi.completedPercent(project.progress.percent)
-              : dictionary.noMilestones}
-          </span>
-        </div>
-
-        {milestoneProgressPct !== null ? (
-          <div className="space-y-1">
-            <div className="flex items-center justify-between">
-              <span className="text-micro text-muted-foreground">
-                {dictionary.milestoneProgress}
-              </span>
+        <div className="mt-auto space-y-3 border-t border-border/55 pt-4">
+          <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1.5 text-meta text-muted-foreground">
+            <span
+              className={`inline-flex items-center gap-1.5 ${overdue ? "font-semibold" : ""}`}
+              style={overdue ? { color: "var(--project-health-off-track)" } : undefined}
+            >
+              <CalendarDays aria-hidden className="size-3.5 shrink-0" />
+              <span className="text-data">{formatClientProjectDate(project.targetDate)}</span>
+              {overdue ? <span className="text-micro">({clientProjectsDictionary.common.delayed})</span> : null}
+            </span>
+            {milestoneProgressPct !== null && milestoneProgressPct > 0 ? (
               <span className="text-data text-micro font-bold text-primary">
-                {milestoneProgressPct}%
+                {clientProjectsDictionary.safeUi.completedPercent(milestoneProgressPct)}
               </span>
-            </div>
-            <ProjectProgressBar ariaLabel={dictionary.milestoneProgress} percent={milestoneProgressPct} trackClassName="bg-muted" fillClassName="bg-primary motion-reduce:transition-none" />
+            ) : null}
           </div>
-        ) : null}
 
-        <div className="mt-auto pt-1">
-          <Button asChild variant="outline" className="min-h-11 w-full justify-between">
-            <Link href={href}>
-              <span className="inline-flex items-center gap-2">
-                <FolderKanban aria-hidden className="size-4 text-muted-foreground" />
-                {dictionary.open}
-              </span>
-              <ArrowRight aria-hidden className="size-3.5 text-muted-foreground transition-transform group-hover:translate-x-0.5 motion-reduce:transition-none motion-reduce:transform-none" />
-            </Link>
-          </Button>
+          {milestoneProgressPct !== null && milestoneProgressPct > 0 ? (
+            <ProjectProgressBar ariaLabel={dictionary.milestoneProgress} percent={milestoneProgressPct} trackClassName="bg-muted" fillClassName="bg-primary motion-reduce:transition-none" />
+          ) : null}
+
+          <span aria-hidden className="inline-flex items-center gap-2 text-body font-semibold text-primary">
+            {dictionary.open}
+            <ArrowRight className="size-3.5 transition-transform group-hover:translate-x-0.5 motion-reduce:transition-none motion-reduce:transform-none" />
+          </span>
         </div>
       </div>
       </article>

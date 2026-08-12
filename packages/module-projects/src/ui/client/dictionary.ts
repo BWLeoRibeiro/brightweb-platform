@@ -119,9 +119,6 @@ export const clientProjectsDictionary = {
     delayed: "atrasado",
   },
   list: {
-    kicker: "Conta · Projetos",
-    back: "Voltar à conta",
-    noMilestones: "Sem metas",
     milestoneProgress: "Progresso das metas",
     open: "Abrir projeto",
   },

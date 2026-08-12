@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { AlertCircle, ArrowLeft, CalendarDays, CheckCircle2, Circle, Clock, Cloud, ExternalLink, FileText, Link2, ListChecks, Sheet, UserRound } from "lucide-react";
+import { AlertCircle, ArrowLeft, CheckCircle2, Circle, Clock, Cloud, ExternalLink, FileText, Link2, Sheet } from "lucide-react";
 import { Button, Card } from "@brightweblabs/ui";
 import type { ClientProjectDetail } from "../../client-contracts";
 import type { MilestoneStatus, ProjectLinkKind } from "../../contracts";
@@ -49,6 +49,15 @@ function Message({ title, children }: { title: string; children: ReactNode }) {
   );
 }
 
+function HeroFact({ label, value, emphasis = false }: { label: string; value: ReactNode; emphasis?: boolean }) {
+  return (
+    <div className="min-w-0">
+      <dt className="text-micro font-semibold text-[color:var(--project-hero-muted)]">{label}</dt>
+      <dd className={`text-data mt-1 truncate text-body font-semibold ${emphasis ? "text-[color:var(--brand-accent)]" : ""}`}>{value}</dd>
+    </div>
+  );
+}
+
 export function ClientProjectDetailClient({ projectId, initialProject }: { projectId: string; initialProject?: ClientProjectDetail | null }) {
   const [project, setProject] = useState<ClientProjectDetail | null>(() => initialProject ?? null);
   const [state, setState] = useState<"loading" | "ready" | "not_found" | "error">(() => (
@@ -88,6 +97,8 @@ export function ClientProjectDetailClient({ projectId, initialProject }: { proje
   if (state === "error" || !project) return <Message title={clientProjectsDictionary.safeUi.openErrorTitle}><p className="text-body text-muted-foreground">{clientProjectsDictionary.safeUi.openErrorDescription}</p><Button type="button" variant="outline" size="sm" onClick={() => setReloadKey((current) => current + 1)}>{clientProjectsDictionary.safeUi.retry}</Button></Message>;
 
   const overdue = isClientProjectDateOverdue(project.targetDate) && !["completed", "canceled"].includes(project.status);
+  const achievedCount = metas.filter((meta) => meta.status === "achieved").length;
+  const percent = project.progress.percent;
 
   return (
     <article className="space-y-8 sm:space-y-10">
@@ -102,71 +113,63 @@ export function ClientProjectDetailClient({ projectId, initialProject }: { proje
           </div>
           <h1 className="font-display text-[length:var(--text-ui-preview-card-title)] font-black leading-[var(--type-leading-110)] tracking-[var(--type-tracking-n025)] sm:text-[length:var(--text-ui-dashboard-title-lg)]">{project.name}</h1>
           <p className="text-body-lg text-[color:var(--project-hero-muted)]">{project.organizations.map((organization) => organization.name).join(" · ")}</p>
+          <dl className="grid grid-cols-2 gap-x-8 gap-y-4 border-t border-[color:var(--project-hero-border)] pt-5 sm:flex sm:flex-wrap sm:gap-x-12">
+            <HeroFact label={clientProjectsDictionary.safeUi.startDate} value={formatClientProjectDate(project.startDate)} />
+            <HeroFact
+              label={clientProjectsDictionary.safeUi.deadline}
+              value={overdue ? `${formatClientProjectDate(project.targetDate)} · ${clientProjectsDictionary.common.delayed}` : formatClientProjectDate(project.targetDate)}
+              emphasis={overdue}
+            />
+            {project.clientContact ? <HeroFact label={clientProjectsDictionary.safeUi.contact} value={project.clientContact.email ? <a className="hover:underline" href={`mailto:${project.clientContact.email}`}>{project.clientContact.label}</a> : project.clientContact.label} /> : null}
+          </dl>
         </div>
       </header>
 
-      <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_19rem] lg:items-start">
-        <div className="space-y-6">
-          {project.clientSummary ? (
-            <section className="border-b border-border/65 pb-7">
-              <p className="eyebrow text-primary">{clientProjectsDictionary.safeUi.summary}</p>
-              <p className="mt-3 max-w-[48rem] text-body-lg leading-relaxed text-foreground">{project.clientSummary}</p>
-            </section>
-          ) : null}
-
-          {project.clientScope ? (
-            <section className="border-b border-border/65 pb-7">
-              <h2 className="flex items-center gap-2 text-title font-bold"><ListChecks className="size-4 text-primary" />{clientProjectsDictionary.safeUi.scope}</h2>
-              <p className="mt-3 whitespace-pre-line text-body leading-relaxed text-muted-foreground">{project.clientScope}</p>
-            </section>
-          ) : null}
-
-          <section className="space-y-4">
-            <div><p className="eyebrow text-primary">{clientProjectsDictionary.safeUi.progress}</p><h2 className="mt-1 text-title font-bold">{clientProjectsDictionary.safeUi.metas}</h2></div>
-            {metas.length === 0 ? <p className="rounded-2xl border border-border/60 bg-background/50 px-5 py-8 text-body text-muted-foreground">{clientProjectsDictionary.safeUi.noSharedMetas}</p> : (
-              <ol className="relative space-y-0 before:absolute before:bottom-5 before:left-[1.15rem] before:top-5 before:w-px before:bg-border">{metas.map((meta) => (
-                <li key={meta.id} className="relative grid grid-cols-[2.35rem_minmax(0,1fr)] gap-4 py-4">
-                  <span className={`z-10 inline-flex size-[2.35rem] items-center justify-center rounded-full border border-border bg-background ${CLIENT_MILESTONE_STATUS_CLASSES[meta.status]}`}>{META_ICONS[meta.status]}</span>
-                  <div className="pt-1"><p className="text-body font-bold">{meta.title}</p><p className="mt-1 text-meta text-muted-foreground">{CLIENT_MILESTONE_STATUS_LABELS[meta.status]}{meta.targetDate ? ` · ${formatClientProjectDate(meta.targetDate)}` : ""}</p></div>
-                </li>
-              ))}</ol>
-            )}
+      <div className="max-w-[52rem] space-y-8 sm:space-y-10">
+        {project.clientSummary ? (
+          <section>
+            <p className="text-label font-semibold text-muted-foreground">{clientProjectsDictionary.safeUi.summary}</p>
+            <p className="mt-3 text-body-lg leading-relaxed text-foreground">{project.clientSummary}</p>
           </section>
+        ) : null}
 
-          <section className="space-y-4 border-t border-border/65 pt-7">
-            <h2 className="flex items-center gap-2 text-title font-bold"><Link2 className="size-4 text-primary" />{clientProjectsDictionary.safeUi.sharedDocuments}</h2>
-            {project.documents.length === 0 ? <p className="text-body text-muted-foreground">{clientProjectsDictionary.safeUi.noSharedDocuments}</p> : (
-              <ul className="grid gap-3 sm:grid-cols-2">{project.documents.map((document) => (
-                <li key={document.id}><a href={document.url} target="_blank" rel="noreferrer" className="flex items-center gap-3 rounded-xl border border-border/60 bg-background/50 px-4 py-4 transition-colors hover:bg-background/80">
-                  <span className="text-muted-foreground">{DOCUMENT_ICONS[document.kind]}</span><span className="min-w-0 flex-1"><span className="block truncate text-body font-semibold text-primary">{document.label}</span><span className="text-meta text-muted-foreground">{CLIENT_PROJECT_LINK_KIND_LABELS[document.kind]}</span></span><ExternalLink className="size-3.5 text-muted-foreground" />
-                </a></li>
-              ))}</ul>
-            )}
+        {project.clientScope ? (
+          <section className="border-t border-border/65 pt-8 sm:pt-10">
+            <p className="text-label font-semibold text-muted-foreground">{clientProjectsDictionary.safeUi.scope}</p>
+            <p className="mt-3 whitespace-pre-line text-body leading-relaxed text-muted-foreground">{project.clientScope}</p>
           </section>
-        </div>
+        ) : null}
 
-        <aside className="space-y-3 lg:sticky lg:top-28">
-          <Card variant="elevated" className="overflow-hidden border-border/65 p-5 before:block before:h-1 before:bg-primary">
-            <p className="text-label font-semibold text-muted-foreground">{clientProjectsDictionary.safeUi.progress}</p>
-            <p className="font-display mt-1 text-heading-2 font-black">{project.progress.percent ?? 0}%</p>
-            <ProjectProgressBar ariaLabel={clientProjectsDictionary.safeUi.progress} percent={project.progress.percent} className="mt-4" trackClassName="bg-muted" fillClassName="bg-primary" />
-            <p className="mt-3 text-meta text-muted-foreground">{metas.filter((meta) => meta.status === "achieved").length} {clientProjectsDictionary.safeUi.of} {metas.length} {clientProjectsDictionary.safeUi.completedMetasLower}</p>
-          </Card>
-          <Card variant="light" className="p-5 shadow-none">
-            <h2 className="flex items-center gap-2 text-label font-semibold text-muted-foreground"><CalendarDays className="size-4" />{clientProjectsDictionary.safeUi.dates}</h2>
-            <dl className="mt-4 space-y-4">
-              <div><dt className="text-micro text-muted-foreground">{clientProjectsDictionary.safeUi.startDate}</dt><dd className="text-data mt-1 text-body font-semibold">{formatClientProjectDate(project.startDate)}</dd></div>
-              <div><dt className="text-micro text-muted-foreground">{clientProjectsDictionary.safeUi.deadline}</dt><dd className={`text-data mt-1 text-body font-semibold ${overdue ? "text-destructive" : ""}`}>{formatClientProjectDate(project.targetDate)}</dd></div>
-            </dl>
-          </Card>
-          {project.clientContact ? (
-            <Card variant="light" className="p-5 shadow-none">
-              <h2 className="flex items-center gap-2 text-label font-semibold text-muted-foreground"><UserRound className="size-4" />{clientProjectsDictionary.safeUi.contact}</h2>
-              <p className="mt-3 text-body font-bold">{project.clientContact.label}</p>
-              {project.clientContact.email ? <a href={`mailto:${project.clientContact.email}`} className="mt-1 inline-flex min-h-11 max-w-full items-center truncate text-meta text-primary hover:underline">{project.clientContact.email}</a> : null}
-            </Card>
+        <section className="border-t border-border/65 pt-8 sm:pt-10">
+          <div className="flex flex-wrap items-baseline justify-between gap-3">
+            <h2 className="text-title font-bold">{clientProjectsDictionary.safeUi.metas}</h2>
+            {metas.length > 0 ? (
+              <p className="text-meta text-muted-foreground">{achievedCount} {clientProjectsDictionary.safeUi.of} {metas.length} {clientProjectsDictionary.safeUi.completedMetasLower}</p>
+            ) : null}
+          </div>
+          {percent !== null && percent > 0 ? (
+            <ProjectProgressBar ariaLabel={clientProjectsDictionary.safeUi.progress} percent={percent} className="mt-4" trackClassName="bg-muted" fillClassName="bg-primary" />
           ) : null}
-        </aside>
+          {metas.length === 0 ? <p className="mt-4 rounded-2xl border border-border/60 bg-background/50 px-5 py-8 text-body text-muted-foreground">{clientProjectsDictionary.safeUi.noSharedMetas}</p> : (
+            <ol className="relative mt-4 space-y-0 before:absolute before:bottom-5 before:left-[1.15rem] before:top-5 before:w-px before:bg-border">{metas.map((meta) => (
+              <li key={meta.id} className="relative grid grid-cols-[2.35rem_minmax(0,1fr)] gap-4 py-4">
+                <span className={`z-10 inline-flex size-[2.35rem] items-center justify-center rounded-full border border-border bg-background ${CLIENT_MILESTONE_STATUS_CLASSES[meta.status]}`}>{META_ICONS[meta.status]}</span>
+                <div className="pt-1"><p className="text-body font-bold">{meta.title}</p><p className="mt-1 text-meta text-muted-foreground">{CLIENT_MILESTONE_STATUS_LABELS[meta.status]}{meta.targetDate ? ` · ${formatClientProjectDate(meta.targetDate)}` : ""}</p></div>
+              </li>
+            ))}</ol>
+          )}
+        </section>
+
+        <section className="border-t border-border/65 pt-8 sm:pt-10">
+          <h2 className="text-title font-bold">{clientProjectsDictionary.safeUi.sharedDocuments}</h2>
+          {project.documents.length === 0 ? <p className="mt-3 text-body text-muted-foreground">{clientProjectsDictionary.safeUi.noSharedDocuments}</p> : (
+            <ul className="mt-4 grid gap-3 sm:grid-cols-2">{project.documents.map((document) => (
+              <li key={document.id}><a href={document.url} target="_blank" rel="noreferrer" className="flex min-h-11 items-center gap-3 rounded-xl border border-border/60 bg-background/50 px-4 py-4 transition-colors hover:bg-background/80">
+                <span className="text-muted-foreground">{DOCUMENT_ICONS[document.kind]}</span><span className="min-w-0 flex-1"><span className="block truncate text-body font-semibold text-primary">{document.label}</span><span className="text-meta text-muted-foreground">{CLIENT_PROJECT_LINK_KIND_LABELS[document.kind]}</span></span><ExternalLink className="size-3.5 text-muted-foreground" />
+              </a></li>
+            ))}</ul>
+          )}
+        </section>
       </div>
     </article>
   );

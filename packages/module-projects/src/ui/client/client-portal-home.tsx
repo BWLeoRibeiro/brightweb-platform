@@ -79,12 +79,12 @@ function AccountAndSecurityFooter() {
   );
 }
 
-function CurrentMetas({ metas }: { metas: ClientProjectDetail["metas"] }) {
+function CurrentMetas({ metas, divider = true }: { metas: ClientProjectDetail["metas"]; divider?: boolean }) {
   const preview = resolveClientMetaPreview(metas);
   if (!preview) return null;
 
   return (
-    <div className="border-t border-border/60 pt-6">
+    <div className={divider ? "border-t border-border/60 pt-6" : undefined}>
       <p className="text-label font-semibold text-muted-foreground">{preview.label}</p>
       <ul className="mt-3 space-y-3">
         {preview.metas.map((meta) => (
@@ -101,13 +101,14 @@ function CurrentMetas({ metas }: { metas: ClientProjectDetail["metas"] }) {
 
 function ProjectOverview({ project }: { project: ClientProjectDetail | ClientProjectListItem }) {
   const progress = project.progress.percent;
+  const hasProgress = progress !== null && progress > 0;
   const href = resolveClientProjectDetailHref(false, project.id);
 
   return (
     <Card asChild variant="elevated">
       <article className="overflow-hidden border-[color:var(--project-hero-border)] bg-background">
         <div className="grid lg:grid-cols-[minmax(0,1.08fr)_minmax(20rem,0.92fr)]">
-          <div className="brand-panel relative flex min-h-80 flex-col overflow-hidden p-6 text-[color:var(--project-hero-foreground)] sm:p-8 lg:p-10">
+          <div className="brand-panel relative flex flex-col overflow-hidden p-6 text-[color:var(--project-hero-foreground)] sm:p-8 lg:min-h-80 lg:p-10">
             <span aria-hidden className="pointer-events-none absolute -right-24 -top-28 size-80 rounded-full bg-[color:var(--brand-accent)]/15 blur-3xl" />
             <div className="relative flex min-h-full flex-1 flex-col">
               <p className="eyebrow tint-hero">{clientProjectsDictionary.portal.activeProject}</p>
@@ -116,8 +117,8 @@ function ProjectOverview({ project }: { project: ClientProjectDetail | ClientPro
                 {project.reference ? <span className="text-data font-semibold">{project.reference}</span> : null}
                 <ProjectStatusBadge status={project.status} label={clientProjectsDictionary.portal.statusLabels[project.status]} size="small" />
               </div>
-              {project.clientSummary ? <p className="mt-7 max-w-[36rem] text-body-lg leading-relaxed text-[color:var(--project-hero-muted)]">{project.clientSummary}</p> : null}
-              <div className="mt-auto pt-8">
+              {project.clientSummary ? <p className="mt-5 max-w-[36rem] text-body-lg leading-relaxed text-[color:var(--project-hero-muted)]">{project.clientSummary}</p> : null}
+              <div className="mt-auto pt-7">
                 <Button asChild size="lg" className="group min-h-11 min-w-44 justify-between gap-5 shadow-[var(--shadow-accent-control)]">
                   <Link href={href}>{clientProjectsDictionary.portal.openProject}<ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5 motion-reduce:transition-none" /></Link>
                 </Button>
@@ -126,18 +127,20 @@ function ProjectOverview({ project }: { project: ClientProjectDetail | ClientPro
           </div>
 
           <div className="border-t border-border/65 bg-[color:var(--project-surface-secondary)] p-6 sm:p-8 lg:border-l lg:border-t-0 lg:p-10">
-            <div className="pb-6">
-              <div className="flex items-end justify-between gap-4">
-                <div>
-                  <p className="text-label font-semibold text-muted-foreground">{clientProjectsDictionary.portal.progress}</p>
-                  <p className="font-display mt-1 text-heading-2 font-black">{progress ?? 0}%</p>
+            {hasProgress ? (
+              <div className="pb-6">
+                <div className="flex items-end justify-between gap-4">
+                  <div>
+                    <p className="text-label font-semibold text-muted-foreground">{clientProjectsDictionary.portal.progress}</p>
+                    <p className="font-display mt-1 text-heading-2 font-black">{progress}%</p>
+                  </div>
+                  <span className="text-meta text-muted-foreground">{clientProjectsDictionary.portal.sharedMetas}</span>
                 </div>
-                <span className="text-meta text-muted-foreground">{clientProjectsDictionary.portal.sharedMetas}</span>
+                <ProjectProgressBar ariaLabel={clientProjectsDictionary.portal.progress} percent={progress} className="mt-4" trackClassName="bg-border/70" fillClassName="bg-primary motion-reduce:transition-none" />
               </div>
-              <ProjectProgressBar ariaLabel={clientProjectsDictionary.portal.progress} percent={progress} className="mt-4" trackClassName="bg-border/70" fillClassName="bg-primary motion-reduce:transition-none" />
-            </div>
+            ) : null}
 
-            <CurrentMetas metas={"metas" in project ? project.metas : project.metaPreview} />
+            <CurrentMetas metas={"metas" in project ? project.metas : project.metaPreview} divider={hasProgress} />
 
             <dl className="mt-6 divide-y divide-border/60 border-t border-border/60">
               {project.targetDate ? (
