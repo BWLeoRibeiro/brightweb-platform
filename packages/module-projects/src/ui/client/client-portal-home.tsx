@@ -142,7 +142,7 @@ function OrganizationIdentity({
   const identity = (
     <>
       {selected ? (
-        <InitialsAvatar label={selected.name} className="size-10 shrink-0" />
+        <InitialsAvatar label={selected.name} tone="inverse" className="size-10 shrink-0" />
       ) : (
         <span className="inline-flex size-10 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground"><Building2 className="size-4" /></span>
       )}

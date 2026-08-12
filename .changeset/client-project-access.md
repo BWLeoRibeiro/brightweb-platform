@@ -5,6 +5,7 @@
 "@brightweblabs/module-crm": patch
 "@brightweblabs/module-projects": minor
 "@brightweblabs/theme": patch
+"@brightweblabs/ui": patch
 "create-bw-app": minor
 ---
 

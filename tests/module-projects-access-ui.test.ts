@@ -215,6 +215,7 @@ test("client portal adapts its hierarchy to organization and project counts", ()
   assert.match(portal, /clientProjectsDictionary\.portal\.upNext/);
   assert.match(portal, /brand-panel relative overflow-hidden/);
   assert.match(portal, /project-hero-surface-raised/);
+  assert.match(portal, /InitialsAvatar label=\{selected\.name\} tone="inverse"/);
   assert.match(portal, /lg:grid-cols-\[minmax\(0,1fr\)_18rem\]/);
   assert.match(portal, /ongoingProjects\.length > 1 \? "md:grid-cols-2"/);
   assert.match(portal, /AccountAndSecurityFooter/);
@@ -246,6 +247,9 @@ test("client account navigation separates the portal from editable profile setti
   assert.match(clientFrame, /href="\/account\/perfil"/);
   assert.match(accountMenu, /Perfil e segurança/);
   assert.match(accountMenu, /O meu espaço/);
+  assert.match(accountMenu, /InitialsAvatar/);
+  assert.match(accountMenu, /tone=\{avatarTone\}/);
+  assert.doesNotMatch(accountMenu, /function avatarRoleClass/);
   assert.match(previewProfile, /ClientProfilePage/);
   assert.match(templateProfile, /ClientProfilePage/);
   assert.match(accountRoute, /ClientOrganizationMemberships/);
