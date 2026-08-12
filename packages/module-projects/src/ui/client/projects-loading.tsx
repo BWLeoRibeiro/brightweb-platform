@@ -39,9 +39,11 @@ function ProjectOverviewSkeleton() {
 export function ClientPortalHomeLoading() {
   return (
     <div className="space-y-10" aria-hidden>
-      <header className="space-y-4">
-        <SkeletonLine w="18rem" className="h-12" />
-        <SkeletonLine w="31rem" />
+      <header className="grid gap-7 lg:grid-cols-[minmax(0,1fr)_minmax(22rem,34rem)] lg:items-end">
+        <div className="space-y-4">
+          <SkeletonLine w="18rem" className="h-12" />
+          <SkeletonLine w="31rem" />
+        </div>
         <div className="flex max-w-[34rem] items-center gap-3 rounded-[var(--radius-card)] border border-border/60 bg-[color:var(--project-surface-secondary)] p-4 sm:p-5">
           <SkeletonLine w="2.75rem" className="h-11 rounded-full" />
           <div className="flex-1 space-y-2">

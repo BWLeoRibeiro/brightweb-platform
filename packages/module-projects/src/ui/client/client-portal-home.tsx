@@ -43,18 +43,20 @@ function organizationRoleLabel(role: ClientOrganizationMembership["role"]) {
 
 function OrganizationIdentity({ organization }: { organization: ClientOrganizationMembership }) {
   return (
-    <section className="max-w-[34rem] rounded-[var(--radius-card)] border border-border/60 bg-[color:var(--project-surface-secondary)] p-4 shadow-[var(--dashboard-shadow-sm)] sm:p-5" aria-labelledby="client-organization-label">
+    <section className="w-full max-w-[34rem] rounded-[var(--radius-card)] border border-border/60 bg-[color:var(--project-surface-secondary)] p-4 shadow-[var(--dashboard-shadow-sm)] sm:p-5 lg:justify-self-end" aria-labelledby="client-organization-label">
       <div className="flex items-center gap-4">
         <InitialsAvatar label={organization.name} className="size-11 shrink-0" />
         <div className="min-w-0 flex-1">
           <p id="client-organization-label" className="text-label text-muted-foreground">
             {clientProjectsDictionary.portal.yourOrganization}
           </p>
-          <p className="mt-1 truncate text-title">{organization.name}</p>
+          <div className="mt-1 flex min-w-0 items-center gap-2">
+            <p className="min-w-0 truncate text-title">{organization.name}</p>
+            <StatusPill token="--role-client" className="shrink-0">
+              {organizationRoleLabel(organization.role)}
+            </StatusPill>
+          </div>
         </div>
-        <StatusPill token="--role-client" className="shrink-0">
-          {organizationRoleLabel(organization.role)}
-        </StatusPill>
       </div>
     </section>
   );
@@ -205,7 +207,7 @@ export function ClientPortalHome({ firstName, initialData = null }: { firstName:
 
   return (
     <div className="space-y-10 sm:space-y-14">
-      <header className="space-y-7">
+      <header className={singleOrganization ? "grid gap-7 lg:grid-cols-[minmax(0,1fr)_minmax(22rem,34rem)] lg:items-end" : "space-y-7"}>
         <div className="max-w-[48rem]">
           <h1 className="font-display text-[length:var(--text-ui-dashboard-title)] font-black leading-[var(--type-leading-110)] tracking-[var(--type-tracking-n025)] sm:text-[length:var(--text-ui-dashboard-title-lg)]">{clientProjectsDictionary.portal.greeting(displayName)}</h1>
           <p className="mt-4 text-body-lg leading-relaxed text-muted-foreground">{clientProjectsDictionary.portal.homeDescription}</p>
