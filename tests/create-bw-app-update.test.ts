@@ -288,11 +288,12 @@ test("published platform scaffolds resolved supabase migrations for the selected
       "0011_admin__20260731122500_admin_activity_visibility.sql",
       "0012_orgs__20260316091500_orgs_v1.sql",
       "0013_orgs__20260731130100_organization_search_indexes.sql",
-      "0014_crm__20260316092000_crm_v1.sql",
-      "0015_crm__20260316092010_crm_org_integration.sql",
-      "0016_crm__20260421201523_portal_read_indexes.sql",
-      "0017_crm__20260724120000_crm_status_authorization.sql",
-      "0018_crm__20260731130200_crm_collection_indexes.sql",
+      "0014_orgs__20260812120000_staff_only_organization_access_management.sql",
+      "0015_crm__20260316092000_crm_v1.sql",
+      "0016_crm__20260316092010_crm_org_integration.sql",
+      "0017_crm__20260421201523_portal_read_indexes.sql",
+      "0018_crm__20260724120000_crm_status_authorization.sql",
+      "0019_crm__20260731130200_crm_collection_indexes.sql",
     ],
   );
 
@@ -329,6 +330,7 @@ test("published platform scaffolds resolved supabase migrations for the selected
   assert.match(bootstrapRemoveForceMigration, /GRANT EXECUTE ON FUNCTION public\.bootstrap_first_admin\(uuid, text\) TO service_role/);
   await fs.access(path.join(targetDir, "supabase", "modules", "orgs", "migrations", "20260316091500_orgs_v1.sql"));
   await fs.access(path.join(targetDir, "supabase", "modules", "orgs", "migrations", "20260731130100_organization_search_indexes.sql"));
+  await fs.access(path.join(targetDir, "supabase", "modules", "orgs", "migrations", "20260812120000_staff_only_organization_access_management.sql"));
   await fs.access(path.join(targetDir, "supabase", "modules", "crm", "migrations", "20260316092000_crm_v1.sql"));
   await fs.access(path.join(targetDir, "supabase", "modules", "crm", "migrations", "20260421201523_portal_read_indexes.sql"));
   await fs.access(path.join(targetDir, "supabase", "modules", "crm", "migrations", "20260731130200_crm_collection_indexes.sql"));
@@ -375,23 +377,24 @@ test("projects scaffolding resolves organizations without CRM", async (t) => {
     "0011_admin__20260731122500_admin_activity_visibility.sql",
     "0012_orgs__20260316091500_orgs_v1.sql",
     "0013_orgs__20260731130100_organization_search_indexes.sql",
-    "0014_projects__20260316093000_projects_v1.sql",
-    "0015_projects__20260421201528_portal_read_indexes.sql",
-    "0016_projects__20260731121000_project_notification_audiences.sql",
-    "0017_projects__20260731123000_project_realtime_visibility.sql",
-    "0018_projects__20260731124000_project_task_stats.sql",
-    "0019_projects__20260731130300_project_collection_indexes.sql",
-    "0020_projects__20260801122000_project_member_sync.sql",
-    "0021_projects__20260804120000_project_task_start_date.sql",
-    "0022_projects__20260804123000_project_start_date.sql",
-    "0023_projects__20260810120000_project_client_access.sql",
-    "0024_projects__20260811120000_project_client_access_expand.sql",
-    "0025_projects__20260811120500_project_member_sync_hardening.sql",
-    "0026_projects__20260811121000_project_client_access_enforcement.sql",
-    "0027_projects__20260811121500_project_client_organization_memberships.sql",
-    "0028_projects__20260811121700_project_client_meta_preview.sql",
-    "0029_projects__20260811122000_project_client_access_identity_cleanup.sql",
-    "0030_projects__20260811122500_remove_project_client_next_steps.sql",
+    "0014_orgs__20260812120000_staff_only_organization_access_management.sql",
+    "0015_projects__20260316093000_projects_v1.sql",
+    "0016_projects__20260421201528_portal_read_indexes.sql",
+    "0017_projects__20260731121000_project_notification_audiences.sql",
+    "0018_projects__20260731123000_project_realtime_visibility.sql",
+    "0019_projects__20260731124000_project_task_stats.sql",
+    "0020_projects__20260731130300_project_collection_indexes.sql",
+    "0021_projects__20260801122000_project_member_sync.sql",
+    "0022_projects__20260804120000_project_task_start_date.sql",
+    "0023_projects__20260804123000_project_start_date.sql",
+    "0024_projects__20260810120000_project_client_access.sql",
+    "0025_projects__20260811120000_project_client_access_expand.sql",
+    "0026_projects__20260811120500_project_member_sync_hardening.sql",
+    "0027_projects__20260811121000_project_client_access_enforcement.sql",
+    "0028_projects__20260811121500_project_client_organization_memberships.sql",
+    "0029_projects__20260811121700_project_client_meta_preview.sql",
+    "0030_projects__20260811122000_project_client_access_identity_cleanup.sql",
+    "0031_projects__20260811122500_remove_project_client_next_steps.sql",
   ]);
   assert.equal(migrations.some((fileName) => fileName.includes("_crm__")), false);
 
