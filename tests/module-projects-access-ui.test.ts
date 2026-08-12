@@ -10,7 +10,7 @@ import {
   getClientAccessDraftError,
   type ClientAccessDraft,
 } from "../packages/module-projects/src/ui/project-client-access-editor.tsx";
-import { matchesClientProjectGroup } from "../packages/module-projects/src/ui/client/projects-list-client.tsx";
+import { matchesClientProjectGroup, matchesClientProjectOrganization } from "../packages/module-projects/src/ui/client/projects-list-client.tsx";
 import { resolveClientMetaPreview } from "../packages/module-projects/src/ui/client/shared.ts";
 
 const uiRoot = join(process.cwd(), "packages/module-projects/src/ui");
@@ -117,7 +117,7 @@ test("creation review names the exact external audience and new controls expose 
   assert.match(wizard, /selectedClientNames\.join/);
   assert.match(wizard, /htmlFor="project-client-summary"/);
   assert.match(wizard, /aria-label=\{projectAccessDictionary\.wizard\.roleFor\(person\.label\)\}/);
-  assert.match(list, /aria-pressed=\{group === item\.value\}/);
+  assert.match(list, /aria-pressed=\{selected\}/);
   assert.match(list, /setReloadKey\(\(current\) => current \+ 1\)/);
   assert.match(detail, /setReloadKey\(\(current\) => current \+ 1\)/);
   assert.match(detail, /response\.status === 404 \|\| response\.status === 403/);
@@ -159,6 +159,14 @@ test("archived client projects are retained only in the all-projects filter", ()
   assert.equal(matchesClientProjectGroup(archived, "all"), true);
   assert.equal(matchesClientProjectGroup(active, "ongoing"), true);
   assert.equal(matchesClientProjectGroup(completed, "completed"), true);
+});
+
+test("client project organization filters scope the project counters and results", () => {
+  const project = { organizations: [{ id: "northwind", name: "Northwind Renewables" }] };
+
+  assert.equal(matchesClientProjectOrganization(project, "all"), true);
+  assert.equal(matchesClientProjectOrganization(project, "northwind"), true);
+  assert.equal(matchesClientProjectOrganization(project, "tagus"), false);
 });
 
 test("client meta previews prefer up to three current metas, then one pending meta", () => {

@@ -22,6 +22,14 @@ export function matchesClientProjectGroup(
     : ["active", "paused", "blocked"].includes(project.status);
 }
 
+export function matchesClientProjectOrganization(
+  project: Pick<ClientProjectListItem, "organizations">,
+  organizationId: string,
+) {
+  return organizationId === "all"
+    || project.organizations.some((organization) => organization.id === organizationId);
+}
+
 const GROUPS: Array<{ value: ClientProjectGroup; label: string }> = [
   { value: "ongoing", label: clientProjectsDictionary.safeUi.ongoingProjects },
   { value: "completed", label: clientProjectsDictionary.safeUi.completedProjects },
@@ -81,25 +89,27 @@ export function ClientProjectsListClient({ initialProjects = null }: { initialPr
     ? selectedOrganizationId
     : "all";
 
+  const organizationScopedProjects = useMemo(() => activeOrganizationId === "all"
+    ? projects
+    : projects.filter((project) => matchesClientProjectOrganization(project, activeOrganizationId)), [activeOrganizationId, projects]);
+
   const filtered = useMemo(() => {
     const needle = search.trim().toLocaleLowerCase("pt-PT");
-    return projects.filter((project) => {
+    return organizationScopedProjects.filter((project) => {
       const matchesGroup = matchesClientProjectGroup(project, group);
-      const matchesOrganization = activeOrganizationId === "all"
-        || project.organizations.some((organization) => organization.id === activeOrganizationId);
       const matchesSearch = !needle
         || project.name.toLocaleLowerCase("pt-PT").includes(needle)
         || (project.reference ?? "").toLocaleLowerCase("pt-PT").includes(needle)
         || project.organizations.some((organization) => organization.name.toLocaleLowerCase("pt-PT").includes(needle));
-      return matchesGroup && matchesOrganization && matchesSearch;
+      return matchesGroup && matchesSearch;
     });
-  }, [activeOrganizationId, group, projects, search]);
+  }, [group, organizationScopedProjects, search]);
 
   const groupCounts = useMemo(() => ({
-    ongoing: projects.filter((project) => matchesClientProjectGroup(project, "ongoing")).length,
-    completed: projects.filter((project) => matchesClientProjectGroup(project, "completed")).length,
-    all: projects.length,
-  }), [projects]);
+    ongoing: organizationScopedProjects.filter((project) => matchesClientProjectGroup(project, "ongoing")).length,
+    completed: organizationScopedProjects.filter((project) => matchesClientProjectGroup(project, "completed")).length,
+    all: organizationScopedProjects.length,
+  }), [organizationScopedProjects]);
 
   if (isLoading) return <ClientProjectsListLoading />;
   if (error) return (
@@ -127,38 +137,61 @@ export function ClientProjectsListClient({ initialProjects = null }: { initialPr
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex flex-wrap gap-2" role="group" aria-label={clientProjectsDictionary.safeUi.filterLabel}>
-          {GROUPS.map((item) => (
-            <Button key={item.value} type="button" aria-pressed={group === item.value} variant={group === item.value ? "default" : "outline"} size="sm" onClick={() => setGroup(item.value)}>
-              {item.label}<span className="ml-1.5 opacity-65">{groupCounts[item.value]}</span>
-            </Button>
-          ))}
+      <section className="rounded-[var(--radius-card)] border border-border/60 bg-background/70 p-3 shadow-[var(--dashboard-shadow-sm)] sm:p-4" aria-labelledby="client-project-filters-title">
+        <div className="flex items-center justify-between gap-4 px-1">
+          <h2 id="client-project-filters-title" className="text-label text-foreground">{clientProjectsDictionary.safeUi.filterLabel}</h2>
+          <p className="text-meta text-muted-foreground" aria-live="polite">{clientProjectsDictionary.safeUi.projectResultCount(filtered.length)}</p>
         </div>
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-          {organizations.length > 1 ? (
-            <SelectControl
-              aria-label={clientProjectsDictionary.portal.yourOrganizations}
-              className="sm:w-56"
-              value={activeOrganizationId}
-              onValueChange={selectOrganization}
-              options={[
-                { value: "all", label: clientProjectsDictionary.portal.allOrganizations },
-                ...organizations.map((organization) => ({ value: organization.id, label: organization.name })),
-              ]}
-            />
-          ) : null}
-          {showSearch ? <SearchField size="sm" value={search} onChange={setSearch} onClear={() => setSearch("")} placeholder={clientProjectsDictionary.safeUi.searchPlaceholder} /> : null}
+        <div className="mt-3 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div className="grid grid-cols-3 gap-1 rounded-[var(--radius-control)] bg-muted/65 p-1" role="group" aria-label={clientProjectsDictionary.safeUi.filterLabel}>
+            {GROUPS.map((item) => {
+              const selected = group === item.value;
+              return (
+                <Button
+                  key={item.value}
+                  type="button"
+                  aria-pressed={selected}
+                  variant="ghost"
+                  className={`min-h-11 px-3 ${selected ? "bg-background text-foreground shadow-[var(--dashboard-shadow-sm)] hover:bg-background" : "text-muted-foreground"}`}
+                  onClick={() => setGroup(item.value)}
+                >
+                  {item.label}
+                  <span className={`ml-1 min-w-5 rounded-full px-1.5 py-0.5 text-micro ${selected ? "bg-primary/10 text-primary" : "bg-background/65 text-muted-foreground"}`}>{groupCounts[item.value]}</span>
+                </Button>
+              );
+            })}
+          </div>
+          <div className={`grid min-w-0 gap-3 lg:w-[31rem] ${organizations.length > 1 && showSearch ? "sm:grid-cols-2" : ""}`}>
+            {organizations.length > 1 ? (
+              <SelectControl
+                aria-label={clientProjectsDictionary.portal.yourOrganizations}
+                className="h-11 w-full bg-background"
+                value={activeOrganizationId}
+                onValueChange={selectOrganization}
+                options={[
+                  { value: "all", label: clientProjectsDictionary.portal.allOrganizations },
+                  ...organizations.map((organization) => ({ value: organization.id, label: organization.name })),
+                ]}
+              />
+            ) : null}
+            {showSearch ? <SearchField value={search} onChange={setSearch} onClear={() => setSearch("")} className="[&>button]:size-11 [&>button]:right-0" inputClassName="h-11 bg-background" placeholder={clientProjectsDictionary.safeUi.searchPlaceholder} /> : null}
+          </div>
         </div>
-      </div>
+      </section>
 
       {filtered.length === 0 ? (
         <Card variant="light">
           <EmptyState icon={FolderKanban} title={clientProjectsDictionary.safeUi.emptyFilteredProjects} />
         </Card>
       ) : (
-        <div className="grid gap-3 md:grid-cols-2">
-          {filtered.map((project) => <ProjectListCard key={project.id} project={project} />)}
+        <div className="grid gap-4 md:grid-cols-2">
+          {filtered.map((project) => (
+            <ProjectListCard
+              key={project.id}
+              project={project}
+              showOrganizations={activeOrganizationId === "all" && organizations.length > 1}
+            />
+          ))}
         </div>
       )}
     </div>

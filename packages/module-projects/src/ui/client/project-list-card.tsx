@@ -37,19 +37,15 @@ export function ProjectListCard({
 
   return (
     <Card asChild variant={emphasis ? "elevated" : "light"}>
-      <article className={`group relative overflow-hidden border-border/65 bg-background/75 transition-[border-color,background-color,box-shadow] focus-within:ring-2 focus-within:ring-ring hover:border-border hover:bg-background hover:shadow-[var(--dashboard-shadow-md)] motion-reduce:transition-none ${emphasis ? "before:absolute before:inset-x-0 before:top-0 before:h-1 before:bg-[color:var(--brand-accent)]" : ""}`}>
-        <div className={`flex flex-1 flex-col gap-4 ${emphasis ? "p-6 sm:p-8" : "p-5"}`}>
-        <div className="flex items-center">
+      <article className={`group relative h-full overflow-hidden border-border/65 bg-background/75 transition-[border-color,background-color,box-shadow] focus-within:ring-2 focus-within:ring-ring hover:border-border hover:bg-background hover:shadow-[var(--dashboard-shadow-md)] motion-reduce:transition-none ${emphasis ? "before:absolute before:inset-x-0 before:top-0 before:h-1 before:bg-[color:var(--brand-accent)]" : ""}`}>
+        <div className={`flex flex-1 flex-col gap-4 ${emphasis ? "p-6 sm:p-8" : "p-5 sm:p-6"}`}>
+        <div className="flex items-center justify-between gap-4">
           <ProjectStatusBadge status={project.status} label={CLIENT_PROJECT_STATUS_LABELS[project.status]} size="small" />
+          {project.reference ? <p className="text-data text-micro text-muted-foreground/65">{project.reference}</p> : null}
         </div>
 
         <div>
-          {project.reference ? (
-            <p className="text-data mb-0.5 text-micro text-muted-foreground/60">
-              {project.reference}
-            </p>
-          ) : null}
-          <ProjectHeading className={emphasis ? "font-display text-[length:var(--text-ui-dashboard-title)] font-black leading-[var(--type-leading-110)] tracking-[var(--type-tracking-n025)]" : "text-title"}>
+          <ProjectHeading className={emphasis ? "font-display text-[length:var(--text-ui-dashboard-title)] font-black leading-[var(--type-leading-110)] tracking-[var(--type-tracking-n025)]" : "text-heading-3 font-bold"}>
             <Link href={href} className="after:absolute after:inset-0 focus-visible:outline-none">
               {project.name}
             </Link>
@@ -64,7 +60,7 @@ export function ProjectListCard({
         ) : null}
 
         {metaPreview ? (
-          <div className={`border-t border-border/55 ${emphasis ? "my-1 pt-4" : "pt-3"}`}>
+          <div className={`rounded-xl bg-muted/45 px-3 py-3 ${emphasis ? "my-1" : ""}`}>
             <p className="text-micro font-semibold text-muted-foreground">{metaPreview.label}</p>
             <ul className="mt-2 space-y-1.5">
               {metaPreview.metas.map((meta) => (

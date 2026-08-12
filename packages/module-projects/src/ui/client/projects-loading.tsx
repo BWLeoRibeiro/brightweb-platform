@@ -2,9 +2,24 @@ import { SkeletonCard, SkeletonLine } from "@brightweblabs/ui";
 
 export function ClientProjectsListLoading() {
   return (
-    <div className="grid gap-3 md:grid-cols-2" aria-hidden>
-      <SkeletonCard className="h-72 shadow-none" lines={4} />
-      <SkeletonCard className="h-72 shadow-none" lines={4} />
+    <div className="space-y-4" aria-hidden>
+      <div className="rounded-[var(--radius-card)] border border-border/60 bg-background/70 p-3 shadow-[var(--dashboard-shadow-sm)] sm:p-4">
+        <div className="flex items-center justify-between gap-4 px-1">
+          <SkeletonLine w="7rem" />
+          <SkeletonLine w="5rem" />
+        </div>
+        <div className="mt-3 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <SkeletonLine w="18rem" className="h-12" />
+          <div className="grid gap-3 sm:grid-cols-2 lg:w-[31rem]">
+            <SkeletonLine w="15rem" className="h-11" />
+            <SkeletonLine w="15rem" className="h-11" />
+          </div>
+        </div>
+      </div>
+      <div className="grid gap-4 md:grid-cols-2">
+        <SkeletonCard className="h-80 shadow-none" lines={4} />
+        <SkeletonCard className="h-80 shadow-none" lines={4} />
+      </div>
     </div>
   );
 }
