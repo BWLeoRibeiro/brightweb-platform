@@ -2,8 +2,23 @@ import { SkeletonCard, SkeletonLine } from "@brightweblabs/ui";
 
 export function ClientProjectsListLoading() {
   return (
-    <div className="space-y-4" aria-hidden>
-      <div className="rounded-[var(--radius-card)] border border-border/60 bg-background/70 p-3 shadow-[var(--dashboard-shadow-sm)] sm:p-4">
+    <div className="space-y-6 sm:space-y-8" aria-hidden>
+      <header className="brand-panel rounded-[var(--radius-panel)] p-6 md:p-8">
+        <div className="grid gap-7 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-end">
+          <div className="space-y-3">
+            <SkeletonLine w="7rem" className="bg-[color:var(--project-hero-surface-raised)]" />
+            <SkeletonLine w="26rem" className="h-12 bg-[color:var(--project-hero-surface-raised)]" />
+            <SkeletonLine w="34rem" className="bg-[color:var(--project-hero-surface-raised)]" />
+          </div>
+          <div className="space-y-2">
+            <SkeletonLine w="8rem" className="bg-[color:var(--project-hero-surface-raised)] lg:ml-auto" />
+            <SkeletonLine w="20rem" className="h-14 bg-[color:var(--project-hero-surface-raised)]" />
+            <SkeletonLine w="13rem" className="bg-[color:var(--project-hero-surface-raised)] lg:ml-auto" />
+          </div>
+        </div>
+      </header>
+      <div className="space-y-4">
+        <div className="rounded-[var(--radius-card)] border border-border/60 bg-background/70 p-3 shadow-[var(--dashboard-shadow-sm)] sm:p-4">
         <div className="flex items-center justify-between gap-4 px-1">
           <SkeletonLine w="7rem" />
           <SkeletonLine w="5rem" />
@@ -15,10 +30,11 @@ export function ClientProjectsListLoading() {
             <SkeletonLine w="15rem" className="h-11" />
           </div>
         </div>
-      </div>
-      <div className="grid gap-4 md:grid-cols-2">
-        <SkeletonCard className="h-80 shadow-none" lines={4} />
-        <SkeletonCard className="h-80 shadow-none" lines={4} />
+        </div>
+        <div className="grid gap-4 md:grid-cols-2">
+          <SkeletonCard className="h-80 shadow-none" lines={4} />
+          <SkeletonCard className="h-80 shadow-none" lines={4} />
+        </div>
       </div>
     </div>
   );
