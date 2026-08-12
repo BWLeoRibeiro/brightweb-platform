@@ -201,7 +201,7 @@ test("client portal adapts its hierarchy to organization and project counts", ()
   assert.match(portal, /ongoingProjects\.slice\(0, 4\)/);
   assert.match(portal, /organizations\.length > 1/);
   assert.match(portal, /setSelectedOrganizationId/);
-  assert.match(portal, /showOrganizations=\{!singleOrganization\}/);
+  assert.match(portal, /showOrganizations=\{!singleOrganization && !focusedOrganization\}/);
   assert.match(portal, /yourOrganization/);
   assert.match(portal, /AccountAndSecurityFooter/);
   assert.match(portal, /href="\/account\/perfil"/);

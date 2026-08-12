@@ -40,16 +40,19 @@ function ProjectOverviewSkeleton() {
 export function ClientPortalHomeLoading() {
   return (
     <div className="space-y-10" aria-hidden>
-      <header className="grid gap-7 lg:grid-cols-[minmax(0,1fr)_minmax(22rem,34rem)] lg:items-end">
+      <header className="grid gap-7 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
         <div className="space-y-4">
           <SkeletonLine w="18rem" className="h-12" />
           <SkeletonLine w="31rem" />
         </div>
-        <div className="flex max-w-[34rem] items-center gap-3 rounded-[var(--radius-card)] border border-border/60 bg-[color:var(--project-surface-secondary)] p-4 sm:p-5">
-          <SkeletonLine w="2.75rem" className="h-11 rounded-full" />
-          <div className="flex-1 space-y-2">
-            <SkeletonLine w="7rem" />
-            <SkeletonLine w="12rem" className="h-6" />
+        <div className="max-w-[34rem] space-y-2 lg:min-w-[18rem]">
+          <SkeletonLine w="7rem" className="lg:ml-auto" />
+          <div className="flex items-center gap-3 rounded-[var(--radius-card)] border border-border/60 bg-[color:var(--project-surface-secondary)] p-4">
+            <SkeletonLine w="2.5rem" className="h-10 rounded-full" />
+            <div className="flex-1 space-y-1.5">
+              <SkeletonLine w="12rem" className="h-6" />
+              <SkeletonLine w="6rem" />
+            </div>
           </div>
         </div>
       </header>

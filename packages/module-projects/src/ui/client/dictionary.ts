@@ -46,7 +46,7 @@ export const CLIENT_MILESTONE_STATUS_CLASSES: Record<MilestoneStatus, string> = 
 export const clientProjectsDictionary = {
   portal: {
     clientFallbackName: "cliente",
-    greeting: (name: string) => `Olá, ${name}.`,
+    greetingPrefix: "Olá",
     homeDescription: "O essencial sobre o trabalho que estamos a desenvolver contigo.",
     organizationAdmin: "Administrador",
     organizationMember: "Membro",

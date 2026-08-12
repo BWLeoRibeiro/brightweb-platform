@@ -70,7 +70,7 @@ export async function ClientAccountPage({
     supabase.from("profiles").select("first_name").eq("user_id", user.id).maybeSingle<{ first_name: string | null }>(),
     loadClientPortalData(supabase as SupabaseClient).catch(() => null),
   ]);
-  return <ClientPortalHome firstName={profileResult.data?.first_name ?? null} initialData={initialData} />;
+  return <ClientPortalHome firstName={profileResult.data?.first_name ?? null} email={user.email ?? null} initialData={initialData} />;
 }
 
 export async function ClientProjectDetailRoute({

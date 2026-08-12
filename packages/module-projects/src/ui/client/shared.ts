@@ -38,6 +38,26 @@ export function isClientProjectDateOverdue(dateLike: string | null): boolean {
   return !Number.isNaN(value.getTime()) && value < new Date();
 }
 
+const CLIENT_ORGANIZATION_FILTER_STORAGE_KEY = "bw-client-organization-filter";
+
+export function readStoredClientOrganizationFilter(): string {
+  if (typeof window === "undefined") return "all";
+  try {
+    return window.localStorage.getItem(CLIENT_ORGANIZATION_FILTER_STORAGE_KEY) ?? "all";
+  } catch {
+    return "all";
+  }
+}
+
+export function storeClientOrganizationFilter(organizationId: string) {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(CLIENT_ORGANIZATION_FILTER_STORAGE_KEY, organizationId);
+  } catch {
+    // storage unavailable (private mode); selection stays page-local
+  }
+}
+
 export function resolveClientProjectDetailHref(isStaff: boolean, projectId: string, internalProjectsHref = "/projetos"): string {
   return isStaff ? `${internalProjectsHref}/${encodeURIComponent(projectId)}` : `/account/projetos/${encodeURIComponent(projectId)}`;
 }
