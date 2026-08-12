@@ -90,16 +90,19 @@ export function ClientProjectDetailClient({ projectId, initialProject }: { proje
   const overdue = isClientProjectDateOverdue(project.targetDate) && !["completed", "canceled"].includes(project.status);
 
   return (
-    <article className="space-y-9">
+    <article className="space-y-8 sm:space-y-10">
       <Link href="/account/projetos" className="inline-flex min-h-11 items-center gap-1.5 text-body font-semibold text-muted-foreground hover:text-foreground"><ArrowLeft className="size-4" />{clientProjectsDictionary.safeUi.projectsBack}</Link>
 
-      <header className="max-w-[52rem] space-y-3">
-        <div className="flex flex-wrap items-center gap-3">
-          <ProjectStatusBadge status={project.status} label={CLIENT_PROJECT_STATUS_LABELS[project.status]} size="small" />
-          {project.reference ? <span className="text-data text-meta text-muted-foreground">{project.reference}</span> : null}
+      <header className="brand-panel relative overflow-hidden rounded-[var(--radius-card)] border border-[color:var(--project-hero-border)] p-6 text-[color:var(--project-hero-foreground)] shadow-[var(--project-hero-shadow)] sm:p-8 lg:p-10">
+        <span aria-hidden className="pointer-events-none absolute -right-24 -top-32 size-96 rounded-full bg-[color:var(--brand-accent)]/15 blur-3xl" />
+        <div className="relative max-w-[52rem] space-y-4">
+          <div className="flex flex-wrap items-center gap-3">
+            <ProjectStatusBadge status={project.status} label={CLIENT_PROJECT_STATUS_LABELS[project.status]} size="small" />
+            {project.reference ? <span className="text-data text-meta text-[color:var(--project-hero-muted)]">{project.reference}</span> : null}
+          </div>
+          <h1 className="font-display text-[length:var(--text-ui-preview-card-title)] font-black leading-[var(--type-leading-110)] tracking-[var(--type-tracking-n025)] sm:text-[length:var(--text-ui-dashboard-title-lg)]">{project.name}</h1>
+          <p className="text-body-lg text-[color:var(--project-hero-muted)]">{project.organizations.map((organization) => organization.name).join(" · ")}</p>
         </div>
-        <h1 className="text-heading-1">{project.name}</h1>
-        <p className="text-body text-muted-foreground">{project.organizations.map((organization) => organization.name).join(" · ")}</p>
       </header>
 
       <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_19rem] lg:items-start">
@@ -143,7 +146,7 @@ export function ClientProjectDetailClient({ projectId, initialProject }: { proje
         </div>
 
         <aside className="space-y-3 lg:sticky lg:top-28">
-          <Card variant="light" className="p-5 shadow-none">
+          <Card variant="elevated" className="overflow-hidden border-border/65 p-5 before:block before:h-1 before:bg-primary">
             <p className="text-label font-semibold text-muted-foreground">{clientProjectsDictionary.safeUi.progress}</p>
             <p className="font-display mt-1 text-heading-2 font-black">{project.progress.percent ?? 0}%</p>
             <ProjectProgressBar ariaLabel={clientProjectsDictionary.safeUi.progress} percent={project.progress.percent} className="mt-4" trackClassName="bg-muted" fillClassName="bg-primary" />

@@ -37,8 +37,8 @@ export function ClientPortalFrame({
   onSignOut,
 }: ClientPortalFrameProps) {
   return (
-    <div className="min-h-dvh bg-background text-foreground">
-      <header className="sticky top-0 z-40 border-b border-border/65 bg-background/88 backdrop-blur-xl supports-[backdrop-filter]:bg-background/78">
+    <div className="min-h-dvh bg-background bg-[image:var(--page-background)] text-foreground">
+      <header className="sticky top-0 z-40 border-b border-border/60 bg-background/88 shadow-[var(--dashboard-shadow-sm)] backdrop-blur-xl supports-[backdrop-filter]:bg-background/78">
         <div className="mx-auto flex h-[4.5rem] max-w-[76rem] items-center justify-between gap-6 px-4 sm:px-6 lg:px-8">
           <Link href="/account" prefetch={false} className="flex min-h-11 min-w-0 items-center gap-3" aria-label={brand.ariaLabel}>
             <Image
@@ -49,7 +49,7 @@ export function ClientPortalFrame({
               className="size-9 shrink-0 object-contain"
               priority
             />
-            <span className="hidden border-l border-border/70 pl-3 sm:block">
+            <span className="hidden border-l border-border/65 pl-3 sm:block">
               <span className="block text-label font-bold">BrightWeb</span>
               <span className="block text-meta text-muted-foreground">Portal do cliente</span>
             </span>
@@ -66,7 +66,7 @@ export function ClientPortalFrame({
                   aria-current={active ? "page" : undefined}
                   className={cn(
                     "relative inline-flex items-center px-5 text-body font-semibold text-muted-foreground transition-colors hover:text-foreground",
-                    active && "text-foreground after:absolute after:inset-x-5 after:bottom-0 after:h-0.5 after:bg-primary",
+                    active && "text-foreground after:absolute after:inset-x-5 after:bottom-0 after:h-0.5 after:rounded-full after:bg-primary",
                   )}
                 >
                   {item.label}
@@ -86,7 +86,7 @@ export function ClientPortalFrame({
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-[76rem] px-4 pb-28 pt-8 sm:px-6 sm:pb-12 sm:pt-12 lg:px-8">
+      <main className="mx-auto w-full max-w-[76rem] px-4 pb-28 pt-8 sm:px-6 sm:pb-14 sm:pt-12 lg:px-8 lg:pt-14">
         {children}
       </main>
 

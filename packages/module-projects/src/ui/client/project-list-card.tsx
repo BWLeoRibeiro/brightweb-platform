@@ -33,9 +33,9 @@ export function ProjectListCard({
   const metaPreview = resolveClientMetaPreview(project.metaPreview);
 
   return (
-    <Card asChild variant="light">
-      <article className={`group relative overflow-hidden bg-background/70 transition-[border-color,background-color] hover:border-border hover:bg-background motion-reduce:transition-none ${emphasis ? "min-h-80" : ""}`}>
-        <div className={`flex flex-1 flex-col gap-3 ${emphasis ? "p-6 sm:p-8" : "p-5"}`}>
+    <Card asChild variant={emphasis ? "elevated" : "light"}>
+      <article className={`group relative overflow-hidden border-border/65 bg-background/75 transition-[border-color,background-color,box-shadow] hover:border-border hover:bg-background hover:shadow-[var(--dashboard-shadow-md)] motion-reduce:transition-none ${emphasis ? "min-h-80 before:absolute before:inset-x-0 before:top-0 before:h-1 before:bg-[color:var(--brand-accent)]" : ""}`}>
+        <div className={`flex flex-1 flex-col gap-4 ${emphasis ? "p-6 sm:p-8" : "p-5"}`}>
         <div className="flex items-center">
           <ProjectStatusBadge status={project.status} label={CLIENT_PROJECT_STATUS_LABELS[project.status]} size="small" />
         </div>
@@ -46,7 +46,7 @@ export function ProjectListCard({
               {project.reference}
             </p>
           ) : null}
-          <h2 className={emphasis ? "font-display text-heading-2 font-bold" : "text-title"}>{project.name}</h2>
+          <h2 className={emphasis ? "font-display text-[length:var(--text-ui-dashboard-title)] font-black leading-[var(--type-leading-110)] tracking-[var(--type-tracking-n025)]" : "text-title"}>{project.name}</h2>
           {showOrganizations ? (
             <p className="mt-0.5 text-meta text-muted-foreground">{project.organizations.map((organization) => organization.name).join(" · ")}</p>
           ) : null}
@@ -57,7 +57,7 @@ export function ProjectListCard({
         ) : null}
 
         {metaPreview ? (
-          <div className="border-y border-border/55 py-3">
+          <div className={`border-y border-border/55 ${emphasis ? "my-1 py-4" : "py-3"}`}>
             <p className="text-micro font-semibold text-muted-foreground">{metaPreview.label}</p>
             <ul className="mt-2 space-y-1.5">
               {metaPreview.metas.map((meta) => (

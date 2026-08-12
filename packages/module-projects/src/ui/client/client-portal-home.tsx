@@ -43,14 +43,16 @@ function organizationRoleLabel(role: ClientOrganizationMembership["role"]) {
 
 function OrganizationIdentity({ organization }: { organization: ClientOrganizationMembership }) {
   return (
-    <section className="border-y border-border/65 py-4 sm:border-y-0 sm:py-0" aria-labelledby="client-organization-label">
-      <p id="client-organization-label" className="text-label text-muted-foreground">
-        {clientProjectsDictionary.portal.yourOrganization}
-      </p>
-      <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2">
-        <InitialsAvatar label={organization.name} className="size-9" />
-        <span className="text-body font-bold">{organization.name}</span>
-        <StatusPill token="--role-client">
+    <section className="max-w-[34rem] rounded-[var(--radius-card)] border border-border/60 bg-[color:var(--project-surface-secondary)] p-4 shadow-[var(--dashboard-shadow-sm)] sm:p-5" aria-labelledby="client-organization-label">
+      <div className="flex items-center gap-4">
+        <InitialsAvatar label={organization.name} className="size-11 shrink-0" />
+        <div className="min-w-0 flex-1">
+          <p id="client-organization-label" className="text-label text-muted-foreground">
+            {clientProjectsDictionary.portal.yourOrganization}
+          </p>
+          <p className="mt-1 truncate text-title">{organization.name}</p>
+        </div>
+        <StatusPill token="--role-client" className="shrink-0">
           {organizationRoleLabel(organization.role)}
         </StatusPill>
       </div>
@@ -60,7 +62,7 @@ function OrganizationIdentity({ organization }: { organization: ClientOrganizati
 
 function AccountAndSecurityFooter() {
   return (
-    <footer className="border-t border-border/65 pt-6">
+    <footer className="rounded-[var(--radius-card)] border border-border/55 bg-background/55 p-5 shadow-[var(--dashboard-shadow-sm)] sm:p-6">
       <SectionHeading
         icon={ShieldCheck}
         title={clientProjectsDictionary.portal.accountAndSecurity}
@@ -100,25 +102,28 @@ function ProjectOverview({ project }: { project: ClientProjectDetail | ClientPro
   const href = resolveClientProjectDetailHref(false, project.id);
 
   return (
-    <Card asChild variant="light">
-      <article className="overflow-hidden border-border/70 bg-background/80 shadow-none">
+    <Card asChild variant="elevated">
+      <article className="overflow-hidden border-[color:var(--project-hero-border)] bg-background">
         <div className="grid lg:grid-cols-[minmax(0,1.08fr)_minmax(20rem,0.92fr)]">
-          <div className="flex min-h-80 flex-col p-6 sm:p-8">
-            <p className="eyebrow text-primary">{clientProjectsDictionary.portal.activeProject}</p>
-            <h2 className="mt-4 text-heading-1 sm:text-[length:var(--text-ui-dashboard-title-lg)]">{project.name}</h2>
-            <div className="mt-4 flex flex-wrap items-center gap-3 text-meta text-muted-foreground">
-              {project.reference ? <span className="text-data font-semibold">{project.reference}</span> : null}
-              <ProjectStatusBadge status={project.status} label={clientProjectsDictionary.portal.statusLabels[project.status]} size="small" />
-            </div>
-            {project.clientSummary ? <p className="mt-6 max-w-[36rem] text-body-lg text-muted-foreground">{project.clientSummary}</p> : null}
-            <div className="mt-auto pt-8">
-              <Button asChild size="lg" className="group min-h-11 min-w-40 justify-between gap-5">
-                <Link href={href}>{clientProjectsDictionary.portal.openProject}<ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5 motion-reduce:transition-none" /></Link>
-              </Button>
+          <div className="brand-panel relative flex min-h-80 flex-col overflow-hidden p-6 text-[color:var(--project-hero-foreground)] sm:p-8 lg:p-10">
+            <span aria-hidden className="pointer-events-none absolute -right-24 -top-28 size-80 rounded-full bg-[color:var(--brand-accent)]/15 blur-3xl" />
+            <div className="relative flex min-h-full flex-1 flex-col">
+              <p className="eyebrow tint-hero">{clientProjectsDictionary.portal.activeProject}</p>
+              <h2 className="mt-5 text-[length:var(--text-ui-preview-card-title)] font-black leading-[var(--type-leading-110)] tracking-[var(--type-tracking-n025)] sm:text-[length:var(--text-ui-dashboard-title-lg)]">{project.name}</h2>
+              <div className="mt-4 flex flex-wrap items-center gap-3 text-meta text-[color:var(--project-hero-muted)]">
+                {project.reference ? <span className="text-data font-semibold">{project.reference}</span> : null}
+                <ProjectStatusBadge status={project.status} label={clientProjectsDictionary.portal.statusLabels[project.status]} size="small" />
+              </div>
+              {project.clientSummary ? <p className="mt-7 max-w-[36rem] text-body-lg leading-relaxed text-[color:var(--project-hero-muted)]">{project.clientSummary}</p> : null}
+              <div className="mt-auto pt-8">
+                <Button asChild size="lg" className="group min-h-11 min-w-44 justify-between gap-5 shadow-[var(--shadow-accent-control)]">
+                  <Link href={href}>{clientProjectsDictionary.portal.openProject}<ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5 motion-reduce:transition-none" /></Link>
+                </Button>
+              </div>
             </div>
           </div>
 
-          <div className="border-t border-border/65 bg-muted/20 p-6 sm:p-8 lg:border-l lg:border-t-0">
+          <div className="border-t border-border/65 bg-[color:var(--project-surface-secondary)] p-6 sm:p-8 lg:border-l lg:border-t-0 lg:p-10">
             <div className="pb-6">
               <div className="flex items-end justify-between gap-4">
                 <div>
@@ -199,11 +204,11 @@ export function ClientPortalHome({ firstName, initialData = null }: { firstName:
     : null;
 
   return (
-    <div className="space-y-9 sm:space-y-12">
-      <header className="space-y-6">
-        <div>
-          <h1 className="text-heading-1">{clientProjectsDictionary.portal.greeting(displayName)}</h1>
-          <p className="mt-3 text-body-lg text-muted-foreground">{clientProjectsDictionary.portal.homeDescription}</p>
+    <div className="space-y-10 sm:space-y-14">
+      <header className="space-y-7">
+        <div className="max-w-[48rem]">
+          <h1 className="font-display text-[length:var(--text-ui-dashboard-title)] font-black leading-[var(--type-leading-110)] tracking-[var(--type-tracking-n025)] sm:text-[length:var(--text-ui-dashboard-title-lg)]">{clientProjectsDictionary.portal.greeting(displayName)}</h1>
+          <p className="mt-4 text-body-lg leading-relaxed text-muted-foreground">{clientProjectsDictionary.portal.homeDescription}</p>
         </div>
         {singleOrganization ? <OrganizationIdentity organization={singleOrganization} /> : null}
       </header>

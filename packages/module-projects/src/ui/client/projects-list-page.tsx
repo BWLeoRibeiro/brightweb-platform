@@ -21,8 +21,8 @@ async function ClientProjectsListPageWithInternalHref(internalProjectsHref: stri
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div className="space-y-2">
           <span className="eyebrow text-primary">{dictionary.kicker}</span>
-          <h1 className="text-heading-1">{clientProjectsDictionary.safeUi.myProjects}</h1>
-          <p className="text-body text-muted-foreground">{clientProjectsDictionary.safeUi.pageDescription}</p>
+          <h1 className="font-display text-[length:var(--text-ui-dashboard-title)] font-black leading-[var(--type-leading-110)] tracking-[var(--type-tracking-n025)] sm:text-[length:var(--text-ui-dashboard-title-lg)]">{clientProjectsDictionary.safeUi.myProjects}</h1>
+          <p className="max-w-[42rem] text-body-lg leading-relaxed text-muted-foreground">{clientProjectsDictionary.safeUi.pageDescription}</p>
         </div>
         <Button asChild variant="outline" className="min-h-11">
           <Link href="/account">
