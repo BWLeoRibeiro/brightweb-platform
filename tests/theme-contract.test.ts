@@ -224,6 +224,7 @@ test("the base reset contains one complete base layer and no outside rules", asy
   const css = stripComments(await read("src/base.css"));
   assert.match(css, /^@layer\s+base\s*\{/);
   assert.match(css, /button,\s*\n\s*input\s*\{\s*font:\s*inherit;/);
+  assert.match(css, /html,\s*\n\s*body\s*\{[\s\S]*scrollbar-gutter:\s*stable;/);
 
   const openingBrace = css.indexOf("{");
   let depth = 0;
