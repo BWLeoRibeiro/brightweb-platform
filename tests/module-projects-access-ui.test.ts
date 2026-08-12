@@ -207,12 +207,14 @@ test("client portal adapts its hierarchy to organization and project counts", ()
   assert.match(portal, /min-w-0 w-full lg:w-80/);
   assert.match(portal, /group min-w-0 transition-/);
   assert.match(portal, /w-\[var\(--radix-dropdown-menu-trigger-width\)\]/);
-  assert.match(portal, /focus-visible:border-ring/);
+  assert.match(portal, /focus-visible:border-\[color:var\(--accent\)\]/);
   assert.match(portal, /showOrganizations=\{!singleOrganization && !focusedOrganization\}/);
   assert.match(portal, /yourOrganization/);
   assert.match(portal, /buildUpcomingBriefing\(ongoingProjects\)/);
   assert.match(portal, /findNearestDelivery\(ongoingProjects\)/);
   assert.match(portal, /clientProjectsDictionary\.portal\.upNext/);
+  assert.match(portal, /brand-panel relative overflow-hidden/);
+  assert.match(portal, /project-hero-surface-raised/);
   assert.match(portal, /lg:grid-cols-\[minmax\(0,1fr\)_18rem\]/);
   assert.match(portal, /ongoingProjects\.length > 1 \? "md:grid-cols-2"/);
   assert.match(portal, /AccountAndSecurityFooter/);

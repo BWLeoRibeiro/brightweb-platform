@@ -80,12 +80,12 @@ function findNearestDelivery(projects: ClientProjectListItem[]) {
 function BriefingFact({ icon, label, value, detail, className }: { icon: React.ReactNode; label: string; value: string; detail: string | null; className: string }) {
   return (
     <div className={`min-w-0 ${className}`}>
-      <dt className="flex items-center gap-2 text-label text-muted-foreground">
-        <span className="text-primary">{icon}</span>
+      <dt className="flex items-center gap-2 text-label" style={{ color: "var(--project-hero-muted)" }}>
+        <span style={{ color: "var(--accent)" }}>{icon}</span>
         {label}
       </dt>
       <dd className="mt-2 truncate text-title">{value}</dd>
-      {detail ? <dd className="mt-0.5 truncate text-meta text-muted-foreground">{detail}</dd> : null}
+      {detail ? <dd className="mt-0.5 truncate text-meta" style={{ color: "var(--project-hero-muted)" }}>{detail}</dd> : null}
     </div>
   );
 }
@@ -151,24 +151,24 @@ function OrganizationIdentity({
         {selected ? (
           <StatusPill token="--role-client" className="mt-1">{organizationRoleLabel(selected.role)}</StatusPill>
         ) : (
-          <span className="block truncate text-meta text-muted-foreground">{organizations.map((organization) => organization.name).join(" · ")}</span>
+          <span className="block truncate text-meta" style={{ color: "var(--project-hero-muted)" }}>{organizations.map((organization) => organization.name).join(" · ")}</span>
         )}
       </span>
     </>
   );
-  const identityCardClassName = "mt-2 flex h-20 w-full items-center gap-3 rounded-[var(--radius-card)] border border-border/60 bg-[color:var(--project-surface-secondary)] p-4 text-left shadow-[var(--dashboard-shadow-sm)]";
+  const identityCardClassName = "mt-2 flex h-20 w-full items-center gap-3 rounded-[var(--radius-card)] border border-[color:var(--project-hero-border)] bg-[color:var(--project-hero-surface-raised)] p-4 text-left text-[color:var(--project-hero-foreground)] shadow-none";
 
   return (
     <section className="min-w-0 w-full lg:w-80 lg:justify-self-end" aria-labelledby="client-organization-label">
-      <p id="client-organization-label" className="text-label text-muted-foreground lg:text-right">
+      <p id="client-organization-label" className="text-label lg:text-right" style={{ color: "var(--project-hero-muted)" }}>
         {multiple ? clientProjectsDictionary.portal.yourOrganizations : clientProjectsDictionary.portal.yourOrganization}
       </p>
       {multiple ? (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button type="button" className={`${identityCardClassName} group min-w-0 transition-[border-color,box-shadow] hover:border-border focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30 motion-reduce:transition-none`}>
+            <button type="button" className={`${identityCardClassName} group min-w-0 transition-[border-color,box-shadow] hover:border-[color:var(--accent)] focus-visible:border-[color:var(--accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)] motion-reduce:transition-none`}>
               {identity}
-              <ChevronDown aria-hidden className="size-4 shrink-0 text-muted-foreground transition-transform duration-200 group-data-[state=open]:rotate-180 motion-reduce:transition-none" />
+              <ChevronDown aria-hidden className="size-4 shrink-0 transition-transform duration-200 group-data-[state=open]:rotate-180 motion-reduce:transition-none" style={{ color: "var(--project-hero-muted)" }} />
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" sideOffset={8} className="w-[var(--radix-dropdown-menu-trigger-width)] max-w-[calc(100vw-2rem)]">
@@ -276,15 +276,15 @@ export function ClientPortalHome({ firstName, email = null, initialData = null }
 
   return (
     <div className="space-y-10 sm:space-y-14">
-      <header className="relative overflow-hidden rounded-[var(--radius-panel)] border border-border/55 bg-background/75 p-6 shadow-[var(--dashboard-shadow-sm)] sm:p-8">
-        <div aria-hidden className="pointer-events-none absolute -right-24 -top-28 size-80 rounded-full opacity-30 blur-3xl" style={{ background: "var(--dashboard-hero-glow)" }} />
+      <header className="brand-panel relative overflow-hidden rounded-[var(--radius-panel)] p-6 text-[color:var(--project-hero-foreground)] sm:p-8">
+        <div aria-hidden className="pointer-events-none absolute -right-24 -top-28 size-80 rounded-full opacity-100 blur-3xl dark:opacity-40" style={{ background: "var(--dashboard-hero-glow)" }} />
         <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-px" style={{ background: "var(--dashboard-hero-highlight)" }} />
         <div className={organizations.length > 0 ? "relative grid gap-7 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end" : "relative space-y-7"}>
           <div className="max-w-[48rem]">
             <h1 className="font-display text-[length:var(--text-ui-dashboard-title)] font-black leading-[var(--type-leading-110)] tracking-[var(--type-tracking-n025)] sm:text-[length:var(--text-ui-dashboard-title-lg)]">
               {clientProjectsDictionary.portal.greetingPrefix}, <span style={{ color: "var(--accent)" }}>{displayName}</span>.
             </h1>
-            <p className="mt-4 text-body-lg leading-relaxed text-muted-foreground">{clientProjectsDictionary.portal.homeDescription}</p>
+            <p className="mt-4 text-body-lg leading-relaxed" style={{ color: "var(--project-hero-muted)" }}>{clientProjectsDictionary.portal.homeDescription}</p>
           </div>
           {organizations.length > 0 ? (
             <OrganizationIdentity
@@ -294,20 +294,20 @@ export function ClientPortalHome({ firstName, email = null, initialData = null }
             />
           ) : null}
         </div>
-        <dl className="relative mt-8 grid grid-cols-2 border-t border-border/55 pt-5 sm:grid-cols-3">
+        <dl className="relative mt-8 grid grid-cols-2 border-t border-[color:var(--project-hero-border)] pt-5 sm:grid-cols-3">
           <BriefingFact
             icon={<BriefcaseBusiness aria-hidden className="size-4" />}
             label={clientProjectsDictionary.portal.workInProgress}
             value={clientProjectsDictionary.portal.activeProjectsCount(ongoingProjects.length)}
             detail={focusedOrganization?.name ?? singleOrganization?.name ?? (organizations.length > 1 ? clientProjectsDictionary.portal.allOrganizations : null)}
-            className="col-span-2 border-b border-border/55 pb-4 sm:col-span-1 sm:border-b-0 sm:border-r sm:pb-0 sm:pr-5"
+            className="col-span-2 border-b border-[color:var(--project-hero-border)] pb-4 sm:col-span-1 sm:border-b-0 sm:border-r sm:pb-0 sm:pr-5"
           />
           <BriefingFact
             icon={<Flag aria-hidden className="size-4" />}
             label={nextMeta?.delayed ? clientProjectsDictionary.portal.delayedMeta : clientProjectsDictionary.portal.nextSharedMeta}
             value={nextMeta?.title ?? clientProjectsDictionary.portal.noScheduledMetas}
             detail={nextMeta ? `${nextMeta.projectName} · ${formatClientProjectDate(nextMeta.targetDate)}` : null}
-            className="border-r border-border/55 pr-4 pt-4 sm:px-5 sm:pt-0"
+            className="border-r border-[color:var(--project-hero-border)] pr-4 pt-4 sm:px-5 sm:pt-0"
           />
           <BriefingFact
             icon={<CalendarDays aria-hidden className="size-4" />}

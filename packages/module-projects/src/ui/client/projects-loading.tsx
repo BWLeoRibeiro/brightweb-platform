@@ -12,29 +12,29 @@ export function ClientProjectsListLoading() {
 export function ClientPortalHomeLoading() {
   return (
     <div className="space-y-10" aria-hidden>
-      <header className="rounded-[var(--radius-panel)] border border-border/55 bg-background/75 p-6 shadow-[var(--dashboard-shadow-sm)] sm:p-8">
+      <header className="brand-panel rounded-[var(--radius-panel)] p-6 sm:p-8">
         <div className="grid gap-7 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
           <div className="space-y-4">
-            <SkeletonLine w="18rem" className="h-12" />
-            <SkeletonLine w="31rem" />
+            <SkeletonLine w="18rem" className="h-12 bg-[color:var(--project-hero-surface-raised)]" />
+            <SkeletonLine w="31rem" className="bg-[color:var(--project-hero-surface-raised)]" />
           </div>
           <div className="space-y-2 lg:w-80">
-            <SkeletonLine w="7rem" className="lg:ml-auto" />
-            <div className="flex h-20 items-center gap-3 rounded-[var(--radius-card)] border border-border/60 bg-[color:var(--project-surface-secondary)] p-4">
-              <SkeletonLine w="2.5rem" className="h-10 rounded-full" />
+            <SkeletonLine w="7rem" className="bg-[color:var(--project-hero-surface-raised)] lg:ml-auto" />
+            <div className="flex h-20 items-center gap-3 rounded-[var(--radius-card)] border border-[color:var(--project-hero-border)] bg-[color:var(--project-hero-surface-raised)] p-4">
+              <SkeletonLine w="2.5rem" className="h-10 rounded-full bg-[color:var(--project-hero-muted)]" />
               <div className="flex-1 space-y-1.5">
-                <SkeletonLine w="12rem" className="h-6" />
-                <SkeletonLine w="6rem" />
+                <SkeletonLine w="12rem" className="h-6 bg-[color:var(--project-hero-muted)]" />
+                <SkeletonLine w="6rem" className="bg-[color:var(--project-hero-muted)]" />
               </div>
             </div>
           </div>
         </div>
-        <div className="mt-8 grid grid-cols-2 border-t border-border/55 pt-5 sm:grid-cols-3">
+        <div className="mt-8 grid grid-cols-2 border-t border-[color:var(--project-hero-border)] pt-5 sm:grid-cols-3">
           {[0, 1, 2].map((item) => (
-            <div key={item} className={`space-y-2 ${item === 0 ? "col-span-2 border-b border-border/55 pb-4 sm:col-span-1 sm:border-b-0 sm:border-r sm:pb-0 sm:pr-5" : item === 1 ? "border-r border-border/55 pr-4 pt-4 sm:px-5 sm:pt-0" : "pl-4 pt-4 sm:pl-5 sm:pt-0"}`}>
-              <SkeletonLine w="7rem" />
-              <SkeletonLine w="11rem" className="h-6" />
-              <SkeletonLine w="8rem" />
+            <div key={item} className={`space-y-2 ${item === 0 ? "col-span-2 border-b border-[color:var(--project-hero-border)] pb-4 sm:col-span-1 sm:border-b-0 sm:border-r sm:pb-0 sm:pr-5" : item === 1 ? "border-r border-[color:var(--project-hero-border)] pr-4 pt-4 sm:px-5 sm:pt-0" : "pl-4 pt-4 sm:pl-5 sm:pt-0"}`}>
+              <SkeletonLine w="7rem" className="bg-[color:var(--project-hero-surface-raised)]" />
+              <SkeletonLine w="11rem" className="h-6 bg-[color:var(--project-hero-surface-raised)]" />
+              <SkeletonLine w="8rem" className="bg-[color:var(--project-hero-surface-raised)]" />
             </div>
           ))}
         </div>
