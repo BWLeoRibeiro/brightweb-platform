@@ -9,9 +9,10 @@ import {
   CalendarDays,
   Flag,
   RefreshCw,
+  ShieldCheck,
   UserRound,
 } from "lucide-react";
-import { Button, Card, EmptyState, InitialsAvatar, StatusPill } from "@brightweblabs/ui";
+import { Button, Card, EmptyState, InitialsAvatar, SectionHeading, StatusPill } from "@brightweblabs/ui";
 import type {
   ClientOrganizationMembership,
   ClientProjectDetail,
@@ -42,13 +43,35 @@ function organizationRoleLabel(role: ClientOrganizationMembership["role"]) {
 
 function OrganizationIdentity({ organization }: { organization: ClientOrganizationMembership }) {
   return (
-    <div className="flex flex-wrap items-center gap-x-3 gap-y-2 border-y border-border/65 py-4 sm:border-y-0 sm:py-0">
-      <InitialsAvatar label={organization.name} className="size-9" />
-      <span className="text-body font-bold">{organization.name}</span>
-      <StatusPill token="--role-client">
-        {organizationRoleLabel(organization.role)}
-      </StatusPill>
-    </div>
+    <section className="border-y border-border/65 py-4 sm:border-y-0 sm:py-0" aria-labelledby="client-organization-label">
+      <p id="client-organization-label" className="text-label text-muted-foreground">
+        {clientProjectsDictionary.portal.yourOrganization}
+      </p>
+      <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2">
+        <InitialsAvatar label={organization.name} className="size-9" />
+        <span className="text-body font-bold">{organization.name}</span>
+        <StatusPill token="--role-client">
+          {organizationRoleLabel(organization.role)}
+        </StatusPill>
+      </div>
+    </section>
+  );
+}
+
+function AccountAndSecurityFooter() {
+  return (
+    <footer className="border-t border-border/65 pt-6">
+      <SectionHeading
+        icon={ShieldCheck}
+        title={clientProjectsDictionary.portal.accountAndSecurity}
+        subtitle={clientProjectsDictionary.portal.accountAndSecurityDescription}
+        action={(
+          <Button asChild variant="outline" className="min-h-11">
+            <Link href="/account/perfil">{clientProjectsDictionary.portal.openAccountAndSecurity}</Link>
+          </Button>
+        )}
+      />
+    </footer>
   );
 }
 
@@ -82,7 +105,7 @@ function ProjectOverview({ project }: { project: ClientProjectDetail | ClientPro
         <div className="grid lg:grid-cols-[minmax(0,1.08fr)_minmax(20rem,0.92fr)]">
           <div className="flex min-h-80 flex-col p-6 sm:p-8">
             <p className="eyebrow text-primary">{clientProjectsDictionary.portal.activeProject}</p>
-            <h2 className="mt-4 text-heading-1">{project.name}</h2>
+            <h2 className="mt-4 text-heading-1 sm:text-[length:var(--text-ui-dashboard-title-lg)]">{project.name}</h2>
             <div className="mt-4 flex flex-wrap items-center gap-3 text-meta text-muted-foreground">
               {project.reference ? <span className="text-data font-semibold">{project.reference}</span> : null}
               <ProjectStatusBadge status={project.status} label={clientProjectsDictionary.portal.statusLabels[project.status]} size="small" />
@@ -179,7 +202,7 @@ export function ClientPortalHome({ firstName, initialData = null }: { firstName:
     <div className="space-y-9 sm:space-y-12">
       <header className="space-y-6">
         <div>
-          <h1 className="text-heading-2">{clientProjectsDictionary.portal.greeting(displayName)}</h1>
+          <h1 className="text-heading-1">{clientProjectsDictionary.portal.greeting(displayName)}</h1>
           <p className="mt-3 text-body-lg text-muted-foreground">{clientProjectsDictionary.portal.homeDescription}</p>
         </div>
         {singleOrganization ? <OrganizationIdentity organization={singleOrganization} /> : null}
@@ -221,6 +244,8 @@ export function ClientPortalHome({ firstName, initialData = null }: { firstName:
           </section>
         </Card>
       )}
+
+      <AccountAndSecurityFooter />
     </div>
   );
 }

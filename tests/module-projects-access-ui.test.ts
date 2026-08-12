@@ -202,6 +202,9 @@ test("client portal adapts its hierarchy to organization and project counts", ()
   assert.match(portal, /organizations\.length > 1/);
   assert.match(portal, /setSelectedOrganizationId/);
   assert.match(portal, /showOrganizations=\{!singleOrganization\}/);
+  assert.match(portal, /yourOrganization/);
+  assert.match(portal, /AccountAndSecurityFooter/);
+  assert.match(portal, /href="\/account\/perfil"/);
   assert.match(shared, /meta\.status === "in_progress" \|\| meta\.status === "delayed"/);
   assert.match(shared, /ordered\.find\(\(meta\) => meta\.status === "pending"\)/);
   assert.doesNotMatch(portal, /clientNextSteps|nextSteps/);
