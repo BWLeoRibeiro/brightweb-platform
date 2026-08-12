@@ -271,12 +271,12 @@ async function main() {
     "Could not assign seed client role",
   );
   await requireResult(
-    supabase.from("organization_members").upsert({
-      organization_id: ORGANIZATIONS[0].id,
-      profile_id: clientProfile.id,
-      role: "admin",
-    }, { onConflict: "organization_id,profile_id" }),
-    "Could not assign seed client organization",
+    supabase.from("organization_members").upsert([
+      { organization_id: ORGANIZATIONS[0].id, profile_id: clientProfile.id, role: "admin" },
+      { organization_id: ORGANIZATIONS[1].id, profile_id: clientProfile.id, role: "member" },
+      { organization_id: ORGANIZATIONS[2].id, profile_id: clientProfile.id, role: "member" },
+    ], { onConflict: "organization_id,profile_id" }),
+    "Could not assign seed client organizations",
   );
   await requireResult(
     supabase
@@ -325,40 +325,177 @@ async function main() {
     authenticatedAdmin.auth.signInWithPassword({ email, password }),
     "Could not authenticate seed admin",
   );
-  const projectCreation = await requireResult(
-    authenticatedAdmin.rpc("create_project_with_client_access", {
-      p_request_id: CLIENT_PROJECT_REQUEST_ID,
-      p_project: {
-        primary_organization_id: ORGANIZATIONS[0].id,
-        name: "Portal Aurora",
-        code: "AUR-26",
-        status: "active",
-        start_date: "2026-07-01",
-        target_date: "2026-10-30",
-        client_summary: "Uma nova presença digital para apresentar a marca, os serviços e criar novas oportunidades.",
-        client_scope: "Estratégia, direção visual, design e desenvolvimento do novo portal.",
-        client_contact_profile_id: profile.id,
-      },
-      p_organization_ids: [ORGANIZATIONS[0].id],
-      p_members: [{ profile_id: profile.id, role: "owner" }],
-      p_client_access: { mode: "all_org_clients", organization_ids: [ORGANIZATIONS[0].id], profile_grants: [] },
-    }),
-    "Could not create seed client project",
-  );
-  const projectId = projectCreation?.[0]?.project_id;
-  if (!projectId) throw new Error("Seed client project did not return an id.");
-  await requireResult(
-    authenticatedAdmin.from("project_milestones").upsert({
-      id: "36000000-0000-4000-b000-000000000001",
-      project_id: projectId,
-      title: "Direção visual aprovada",
-      status: "in_progress",
-      target_date: "2026-08-18",
-      position: 1,
-      visibility: "client",
-    }, { onConflict: "id" }),
-    "Could not upsert seed client milestone",
-  );
+  const CLIENT_PROJECTS = [
+    {
+      requestId: CLIENT_PROJECT_REQUEST_ID,
+      organizationId: ORGANIZATIONS[0].id,
+      name: "Portal Aurora",
+      code: "AUR-26",
+      status: "active",
+      start_date: "2026-07-01",
+      target_date: "2026-10-30",
+      client_summary: "Uma nova presença digital para apresentar a marca, os serviços e criar novas oportunidades.",
+      client_scope: "Estratégia, direção visual, design e desenvolvimento do novo portal.",
+      milestones: [
+        { id: "36000000-0000-4000-b000-000000000001", title: "Direção visual aprovada", status: "in_progress", target_date: "2026-08-18", position: 1 },
+      ],
+    },
+    {
+      requestId: "36000000-0000-4000-8000-000000000027",
+      organizationId: ORGANIZATIONS[1].id,
+      name: "Plataforma Solar Norte",
+      code: "NWR-11",
+      status: "active",
+      start_date: "2026-05-12",
+      target_date: "2026-11-20",
+      client_summary: "Plataforma de gestão e acompanhamento dos parques solares em operação.",
+      client_scope: "Arquitetura, design da plataforma e desenvolvimento por fases.",
+      milestones: [
+        { id: "36000000-0000-4000-b000-000000000011", title: "Modelo de dados validado", status: "achieved", target_date: "2026-06-30", position: 1 },
+        { id: "36000000-0000-4000-b000-000000000012", title: "Dashboard operacional", status: "in_progress", target_date: "2026-09-15", position: 2 },
+      ],
+    },
+    {
+      requestId: "36000000-0000-4000-8000-000000000028",
+      organizationId: ORGANIZATIONS[1].id,
+      name: "Relatório de Sustentabilidade",
+      code: "NWR-14",
+      status: "active",
+      start_date: "2026-07-06",
+      target_date: "2026-12-18",
+      client_summary: "Micro-site anual com os resultados de sustentabilidade e impacto.",
+      milestones: [
+        { id: "36000000-0000-4000-b000-000000000013", title: "Estrutura de conteúdos", status: "pending", target_date: "2026-09-30", position: 1 },
+      ],
+    },
+    {
+      requestId: "36000000-0000-4000-8000-000000000029",
+      organizationId: ORGANIZATIONS[1].id,
+      name: "App de Monitorização",
+      code: "NWR-08",
+      status: "canceled",
+      cancellation_reason: "Substituída pela plataforma web de monitorização.",
+      start_date: "2026-02-02",
+      target_date: "2026-06-30",
+      client_summary: "Aplicação móvel de monitorização em tempo real, substituída pela plataforma web.",
+      milestones: [],
+    },
+    {
+      requestId: "36000000-0000-4000-8000-000000000030",
+      organizationId: ORGANIZATIONS[1].id,
+      name: "Website Corporativo",
+      code: "NWR-05",
+      status: "completed",
+      start_date: "2025-11-03",
+      target_date: "2026-03-31",
+      client_summary: "Novo website corporativo com foco em recrutamento e comunicação institucional.",
+      milestones: [
+        { id: "36000000-0000-4000-b000-000000000014", title: "Lançamento público", status: "achieved", target_date: "2026-03-25", position: 1 },
+      ],
+    },
+    {
+      requestId: "36000000-0000-4000-8000-000000000031",
+      organizationId: ORGANIZATIONS[2].id,
+      name: "Portal do Produto",
+      code: "TPL-01",
+      status: "active",
+      start_date: "2026-06-01",
+      target_date: "2026-10-15",
+      client_summary: "Portal público de apresentação do produto e captação de interessados.",
+      milestones: [
+        { id: "36000000-0000-4000-b000-000000000015", title: "Protótipo navegável", status: "achieved", target_date: "2026-07-15", position: 1 },
+        { id: "36000000-0000-4000-b000-000000000016", title: "Conteúdos finais", status: "in_progress", target_date: "2026-09-01", position: 2 },
+      ],
+    },
+    {
+      requestId: "36000000-0000-4000-8000-000000000032",
+      organizationId: ORGANIZATIONS[2].id,
+      name: "Aplicação Móvel",
+      code: "TPL-02",
+      status: "active",
+      start_date: "2026-06-15",
+      target_date: "2026-12-10",
+      client_summary: "Aplicação móvel complementar para clientes finais.",
+      milestones: [],
+    },
+    {
+      requestId: "36000000-0000-4000-8000-000000000033",
+      organizationId: ORGANIZATIONS[2].id,
+      name: "Design System",
+      code: "TPL-03",
+      status: "active",
+      start_date: "2026-05-05",
+      target_date: "2026-09-30",
+      client_summary: "Sistema de design partilhado entre o portal e a aplicação.",
+      milestones: [
+        { id: "36000000-0000-4000-b000-000000000017", title: "Fundações e tokens", status: "achieved", target_date: "2026-06-20", position: 1 },
+        { id: "36000000-0000-4000-b000-000000000018", title: "Componentes core", status: "delayed", target_date: "2026-08-05", position: 2 },
+      ],
+    },
+    {
+      requestId: "36000000-0000-4000-8000-000000000034",
+      organizationId: ORGANIZATIONS[2].id,
+      name: "Automação de Marketing",
+      code: "TPL-04",
+      status: "active",
+      start_date: "2026-07-20",
+      target_date: "2027-01-15",
+      client_summary: "Fluxos de email e nutrição de leads integrados com o CRM.",
+      milestones: [],
+    },
+    {
+      requestId: "36000000-0000-4000-8000-000000000035",
+      organizationId: ORGANIZATIONS[2].id,
+      name: "Integração CRM",
+      code: "TPL-05",
+      status: "active",
+      start_date: "2026-08-03",
+      target_date: "2026-11-28",
+      client_summary: "Integração do portal com o CRM para sincronizar contactos e pedidos.",
+      milestones: [
+        { id: "36000000-0000-4000-b000-000000000019", title: "Mapeamento de campos", status: "in_progress", target_date: "2026-09-10", position: 1 },
+      ],
+    },
+  ];
+
+  for (const seedProject of CLIENT_PROJECTS) {
+    const creation = await requireResult(
+      authenticatedAdmin.rpc("create_project_with_client_access", {
+        p_request_id: seedProject.requestId,
+        p_project: {
+          primary_organization_id: seedProject.organizationId,
+          name: seedProject.name,
+          code: seedProject.code,
+          status: seedProject.status,
+          start_date: seedProject.start_date,
+          target_date: seedProject.target_date,
+          client_summary: seedProject.client_summary,
+          ...(seedProject.client_scope ? { client_scope: seedProject.client_scope } : {}),
+          ...(seedProject.cancellation_reason ? { cancellation_reason: seedProject.cancellation_reason } : {}),
+          client_contact_profile_id: profile.id,
+        },
+        p_organization_ids: [seedProject.organizationId],
+        p_members: [{ profile_id: profile.id, role: "owner" }],
+        p_client_access: { mode: "all_org_clients", organization_ids: [seedProject.organizationId], profile_grants: [] },
+      }),
+      `Could not create seed client project: ${seedProject.name}`,
+    );
+    const seedProjectId = creation?.[0]?.project_id;
+    if (!seedProjectId) throw new Error(`Seed client project did not return an id: ${seedProject.name}`);
+    if (seedProject.milestones.length > 0) {
+      await requireResult(
+        authenticatedAdmin.from("project_milestones").upsert(
+          seedProject.milestones.map((milestone) => ({
+            ...milestone,
+            project_id: seedProjectId,
+            visibility: "client",
+          })),
+          { onConflict: "id" },
+        ),
+        `Could not upsert seed client milestones: ${seedProject.name}`,
+      );
+    }
+  }
 
   const [profiles, assignments, organizations, contacts, timeline] = await Promise.all([
     requireCount(
