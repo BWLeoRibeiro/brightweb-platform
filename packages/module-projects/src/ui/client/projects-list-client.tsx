@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { FolderKanban } from "lucide-react";
+import { PillTabs } from "@brightweblabs/app-shell";
 import { Button, Card, EmptyState, SearchField, SelectControl } from "@brightweblabs/ui";
 import type { ClientProjectListItem, ClientProjectsResult } from "../../client-contracts";
 import { ProjectListCard } from "./project-list-card";
@@ -143,24 +144,13 @@ export function ClientProjectsListClient({ initialProjects = null }: { initialPr
           <p className="text-meta text-muted-foreground" aria-live="polite">{clientProjectsDictionary.safeUi.projectResultCount(filtered.length)}</p>
         </div>
         <div className="mt-3 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-          <div className="grid grid-cols-3 gap-1 rounded-[var(--radius-control)] bg-muted/65 p-1" role="group" aria-label={clientProjectsDictionary.safeUi.filterLabel}>
-            {GROUPS.map((item) => {
-              const selected = group === item.value;
-              return (
-                <Button
-                  key={item.value}
-                  type="button"
-                  aria-pressed={selected}
-                  variant="ghost"
-                  className={`min-h-11 px-3 ${selected ? "bg-background text-foreground shadow-[var(--dashboard-shadow-sm)] hover:bg-background" : "text-muted-foreground"}`}
-                  onClick={() => setGroup(item.value)}
-                >
-                  {item.label}
-                  <span className={`ml-1 min-w-5 rounded-full px-1.5 py-0.5 text-micro ${selected ? "bg-primary/10 text-primary" : "bg-background/65 text-muted-foreground"}`}>{groupCounts[item.value]}</span>
-                </Button>
-              );
-            })}
-          </div>
+          <PillTabs
+            ariaLabel={clientProjectsDictionary.safeUi.filterLabel}
+            className="max-w-full overflow-x-auto [&>button]:min-h-11 [&>button]:px-3 sm:[&>button]:px-4"
+            items={GROUPS.map((item) => ({ value: item.value, label: `${item.label} · ${groupCounts[item.value]}` }))}
+            value={group}
+            onValueChange={setGroup}
+          />
           <div className={`grid min-w-0 gap-3 lg:w-[31rem] ${organizations.length > 1 && showSearch ? "sm:grid-cols-2" : ""}`}>
             {organizations.length > 1 ? (
               <SelectControl

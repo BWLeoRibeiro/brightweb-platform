@@ -9,7 +9,7 @@ export function ClientProjectsListLoading() {
           <SkeletonLine w="5rem" />
         </div>
         <div className="mt-3 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-          <SkeletonLine w="18rem" className="h-12" />
+          <SkeletonLine w="18rem" className="h-12 rounded-full" />
           <div className="grid gap-3 sm:grid-cols-2 lg:w-[31rem]">
             <SkeletonLine w="15rem" className="h-11" />
             <SkeletonLine w="15rem" className="h-11" />
