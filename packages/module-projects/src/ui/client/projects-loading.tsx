@@ -26,7 +26,7 @@ export function ClientProjectsListLoading() {
 
 export function ClientPortalHomeLoading() {
   return (
-    <div className="space-y-10 sm:space-y-14" aria-hidden>
+    <div className="space-y-5 sm:space-y-7" aria-hidden>
       <header className="brand-panel rounded-[var(--radius-panel)] p-6 md:p-8">
         <div className="grid gap-7 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
           <div className="space-y-3">

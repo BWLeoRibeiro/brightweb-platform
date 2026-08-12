@@ -298,7 +298,7 @@ export function ClientPortalHome({ firstName, email = null, initialData = null }
   const deliveryOverdue = nearestDelivery ? isClientProjectDateOverdue(nearestDelivery.targetDate) : false;
 
   return (
-    <div className="space-y-10 sm:space-y-14">
+    <div>
       <header className="brand-panel relative overflow-hidden rounded-[var(--radius-panel)] p-6 text-[color:var(--project-hero-foreground)] md:p-8">
         <div aria-hidden className="pointer-events-none absolute -right-24 -top-28 size-80 rounded-full opacity-100 blur-3xl dark:opacity-40" style={{ background: "var(--dashboard-hero-glow)" }} />
         <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-px" style={{ background: "var(--dashboard-hero-highlight)" }} />
@@ -342,8 +342,9 @@ export function ClientPortalHome({ firstName, email = null, initialData = null }
         </dl>
       </header>
 
-      {ongoingProjects.length > 0 ? (
-        <section aria-labelledby="client-projects-title" className="space-y-5">
+      <div className="mt-5 sm:mt-7">
+        {ongoingProjects.length > 0 ? (
+          <section aria-labelledby="client-projects-title" className="space-y-5">
           <div className="flex flex-wrap items-end justify-between gap-3">
             <h2 id="client-projects-title" className="text-heading-2 font-bold">
               {ongoingProjects.length === 1 ? clientProjectsDictionary.portal.activeProject : clientProjectsDictionary.portal.ongoingProjects}
@@ -360,21 +361,24 @@ export function ClientPortalHome({ firstName, email = null, initialData = null }
               <ProjectListCard key={project.id} project={project} showOrganizations={!singleOrganization && !focusedOrganization} headingLevel="h3" />
             ))}</div>
           </div>
-        </section>
-      ) : (
-        <Card asChild variant="light">
-          <section>
-            <EmptyState
-              icon={BriefcaseBusiness}
-              title={clientProjectsDictionary.portal.noOngoingProjects}
-              hint={clientProjectsDictionary.portal.noOngoingProjectsDescription}
-              action={<Button asChild variant="outline"><Link href="/account/projetos">{clientProjectsDictionary.portal.seeProjectHistory}</Link></Button>}
-            />
           </section>
-        </Card>
-      )}
+        ) : (
+          <Card asChild variant="light">
+            <section>
+              <EmptyState
+                icon={BriefcaseBusiness}
+                title={clientProjectsDictionary.portal.noOngoingProjects}
+                hint={clientProjectsDictionary.portal.noOngoingProjectsDescription}
+                action={<Button asChild variant="outline"><Link href="/account/projetos">{clientProjectsDictionary.portal.seeProjectHistory}</Link></Button>}
+              />
+            </section>
+          </Card>
+        )}
+      </div>
 
-      <AccountAndSecurityFooter displayName={displayName} email={email} />
+      <div className="mt-10 sm:mt-14">
+        <AccountAndSecurityFooter displayName={displayName} email={email} />
+      </div>
     </div>
   );
 }
