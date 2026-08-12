@@ -9,31 +9,6 @@ export function ClientProjectsListLoading() {
   );
 }
 
-function FeaturedProjectCardSkeleton() {
-  return (
-    <div className="relative overflow-hidden rounded-[var(--radius-card)] border border-border/65 bg-background/75 p-6 shadow-[var(--dashboard-shadow-md)] before:absolute before:inset-x-0 before:top-0 before:h-1 before:bg-[color:var(--brand-accent)] sm:p-8">
-      <SkeletonLine w="5rem" className="h-6 rounded-full" />
-      <div className="mt-4 space-y-2">
-        <SkeletonLine w="8rem" />
-        <SkeletonLine w="18rem" className="h-10" />
-      </div>
-      <div className="mt-5 space-y-3">
-        <SkeletonLine w="90%" />
-        <SkeletonLine w="72%" />
-      </div>
-      <div className="mt-5 space-y-3 border-t border-border/55 pt-4">
-        <SkeletonLine w="7rem" />
-        <SkeletonLine w="75%" className="h-7" />
-      </div>
-      <div className="mt-5 space-y-3 border-t border-border/55 pt-4">
-        <SkeletonLine w="9rem" />
-        <SkeletonLine w="100%" className="h-2" />
-        <SkeletonLine w="7rem" />
-      </div>
-    </div>
-  );
-}
-
 export function ClientPortalHomeLoading() {
   return (
     <div className="space-y-10" aria-hidden>
@@ -42,7 +17,7 @@ export function ClientPortalHomeLoading() {
           <SkeletonLine w="18rem" className="h-12" />
           <SkeletonLine w="31rem" />
         </div>
-        <div className="max-w-[34rem] space-y-2 lg:min-w-[18rem]">
+        <div className="space-y-2 lg:w-80">
           <SkeletonLine w="7rem" className="lg:ml-auto" />
           <div className="flex items-center gap-3 rounded-[var(--radius-card)] border border-border/60 bg-[color:var(--project-surface-secondary)] p-4">
             <SkeletonLine w="2.5rem" className="h-10 rounded-full" />
@@ -53,7 +28,13 @@ export function ClientPortalHomeLoading() {
           </div>
         </div>
       </header>
-      <FeaturedProjectCardSkeleton />
+      <section className="space-y-5">
+        <SkeletonLine w="12rem" className="h-8" />
+        <div className="grid gap-4 md:grid-cols-2">
+          <SkeletonCard className="h-72 shadow-none" lines={4} />
+          <SkeletonCard className="h-72 shadow-none" lines={4} />
+        </div>
+      </section>
     </div>
   );
 }

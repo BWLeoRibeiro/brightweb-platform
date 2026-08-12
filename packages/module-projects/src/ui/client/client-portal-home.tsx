@@ -50,8 +50,8 @@ function OrganizationIdentity({
     ? organizations.find((organization) => organization.id === selectedOrganizationId) ?? null
     : organizations[0] ?? null;
 
-  const identityCard = (interactive: boolean) => (
-    <div className={`mt-2 flex min-h-11 w-full items-center gap-3 rounded-[var(--radius-card)] border border-border/60 bg-[color:var(--project-surface-secondary)] p-4 text-left shadow-[var(--dashboard-shadow-sm)] ${interactive ? "transition-colors hover:border-border" : ""}`}>
+  const identity = (
+    <>
       {selected ? (
         <InitialsAvatar label={selected.name} className="size-10 shrink-0" />
       ) : (
@@ -65,23 +65,24 @@ function OrganizationIdentity({
           <span className="block truncate text-meta text-muted-foreground">{organizations.map((organization) => organization.name).join(" · ")}</span>
         )}
       </span>
-      {interactive ? <ChevronDown aria-hidden className="size-4 shrink-0 text-muted-foreground" /> : null}
-    </div>
+    </>
   );
+  const identityCardClassName = "mt-2 flex h-20 w-full items-center gap-3 rounded-[var(--radius-card)] border border-border/60 bg-[color:var(--project-surface-secondary)] p-4 text-left shadow-[var(--dashboard-shadow-sm)]";
 
   return (
-    <section className="w-full max-w-[34rem] lg:w-fit lg:min-w-[20rem] lg:justify-self-end" aria-labelledby="client-organization-label">
+    <section className="min-w-0 w-full lg:w-80 lg:justify-self-end" aria-labelledby="client-organization-label">
       <p id="client-organization-label" className="text-label text-muted-foreground lg:text-right">
         {multiple ? clientProjectsDictionary.portal.yourOrganizations : clientProjectsDictionary.portal.yourOrganization}
       </p>
       {multiple ? (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button type="button" className="block w-full rounded-[var(--radius-card)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-              {identityCard(true)}
+            <button type="button" className={`${identityCardClassName} group min-w-0 transition-[border-color,box-shadow] hover:border-border focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30 motion-reduce:transition-none`}>
+              {identity}
+              <ChevronDown aria-hidden className="size-4 shrink-0 text-muted-foreground transition-transform duration-200 group-data-[state=open]:rotate-180 motion-reduce:transition-none" />
             </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-[min(20rem,calc(100vw-2rem))]">
+          <DropdownMenuContent align="end" sideOffset={8} className="w-[var(--radix-dropdown-menu-trigger-width)] max-w-[calc(100vw-2rem)]">
             <DropdownMenuRadioGroup value={selected ? selected.id : "all"} onValueChange={onSelect}>
               <DropdownMenuRadioItem value="all" className="min-h-11">
                 {clientProjectsDictionary.portal.allOrganizations}
@@ -98,7 +99,7 @@ function OrganizationIdentity({
           </DropdownMenuContent>
         </DropdownMenu>
       ) : (
-        identityCard(false)
+        <div className={identityCardClassName}>{identity}</div>
       )}
     </section>
   );
@@ -173,15 +174,12 @@ export function ClientPortalHome({ firstName, email = null, initialData = null }
     </div>
   );
 
-  const { organizations, featuredProject } = state.data;
+  const { organizations } = state.data;
   const singleOrganization = organizations.length === 1 ? organizations[0] : null;
   const focusedOrganization = organizations.length > 1
     ? organizations.find((organization) => organization.id === selectedOrganizationId) ?? null
     : null;
   const ongoingProjects = visibleProjects.filter(isOngoingProject);
-  const featured = ongoingProjects.length === 1
-    ? (featuredProject?.id === ongoingProjects[0]?.id ? featuredProject : ongoingProjects[0])
-    : null;
 
   return (
     <div className="space-y-10 sm:space-y-14">
@@ -201,23 +199,12 @@ export function ClientPortalHome({ firstName, email = null, initialData = null }
         ) : null}
       </header>
 
-      {featured ? (
-        <section aria-labelledby="client-featured-project-title" className="space-y-5">
-          <div className="flex flex-wrap items-end justify-between gap-3">
-            <h2 id="client-featured-project-title" className="text-heading-2 font-bold">{clientProjectsDictionary.portal.activeProject}</h2>
-            <Link href="/account/projetos" className="inline-flex min-h-11 items-center gap-2 text-body font-bold text-primary hover:underline">{clientProjectsDictionary.portal.seeAllProjects}<ArrowRight className="size-4" /></Link>
-          </div>
-          <ProjectListCard
-            project={featured}
-            showOrganizations={!singleOrganization && !focusedOrganization}
-            emphasis
-            headingLevel="h3"
-          />
-        </section>
-      ) : ongoingProjects.length > 1 ? (
+      {ongoingProjects.length > 0 ? (
         <section aria-labelledby="client-projects-title" className="space-y-5">
           <div className="flex flex-wrap items-end justify-between gap-3">
-            <h2 id="client-projects-title" className="text-heading-2 font-bold">{clientProjectsDictionary.portal.ongoingProjects}</h2>
+            <h2 id="client-projects-title" className="text-heading-2 font-bold">
+              {ongoingProjects.length === 1 ? clientProjectsDictionary.portal.activeProject : clientProjectsDictionary.portal.ongoingProjects}
+            </h2>
             <Link href="/account/projetos" className="inline-flex min-h-11 items-center gap-2 text-body font-bold text-primary hover:underline">{clientProjectsDictionary.portal.seeAllProjects}<ArrowRight className="size-4" /></Link>
           </div>
           <div className="grid gap-4 md:grid-cols-2">{ongoingProjects.slice(0, 4).map((project) => (
