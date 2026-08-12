@@ -197,7 +197,10 @@ test("client portal adapts its hierarchy to organization and project counts", ()
   assert.match(portal, /!project\.archivedAt/);
   assert.match(portal, /ongoingProjects\.length === 1/);
   assert.match(portal, /featuredProject\?\.id === ongoingProjects\[0\]\?\.id/);
-  assert.match(portal, /<ProjectOverview project=\{featured\}/);
+  assert.match(portal, /project=\{featured\}/);
+  assert.match(portal, /emphasis/);
+  assert.match(portal, /headingLevel="h3"/);
+  assert.doesNotMatch(portal, /function ProjectOverview/);
   assert.match(portal, /ongoingProjects\.slice\(0, 4\)/);
   assert.match(portal, /organizations\.length > 1/);
   assert.match(portal, /setSelectedOrganizationId/);
@@ -248,8 +251,8 @@ test("client loading states mirror the home, list and detail page geometries", (
   const listPage = source("client/projects-list-page.tsx");
   const detailPage = source("client/project-detail-page.tsx");
   assert.match(loading, /ClientPortalHomeLoading/);
-  assert.match(loading, /ProjectOverviewSkeleton/);
-  assert.match(loading, /min-h-80/);
+  assert.match(loading, /FeaturedProjectCardSkeleton/);
+  assert.match(loading, /before:h-1/);
   assert.match(loading, /ClientProjectsListLoading/);
   assert.match(loading, /md:grid-cols-2/);
   assert.match(loading, /ClientProjectDetailLoading/);

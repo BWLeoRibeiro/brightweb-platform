@@ -19,10 +19,12 @@ export function ProjectListCard({
   project,
   showOrganizations = true,
   emphasis = false,
+  headingLevel = "h2",
 }: {
   project: ClientProjectListItem;
   showOrganizations?: boolean;
   emphasis?: boolean;
+  headingLevel?: "h2" | "h3";
 }) {
   const milestoneProgressPct = project.progress.percent;
   const overdue = isClientProjectDateOverdue(project.targetDate)
@@ -31,6 +33,7 @@ export function ProjectListCard({
   const href = resolveClientProjectDetailHref(false, project.id);
   const dictionary = clientProjectsDictionary.list;
   const metaPreview = resolveClientMetaPreview(project.metaPreview);
+  const ProjectHeading = headingLevel;
 
   return (
     <Card asChild variant={emphasis ? "elevated" : "light"}>
@@ -46,11 +49,11 @@ export function ProjectListCard({
               {project.reference}
             </p>
           ) : null}
-          <h2 className={emphasis ? "font-display text-[length:var(--text-ui-dashboard-title)] font-black leading-[var(--type-leading-110)] tracking-[var(--type-tracking-n025)]" : "text-title"}>
+          <ProjectHeading className={emphasis ? "font-display text-[length:var(--text-ui-dashboard-title)] font-black leading-[var(--type-leading-110)] tracking-[var(--type-tracking-n025)]" : "text-title"}>
             <Link href={href} className="after:absolute after:inset-0 focus-visible:outline-none">
               {project.name}
             </Link>
-          </h2>
+          </ProjectHeading>
           {showOrganizations ? (
             <p className="mt-0.5 text-meta text-muted-foreground">{project.organizations.map((organization) => organization.name).join(" · ")}</p>
           ) : null}

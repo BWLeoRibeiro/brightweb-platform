@@ -9,29 +9,26 @@ export function ClientProjectsListLoading() {
   );
 }
 
-function ProjectOverviewSkeleton() {
+function FeaturedProjectCardSkeleton() {
   return (
-    <div className="grid overflow-hidden rounded-[var(--radius-card)] border border-[color:var(--project-hero-border)] shadow-[var(--dashboard-shadow-md)] lg:grid-cols-[minmax(0,1.08fr)_minmax(20rem,0.92fr)]">
-      <div className="brand-panel flex flex-col p-6 sm:p-8 lg:min-h-80 lg:p-10">
-        <SkeletonLine w="8rem" className="h-7 bg-[color:var(--project-hero-surface-raised)]" />
-        <SkeletonLine w="18rem" className="mt-5 h-10 bg-[color:var(--project-hero-surface-raised)]" />
-        <SkeletonLine w="8rem" className="mt-4 bg-[color:var(--project-hero-surface-raised)]" />
-        <div className="mt-5 space-y-3">
-          <SkeletonLine w="90%" className="bg-[color:var(--project-hero-surface-raised)]" />
-          <SkeletonLine w="72%" className="bg-[color:var(--project-hero-surface-raised)]" />
-        </div>
-        <SkeletonLine w="10rem" className="mt-auto pt-7 h-11 rounded-[var(--radius-control)] bg-[color:var(--project-hero-surface-raised)]" />
-      </div>
-      <div className="border-t border-border/65 bg-[color:var(--project-surface-secondary)] p-6 sm:p-8 lg:border-l lg:border-t-0 lg:p-10">
+    <div className="relative overflow-hidden rounded-[var(--radius-card)] border border-border/65 bg-background/75 p-6 shadow-[var(--dashboard-shadow-md)] before:absolute before:inset-x-0 before:top-0 before:h-1 before:bg-[color:var(--brand-accent)] sm:p-8">
+      <SkeletonLine w="5rem" className="h-6 rounded-full" />
+      <div className="mt-4 space-y-2">
         <SkeletonLine w="8rem" />
-        <div className="mt-3 space-y-3">
-          <SkeletonLine w="80%" className="h-7" />
-          <SkeletonLine w="70%" className="h-7" />
-        </div>
-        <div className="mt-6 space-y-5 border-t border-border/60 pt-5">
-          <SkeletonLine w="9rem" className="h-8" />
-          <SkeletonLine w="9rem" className="h-8" />
-        </div>
+        <SkeletonLine w="18rem" className="h-10" />
+      </div>
+      <div className="mt-5 space-y-3">
+        <SkeletonLine w="90%" />
+        <SkeletonLine w="72%" />
+      </div>
+      <div className="mt-5 space-y-3 border-t border-border/55 pt-4">
+        <SkeletonLine w="7rem" />
+        <SkeletonLine w="75%" className="h-7" />
+      </div>
+      <div className="mt-5 space-y-3 border-t border-border/55 pt-4">
+        <SkeletonLine w="9rem" />
+        <SkeletonLine w="100%" className="h-2" />
+        <SkeletonLine w="7rem" />
       </div>
     </div>
   );
@@ -56,7 +53,7 @@ export function ClientPortalHomeLoading() {
           </div>
         </div>
       </header>
-      <ProjectOverviewSkeleton />
+      <FeaturedProjectCardSkeleton />
     </div>
   );
 }
