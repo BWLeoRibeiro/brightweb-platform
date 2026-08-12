@@ -197,17 +197,19 @@ function OrganizationIdentity({
 function AccountAndSecurityFooter({ displayName, email }: { displayName: string; email: string | null }) {
   return (
     <footer className="rounded-[var(--radius-card)] border border-border/55 bg-background/55 p-5 shadow-[var(--dashboard-shadow-sm)] sm:p-6" aria-labelledby="client-account-footer-label">
-      <div className="flex flex-wrap items-center gap-4">
-        <InitialsAvatar label={displayName} className="size-11 shrink-0" />
-        <div className="min-w-0 flex-1">
-          <p id="client-account-footer-label" className="flex items-center gap-1.5 text-label text-muted-foreground">
-            <ShieldCheck className="size-3.5" />
-            {clientProjectsDictionary.portal.accountAndSecurity}
-          </p>
-          <p className="mt-0.5 truncate text-title">{displayName}</p>
-          {email ? <p className="truncate text-meta text-muted-foreground">{email}</p> : null}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+        <div className="flex min-w-0 items-center gap-3 sm:flex-1">
+          <InitialsAvatar label={displayName} className="size-11 shrink-0" />
+          <div className="min-w-0 flex-1">
+            <p id="client-account-footer-label" className="flex items-center gap-1.5 text-label text-muted-foreground">
+              <ShieldCheck className="size-3.5 shrink-0" />
+              {clientProjectsDictionary.portal.accountAndSecurity}
+            </p>
+            <p className="mt-0.5 truncate text-title">{displayName}</p>
+            {email ? <p className="truncate text-meta text-muted-foreground">{email}</p> : null}
+          </div>
         </div>
-        <Button asChild variant="outline" className="min-h-11">
+        <Button asChild variant="outline" className="min-h-11 w-full sm:w-auto">
           <Link href="/account/perfil">{clientProjectsDictionary.portal.openAccountAndSecurity}</Link>
         </Button>
       </div>
@@ -276,7 +278,7 @@ export function ClientPortalHome({ firstName, email = null, initialData = null }
 
   return (
     <div className="space-y-10 sm:space-y-14">
-      <header className="brand-panel relative overflow-hidden rounded-[var(--radius-panel)] p-6 text-[color:var(--project-hero-foreground)] sm:p-8">
+      <header className="brand-panel relative overflow-hidden rounded-[var(--radius-panel)] p-6 text-[color:var(--project-hero-foreground)] md:p-8">
         <div aria-hidden className="pointer-events-none absolute -right-24 -top-28 size-80 rounded-full opacity-100 blur-3xl dark:opacity-40" style={{ background: "var(--dashboard-hero-glow)" }} />
         <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-px" style={{ background: "var(--dashboard-hero-highlight)" }} />
         <div className={organizations.length > 0 ? "relative grid gap-7 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end" : "relative space-y-7"}>
@@ -284,7 +286,7 @@ export function ClientPortalHome({ firstName, email = null, initialData = null }
             <h1 className="font-display text-[length:var(--text-ui-dashboard-title)] font-black leading-[var(--type-leading-110)] tracking-[var(--type-tracking-n025)] sm:text-[length:var(--text-ui-dashboard-title-lg)]">
               {clientProjectsDictionary.portal.greetingPrefix}, <span style={{ color: "var(--accent)" }}>{displayName}</span>.
             </h1>
-            <p className="mt-4 text-body-lg leading-relaxed" style={{ color: "var(--project-hero-muted)" }}>{clientProjectsDictionary.portal.homeDescription}</p>
+            <p className="mt-3 text-body-lg leading-relaxed" style={{ color: "var(--project-hero-muted)" }}>{clientProjectsDictionary.portal.homeDescription}</p>
           </div>
           {organizations.length > 0 ? (
             <OrganizationIdentity

@@ -11,10 +11,10 @@ export function ClientProjectsListLoading() {
 
 export function ClientPortalHomeLoading() {
   return (
-    <div className="space-y-10" aria-hidden>
-      <header className="brand-panel rounded-[var(--radius-panel)] p-6 sm:p-8">
+    <div className="space-y-10 sm:space-y-14" aria-hidden>
+      <header className="brand-panel rounded-[var(--radius-panel)] p-6 md:p-8">
         <div className="grid gap-7 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
-          <div className="space-y-4">
+          <div className="space-y-3">
             <SkeletonLine w="18rem" className="h-12 bg-[color:var(--project-hero-surface-raised)]" />
             <SkeletonLine w="31rem" className="bg-[color:var(--project-hero-surface-raised)]" />
           </div>
