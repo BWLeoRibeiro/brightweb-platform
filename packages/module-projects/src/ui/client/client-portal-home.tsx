@@ -77,6 +77,15 @@ function findNearestDelivery(projects: ClientProjectListItem[]) {
     ), null);
 }
 
+function formatPortalCalendarDate(date: Date) {
+  const label = new Intl.DateTimeFormat("pt-PT", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  }).format(date);
+  return label.charAt(0).toLocaleUpperCase("pt-PT") + label.slice(1);
+}
+
 function BriefingFact({ icon, label, value, detail, className }: { icon: React.ReactNode; label: string; value: string; detail: string | null; className: string }) {
   return (
     <div className={`min-w-0 ${className}`}>
@@ -90,11 +99,15 @@ function BriefingFact({ icon, label, value, detail, className }: { icon: React.R
   );
 }
 
-function UpcomingBriefing({ items }: { items: UpcomingBriefingMeta[] }) {
+function UpcomingBriefing({ items, dateLabel, dateTime }: { items: UpcomingBriefingMeta[]; dateLabel: string | null; dateTime: string | null }) {
   return (
     <aside className="min-w-0 rounded-[var(--radius-card)] border border-border/55 bg-[color:var(--project-surface-secondary)] p-5 shadow-[var(--dashboard-shadow-sm)] lg:col-start-2 lg:row-start-1" aria-labelledby="client-upcoming-title">
       <p className="text-label text-primary">{clientProjectsDictionary.portal.upNextEyebrow}</p>
       <h3 id="client-upcoming-title" className="mt-1 text-heading-3 font-bold">{clientProjectsDictionary.portal.upNext}</h3>
+      <p className="mt-2 flex min-h-5 items-center gap-2 text-meta text-muted-foreground">
+        <CalendarDays aria-hidden className="size-3.5 shrink-0 text-primary" />
+        <time dateTime={dateTime ?? undefined}>{dateLabel ?? "\u00a0"}</time>
+      </p>
       <p className="mt-1 text-meta text-muted-foreground">{clientProjectsDictionary.portal.upNextDescription}</p>
       {items.length > 0 ? (
         <ol className="portal-scroll -mx-1 mt-5 flex min-w-0 max-w-full gap-3 overflow-x-auto px-1 pb-2 lg:mx-0 lg:block lg:divide-y lg:divide-border/55 lg:overflow-visible lg:px-0 lg:pb-0">
@@ -221,6 +234,14 @@ export function ClientPortalHome({ firstName, email = null, initialData = null }
   const [state, setState] = useState<PortalState>(() => initialData ? { status: "ready", data: initialData } : { status: "loading" });
   const [selectedOrganizationId, setSelectedOrganizationId] = useState("all");
   const [reloadKey, setReloadKey] = useState(0);
+  const [today, setToday] = useState<Date | null>(null);
+
+  useEffect(() => {
+    const update = () => setToday(new Date());
+    update();
+    const interval = window.setInterval(update, 60_000);
+    return () => window.clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     setSelectedOrganizationId(readStoredClientOrganizationFilter());
@@ -330,7 +351,11 @@ export function ClientPortalHome({ firstName, email = null, initialData = null }
             <Link href="/account/projetos" className="inline-flex min-h-11 items-center gap-2 text-body font-bold text-primary hover:underline">{clientProjectsDictionary.portal.seeAllProjects}<ArrowRight className="size-4" /></Link>
           </div>
           <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_18rem]">
-            <UpcomingBriefing items={upcomingBriefing} />
+            <UpcomingBriefing
+              items={upcomingBriefing}
+              dateLabel={today ? formatPortalCalendarDate(today) : null}
+              dateTime={today ? today.toISOString().slice(0, 10) : null}
+            />
             <div className={`grid gap-4 lg:col-start-1 lg:row-start-1 ${ongoingProjects.length > 1 ? "md:grid-cols-2" : ""}`}>{ongoingProjects.slice(0, 4).map((project) => (
               <ProjectListCard key={project.id} project={project} showOrganizations={!singleOrganization && !focusedOrganization} headingLevel="h3" />
             ))}</div>

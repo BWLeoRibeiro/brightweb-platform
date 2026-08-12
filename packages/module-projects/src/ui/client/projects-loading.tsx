@@ -48,6 +48,7 @@ export function ClientPortalHomeLoading() {
           <div className="min-w-0 space-y-4 rounded-[var(--radius-card)] border border-border/55 bg-[color:var(--project-surface-secondary)] p-5 lg:col-start-2 lg:row-start-1">
             <SkeletonLine w="5rem" />
             <SkeletonLine w="7rem" className="h-7" />
+            <SkeletonLine w="10rem" />
             <SkeletonLine w="12rem" />
             <div className="portal-scroll -mx-1 flex min-w-0 gap-3 overflow-hidden px-1 pt-2 lg:mx-0 lg:block lg:space-y-4 lg:px-0">
               {[0, 1, 2, 3].map((item) => (
