@@ -6,7 +6,9 @@ import {
   ArrowRight,
   BriefcaseBusiness,
   Building2,
+  CalendarDays,
   ChevronDown,
+  Flag,
   RefreshCw,
   ShieldCheck,
 } from "lucide-react";
@@ -19,7 +21,13 @@ import type {
 import { clientProjectsDictionary } from "./dictionary";
 import { ProjectListCard } from "./project-list-card";
 import { ClientPortalHomeLoading } from "./projects-loading";
-import { readStoredClientOrganizationFilter, storeClientOrganizationFilter } from "./shared";
+import {
+  formatClientProjectDate,
+  isClientProjectDateOverdue,
+  readStoredClientOrganizationFilter,
+  resolveClientProjectDetailHref,
+  storeClientOrganizationFilter,
+} from "./shared";
 
 type PortalState =
   | { status: "loading" }
@@ -34,6 +42,87 @@ function isOngoingProject(project: Pick<ClientProjectListItem, "status" | "archi
 
 function organizationRoleLabel(role: ClientOrganizationMembership["role"]) {
   return role === "admin" ? clientProjectsDictionary.portal.organizationAdmin : clientProjectsDictionary.portal.organizationMember;
+}
+
+type UpcomingBriefingMeta = {
+  id: string;
+  projectId: string;
+  projectName: string;
+  title: string;
+  targetDate: string;
+  delayed: boolean;
+};
+
+function buildUpcomingBriefing(projects: ClientProjectListItem[]): UpcomingBriefingMeta[] {
+  return projects
+    .flatMap((project) => project.metaPreview
+      .filter((meta) => meta.status !== "achieved" && meta.targetDate)
+      .map((meta) => ({
+        id: `${project.id}:${meta.id}`,
+        projectId: project.id,
+        projectName: project.name,
+        title: meta.title,
+        targetDate: meta.targetDate as string,
+        delayed: meta.status === "delayed" || isClientProjectDateOverdue(meta.targetDate),
+      })))
+    .sort((left, right) => left.targetDate.localeCompare(right.targetDate))
+    .slice(0, 4);
+}
+
+function findNearestDelivery(projects: ClientProjectListItem[]) {
+  return projects
+    .filter((project): project is ClientProjectListItem & { targetDate: string } => Boolean(project.targetDate))
+    .reduce<ClientProjectListItem & { targetDate: string } | null>((nearest, project) => (
+      !nearest || project.targetDate.localeCompare(nearest.targetDate) < 0 ? project : nearest
+    ), null);
+}
+
+function BriefingFact({ icon, label, value, detail, className }: { icon: React.ReactNode; label: string; value: string; detail: string | null; className: string }) {
+  return (
+    <div className={`min-w-0 ${className}`}>
+      <dt className="flex items-center gap-2 text-label text-muted-foreground">
+        <span className="text-primary">{icon}</span>
+        {label}
+      </dt>
+      <dd className="mt-2 truncate text-title">{value}</dd>
+      {detail ? <dd className="mt-0.5 truncate text-meta text-muted-foreground">{detail}</dd> : null}
+    </div>
+  );
+}
+
+function UpcomingBriefing({ items }: { items: UpcomingBriefingMeta[] }) {
+  return (
+    <aside className="min-w-0 rounded-[var(--radius-card)] border border-border/55 bg-[color:var(--project-surface-secondary)] p-5 shadow-[var(--dashboard-shadow-sm)] lg:col-start-2 lg:row-start-1" aria-labelledby="client-upcoming-title">
+      <p className="text-label text-primary">{clientProjectsDictionary.portal.upNextEyebrow}</p>
+      <h3 id="client-upcoming-title" className="mt-1 text-heading-3 font-bold">{clientProjectsDictionary.portal.upNext}</h3>
+      <p className="mt-1 text-meta text-muted-foreground">{clientProjectsDictionary.portal.upNextDescription}</p>
+      {items.length > 0 ? (
+        <ol className="portal-scroll -mx-1 mt-5 flex min-w-0 max-w-full gap-3 overflow-x-auto px-1 pb-2 lg:mx-0 lg:block lg:divide-y lg:divide-border/55 lg:overflow-visible lg:px-0 lg:pb-0">
+          {items.map((item) => (
+            <li key={item.id} className="min-w-[13rem] rounded-xl border border-border/55 bg-background/65 lg:min-w-0 lg:rounded-none lg:border-0 lg:bg-transparent">
+              <Link
+                href={resolveClientProjectDetailHref(false, item.projectId)}
+                className="group/next block min-h-11 rounded-xl p-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring lg:-mx-2 lg:rounded-lg lg:px-2"
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <time dateTime={item.targetDate} className={`text-data text-micro font-bold ${item.delayed ? "text-[color:var(--project-health-off-track)]" : "text-primary"}`}>
+                    {formatClientProjectDate(item.targetDate)}
+                  </time>
+                  <ArrowRight aria-hidden className="size-3.5 shrink-0 text-muted-foreground transition-transform group-hover/next:translate-x-0.5 motion-reduce:transition-none motion-reduce:transform-none" />
+                </div>
+                <p className="mt-1 text-body font-bold leading-snug">{item.title}</p>
+                <p className="mt-0.5 truncate text-meta text-muted-foreground">{item.projectName}</p>
+              </Link>
+            </li>
+          ))}
+        </ol>
+      ) : (
+        <p className="mt-5 rounded-xl border border-dashed border-border/70 p-4 text-body text-muted-foreground">
+          {clientProjectsDictionary.portal.noUpcomingMetas}
+        </p>
+      )}
+    </aside>
+  );
 }
 
 function OrganizationIdentity({
@@ -164,6 +253,9 @@ export function ClientPortalHome({ firstName, email = null, initialData = null }
     if (!data.organizations.some((organization) => organization.id === selectedOrganizationId)) return data.items;
     return data.items.filter((project) => project.organizations.some((organization) => organization.id === selectedOrganizationId));
   }, [data, selectedOrganizationId]);
+  const ongoingProjects = useMemo(() => visibleProjects.filter(isOngoingProject), [visibleProjects]);
+  const upcomingBriefing = useMemo(() => buildUpcomingBriefing(ongoingProjects), [ongoingProjects]);
+  const nearestDelivery = useMemo(() => findNearestDelivery(ongoingProjects), [ongoingProjects]);
   const displayName = firstName?.trim() || clientProjectsDictionary.portal.clientFallbackName;
 
   if (state.status === "loading") return <ClientPortalHomeLoading />;
@@ -179,24 +271,52 @@ export function ClientPortalHome({ firstName, email = null, initialData = null }
   const focusedOrganization = organizations.length > 1
     ? organizations.find((organization) => organization.id === selectedOrganizationId) ?? null
     : null;
-  const ongoingProjects = visibleProjects.filter(isOngoingProject);
+  const nextMeta = upcomingBriefing[0] ?? null;
+  const deliveryOverdue = nearestDelivery ? isClientProjectDateOverdue(nearestDelivery.targetDate) : false;
 
   return (
     <div className="space-y-10 sm:space-y-14">
-      <header className={organizations.length > 0 ? "grid gap-7 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end" : "space-y-7"}>
-        <div className="max-w-[48rem]">
-          <h1 className="font-display text-[length:var(--text-ui-dashboard-title)] font-black leading-[var(--type-leading-110)] tracking-[var(--type-tracking-n025)] sm:text-[length:var(--text-ui-dashboard-title-lg)]">
-            {clientProjectsDictionary.portal.greetingPrefix}, <span style={{ color: "var(--accent)" }}>{displayName}</span>.
-          </h1>
-          <p className="mt-4 text-body-lg leading-relaxed text-muted-foreground">{clientProjectsDictionary.portal.homeDescription}</p>
+      <header className="relative overflow-hidden rounded-[var(--radius-panel)] border border-border/55 bg-background/75 p-6 shadow-[var(--dashboard-shadow-sm)] sm:p-8">
+        <div aria-hidden className="pointer-events-none absolute -right-24 -top-28 size-80 rounded-full opacity-30 blur-3xl" style={{ background: "var(--dashboard-hero-glow)" }} />
+        <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-px" style={{ background: "var(--dashboard-hero-highlight)" }} />
+        <div className={organizations.length > 0 ? "relative grid gap-7 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end" : "relative space-y-7"}>
+          <div className="max-w-[48rem]">
+            <h1 className="font-display text-[length:var(--text-ui-dashboard-title)] font-black leading-[var(--type-leading-110)] tracking-[var(--type-tracking-n025)] sm:text-[length:var(--text-ui-dashboard-title-lg)]">
+              {clientProjectsDictionary.portal.greetingPrefix}, <span style={{ color: "var(--accent)" }}>{displayName}</span>.
+            </h1>
+            <p className="mt-4 text-body-lg leading-relaxed text-muted-foreground">{clientProjectsDictionary.portal.homeDescription}</p>
+          </div>
+          {organizations.length > 0 ? (
+            <OrganizationIdentity
+              organizations={organizations}
+              selectedOrganizationId={selectedOrganizationId}
+              onSelect={selectOrganization}
+            />
+          ) : null}
         </div>
-        {organizations.length > 0 ? (
-          <OrganizationIdentity
-            organizations={organizations}
-            selectedOrganizationId={selectedOrganizationId}
-            onSelect={selectOrganization}
+        <dl className="relative mt-8 grid grid-cols-2 border-t border-border/55 pt-5 sm:grid-cols-3">
+          <BriefingFact
+            icon={<BriefcaseBusiness aria-hidden className="size-4" />}
+            label={clientProjectsDictionary.portal.workInProgress}
+            value={clientProjectsDictionary.portal.activeProjectsCount(ongoingProjects.length)}
+            detail={focusedOrganization?.name ?? singleOrganization?.name ?? (organizations.length > 1 ? clientProjectsDictionary.portal.allOrganizations : null)}
+            className="col-span-2 border-b border-border/55 pb-4 sm:col-span-1 sm:border-b-0 sm:border-r sm:pb-0 sm:pr-5"
           />
-        ) : null}
+          <BriefingFact
+            icon={<Flag aria-hidden className="size-4" />}
+            label={nextMeta?.delayed ? clientProjectsDictionary.portal.delayedMeta : clientProjectsDictionary.portal.nextSharedMeta}
+            value={nextMeta?.title ?? clientProjectsDictionary.portal.noScheduledMetas}
+            detail={nextMeta ? `${nextMeta.projectName} · ${formatClientProjectDate(nextMeta.targetDate)}` : null}
+            className="border-r border-border/55 pr-4 pt-4 sm:px-5 sm:pt-0"
+          />
+          <BriefingFact
+            icon={<CalendarDays aria-hidden className="size-4" />}
+            label={deliveryOverdue ? clientProjectsDictionary.portal.delayedDelivery : clientProjectsDictionary.portal.nextDelivery}
+            value={nearestDelivery?.name ?? clientProjectsDictionary.portal.noScheduledDelivery}
+            detail={nearestDelivery ? formatClientProjectDate(nearestDelivery.targetDate) : null}
+            className="pl-4 pt-4 sm:pl-5 sm:pt-0"
+          />
+        </dl>
       </header>
 
       {ongoingProjects.length > 0 ? (
@@ -207,9 +327,12 @@ export function ClientPortalHome({ firstName, email = null, initialData = null }
             </h2>
             <Link href="/account/projetos" className="inline-flex min-h-11 items-center gap-2 text-body font-bold text-primary hover:underline">{clientProjectsDictionary.portal.seeAllProjects}<ArrowRight className="size-4" /></Link>
           </div>
-          <div className="grid gap-4 md:grid-cols-2">{ongoingProjects.slice(0, 4).map((project) => (
-            <ProjectListCard key={project.id} project={project} showOrganizations={!singleOrganization && !focusedOrganization} headingLevel="h3" />
-          ))}</div>
+          <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_18rem]">
+            <UpcomingBriefing items={upcomingBriefing} />
+            <div className={`grid gap-4 lg:col-start-1 lg:row-start-1 ${ongoingProjects.length > 1 ? "md:grid-cols-2" : ""}`}>{ongoingProjects.slice(0, 4).map((project) => (
+              <ProjectListCard key={project.id} project={project} showOrganizations={!singleOrganization && !focusedOrganization} headingLevel="h3" />
+            ))}</div>
+          </div>
         </section>
       ) : (
         <Card asChild variant="light">

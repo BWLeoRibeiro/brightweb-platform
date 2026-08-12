@@ -210,11 +210,15 @@ test("client portal adapts its hierarchy to organization and project counts", ()
   assert.match(portal, /focus-visible:border-ring/);
   assert.match(portal, /showOrganizations=\{!singleOrganization && !focusedOrganization\}/);
   assert.match(portal, /yourOrganization/);
+  assert.match(portal, /buildUpcomingBriefing\(ongoingProjects\)/);
+  assert.match(portal, /findNearestDelivery\(ongoingProjects\)/);
+  assert.match(portal, /clientProjectsDictionary\.portal\.upNext/);
+  assert.match(portal, /lg:grid-cols-\[minmax\(0,1fr\)_18rem\]/);
+  assert.match(portal, /ongoingProjects\.length > 1 \? "md:grid-cols-2"/);
   assert.match(portal, /AccountAndSecurityFooter/);
   assert.match(portal, /href="\/account\/perfil"/);
   assert.match(shared, /meta\.status === "in_progress" \|\| meta\.status === "delayed"/);
   assert.match(shared, /ordered\.find\(\(meta\) => meta\.status === "pending"\)/);
-  assert.doesNotMatch(portal, /clientNextSteps|nextSteps/);
   assert.match(listCard, /showOrganizations = true/);
   assert.match(listCard, /resolveClientMetaPreview\(project\.metaPreview\)/);
   assert.match(listCard, /metaPreview\.metas\.map/);
@@ -256,6 +260,7 @@ test("client loading states mirror the home, list and detail page geometries", (
   const detailPage = source("client/project-detail-page.tsx");
   assert.match(loading, /ClientPortalHomeLoading/);
   assert.match(loading, /SkeletonCard className="h-72 shadow-none" lines=\{4\}/);
+  assert.match(loading, /lg:grid-cols-\[minmax\(0,1fr\)_18rem\]/);
   assert.match(loading, /ClientProjectsListLoading/);
   assert.match(loading, /md:grid-cols-2/);
   assert.match(loading, /ClientProjectDetailLoading/);
