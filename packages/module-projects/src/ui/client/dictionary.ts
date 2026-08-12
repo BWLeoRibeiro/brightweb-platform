@@ -112,7 +112,6 @@ export const clientProjectsDictionary = {
     allProjects: "Todos",
     myProjects: "Os meus projetos",
     portfolioEyebrow: "Portefólio",
-    portfolioScope: "Âmbito do portefólio",
     inPortfolio: "no portefólio",
     openProjects: "Abrir projetos",
     projectsLoadError: "Não foi possível carregar os projetos.",

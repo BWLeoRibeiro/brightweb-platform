@@ -214,6 +214,8 @@ test("client portal adapts its hierarchy to organization and project counts", ()
   assert.match(portal, /setSelectedOrganizationId/);
   assert.match(portal, /<OrganizationFilterMenu/);
   assert.match(list, /<OrganizationFilterMenu/);
+  assert.match(list, /clientProjectsDictionary\.portal\.yourOrganizations/);
+  assert.match(list, /clientProjectsDictionary\.portal\.yourOrganization/);
   assert.match(organizationFilter, /h-20 w-full/);
   assert.match(organizationFilter, /lg:w-80/);
   assert.match(organizationFilter, /min-w-0 w-full lg:w-80/);

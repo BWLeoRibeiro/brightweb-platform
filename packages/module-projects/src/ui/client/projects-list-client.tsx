@@ -69,7 +69,7 @@ function ClientProjectsPortfolioHeader({
             organizations={organizations}
             selectedOrganizationId={activeOrganizationId}
             onSelect={onSelectOrganization}
-            label={clientProjectsDictionary.safeUi.portfolioScope}
+            label={organizations.length > 1 ? clientProjectsDictionary.portal.yourOrganizations : clientProjectsDictionary.portal.yourOrganization}
             description={`${clientProjectsDictionary.portal.activeProjectsCount(activeCount)} · ${clientProjectsDictionary.safeUi.projectResultCount(totalCount)} ${clientProjectsDictionary.safeUi.inPortfolio}`}
           />
         ) : null}
