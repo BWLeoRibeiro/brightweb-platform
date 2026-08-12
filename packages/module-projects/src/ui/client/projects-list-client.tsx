@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Building2, FolderKanban } from "lucide-react";
+import { FolderKanban } from "lucide-react";
 import { PillTabs } from "@brightweblabs/app-shell";
-import { Button, Card, EmptyState, SearchField, SelectControl } from "@brightweblabs/ui";
+import { Button, Card, EmptyState, SearchField } from "@brightweblabs/ui";
 import type { ClientProjectListItem, ClientProjectsResult } from "../../client-contracts";
+import { OrganizationFilterMenu } from "./organization-filter-menu";
 import { ProjectListCard } from "./project-list-card";
 import { ClientProjectsListLoading } from "./projects-loading";
 import { clientProjectsDictionary } from "./dictionary";
@@ -50,9 +51,6 @@ function ClientProjectsPortfolioHeader({
   totalCount: number;
   onSelectOrganization: (organizationId: string) => void;
 }) {
-  const selectedOrganization = organizations.find((organization) => organization.id === activeOrganizationId) ?? null;
-  const scopeLabel = selectedOrganization?.name ?? clientProjectsDictionary.portal.allOrganizations;
-
   return (
     <header className="brand-panel relative overflow-hidden rounded-[var(--radius-panel)] p-6 text-[color:var(--project-hero-foreground)] md:p-8">
       <div aria-hidden className="pointer-events-none absolute -right-24 -top-28 size-80 rounded-full opacity-100 blur-3xl dark:opacity-40" style={{ background: "var(--dashboard-hero-glow)" }} />
@@ -67,29 +65,13 @@ function ClientProjectsPortfolioHeader({
           <p className="mt-3 max-w-[42rem] text-body-lg leading-relaxed" style={{ color: "var(--project-hero-muted)" }}>{clientProjectsDictionary.safeUi.pageDescription}</p>
         </div>
         {organizations.length > 0 ? (
-          <section className="min-w-0" aria-labelledby="client-project-portfolio-scope">
-            <p id="client-project-portfolio-scope" className="text-label lg:text-right" style={{ color: "var(--project-hero-muted)" }}>{clientProjectsDictionary.safeUi.portfolioScope}</p>
-            {organizations.length > 1 ? (
-              <SelectControl
-                aria-label={clientProjectsDictionary.portal.yourOrganizations}
-                className="mt-2 h-14 w-full border-[color:var(--project-hero-border)] bg-[color:var(--project-hero-surface-raised)] text-[color:var(--project-hero-foreground)]"
-                value={activeOrganizationId}
-                onValueChange={onSelectOrganization}
-                options={[
-                  { value: "all", label: clientProjectsDictionary.portal.allOrganizations },
-                  ...organizations.map((organization) => ({ value: organization.id, label: organization.name })),
-                ]}
-              />
-            ) : (
-              <div className="mt-2 flex h-14 items-center gap-3 rounded-[var(--radius-card)] border border-[color:var(--project-hero-border)] bg-[color:var(--project-hero-surface-raised)] px-4">
-                <Building2 aria-hidden className="size-4 shrink-0" style={{ color: "var(--accent)" }} />
-                <span className="min-w-0 truncate text-title">{scopeLabel}</span>
-              </div>
-            )}
-            <p className="mt-2 text-meta lg:text-right" style={{ color: "var(--project-hero-muted)" }}>
-              {clientProjectsDictionary.portal.activeProjectsCount(activeCount)} · {clientProjectsDictionary.safeUi.projectResultCount(totalCount)} {clientProjectsDictionary.safeUi.inPortfolio}
-            </p>
-          </section>
+          <OrganizationFilterMenu
+            organizations={organizations}
+            selectedOrganizationId={activeOrganizationId}
+            onSelect={onSelectOrganization}
+            label={clientProjectsDictionary.safeUi.portfolioScope}
+            description={`${clientProjectsDictionary.portal.activeProjectsCount(activeCount)} · ${clientProjectsDictionary.safeUi.projectResultCount(totalCount)} ${clientProjectsDictionary.safeUi.inPortfolio}`}
+          />
         ) : null}
       </div>
     </header>

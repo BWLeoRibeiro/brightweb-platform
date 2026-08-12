@@ -12,7 +12,7 @@ export function ClientProjectsListLoading() {
           </div>
           <div className="space-y-2">
             <SkeletonLine w="8rem" className="bg-[color:var(--project-hero-surface-raised)] lg:ml-auto" />
-            <SkeletonLine w="20rem" className="h-14 bg-[color:var(--project-hero-surface-raised)]" />
+            <SkeletonLine w="20rem" className="h-20 bg-[color:var(--project-hero-surface-raised)]" />
             <SkeletonLine w="13rem" className="bg-[color:var(--project-hero-surface-raised)] lg:ml-auto" />
           </div>
         </div>

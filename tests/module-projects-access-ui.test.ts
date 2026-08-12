@@ -199,6 +199,7 @@ test("client portal adapts its hierarchy to organization and project counts", ()
   const accountRoute = source("client/account-routes.tsx");
   const listCard = source("client/project-list-card.tsx");
   const list = source("client/projects-list-client.tsx");
+  const organizationFilter = source("client/organization-filter-menu.tsx");
   const shared = source("client/shared.ts");
 
   assert.match(portal, /organizations\.length === 1/);
@@ -211,20 +212,22 @@ test("client portal adapts its hierarchy to organization and project counts", ()
   assert.match(portal, /ongoingProjects\.slice\(0, 4\)/);
   assert.match(portal, /organizations\.length > 1/);
   assert.match(portal, /setSelectedOrganizationId/);
-  assert.match(portal, /h-20 w-full/);
-  assert.match(portal, /lg:w-80/);
-  assert.match(portal, /min-w-0 w-full lg:w-80/);
-  assert.match(portal, /group min-w-0 transition-/);
-  assert.match(portal, /w-\[var\(--radix-dropdown-menu-trigger-width\)\]/);
-  assert.match(portal, /focus-visible:border-\[color:var\(--accent\)\]/);
+  assert.match(portal, /<OrganizationFilterMenu/);
+  assert.match(list, /<OrganizationFilterMenu/);
+  assert.match(organizationFilter, /h-20 w-full/);
+  assert.match(organizationFilter, /lg:w-80/);
+  assert.match(organizationFilter, /min-w-0 w-full lg:w-80/);
+  assert.match(organizationFilter, /group min-w-0 transition-/);
+  assert.match(organizationFilter, /w-\[var\(--radix-dropdown-menu-trigger-width\)\]/);
+  assert.match(organizationFilter, /focus-visible:border-\[color:var\(--accent\)\]/);
   assert.match(portal, /showOrganizations=\{!singleOrganization && !focusedOrganization\}/);
   assert.match(portal, /yourOrganization/);
   assert.match(portal, /buildUpcomingBriefing\(ongoingProjects\)/);
   assert.match(portal, /findNearestDelivery\(ongoingProjects\)/);
   assert.match(portal, /clientProjectsDictionary\.portal\.upNext/);
   assert.match(portal, /brand-panel relative overflow-hidden/);
-  assert.match(portal, /project-hero-surface-raised/);
-  assert.match(portal, /InitialsAvatar label=\{selected\.name\} tone="inverse"/);
+  assert.match(organizationFilter, /project-hero-surface-raised/);
+  assert.match(organizationFilter, /InitialsAvatar label=\{selected\.name\} tone="inverse"/);
   assert.match(portal, /lg:grid-cols-\[minmax\(0,1fr\)_18rem\]/);
   assert.match(portal, /ongoingProjects\.length > 1 \? "md:grid-cols-2"/);
   assert.match(portal, /AccountAndSecurityFooter/);
