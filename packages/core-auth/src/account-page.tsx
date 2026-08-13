@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { BriefcaseBusiness, KeyRound, ShieldCheck, UserCircle2 } from "lucide-react";
-import { Button, Card, SectionHeading } from "@brightweblabs/ui";
+import { Button, Card, InitialsAvatar, SectionHeading, StatusPill } from "@brightweblabs/ui";
 import { getCurrentAccountProfile, type AccountProfile } from "./account/profile";
 import { requireServerPageAccess } from "./server";
 import { AccountClient } from "./ui/account/account-client";
@@ -66,44 +66,74 @@ export async function AccountPage({
   const roleLabel = getRoleLabel(role);
 
   return (
-    <div className="space-y-5">
-      <div className="relative overflow-hidden rounded-2xl" style={{ background: "var(--account-identity-surface)", boxShadow: "var(--account-identity-shadow)" }}>
-        <div className="pointer-events-none absolute -right-16 -top-16 size-64 rounded-full" style={{ background: "var(--account-identity-glow-strong)" }} />
-        <div className="pointer-events-none absolute -bottom-12 -left-8 size-48 rounded-full" style={{ background: "var(--account-identity-glow-soft)" }} />
-        <div className="absolute left-0 right-0 top-0 h-[2px]" style={{ background: "var(--account-identity-accent)" }} />
-
-        <div className="relative z-10 flex flex-wrap items-center justify-between gap-5 px-6 py-7 sm:px-8">
-          <div className="flex items-center gap-5">
-            <div
-              className="font-display flex size-[3.75rem] shrink-0 select-none items-center justify-center rounded-full text-heading-3 font-bold"
-              style={{
-                background: isClient ? "var(--role-client)" : "var(--role-team)",
-                color: "var(--account-identity-foreground)",
-                boxShadow: isClient ? "var(--account-avatar-ring-client)" : "var(--account-avatar-ring-team)",
-              }}
-            >
-              {initials}
-            </div>
-            <div>
-              <p className="mb-1 text-label font-bold" style={{ color: "var(--account-identity-muted)" }}>
-                {defaultAccountUiDictionary.identity.kicker}
-              </p>
-              <h1 className="font-display text-heading-2 font-bold leading-none" style={{ color: "var(--account-identity-foreground)" }}>
-                {displayName}
-              </h1>
+    <div className={isClient ? "mx-auto max-w-[68rem] space-y-6" : "space-y-5"}>
+      {isClient ? (
+        <header className="overflow-hidden rounded-[var(--radius-panel)] border border-border/60 bg-card shadow-[var(--account-client-card-shadow)]">
+          <div className="relative h-28 overflow-hidden sm:h-36" style={{ background: "var(--account-client-cover)" }}>
+            <span aria-hidden className="absolute -right-16 -top-24 size-72 rounded-full" style={{ background: "var(--account-client-cover-glow)" }} />
+            <span aria-hidden className="absolute -bottom-24 left-[12%] size-56 rounded-full" style={{ background: "var(--account-client-cover-glow-soft)" }} />
+          </div>
+          <div className="relative px-5 pb-6 sm:px-8 sm:pb-8">
+            <InitialsAvatar
+              label={displayName}
+              fallback={user.email ?? null}
+              tone="client"
+              className="-mt-10 size-20 border-4 border-card shadow-[var(--account-client-avatar-shadow)] [&_[data-slot=avatar-fallback]]:text-heading-3"
+            />
+            <div className="mt-4 flex flex-wrap items-start justify-between gap-4">
+              <div className="min-w-0">
+                <p className="text-label font-semibold text-muted-foreground">{defaultAccountUiDictionary.identity.kicker}</p>
+                <h1 className="font-display mt-1 text-heading-2 font-bold leading-tight text-foreground">{displayName}</h1>
+                <p className="mt-1 truncate text-body text-muted-foreground">{user.email ?? defaultAccountUiDictionary.profile.emptyValue}</p>
+              </div>
               {roleLabel ? (
-                <span
-                  className="mt-2 inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-label font-semibold"
-                  style={{ background: "var(--account-role-surface)", color: "var(--account-identity-accent)", borderColor: "var(--account-role-border)" }}
-                >
-                  <ShieldCheck className="size-3" />
+                <StatusPill token="--role-client" size="normal" className="mt-1">
+                  <ShieldCheck aria-hidden className="size-3.5" />
                   {roleLabel}
-                </span>
+                </StatusPill>
               ) : null}
             </div>
           </div>
+        </header>
+      ) : (
+        <div className="relative overflow-hidden rounded-2xl" style={{ background: "var(--account-identity-surface)", boxShadow: "var(--account-identity-shadow)" }}>
+          <div className="pointer-events-none absolute -right-16 -top-16 size-64 rounded-full" style={{ background: "var(--account-identity-glow-strong)" }} />
+          <div className="pointer-events-none absolute -bottom-12 -left-8 size-48 rounded-full" style={{ background: "var(--account-identity-glow-soft)" }} />
+          <div className="absolute left-0 right-0 top-0 h-[2px]" style={{ background: "var(--account-identity-accent)" }} />
+
+          <div className="relative z-10 flex flex-wrap items-center justify-between gap-5 px-6 py-7 sm:px-8">
+            <div className="flex items-center gap-5">
+              <div
+                className="font-display flex size-[3.75rem] shrink-0 select-none items-center justify-center rounded-full text-heading-3 font-bold"
+                style={{
+                  background: "var(--role-team)",
+                  color: "var(--account-identity-foreground)",
+                  boxShadow: "var(--account-avatar-ring-team)",
+                }}
+              >
+                {initials}
+              </div>
+              <div>
+                <p className="mb-1 text-label font-bold" style={{ color: "var(--account-identity-muted)" }}>
+                  {defaultAccountUiDictionary.identity.kicker}
+                </p>
+                <h1 className="font-display text-heading-2 font-bold leading-none" style={{ color: "var(--account-identity-foreground)" }}>
+                  {displayName}
+                </h1>
+                {roleLabel ? (
+                  <span
+                    className="mt-2 inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-label font-semibold"
+                    style={{ background: "var(--account-role-surface)", color: "var(--account-identity-accent)", borderColor: "var(--account-role-border)" }}
+                  >
+                    <ShieldCheck className="size-3" />
+                    {roleLabel}
+                  </span>
+                ) : null}
+              </div>
+            </div>
+          </div>
         </div>
-      </div>
+      )}
 
       <div className={`grid gap-5 ${showWorkAccess ? "lg:grid-cols-2" : "lg:grid-cols-[minmax(0,1fr)_minmax(18rem,0.72fr)]"}`}>
         <div className="space-y-4">

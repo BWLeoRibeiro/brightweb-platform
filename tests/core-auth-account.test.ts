@@ -412,4 +412,7 @@ test("account keeps personal settings separate from the dedicated projects area"
   assert.doesNotMatch(surface, /module-projects/);
   assert.match(surface, /console\.error\("\[core-auth\.AccountPage\.profile\]"/);
   assert.doesNotMatch(surface, /loadError\}: \{accountProfile\.error\}/);
+  assert.match(surface, /<InitialsAvatar/);
+  assert.match(surface, /var\(--account-client-cover\)/);
+  assert.match(surface, /<StatusPill token="--role-client"/);
 });
