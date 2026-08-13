@@ -21,6 +21,24 @@ export function resolveClientMetaPreview(metas: ClientProjectMeta[]) {
     : null;
 }
 
+export function resolveNextClientMeta(
+  metas: ClientProjectMeta[],
+  todayKey = new Date().toISOString().slice(0, 10),
+) {
+  const incomplete = metas.filter((meta) => meta.status !== "achieved");
+  const upcoming = incomplete
+    .filter((meta) => meta.targetDate && meta.targetDate >= todayKey)
+    .sort((left, right) => left.targetDate!.localeCompare(right.targetDate!) || left.position - right.position);
+  if (upcoming[0]) return upcoming[0];
+
+  const overdue = incomplete
+    .filter((meta) => meta.targetDate)
+    .sort((left, right) => right.targetDate!.localeCompare(left.targetDate!) || left.position - right.position);
+  if (overdue[0]) return overdue[0];
+
+  return [...incomplete].sort((left, right) => left.position - right.position)[0] ?? null;
+}
+
 export function formatClientProjectDate(dateLike: string | null): string {
   if (!dateLike) return clientProjectsDictionary.common.noDate;
   const value = dateLike.includes("T")

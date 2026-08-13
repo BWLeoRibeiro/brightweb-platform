@@ -111,7 +111,7 @@ export const clientProjectsDictionary = {
     projectSetupTitle: "Estamos a preparar o teu projeto",
     projectSetupDescription: "A equipa está a definir as primeiras metas. Em breve vais poder acompanhar o progresso aqui.",
     milestoneJourney: "Percurso do projeto",
-    highlightedMilestone: "Em destaque",
+    nextMilestone: "Próxima meta",
     metas: "Metas",
     sharedMaterialsEyebrow: "Partilha",
     sharedDocuments: "Materiais partilhados",

@@ -11,7 +11,7 @@ import {
   type ClientAccessDraft,
 } from "../packages/module-projects/src/ui/project-client-access-editor.tsx";
 import { matchesClientProjectGroup, matchesClientProjectOrganization } from "../packages/module-projects/src/ui/client/projects-list-client.tsx";
-import { resolveClientMetaPreview } from "../packages/module-projects/src/ui/client/shared.ts";
+import { resolveClientMetaPreview, resolveNextClientMeta } from "../packages/module-projects/src/ui/client/shared.ts";
 
 const uiRoot = join(process.cwd(), "packages/module-projects/src/ui");
 const source = (file: string) => readFileSync(join(uiRoot, file), "utf8");
@@ -202,6 +202,32 @@ test("client meta previews prefer up to three current metas, then one pending me
   const pending = resolveClientMetaPreview([meta("done", "achieved", 0), meta("next", "pending", 1)]);
   assert.equal(pending?.label, "Próxima meta");
   assert.deepEqual(pending?.metas.map(({ id }) => id), ["next"]);
+});
+
+test("client project pulse shows the closest incomplete milestone deadline", () => {
+  const meta = (id: string, status: "pending" | "in_progress" | "achieved" | "delayed", targetDate: string | null, position: number) => ({
+    id,
+    title: id,
+    status,
+    targetDate,
+    completedAt: status === "achieved" ? targetDate : null,
+    position,
+  });
+
+  const next = resolveNextClientMeta([
+    meta("undated", "in_progress", null, 0),
+    meta("later", "in_progress", "2026-11-20", 1),
+    meta("done", "achieved", "2026-08-01", 2),
+    meta("closest", "pending", "2026-09-10", 3),
+    meta("overdue", "delayed", "2026-08-05", 4),
+  ], "2026-08-13");
+
+  assert.equal(next?.id, "closest");
+  assert.equal(resolveNextClientMeta([
+    meta("older-overdue", "delayed", "2026-07-01", 0),
+    meta("recent-overdue", "delayed", "2026-08-05", 1),
+  ], "2026-08-13")?.id, "recent-overdue");
+  assert.equal(resolveNextClientMeta([meta("done", "achieved", "2026-08-01", 0)], "2026-08-13"), null);
 });
 
 test("client portal adapts its hierarchy to organization and project counts", () => {

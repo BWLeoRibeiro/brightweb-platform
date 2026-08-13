@@ -7,7 +7,7 @@ import { Button, Card } from "@brightweblabs/ui";
 import type { ClientProjectDetail } from "../../client-contracts";
 import type { MilestoneStatus, ProjectLinkKind } from "../../contracts";
 import { CLIENT_MILESTONE_STATUS_CLASSES, CLIENT_MILESTONE_STATUS_LABELS, CLIENT_PROJECT_LINK_KIND_LABELS, CLIENT_PROJECT_STATUS_LABELS, clientProjectsDictionary } from "./dictionary";
-import { formatClientProjectDate, isClientProjectDateOverdue } from "./shared";
+import { formatClientProjectDate, isClientProjectDateOverdue, resolveNextClientMeta } from "./shared";
 import { ClientProjectDetailLoading } from "./projects-loading";
 import { ProjectStatusBadge } from "../project-state-badge";
 import { ProjectProgressBar } from "../shared/project-progress";
@@ -99,10 +99,7 @@ export function ClientProjectDetailClient({ projectId, initialProject }: { proje
   const overdue = isClientProjectDateOverdue(project.targetDate) && !["completed", "canceled"].includes(project.status);
   const achievedCount = metas.filter((meta) => meta.status === "achieved").length;
   const displayPercent = project.progress.percent ?? (metas.length > 0 ? Math.round((achievedCount / metas.length) * 100) : null);
-  const highlightedMeta = metas.find((meta) => meta.status === "delayed")
-    ?? metas.find((meta) => meta.status === "in_progress")
-    ?? metas.find((meta) => meta.status === "pending")
-    ?? null;
+  const nextMeta = resolveNextClientMeta(metas);
   const hasNarrative = Boolean(project.clientSummary || project.clientScope);
 
   return (
@@ -138,11 +135,11 @@ export function ClientProjectDetailClient({ projectId, initialProject }: { proje
                   <p className="pb-1 text-right text-meta" style={{ color: "var(--project-hero-muted)" }}>{achievedCount} {clientProjectsDictionary.safeUi.of} {metas.length}</p>
                 </div>
                 {displayPercent !== null ? <ProjectProgressBar ariaLabel={clientProjectsDictionary.safeUi.progress} percent={displayPercent} className="mt-4" trackClassName="bg-[color:var(--project-hero-border)]" fillClassName="bg-[color:var(--accent)]" /> : null}
-                {highlightedMeta ? (
+                {nextMeta ? (
                   <div className="mt-5 border-t border-[color:var(--project-hero-border)] pt-4">
-                    <p className="flex items-center gap-2 text-label" style={{ color: "var(--project-hero-muted)" }}><Flag aria-hidden className="size-3.5 text-[color:var(--accent)]" />{clientProjectsDictionary.safeUi.highlightedMilestone}</p>
-                    <p className="mt-2 text-body font-bold leading-snug">{highlightedMeta.title}</p>
-                    <p className="mt-1 text-meta" style={{ color: "var(--project-hero-muted)" }}>{CLIENT_MILESTONE_STATUS_LABELS[highlightedMeta.status]}{highlightedMeta.targetDate ? ` · ${formatClientProjectDate(highlightedMeta.targetDate)}` : ""}</p>
+                    <p className="flex items-center gap-2 text-label" style={{ color: "var(--project-hero-muted)" }}><Flag aria-hidden className="size-3.5 text-[color:var(--accent)]" />{clientProjectsDictionary.safeUi.nextMilestone}</p>
+                    <p className="mt-2 text-body font-bold leading-snug">{nextMeta.title}</p>
+                    <p className="mt-1 text-meta" style={{ color: "var(--project-hero-muted)" }}>{CLIENT_MILESTONE_STATUS_LABELS[nextMeta.status]}{nextMeta.targetDate ? ` · ${formatClientProjectDate(nextMeta.targetDate)}` : ""}</p>
                   </div>
                 ) : null}
               </>
