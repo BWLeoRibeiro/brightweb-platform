@@ -102,21 +102,26 @@ export function ClientProjectDetailLoading() {
   return (
     <div className="space-y-8 sm:space-y-10" aria-hidden>
       <SkeletonLine w="6rem" className="h-6" />
-      <div className="brand-panel space-y-4 rounded-[var(--radius-card)] border border-[color:var(--project-hero-border)] p-6 sm:p-8 lg:p-10">
-        <SkeletonLine w="7rem" className="h-6 rounded-full bg-[color:var(--project-hero-surface-raised)]" />
-        <SkeletonLine w="25rem" className="h-12 bg-[color:var(--project-hero-surface-raised)]" />
-        <SkeletonLine w="14rem" className="bg-[color:var(--project-hero-surface-raised)]" />
-        <div className="flex flex-wrap gap-x-12 gap-y-4 border-t border-[color:var(--project-hero-border)] pt-5">
-          <SkeletonLine w="7rem" className="h-9 bg-[color:var(--project-hero-surface-raised)]" />
-          <SkeletonLine w="7rem" className="h-9 bg-[color:var(--project-hero-surface-raised)]" />
-          <SkeletonLine w="7rem" className="h-9 bg-[color:var(--project-hero-surface-raised)]" />
+      <div className="brand-panel rounded-[var(--radius-panel)] border border-[color:var(--project-hero-border)] p-6 sm:p-8 lg:p-10">
+        <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_18rem] lg:items-end">
+          <div className="space-y-4">
+            <SkeletonLine w="7rem" className="h-6 rounded-full bg-[color:var(--project-hero-surface-raised)]" />
+            <SkeletonLine w="25rem" className="h-12 bg-[color:var(--project-hero-surface-raised)]" />
+            <SkeletonLine w="14rem" className="bg-[color:var(--project-hero-surface-raised)]" />
+            <div className="flex flex-wrap gap-x-12 gap-y-4 border-t border-[color:var(--project-hero-border)] pt-5">
+              <SkeletonLine w="7rem" className="h-9 bg-[color:var(--project-hero-surface-raised)]" />
+              <SkeletonLine w="7rem" className="h-9 bg-[color:var(--project-hero-surface-raised)]" />
+              <SkeletonLine w="7rem" className="h-9 bg-[color:var(--project-hero-surface-raised)]" />
+            </div>
+          </div>
+          <SkeletonCard className="h-56 border-[color:var(--project-hero-border)] bg-[color:var(--project-hero-surface-raised)] shadow-none" lines={4} />
         </div>
       </div>
-      <div className="max-w-[52rem] space-y-8 sm:space-y-10">
-        <SkeletonCard className="h-36 shadow-none" lines={3} />
-        <SkeletonCard className="h-72 shadow-none" lines={5} />
-        <SkeletonCard className="h-40 shadow-none" lines={3} />
+      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_22rem] lg:gap-8">
+        <SkeletonCard className="h-64 shadow-none" lines={4} />
+        <SkeletonCard className="h-80 shadow-none" lines={6} />
       </div>
+      <SkeletonCard className="h-40 shadow-none" lines={3} />
     </div>
   );
 }

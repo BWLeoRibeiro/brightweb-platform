@@ -65,8 +65,13 @@ test("client detail renders only explicit client-facing project fields", () => {
   assert.match(detail, /project\.clientSummary/);
   assert.match(detail, /project\.clientScope/);
   assert.match(detail, /project\.clientContact/);
+  assert.match(detail, /project\.documents/);
+  assert.match(detail, /meta\.completedAt \?\? meta\.targetDate/);
+  assert.match(detail, /lg:grid-cols-\[minmax\(0,1fr\)_22rem\]/);
+  assert.match(detail, /clientProjectsDictionary\.safeUi\.milestoneJourney/);
   assert.doesNotMatch(detail, /clientNextSteps|Próximos passos/);
   assert.doesNotMatch(detail, /project\.summary/);
+  assert.doesNotMatch(detail, /project\.tasks|project\.activity|project\.budget/);
 });
 
 test("selected-client access requires an audience in every selected organization", () => {
@@ -283,7 +288,8 @@ test("client loading states mirror the home, list and detail page geometries", (
   assert.match(loading, /ClientProjectsListLoading/);
   assert.match(loading, /md:grid-cols-2/);
   assert.match(loading, /ClientProjectDetailLoading/);
-  assert.match(loading, /max-w-\[52rem\]/);
+  assert.match(loading, /lg:grid-cols-\[minmax\(0,1fr\)_22rem\]/);
+  assert.match(loading, /h-56 border-\[color:var\(--project-hero-border\)\]/);
   assert.match(accountRoute, /loadClientPortalData/);
   assert.match(listPage, /initialProjects=\{initialProjects\}/);
   assert.match(detailPage, /initialProject=\{initialProject\}/);
