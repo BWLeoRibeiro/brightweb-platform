@@ -205,6 +205,8 @@ test("segmented controls expose selection, visible focus, and reduced Framer mot
     assert.match(source, /whileTap=\{prefersReducedMotion \? undefined : \{ scale: 0\.95 \}\}/);
     assert.match(source, /layoutId=\{prefersReducedMotion \? undefined :/);
   }
+
+  assert.match(pillTabs, /className="[^"]*min-h-11/);
 });
 
 test("reduced motion is static across theme entrances, sheets, modules, and auth", async () => {

@@ -115,7 +115,7 @@ export function ClientProjectDetailClient({ projectId, initialProject }: { proje
         <div className={`relative grid gap-8 ${hasProjectPulse ? "lg:grid-cols-[minmax(0,1fr)_18rem] lg:items-end" : ""}`}>
           <div className="min-w-0 space-y-4">
             <div className="flex flex-wrap items-center gap-3">
-              <ProjectStatusBadge status={project.status} label={CLIENT_PROJECT_STATUS_LABELS[project.status]} size="small" />
+              <ProjectStatusBadge status={project.status} label={CLIENT_PROJECT_STATUS_LABELS[project.status]} surface="hero" />
               {project.reference ? <span className="text-data text-meta text-[color:var(--project-hero-muted)]">{project.reference}</span> : null}
             </div>
             <h1 className="font-display max-w-[48rem] text-[length:var(--text-ui-preview-card-title)] font-black leading-[var(--type-leading-110)] tracking-[var(--type-tracking-n025)] sm:text-[length:var(--text-ui-dashboard-title-lg)]">{project.name}</h1>

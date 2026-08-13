@@ -195,13 +195,14 @@ export function ClientProjectsListClient({ initialProjects = null }: { initialPr
           <p className="text-meta text-muted-foreground" aria-live="polite">{clientProjectsDictionary.safeUi.projectResultCount(filtered.length)}</p>
         </div>
         <div className="mt-3 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-          <PillTabs
-            ariaLabel={clientProjectsDictionary.safeUi.filterLabel}
-            className="max-w-full overflow-x-auto [&>button]:min-h-11 [&>button]:px-3 sm:[&>button]:px-4"
-            items={GROUPS.map((item) => ({ value: item.value, label: `${item.label} · ${groupCounts[item.value]}` }))}
-            value={group}
-            onValueChange={setGroup}
-          />
+          <div className="-m-1 max-w-full overflow-x-auto p-1">
+            <PillTabs
+              ariaLabel={clientProjectsDictionary.safeUi.filterLabel}
+              items={GROUPS.map((item) => ({ value: item.value, label: `${item.label} · ${groupCounts[item.value]}` }))}
+              value={group}
+              onValueChange={setGroup}
+            />
+          </div>
           {showSearch ? (
             <div className="min-w-0 sm:w-64">
               <SearchField value={search} onChange={setSearch} onClear={() => setSearch("")} className="[&>button]:size-11 [&>button]:right-0" inputClassName="h-11 bg-background" placeholder={clientProjectsDictionary.safeUi.searchPlaceholder} />

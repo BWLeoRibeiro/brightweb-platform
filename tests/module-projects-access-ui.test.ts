@@ -124,9 +124,11 @@ test("creation review names the exact external audience and new controls expose 
   assert.match(wizard, /aria-label=\{projectAccessDictionary\.wizard\.roleFor\(person\.label\)\}/);
   assert.match(list, /<PillTabs/);
   assert.match(list, /ariaLabel=\{clientProjectsDictionary\.safeUi\.filterLabel\}/);
+  assert.doesNotMatch(list, /<PillTabs[\s\S]{0,200}className=/);
   assert.match(list, /setReloadKey\(\(current\) => current \+ 1\)/);
   assert.match(detail, /setReloadKey\(\(current\) => current \+ 1\)/);
   assert.match(detail, /response\.status === 404 \|\| response\.status === 403/);
+  assert.match(detail, /<ProjectStatusBadge[^>]*surface="hero"/);
 });
 
 test("participating organizations remain editable by project managers through the protected route", () => {

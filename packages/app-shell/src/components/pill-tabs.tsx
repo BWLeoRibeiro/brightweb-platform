@@ -54,7 +54,7 @@ export function PillTabs<Value extends string>({
             onBlur={() => setHovered(null)}
             whileTap={prefersReducedMotion ? undefined : { scale: 0.95 }}
             transition={prefersReducedMotion ? { duration: 0 } : { type: "spring", stiffness: 500, damping: 32 }}
-            className="relative shrink-0 rounded-full px-4 py-1.5 text-body text-[length:var(--text-ui-action)] font-semibold outline-none transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-[color:var(--ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--background)] motion-reduce:transition-none"
+            className="relative min-h-11 shrink-0 rounded-full px-4 py-1.5 text-body text-[length:var(--text-ui-action)] font-semibold outline-none transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-[color:var(--ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--background)] motion-reduce:transition-none"
             style={{
               color: active
                 ? "var(--foreground-button-brand)"

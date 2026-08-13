@@ -27,15 +27,6 @@ export const CLIENT_PROJECT_LINK_KIND_LABELS: Record<ProjectLinkKind, string> = 
   other: "Outro",
 };
 
-export const CLIENT_PROJECT_STATUS_STYLES: Record<ProjectStatus, string> = {
-  planned: "bg-[color:var(--project-ui-color-31)] text-[color:var(--project-state-planned-strong)]",
-  active: "bg-[color:var(--project-ui-color-33)] text-[color:var(--project-state-active-strong)]",
-  paused: "bg-[color:var(--project-ui-color-31)] text-[color:var(--project-state-planned-strong)]",
-  blocked: "bg-[color:var(--project-ui-color-35)] text-[color:var(--project-state-blocked-strong)]",
-  completed: "bg-[color:var(--project-ui-color-37)] text-[color:var(--project-state-completed-strong)]",
-  canceled: "bg-[color:var(--project-ui-color-39)] text-[color:var(--project-state-canceled-strong)] line-through",
-};
-
 export const CLIENT_MILESTONE_STATUS_CLASSES: Record<MilestoneStatus, string> = {
   pending: "text-muted-foreground",
   in_progress: "text-[color:var(--project-state-active-strong)]",
