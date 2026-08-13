@@ -415,4 +415,7 @@ test("account keeps personal settings separate from the dedicated projects area"
   assert.match(surface, /<InitialsAvatar/);
   assert.match(surface, /var\(--account-client-cover\)/);
   assert.match(surface, /<StatusPill token="--role-client"/);
+  const profileEditor = await readFile(path.join(repoRoot, "packages/core-auth/src/ui/account/account-client.tsx"), "utf8");
+  assert.match(profileEditor, /grid h-14 grid-cols-/);
+  assert.doesNotMatch(profileEditor, /sm:grid-cols-2/);
 });
