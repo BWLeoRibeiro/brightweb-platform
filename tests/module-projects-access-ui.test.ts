@@ -69,6 +69,9 @@ test("client detail renders only explicit client-facing project fields", () => {
   assert.match(detail, /meta\.completedAt \?\? meta\.targetDate/);
   assert.match(detail, /lg:grid-cols-\[minmax\(0,1fr\)_22rem\]/);
   assert.match(detail, /clientProjectsDictionary\.safeUi\.milestoneJourney/);
+  assert.match(detail, /clientProjectsDictionary\.safeUi\.projectSetupTitle/);
+  assert.match(detail, /metas\.length > 0 \?/);
+  assert.doesNotMatch(detail, /hasProjectPulse/);
   assert.doesNotMatch(detail, /clientNextSteps|Próximos passos/);
   assert.doesNotMatch(detail, /project\.summary/);
   assert.doesNotMatch(detail, /project\.tasks|project\.activity|project\.budget/);

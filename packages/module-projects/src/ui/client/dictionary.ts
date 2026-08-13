@@ -108,6 +108,8 @@ export const clientProjectsDictionary = {
     deadline: "Prazo",
     contact: "Contacto",
     projectProgress: "Progresso do projeto",
+    projectSetupTitle: "Estamos a preparar o teu projeto",
+    projectSetupDescription: "A equipa está a definir as primeiras metas. Em breve vais poder acompanhar o progresso aqui.",
     milestoneJourney: "Percurso do projeto",
     highlightedMilestone: "Em destaque",
     metas: "Metas",

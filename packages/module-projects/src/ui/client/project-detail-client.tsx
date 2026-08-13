@@ -104,7 +104,6 @@ export function ClientProjectDetailClient({ projectId, initialProject }: { proje
     ?? metas.find((meta) => meta.status === "pending")
     ?? null;
   const hasNarrative = Boolean(project.clientSummary || project.clientScope);
-  const hasProjectPulse = metas.length > 0;
 
   return (
     <article className="space-y-8 sm:space-y-10">
@@ -112,7 +111,7 @@ export function ClientProjectDetailClient({ projectId, initialProject }: { proje
 
       <header className="brand-panel relative overflow-hidden rounded-[var(--radius-panel)] border border-[color:var(--project-hero-border)] p-6 text-[color:var(--project-hero-foreground)] shadow-[var(--project-hero-shadow)] sm:p-8 lg:p-10">
         <span aria-hidden className="pointer-events-none absolute -right-24 -top-32 size-96 rounded-full bg-[color:var(--brand-accent)]/15 blur-3xl" />
-        <div className={`relative grid gap-8 ${hasProjectPulse ? "lg:grid-cols-[minmax(0,1fr)_18rem] lg:items-end" : ""}`}>
+        <div className="relative grid gap-8 lg:grid-cols-[minmax(0,1fr)_18rem] lg:items-end">
           <div className="min-w-0 space-y-4">
             <div className="flex flex-wrap items-center gap-3">
               <ProjectStatusBadge status={project.status} label={CLIENT_PROJECT_STATUS_LABELS[project.status]} surface="hero" />
@@ -130,23 +129,33 @@ export function ClientProjectDetailClient({ projectId, initialProject }: { proje
               {project.clientContact ? <HeroFact label={clientProjectsDictionary.safeUi.contact} value={project.clientContact.email ? <a className="rounded-sm hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]" href={`mailto:${project.clientContact.email}`}>{project.clientContact.label}</a> : project.clientContact.label} /> : null}
             </dl>
           </div>
-          {hasProjectPulse ? (
-            <aside className="rounded-[var(--radius-card)] border border-[color:var(--project-hero-border)] bg-[color:var(--project-hero-surface-raised)] p-5" aria-labelledby="client-project-progress-title">
-              <p id="client-project-progress-title" className="text-label" style={{ color: "var(--project-hero-muted)" }}>{clientProjectsDictionary.safeUi.projectProgress}</p>
-              <div className="mt-2 flex items-end justify-between gap-4">
-                <p className="font-display text-[length:var(--text-ui-dashboard-title-lg)] font-black leading-none">{displayPercent ?? 0}%</p>
-                <p className="pb-1 text-right text-meta" style={{ color: "var(--project-hero-muted)" }}>{achievedCount} {clientProjectsDictionary.safeUi.of} {metas.length}</p>
-              </div>
-              {displayPercent !== null ? <ProjectProgressBar ariaLabel={clientProjectsDictionary.safeUi.progress} percent={displayPercent} className="mt-4" trackClassName="bg-[color:var(--project-hero-border)]" fillClassName="bg-[color:var(--accent)]" /> : null}
-              {highlightedMeta ? (
-                <div className="mt-5 border-t border-[color:var(--project-hero-border)] pt-4">
-                  <p className="flex items-center gap-2 text-label" style={{ color: "var(--project-hero-muted)" }}><Flag aria-hidden className="size-3.5 text-[color:var(--accent)]" />{clientProjectsDictionary.safeUi.highlightedMilestone}</p>
-                  <p className="mt-2 text-body font-bold leading-snug">{highlightedMeta.title}</p>
-                  <p className="mt-1 text-meta" style={{ color: "var(--project-hero-muted)" }}>{CLIENT_MILESTONE_STATUS_LABELS[highlightedMeta.status]}{highlightedMeta.targetDate ? ` · ${formatClientProjectDate(highlightedMeta.targetDate)}` : ""}</p>
+          <aside className="rounded-[var(--radius-card)] border border-[color:var(--project-hero-border)] bg-[color:var(--project-hero-surface-raised)] p-5" aria-labelledby="client-project-progress-title">
+            <p id="client-project-progress-title" className="text-label" style={{ color: "var(--project-hero-muted)" }}>{clientProjectsDictionary.safeUi.projectProgress}</p>
+            {metas.length > 0 ? (
+              <>
+                <div className="mt-2 flex items-end justify-between gap-4">
+                  <p className="font-display text-[length:var(--text-ui-dashboard-title-lg)] font-black leading-none">{displayPercent ?? 0}%</p>
+                  <p className="pb-1 text-right text-meta" style={{ color: "var(--project-hero-muted)" }}>{achievedCount} {clientProjectsDictionary.safeUi.of} {metas.length}</p>
                 </div>
-              ) : null}
-            </aside>
-          ) : null}
+                {displayPercent !== null ? <ProjectProgressBar ariaLabel={clientProjectsDictionary.safeUi.progress} percent={displayPercent} className="mt-4" trackClassName="bg-[color:var(--project-hero-border)]" fillClassName="bg-[color:var(--accent)]" /> : null}
+                {highlightedMeta ? (
+                  <div className="mt-5 border-t border-[color:var(--project-hero-border)] pt-4">
+                    <p className="flex items-center gap-2 text-label" style={{ color: "var(--project-hero-muted)" }}><Flag aria-hidden className="size-3.5 text-[color:var(--accent)]" />{clientProjectsDictionary.safeUi.highlightedMilestone}</p>
+                    <p className="mt-2 text-body font-bold leading-snug">{highlightedMeta.title}</p>
+                    <p className="mt-1 text-meta" style={{ color: "var(--project-hero-muted)" }}>{CLIENT_MILESTONE_STATUS_LABELS[highlightedMeta.status]}{highlightedMeta.targetDate ? ` · ${formatClientProjectDate(highlightedMeta.targetDate)}` : ""}</p>
+                  </div>
+                ) : null}
+              </>
+            ) : (
+              <div className="mt-5 border-t border-[color:var(--project-hero-border)] pt-5">
+                <span className="inline-flex size-10 items-center justify-center rounded-full border border-[color:var(--project-hero-border)] bg-[color:var(--project-hero-surface-raised)] text-[color:var(--accent)]">
+                  <Flag aria-hidden className="size-4" />
+                </span>
+                <h2 className="mt-4 text-title font-bold leading-snug">{clientProjectsDictionary.safeUi.projectSetupTitle}</h2>
+                <p className="mt-2 text-body leading-relaxed" style={{ color: "var(--project-hero-muted)" }}>{clientProjectsDictionary.safeUi.projectSetupDescription}</p>
+              </div>
+            )}
+          </aside>
         </div>
       </header>
 
