@@ -69,7 +69,6 @@ function ClientProjectsPortfolioHeader({
             organizations={organizations}
             selectedOrganizationId={activeOrganizationId}
             onSelect={onSelectOrganization}
-            label={organizations.length > 1 ? clientProjectsDictionary.portal.yourOrganizations : clientProjectsDictionary.portal.yourOrganization}
             description={`${clientProjectsDictionary.portal.activeProjectsCount(activeCount)} · ${clientProjectsDictionary.safeUi.projectResultCount(totalCount)} ${clientProjectsDictionary.safeUi.inPortfolio}`}
           />
         ) : null}
@@ -203,9 +202,11 @@ export function ClientProjectsListClient({ initialProjects = null }: { initialPr
             value={group}
             onValueChange={setGroup}
           />
-          <div className="min-w-0 sm:w-64">
-            {showSearch ? <SearchField value={search} onChange={setSearch} onClear={() => setSearch("")} className="[&>button]:size-11 [&>button]:right-0" inputClassName="h-11 bg-background" placeholder={clientProjectsDictionary.safeUi.searchPlaceholder} /> : null}
-          </div>
+          {showSearch ? (
+            <div className="min-w-0 sm:w-64">
+              <SearchField value={search} onChange={setSearch} onClear={() => setSearch("")} className="[&>button]:size-11 [&>button]:right-0" inputClassName="h-11 bg-background" placeholder={clientProjectsDictionary.safeUi.searchPlaceholder} />
+            </div>
+          ) : null}
         </div>
       </section>
 

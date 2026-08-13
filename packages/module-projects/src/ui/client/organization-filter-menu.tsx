@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, type ReactNode } from "react";
+import { useId } from "react";
 import { Building2, ChevronDown } from "lucide-react";
 import {
   DropdownMenu,
@@ -30,17 +30,18 @@ export function OrganizationFilterMenu({
   organizations,
   selectedOrganizationId,
   onSelect,
-  label,
   description,
 }: {
   organizations: ClientOrganizationFilterOption[];
   selectedOrganizationId: string;
   onSelect: (organizationId: string) => void;
-  label: string;
-  description?: ReactNode;
+  description?: string;
 }) {
   const labelId = useId();
   const multiple = organizations.length > 1;
+  const label = multiple
+    ? clientProjectsDictionary.portal.yourOrganizations
+    : clientProjectsDictionary.portal.yourOrganization;
   const selected = multiple
     ? organizations.find((organization) => organization.id === selectedOrganizationId) ?? null
     : organizations[0] ?? null;

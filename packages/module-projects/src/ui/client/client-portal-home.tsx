@@ -239,7 +239,6 @@ export function ClientPortalHome({ firstName, email = null, initialData = null }
               organizations={organizations}
               selectedOrganizationId={selectedOrganizationId}
               onSelect={selectOrganization}
-              label={organizations.length > 1 ? clientProjectsDictionary.portal.yourOrganizations : clientProjectsDictionary.portal.yourOrganization}
             />
           ) : null}
         </div>
