@@ -418,4 +418,9 @@ test("account keeps personal settings separate from the dedicated projects area"
   const profileEditor = await readFile(path.join(repoRoot, "packages/core-auth/src/ui/account/account-client.tsx"), "utf8");
   assert.match(profileEditor, /grid h-14 grid-cols-/);
   assert.doesNotMatch(profileEditor, /sm:grid-cols-2/);
+  assert.equal((profileEditor.match(/<Button\b/g) ?? []).length, 3);
+  assert.match(profileEditor, /<Button[\s\S]{0,100}variant="outline"[\s\S]{0,180}dictionary\.profile\.edit/);
+  assert.match(profileEditor, /<Button type="button" variant="ghost"[\s\S]{0,180}dictionary\.profile\.cancel/);
+  assert.match(profileEditor, /<Button type="submit"[\s\S]{0,300}dictionary\.profile\.save/);
+  assert.doesNotMatch(profileEditor, /<button\b/);
 });
