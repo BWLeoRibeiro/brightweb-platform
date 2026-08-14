@@ -1,5 +1,13 @@
 # @brightweblabs/module-projects
 
+## 0.18.2
+
+### Patch Changes
+
+- Updated dependencies [6d04f3f]
+  - @brightweblabs/core-auth@0.12.0
+  - @brightweblabs/module-orgs@0.6.3
+
 ## 0.18.1
 
 ### Patch Changes
