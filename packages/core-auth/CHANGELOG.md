@@ -1,5 +1,11 @@
 # @brightweblabs/core-auth
 
+## 0.12.0
+
+### Minor Changes
+
+- 6d04f3f: Add a server-only Supabase Management API utility that backs up, synchronizes, and verifies all 12 hosted authentication email subjects and HTML templates without changing unrelated Auth configuration.
+
 ## 0.11.0
 
 ### Minor Changes
