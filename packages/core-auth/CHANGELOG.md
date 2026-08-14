@@ -1,5 +1,19 @@
 # @brightweblabs/core-auth
 
+## 0.11.0
+
+### Minor Changes
+
+- 456e836: Add atomic project setup with participating organizations, internal teams, and explicit organization or selected-client access; introduce narrow client-safe project APIs, client-facing content fields, paused lifecycle support, client-visible metas, and staff-only internal project boundaries. Client-visible metas are now the single source of truth for current and upcoming work, with bounded previews shipped at the non-destructive compatibility boundary before the separate free-text client-next-steps field is removed. Role changes now surface project reassignment requirements cleanly. Add module-scoped migration cutoffs and hold marked destructive migrations during ordinary `bw upgrade`; cleanup now requires the explicit `--include-destructive-migrations` opt-in after the fail-closed enforcement boundary is deployed.
+
+### Patch Changes
+
+- a8c1e01: Share the branded light cover-header composition across client account and project surfaces.
+- 88aa2b8: Give client account profiles a light cover-card identity treatment using shared avatar and status primitives.
+- Updated dependencies [456e836]
+- Updated dependencies [a8c1e01]
+  - @brightweblabs/ui@1.5.4
+
 ## 0.10.11
 
 ### Patch Changes

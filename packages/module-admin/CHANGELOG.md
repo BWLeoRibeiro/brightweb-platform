@@ -1,5 +1,18 @@
 # @brightweblabs/module-admin
 
+## 0.9.2
+
+### Patch Changes
+
+- 456e836: Add atomic project setup with participating organizations, internal teams, and explicit organization or selected-client access; introduce narrow client-safe project APIs, client-facing content fields, paused lifecycle support, client-visible metas, and staff-only internal project boundaries. Client-visible metas are now the single source of truth for current and upcoming work, with bounded previews shipped at the non-destructive compatibility boundary before the separate free-text client-next-steps field is removed. Role changes now surface project reassignment requirements cleanly. Add module-scoped migration cutoffs and hold marked destructive migrations during ordinary `bw upgrade`; cleanup now requires the explicit `--include-destructive-migrations` opt-in after the fail-closed enforcement boundary is deployed.
+- Updated dependencies [ba31576]
+- Updated dependencies [456e836]
+- Updated dependencies [a8c1e01]
+- Updated dependencies [88aa2b8]
+  - @brightweblabs/app-shell@0.16.0
+  - @brightweblabs/core-auth@0.11.0
+  - @brightweblabs/ui@1.5.4
+
 ## 0.9.1
 
 ### Patch Changes
