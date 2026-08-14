@@ -64,10 +64,14 @@ test("client detail renders only explicit client-facing project fields", () => {
 
   assert.match(detail, /project\.clientSummary/);
   assert.match(detail, /project\.clientScope/);
+  assert.match(detail, /client-project-summary-title/);
+  assert.match(detail, /client-project-scope-title/);
   assert.match(detail, /project\.clientContact/);
   assert.match(detail, /project\.documents/);
   assert.match(detail, /meta\.completedAt \?\? meta\.targetDate/);
-  assert.match(detail, /lg:grid-cols-\[minmax\(0,1fr\)_22rem\]/);
+  assert.match(detail, /<ProjectRoadmap metas=\{metas\} currentMetaId=\{nextMeta\?\.id \?\? null\} \/>/);
+  assert.match(detail, /grid-flow-col auto-cols-\[15rem\]/);
+  assert.match(detail, /container\.scrollLeft = Math\.max/);
   assert.match(detail, /clientProjectsDictionary\.safeUi\.milestoneJourney/);
   assert.match(detail, /clientProjectsDictionary\.safeUi\.projectSetupTitle/);
   assert.match(detail, /metas\.length > 0 \?/);
@@ -131,7 +135,9 @@ test("creation review names the exact external audience and new controls expose 
   assert.match(list, /setReloadKey\(\(current\) => current \+ 1\)/);
   assert.match(detail, /setReloadKey\(\(current\) => current \+ 1\)/);
   assert.match(detail, /response\.status === 404 \|\| response\.status === 403/);
-  assert.match(detail, /<ProjectStatusBadge[^>]*surface="hero"/);
+  assert.match(detail, /<CoverHeader>/);
+  assert.match(detail, /<ProjectStatusBadge status=\{project\.status\} label=\{CLIENT_PROJECT_STATUS_LABELS\[project\.status\]\} \/>/);
+  assert.match(detail, /brand-panel rounded-\[var\(--radius-card\)\]/);
 });
 
 test("participating organizations remain editable by project managers through the protected route", () => {
@@ -258,13 +264,18 @@ test("client portal adapts its hierarchy to organization and project counts", ()
   assert.match(organizationFilter, /group min-w-0 transition-/);
   assert.match(organizationFilter, /w-\[var\(--radix-dropdown-menu-trigger-width\)\]/);
   assert.match(organizationFilter, /focus-visible:border-\[color:var\(--accent\)\]/);
+  assert.match(organizationFilter, /surface === "hero"/);
+  assert.match(organizationFilter, /focus-visible:border-ring focus-visible:ring-ring/);
   assert.match(portal, /showOrganizations=\{!singleOrganization && !focusedOrganization\}/);
   assert.match(portal, /buildUpcomingBriefing\(ongoingProjects\)/);
   assert.match(portal, /findNearestDelivery\(ongoingProjects\)/);
   assert.match(portal, /clientProjectsDictionary\.portal\.upNext/);
-  assert.match(portal, /brand-panel relative overflow-hidden/);
+  assert.match(portal, /<CoverHeader>/);
+  assert.match(list, /<CoverHeader>/);
+  assert.match(portal, /surface="light"/);
+  assert.match(list, /surface="light"/);
   assert.match(organizationFilter, /project-hero-surface-raised/);
-  assert.match(organizationFilter, /InitialsAvatar label=\{selected\.name\} tone="inverse"/);
+  assert.match(organizationFilter, /tone=\{surface === "hero" \? "inverse" : "client"\}/);
   assert.match(portal, /lg:grid-cols-\[minmax\(0,1fr\)_18rem\]/);
   assert.match(portal, /ongoingProjects\.length > 1 \? "md:grid-cols-2"/);
   assert.match(portal, /AccountAndSecurityFooter/);
@@ -319,8 +330,8 @@ test("client loading states mirror the home, list and detail page geometries", (
   assert.match(loading, /ClientProjectsListLoading/);
   assert.match(loading, /md:grid-cols-2/);
   assert.match(loading, /ClientProjectDetailLoading/);
-  assert.match(loading, /lg:grid-cols-\[minmax\(0,1fr\)_22rem\]/);
-  assert.match(loading, /h-56 border-\[color:var\(--project-hero-border\)\]/);
+  assert.match(loading, /grid-flow-col auto-cols-\[15rem\]/);
+  assert.match(loading, /brand-panel h-56 border-\[color:var\(--project-hero-border\)\]/);
   assert.match(accountRoute, /loadClientPortalData/);
   assert.match(listPage, /initialProjects=\{initialProjects\}/);
   assert.match(detailPage, /initialProject=\{initialProject\}/);

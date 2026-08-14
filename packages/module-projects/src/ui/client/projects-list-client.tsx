@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { FolderKanban } from "lucide-react";
 import { PillTabs } from "@brightweblabs/app-shell";
-import { Button, Card, EmptyState, SearchField } from "@brightweblabs/ui";
+import { Button, Card, CoverHeader, EmptyState, SearchField } from "@brightweblabs/ui";
 import type { ClientProjectListItem, ClientProjectsResult } from "../../client-contracts";
 import { OrganizationFilterMenu } from "./organization-filter-menu";
 import { ProjectListCard } from "./project-list-card";
@@ -52,17 +52,17 @@ function ClientProjectsPortfolioHeader({
   onSelectOrganization: (organizationId: string) => void;
 }) {
   return (
-    <header className="brand-panel relative overflow-hidden rounded-[var(--radius-panel)] p-6 text-[color:var(--project-hero-foreground)] md:p-8">
-      <div aria-hidden className="pointer-events-none absolute -right-24 -top-28 size-80 rounded-full opacity-100 blur-3xl dark:opacity-40" style={{ background: "var(--dashboard-hero-glow)" }} />
-      <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-px" style={{ background: "var(--dashboard-hero-highlight)" }} />
-      <div className={`relative grid gap-7 ${organizations.length > 0 ? "lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-end" : ""}`}>
+    <CoverHeader>
+      <div className={`grid gap-7 ${organizations.length > 0 ? "lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-end" : ""}`}>
         <div className="max-w-[48rem]">
-          <p className="inline-flex items-center gap-2 text-label font-semibold" style={{ color: "var(--project-hero-muted)" }}>
-            <FolderKanban aria-hidden className="size-3.5" style={{ color: "var(--accent)" }} />
+          <span className="-mt-8 flex size-16 items-center justify-center rounded-full border-4 border-card bg-primary text-primary-foreground shadow-[var(--cover-header-avatar-shadow)]">
+            <FolderKanban aria-hidden className="size-6" />
+          </span>
+          <p className="mt-4 inline-flex items-center gap-2 text-label font-semibold text-muted-foreground">
             {clientProjectsDictionary.safeUi.portfolioEyebrow}
           </p>
-          <h1 className="font-display mt-4 text-[length:var(--text-ui-dashboard-title)] font-black leading-[var(--type-leading-110)] tracking-[var(--type-tracking-n025)] sm:text-[length:var(--text-ui-dashboard-title-lg)]">{clientProjectsDictionary.safeUi.myProjects}</h1>
-          <p className="mt-3 max-w-[42rem] text-body-lg leading-relaxed" style={{ color: "var(--project-hero-muted)" }}>{clientProjectsDictionary.safeUi.pageDescription}</p>
+          <h1 className="font-display mt-1 text-[length:var(--text-ui-dashboard-title)] font-black leading-[var(--type-leading-110)] tracking-[var(--type-tracking-n025)] sm:text-[length:var(--text-ui-dashboard-title-lg)]">{clientProjectsDictionary.safeUi.myProjects}</h1>
+          <p className="mt-3 max-w-[42rem] text-body-lg leading-relaxed text-muted-foreground">{clientProjectsDictionary.safeUi.pageDescription}</p>
         </div>
         {organizations.length > 0 ? (
           <OrganizationFilterMenu
@@ -70,10 +70,11 @@ function ClientProjectsPortfolioHeader({
             selectedOrganizationId={activeOrganizationId}
             onSelect={onSelectOrganization}
             description={`${clientProjectsDictionary.portal.activeProjectsCount(activeCount)} · ${clientProjectsDictionary.safeUi.projectResultCount(totalCount)} ${clientProjectsDictionary.safeUi.inPortfolio}`}
+            surface="light"
           />
         ) : null}
       </div>
-    </header>
+    </CoverHeader>
   );
 }
 
@@ -195,7 +196,7 @@ export function ClientProjectsListClient({ initialProjects = null }: { initialPr
           <p className="text-meta text-muted-foreground" aria-live="polite">{clientProjectsDictionary.safeUi.projectResultCount(filtered.length)}</p>
         </div>
         <div className="mt-3 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-          <div className="-m-1 max-w-full overflow-x-auto p-1">
+          <div className="portal-scroll -m-1 max-w-full overflow-x-auto p-1">
             <PillTabs
               ariaLabel={clientProjectsDictionary.safeUi.filterLabel}
               items={GROUPS.map((item) => ({ value: item.value, label: `${item.label} · ${groupCounts[item.value]}` }))}

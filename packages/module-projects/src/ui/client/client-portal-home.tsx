@@ -10,7 +10,7 @@ import {
   RefreshCw,
   ShieldCheck,
 } from "lucide-react";
-import { Button, Card, EmptyState, InitialsAvatar } from "@brightweblabs/ui";
+import { Button, Card, CoverHeader, EmptyState, InitialsAvatar } from "@brightweblabs/ui";
 import type {
   ClientProjectListItem,
   ClientProjectsResult,
@@ -83,12 +83,12 @@ function formatPortalCalendarDate(date: Date) {
 function BriefingFact({ icon, label, value, detail, className }: { icon: React.ReactNode; label: string; value: string; detail: string | null; className: string }) {
   return (
     <div className={`min-w-0 ${className}`}>
-      <dt className="flex items-center gap-2 text-label" style={{ color: "var(--project-hero-muted)" }}>
-        <span style={{ color: "var(--accent)" }}>{icon}</span>
+      <dt className="flex items-center gap-2 text-label text-muted-foreground">
+        <span className="text-primary">{icon}</span>
         {label}
       </dt>
       <dd className="mt-2 truncate text-title">{value}</dd>
-      {detail ? <dd className="mt-0.5 truncate text-meta" style={{ color: "var(--project-hero-muted)" }}>{detail}</dd> : null}
+      {detail ? <dd className="mt-0.5 truncate text-meta text-muted-foreground">{detail}</dd> : null}
     </div>
   );
 }
@@ -224,38 +224,43 @@ export function ClientPortalHome({ firstName, email = null, initialData = null }
 
   return (
     <div>
-      <header className="brand-panel relative overflow-hidden rounded-[var(--radius-panel)] p-6 text-[color:var(--project-hero-foreground)] md:p-8">
-        <div aria-hidden className="pointer-events-none absolute -right-24 -top-28 size-80 rounded-full opacity-100 blur-3xl dark:opacity-40" style={{ background: "var(--dashboard-hero-glow)" }} />
-        <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-px" style={{ background: "var(--dashboard-hero-highlight)" }} />
-        <div className={organizations.length > 0 ? "relative grid gap-7 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end" : "relative space-y-7"}>
+      <CoverHeader>
+        <div className={organizations.length > 0 ? "grid gap-7 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end" : "space-y-7"}>
           <div className="max-w-[48rem]">
+            <InitialsAvatar
+              label={displayName}
+              fallback={email}
+              tone="client"
+              className="-mt-10 size-20 border-4 border-card shadow-[var(--cover-header-avatar-shadow)] [&_[data-slot=avatar-fallback]]:text-heading-3"
+            />
             <h1 className="font-display text-[length:var(--text-ui-dashboard-title)] font-black leading-[var(--type-leading-110)] tracking-[var(--type-tracking-n025)] sm:text-[length:var(--text-ui-dashboard-title-lg)]">
-              {clientProjectsDictionary.portal.greetingPrefix}, <span style={{ color: "var(--accent)" }}>{displayName}</span>.
+              <span className="mt-4 block">{clientProjectsDictionary.portal.greetingPrefix}, <span className="text-primary">{displayName}</span>.</span>
             </h1>
-            <p className="mt-3 text-body-lg leading-relaxed" style={{ color: "var(--project-hero-muted)" }}>{clientProjectsDictionary.portal.homeDescription}</p>
+            <p className="mt-3 text-body-lg leading-relaxed text-muted-foreground">{clientProjectsDictionary.portal.homeDescription}</p>
           </div>
           {organizations.length > 0 ? (
             <OrganizationFilterMenu
               organizations={organizations}
               selectedOrganizationId={selectedOrganizationId}
               onSelect={selectOrganization}
+              surface="light"
             />
           ) : null}
         </div>
-        <dl className="relative mt-8 grid grid-cols-2 border-t border-[color:var(--project-hero-border)] pt-5 sm:grid-cols-3">
+        <dl className="mt-8 grid grid-cols-2 border-t border-border/60 pt-5 sm:grid-cols-3">
           <BriefingFact
             icon={<BriefcaseBusiness aria-hidden className="size-4" />}
             label={clientProjectsDictionary.portal.workInProgress}
             value={clientProjectsDictionary.portal.activeProjectsCount(ongoingProjects.length)}
             detail={focusedOrganization?.name ?? singleOrganization?.name ?? (organizations.length > 1 ? clientProjectsDictionary.portal.allOrganizations : null)}
-            className="col-span-2 border-b border-[color:var(--project-hero-border)] pb-4 sm:col-span-1 sm:border-b-0 sm:border-r sm:pb-0 sm:pr-5"
+            className="col-span-2 border-b border-border/60 pb-4 sm:col-span-1 sm:border-b-0 sm:border-r sm:pb-0 sm:pr-5"
           />
           <BriefingFact
             icon={<Flag aria-hidden className="size-4" />}
             label={nextMeta?.delayed ? clientProjectsDictionary.portal.delayedMeta : clientProjectsDictionary.portal.nextSharedMeta}
             value={nextMeta?.title ?? clientProjectsDictionary.portal.noScheduledMetas}
             detail={nextMeta ? `${nextMeta.projectName} · ${formatClientProjectDate(nextMeta.targetDate)}` : null}
-            className="border-r border-[color:var(--project-hero-border)] pr-4 pt-4 sm:px-5 sm:pt-0"
+            className="border-r border-border/60 pr-4 pt-4 sm:px-5 sm:pt-0"
           />
           <BriefingFact
             icon={<CalendarDays aria-hidden className="size-4" />}
@@ -265,7 +270,7 @@ export function ClientPortalHome({ firstName, email = null, initialData = null }
             className="pl-4 pt-4 sm:pl-5 sm:pt-0"
           />
         </dl>
-      </header>
+      </CoverHeader>
 
       <div className="mt-5 sm:mt-7">
         {ongoingProjects.length > 0 ? (

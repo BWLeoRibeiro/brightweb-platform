@@ -24,7 +24,7 @@ export const CLIENT_PROJECT_LINK_KIND_LABELS: Record<ProjectLinkKind, string> = 
   doc: "Documento",
   sheet: "Folha de cálculo",
   drive: "Drive",
-  other: "Outro",
+  other: "Ligação",
 };
 
 export const CLIENT_MILESTONE_STATUS_CLASSES: Record<MilestoneStatus, string> = {
@@ -111,6 +111,16 @@ export const clientProjectsDictionary = {
     projectSetupTitle: "Estamos a preparar o teu projeto",
     projectSetupDescription: "A equipa está a definir as primeiras metas. Em breve vais poder acompanhar o progresso aqui.",
     milestoneJourney: "Percurso do projeto",
+    roadmapDescription: "As etapas partilhadas contigo, da primeira entrega à conclusão.",
+    milestoneCount: (count: number) => `${count} ${count === 1 ? "etapa" : "etapas"}`,
+    milestonePosition: (current: number, total: number) => `Etapa ${current} de ${total}`,
+    roadmapNavigation: "Navegar pelo percurso do projeto",
+    roadmapPrevious: "Ver etapa anterior",
+    roadmapNext: "Ver etapa seguinte",
+    milestoneUpNext: "A seguir",
+    milestoneCompletedDate: (date: string) => `Concluída · ${date}`,
+    milestoneDeadlineDate: (date: string) => `Prazo · ${date}`,
+    milestonePlannedDate: (date: string) => `Prevista para ${date}`,
     nextMilestone: "Próxima meta",
     metas: "Metas",
     sharedMaterialsEyebrow: "Partilha",

@@ -36,11 +36,6 @@
   --account-avatar-ring-team: 0 0 0 3px color-mix(in srgb, var(--role-team) 24%, transparent);
   --account-role-surface: color-mix(in srgb, var(--brand-accent) 15%, transparent);
   --account-role-border: color-mix(in srgb, var(--brand-accent) 25%, transparent);
-  --account-client-cover: linear-gradient(135deg, color-mix(in srgb, var(--brand-accent) 12%, var(--card)), color-mix(in srgb, var(--semantic-info) 8%, var(--card)) 52%, color-mix(in srgb, var(--role-client) 13%, var(--card)));
-  --account-client-cover-glow: radial-gradient(circle, color-mix(in srgb, var(--brand-accent) 26%, transparent) 0%, transparent 70%);
-  --account-client-cover-glow-soft: radial-gradient(circle, color-mix(in srgb, var(--role-client) 18%, transparent) 0%, transparent 72%);
-  --account-client-card-shadow: var(--brand-shadow-soft);
-  --account-client-avatar-shadow: 0 10px 28px color-mix(in srgb, var(--foreground) 14%, transparent);
 }
 
 @layer components {

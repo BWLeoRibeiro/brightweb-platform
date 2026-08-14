@@ -30,6 +30,7 @@
     "./card": "./src/components/card.tsx",
     "./chart": "./src/components/chart.tsx",
     "./checkbox": "./src/components/checkbox.tsx",
+    "./cover-header": "./src/components/cover-header.tsx",
     "./dropdown-menu": "./src/components/dropdown-menu.tsx",
     "./email/invitation": "./src/email/invitation.ts",
     "./empty-state": "./src/components/empty-state.tsx",

@@ -413,7 +413,8 @@ test("account keeps personal settings separate from the dedicated projects area"
   assert.match(surface, /console\.error\("\[core-auth\.AccountPage\.profile\]"/);
   assert.doesNotMatch(surface, /loadError\}: \{accountProfile\.error\}/);
   assert.match(surface, /<InitialsAvatar/);
-  assert.match(surface, /var\(--account-client-cover\)/);
+  assert.match(surface, /<CoverHeader/);
+  assert.match(surface, /var\(--cover-header-avatar-shadow\)/);
   assert.match(surface, /<StatusPill token="--role-client"/);
   const profileEditor = await readFile(path.join(repoRoot, "packages/core-auth/src/ui/account/account-client.tsx"), "utf8");
   assert.match(profileEditor, /grid h-14 grid-cols-/);

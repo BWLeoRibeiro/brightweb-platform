@@ -31,11 +31,13 @@ export function OrganizationFilterMenu({
   selectedOrganizationId,
   onSelect,
   description,
+  surface = "hero",
 }: {
   organizations: ClientOrganizationFilterOption[];
   selectedOrganizationId: string;
   onSelect: (organizationId: string) => void;
   description?: string;
+  surface?: "hero" | "light";
 }) {
   const labelId = useId();
   const multiple = organizations.length > 1;
@@ -49,7 +51,7 @@ export function OrganizationFilterMenu({
   const identity = (
     <>
       {selected ? (
-        <InitialsAvatar label={selected.name} tone="inverse" className="size-10 shrink-0" />
+        <InitialsAvatar label={selected.name} tone={surface === "hero" ? "inverse" : "client"} className="size-10 shrink-0" />
       ) : (
         <span className="inline-flex size-10 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground">
           <Building2 aria-hidden className="size-4" />
@@ -64,18 +66,24 @@ export function OrganizationFilterMenu({
             {organizationRoleLabel(selected.role)}
           </StatusPill>
         ) : !selected ? (
-          <span className="block truncate text-meta" style={{ color: "var(--project-hero-muted)" }}>
+          <span className={surface === "hero" ? "block truncate text-meta text-[color:var(--project-hero-muted)]" : "block truncate text-meta text-muted-foreground"}>
             {organizations.map((organization) => organization.name).join(" · ")}
           </span>
         ) : null}
       </span>
     </>
   );
-  const identityCardClassName = "mt-2 flex h-20 w-full items-center gap-3 rounded-[var(--radius-card)] border border-[color:var(--project-hero-border)] bg-[color:var(--project-hero-surface-raised)] p-4 text-left text-[color:var(--project-hero-foreground)] shadow-none";
+  const identityCardClassName = surface === "hero"
+    ? "mt-2 flex h-20 w-full items-center gap-3 rounded-[var(--radius-card)] border border-[color:var(--project-hero-border)] bg-[color:var(--project-hero-surface-raised)] p-4 text-left text-[color:var(--project-hero-foreground)] shadow-none"
+    : "mt-2 flex h-20 w-full items-center gap-3 rounded-[var(--radius-card)] border border-border/60 bg-background/75 p-4 text-left text-foreground shadow-[var(--dashboard-shadow-sm)]";
+  const interactiveClassName = surface === "hero"
+    ? "hover:border-[color:var(--accent)] focus-visible:border-[color:var(--accent)] focus-visible:ring-[color:var(--accent)]"
+    : "hover:border-ring focus-visible:border-ring focus-visible:ring-ring";
+  const mutedClassName = surface === "hero" ? "text-[color:var(--project-hero-muted)]" : "text-muted-foreground";
 
   return (
     <section className="min-w-0 w-full lg:w-80 lg:justify-self-end" aria-labelledby={labelId}>
-      <p id={labelId} className="text-label lg:text-right" style={{ color: "var(--project-hero-muted)" }}>
+      <p id={labelId} className={`text-label lg:text-right ${mutedClassName}`}>
         {label}
       </p>
       {multiple ? (
@@ -83,13 +91,12 @@ export function OrganizationFilterMenu({
           <DropdownMenuTrigger asChild>
             <button
               type="button"
-              className={`${identityCardClassName} group min-w-0 transition-[border-color,box-shadow] hover:border-[color:var(--accent)] focus-visible:border-[color:var(--accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)] motion-reduce:transition-none`}
+              className={`${identityCardClassName} ${interactiveClassName} group min-w-0 transition-[border-color,box-shadow] focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none`}
             >
               {identity}
               <ChevronDown
                 aria-hidden
-                className="size-4 shrink-0 transition-transform duration-200 group-data-[state=open]:rotate-180 motion-reduce:transition-none"
-                style={{ color: "var(--project-hero-muted)" }}
+                className={`size-4 shrink-0 transition-transform duration-200 group-data-[state=open]:rotate-180 motion-reduce:transition-none ${mutedClassName}`}
               />
             </button>
           </DropdownMenuTrigger>
@@ -115,7 +122,7 @@ export function OrganizationFilterMenu({
         <div className={identityCardClassName}>{identity}</div>
       )}
       {description ? (
-        <p className="mt-2 text-meta lg:text-right" style={{ color: "var(--project-hero-muted)" }}>
+        <p className={`mt-2 text-meta lg:text-right ${mutedClassName}`}>
           {description}
         </p>
       ) : null}

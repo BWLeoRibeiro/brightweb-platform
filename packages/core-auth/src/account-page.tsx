@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { BriefcaseBusiness, KeyRound, ShieldCheck, UserCircle2 } from "lucide-react";
-import { Button, Card, InitialsAvatar, SectionHeading, StatusPill } from "@brightweblabs/ui";
+import { Button, Card, CoverHeader, InitialsAvatar, SectionHeading, StatusPill } from "@brightweblabs/ui";
 import { getCurrentAccountProfile, type AccountProfile } from "./account/profile";
 import { requireServerPageAccess } from "./server";
 import { AccountClient } from "./ui/account/account-client";
@@ -68,17 +68,12 @@ export async function AccountPage({
   return (
     <div className={isClient ? "mx-auto max-w-[68rem] space-y-6" : "space-y-5"}>
       {isClient ? (
-        <header className="overflow-hidden rounded-[var(--radius-panel)] border border-border/60 bg-card shadow-[var(--account-client-card-shadow)]">
-          <div className="relative h-28 overflow-hidden sm:h-36" style={{ background: "var(--account-client-cover)" }}>
-            <span aria-hidden className="absolute -right-16 -top-24 size-72 rounded-full" style={{ background: "var(--account-client-cover-glow)" }} />
-            <span aria-hidden className="absolute -bottom-24 left-[12%] size-56 rounded-full" style={{ background: "var(--account-client-cover-glow-soft)" }} />
-          </div>
-          <div className="relative px-5 pb-6 sm:px-8 sm:pb-8">
+        <CoverHeader coverClassName="h-28 sm:h-36">
             <InitialsAvatar
               label={displayName}
               fallback={user.email ?? null}
               tone="client"
-              className="-mt-10 size-20 border-4 border-card shadow-[var(--account-client-avatar-shadow)] [&_[data-slot=avatar-fallback]]:text-heading-3"
+              className="-mt-10 size-20 border-4 border-card shadow-[var(--cover-header-avatar-shadow)] [&_[data-slot=avatar-fallback]]:text-heading-3"
             />
             <div className="mt-4 flex flex-wrap items-start justify-between gap-4">
               <div className="min-w-0">
@@ -93,8 +88,7 @@ export async function AccountPage({
                 </StatusPill>
               ) : null}
             </div>
-          </div>
-        </header>
+        </CoverHeader>
       ) : (
         <div className="relative overflow-hidden rounded-2xl" style={{ background: "var(--account-identity-surface)", boxShadow: "var(--account-identity-shadow)" }}>
           <div className="pointer-events-none absolute -right-16 -top-16 size-64 rounded-full" style={{ background: "var(--account-identity-glow-strong)" }} />
