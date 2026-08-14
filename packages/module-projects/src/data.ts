@@ -126,7 +126,7 @@ function buildProjectSelectColumns(profileColumns: string, includeCancellationRe
     "updated_at",
   ];
 
-  return `${columns.join(", ")}, organizations(name, primary_contact:profiles!organizations_primary_contact_id_fkey(${profileColumns})), owner:profiles!projects_owner_profile_id_fkey(${profileColumns})`;
+  return `${columns.join(", ")}, organizations!projects_organization_id_fkey(name, primary_contact:profiles!organizations_primary_contact_id_fkey(${profileColumns})), owner:profiles!projects_owner_profile_id_fkey(${profileColumns})`;
 }
 
 const PROJECT_SELECT_COLUMNS = buildProjectSelectColumns(PROJECT_PROFILE_SELECT_COLUMNS, true);
