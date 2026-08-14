@@ -56,7 +56,41 @@ The current public scaffold only generates `.env.local` for the `platform` templ
 - Auth email flows (`signUp`, resend confirmation, reset password) are Supabase-owned and use `supabase.auth.*`.
 - Auth provider and SMTP behavior are configured in Supabase Auth settings, not in the app transport layer.
 - Generate Supabase template files with `createAuthEmailTemplates`; pass the same semantic palette used by app-owned invitations so every account email stays on-brand.
+- Hosted Supabase projects do not read repository template files. Use the server-only
+  `@brightweblabs/core-auth/email/supabase-management` entrypoint to back up, synchronize,
+  and verify the 12 generated subjects and HTML bodies through the Management API.
+- `syncSupabaseAuthEmailTemplates` requires an `onBackup` callback and completes it before
+  sending a PATCH. Its PATCH contains only the 24 supported subject/body fields. Afterward it
+  verifies exact template parity and fails post-update verification if SMTP, redirects,
+  providers, invitation content, or any other unmanaged Auth setting changed. The captured
+  `rollbackPayload` restores the 24 template fields; unexpected drift in an unmanaged setting
+  must be inspected and repaired separately.
 - App-owned transactional, contact, invite, and marketing flows should call Resend via `@brightweblabs/infra/server`.
+
+```ts
+import { writeFile } from "node:fs/promises";
+
+import { createAuthEmailTemplates } from "@brightweblabs/core-auth/email";
+import { syncSupabaseAuthEmailTemplates } from "@brightweblabs/core-auth/email/supabase-management";
+
+const templates = createAuthEmailTemplates(brand);
+const result = await syncSupabaseAuthEmailTemplates({
+  projectRef: process.env.SUPABASE_PROJECT_REF ?? "",
+  accessToken: process.env.SUPABASE_ACCESS_TOKEN ?? "",
+  templates,
+  onBackup: (backup) => writeFile(
+    `.supabase-auth-email-backup-${backup.capturedAt.replaceAll(":", "-")}.json`,
+    `${JSON.stringify(backup, null, 2)}\n`,
+    { encoding: "utf8", mode: 0o600 },
+  ),
+});
+
+console.log(result.changed ? "Hosted templates synchronized." : "Hosted templates already match.");
+```
+
+Keep this synchronization separate from `supabase config push`. Every hosted app has its own
+Supabase project ref and must run the scoped synchronization for that project after generating
+its branded templates.
 
 ## Generated platform config files
 
