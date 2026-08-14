@@ -348,6 +348,7 @@ test("client shell and internal route guards keep clients out of the staff porta
   assert.match(clientFrame, /Os meus projetos/);
   assert.doesNotMatch(clientFrame, /CRM|Marketing|Dashboard/);
   assert.match(previewRoot, /requireServerPageRoleAccess\(\["admin", "staff"\]\)/);
+  assert.match(previewRoot, /export const dynamic = "force-dynamic"/);
   assert.match(previewShell, /if \(!viewer\.isStaff && !viewer\.isAdmin\)/);
   assert.match(previewShell, /<ClientPortalFrame/);
   assert.match(dashboard, /requireServerPageRoleAccess\(\["admin", "staff"\]\)/);

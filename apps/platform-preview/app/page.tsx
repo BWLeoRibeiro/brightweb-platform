@@ -2,6 +2,8 @@ import Link from "next/link";
 import { requireServerPageRoleAccess } from "@brightweblabs/core-auth/server";
 import { getStarterClientConfig } from "../config/client";
 
+export const dynamic = "force-dynamic";
+
 export default async function HomePage() {
   await requireServerPageRoleAccess(["admin", "staff"]);
   const config = getStarterClientConfig();
