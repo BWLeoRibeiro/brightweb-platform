@@ -29,11 +29,20 @@ import {
 
 const ORGANIZATION_ADDRESS_SEPARATOR = " | ";
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
-const PROJECT_SELECT_COLUMNS = "id, organization_id, name, code, status, health, owner_profile_id, activated_at, start_date, target_date, completed_at, cancellation_reason, summary, created_at, updated_at, organizations(name, primary_contact:profiles!organizations_primary_contact_id_fkey(first_name, last_name, email)), owner:profiles!projects_owner_profile_id_fkey(first_name, last_name, email)";
-const PROJECT_SELECT_COLUMNS_LEGACY = "id, organization_id, name, code, status, health, owner_profile_id, activated_at, start_date, target_date, completed_at, summary, created_at, updated_at, organizations(name, primary_contact:profiles!organizations_primary_contact_id_fkey(first_name, last_name, email)), owner:profiles!projects_owner_profile_id_fkey(first_name, last_name, email)";
+const PROJECT_SELECT_COLUMNS = "id, organization_id, name, code, status, health, owner_profile_id, activated_at, start_date, target_date, completed_at, cancellation_reason, summary, created_at, updated_at, organizations!projects_organization_id_fkey(name, primary_contact:profiles!organizations_primary_contact_id_fkey(first_name, last_name, email)), owner:profiles!projects_owner_profile_id_fkey(first_name, last_name, email)";
+const PROJECT_SELECT_COLUMNS_LEGACY = "id, organization_id, name, code, status, health, owner_profile_id, activated_at, start_date, target_date, completed_at, summary, created_at, updated_at, organizations!projects_organization_id_fkey(name, primary_contact:profiles!organizations_primary_contact_id_fkey(first_name, last_name, email)), owner:profiles!projects_owner_profile_id_fkey(first_name, last_name, email)";
 
 function createProjectsServiceRoleClient() {
   return createServiceRoleClient();
+}
+
+function getProjectErrorMessage(error: unknown): string {
+  if (error instanceof Error) return error.message.toLowerCase();
+  if (typeof error === "object" && error !== null && "message" in error) {
+    const message = (error as { message?: unknown }).message;
+    if (typeof message === "string") return message.toLowerCase();
+  }
+  return String(error).toLowerCase();
 }
 
 async function logProjectActivityEvent(input: {
@@ -78,7 +87,7 @@ async function listOrganizationIdsForProfile(
 }
 
 export function isProjectsSchemaMissingError(error: unknown): boolean {
-  const message = error instanceof Error ? error.message.toLowerCase() : String(error).toLowerCase();
+  const message = getProjectErrorMessage(error);
   return (
     message.includes("could not find the table 'public.projects' in the schema cache")
     || message.includes("relation \"projects\" does not exist")
@@ -93,7 +102,7 @@ export function isProjectsSchemaMissingError(error: unknown): boolean {
 }
 
 function isMissingProjectCancellationReasonColumnError(error: unknown): boolean {
-  const message = error instanceof Error ? error.message.toLowerCase() : String(error).toLowerCase();
+  const message = getProjectErrorMessage(error);
   return (
     message.includes("column projects.cancellation_reason does not exist")
     || message.includes("column \"cancellation_reason\" does not exist")
