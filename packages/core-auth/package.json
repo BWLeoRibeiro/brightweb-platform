@@ -20,6 +20,8 @@
     "./account-page": "./src/account-page.tsx",
     "./client": "./src/client.ts",
     "./email": "./src/email/index.ts",
+    "./email/supabase-management": "./src/email/supabase-management.ts",
+    "./email/supabase-management/node": "./src/email/supabase-management.node.ts",
     "./notifications": "./src/notifications/index.ts",
     "./routes": "./src/routes.ts",
     "./server": "./src/server.ts",
@@ -33,6 +35,7 @@
     "@brightweblabs/ui": "workspace:*",
     "@supabase/supabase-js": "^2.110.8",
     "lucide-react": "^1.26.0",
+    "server-only": "^0.0.1",
     "sonner": "^2.0.7"
   },
   "peerDependencies": {
