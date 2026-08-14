@@ -456,6 +456,36 @@ async function main() {
         { id: "36000000-0000-4000-b000-000000000019", title: "Mapeamento de campos", status: "in_progress", target_date: "2026-09-10", position: 1 },
       ],
     },
+    {
+      requestId: "36000000-0000-4000-8000-000000000036",
+      organizationId: ORGANIZATIONS[2].id,
+      name: "Lançamento Atlas",
+      code: "TPL-06",
+      status: "active",
+      start_date: "2026-07-01",
+      target_date: "2026-10-30",
+      client_summary: "Preparação e lançamento de uma nova experiência digital, da descoberta à entrada em produção.",
+      client_scope: "Estratégia, design, desenvolvimento, validação e acompanhamento do lançamento.",
+      milestones: [
+        { id: "36000000-0000-4000-b000-000000000020", title: "Descoberta técnica", status: "achieved", target_date: "2026-07-10", position: 1 },
+        { id: "36000000-0000-4000-b000-000000000021", title: "Arquitetura aprovada", status: "achieved", target_date: "2026-07-21", position: 2 },
+        { id: "36000000-0000-4000-b000-000000000022", title: "Direção visual", status: "achieved", target_date: "2026-08-07", position: 3 },
+        { id: "36000000-0000-4000-b000-000000000023", title: "Protótipo navegável", status: "achieved", target_date: "2026-09-01", position: 4 },
+        { id: "36000000-0000-4000-b000-000000000024", title: "Conteúdos validados", status: "achieved", target_date: "2026-09-01", position: 5 },
+        { id: "36000000-0000-4000-b000-000000000025", title: "Desenvolvimento principal", status: "in_progress", target_date: "2026-09-18", position: 6 },
+        { id: "36000000-0000-4000-b000-000000000026", title: "Testes de integração", status: "pending", target_date: "2026-09-25", position: 7 },
+        { id: "36000000-0000-4000-b000-000000000027", title: "Revisão com a equipa", status: "pending", target_date: "2026-10-02", position: 8 },
+        { id: "36000000-0000-4000-b000-000000000028", title: "Preparação de produção", status: "pending", target_date: "2026-10-02", position: 9 },
+        { id: "36000000-0000-4000-b000-000000000029", title: "Entrada em produção", status: "pending", target_date: "2026-10-16", position: 10 },
+      ],
+      materials: [
+        { id: "36000000-0000-4000-c000-000000000001", label: "Brief e objetivos do projeto", url: "https://example.com/lancamento-atlas/brief", kind: "doc", created_at: "2026-07-02T09:00:00.000Z" },
+        { id: "36000000-0000-4000-c000-000000000002", label: "Planeamento de conteúdos", url: "https://example.com/lancamento-atlas/conteudos", kind: "sheet", created_at: "2026-07-18T10:30:00.000Z" },
+        { id: "36000000-0000-4000-c000-000000000003", label: "Pasta partilhada do projeto", url: "https://example.com/lancamento-atlas/ficheiros", kind: "drive", created_at: "2026-08-04T14:00:00.000Z" },
+        { id: "36000000-0000-4000-c000-000000000004", label: "Protótipo navegável — versão para validação", url: "https://example.com/lancamento-atlas/prototipo", kind: "other", created_at: "2026-08-12T15:45:00.000Z" },
+        { id: "36000000-0000-4000-c000-000000000005", label: "Relatório de testes de usabilidade", url: "https://example.com/lancamento-atlas/testes", kind: "doc", created_at: "2026-08-13T11:15:00.000Z" },
+      ],
+    },
   ];
 
   for (const seedProject of CLIENT_PROJECTS) {
@@ -493,6 +523,19 @@ async function main() {
           { onConflict: "id" },
         ),
         `Could not upsert seed client milestones: ${seedProject.name}`,
+      );
+    }
+    if (seedProject.materials?.length > 0) {
+      await requireResult(
+        authenticatedAdmin.from("project_links").upsert(
+          seedProject.materials.map((material) => ({
+            ...material,
+            project_id: seedProjectId,
+            visibility: "client",
+          })),
+          { onConflict: "id" },
+        ),
+        `Could not upsert seed client materials: ${seedProject.name}`,
       );
     }
   }
