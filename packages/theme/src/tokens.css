@@ -418,6 +418,11 @@
   --brand-panel-muted: color-mix(in srgb, var(--brand-white) 68%, transparent);
   --brand-panel-subtle: color-mix(in srgb, var(--brand-white) 48%, transparent);
   --brand-panel-border: color-mix(in srgb, var(--brand-accent) 22%, transparent);
+  --cover-header-surface: linear-gradient(135deg, color-mix(in srgb, var(--brand-accent) 12%, var(--card)), color-mix(in srgb, var(--semantic-info) 8%, var(--card)) 52%, color-mix(in srgb, var(--role-client) 13%, var(--card)));
+  --cover-header-glow-strong: radial-gradient(circle, color-mix(in srgb, var(--brand-accent) 26%, transparent) 0%, transparent 70%);
+  --cover-header-glow-soft: radial-gradient(circle, color-mix(in srgb, var(--role-client) 18%, transparent) 0%, transparent 72%);
+  --cover-header-shadow: var(--brand-shadow-soft);
+  --cover-header-avatar-shadow: 0 10px 28px color-mix(in srgb, var(--foreground) 14%, transparent);
   --project-surface-primary: var(--card);
   --project-surface-secondary: color-mix(in srgb, var(--foreground) 2%, var(--card) 98%);
   --project-surface-item: color-mix(in srgb, var(--card) 96%, transparent);

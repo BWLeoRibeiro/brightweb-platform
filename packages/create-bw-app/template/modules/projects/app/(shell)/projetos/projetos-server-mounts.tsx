@@ -1,4 +1,4 @@
-import { requireServerPageAccess } from "@brightweblabs/core-auth/server";
+import { requireServerPageRoleAccess } from "@brightweblabs/core-auth/server";
 import {
   getProjectDashboard,
   getProjectAccess,
@@ -18,6 +18,7 @@ const navigation = {
 };
 
 export async function ProjectsServerMount() {
+  await requireServerPageRoleAccess(["admin", "staff"]);
   const { organizationOptions, portfolioStats, result } = await getProjectsPortfolioPageData();
   const attentionSummary = {
     total: result.total,
@@ -38,7 +39,7 @@ export async function ProjectsServerMount() {
 
 async function getInitialProject(params: Promise<{ projectId: string }>) {
   const { projectId } = await params;
-  const { supabase, profileId, role } = await requireServerPageAccess();
+  const { supabase, profileId, role } = await requireServerPageRoleAccess(["admin", "staff"]);
   const [initialData, access] = await Promise.all([
     getProjectDashboard(supabase, projectId),
     getProjectAccess(supabase, projectId, profileId, role),

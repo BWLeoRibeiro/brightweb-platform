@@ -1,6 +1,6 @@
 import type { ComponentType } from "react";
 
-export type DashboardProjectStatus = "planned" | "active" | "blocked" | "completed" | "canceled";
+export type DashboardProjectStatus = "planned" | "active" | "paused" | "blocked" | "completed" | "canceled";
 export type DashboardProjectHealth = "on_track" | "at_risk" | "off_track";
 export type DashboardProjectAttentionReason = "overdue" | "at_risk" | "blocked_tasks" | "without_owner" | "due_soon";
 export type DashboardProjectMilestoneStatus = "pending" | "in_progress" | "delayed";

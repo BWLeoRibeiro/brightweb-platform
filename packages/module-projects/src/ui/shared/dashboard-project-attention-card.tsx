@@ -65,6 +65,7 @@ export function DashboardProjectAttentionCard({
   const statusMeta: Record<DashboardProjectAttentionItem["status"], { label: string }> = {
     planned: { label: dictionary.status.planned },
     active: { label: dictionary.status.active },
+    paused: { label: dictionary.status.paused },
     blocked: { label: dictionary.status.blocked },
     completed: { label: dictionary.status.completed },
     canceled: { label: dictionary.status.canceled },

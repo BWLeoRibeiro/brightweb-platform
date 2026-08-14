@@ -32,12 +32,14 @@ From a generated app, use `bw` to manage the machine-readable `.brightweb/app-ma
 ```bash
 bw add projects
 bw upgrade
+bw upgrade projects --through-migration 20260811121700_project_client_meta_preview.sql
 bw doctor
 bw admin create --email owner@example.com
 ```
 
 - `bw add <moduleKey>` resolves requirements, installs thin package mounts and module wiring, and appends migrations.
-- `bw upgrade [moduleKey]` includes the existing managed update flow plus forward-only module migrations.
+- `bw upgrade [moduleKey]` includes the existing managed update flow plus forward-only module migrations. For a staged database rollout, `bw upgrade <moduleKey> --through-migration <filename>` still updates packages and managed files but appends and records that module only through the named migration.
+- Destructive migrations are held at the preceding safe boundary. After compatible code is deployed and affected data is backed up, apply a held migration with an explicit module-scoped `bw upgrade <moduleKey> --include-destructive-migrations`. A destructive `--through-migration` target also requires that opt-in.
 - `bw doctor` checks package, config, scaffold, environment-name, migration, configured function-region, and deployed function-region consistency. Pass `--deployment-url` to inspect the deployed `x-vercel-id`; add `--report` to stamp the result in the app manifest.
 - `bw admin create --email <email>` creates a passwordless Supabase Auth user, transactionally ensures its profile and `admin` assignment, then sends the Core Auth `/reset-password` flow. It always refuses when the project already has an admin (use the in-app admin role controls to add administrators) and never promotes an existing Auth user.
 - All mutating commands support `--dry-run`.

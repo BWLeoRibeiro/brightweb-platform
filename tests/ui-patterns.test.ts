@@ -8,6 +8,7 @@ import test from "node:test";
 
 import { BreadcrumbLink } from "../packages/ui/src/components/breadcrumb.tsx";
 import { Card } from "../packages/ui/src/components/card.tsx";
+import { CoverHeader } from "../packages/ui/src/components/cover-header.tsx";
 import { PhoneInput } from "../packages/ui/src/components/phone-input.tsx";
 import { SurfaceCard } from "../packages/ui/src/components/surface-card.tsx";
 import { cn as appShellCn } from "../packages/app-shell/src/lib/utils.ts";
@@ -19,6 +20,7 @@ const repoRoot = path.resolve(new URL("..", import.meta.url).pathname);
 
 const patternExports = {
   action: ["ActionButton", "actionClassName"],
+  "cover-header": ["CoverHeader"],
   "empty-state": ["EmptyState"],
   "initials-avatar": ["InitialsAvatar"],
   "kpi-breakdown-bar": ["KpiBreakdownBar"],
@@ -38,6 +40,15 @@ test("every Tier-2 pattern has a package subpath and root export", async () => {
     assert.equal(packageJson.exports[`./${subpath}`], `./src/components/${subpath}.tsx`);
     assert.match(rootSource, new RegExp(`components/${subpath.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`));
   }
+});
+
+test("CoverHeader exposes a composable branded cover and content surface", () => {
+  const html = renderToStaticMarkup(h(CoverHeader, { className: "consumer-class" }, h("h1", null, "Workspace")));
+
+  assert.match(html, /var\(--cover-header-surface\)/);
+  assert.match(html, /var\(--cover-header-glow-strong\)/);
+  assert.match(html, /consumer-class/);
+  assert.match(html, /<h1>Workspace<\/h1>/);
 });
 
 test("Checkbox exposes the native selection-control contract", async () => {

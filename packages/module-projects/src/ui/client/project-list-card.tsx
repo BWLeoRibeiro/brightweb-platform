@@ -1,142 +1,104 @@
 import Link from "next/link";
-import { ArrowRight, CalendarDays, Flag, FolderKanban } from "lucide-react";
+import { ArrowRight, CalendarDays, Flag } from "lucide-react";
 import { Card } from "@brightweblabs/ui";
-import type { ProjectListItem } from "../../data";
+import type { ClientProjectListItem } from "../../client-contracts";
 import {
-  CLIENT_PROJECT_HEALTH_LABELS,
-  CLIENT_PROJECT_HEALTH_VAR,
   CLIENT_PROJECT_STATUS_LABELS,
-  CLIENT_PROJECT_STATUS_STYLES,
   clientProjectsDictionary,
 } from "./dictionary";
 import {
   formatClientProjectDate,
   isClientProjectDateOverdue,
+  resolveClientMetaPreview,
   resolveClientProjectDetailHref,
 } from "./shared";
+import { ProjectStatusBadge } from "../project-state-badge";
+import { ProjectProgressBar } from "../shared/project-progress";
 
 export function ProjectListCard({
   project,
-  isStaff,
+  showOrganizations = true,
+  emphasis = false,
+  headingLevel = "h2",
 }: {
-  project: ProjectListItem;
-  isStaff: boolean;
+  project: ClientProjectListItem;
+  showOrganizations?: boolean;
+  emphasis?: boolean;
+  headingLevel?: "h2" | "h3";
 }) {
-  const healthVar = CLIENT_PROJECT_HEALTH_VAR[project.health];
-  const milestoneProgressPct =
-    project.milestoneStats.total > 0
-      ? Math.round(
-        (project.milestoneStats.achieved / project.milestoneStats.total) * 100,
-      )
-      : null;
-  const overdue =
-    isClientProjectDateOverdue(project.targetDate)
+  const milestoneProgressPct = project.progress.percent;
+  const overdue = isClientProjectDateOverdue(project.targetDate)
     && project.status !== "completed"
     && project.status !== "canceled";
-  const href = resolveClientProjectDetailHref(isStaff, project.id);
+  const href = resolveClientProjectDetailHref(false, project.id);
   const dictionary = clientProjectsDictionary.list;
+  const metaPreview = resolveClientMetaPreview(project.metaPreview);
+  const ProjectHeading = headingLevel;
 
   return (
-    <Card asChild variant="light">
-      <article className="group relative overflow-hidden bg-background/70 transition-shadow hover:shadow-md motion-reduce:transition-none">
-      <div className="h-[3px] w-full shrink-0" style={{ background: healthVar }} />
-
-      <div className="flex flex-1 flex-col gap-3 p-4">
-        <div className="flex items-center justify-between">
-          <span
-            className={`inline-flex items-center rounded-full px-2 py-0.5 text-label font-semibold ${CLIENT_PROJECT_STATUS_STYLES[project.status]}`}
-          >
-            {CLIENT_PROJECT_STATUS_LABELS[project.status]}
-          </span>
-          <span
-            className="inline-flex items-center gap-1 text-label font-semibold"
-            style={{ color: healthVar }}
-          >
-            <span className="size-1.5 rounded-full" style={{ background: healthVar }} />
-            {CLIENT_PROJECT_HEALTH_LABELS[project.health]}
-          </span>
+    <Card asChild variant={emphasis ? "elevated" : "light"}>
+      <article className={`group relative h-full overflow-hidden border-border/65 bg-background/75 transition-[border-color,background-color,box-shadow] focus-within:ring-2 focus-within:ring-ring hover:border-border hover:bg-background hover:shadow-[var(--dashboard-shadow-md)] motion-reduce:transition-none ${emphasis ? "before:absolute before:inset-x-0 before:top-0 before:h-1 before:bg-[color:var(--brand-accent)]" : ""}`}>
+        <div className={`flex flex-1 flex-col gap-4 ${emphasis ? "p-6 sm:p-8" : "p-5 sm:p-6"}`}>
+        <div className="flex items-center justify-between gap-4">
+          <ProjectStatusBadge status={project.status} label={CLIENT_PROJECT_STATUS_LABELS[project.status]} size="small" />
+          {project.reference ? <p className="text-data text-micro text-muted-foreground/65">{project.reference}</p> : null}
         </div>
 
         <div>
-          {project.code ? (
-            <p className="text-data mb-0.5 select-all text-micro text-muted-foreground/60">
-              {project.code}
-            </p>
+          <ProjectHeading className={emphasis ? "font-display text-[length:var(--text-ui-dashboard-title)] font-black leading-[var(--type-leading-110)] tracking-[var(--type-tracking-n025)]" : "text-heading-3 font-bold"}>
+            <Link href={href} className="after:absolute after:inset-0 focus-visible:outline-none">
+              {project.name}
+            </Link>
+          </ProjectHeading>
+          {showOrganizations ? (
+            <p className="mt-0.5 text-meta text-muted-foreground">{project.organizations.map((organization) => organization.name).join(" · ")}</p>
           ) : null}
-          <h2 className="text-title">{project.name}</h2>
-          <p className="mt-0.5 text-meta text-muted-foreground">{project.organizationName}</p>
         </div>
 
-        {project.summary ? (
-          <p className="line-clamp-2 text-body text-muted-foreground">{project.summary}</p>
+        {project.clientSummary ? (
+          <p className={`${emphasis ? "max-w-[42rem] text-body-lg leading-relaxed" : "line-clamp-2 text-body"} text-muted-foreground`}>{project.clientSummary}</p>
         ) : null}
 
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-meta text-muted-foreground">
-          <span
-            className={`inline-flex items-center gap-1.5 ${overdue ? "font-semibold" : ""}`}
-            style={overdue ? { color: "var(--project-health-off-track)" } : undefined}
-          >
-            <CalendarDays aria-hidden className="size-3.5 shrink-0" />
-            <span className="text-data">{formatClientProjectDate(project.targetDate)}</span>
-            {overdue ? <span className="text-micro">({clientProjectsDictionary.common.delayed})</span> : null}
-          </span>
-
-          <span
-            className="inline-flex items-center gap-1.5"
-            style={
-              project.milestoneStats.delayed > 0
-                ? { color: "var(--project-health-off-track)" }
-                : undefined
-            }
-          >
-            <Flag aria-hidden className="size-3.5 shrink-0" />
-            {project.milestoneStats.total > 0
-              ? dictionary.milestones(
-                project.milestoneStats.achieved,
-                project.milestoneStats.total,
-              )
-              : dictionary.noMilestones}
-            {project.milestoneStats.delayed > 0 ? (
-              <span className="text-micro">
-                {dictionary.delayedMilestones(project.milestoneStats.delayed)}
-              </span>
-            ) : null}
-          </span>
-        </div>
-
-        {milestoneProgressPct !== null ? (
-          <div className="space-y-1">
-            <div className="flex items-center justify-between">
-              <span className="text-micro text-muted-foreground">
-                {dictionary.milestoneProgress}
-              </span>
-              <span
-                className="text-data text-micro font-bold"
-                style={{ color: healthVar }}
-              >
-                {milestoneProgressPct}%
-              </span>
-            </div>
-            <div className="h-1.5 overflow-hidden rounded-full bg-muted">
-              <div
-                className="h-full rounded-full transition-[width] duration-500 motion-reduce:transition-none"
-                style={{ width: `${milestoneProgressPct}%`, background: healthVar }}
-              />
-            </div>
+        {metaPreview ? (
+          <div className={`rounded-xl bg-muted/45 px-3 py-3 ${emphasis ? "my-1" : ""}`}>
+            <p className="text-micro font-semibold text-muted-foreground">{metaPreview.label}</p>
+            <ul className="mt-2 space-y-1.5">
+              {metaPreview.metas.map((meta) => (
+                <li key={meta.id} className="flex items-center gap-2 text-body font-semibold">
+                  <Flag aria-hidden className="size-3.5 shrink-0 text-primary" />
+                  <span className="min-w-0 flex-1 truncate">{meta.title}</span>
+                  {meta.targetDate ? <span className="text-data text-micro font-normal text-muted-foreground">{formatClientProjectDate(meta.targetDate)}</span> : null}
+                </li>
+              ))}
+            </ul>
           </div>
         ) : null}
 
-        <div className="mt-auto pt-1">
-          <Link
-            href={href}
-            className="flex w-full items-center justify-between rounded-lg border border-border/60 bg-muted/30 px-3 py-2 text-body font-semibold text-foreground transition-[color,background-color,border-color] hover:border-border hover:bg-muted/60 motion-reduce:transition-none"
-          >
-            <span className="inline-flex items-center gap-2">
-              <FolderKanban aria-hidden className="size-4 text-muted-foreground" />
-              {dictionary.open}
+        <div className="mt-auto space-y-3 border-t border-border/55 pt-4">
+          <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1.5 text-meta text-muted-foreground">
+            <span
+              className={`inline-flex items-center gap-1.5 ${overdue ? "font-semibold" : ""}`}
+              style={overdue ? { color: "var(--project-health-off-track)" } : undefined}
+            >
+              <CalendarDays aria-hidden className="size-3.5 shrink-0" />
+              <span className="text-data">{formatClientProjectDate(project.targetDate)}</span>
+              {overdue ? <span className="text-micro">({clientProjectsDictionary.common.delayed})</span> : null}
             </span>
-            <ArrowRight aria-hidden className="size-3.5 text-muted-foreground transition-transform group-hover:translate-x-0.5 motion-reduce:transition-none motion-reduce:transform-none" />
-          </Link>
+            {milestoneProgressPct !== null && milestoneProgressPct > 0 ? (
+              <span className="text-data text-micro font-bold text-primary">
+                {clientProjectsDictionary.safeUi.completedPercent(milestoneProgressPct)}
+              </span>
+            ) : null}
+          </div>
+
+          {milestoneProgressPct !== null && milestoneProgressPct > 0 ? (
+            <ProjectProgressBar ariaLabel={dictionary.milestoneProgress} percent={milestoneProgressPct} trackClassName="bg-muted" fillClassName="bg-primary motion-reduce:transition-none" />
+          ) : null}
+
+          <span aria-hidden className="inline-flex items-center gap-2 text-body font-semibold text-primary">
+            {dictionary.open}
+            <ArrowRight className="size-3.5 transition-transform group-hover:translate-x-0.5 motion-reduce:transition-none motion-reduce:transform-none" />
+          </span>
         </div>
       </div>
       </article>

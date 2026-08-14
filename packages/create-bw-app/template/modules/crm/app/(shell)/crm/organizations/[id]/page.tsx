@@ -1,1 +1,1 @@
-export { CrmOrganizationRoutePage as default } from "@brightweblabs/module-crm/ui";
+export { CrmOrganizationRoutePage as default } from "@brightweblabs/module-crm/routes";

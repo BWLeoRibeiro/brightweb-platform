@@ -192,6 +192,18 @@ test("account GET handler sanitizes profile read failures", async () => {
   }
 });
 
+test("profile-only account mode keeps self-editing and removes work access", async () => {
+  const source = await readFile(path.join(process.cwd(), "packages/core-auth/src/account-page.tsx"), "utf8");
+  const profileEditorIndex = source.indexOf("<AccountClient profile={profileData} />");
+  const workAccessConditionalIndex = source.indexOf("{showWorkAccess ? (", profileEditorIndex);
+
+  assert.ok(profileEditorIndex >= 0, "the personal profile editor must always render");
+  assert.ok(
+    workAccessConditionalIndex > profileEditorIndex,
+    "showWorkAccess must guard the work-access panel, not the personal profile editor",
+  );
+});
+
 type ProjectQueryResult = {
   data: unknown;
   error: null | { code?: string; message: string };
@@ -223,13 +235,22 @@ function createProjectServiceClient(results: Record<string, ProjectQueryResult[]
   };
 }
 
-function projectAccess() {
+function projectAccess(
+  role: "client" | "staff" = "client",
+  clientResult: { data: boolean; error: { message: string } | null } = { data: false, error: null },
+) {
   return {
     ok: true as const,
-    supabase: {} as never,
+    supabase: {
+      rpc: async (name: string, args: unknown) => {
+        assert.equal(name, "can_current_client_view_project");
+        assert.deepEqual(args, { target_project_id: "project-1" });
+        return clientResult;
+      },
+    } as never,
     user: { id: "user-1", email: "ana@example.com" } as never,
     profileId: "profile-1",
-    role: "client" as const,
+    role,
   };
 }
 
@@ -247,7 +268,33 @@ test("project read access passes admins without querying projects", async () => 
   assert.equal(serviceClientCalls, 0);
 });
 
-test("project read access accepts project members, direct owners, and organization members", async () => {
+test("client project read access uses the canonical database predicate", async () => {
+  let serviceClientCalls = 0;
+  const allowed = createProjectReadAccessGuard({
+    getAccess: async () => projectAccess("client", { data: true, error: null }),
+    getServiceClient: () => {
+      serviceClientCalls += 1;
+      throw new Error("must not run");
+    },
+  });
+  const denied = createProjectReadAccessGuard({
+    getAccess: async () => projectAccess(),
+    getServiceClient: () => {
+      serviceClientCalls += 1;
+      throw new Error("must not run");
+    },
+  });
+
+  assert.equal((await allowed("project-1")).ok, true);
+  assert.deepEqual(await denied("project-1"), {
+    ok: false,
+    status: 404,
+    error: "Projeto não encontrado.",
+  });
+  assert.equal(serviceClientCalls, 0);
+});
+
+test("staff project read access accepts project members, direct owners, and organization admins", async () => {
   const cases = [
     {
       label: "project member",
@@ -262,10 +309,10 @@ test("project read access accepts project members, direct owners, and organizati
       organizationMembership: undefined,
     },
     {
-      label: "organization member",
+      label: "organization admin",
       project: { id: "project-1", organization_id: "org-1", owner_profile_id: "other" },
       membership: null,
-      organizationMembership: { role: "member" },
+      organizationMembership: { role: "admin" },
     },
   ];
 
@@ -278,7 +325,7 @@ test("project read access accepts project members, direct owners, and organizati
         : [],
     });
     const guard = createProjectReadAccessGuard({
-      getAccess: async () => projectAccess(),
+      getAccess: async () => projectAccess("staff"),
       getServiceClient: () => service.client as never,
     });
     assert.equal((await guard("project-1")).ok, true, item.label);
@@ -292,7 +339,7 @@ test("project read access returns the same 404 for missing and forbidden project
       project_members: project ? [{ data: null, error: null }] : [],
     });
     return createProjectReadAccessGuard({
-      getAccess: async () => projectAccess(),
+      getAccess: async () => projectAccess("staff"),
       getServiceClient: () => service.client as never,
     })("project-1");
   };
@@ -338,7 +385,7 @@ test("project read access reports project, membership, and organization query fa
     for (const failure of failures) {
       const service = createProjectServiceClient(failure);
       const result = await createProjectReadAccessGuard({
-        getAccess: async () => projectAccess(),
+        getAccess: async () => projectAccess("staff"),
         getServiceClient: () => service.client as never,
       })("project-1");
       assert.deepEqual(result, {
@@ -352,17 +399,29 @@ test("project read access reports project, membership, and organization query fa
   }
 });
 
-test("preview account composes the projects slot without coupling core-auth", async () => {
+test("account keeps personal settings separate from the dedicated projects area", async () => {
   const repoRoot = path.resolve(new URL("..", import.meta.url).pathname);
   const page = await readFile(path.join(repoRoot, "apps/platform-preview/app/(shell)/account/page.tsx"), "utf8");
   const route = await readFile(path.join(repoRoot, "apps/platform-preview/app/api/account/route.ts"), "utf8");
   const surface = await readFile(path.join(repoRoot, "packages/core-auth/src/account-page.tsx"), "utf8");
-  assert.match(page, /<AccountPage projectsSlot=\{<ClientProjectsPreview \/>}/);
+  assert.match(page, /<ClientAccountPage internalProjectsHref="\/projects" \/>/);
   assert.match(route, /handleAccountGetRequest/);
   assert.match(route, /handleAccountUpdateRequest/);
-  assert.match(surface, /projectsSlot\?: ReactNode/);
-  assert.match(surface, /\{projectsSlot\}/);
+  assert.doesNotMatch(surface, /projectsSlot/);
+  assert.match(surface, /href=\{isClient \? "\/account\/projetos" : internalProjectsHref\}/);
   assert.doesNotMatch(surface, /module-projects/);
   assert.match(surface, /console\.error\("\[core-auth\.AccountPage\.profile\]"/);
   assert.doesNotMatch(surface, /loadError\}: \{accountProfile\.error\}/);
+  assert.match(surface, /<InitialsAvatar/);
+  assert.match(surface, /<CoverHeader/);
+  assert.match(surface, /var\(--cover-header-avatar-shadow\)/);
+  assert.match(surface, /<StatusPill token="--role-client"/);
+  const profileEditor = await readFile(path.join(repoRoot, "packages/core-auth/src/ui/account/account-client.tsx"), "utf8");
+  assert.match(profileEditor, /grid h-14 grid-cols-/);
+  assert.doesNotMatch(profileEditor, /sm:grid-cols-2/);
+  assert.equal((profileEditor.match(/<Button\b/g) ?? []).length, 3);
+  assert.match(profileEditor, /<Button[\s\S]{0,100}variant="outline"[\s\S]{0,180}dictionary\.profile\.edit/);
+  assert.match(profileEditor, /<Button type="button" variant="ghost"[\s\S]{0,180}dictionary\.profile\.cancel/);
+  assert.match(profileEditor, /<Button type="submit"[\s\S]{0,300}dictionary\.profile\.save/);
+  assert.doesNotMatch(profileEditor, /<button\b/);
 });

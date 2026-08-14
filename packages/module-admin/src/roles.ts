@@ -62,7 +62,12 @@ export async function applyAdminRoleChanges({
 
     if (error) {
       console.error("[admin.role-change]", { profileId, error });
-      skipped.push({ profileId, reason: "role_update_failed" });
+      skipped.push({
+        profileId,
+        reason: error.message?.includes("Reassign or remove this profile from every project")
+          ? "project_reassignment_required"
+          : "role_update_failed",
+      });
       continue;
     }
 

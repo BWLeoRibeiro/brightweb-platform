@@ -31,10 +31,11 @@ import { useWindowEventBridge } from "../window-events";
 type ProjectLinkCreateSheetProps = {
   projectId: string;
   initialOpen?: boolean;
+  canManageClientContent?: boolean;
 };
 
 export function ProjectLinkCreateSheet({
-  projectId, initialOpen = false }: ProjectLinkCreateSheetProps) {
+  projectId, initialOpen = false, canManageClientContent = false }: ProjectLinkCreateSheetProps) {
   const client = useProjectsUiClient();
   const dictionary = useProjectsUiDictionary();
   const router = useRouter();
@@ -155,7 +156,7 @@ export function ProjectLinkCreateSheet({
                     <option value="drive">{dictionary.create.linkKinds.drive}</option>
                   </StyledSelect>
                 </div>
-                <div>
+                {canManageClientContent ? <div>
                   <label className={sheetFieldLabelClassName} htmlFor="link-create-visibility">{dictionary.forms.visibility}</label>
                   <StyledSelect
                     id="link-create-visibility"
@@ -166,7 +167,7 @@ export function ProjectLinkCreateSheet({
                     <option value="staff">{dictionary.create.internalTeam}</option>
                     <option value="client">{dictionary.people.client}</option>
                   </StyledSelect>
-                </div>
+                </div> : null}
               </div>
             </SheetSection>
           </div>

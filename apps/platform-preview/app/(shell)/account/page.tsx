@@ -1,6 +1,5 @@
-import { AccountPage } from "@brightweblabs/core-auth";
-import { ClientProjectsPreview } from "@brightweblabs/module-projects";
+import { ClientAccountPage } from "@brightweblabs/module-projects";
 
 export default function AccountPreviewPage() {
-  return <AccountPage projectsSlot={<ClientProjectsPreview />} />;
+  return <ClientAccountPage internalProjectsHref="/projects" />;
 }

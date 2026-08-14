@@ -1,1 +1,1 @@
-export { ClientProjectsListPage as default } from "@brightweblabs/module-projects";
+export { ClientProjectsPreviewListPage as default } from "@brightweblabs/module-projects";

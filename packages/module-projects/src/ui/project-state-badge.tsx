@@ -28,6 +28,7 @@ export const PROJECT_HEALTH_LABELS: Record<ProjectHealth, string> = {
 const PROJECT_STATUS_TINT: Record<ProjectStatus, string> = {
   planned: "--project-state-planned",
   active: "--project-state-active",
+  paused: "--project-state-planned",
   blocked: "--project-state-blocked",
   completed: "--project-state-completed",
   canceled: "--project-state-canceled",

@@ -12,6 +12,7 @@
   body {
     margin: 0;
     padding: 0;
+    scrollbar-gutter: stable;
     background: var(--page-background);
     color: var(--foreground);
     font-family: var(--font-sans);

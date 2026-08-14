@@ -13,7 +13,7 @@ const HELP = `Usage: bw <command> [options]\n\nCommands:\n  add <moduleKey>     
 function parseOptions(argv) {
   const options = {};
   const positionals = [];
-  const booleanFlags = new Set(["help", "dry-run", "strict", "report", "install", "refresh-starters", "allow-stale-fallback", "allow-uncursored", "force", "list", "yes"]);
+  const booleanFlags = new Set(["help", "dry-run", "strict", "report", "install", "refresh-starters", "include-destructive-migrations", "allow-stale-fallback", "allow-uncursored", "force", "list", "yes"]);
   const repeatableFlags = new Set(["cursor", "owned-surface", "own", "skip"]);
   for (let index = 0; index < argv.length; index += 1) {
     const token = argv[index];

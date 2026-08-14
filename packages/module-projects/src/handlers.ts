@@ -1,5 +1,10 @@
 import { requireServerUserAccess } from "@brightweblabs/core-auth/server";
 import {
+  createClientProjectDetailGetHandler,
+  createClientProjectsGetHandler,
+  createProjectClientAccessGetHandler,
+  createProjectClientAccessPatchHandler,
+  createProjectOrganizationsPatchHandler,
   createProjectsActivityGetHandler,
   createProjectsAssignableProfilesGetHandler,
   createProjectsDashboardGetHandler,
@@ -18,11 +23,22 @@ import {
   createProjectsPatchHandler,
   createProjectsPostHandler,
   createProjectsStatsGetHandler,
+  createProjectsSetupOptionsGetHandler,
   createProjectsTasksDeleteHandler,
   createProjectsTasksPatchHandler,
   createProjectsTasksPostHandler,
   createTasksDashboardGetHandler,
 } from "./http";
+import {
+  createProjectWithAccess,
+  getClientProject,
+  getProjectClientAccess,
+  listClientOrganizations,
+  listClientProjects,
+  listProjectSetupOptions,
+  updateProjectClientAccess,
+  updateProjectOrganizations,
+} from "./client-access";
 import {
   getProjectPortfolioStats,
   listProjects,
@@ -42,6 +58,7 @@ import {
   deleteProjectMilestone,
   deleteProjectTask,
   getProjectDashboard,
+  getProjectAccess,
   listProjectActivity,
   queryProjectActivity,
   listProjectAssignableProfiles,
@@ -76,7 +93,23 @@ const projectsDependencies = {
   createLink: createProjectLink,
   updateLink: updateProjectLink,
   deleteLink: deleteProjectLink,
+  listClientProjects,
+  listClientOrganizations,
+  getClientProject,
+  getProjectClientAccess,
+  updateProjectClientAccess,
+  updateProjectOrganizations,
+  listProjectSetupOptions,
+  createProjectWithAccess,
+  getProjectAccess,
 };
+
+export const handleClientProjectsGetRequest = createClientProjectsGetHandler(projectsDependencies);
+export const handleClientProjectDetailGetRequest = createClientProjectDetailGetHandler(projectsDependencies);
+export const handleProjectClientAccessGetRequest = createProjectClientAccessGetHandler(projectsDependencies);
+export const handleProjectClientAccessPatchRequest = createProjectClientAccessPatchHandler(projectsDependencies);
+export const handleProjectOrganizationsPatchRequest = createProjectOrganizationsPatchHandler(projectsDependencies);
+export const handleProjectsSetupOptionsGetRequest = createProjectsSetupOptionsGetHandler(projectsDependencies);
 
 export const handleProjectsGetRequest = createProjectsGetHandler(projectsDependencies);
 export const handleProjectsStatsGetRequest = createProjectsStatsGetHandler(projectsDependencies);

@@ -9,7 +9,7 @@ import { ProjectDetailDataProvider } from "./project-detail-data-provider";
 import { ProjectEditSheetLazy } from "./project-lazy-panels";
 import type { ProjectsNavigationConfig, ProjectsUiClient, ProjectsUiDictionary } from "./types";
 
-export type ProjectTasksPermissions = { canEditProjectItems: boolean; canCreateProjectLinks: boolean; canOpenEditProject: boolean };
+export type ProjectTasksPermissions = { canEditProjectItems: boolean; canCreateProjectLinks: boolean; canManageClientContent: boolean; canOpenEditProject: boolean };
 
 export type ProjectTasksPageProps = {
   client?: ProjectsUiClient;
@@ -20,7 +20,7 @@ export type ProjectTasksPageProps = {
   navigation?: Partial<ProjectsNavigationConfig>;
 };
 
-const DEFAULT_PERMISSIONS: ProjectTasksPermissions = { canEditProjectItems: false, canCreateProjectLinks: false, canOpenEditProject: true };
+const DEFAULT_PERMISSIONS: ProjectTasksPermissions = { canEditProjectItems: false, canCreateProjectLinks: false, canManageClientContent: false, canOpenEditProject: true };
 
 export function ProjectTasksPage({ client, initialData, permissions, projectRole = "observer", dictionary = defaultProjectsUiDictionary, navigation }: ProjectTasksPageProps) {
   const access = { ...DEFAULT_PERMISSIONS, ...permissions };
@@ -30,7 +30,7 @@ export function ProjectTasksPage({ client, initialData, permissions, projectRole
         <div className="mx-auto flex w-full max-w-[1360px] flex-col gap-6">
           <ProjectBoardKanban canEditItems={access.canEditProjectItems} />
           {access.canOpenEditProject ? <ProjectEditSheetLazy projectId={initialData.project.id} projectRole={projectRole} /> : null}
-          <ProjectDetailCreateSheetsMount projectId={initialData.project.id} canCreateMilestonesAndTasks={access.canEditProjectItems} canCreateLinks={access.canCreateProjectLinks} />
+          <ProjectDetailCreateSheetsMount projectId={initialData.project.id} canCreateMilestonesAndTasks={access.canEditProjectItems} canCreateLinks={access.canCreateProjectLinks} canManageClientContent={access.canManageClientContent} />
         </div>
       </ProjectDetailDataProvider>
     </ProjectsUiProvider>

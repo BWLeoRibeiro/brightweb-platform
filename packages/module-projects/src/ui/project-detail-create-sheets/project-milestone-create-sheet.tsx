@@ -19,7 +19,7 @@ import { cn } from "../utils";
 import { PROJECTS_EVENTS } from "../events";
 import { createMilestone } from "../project-ui-actions";
 import { parseIsoDate, toIsoDate } from "./date-utils";
-import { Button } from "@brightweblabs/ui";
+import { Button, Checkbox } from "@brightweblabs/ui";
 import { ProjectCalendar as Calendar } from "../shared/project-calendar";
 import { Input } from "@brightweblabs/ui";
 import { Popover, PopoverContent, PopoverTrigger } from "@brightweblabs/ui";
@@ -33,9 +33,10 @@ import { useWindowEventBridge } from "../window-events";
 type ProjectMilestoneCreateSheetProps = {
   projectId: string;
   initialOpen?: boolean;
+  canManageClientContent?: boolean;
 };
 
-export function ProjectMilestoneCreateSheet({ projectId, initialOpen = false }: ProjectMilestoneCreateSheetProps) {
+export function ProjectMilestoneCreateSheet({ projectId, initialOpen = false, canManageClientContent = false }: ProjectMilestoneCreateSheetProps) {
   const client = useProjectsUiClient();
   const dictionary = useProjectsUiDictionary();
   const router = useRouter();
@@ -44,6 +45,7 @@ export function ProjectMilestoneCreateSheet({ projectId, initialOpen = false }: 
   const [title, setTitle] = useState("");
   const [status, setStatus] = useState("pending");
   const [targetDate, setTargetDate] = useState("");
+  const [visibleToClients, setVisibleToClients] = useState(false);
   const targetDateValue = useMemo(() => parseIsoDate(targetDate), [targetDate]);
 
   useWindowEventBridge(PROJECTS_EVENTS.openNewMilestone, () => {
@@ -54,6 +56,7 @@ export function ProjectMilestoneCreateSheet({ projectId, initialOpen = false }: 
     setTitle("");
     setStatus("pending");
     setTargetDate("");
+    setVisibleToClients(false);
   };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -66,6 +69,7 @@ export function ProjectMilestoneCreateSheet({ projectId, initialOpen = false }: 
         title,
         status,
         targetDate: targetDate || undefined,
+        visibility: visibleToClients ? "client" : "staff",
       });
       toast.success(dictionary.create.milestoneCreated);
       setOpen(false);
@@ -146,6 +150,13 @@ export function ProjectMilestoneCreateSheet({ projectId, initialOpen = false }: 
                   </PopoverContent>
                 </Popover>
               </div>
+              {canManageClientContent ? <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-border px-3 py-2.5">
+                <Checkbox checked={visibleToClients} onChange={() => setVisibleToClients((current) => !current)} />
+                <span>
+                  <span className="block text-body font-semibold">{dictionary.milestoneVisibility.client}</span>
+                  <span className="mt-0.5 block text-meta text-muted-foreground">{dictionary.milestoneVisibility.clientHint}</span>
+                </span>
+              </label> : null}
             </SheetSection>
           </div>
           <SheetFooter className={`${sheetFooterClassName} flex-row gap-2`}>

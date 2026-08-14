@@ -4,15 +4,17 @@ import type {
   ProjectLinkKind,
   ProjectLinkVisibility,
   ProjectMemberRole,
+  ProjectMilestoneVisibility,
   ProjectStatus,
   TaskPriority,
   TaskStatus,
 } from "./contracts";
-import type { ListProjectsParams, ProjectListItem } from "./data";
+import type { ListProjectsParams, ProjectClientAccessSummary, ProjectListItem } from "./data";
 
 export type {
   ListProjectsParams,
   ProjectListItem,
+  ProjectClientAccessSummary,
 };
 
 export type ProjectMember = {
@@ -52,6 +54,7 @@ export type ProjectMilestone = {
   position: number;
   createdAt: string;
   updatedAt: string;
+  visibility: ProjectMilestoneVisibility;
 };
 
 export type ProjectTask = {
@@ -183,6 +186,7 @@ export type CreateProjectMilestoneInput = {
   title: string;
   status?: MilestoneStatus;
   targetDate?: string | null;
+  visibility?: ProjectMilestoneVisibility;
 };
 
 export type UpdateProjectMilestoneInput = {
@@ -191,6 +195,7 @@ export type UpdateProjectMilestoneInput = {
   targetDate?: string | null;
   completedAt?: string | null;
   position?: number;
+  visibility?: ProjectMilestoneVisibility;
 };
 
 export type CreateProjectLinkInput = {

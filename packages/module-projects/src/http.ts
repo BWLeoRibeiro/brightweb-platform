@@ -7,14 +7,26 @@ import { appendServerTiming, elapsedMs, requestStartedAt } from "@brightweblabs/
 import {
   isMilestoneStatus,
   isProjectHealth,
+  isProjectClientAccessMode,
   isProjectLinkKind,
   isProjectLinkVisibility,
   isProjectMemberRole,
   isProjectStatus,
+  isProjectMilestoneVisibility,
   isTaskPriority,
   isTaskStatus,
   parsePositiveInt,
 } from "./contracts";
+import {
+  createProjectWithAccess,
+  getClientProject,
+  getProjectClientAccess,
+  listClientOrganizations,
+  listClientProjects,
+  listProjectSetupOptions,
+  updateProjectClientAccess,
+  updateProjectOrganizations,
+} from "./client-access";
 import {
   getProjectPortfolioStats,
   listProjects,
@@ -36,6 +48,7 @@ import {
   deleteProjectMilestone,
   deleteProjectTask,
   getProjectDashboard,
+  getProjectAccess,
   listProjectActivity,
   queryProjectActivity,
   listProjectAssignableProfiles,
@@ -57,6 +70,11 @@ import type {
   UpdateProjectMilestoneInput,
   UpdateProjectTaskInput,
 } from "./types";
+import type {
+  CreateProjectWithAccessInput,
+  UpdateProjectClientAccessInput,
+} from "./client-contracts";
+import { hasSelectedClientOrganizationWithoutAudience } from "./client-access-validation";
 
 export function json(body: unknown, init?: ResponseInit) {
   const payload = JSON.stringify(body);
@@ -110,6 +128,15 @@ export type ProjectsHttpDependencies = {
   createLink: typeof createProjectLink;
   updateLink: typeof updateProjectLink;
   deleteLink: typeof deleteProjectLink;
+  listClientProjects: typeof listClientProjects;
+  listClientOrganizations: typeof listClientOrganizations;
+  getClientProject: typeof getClientProject;
+  getProjectClientAccess: typeof getProjectClientAccess;
+  updateProjectClientAccess: typeof updateProjectClientAccess;
+  updateProjectOrganizations: typeof updateProjectOrganizations;
+  listProjectSetupOptions: typeof listProjectSetupOptions;
+  createProjectWithAccess: typeof createProjectWithAccess;
+  getProjectAccess: typeof getProjectAccess;
 };
 
 const PROJECT_DUE_WINDOWS = ["all", "overdue", "next_7_days", "next_30_days"] as const;
@@ -176,10 +203,33 @@ const PROJECT_DOMAIN_ERRORS = {
 
 function projectsErrorResponse(error: unknown, context: string, status = 500) {
   const message = error instanceof Error ? error.message : "";
+  if (message === "The idempotency key was already used with another request.") {
+    return json(publicError("IDEMPOTENCY_CONFLICT", message), { status: 409 });
+  }
+  if (
+    message === "Only authenticated staff can create projects."
+    || message === "Staff creators must own the projects they create."
+    || message.startsWith("Only project owners or administrators can")
+  ) {
+    return json(publicError("FORBIDDEN", "Forbidden."), { status: 403 });
+  }
   if (
     message === "Indica o motivo do cancelamento."
     || message === "Motivo de bloqueio é obrigatório quando a tarefa está bloqueada."
     || message === "name é obrigatório."
+    || message === "A equipa interna só pode incluir administradores e membros de staff."
+    || message === "Invalid project creation payload."
+    || message === "Project name, primary organization, and status are invalid."
+    || message === "The primary organization must participate in the project."
+    || message === "One or more participating organizations do not exist."
+    || message === "A data alvo não pode ser anterior à data de início."
+    || message.startsWith("Exactly one internal project owner is required")
+    || message === "Each internal profile can appear only once in the project team."
+    || message === "Project members must be internal staff."
+    || message === "The client contact must be an internal staff profile."
+    || message === "The client contact must be an internal project team member."
+    || message === "Every project member requires a valid profile and role."
+    || message === "The responsible client contact must remain in the internal project team."
   ) {
     return json(publicError("INVALID_INPUT", message), { status: 400 });
   }
@@ -268,6 +318,45 @@ function withStaffAccess(
   };
 }
 
+function withStaffAccessWithoutContext(
+  dependencies: ProjectsHttpDependencies,
+  errorContext: string,
+  action: ProjectsActionWithoutContext,
+) {
+  const handler = withStaffAccess(
+    dependencies,
+    errorContext,
+    (access, request) => action(access, request),
+  );
+  return (request: Request) => handler(request);
+}
+
+function requireClientAccess(access: Extract<ServerUserAccess, { ok: true }>): Response | null {
+  return access.role === "client" && access.profileId
+    ? null
+    : json(publicError("FORBIDDEN", "Forbidden."), { status: 403 });
+}
+
+async function requireProjectClientAccessManager(
+  dependencies: ProjectsHttpDependencies,
+  access: Extract<ServerUserAccess, { ok: true }>,
+  projectId: string,
+): Promise<Response | null> {
+  if (access.role === "admin") return null;
+  if (access.role !== "staff" || !access.profileId) {
+    return json(publicError("FORBIDDEN", "Forbidden."), { status: 403 });
+  }
+  const projectAccess = await dependencies.getProjectAccess(
+    access.supabase as SupabaseClient,
+    projectId,
+    access.profileId,
+    access.role,
+  );
+  return projectAccess.projectRole === "owner"
+    ? null
+    : json(publicError("FORBIDDEN", "Forbidden."), { status: 403 });
+}
+
 async function getRouteParams(context: ProjectsRequestContext | undefined) {
   if (!context) throw new Error("Missing Projects route context.");
   return context.params;
@@ -289,6 +378,16 @@ function isNullableString(value: unknown): value is string | null {
 
 function isFiniteNumber(value: unknown): value is number {
   return typeof value === "number" && Number.isFinite(value);
+}
+
+function isUuid(value: unknown): value is string {
+  return typeof value === "string"
+    && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+}
+
+function uniqueStrings(value: unknown): string[] | null {
+  if (!Array.isArray(value) || !value.every(isNonEmptyString)) return null;
+  return Array.from(new Set(value));
 }
 
 type FieldValidator = (value: unknown) => boolean;
@@ -344,11 +443,29 @@ const projectFields = [
   "cancellationReason",
   "summary",
 ] as const;
+const projectUpdateFields = [
+  "name",
+  "code",
+  "status",
+  "startDate",
+  "targetDate",
+  "cancellationReason",
+  "summary",
+] as const;
 const projectValidators: Record<(typeof projectFields)[number], FieldValidator> = {
   name: isNonEmptyString,
   code: nullableString,
   status: isProjectStatus,
   ownerProfileId: nullableString,
+  startDate: nullableString,
+  targetDate: nullableString,
+  cancellationReason: nullableString,
+  summary: nullableString,
+};
+const projectUpdateValidators: Record<(typeof projectUpdateFields)[number], FieldValidator> = {
+  name: isNonEmptyString,
+  code: nullableString,
+  status: isProjectStatus,
   startDate: nullableString,
   targetDate: nullableString,
   cancellationReason: nullableString,
@@ -409,13 +526,14 @@ const taskValidators: Record<(typeof taskFields)[number], FieldValidator> = {
   blockedReason: nullableString,
 };
 
-const milestoneFields = ["title", "status", "targetDate", "completedAt", "position"] as const;
+const milestoneFields = ["title", "status", "targetDate", "completedAt", "position", "visibility"] as const;
 const milestoneValidators: Record<(typeof milestoneFields)[number], FieldValidator> = {
   title: isNonEmptyString,
   status: isMilestoneStatus,
   targetDate: nullableString,
   completedAt: nullableString,
   position: isFiniteNumber,
+  visibility: isProjectMilestoneVisibility,
 };
 
 const linkFields = ["label", "url", "visibility", "kind"] as const;
@@ -426,8 +544,126 @@ const linkValidators: Record<(typeof linkFields)[number], FieldValidator> = {
   kind: isProjectLinkKind,
 };
 
+function parseClientAccessInput(value: unknown): UpdateProjectClientAccessInput | Response {
+  if (!isRecord(value) || !isProjectClientAccessMode(value.mode) || !Array.isArray(value.organizations)) {
+    return invalidPayload('Invalid "clientAccess" field.');
+  }
+  const organizations: UpdateProjectClientAccessInput["organizations"] = [];
+  const seenOrganizationIds = new Set<string>();
+  for (const organization of value.organizations) {
+    if (!isRecord(organization) || !isNonEmptyString(organization.organizationId)) {
+      return invalidPayload('Invalid "clientAccess.organizations" field.');
+    }
+    const selectedProfileIds = uniqueStrings(organization.selectedProfileIds);
+    if (!selectedProfileIds) {
+      return invalidPayload('Invalid "selectedProfileIds" field.');
+    }
+    if (seenOrganizationIds.has(organization.organizationId)) {
+      return invalidPayload("Each client access organization can appear only once.");
+    }
+    seenOrganizationIds.add(organization.organizationId);
+    organizations.push({ organizationId: organization.organizationId, selectedProfileIds });
+  }
+  if (value.mode !== "hidden" && organizations.length === 0) {
+    return invalidPayload("Visible client access requires at least one organization.");
+  }
+  if (value.mode === "hidden" && organizations.length > 0) {
+    return invalidPayload("Hidden client access cannot include organizations.");
+  }
+  if (value.mode === "all_org_clients" && organizations.some((organization) => organization.selectedProfileIds.length > 0)) {
+    return invalidPayload("Organization-wide access cannot include selected profiles.");
+  }
+  if (hasSelectedClientOrganizationWithoutAudience(value.mode, organizations)) {
+    return invalidPayload("Every selected organization requires at least one selected client.");
+  }
+  for (const field of ["clientSummary", "clientScope", "clientContactProfileId"] as const) {
+    if (hasOwn(value, field) && !isNullableString(value[field])) {
+      return invalidPayload(`Invalid "${field}" field.`);
+    }
+  }
+  return {
+    mode: value.mode,
+    organizations,
+    ...(hasOwn(value, "clientSummary") ? { clientSummary: value.clientSummary as string | null } : {}),
+    ...(hasOwn(value, "clientScope") ? { clientScope: value.clientScope as string | null } : {}),
+    ...(hasOwn(value, "clientContactProfileId") ? { clientContactProfileId: value.clientContactProfileId as string | null } : {}),
+  };
+}
+
+function parseAtomicCreateInput(payload: Record<string, unknown>): CreateProjectWithAccessInput | Response | null {
+  if (!hasOwn(payload, "project") && !hasOwn(payload, "idempotencyKey")) return null;
+  if (!isUuid(payload.idempotencyKey) || !isRecord(payload.project)) {
+    return invalidPayload('Invalid atomic project creation payload.');
+  }
+  const project = payload.project;
+  const fields = ["organizationId", ...projectFields] as const;
+  const projectInput = validateInput<CreateProjectInput>(
+    project,
+    fields,
+    { organizationId: isNonEmptyString, ...projectValidators },
+    ["organizationId", "name"],
+  );
+  if (isResponse(projectInput)) return projectInput;
+  const participatingOrganizationIds = uniqueStrings(payload.participatingOrganizationIds);
+  if (!participatingOrganizationIds) {
+    return invalidPayload('Invalid "participatingOrganizationIds" field.');
+  }
+  if (!Array.isArray(payload.members)) return invalidPayload('Invalid "members" field.');
+  const members: CreateProjectWithAccessInput["members"] = [];
+  const memberProfileIds = new Set<string>();
+  for (const member of payload.members) {
+    if (!isRecord(member) || !isNonEmptyString(member.profileId) || !isProjectMemberRole(member.role)) {
+      return invalidPayload('Invalid "members" field.');
+    }
+    if (memberProfileIds.has(member.profileId)) {
+      return invalidPayload("Each internal profile can appear only once in the project team.");
+    }
+    memberProfileIds.add(member.profileId);
+    members.push({ profileId: member.profileId, role: member.role });
+  }
+  if (members.filter((member) => member.role === "owner").length !== 1) {
+    return invalidPayload("Project creation requires exactly one owner.");
+  }
+  const clientAccess = parseClientAccessInput(payload.clientAccess);
+  if (isResponse(clientAccess)) return clientAccess;
+  const participantIds = new Set([projectInput.organizationId, ...participatingOrganizationIds]);
+  if (clientAccess.organizations.some((organization) => !participantIds.has(organization.organizationId))) {
+    return invalidPayload("Client access organizations must participate in the project.");
+  }
+  if (projectInput.startDate && projectInput.targetDate && projectInput.targetDate < projectInput.startDate) {
+    return invalidPayload("A data alvo não pode ser anterior à data de início.");
+  }
+  if (projectInput.status === "canceled" && !projectInput.cancellationReason?.trim()) {
+    return invalidPayload("Indica o motivo do cancelamento.");
+  }
+  const clientFields = [
+    "clientSummary",
+    "clientScope",
+    "clientContactProfileId",
+  ] as const;
+  for (const field of clientFields) {
+    if (hasOwn(project, field) && !isNullableString(project[field])) {
+      return invalidPayload(`Invalid "project.${field}" field.`);
+    }
+  }
+  return {
+    idempotencyKey: payload.idempotencyKey,
+    project: {
+      ...projectInput,
+      ...(hasOwn(project, "clientSummary") ? { clientSummary: project.clientSummary as string | null } : {}),
+      ...(hasOwn(project, "clientScope") ? { clientScope: project.clientScope as string | null } : {}),
+      ...(hasOwn(project, "clientContactProfileId")
+        ? { clientContactProfileId: project.clientContactProfileId as string | null }
+        : {}),
+    },
+    participatingOrganizationIds,
+    members,
+    clientAccess,
+  };
+}
+
 export function createProjectsGetHandler(dependencies: ProjectsHttpDependencies) {
-  return withUserAccess(dependencies, "projects.list", async (access, request) => {
+  return withStaffAccess(dependencies, "projects.list", async (access, request) => {
     const timings = new Map<string, number>();
     const result = await dependencies.listProjects(
       access.supabase as never,
@@ -442,19 +678,19 @@ export function createProjectsGetHandler(dependencies: ProjectsHttpDependencies)
 }
 
 export function createProjectsStatsGetHandler(dependencies: ProjectsHttpDependencies) {
-  return withUserAccess(dependencies, "projects.stats", async (access) => {
+  return withStaffAccess(dependencies, "projects.stats", async (access) => {
     return json(await dependencies.getPortfolioStats(access.supabase as never));
   });
 }
 
 export function createProjectsDashboardOverviewGetHandler(dependencies: ProjectsHttpDependencies) {
-  return withUserAccessWithoutContext(dependencies, "projects.dashboard-overview", async (access) => {
+  return withStaffAccessWithoutContext(dependencies, "projects.dashboard-overview", async (access) => {
     return json({ data: await dependencies.getProjectsDashboardData(access.supabase as never) });
   });
 }
 
 export function createTasksDashboardGetHandler(dependencies: ProjectsHttpDependencies) {
-  return withUserAccessWithoutContext(dependencies, "projects.tasks-dashboard", async (access, request) => {
+  return withStaffAccessWithoutContext(dependencies, "projects.tasks-dashboard", async (access, request) => {
     const url = new URL(request.url);
     return json({
       data: await dependencies.getTasksDashboardData(
@@ -471,14 +707,14 @@ export function createTasksDashboardGetHandler(dependencies: ProjectsHttpDepende
 }
 
 export function createProjectsDashboardGetHandler(dependencies: ProjectsHttpDependencies) {
-  return withUserAccess(dependencies, "projects.dashboard", async (access, _request, context) => {
+  return withStaffAccess(dependencies, "projects.dashboard", async (access, _request, context) => {
     const { id } = await getRouteParams(context);
     return json(await dependencies.getDashboard(access.supabase as never, id));
   });
 }
 
 export function createProjectsActivityGetHandler(dependencies: ProjectsHttpDependencies) {
-  return withUserAccess(dependencies, "projects.activity", async (access, request, context) => {
+  return withStaffAccess(dependencies, "projects.activity", async (access, request, context) => {
     const { id } = await getRouteParams(context);
     const url = new URL(request.url);
     if (url.searchParams.has("page") || url.searchParams.has("pageSize")) {
@@ -492,7 +728,7 @@ export function createProjectsActivityGetHandler(dependencies: ProjectsHttpDepen
 }
 
 export function createProjectsOrganizationsGetHandler(dependencies: ProjectsHttpDependencies) {
-  return withUserAccess(dependencies, "projects.organizations.list", async (access) => {
+  return withStaffAccess(dependencies, "projects.organizations.list", async (access) => {
     const { data, error } = await (access.supabase as SupabaseClient)
       .from("organizations")
       .select("id, name")
@@ -502,6 +738,101 @@ export function createProjectsOrganizationsGetHandler(dependencies: ProjectsHttp
     return json(
       ((data ?? []) as Array<{ id: string; name: string }>).map(({ id, name }) => ({ id, name })),
     );
+  });
+}
+
+export function createClientProjectsGetHandler(dependencies: ProjectsHttpDependencies) {
+  return withUserAccessWithoutContext(dependencies, "projects.client.list", async (access) => {
+    const forbidden = requireClientAccess(access);
+    if (forbidden) return forbidden;
+    const [items, organizations] = await Promise.all([
+      dependencies.listClientProjects(access.supabase as SupabaseClient),
+      dependencies.listClientOrganizations(access.supabase as SupabaseClient),
+    ]);
+    const ongoingProjects = items.filter((project) => (
+      !project.archivedAt
+      && (project.status === "active" || project.status === "paused" || project.status === "blocked")
+    ));
+    const featuredProject = ongoingProjects.length === 1
+      ? await dependencies.getClientProject(access.supabase as SupabaseClient, ongoingProjects[0]!.id)
+      : null;
+    return json({ items, organizations, featuredProject });
+  });
+}
+
+export function createClientProjectDetailGetHandler(dependencies: ProjectsHttpDependencies) {
+  return withUserAccess(dependencies, "projects.client.detail", async (access, _request, context) => {
+    const forbidden = requireClientAccess(access);
+    if (forbidden) return forbidden;
+    const { id } = await getRouteParams(context);
+    if (!isUuid(id)) {
+      return json(publicError("PROJECT_NOT_FOUND", "Projeto não encontrado."), { status: 404 });
+    }
+    const project = await dependencies.getClientProject(access.supabase as SupabaseClient, id);
+    return project
+      ? json({ data: project })
+      : json(publicError("PROJECT_NOT_FOUND", "Projeto não encontrado."), { status: 404 });
+  });
+}
+
+export function createProjectClientAccessGetHandler(dependencies: ProjectsHttpDependencies) {
+  return withStaffAccess(dependencies, "projects.client-access.get", async (access, _request, context) => {
+    const { id } = await getRouteParams(context);
+    const forbidden = await requireProjectClientAccessManager(dependencies, access, id);
+    if (forbidden) return forbidden;
+    return json({ data: await dependencies.getProjectClientAccess(access.supabase as SupabaseClient, id) });
+  });
+}
+
+export function createProjectClientAccessPatchHandler(dependencies: ProjectsHttpDependencies) {
+  return withStaffAccess(dependencies, "projects.client-access.update", async (access, request, context) => {
+    const { id } = await getRouteParams(context);
+    const forbidden = await requireProjectClientAccessManager(dependencies, access, id);
+    if (forbidden) return forbidden;
+    const payload = await parseJsonObject(request);
+    if (!payload) return invalidPayload();
+    const input = parseClientAccessInput(payload);
+    if (isResponse(input)) return input;
+    const data = await dependencies.updateProjectClientAccess(access.supabase as SupabaseClient, id, input);
+    return json({ data });
+  });
+}
+
+export function createProjectOrganizationsPatchHandler(dependencies: ProjectsHttpDependencies) {
+  return withStaffAccess(dependencies, "projects.organizations.update", async (access, request, context) => {
+    const { id } = await getRouteParams(context);
+    const forbidden = await requireProjectClientAccessManager(dependencies, access, id);
+    if (forbidden) return forbidden;
+    const payload = await parseJsonObject(request);
+    const organizationIds = payload ? uniqueStrings(payload.organizationIds) : null;
+    if (!organizationIds || organizationIds.length === 0) {
+      return invalidPayload('Invalid "organizationIds" field.');
+    }
+    return json({
+      data: await dependencies.updateProjectOrganizations(
+        access.supabase as SupabaseClient,
+        id,
+        organizationIds,
+      ),
+    });
+  });
+}
+
+export function createProjectsSetupOptionsGetHandler(dependencies: ProjectsHttpDependencies) {
+  return withStaffAccessWithoutContext(dependencies, "projects.setup-options", async (access, request) => {
+    if (!access.profileId) return json(publicError("FORBIDDEN", "Forbidden."), { status: 403 });
+    const raw = new URL(request.url).searchParams.get("organizationIds") ?? "";
+    const organizationIds = Array.from(new Set(raw.split(",").map((item) => item.trim()).filter(Boolean)));
+    if (organizationIds.length > 50 || organizationIds.some((item) => !isUuid(item))) {
+      return invalidPayload('Invalid "organizationIds" query parameter.');
+    }
+    return json({
+      data: await dependencies.listProjectSetupOptions(
+        access.supabase as SupabaseClient,
+        access.profileId,
+        organizationIds,
+      ),
+    });
   });
 }
 
@@ -532,6 +863,20 @@ export function createProjectsPostHandler(dependencies: ProjectsHttpDependencies
   return withStaffAccess(dependencies, "projects.create", async (access, request) => {
     const payload = await parseJsonObject(request);
     if (!payload) return invalidPayload();
+    const atomicInput = parseAtomicCreateInput(payload);
+    if (atomicInput !== null) {
+      if (isResponse(atomicInput)) return atomicInput;
+      const result = await dependencies.createProjectWithAccess(access.supabase as SupabaseClient, atomicInput);
+      const ownerProfileId = atomicInput.members.find((member) => member.role === "owner")?.profileId ?? null;
+      return json({
+        data: {
+          id: result.projectId,
+          name: atomicInput.project.name.trim(),
+          ownerProfileId,
+          created: result.created,
+        },
+      }, { status: result.created ? 201 : 200 });
+    }
     const fields = ["organizationId", ...projectFields] as const;
     const input = validateInput<CreateProjectInput>(
       payload,
@@ -540,14 +885,31 @@ export function createProjectsPostHandler(dependencies: ProjectsHttpDependencies
       ["organizationId", "name"],
     );
     if (isResponse(input)) return input;
-    const dashboard = await dependencies.createProject(access.supabase as never, input);
+    if (!access.profileId) return json(publicError("FORBIDDEN", "Forbidden."), { status: 403 });
+    const ownerProfileId = input.ownerProfileId || access.profileId;
+    const result = await dependencies.createProjectWithAccess(access.supabase as SupabaseClient, {
+      idempotencyKey: crypto.randomUUID(),
+      project: {
+        organizationId: input.organizationId,
+        name: input.name,
+        code: input.code,
+        status: input.status,
+        startDate: input.startDate,
+        targetDate: input.targetDate,
+        cancellationReason: input.cancellationReason,
+        summary: input.summary,
+      },
+      participatingOrganizationIds: [input.organizationId],
+      members: [{ profileId: ownerProfileId, role: "owner" }],
+      clientAccess: { mode: "hidden", organizations: [] },
+    });
     return json({
       data: {
-        id: dashboard.project.id,
-        name: dashboard.project.name,
-        ownerProfileId: dashboard.project.ownerProfileId,
+        id: result.projectId,
+        name: input.name.trim(),
+        ownerProfileId,
       },
-    }, { status: 201 });
+    }, { status: result.created ? 201 : 200 });
   });
 }
 
@@ -558,8 +920,8 @@ export function createProjectsPatchHandler(dependencies: ProjectsHttpDependencie
     if (!payload) return invalidPayload();
     const input = validateInput<UpdateProjectInput>(
       payload,
-      projectFields,
-      projectValidators,
+      projectUpdateFields,
+      projectUpdateValidators,
     );
     if (isResponse(input)) return input;
     await dependencies.updateProject(access.supabase as never, id, input);

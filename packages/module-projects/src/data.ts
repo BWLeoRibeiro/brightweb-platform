@@ -1,11 +1,25 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-export const PROJECT_STATUSES = ["planned", "active", "blocked", "completed", "canceled"] as const;
+export const PROJECT_STATUSES = ["planned", "active", "paused", "blocked", "completed", "canceled"] as const;
 export const PROJECT_HEALTH_STATES = ["on_track", "at_risk", "off_track"] as const;
 
 export type ProjectStatus = (typeof PROJECT_STATUSES)[number];
 export type ProjectHealth = (typeof PROJECT_HEALTH_STATES)[number];
 export type ProjectsDueWindow = "all" | "overdue" | "next_7_days" | "next_30_days";
+
+export type ProjectClientAccessSummary = {
+  mode: "hidden" | "all_org_clients" | "selected_clients";
+  organizationNames: string[];
+  organizationCount: number;
+  selectedClientCount: number;
+  contentReadiness: {
+    hasSummary: boolean;
+    hasScope: boolean;
+    hasContact: boolean;
+    clientVisibleMilestoneCount: number;
+    sharedDocumentCount: number;
+  };
+};
 
 export type ProjectListItem = {
   id: string;
@@ -14,6 +28,8 @@ export type ProjectListItem = {
   organizationOwnerLabel: string | null;
   organizationOwnerEmail: string | null;
   organizationOwnerPhone: string | null;
+  participatingOrganizations?: Array<{ id: string; name: string; isPrimary: boolean }>;
+  clientAccessSummary?: ProjectClientAccessSummary;
   name: string;
   code: string | null;
   status: ProjectStatus;

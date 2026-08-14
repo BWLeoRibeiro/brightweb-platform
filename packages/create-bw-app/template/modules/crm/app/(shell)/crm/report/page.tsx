@@ -1,5 +1,1 @@
-import { CrmReportPage } from "@brightweblabs/module-crm/ui";
-
-export default function ReportPage() {
-  return <CrmReportPage />;
-}
+export { CrmReportRoutePage as default } from "@brightweblabs/module-crm/routes";

@@ -1,4 +1,9 @@
 import {
+  handleClientProjectDetailGetRequest,
+  handleClientProjectsGetRequest,
+  handleProjectClientAccessGetRequest,
+  handleProjectClientAccessPatchRequest,
+  handleProjectOrganizationsPatchRequest,
   handleProjectsActivityGetRequest,
   handleProjectsAssignableProfilesGetRequest,
   handleProjectsDashboardGetRequest,
@@ -16,6 +21,7 @@ import {
   handleProjectsPatchRequest,
   handleProjectsPostRequest,
   handleProjectsStatsGetRequest,
+  handleProjectsSetupOptionsGetRequest,
   handleProjectsTasksDeleteRequest,
   handleProjectsTasksPatchRequest,
   handleProjectsTasksPostRequest,
@@ -26,6 +32,24 @@ type ItemRouteContext = { params: Promise<{ id: string; itemId: string }> };
 
 export function projectsGet(request: Request) {
   return handleProjectsGetRequest(request);
+}
+export function clientProjectsGet(request: Request) {
+  return handleClientProjectsGetRequest(request);
+}
+export function clientProjectDetailGet(request: Request, context: IdRouteContext) {
+  return handleClientProjectDetailGetRequest(request, context);
+}
+export function projectClientAccessGet(request: Request, context: IdRouteContext) {
+  return handleProjectClientAccessGetRequest(request, context);
+}
+export function projectClientAccessPatch(request: Request, context: IdRouteContext) {
+  return handleProjectClientAccessPatchRequest(request, context);
+}
+export function projectOrganizationsPatch(request: Request, context: IdRouteContext) {
+  return handleProjectOrganizationsPatchRequest(request, context);
+}
+export function projectsSetupOptionsGet(request: Request) {
+  return handleProjectsSetupOptionsGetRequest(request);
 }
 export function projectsPost(request: Request) {
   return handleProjectsPostRequest(request);

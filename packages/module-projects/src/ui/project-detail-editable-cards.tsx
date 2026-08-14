@@ -37,7 +37,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@brightweblabs/ui";
-import { Button } from "@brightweblabs/ui";
+import { Button, Checkbox } from "@brightweblabs/ui";
 import { ProjectCalendar as Calendar } from "./shared/project-calendar";
 import { Input } from "@brightweblabs/ui";
 import { Popover, PopoverContent, PopoverTrigger } from "@brightweblabs/ui";
@@ -54,6 +54,7 @@ import { defaultProjectsUiDictionary } from "./dictionary";
 type ProjectMilestonesAndTasksCardsProps = {
   projectId: string;
   canEditItems: boolean;
+  canManageClientContent?: boolean;
 };
 type SheetMode = "view" | "edit";
 
@@ -70,6 +71,7 @@ type MilestoneFormState = {
   title: string;
   status: string;
   targetDate: string;
+  visibility: "staff" | "client";
 };
 
 type TaskFormState = {
@@ -103,6 +105,7 @@ function normalizeMilestoneForm(form: MilestoneFormState) {
     title: form.title.trim(),
     status: form.status,
     targetDate: form.targetDate,
+    visibility: form.visibility,
   };
 }
 
@@ -122,6 +125,7 @@ function normalizeTaskForm(form: TaskFormState) {
 export function ProjectMilestonesAndTasksCards({
   projectId,
   canEditItems,
+  canManageClientContent = false,
 }: ProjectMilestonesAndTasksCardsProps) {
   const client = useProjectsUiClient();
   const dictionary = useProjectsUiDictionary();
@@ -142,6 +146,7 @@ export function ProjectMilestonesAndTasksCards({
   const [milestoneTitle, setMilestoneTitle] = useState("");
   const [milestoneStatus, setMilestoneStatus] = useState("pending");
   const [milestoneTargetDate, setMilestoneTargetDate] = useState("");
+  const [milestoneVisibility, setMilestoneVisibility] = useState<"staff" | "client">("staff");
   const [taskTitle, setTaskTitle] = useState("");
   const [taskDescription, setTaskDescription] = useState("");
   const [taskStatus, setTaskStatus] = useState("todo");
@@ -179,6 +184,7 @@ export function ProjectMilestonesAndTasksCards({
       setMilestoneTitle(refreshedMilestone.title);
       setMilestoneStatus(refreshedMilestone.status);
       setMilestoneTargetDate(refreshedMilestone.targetDate ?? "");
+      setMilestoneVisibility(refreshedMilestone.visibility ?? "staff");
     }
   }, [editingMilestone, milestoneMode, milestones]);
 
@@ -216,10 +222,11 @@ export function ProjectMilestonesAndTasksCards({
           title: milestoneTitle,
           status: milestoneStatus,
           targetDate: milestoneTargetDate,
+          visibility: milestoneVisibility,
         }),
       ) !== JSON.stringify(normalizeMilestoneForm(milestoneEditBaseline))
     );
-  }, [milestoneEditBaseline, milestoneMode, milestoneStatus, milestoneTargetDate, milestoneTitle]);
+  }, [milestoneEditBaseline, milestoneMode, milestoneStatus, milestoneTargetDate, milestoneTitle, milestoneVisibility]);
 
   const isTaskEditDirty = useMemo(() => {
     if (taskMode !== "edit" || !taskEditBaseline) return false;
@@ -270,6 +277,7 @@ export function ProjectMilestonesAndTasksCards({
     setMilestoneTitle(milestone.title);
     setMilestoneStatus(milestone.status);
     setMilestoneTargetDate(milestone.targetDate ?? "");
+    setMilestoneVisibility(milestone.visibility ?? "staff");
   };
 
   const openEditTask = (task: ProjectTask) => {
@@ -296,6 +304,7 @@ export function ProjectMilestonesAndTasksCards({
         title: milestoneTitle,
         status: milestoneStatus,
         targetDate: milestoneTargetDate,
+        visibility: milestoneVisibility,
       });
       toast.success(dictionary.editItems.milestoneUpdated);
       setEditingMilestone(null);
@@ -488,6 +497,19 @@ export function ProjectMilestonesAndTasksCards({
                   </Popover>
                   )}
                 </div>
+                <div>
+                  {milestoneMode === "view" ? (
+                    <p className={sheetViewValueClassName}>{milestoneVisibility === "client" ? dictionary.milestoneVisibility.client : dictionary.milestoneVisibility.staff}</p>
+                  ) : canManageClientContent ? (
+                    <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-border px-3 py-2.5">
+                      <Checkbox checked={milestoneVisibility === "client"} onChange={() => setMilestoneVisibility((current) => current === "client" ? "staff" : "client")} />
+                      <span>
+                        <span className="block text-body font-semibold">{dictionary.milestoneVisibility.client}</span>
+                        <span className="mt-0.5 block text-meta text-muted-foreground">{dictionary.milestoneVisibility.clientHint}</span>
+                      </span>
+                    </label>
+                  ) : <p className={sheetViewValueClassName}>{dictionary.milestoneVisibility.staff}</p>}
+                </div>
               </SheetSection>
               {milestoneMode === "edit" ? (
                 <Button
@@ -505,7 +527,7 @@ export function ProjectMilestonesAndTasksCards({
             </div>
             <SheetFooter className={`${sheetFooterClassName} flex-row gap-2`}>
               {milestoneMode === "view" ? (
-                canEditItems ? (
+                canEditItems && (milestoneVisibility !== "client" || canManageClientContent) ? (
                   <Button
                     type="button"
                     className="w-full"
@@ -514,6 +536,7 @@ export function ProjectMilestonesAndTasksCards({
                         title: milestoneTitle,
                         status: milestoneStatus,
                         targetDate: milestoneTargetDate,
+                        visibility: milestoneVisibility,
                       });
                       setMilestoneMode("edit");
                     }}
@@ -542,6 +565,7 @@ export function ProjectMilestonesAndTasksCards({
                         setMilestoneTitle(milestoneEditBaseline.title);
                         setMilestoneStatus(milestoneEditBaseline.status);
                         setMilestoneTargetDate(milestoneEditBaseline.targetDate);
+                        setMilestoneVisibility(milestoneEditBaseline.visibility);
                       }
                       setMilestoneMode("view");
                     }}

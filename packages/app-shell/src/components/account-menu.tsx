@@ -13,16 +13,11 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@brightweblabs/ui/dropdown-menu";
+import { InitialsAvatar } from "@brightweblabs/ui/initials-avatar";
 import { cn } from "../lib/utils";
 import { useTheme } from "../theme/theme-provider";
 import type { ThemeMode } from "../theme/theme-controller";
 import type { AccountMenuProps } from "../types";
-
-function avatarRoleClass(role: "team" | "client") {
-  return role === "team"
-    ? "bg-[color:var(--surface-account-team)] text-[color:var(--role-team-strong)]"
-    : "bg-[color:var(--surface-account-client)] text-[color:var(--role-client-strong)]";
-}
 
 export function AccountMenu({
   displayName,
@@ -39,10 +34,11 @@ export function AccountMenu({
   const compactLabel = displayName?.trim().split(/\s+/)[0] || user?.email || "Conta";
   const isRail = variant === "rail";
   const secondaryLabel = user?.email ?? (isStaff ? "Administrador" : "Conta");
-  const avatarTone = avatarRoleClass(isStaff ? "team" : "client");
+  const avatarTone = isStaff ? "team" : "client";
   const hrefs = {
     staffDashboard: links?.staffDashboard ?? "/dashboard",
     account: links?.account ?? "/account",
+    profile: links?.profile ?? "/account/perfil",
     projects: links?.projects ?? "/account/projetos",
     home: links?.home ?? "/",
   };
@@ -69,9 +65,7 @@ export function AccountMenu({
             aria-label="Menu da conta"
           >
             <span className="relative inline-flex shrink-0">
-              <span className={cn("inline-flex h-8 w-8 items-center justify-center rounded-full text-body text-[length:var(--text-ui-action)] font-extrabold", avatarTone)}>
-                {userInitials || <User className="size-4" />}
-              </span>
+              <InitialsAvatar label={displayName ?? user?.email} fallback={userInitials} tone={avatarTone} className="size-8 text-[length:var(--text-ui-action)]" />
               <span className="absolute -bottom-px -right-px size-[var(--account-presence-size)] rounded-full border-2 border-[color:var(--card)] bg-[color:var(--account-presence)]" />
             </span>
             {!collapsed ? (
@@ -85,8 +79,8 @@ export function AccountMenu({
             ) : null}
           </button>
         ) : (
-          <button id="header-account-menu-trigger" className="inline-flex items-center gap-xs rounded-full px-2xs.5 pr-xs text-foreground/80 transition-colors hover:bg-[color:var(--surface-account-hover)] hover:text-foreground" aria-label="Menu da conta">
-            <span className={cn("inline-flex h-7 w-7 items-center justify-center rounded-full text-label font-semibold", avatarTone)}>{userInitials || <User className="size-3.5" />}</span>
+          <button id="header-account-menu-trigger" className="inline-flex min-h-11 items-center gap-xs rounded-full px-2xs.5 pr-xs text-foreground/80 transition-colors hover:bg-[color:var(--surface-account-hover)] hover:text-foreground" aria-label="Menu da conta">
+            <InitialsAvatar label={displayName ?? user?.email} fallback={userInitials} tone={avatarTone} className="size-7" />
             <span className="hidden max-w-[7rem] truncate text-meta font-semibold leading-none text-[color:var(--foreground)] xl:inline">{compactLabel}</span>
             <ChevronDown className="hidden size-3.5 text-foreground/45 xl:block" />
           </button>
@@ -110,9 +104,9 @@ export function AccountMenu({
           </>
         ) : (
           <>
-            <DropdownMenuItem asChild><Link href={hrefs.account} prefetch={false} className="flex items-center gap-xs"><LayoutDashboard className="size-4" />O meu painel</Link></DropdownMenuItem>
+            <DropdownMenuItem asChild><Link href={hrefs.account} prefetch={false} className="flex items-center gap-xs"><House className="size-4" />O meu espaço</Link></DropdownMenuItem>
             <DropdownMenuItem asChild><Link href={hrefs.projects} prefetch={false} className="flex items-center gap-xs"><FolderKanban className="size-4" />Os meus projetos</Link></DropdownMenuItem>
-            <DropdownMenuItem asChild><Link href={hrefs.account} prefetch={false} className="flex items-center gap-xs"><User className="size-4" />Dados da conta</Link></DropdownMenuItem>
+            <DropdownMenuItem asChild><Link href={hrefs.profile} prefetch={false} className="flex items-center gap-xs"><User className="size-4" />Perfil e segurança</Link></DropdownMenuItem>
           </>
         )}
         <DropdownMenuItem asChild><Link href={hrefs.home} prefetch={false} className="flex items-center gap-xs"><House className="size-4" />Site principal</Link></DropdownMenuItem>
@@ -140,7 +134,7 @@ export function AccountMenu({
           </>
         ) : null}
         <DropdownMenuSeparator />
-        <DropdownMenuItem variant="destructive" onClick={onSignOut} className="gap-xs"><LogOut className="size-4" />Terminar Sessao</DropdownMenuItem>
+        <DropdownMenuItem variant="destructive" onClick={onSignOut} className="gap-xs"><LogOut className="size-4" />Terminar sessão</DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );

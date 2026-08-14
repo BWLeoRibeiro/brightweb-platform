@@ -574,9 +574,11 @@ test("marketing scaffolds its full thin surface and auto-enables CRM plus Organi
   assert.match(envConfig, /key: "RESEND_API_KEY"[\s\S]*?requiredFor: \["marketing"\]/);
   assert.match(envConfig, /key: "MARKETING_WORKER_SECRET"[\s\S]*?requiredFor: \["marketing"\]/);
 
+  const marketingPage = await fs.readFile(path.join(targetDir, "app", "(shell)", "marketing", "page.tsx"), "utf8");
+  assert.match(marketingPage, /MarketingPage.*@brightweblabs\/module-marketing/);
   assert.match(
-    await fs.readFile(path.join(targetDir, "app", "(shell)", "marketing", "page.tsx"), "utf8"),
-    /MarketingPage as default.*@brightweblabs\/module-marketing/,
+    await fs.readFile(path.join(REPO_ROOT, "packages", "module-marketing", "src", "marketing-page.tsx"), "utf8"),
+    /requireServerPageRoleAccess\(\["staff", "admin"\]\)/,
   );
   assert.match(
     await fs.readFile(path.join(targetDir, "app", "api", "marketing", "_handlers.ts"), "utf8"),
@@ -732,7 +734,7 @@ test("bw add projects resolves orgs, writes overlays, migrations, and manifest s
   const release = await readJson(path.join(REPO_ROOT, "brightweb-release.json"));
   assert.equal(updated.modules.orgs.version, release.packages["@brightweblabs/module-orgs"]);
   assert.equal(updated.modules.projects.version, release.packages["@brightweblabs/module-projects"]);
-  assert.equal(updated.migrationCursor.projects, "20260804123000_project_start_date.sql");
+  assert.equal(updated.migrationCursor.projects, "20260811122500_remove_project_client_next_steps.sql");
   assert.match(await fs.readFile(path.join(targetDir, "app", "globals.css"), "utf8"), /@source "\.\.\/node_modules\/@brightweblabs\/module-projects\/src";/);
   assert.match(
     await fs.readFile(path.join(targetDir, "config", "module-toolbar-controls.tsx"), "utf8"),
@@ -746,6 +748,24 @@ test("bw add projects resolves orgs, writes overlays, migrations, and manifest s
   assert.ok(migrations.some((name) => name.includes("_projects__20260731124000_project_task_stats.sql")));
   assert.ok(migrations.some((name) => name.includes("_projects__20260731130300_project_collection_indexes.sql")));
   assert.ok(migrations.some((name) => name.includes("_projects__20260801122000_project_member_sync.sql")));
+  assert.deepEqual(
+    migrations
+      .filter((name) => name.includes("_projects__202608"))
+      .toSorted(),
+    [
+      "0026_projects__20260801122000_project_member_sync.sql",
+      "0027_projects__20260804120000_project_task_start_date.sql",
+      "0028_projects__20260804123000_project_start_date.sql",
+      "0029_projects__20260810120000_project_client_access.sql",
+      "0030_projects__20260811120000_project_client_access_expand.sql",
+      "0031_projects__20260811120500_project_member_sync_hardening.sql",
+      "0032_projects__20260811121000_project_client_access_enforcement.sql",
+      "0033_projects__20260811121500_project_client_organization_memberships.sql",
+      "0034_projects__20260811121700_project_client_meta_preview.sql",
+      "0035_projects__20260811122000_project_client_access_identity_cleanup.sql",
+      "0036_projects__20260811122500_remove_project_client_next_steps.sql",
+    ],
+  );
   const doctor = await doctorBrightwebApp({ targetDir }, { workspaceRoot: REPO_ROOT });
   assert.equal(doctor.ok, true);
   assert.equal(doctor.checks.find((entry: { id: string }) => entry.id === "scaffold")?.status, "PASS");
@@ -790,6 +810,106 @@ test("bw upgrade appends only unapplied migrations and preserves drifted scaffol
   const upgradedManifest = await readJson(manifestPath);
   assert.equal(upgradedManifest.modules.crm.version, release.packages["@brightweblabs/module-crm"]);
   assert.match(appended, new RegExp(`^-- bw-module: crm@${release.packages["@brightweblabs/module-crm"].replaceAll(".", "\\.")} 20260316092010_crm_org_integration\\.sql`));
+});
+
+test("bw upgrade stops at a safe enforcement boundary and requires explicit destructive cleanup opt-in", async (t) => {
+  const { root, targetDir } = await scaffold(["projects"]);
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+  const manifestPath = path.join(targetDir, ".brightweb", "app-manifest.json");
+  const manifest = await readJson(manifestPath);
+  manifest.migrationCursor.projects = "20260804123000_project_start_date.sql";
+  manifest.modules.projects.version = "0.0.1";
+  const setupRoute = "app/api/projects/setup-options/route.ts";
+  delete manifest.scaffoldFiles[setupRoute];
+  await writeJson(manifestPath, manifest);
+
+  const packagePath = path.join(targetDir, "package.json");
+  const packageManifest = await readJson(packagePath);
+  packageManifest.dependencies["@brightweblabs/module-projects"] = "^0.0.1";
+  await writeJson(packagePath, packageManifest);
+  await fs.rm(path.join(targetDir, setupRoute));
+
+  const migrationsDir = path.join(targetDir, "supabase", "migrations");
+  for (const name of await fs.readdir(migrationsDir)) {
+    if (name.includes("_projects__20260810120000_") || name.includes("_projects__202608111")) {
+      await fs.rm(path.join(migrationsDir, name));
+    }
+  }
+
+  const foundationMigration = "20260810120000_project_client_access.sql";
+  const expandMigration = "20260811120000_project_client_access_expand.sql";
+  const memberSyncMigration = "20260811120500_project_member_sync_hardening.sql";
+  const enforcementMigration = "20260811121000_project_client_access_enforcement.sql";
+  const clientOrganizationsMigration = "20260811121500_project_client_organization_memberships.sql";
+  const metaPreviewMigration = "20260811121700_project_client_meta_preview.sql";
+  const identityCleanupMigration = "20260811122000_project_client_access_identity_cleanup.sql";
+  const nextStepsCleanupMigration = "20260811122500_remove_project_client_next_steps.sql";
+  const firstPhase = await upgradeBrightwebApp(
+    "projects",
+    { targetDir, refreshStarters: true },
+    { workspaceRoot: REPO_ROOT, fetchImpl: mockNpmFetch },
+  );
+
+  assert.deepEqual(
+    firstPhase.migrationPlan.writes.map((entry) => entry.originalFileName),
+    [foundationMigration, expandMigration, memberSyncMigration, enforcementMigration, clientOrganizationsMigration, metaPreviewMigration],
+  );
+  assert.deepEqual(firstPhase.migrationPlan.deferred.map((entry) => entry.fileName), [identityCleanupMigration, nextStepsCleanupMigration]);
+  assert.ok(firstPhase.plan.packageUpdates.some((entry) => entry.packageName === "@brightweblabs/module-projects"));
+  assert.ok(firstPhase.plan.fileWrites.some((entry) => entry.relativePath === setupRoute));
+  await fs.access(path.join(targetDir, setupRoute));
+
+  let upgradedManifest = await readJson(manifestPath);
+  assert.equal(upgradedManifest.migrationCursor.projects, metaPreviewMigration);
+
+  const safeDefault = await upgradeBrightwebApp(
+    "projects",
+    { targetDir, dryRun: true, throughMigration: metaPreviewMigration },
+    { workspaceRoot: REPO_ROOT, fetchImpl: mockNpmFetch },
+  );
+  assert.equal(safeDefault.migrationPlan.writes.length, 0);
+  assert.deepEqual(safeDefault.migrationPlan.deferred.map((entry) => entry.fileName), [identityCleanupMigration, nextStepsCleanupMigration]);
+
+  const cleanupPhase = await upgradeBrightwebApp(
+    "projects",
+    { targetDir, includeDestructiveMigrations: true },
+    { workspaceRoot: REPO_ROOT, fetchImpl: mockNpmFetch },
+  );
+  assert.deepEqual(
+    cleanupPhase.migrationPlan.writes.map((entry) => entry.originalFileName),
+    [identityCleanupMigration, nextStepsCleanupMigration],
+  );
+  upgradedManifest = await readJson(manifestPath);
+  assert.equal(upgradedManifest.migrationCursor.projects, nextStepsCleanupMigration);
+});
+
+test("bw upgrade rejects ambiguous, unknown, and backwards migration cutoffs before writing", async (t) => {
+  const { root, targetDir } = await scaffold(["projects"]);
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+  const manifestPath = path.join(targetDir, ".brightweb", "app-manifest.json");
+  const manifestBefore = await fs.readFile(manifestPath, "utf8");
+
+  await assert.rejects(
+    () => upgradeBrightwebApp(undefined, { targetDir, throughMigration: "20260811120000_project_client_access_expand.sql" }, { workspaceRoot: REPO_ROOT, fetchImpl: mockNpmFetch }),
+    /requires an explicit module key/,
+  );
+  await assert.rejects(
+    () => upgradeBrightwebApp(undefined, { targetDir, includeDestructiveMigrations: true }, { workspaceRoot: REPO_ROOT, fetchImpl: mockNpmFetch }),
+    /requires an explicit module key/,
+  );
+  await assert.rejects(
+    () => upgradeBrightwebApp("projects", { targetDir, throughMigration: "20260811122000_project_client_access_identity_cleanup.sql" }, { workspaceRoot: REPO_ROOT, fetchImpl: mockNpmFetch }),
+    /includes destructive migration.*--include-destructive-migrations/,
+  );
+  await assert.rejects(
+    () => upgradeBrightwebApp("projects", { targetDir, throughMigration: "20990101000000_missing.sql" }, { workspaceRoot: REPO_ROOT, fetchImpl: mockNpmFetch }),
+    /does not exist for module projects/,
+  );
+  await assert.rejects(
+    () => upgradeBrightwebApp("projects", { targetDir, throughMigration: "20260811120000_project_client_access_expand.sql" }, { workspaceRoot: REPO_ROOT, fetchImpl: mockNpmFetch }),
+    /is before the current projects cursor/,
+  );
+  assert.equal(await fs.readFile(manifestPath, "utf8"), manifestBefore);
 });
 
 test("bw upgrade synchronizes manifest module versions without an installed package tree", async (t) => {
@@ -1217,7 +1337,7 @@ test("enabling projects mounts the client account surfaces", async (t) => {
   t.after(() => fs.rm(root, { recursive: true, force: true }));
 
   const accountPage = await fs.readFile(path.join(targetDir, "app", "(shell)", "account", "page.tsx"), "utf8");
-  assert.match(accountPage, /ClientAccountPage as default/);
+  assert.match(accountPage, /return <ClientAccountPage \/>/);
 
   for (const relativePath of [
     ["app", "(shell)", "account", "projetos", "page.tsx"],

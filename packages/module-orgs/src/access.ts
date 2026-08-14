@@ -67,22 +67,13 @@ export function createOrganizationsStaffAccessGuard(
 export function createOrganizationManageAccessGuard(
   dependencies: OrganizationAccessDependencies,
 ) {
-  return async function organizationManageAccess(organizationId: string) {
+  return async function organizationManageAccess(_organizationId: string) {
     const base = await resolveBaseOrganizationAccess(dependencies);
     if (isAccessError(base)) return base;
-    if (base.role === "admin" || base.role === "staff") {
-      return { ok: true, ...base, isOrgMember: true, isOrgAdmin: true } as const;
+    if (base.role !== "admin" && base.role !== "staff") {
+      return { ok: false, status: 403, error: "Acesso proibido." } as const;
     }
-
-    const { data, error } = await base.serviceSupabase
-      .from("organization_members")
-      .select("role")
-      .eq("organization_id", organizationId)
-      .eq("profile_id", base.profileId)
-      .maybeSingle<{ role: string }>();
-    if (error) return { ok: false, status: 500, error: error.message } as const;
-    if (data?.role !== "admin") return { ok: false, status: 403, error: "Acesso proibido." } as const;
-    return { ok: true, ...base, isOrgMember: true, isOrgAdmin: true } as const;
+    return { ok: true, ...base } as const;
   };
 }
 

@@ -32,6 +32,7 @@ export { TableRowsSkeleton } from "./components/skeleton-table";
 export { Separator } from "./components/separator";
 export * from "./components/alert-dialog";
 export * from "./components/card";
+export * from "./components/cover-header";
 export * from "./components/chart";
 export * from "./components/breadcrumb";
 export * from "./components/calendar";

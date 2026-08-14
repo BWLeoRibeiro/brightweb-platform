@@ -370,6 +370,7 @@ export function ProjectEditSheet({
                   >
                     <option value="planned">{dictionary.badge.status.planned}</option>
                     <option value="active">{dictionary.badge.status.active}</option>
+                    <option value="paused">{dictionary.badge.status.paused}</option>
                     <option value="blocked">{dictionary.badge.status.blocked}</option>
                     <option value="completed">{dictionary.badge.status.completed}</option>
                     <option value="canceled">{dictionary.badge.status.canceled}</option>

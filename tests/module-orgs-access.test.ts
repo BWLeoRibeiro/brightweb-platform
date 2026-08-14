@@ -1,4 +1,6 @@
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
+import path from "node:path";
 import test from "node:test";
 
 import {
@@ -22,31 +24,6 @@ function accessDependencies(
   return {
     getAccess: async () => access as never,
     getServiceClient: () => serviceClient as never,
-  };
-}
-
-function membershipClient(result: { data: { role: string } | null; error: { message: string } | null }) {
-  const calls: Array<[string, string]> = [];
-  return {
-    calls,
-    client: {
-      from(table: string) {
-        assert.equal(table, "organization_members");
-        return {
-          select(columns: string) {
-            assert.equal(columns, "role");
-            return this;
-          },
-          eq(column: string, value: string) {
-            calls.push([column, value]);
-            return this;
-          },
-          async maybeSingle() {
-            return result;
-          },
-        };
-      },
-    },
   };
 }
 
@@ -111,37 +88,22 @@ test("organization management bypasses membership queries for platform staff", a
 
   const result = await guard("org-1");
   assert.equal(result.ok, true);
-  if (result.ok) {
-    assert.equal(result.isOrgMember, true);
-    assert.equal(result.isOrgAdmin, true);
-  }
+  if (result.ok) assert.equal(result.role, "admin");
 });
 
-test("organization management scopes client access to admin membership", async () => {
-  const membership = membershipClient({ data: { role: "admin" }, error: null });
-  const guard = createOrganizationManageAccessGuard(accessDependencies({
-    ok: true,
-    user,
-    profileId: "profile-1",
-    role: "client",
-    supabase: {},
-  }, membership.client));
-
-  const result = await guard("org-1");
-  assert.equal(result.ok, true);
-  assert.deepEqual(membership.calls, [
-    ["organization_id", "org-1"],
-    ["profile_id", "profile-1"],
-  ]);
-
-  const member = membershipClient({ data: { role: "member" }, error: null });
+test("organization management rejects clients even when they are organization administrators", async () => {
+  const serviceClient = {
+    from() {
+      throw new Error("client access must be rejected before organization membership is queried");
+    },
+  };
   const denied = await createOrganizationManageAccessGuard(accessDependencies({
     ok: true,
     user,
     profileId: "profile-1",
     role: "client",
     supabase: {},
-  }, member.client))("org-1");
+  }, serviceClient))("org-1");
   assert.deepEqual(denied, {
     ok: false,
     status: 403,
@@ -149,19 +111,22 @@ test("organization management scopes client access to admin membership", async (
   });
 });
 
-test("organization management surfaces membership query failures", async () => {
-  const membership = membershipClient({ data: null, error: { message: "membership unavailable" } });
-  const result = await createOrganizationManageAccessGuard(accessDependencies({
-    ok: true,
-    user,
-    profileId: "profile-1",
-    role: "client",
-    supabase: {},
-  }, membership.client))("org-1");
+test("organization management RLS removes direct organization-admin writes", async () => {
+  const migrationPath = path.join(
+    process.cwd(),
+    "supabase/modules/orgs/migrations/20260812120000_staff_only_organization_access_management.sql",
+  );
+  const templatePath = path.join(
+    process.cwd(),
+    "packages/create-bw-app/template/supabase/modules/orgs/migrations/20260812120000_staff_only_organization_access_management.sql",
+  );
+  const [migration, template] = await Promise.all([
+    readFile(migrationPath, "utf8"),
+    readFile(templatePath, "utf8"),
+  ]);
 
-  assert.deepEqual(result, {
-    ok: false,
-    status: 500,
-    error: "membership unavailable",
-  });
+  assert.equal(template, migration);
+  assert.match(migration, /DROP POLICY IF EXISTS "Org admins manage org members"/);
+  assert.match(migration, /DROP POLICY IF EXISTS "Org admins manage organization invitations"/);
+  assert.doesNotMatch(migration, /CREATE POLICY/);
 });

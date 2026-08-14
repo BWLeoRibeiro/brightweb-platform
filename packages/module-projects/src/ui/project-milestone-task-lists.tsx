@@ -463,6 +463,12 @@ export function ProjectMilestonesAndTasksLists({
                         <span className={cn("size-1.5 shrink-0 rounded-full", milestoneStatusDotClass[milestone.status] ?? "bg-slate-400/70")} />
                         {milestoneStatusLabels[milestone.status] ?? milestone.status}
                       </span>
+                      {milestone.visibility === "client" ? (
+                        <>
+                          <span className="text-foreground/25">·</span>
+                          <span className="rounded-full border border-primary/20 bg-primary/5 px-2 py-0.5 text-micro font-semibold text-primary">Cliente</span>
+                        </>
+                      ) : null}
                       {relativeDue ? (
                         <>
                           <span className="text-foreground/25">·</span>

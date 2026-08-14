@@ -13,6 +13,7 @@ bw diff --list
 bw scaffold list
 bw remove crm
 bw upgrade
+bw upgrade projects --through-migration 20260811121700_project_client_meta_preview.sql
 bw doctor
 ```
 
@@ -23,6 +24,16 @@ bw doctor
 ### Upgrade an app
 
 `bw upgrade [moduleKey]` performs the managed package/config update and appends only migrations after each module's recorded cursor. It will not overwrite a tracked scaffold file whose recorded hash has drifted, or any file recorded as `owned` or `skipped`, including when `--refresh-starters` is used. `create-bw-app update` remains available with its original behavior for compatibility.
+
+Use `bw upgrade <moduleKey> --through-migration <filename>` when a rollout needs a deliberate compatibility boundary. The command still updates packages and managed mounts, but advances only that module's migration cursor through the exact named migration. Later migrations remain pending and appear on the next `bw upgrade <moduleKey>`. The cutoff requires an explicit module key, must name a shipped migration, and cannot move a cursor backwards; it never places an implicit cutoff on other modules.
+
+Migrations marked `bw-migration-safety: destructive` are held by default during `bw upgrade`, including an unqualified upgrade across several modules. The plan stops immediately before the first marked migration and reports what was deferred. Applying held migrations requires an explicit module-scoped opt-in:
+
+```bash
+bw upgrade projects --include-destructive-migrations
+```
+
+The opt-in is deliberately separate from `--through-migration`: naming a destructive migration as a cutoff is rejected unless `--include-destructive-migrations` is also present. Review the SQL, back up affected data, and deploy compatible readers and writers before using it. `bw add` still installs a new module's complete schema because there is no legacy module data to normalize.
 
 An adopted module with a null migration cursor is blocked from upgrade until an operator records an explicit cursor. This prevents an unknown legacy history from being treated as a new database.
 

@@ -64,7 +64,8 @@ export function useProjectSetupState() {
         throw new Error(message);
       }
 
-      const options = (Array.isArray(membersPayload?.data) ? membersPayload.data : []) as ProjectMemberOption[];
+      const options = ((Array.isArray(membersPayload?.data) ? membersPayload.data : []) as ProjectMemberOption[])
+        .filter((option) => option.organizationRole === "staff" || option.organizationRole === "admin");
       const membersMap = options.reduce<Record<string, ProjectMemberRole>>((acc, option) => {
         if (option.projectRole) acc[option.profileId] = option.projectRole;
         return acc;

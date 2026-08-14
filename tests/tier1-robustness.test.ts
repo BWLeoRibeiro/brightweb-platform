@@ -207,6 +207,27 @@ test("Admin role changes reject oversized/invalid batches and sanitize per-ID pr
   }
 });
 
+test("Admin role downgrade reports when project reassignment is required", async () => {
+  const originalError = console.error;
+  console.error = () => {};
+  try {
+    const result = await applyAdminRoleChanges({
+      supabase: {
+        rpc: async () => ({
+          data: null,
+          error: { message: "Reassign or remove this profile from every project before changing its role to client." },
+        }),
+      } as never,
+      profileIds: [uuid(1)],
+      newRole: "client",
+      reason: "Alteração de função",
+    });
+    assert.deepEqual(result.skipped, [{ profileId: uuid(1), reason: "project_reassignment_required" }]);
+  } finally {
+    console.error = originalError;
+  }
+});
+
 test("Admin role changes emit the MQ-compatible realtime activity event", async () => {
   const activityCalls: Array<{ name: string; args: Record<string, unknown> }> = [];
   const result = await applyAdminRoleChanges({
