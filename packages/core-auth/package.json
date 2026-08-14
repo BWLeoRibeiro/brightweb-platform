@@ -21,6 +21,7 @@
     "./client": "./src/client.ts",
     "./email": "./src/email/index.ts",
     "./email/supabase-management": "./src/email/supabase-management.ts",
+    "./email/supabase-management/node": "./src/email/supabase-management.node.ts",
     "./notifications": "./src/notifications/index.ts",
     "./routes": "./src/routes.ts",
     "./server": "./src/server.ts",

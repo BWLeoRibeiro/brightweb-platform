@@ -6,7 +6,7 @@ import {
   compareSupabaseAuthEmailTemplates,
   createSupabaseAuthEmailTemplatePayload,
   syncSupabaseAuthEmailTemplates,
-} from "./supabase-management.impl";
+} from "./supabase-management.node";
 
 const PROJECT_REF = "abcdefghijklmnopqrst";
 

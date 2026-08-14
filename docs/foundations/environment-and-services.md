@@ -56,9 +56,11 @@ The current public scaffold only generates `.env.local` for the `platform` templ
 - Auth email flows (`signUp`, resend confirmation, reset password) are Supabase-owned and use `supabase.auth.*`.
 - Auth provider and SMTP behavior are configured in Supabase Auth settings, not in the app transport layer.
 - Generate Supabase template files with `createAuthEmailTemplates`; pass the same semantic palette used by app-owned invitations so every account email stays on-brand.
-- Hosted Supabase projects do not read repository template files. Use the server-only
-  `@brightweblabs/core-auth/email/supabase-management` entrypoint to back up, synchronize,
-  and verify the 12 generated subjects and HTML bodies through the Management API.
+- Hosted Supabase projects do not read repository template files. Use
+  `@brightweblabs/core-auth/email/supabase-management` inside a Next.js server runtime, or
+  its `/node` subpath in an operational Node script, to back up, synchronize, and verify the
+  12 generated subjects and HTML bodies through the Management API. The browser runtime guard
+  remains active in both entrypoints.
 - `syncSupabaseAuthEmailTemplates` requires an `onBackup` callback and completes it before
   sending a PATCH. Its PATCH contains only the 24 supported subject/body fields. Afterward it
   verifies exact template parity and fails post-update verification if SMTP, redirects,
@@ -71,7 +73,7 @@ The current public scaffold only generates `.env.local` for the `platform` templ
 import { writeFile } from "node:fs/promises";
 
 import { createAuthEmailTemplates } from "@brightweblabs/core-auth/email";
-import { syncSupabaseAuthEmailTemplates } from "@brightweblabs/core-auth/email/supabase-management";
+import { syncSupabaseAuthEmailTemplates } from "@brightweblabs/core-auth/email/supabase-management/node";
 
 const templates = createAuthEmailTemplates(brand);
 const result = await syncSupabaseAuthEmailTemplates({
