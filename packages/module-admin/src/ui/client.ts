@@ -83,8 +83,7 @@ export function createAdminUiClient(basePath = "/api/admin/users", fetcher: type
     },
     listOrganizations,
     async inviteUser(input) {
-      if (input.role === "client") {
-        if (!input.organizationId) throw new Error("Escolha uma organização.");
+      if (input.role === "client" && input.organizationId) {
         const payload = await readPayload(await fetcher(`${organizationsRoot}/${encodeURIComponent(input.organizationId)}/invitations`, {
           method: "POST",
           headers: { "content-type": "application/json" },

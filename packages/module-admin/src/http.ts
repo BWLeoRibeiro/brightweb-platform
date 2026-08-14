@@ -261,7 +261,7 @@ export function createAdminUserInvitationsHandler(dependencies: AdminInvitationH
       const record = body as Record<string, unknown>;
       const email = typeof record.email === "string" ? record.email.trim() : "";
       const role: AdminInviteRole | null =
-        record.role === "staff" || record.role === "admin" ? record.role : null;
+        record.role === "client" || record.role === "staff" || record.role === "admin" ? record.role : null;
       if (!email || !role) {
         return json(publicError("INVITATION_FIELDS_REQUIRED", "E-mail e função são obrigatórios."), { status: 400 });
       }

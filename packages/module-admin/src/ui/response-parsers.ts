@@ -60,7 +60,6 @@ export function parseAdminUsersResponse(value: unknown): AdminUsersListResult {
 function parseInvitation(value: unknown): AdminUserInvitation {
   const invitation = record(value, "admin invitation");
   const invitationRole = role(invitation.role, "admin invitation");
-  if (invitationRole === "client") throw new Error("Invalid admin invitation response.");
   if (
     invitation.status !== "pending"
     && invitation.status !== "accepted"

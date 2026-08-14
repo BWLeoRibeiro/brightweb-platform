@@ -7,7 +7,7 @@ export const ADMIN_USER_INVITE_EMAIL_DELIVERY_ERROR =
 export const ADMIN_USER_INVITE_SCHEMA_MISSING_ERROR =
   "A tabela de convites de utilizadores ainda não existe na base de dados. Aplique a migration admin_user_invitations.";
 
-export type AdminInviteRole = "staff" | "admin";
+export type AdminInviteRole = "client" | "staff" | "admin";
 export type AdminUserInvitation = {
   id: string;
   email: string;
@@ -34,7 +34,8 @@ function normalizeEmail(value: string): string {
 }
 
 function normalizeRole(value: unknown): AdminInviteRole {
-  return value === "admin" ? "admin" : "staff";
+  if (value === "admin" || value === "client") return value;
+  return "staff";
 }
 
 function normalizeStatus(value: unknown): AdminUserInvitation["status"] {

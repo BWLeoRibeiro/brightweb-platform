@@ -308,7 +308,6 @@ export function AdminUsersClient({
   const submitInvite = async () => {
     const email = inviteEmail.trim().toLowerCase();
     if (!email) { setInviteFieldError(dictionary.invitations.emailRequired); return; }
-    if (inviteRole === "client" && !inviteOrganizationId) { setInviteFieldError("Escolha uma organização para o Cliente."); return; }
     setInviteFieldError(null);
     setInviteFeedback(null);
     setInviteSubmitting(true);
@@ -317,9 +316,9 @@ export function AdminUsersClient({
       const created = await client.inviteUser({
         email,
         role: inviteRole,
-        organizationId: inviteRole === "client" ? inviteOrganizationId : undefined,
-        organizationName: inviteRole === "client" ? organization?.name : undefined,
-        organizationRole: inviteRole === "client" ? inviteOrganizationRole : undefined,
+        organizationId: inviteRole === "client" && inviteOrganizationId ? inviteOrganizationId : undefined,
+        organizationName: inviteRole === "client" && inviteOrganizationId ? organization?.name : undefined,
+        organizationRole: inviteRole === "client" && inviteOrganizationId ? inviteOrganizationRole : undefined,
       });
       setPendingInvites((current) => [created, ...current.filter((invite) => invite.id !== created.id)]);
       setInvitationPage(1);
@@ -439,7 +438,7 @@ export function AdminUsersClient({
                   </Field>
                   <Field>
                     <FieldLabel htmlFor="admin-user-invite-organization-role" className={sheetFieldLabelClassName}>{dictionary.invitations.organizationRoleLabel}</FieldLabel>
-                    <FieldContent><SheetSelect id="admin-user-invite-organization-role" name="organizationRole" className="mt-1.5" value={inviteOrganizationRole} onValueChange={(role) => setInviteOrganizationRole(role === "admin" ? "admin" : "member")} disabled={inviteSubmitting} options={[{ value: "member", label: dictionary.invitations.organizationRoles.member }, { value: "admin", label: dictionary.invitations.organizationRoles.admin }]} /></FieldContent>
+                    <FieldContent><SheetSelect id="admin-user-invite-organization-role" name="organizationRole" className="mt-1.5" value={inviteOrganizationRole} onValueChange={(role) => setInviteOrganizationRole(role === "admin" ? "admin" : "member")} disabled={inviteSubmitting || !inviteOrganizationId} options={[{ value: "member", label: dictionary.invitations.organizationRoles.member }, { value: "admin", label: dictionary.invitations.organizationRoles.admin }]} /></FieldContent>
                   </Field>
                 </SheetSection>
               ) : null}
