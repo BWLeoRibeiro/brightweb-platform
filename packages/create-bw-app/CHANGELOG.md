@@ -1,5 +1,11 @@
 # create-bw-app
 
+## 0.25.1
+
+### Patch Changes
+
+- 97d6b1e: Allow portal clients to be invited without an organization and disable the organization-role selector until an organization is selected.
+
 ## 0.25.0
 
 ### Minor Changes

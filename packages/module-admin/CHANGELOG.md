@@ -1,5 +1,11 @@
 # @brightweblabs/module-admin
 
+## 0.9.3
+
+### Patch Changes
+
+- 97d6b1e: Allow portal clients to be invited without an organization and disable the organization-role selector until an organization is selected.
+
 ## 0.9.2
 
 ### Patch Changes
