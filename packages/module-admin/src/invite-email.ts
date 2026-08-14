@@ -21,7 +21,11 @@ export async function sendAdminUserInviteEmail(params: {
 }): Promise<boolean> {
   try {
     const signupUrl = new URL(`admin-invite/${params.invitationId}`, `${getAuthBaseUrl()}/`).toString();
-    const roleLabel = params.role === "admin" ? "Administrador" : "Colaborador";
+    const roleLabel = params.role === "admin"
+      ? "Administrador"
+      : params.role === "client"
+        ? "Cliente"
+        : "Colaborador";
     const sender = getTransactionalSender();
     const brandName = process.env.EMAIL_BRAND_NAME?.trim() || emailBrandNameFromSender(sender);
     const logoPath = process.env.EMAIL_BRAND_LOGO_URL?.trim();

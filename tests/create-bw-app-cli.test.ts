@@ -753,17 +753,17 @@ test("bw add projects resolves orgs, writes overlays, migrations, and manifest s
       .filter((name) => name.includes("_projects__202608"))
       .toSorted(),
     [
-      "0026_projects__20260801122000_project_member_sync.sql",
-      "0027_projects__20260804120000_project_task_start_date.sql",
-      "0028_projects__20260804123000_project_start_date.sql",
-      "0029_projects__20260810120000_project_client_access.sql",
-      "0030_projects__20260811120000_project_client_access_expand.sql",
-      "0031_projects__20260811120500_project_member_sync_hardening.sql",
-      "0032_projects__20260811121000_project_client_access_enforcement.sql",
-      "0033_projects__20260811121500_project_client_organization_memberships.sql",
-      "0034_projects__20260811121700_project_client_meta_preview.sql",
-      "0035_projects__20260811122000_project_client_access_identity_cleanup.sql",
-      "0036_projects__20260811122500_remove_project_client_next_steps.sql",
+      "0027_projects__20260801122000_project_member_sync.sql",
+      "0028_projects__20260804120000_project_task_start_date.sql",
+      "0029_projects__20260804123000_project_start_date.sql",
+      "0030_projects__20260810120000_project_client_access.sql",
+      "0031_projects__20260811120000_project_client_access_expand.sql",
+      "0032_projects__20260811120500_project_member_sync_hardening.sql",
+      "0033_projects__20260811121000_project_client_access_enforcement.sql",
+      "0034_projects__20260811121500_project_client_organization_memberships.sql",
+      "0035_projects__20260811121700_project_client_meta_preview.sql",
+      "0036_projects__20260811122000_project_client_access_identity_cleanup.sql",
+      "0037_projects__20260811122500_remove_project_client_next_steps.sql",
     ],
   );
   const doctor = await doctorBrightwebApp({ targetDir }, { workspaceRoot: REPO_ROOT });

@@ -41,7 +41,7 @@ export const defaultAdminUiDictionary: AdminUiDictionary = {
     description: "Convide Clientes, colaboradores ou administradores e defina o respetivo acesso.",
     formHint: "O destinatário recebe um link pessoal, válido durante 14 dias.",
     roleDescriptions: {
-      client: "Acesso ao portal através de uma organização específica.",
+      client: "Acesso ao portal, com associação opcional a uma organização.",
       staff: "Acesso operacional às áreas de trabalho do portal.",
       admin: "Acesso alargado, incluindo gestão de utilizadores e configurações.",
     },
@@ -65,7 +65,7 @@ export const defaultAdminUiDictionary: AdminUiDictionary = {
     emailPlaceholder: "email@empresa.pt",
     roleLabel: "Função do utilizador",
     organizationTitle: "Acesso à organização",
-    organizationDescription: "Um Cliente precisa de acesso a pelo menos uma organização.",
+    organizationDescription: "Opcional. Associe o Cliente a uma organização para definir o respetivo acesso.",
     organizationLabel: "Organização",
     organizationPlaceholder: "Selecionar organização",
     organizationRoleLabel: "Função na organização",

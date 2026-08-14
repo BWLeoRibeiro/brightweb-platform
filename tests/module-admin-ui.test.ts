@@ -94,6 +94,15 @@ test("admin invitations read organizations from the CRM list response", async ()
   assert.match(client, /"items" in collection/);
 });
 
+test("admin invitations allow clients without an organization and gate the organization role", async () => {
+  const component = await read("packages/module-admin/src/ui/admin-users.tsx");
+  const client = await read("packages/module-admin/src/ui/client.ts");
+
+  assert.doesNotMatch(component, /Escolha uma organização para o Cliente/);
+  assert.match(component, /disabled=\{inviteSubmitting \|\| !inviteOrganizationId\}/);
+  assert.match(client, /input\.role === "client" && input\.organizationId/);
+});
+
 test("preview mounts the live packaged admin page and routes", async () => {
   const overview = await read("apps/platform-preview/app/(shell)/admin/page.tsx");
   const users = await read("apps/platform-preview/app/(shell)/admin/users/page.tsx");

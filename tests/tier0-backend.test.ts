@@ -10,6 +10,7 @@ import {
   createAdminUserInvitationDeleteHandler,
   createAdminUserInvitationsHandler,
 } from "../packages/module-admin/src/http.ts";
+import { createAdminUiClient } from "../packages/module-admin/src/ui/client.ts";
 import { createOrganization } from "../packages/module-orgs/src/data.ts";
 import {
   addOrganizationCreateInvitation,
@@ -145,9 +146,10 @@ test("admin invitation handlers enforce admin access and preserve response envel
   assert.deepEqual(await (await handlers.GET()).json(), { data: [{ id: "invite-1" }] });
   const response = await handlers.POST(new Request("https://example.test", {
     method: "POST",
-    body: JSON.stringify({ email: "person@example.com", role: "staff" }),
+    body: JSON.stringify({ email: "person@example.com", role: "client" }),
   }));
   assert.equal(response.status, 201);
+  assert.equal(created[0]?.role, "client");
   assert.equal(created[0]?.invitedByProfileId, "admin-profile");
 
   let revoked = "";
@@ -162,6 +164,31 @@ test("admin invitation handlers enforce admin access and preserve response envel
     params: Promise.resolve({ invitationId: "invite-3" }),
   });
   assert.equal(revoked, "invite-3");
+});
+
+test("admin client invitations without an organization use the global invitation endpoint", async () => {
+  const calls: Array<{ url: string; body: unknown }> = [];
+  const client = createAdminUiClient("/api/admin/users", (async (input, init) => {
+    calls.push({ url: String(input), body: JSON.parse(String(init?.body)) });
+    return Response.json({
+      data: {
+        id: "invite-client",
+        email: "client@example.com",
+        role: "client",
+        status: "pending",
+        createdAt: "2026-08-14T10:00:00.000Z",
+        expiresAt: "2026-08-28T10:00:00.000Z",
+      },
+    }, { status: 201 });
+  }) as typeof fetch);
+
+  const invitation = await client.inviteUser({ email: "client@example.com", role: "client" });
+
+  assert.equal(invitation.role, "client");
+  assert.deepEqual(calls, [{
+    url: "/api/admin/users/invitations",
+    body: { email: "client@example.com", role: "client" },
+  }]);
 });
 
 test("invitation registration rejects malformed JSON before privileged dependencies", async () => {
@@ -257,4 +284,12 @@ test("canonical and scaffold invitation migrations remain identical", async () =
   assert.match(canonical, /role_code IN \('staff', 'admin'\)/);
   assert.match(canonical, /status = 'pending'/);
   assert.match(canonical, /public\.is_admin\(\)/);
+
+  const clientInvitations = await readFile("supabase/modules/admin/migrations/20260814100000_admin_client_invitations.sql", "utf8");
+  const scaffoldClientInvitations = await readFile(
+    "packages/create-bw-app/template/supabase/modules/admin/migrations/20260814100000_admin_client_invitations.sql",
+    "utf8",
+  );
+  assert.equal(clientInvitations, scaffoldClientInvitations);
+  assert.match(clientInvitations, /role_code IN \('client', 'staff', 'admin'\)/);
 });
