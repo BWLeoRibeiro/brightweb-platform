@@ -1,5 +1,11 @@
 # @brightweblabs/module-projects
 
+## 0.18.1
+
+### Patch Changes
+
+- 234e640: Disambiguate project organization embeds after client audience relationships are installed.
+
 ## 0.18.0
 
 ### Minor Changes
