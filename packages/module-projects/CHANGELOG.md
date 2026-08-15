@@ -1,5 +1,11 @@
 # @brightweblabs/module-projects
 
+## 0.18.4
+
+### Patch Changes
+
+- a9af003: Make project date, overdue, and elapsed-time UI deterministic across server rendering and browser hydration.
+
 ## 0.18.3
 
 ### Patch Changes
