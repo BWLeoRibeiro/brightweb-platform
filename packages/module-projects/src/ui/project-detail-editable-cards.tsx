@@ -53,7 +53,9 @@ import { defaultProjectsUiDictionary } from "./dictionary";
 
 type ProjectMilestonesAndTasksCardsProps = {
   projectId: string;
-  canEditItems: boolean;
+  canManageItems: boolean;
+  canUpdateAssignedTasks?: boolean;
+  viewerProfileId?: string;
   canManageClientContent?: boolean;
 };
 type SheetMode = "view" | "edit";
@@ -124,7 +126,9 @@ function normalizeTaskForm(form: TaskFormState) {
 
 export function ProjectMilestonesAndTasksCards({
   projectId,
-  canEditItems,
+  canManageItems,
+  canUpdateAssignedTasks = false,
+  viewerProfileId,
   canManageClientContent = false,
 }: ProjectMilestonesAndTasksCardsProps) {
   const client = useProjectsUiClient();
@@ -160,6 +164,14 @@ export function ProjectMilestonesAndTasksCards({
   const taskStartDateValue = useMemo(() => parseIsoDate(taskStartDate), [taskStartDate]);
   const taskDueDateValue = useMemo(() => parseIsoDate(taskDueDate), [taskDueDate]);
   const isTaskBlocked = taskStatus === "blocked";
+  const canUpdateCurrentTask = Boolean(
+    editingTask
+    && (canManageItems || (
+      canUpdateAssignedTasks
+      && viewerProfileId
+      && editingTask.assigneeProfileId === viewerProfileId
+    )),
+  );
 
   useEffect(() => {
     if (taskStatus !== "blocked") {
@@ -262,6 +274,7 @@ export function ProjectMilestonesAndTasksCards({
   const memberOptions = useMemo(
     () =>
       members
+        .filter((member) => member.role === "owner" || member.role === "contributor")
         .map((member) => ({
           profileId: member.profileId,
           label: member.label.trim() || dictionary.people.noName,
@@ -320,7 +333,7 @@ export function ProjectMilestonesAndTasksCards({
 
   const submitTask = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!editingTask || taskMode !== "edit" || isSavingTask || !taskTitle.trim() || !isTaskEditDirty) return;
+    if (!editingTask || !canUpdateCurrentTask || taskMode !== "edit" || isSavingTask || !taskTitle.trim() || !isTaskEditDirty) return;
     if (taskStartDate && taskDueDate && taskDueDate < taskStartDate) {
       toast.error(dictionary.board.invalidDateRange);
       return;
@@ -328,7 +341,7 @@ export function ProjectMilestonesAndTasksCards({
     setIsSavingTask(true);
 
     try {
-      await updateTask(client, projectId, editingTask.id, {
+      await updateTask(client, projectId, editingTask.id, canManageItems ? {
         title: taskTitle,
         description: taskDescription,
         status: taskStatus,
@@ -337,6 +350,9 @@ export function ProjectMilestonesAndTasksCards({
         assigneeProfileId: taskAssigneeProfileId,
         startDate: taskStartDate,
         dueDate: taskDueDate,
+        blockedReason: isTaskBlocked ? taskBlockedReason : "",
+      } : {
+        status: taskStatus,
         blockedReason: isTaskBlocked ? taskBlockedReason : "",
       });
       toast.success(dictionary.board.updated);
@@ -370,7 +386,7 @@ export function ProjectMilestonesAndTasksCards({
   };
 
   const deleteTask = async () => {
-    if (!editingTask || isDeletingTask) return;
+    if (!editingTask || !canManageItems || isDeletingTask) return;
     setIsDeletingTask(true);
     try {
       await deleteTaskAction(client, projectId, editingTask.id);
@@ -391,7 +407,7 @@ export function ProjectMilestonesAndTasksCards({
     <>
       <ProjectMilestonesAndTasksLists
         projectId={projectId}
-        canEditItems={canEditItems}
+        canEditItems={canManageItems}
         milestones={milestones}
         tasks={tasks}
         onEditMilestone={openEditMilestone}
@@ -527,7 +543,7 @@ export function ProjectMilestonesAndTasksCards({
             </div>
             <SheetFooter className={`${sheetFooterClassName} flex-row gap-2`}>
               {milestoneMode === "view" ? (
-                canEditItems && (milestoneVisibility !== "client" || canManageClientContent) ? (
+                canManageItems && (milestoneVisibility !== "client" || canManageClientContent) ? (
                   <Button
                     type="button"
                     className="w-full"
@@ -608,8 +624,8 @@ export function ProjectMilestonesAndTasksCards({
           />
           <form onSubmit={submitTask} className="flex min-h-0 flex-1 flex-col">
             <div className={`${sheetBodyClassName} space-y-4`}>
-              <SheetSection title={dictionary.board.contentSection} editing={taskMode !== "view"} bodyClassName="space-y-3 px-4 py-3">
-              {taskMode === "edit" ? (
+              <SheetSection title={dictionary.board.contentSection} editing={taskMode !== "view" && canManageItems} bodyClassName="space-y-3 px-4 py-3">
+              {taskMode === "edit" && canManageItems ? (
                 <div>
                   <label className={sheetFieldLabelClassName} htmlFor="task-edit-title">{dictionary.forms.title}</label>
                   <Input
@@ -623,7 +639,7 @@ export function ProjectMilestonesAndTasksCards({
               ) : null}
               <div>
                 <label className={sheetFieldLabelClassName} htmlFor="task-edit-description">{dictionary.create.optionalDescription}</label>
-                {taskMode === "view" ? (
+                {taskMode === "view" || !canManageItems ? (
                   <p className={cn(sheetViewValueClassName, "whitespace-pre-wrap")}>
                     {taskDescription.trim() || dictionary.board.noDescription}
                   </p>
@@ -662,7 +678,7 @@ export function ProjectMilestonesAndTasksCards({
                 </div>
                 <div>
                   <label className={sheetFieldLabelClassName} htmlFor="task-edit-priority">{dictionary.forms.priority}</label>
-                  {taskMode === "view" ? (
+                  {taskMode === "view" || !canManageItems ? (
                     <div className="mt-1.5">
                       <TaskPriorityTag task={{ priority: taskPriority as ProjectTask["priority"], status: taskStatus as ProjectTask["status"] }} />
                     </div>
@@ -688,11 +704,11 @@ export function ProjectMilestonesAndTasksCards({
                 </div>
               ) : null}
               </SheetSection>
-              <SheetSection title={dictionary.board.planningSection} editing={taskMode !== "view"} bodyClassName="space-y-3 px-4 py-3">
+              <SheetSection title={dictionary.board.planningSection} editing={taskMode !== "view" && canManageItems} bodyClassName="space-y-3 px-4 py-3">
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
                   <label className={sheetFieldLabelClassName} htmlFor="task-edit-milestone">{dictionary.create.milestoneOptional}</label>
-                  {taskMode === "view" ? (
+                  {taskMode === "view" || !canManageItems ? (
                     <p className={sheetViewValueClassName}>
                       {milestones.find((milestone) => milestone.id === taskMilestoneId)?.title ?? dictionary.board.noMilestone}
                     </p>
@@ -714,7 +730,7 @@ export function ProjectMilestonesAndTasksCards({
                 </div>
                 <div>
                   <label className={sheetFieldLabelClassName} htmlFor="task-edit-assignee">{dictionary.create.assigneeOptional}</label>
-                  {taskMode === "view" ? (
+                  {taskMode === "view" || !canManageItems ? (
                     <p className={sheetViewValueClassName}>
                       {memberOptions.find((member) => member.profileId === taskAssigneeProfileId)?.label ?? dictionary.board.noAssignee}
                     </p>
@@ -736,15 +752,15 @@ export function ProjectMilestonesAndTasksCards({
                 </div>
               </div>
               </SheetSection>
-              <SheetSection title={dictionary.board.calendarSection} editing={taskMode !== "view"} bodyClassName="px-4 py-3">
+              <SheetSection title={dictionary.board.calendarSection} editing={taskMode !== "view" && canManageItems} bodyClassName="px-4 py-3">
               <div className="grid gap-4 sm:grid-cols-2">
               <div>
                 <label className={sheetFieldLabelClassName} htmlFor="task-edit-start">{dictionary.create.startDateOptional}</label>
-                {taskMode === "view" ? <p className={sheetViewValueClassName}>{taskStartDateValue ? format(taskStartDateValue, "dd/MM/yyyy") : dictionary.board.noDate}</p> : <Popover><PopoverTrigger asChild><Button id="task-edit-start" type="button" variant="ghost" className={cn("mt-1.5 h-9 w-full justify-start px-2.5 text-body", "rounded-lg border border-[color:var(--project-ui-color-01)] bg-[color:var(--card)] hover:bg-[color:var(--card)]", taskStartDateValue ? "text-foreground" : "text-foreground/45")}><CalendarIcon className="mr-2 h-4 w-4" />{taskStartDateValue ? format(taskStartDateValue, "dd/MM/yyyy") : dictionary.create.selectDate}</Button></PopoverTrigger><PopoverContent className="w-auto p-0" align="start"><Calendar mode="single" captionLayout="dropdown" className="rounded-lg border" selected={taskStartDateValue} onSelect={(date) => setTaskStartDate(toIsoDate(date))} initialFocus /></PopoverContent></Popover>}
+                {taskMode === "view" || !canManageItems ? <p className={sheetViewValueClassName}>{taskStartDateValue ? format(taskStartDateValue, "dd/MM/yyyy") : dictionary.board.noDate}</p> : <Popover><PopoverTrigger asChild><Button id="task-edit-start" type="button" variant="ghost" className={cn("mt-1.5 h-9 w-full justify-start px-2.5 text-body", "rounded-lg border border-[color:var(--project-ui-color-01)] bg-[color:var(--card)] hover:bg-[color:var(--card)]", taskStartDateValue ? "text-foreground" : "text-foreground/45")}><CalendarIcon className="mr-2 h-4 w-4" />{taskStartDateValue ? format(taskStartDateValue, "dd/MM/yyyy") : dictionary.create.selectDate}</Button></PopoverTrigger><PopoverContent className="w-auto p-0" align="start"><Calendar mode="single" captionLayout="dropdown" className="rounded-lg border" selected={taskStartDateValue} onSelect={(date) => setTaskStartDate(toIsoDate(date))} initialFocus /></PopoverContent></Popover>}
               </div>
               <div>
                 <label className={sheetFieldLabelClassName} htmlFor="task-edit-due">{dictionary.create.dueDateOptional}</label>
-                {taskMode === "view" ? (
+                {taskMode === "view" || !canManageItems ? (
                   <p className={sheetViewValueClassName}>
                     {taskDueDateValue ? format(taskDueDateValue, "dd/MM/yyyy") : dictionary.board.noDate}
                   </p>
@@ -779,9 +795,9 @@ export function ProjectMilestonesAndTasksCards({
                 )}
               </div>
               </div>
-              {taskMode === "edit" && taskStartDate && taskDueDate && taskDueDate < taskStartDate ? <p className="mt-2 text-meta text-[color:var(--destructive)]">{dictionary.board.invalidDateRange}</p> : null}
+              {taskMode === "edit" && canManageItems && taskStartDate && taskDueDate && taskDueDate < taskStartDate ? <p className="mt-2 text-meta text-[color:var(--destructive)]">{dictionary.board.invalidDateRange}</p> : null}
               </SheetSection>
-              {taskMode === "edit" ? (
+              {taskMode === "edit" && canManageItems ? (
                 <Button
                   type="button"
                   variant="link"
@@ -797,7 +813,7 @@ export function ProjectMilestonesAndTasksCards({
             </div>
             <SheetFooter className={`${sheetFooterClassName} flex-row gap-2`}>
               {taskMode === "view" ? (
-                canEditItems ? (
+                canUpdateCurrentTask ? (
                   <Button
                     type="button"
                     className="w-full"

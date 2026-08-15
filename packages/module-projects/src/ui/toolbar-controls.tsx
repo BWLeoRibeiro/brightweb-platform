@@ -29,7 +29,7 @@ const HEALTH_SWATCHES: Partial<Record<ProjectsHealthFilter, string>> = {
   off_track: "var(--project-risk-overdue)",
 };
 
-export function ProjectsToolbarControls() {
+export function ProjectsToolbarControls({ canCreateProjects = false }: { canCreateProjects?: boolean }) {
   const dictionary = useProjectsUiDictionary();
   const dispatchShellAction = useShellActionDispatch();
   const newProjectReady = useShellActionReady(PROJECTS_EVENTS.openNewProject);
@@ -119,10 +119,10 @@ export function ProjectsToolbarControls() {
         </PopoverContent>
       </Popover>
 
-      <Button type="button" disabled={!newProjectReady} onClick={() => dispatchShellAction(PROJECTS_EVENTS.openNewProject)}>
+      {canCreateProjects ? <Button type="button" disabled={!newProjectReady} onClick={() => dispatchShellAction(PROJECTS_EVENTS.openNewProject)}>
         <Plus data-icon="inline-start" aria-hidden />
         {dictionary.toolbar.newProject}
-      </Button>
+      </Button> : null}
     </div>
   );
 }

@@ -5,6 +5,12 @@ const DEFAULT_PASSWORD = "BrightWebDev!36";
 const CLIENT_EMAIL = "orgadmin@bright-harbor.test";
 const CLIENT_PASSWORD = "BrightWebOrgAdmin!36";
 const CLIENT_PROJECT_REQUEST_ID = "36000000-0000-4000-8000-000000000026";
+const STAFF_PROJECT_REQUEST_ID = "36000000-0000-4000-8000-000000000037";
+const STAFF_PASSWORD = "BrightWebStaff!36";
+const STAFF_USERS = [
+  { email: "staff.owner@brightweblabs.test", firstName: "Sara", lastName: "Owner" },
+  { email: "staff.candidate@brightweblabs.test", firstName: "Tiago", lastName: "Candidate" },
+];
 
 const ORGANIZATIONS = [
   {
@@ -242,6 +248,46 @@ async function main() {
       ),
     "Could not assign seed admin role",
   );
+
+  await requireResult(
+    supabase.from("roles").upsert({ code: "staff", label: "Staff" }, { onConflict: "code" }),
+    "Could not ensure staff role",
+  );
+  const staffProfiles = [];
+  for (const staff of STAFF_USERS) {
+    const staffUser = await upsertAuthUser(
+      staff.email,
+      STAFF_PASSWORD,
+      staff.firstName,
+      staff.lastName,
+    );
+    const staffProfile = await requireResult(
+      supabase
+        .from("profiles")
+        .upsert(
+          {
+            user_id: staffUser.id,
+            email: staff.email,
+            first_name: staff.firstName,
+            last_name: staff.lastName,
+          },
+          { onConflict: "user_id" },
+        )
+        .select("id")
+        .single(),
+      `Could not upsert seed staff profile: ${staff.email}`,
+    );
+    await requireResult(
+      supabase.from("user_role_assignments").upsert({
+        profile_id: staffProfile.id,
+        role_code: "staff",
+        assigned_by_profile_id: profile.id,
+        reason: "platform_preview_staff_seed",
+      }, { onConflict: "profile_id" }),
+      `Could not assign seed staff role: ${staff.email}`,
+    );
+    staffProfiles.push(staffProfile);
+  }
 
   await requireResult(
     supabase.from("organizations").upsert(ORGANIZATIONS, { onConflict: "id" }),
@@ -486,9 +532,23 @@ async function main() {
         { id: "36000000-0000-4000-c000-000000000005", label: "Relatório de testes de usabilidade", url: "https://example.com/lancamento-atlas/testes", kind: "doc", created_at: "2026-08-13T11:15:00.000Z" },
       ],
     },
+    {
+      requestId: STAFF_PROJECT_REQUEST_ID,
+      organizationId: ORGANIZATIONS[0].id,
+      name: "Equipa interna — cenário de teste",
+      code: "TEAM-QA",
+      status: "active",
+      start_date: "2026-08-14",
+      target_date: "2026-09-30",
+      client_summary: "Projeto local para validar a gestão da equipa interna.",
+      milestones: [],
+    },
   ];
 
   for (const seedProject of CLIENT_PROJECTS) {
+    const projectOwnerProfileId = seedProject.requestId === STAFF_PROJECT_REQUEST_ID
+      ? staffProfiles[0].id
+      : profile.id;
     const creation = await requireResult(
       authenticatedAdmin.rpc("create_project_with_client_access", {
         p_request_id: seedProject.requestId,
@@ -502,10 +562,10 @@ async function main() {
           client_summary: seedProject.client_summary,
           ...(seedProject.client_scope ? { client_scope: seedProject.client_scope } : {}),
           ...(seedProject.cancellation_reason ? { cancellation_reason: seedProject.cancellation_reason } : {}),
-          client_contact_profile_id: profile.id,
+          client_contact_profile_id: projectOwnerProfileId,
         },
         p_organization_ids: [seedProject.organizationId],
-        p_members: [{ profile_id: profile.id, role: "owner" }],
+        p_members: [{ profile_id: projectOwnerProfileId, role: "owner" }],
         p_client_access: { mode: "all_org_clients", organization_ids: [seedProject.organizationId], profile_grants: [] },
       }),
       `Could not create seed client project: ${seedProject.name}`,
@@ -565,6 +625,8 @@ async function main() {
 
   console.log("Development seed complete.");
   console.log(`User: ${email}`);
+  console.log(`Staff owner: ${STAFF_USERS[0].email}`);
+  console.log(`Staff candidate: ${STAFF_USERS[1].email}`);
   console.log(`Client: ${CLIENT_EMAIL}`);
   console.log(`Profiles: ${profiles}`);
   console.log(`Role assignments: ${assignments}`);

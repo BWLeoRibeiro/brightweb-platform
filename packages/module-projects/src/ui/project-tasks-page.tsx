@@ -9,26 +9,27 @@ import { ProjectDetailDataProvider } from "./project-detail-data-provider";
 import { ProjectEditSheetLazy } from "./project-lazy-panels";
 import type { ProjectsNavigationConfig, ProjectsUiClient, ProjectsUiDictionary } from "./types";
 
-export type ProjectTasksPermissions = { canEditProjectItems: boolean; canCreateProjectLinks: boolean; canManageClientContent: boolean; canOpenEditProject: boolean };
+export type ProjectTasksPermissions = { canEditProjectItems: boolean; canUpdateAssignedTasks: boolean; canCreateProjectLinks: boolean; canManageClientContent: boolean; canOpenEditProject: boolean };
 
 export type ProjectTasksPageProps = {
   client?: ProjectsUiClient;
   initialData: ProjectDashboardData;
   permissions?: Partial<ProjectTasksPermissions>;
   projectRole?: "admin" | "owner" | "contributor" | "observer";
+  viewerProfileId?: string;
   dictionary?: ProjectsUiDictionary;
   navigation?: Partial<ProjectsNavigationConfig>;
 };
 
-const DEFAULT_PERMISSIONS: ProjectTasksPermissions = { canEditProjectItems: false, canCreateProjectLinks: false, canManageClientContent: false, canOpenEditProject: true };
+const DEFAULT_PERMISSIONS: ProjectTasksPermissions = { canEditProjectItems: false, canUpdateAssignedTasks: false, canCreateProjectLinks: false, canManageClientContent: false, canOpenEditProject: false };
 
-export function ProjectTasksPage({ client, initialData, permissions, projectRole = "observer", dictionary = defaultProjectsUiDictionary, navigation }: ProjectTasksPageProps) {
+export function ProjectTasksPage({ client, initialData, permissions, projectRole = "observer", viewerProfileId, dictionary = defaultProjectsUiDictionary, navigation }: ProjectTasksPageProps) {
   const access = { ...DEFAULT_PERMISSIONS, ...permissions };
   return (
     <ProjectsUiProvider client={client} dictionary={dictionary} navigation={navigation}>
       <ProjectDetailDataProvider initialData={initialData}>
         <div className="mx-auto flex w-full max-w-[1360px] flex-col gap-6">
-          <ProjectBoardKanban canEditItems={access.canEditProjectItems} />
+          <ProjectBoardKanban canManageItems={access.canEditProjectItems} canUpdateAssignedTasks={access.canUpdateAssignedTasks} viewerProfileId={viewerProfileId} />
           {access.canOpenEditProject ? <ProjectEditSheetLazy projectId={initialData.project.id} projectRole={projectRole} /> : null}
           <ProjectDetailCreateSheetsMount projectId={initialData.project.id} canCreateMilestonesAndTasks={access.canEditProjectItems} canCreateLinks={access.canCreateProjectLinks} canManageClientContent={access.canManageClientContent} />
         </div>

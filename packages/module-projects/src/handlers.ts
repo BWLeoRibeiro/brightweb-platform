@@ -35,7 +35,6 @@ import {
   getProjectClientAccess,
   listClientOrganizations,
   listClientProjects,
-  listProjectSetupOptions,
   updateProjectClientAccess,
   updateProjectOrganizations,
 } from "./client-access";
@@ -59,9 +58,11 @@ import {
   deleteProjectTask,
   getProjectDashboard,
   getProjectAccess,
+  getProjectTaskAssignment,
   listProjectActivity,
   queryProjectActivity,
   listProjectAssignableProfiles,
+  listProjectSetupOptionsForManagement,
   syncProjectMembers,
   updateProject,
   updateProjectLink,
@@ -99,9 +100,10 @@ const projectsDependencies = {
   getProjectClientAccess,
   updateProjectClientAccess,
   updateProjectOrganizations,
-  listProjectSetupOptions,
+  listProjectSetupOptions: listProjectSetupOptionsForManagement,
   createProjectWithAccess,
   getProjectAccess,
+  getProjectTaskAssignment,
 };
 
 export const handleClientProjectsGetRequest = createClientProjectsGetHandler(projectsDependencies);

@@ -32,12 +32,14 @@ export function parseClientAccessDraft(value: unknown): ClientAccessDraft | null
           profileId: client.profileId,
           label: client.label,
           email: typeof client.email === "string" ? client.email : null,
+          organizationRole: client.organizationRole === "admin" ? "admin" as const : client.organizationRole === "member" ? "member" as const : null,
         }];
       })
       : [];
     organizations.push({
       organizationId: item.organizationId,
       organizationName: item.organizationName,
+      isPrimary: item.isPrimary === true,
       // Older management responses contained selected organizations only. Treat
       // a missing flag as selected so the editor remains backwards compatible.
       selected: typeof item.selectedForClientAccess === "boolean"
@@ -51,10 +53,13 @@ export function parseClientAccessDraft(value: unknown): ClientAccessDraft | null
         : [],
     });
   }
+  const primaryOrganization = organizations.find((organization) => organization.isPrimary) ?? organizations[0];
 
   return {
     mode: candidate.mode,
-    organizations,
+    organizations: primaryOrganization
+      ? [{ ...primaryOrganization, selected: candidate.mode !== "hidden" }]
+      : [],
     clientSummary: typeof candidate.clientSummary === "string" ? candidate.clientSummary : null,
     clientScope: typeof candidate.clientScope === "string" ? candidate.clientScope : null,
     clientContactProfileId: typeof candidate.clientContactProfileId === "string" ? candidate.clientContactProfileId : null,

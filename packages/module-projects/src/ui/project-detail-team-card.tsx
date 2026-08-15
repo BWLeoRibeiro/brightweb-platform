@@ -53,12 +53,6 @@ export function ProjectDetailTeamCard({ canManageMembers, memberColorRoles }: Pr
 
   const renderMembers = (items: typeof sortedMembers) => items.map((member) => {
     const contactCount = (member.email ? 1 : 0) + (member.phone ? 1 : 0);
-    const padHoverClass =
-      contactCount >= 2
-        ? "group-focus-within:pr-[5.25rem] group-hover:pr-[5.25rem]"
-        : contactCount === 1
-          ? "group-focus-within:pr-[2.75rem] group-hover:pr-[2.75rem]"
-          : "";
     const contactText = member.email ?? member.phone;
     const colorRole = colorRoleFor(member.profileId, member.role);
 
@@ -68,28 +62,28 @@ export function ProjectDetailTeamCard({ canManageMembers, memberColorRoles }: Pr
         className="group relative flex min-h-[3.25rem] items-center gap-3 border-t border-[color:var(--border)] px-3 py-1.5 transition-colors first:border-t-0 hover:bg-[color:var(--project-ui-color-09)]"
       >
         <ProjectOwnerAvatar label={member.label} size="md" roleColor={colorRole} />
-        <div className={`min-w-0 flex-1 py-0.5 ${padHoverClass}`}>
-          <div className="flex min-w-0 items-center gap-2">
-            <p className="text-body text-foreground min-w-0 flex-1 truncate font-semibold leading-snug">{member.label}</p>
-            <MemberRoleBadge role={member.role} colorRole={colorRole} />
-          </div>
+        <div className="min-w-0 flex-1 py-0.5">
+          <p className="truncate text-body font-semibold leading-snug text-foreground">{member.label}</p>
           {contactText ? (
             <div className="text-meta text-muted-foreground mt-0.5 truncate">{contactText}</div>
           ) : null}
         </div>
-        {contactCount > 0 ? (
-          <div className="pointer-events-none absolute right-3 top-1/2 z-10 flex -translate-y-1/2 items-center gap-0.5 opacity-0 transition-opacity duration-200 motion-reduce:transition-none group-focus-within:opacity-100 group-hover:opacity-100">
-            <ContactActionButtons
-              label={member.label}
-              email={member.email}
-              phone={member.phone}
-              projectName={project.name}
-              projectReference={project.code ?? project.id}
-              linkClassName={CONTACT_ICON_LINK_CLASS}
-              iconClassName="size-4"
-            />
-          </div>
-        ) : null}
+        <div className="ml-auto flex shrink-0 items-center gap-2">
+          <MemberRoleBadge role={member.role} colorRole={colorRole} />
+          {contactCount > 0 ? (
+            <div className="pointer-events-none flex items-center gap-0.5 opacity-0 transition-opacity duration-200 motion-reduce:transition-none group-focus-within:opacity-100 group-hover:opacity-100">
+              <ContactActionButtons
+                label={member.label}
+                email={member.email}
+                phone={member.phone}
+                projectName={project.name}
+                projectReference={project.code ?? project.id}
+                linkClassName={CONTACT_ICON_LINK_CLASS}
+                iconClassName="size-4"
+              />
+            </div>
+          ) : null}
+        </div>
       </li>
     );
   });

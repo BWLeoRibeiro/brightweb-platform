@@ -9,6 +9,8 @@ import {
   createProjectOrganizationsPatchHandler,
   createProjectsPatchHandler,
   createProjectsPostHandler,
+  createProjectsTasksPatchHandler,
+  createProjectsTasksPostHandler,
   createProjectsSetupOptionsGetHandler,
   createProjectsActivityGetHandler,
   createProjectsDashboardGetHandler,
@@ -291,21 +293,21 @@ test("atomic creation service serializes the locked database contract", async ()
       clientSummary: " Resumo ",
       clientContactProfileId: "client-1",
     },
-    participatingOrganizationIds: ["org-2", "org-1"],
+    participatingOrganizationIds: ["org-1"],
     members: [{ profileId: "staff-1", role: "owner" }],
     clientAccess: {
       mode: "selected_clients",
-      organizations: [{ organizationId: "org-2", selectedProfileIds: ["client-1"] }],
+      organizations: [{ organizationId: "org-1", selectedProfileIds: ["client-1"] }],
     },
   });
   assert.deepEqual(result, { projectId: "project-1", created: false });
   assert.equal(call?.name, "create_project_with_client_access");
-  assert.deepEqual(call?.args.p_organization_ids, ["org-1", "org-2"]);
+  assert.deepEqual(call?.args.p_organization_ids, ["org-1"]);
   assert.deepEqual(call?.args.p_members, [{ profile_id: "staff-1", role: "owner" }]);
   assert.deepEqual(call?.args.p_client_access, {
     mode: "selected_clients",
-    organization_ids: ["org-2"],
-    profile_grants: [{ organization_id: "org-2", profile_id: "client-1" }],
+    organization_ids: ["org-1"],
+    profile_grants: [{ organization_id: "org-1", profile_id: "client-1" }],
   });
   assert.deepEqual(call?.args.p_project, {
     name: "Portal",
@@ -377,7 +379,7 @@ test("management configuration uses one atomic RPC and maps all participant cand
         organization_name: "Cliente A",
         is_primary: true,
         selected_for_client_access: true,
-        eligible_clients: [{ profile_id: "client-1", label: "Cliente", email: "client@example.test" }],
+        eligible_clients: [{ profile_id: "client-1", label: "Cliente", email: "client@example.test", organization_role: "admin" }],
         selected_profile_ids: ["client-1"],
       },
       {
@@ -401,6 +403,7 @@ test("management configuration uses one atomic RPC and maps all participant cand
   const before = await getProjectClientAccess(supabase, "project-1");
   assert.equal(before.organizations[0]?.selectedForClientAccess, true);
   assert.equal(before.organizations[1]?.selectedForClientAccess, false);
+  assert.equal(before.organizations[0]?.eligibleClients[0]?.organizationRole, "admin");
   await updateProjectClientAccess(supabase, "project-1", {
     mode: "selected_clients",
     organizations: [{ organizationId: "org-1", selectedProfileIds: ["client-1"] }],
@@ -428,7 +431,7 @@ test("management configuration uses one atomic RPC and maps all participant cand
 test("atomic project creation preserves all four steps and idempotency", async () => {
   let received: unknown = null;
   const handler = createProjectsPostHandler({
-    getAccess: async () => ({ ok: true, supabase: {}, profileId: "staff-1", role: "staff" }),
+    getAccess: async () => ({ ok: true, supabase: {}, profileId: "admin-1", role: "admin" }),
     createProjectWithAccess: async (_supabase, input) => {
       received = input;
       return { projectId: "project-1", created: true };
@@ -442,14 +445,14 @@ test("atomic project creation preserves all four steps and idempotency", async (
       clientSummary: "Resumo aprovado",
       clientScope: "Área pública",
     },
-    participatingOrganizationIds: ["org-1", "org-2"],
+    participatingOrganizationIds: ["org-1"],
     members: [
       { profileId: "staff-1", role: "owner" },
       { profileId: "staff-2", role: "contributor" },
     ],
     clientAccess: {
       mode: "selected_clients",
-      organizations: [{ organizationId: "org-2", selectedProfileIds: ["client-1"] }],
+      organizations: [{ organizationId: "org-1", selectedProfileIds: ["client-1"] }],
     },
   };
   const response = await handler(new Request("https://example.test/api/projects", {
@@ -467,7 +470,7 @@ test("atomic project creation preserves all four steps and idempotency", async (
 test("legacy project creation delegates to the atomic private-by-default contract", async () => {
   let received: unknown = null;
   const handler = createProjectsPostHandler({
-    getAccess: async () => ({ ok: true, supabase: {}, profileId: "staff-1", role: "staff" }),
+    getAccess: async () => ({ ok: true, supabase: {}, profileId: "admin-1", role: "admin" }),
     createProjectWithAccess: async (_supabase, input) => {
       received = input;
       return { projectId: "project-legacy", created: true };
@@ -488,7 +491,7 @@ test("legacy project creation delegates to the atomic private-by-default contrac
   };
   assert.match(input.idempotencyKey, /^[0-9a-f-]{36}$/i);
   assert.deepEqual(input.participatingOrganizationIds, ["org-1"]);
-  assert.deepEqual(input.members, [{ profileId: "staff-1", role: "owner" }]);
+  assert.deepEqual(input.members, []);
   assert.deepEqual(input.clientAccess, { mode: "hidden", organizations: [] });
 });
 
@@ -496,6 +499,7 @@ test("generic project PATCH cannot mutate ownership outside the team RPC", async
   let updated = false;
   const handler = createProjectsPatchHandler({
     getAccess: async () => ({ ok: true, supabase: {}, profileId: "owner-1", role: "staff" }),
+    getProjectAccess: async () => ({ projectRole: "owner", permissions: {}, viewerProfileId: "owner-1" }),
     updateProject: async () => { updated = true; },
     getDashboard: async () => ({}),
   } as never);
@@ -515,7 +519,7 @@ test("generic project PATCH cannot mutate ownership outside the team RPC", async
 test("atomic project creation rejects audiences outside participating organizations", async () => {
   let created = false;
   const handler = createProjectsPostHandler({
-    getAccess: async () => ({ ok: true, supabase: {}, profileId: "staff-1", role: "staff" }),
+    getAccess: async () => ({ ok: true, supabase: {}, profileId: "admin-1", role: "admin" }),
     createProjectWithAccess: async () => { created = true; return { projectId: "project-1", created: true }; },
   } as never);
   const response = await handler(new Request("https://example.test/api/projects", {
@@ -536,9 +540,33 @@ test("atomic project creation rejects audiences outside participating organizati
   assert.equal(created, false);
 });
 
+test("project creation rejects additional organizations even when client access uses the primary", async () => {
+  let created = false;
+  const handler = createProjectsPostHandler({
+    getAccess: async () => ({ ok: true, supabase: {}, profileId: "admin-1", role: "admin" }),
+    createProjectWithAccess: async () => { created = true; return { projectId: "project-1", created: true }; },
+  } as never);
+  const response = await handler(new Request("https://example.test/api/projects", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      idempotencyKey: "018f47a2-4b6d-7a1c-9b11-8f90c6dc55a1",
+      project: { organizationId: "org-1", name: "Portal" },
+      participatingOrganizationIds: ["org-1", "org-2"],
+      members: [{ profileId: "staff-1", role: "owner" }],
+      clientAccess: {
+        mode: "all_org_clients",
+        organizations: [{ organizationId: "org-1", selectedProfileIds: [] }],
+      },
+    }),
+  }));
+  assert.equal(response.status, 400);
+  assert.equal(created, false);
+});
+
 test("atomic creation reports idempotency payload conflicts without creating a duplicate", async () => {
   const handler = createProjectsPostHandler({
-    getAccess: async () => ({ ok: true, supabase: {}, profileId: "staff-1", role: "staff" }),
+    getAccess: async () => ({ ok: true, supabase: {}, profileId: "admin-1", role: "admin" }),
     createProjectWithAccess: async () => {
       throw new Error("The idempotency key was already used with another request.");
     },
@@ -558,10 +586,10 @@ test("atomic creation reports idempotency payload conflicts without creating a d
   assert.equal((await response.json()).error.code, "IDEMPOTENCY_CONFLICT");
 });
 
-test("setup options are staff-only and scoped to requested organizations", async () => {
+test("setup options are admin-only and scoped to requested organizations", async () => {
   let received: unknown = null;
   const handler = createProjectsSetupOptionsGetHandler({
-    getAccess: async () => ({ ok: true, supabase: {}, profileId: "staff-1", role: "staff" }),
+    getAccess: async () => ({ ok: true, supabase: {}, profileId: "admin-1", role: "admin" }),
     listProjectSetupOptions: async (_supabase, profileId, organizationIds) => {
       received = { profileId, organizationIds };
       return { staff: [], organizations: [] };
@@ -572,9 +600,77 @@ test("setup options are staff-only and scoped to requested organizations", async
   ));
   assert.equal(response.status, 200);
   assert.deepEqual(received, {
-    profileId: "staff-1",
+    profileId: "admin-1",
     organizationIds: ["11111111-1111-4111-8111-111111111111", "22222222-2222-4222-8222-222222222222"],
   });
+});
+
+test("normal staff cannot create projects or load project-creation options", async () => {
+  let touchedCreation = false;
+  let touchedOptions = false;
+  const access = async () => ({ ok: true as const, supabase: {}, profileId: "staff-1", role: "staff" });
+  const createResponse = await createProjectsPostHandler({
+    getAccess: access,
+    createProjectWithAccess: async () => {
+      touchedCreation = true;
+      return { projectId: "project-1", created: true };
+    },
+  } as never)(new Request("https://example.test/api/projects", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ organizationId: "org-1", name: "Portal" }),
+  }));
+  const optionsResponse = await createProjectsSetupOptionsGetHandler({
+    getAccess: access,
+    listProjectSetupOptions: async () => {
+      touchedOptions = true;
+      return { staff: [], organizations: [] };
+    },
+  } as never)(new Request("https://example.test/api/projects/setup-options"));
+
+  assert.equal(createResponse.status, 403);
+  assert.equal(optionsResponse.status, 403);
+  assert.equal(touchedCreation, false);
+  assert.equal(touchedOptions, false);
+});
+
+test("a collaborator may update state only on a task assigned to them", async () => {
+  const updates: unknown[] = [];
+  const context = { params: Promise.resolve({ id: "project-1", itemId: "task-1" }) };
+  const dependencies = (assigneeProfileId: string | null) => ({
+    getAccess: async () => ({ ok: true as const, supabase: {}, profileId: "staff-1", role: "staff" }),
+    getProjectAccess: async () => ({ projectRole: "contributor", permissions: {}, viewerProfileId: "staff-1" }),
+    getProjectTaskAssignment: async () => ({ assigneeProfileId }),
+    updateTask: async (_client: unknown, _projectId: string, _taskId: string, input: unknown) => { updates.push(input); },
+    getDashboard: async () => ({}),
+  });
+  const request = (body: object) => new Request("https://example.test/api/projects/project-1/tasks/task-1", {
+    method: "PATCH",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(body),
+  });
+
+  assert.equal((await createProjectsTasksPatchHandler(dependencies("staff-1") as never)(request({ status: "in_progress" }), context)).status, 200);
+  assert.deepEqual(updates, [{ status: "in_progress" }]);
+  assert.equal((await createProjectsTasksPatchHandler(dependencies("staff-2") as never)(request({ status: "done" }), context)).status, 403);
+  assert.equal((await createProjectsTasksPatchHandler(dependencies("staff-1") as never)(request({ title: "Alterado" }), context)).status, 403);
+  assert.equal(updates.length, 1);
+});
+
+test("a collaborator cannot create project tasks", async () => {
+  let created = false;
+  const response = await createProjectsTasksPostHandler({
+    getAccess: async () => ({ ok: true as const, supabase: {}, profileId: "staff-1", role: "staff" }),
+    getProjectAccess: async () => ({ projectRole: "contributor", permissions: {}, viewerProfileId: "staff-1" }),
+    createTask: async () => { created = true; },
+  } as never)(new Request("https://example.test/api/projects/project-1/tasks", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ title: "Nova tarefa" }),
+  }), { params: Promise.resolve({ id: "project-1" }) });
+
+  assert.equal(response.status, 403);
+  assert.equal(created, false);
 });
 
 test("participating organization changes require admin or project owner", async () => {
@@ -610,6 +706,21 @@ test("staff access PATCH preserves the three-mode organization/profile payload",
   const handler = createProjectClientAccessPatchHandler({
     getAccess: async () => ({ ok: true, supabase: {}, profileId: "staff-1", role: "staff" }),
     getProjectAccess: async () => ({ projectRole: "owner", permissions: {} }),
+    getProjectClientAccess: async () => ({
+      mode: "all_org_clients",
+      organizations: [{
+        organizationId: "org-1",
+        organizationName: "Cliente",
+        isPrimary: true,
+        selectedForClientAccess: true,
+        eligibleClients: [],
+        selectedProfileIds: [],
+      }],
+      clientSummary: null,
+      clientScope: null,
+      clientContactProfileId: null,
+      updatedAt: null,
+    }),
     updateProjectClientAccess: async (_supabase, projectId, input) => {
       received = { projectId, input };
       return { mode: input.mode, organizations: [], updatedAt: null };

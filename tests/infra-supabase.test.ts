@@ -158,3 +158,11 @@ test("createServiceRoleClient does not construct a client with incomplete env", 
   assert.equal(result, null);
   assert.equal(constructorCalls, 0);
 });
+
+test("local preview injects the new-format Supabase secret key", async () => {
+  const source = await readFile("scripts/with-local-preview-supabase.mjs", "utf8");
+
+  assert.match(source, /const localSecretKey = local\.SECRET_KEY/);
+  assert.match(source, /SUPABASE_SECRET_DEFAULT_KEY: localSecretKey/);
+  assert.doesNotMatch(source, /SUPABASE_SECRET_DEFAULT_KEY: local\.SERVICE_ROLE_KEY/);
+});

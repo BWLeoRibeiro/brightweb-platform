@@ -1,116 +1,58 @@
 "use client";
 
-import { StyledSelect } from "@brightweblabs/ui";
-
 import { useProjectsUiClient, useProjectsUiDictionary } from "./context";
-import { defaultProjectsUiDictionary } from "./dictionary";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
-import { Pencil, Plus, Save, Users, X } from "lucide-react";
+import { ArrowLeft, Pencil, Plus, Save, UserPlus, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { sheetShellClassName } from "./constants";
+import { AppSheetBody, AppSheetFooter, AppSheetHeader, SheetSection } from "./shared/app-sheet";
 import {
-  sheetBodyClassName,
-  sheetFooterClassName,
-  sheetShellClassName,
-} from "./constants";
-import { AppSheetHeader } from "./shared/app-sheet";
-import { SearchField } from "@brightweblabs/ui";
-import { Button } from "@brightweblabs/ui";
-import { SectionIconButton } from "./shared/section-icon-button";
-import { Skeleton } from "@brightweblabs/ui";
-import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  Button,
+  SearchField,
   Sheet,
   SheetContent,
-  SheetFooter,
+  Skeleton,
+  TooltipProvider,
 } from "@brightweblabs/ui";
-import { TooltipProvider } from "@brightweblabs/ui";
-import { PROJECT_MEMBER_ROLE_LABELS_PT, type ProjectMemberRole } from "../contracts";
+import { SectionIconButton } from "./shared/section-icon-button";
+import type { ProjectMemberRole } from "../contracts";
 import { parseProjectBoardApiError } from "./project-board-response-parser";
+import {
+  AddResultRow,
+  applyProjectTeamMemberRoles,
+  defaultRoleForProjectTeam,
+  filterAvailableProjectMembers,
+  findRemovedProjectTeamMemberIds,
+  TeamMemberRow,
+  TEAM_MEMBER_AVATAR_CLASS_NAME,
+  type ProjectMemberOption,
+} from "./project-team-members";
 
-type ProjectMemberOption = {
-  profileId: string;
-  label: string;
-  email: string | null;
-  organizationRole: "staff" | "admin";
-  projectRole: ProjectMemberRole | null;
-};
-
-const PROJECT_MEMBER_SCOPE_LABELS: Record<ProjectMemberOption["organizationRole"], string> = {
-  admin: "BeGreen admin",
-  staff: "BeGreen staff",
-};
+export {
+  applyProjectTeamMemberRoles,
+  defaultRoleForProjectTeam,
+  filterAvailableProjectMembers,
+  findRemovedProjectTeamMemberIds,
+  hasProjectTeamOwner,
+} from "./project-team-members";
 
 const MAX_ADD_RESULTS = 25;
 
-function defaultRoleFor(): ProjectMemberRole {
-  return "contributor";
+function projectMemberRoles(
+  members: Array<{ profileId: string; role: ProjectMemberRole }>,
+): Record<string, ProjectMemberRole> {
+  return Object.fromEntries(members.map((member) => [member.profileId, member.role]));
 }
 
-function MemberIdentity({ member }: { member: ProjectMemberOption }) {
-  return (
-    <div className="min-w-0 flex-1">
-      <span className="block truncate text-body font-semibold text-foreground">{member.label}</span>
-      <span className="block truncate text-meta text-foreground/60">
-        {member.email ?? defaultProjectsUiDictionary.people.noEmail} · {PROJECT_MEMBER_SCOPE_LABELS[member.organizationRole]}
-      </span>
-    </div>
-  );
-}
-
-type TeamMemberRowProps = {
-  member: ProjectMemberOption;
-  role: ProjectMemberRole;
-  onRoleChange: (role: ProjectMemberRole) => void;
-  onRemove: () => void;
-};
-
-function TeamMemberRow({ member, role, onRoleChange, onRemove }: TeamMemberRowProps) {
-  return (
-    <div className="flex items-center gap-2 rounded-xl border border-black/8 bg-background/70 px-3 py-2 dark:border-white/10">
-      <MemberIdentity member={member} />
-      <StyledSelect
-        className="h-7 rounded-md border border-black/10 bg-background px-2 text-meta dark:border-white/10"
-        value={role}
-        onChange={(event) => onRoleChange(event.target.value as ProjectMemberRole)}
-      >
-        <option value="owner">{PROJECT_MEMBER_ROLE_LABELS_PT.owner}</option>
-        <option value="contributor">{PROJECT_MEMBER_ROLE_LABELS_PT.contributor}</option>
-        <option value="observer">{PROJECT_MEMBER_ROLE_LABELS_PT.observer}</option>
-      </StyledSelect>
-      <Button
-        type="button"
-        variant="ghost"
-        size="icon-sm"
-        className="shrink-0 text-foreground/50 hover:text-foreground"
-        onClick={onRemove}
-      >
-        <X className="size-4" />
-        <span className="sr-only">{defaultProjectsUiDictionary.team.removeFromProject}</span>
-      </Button>
-    </div>
-  );
-}
-
-function AddResultRow({ member, onAdd }: { member: ProjectMemberOption; onAdd: () => void }) {
-  return (
-    <div className="flex items-center gap-2 rounded-xl border border-black/8 bg-background/40 px-3 py-2 dark:border-white/10">
-      <MemberIdentity member={member} />
-      <Button type="button" variant="outline" size="sm" className="shrink-0" onClick={onAdd}>
-        <Plus className="mr-1 size-3.5" />
-        {PROJECT_MEMBER_ROLE_LABELS_PT[defaultRoleFor()]}
-      </Button>
-    </div>
-  );
-}
-
-function SectionHeading({ title, count }: { title: string; count?: number }) {
-  return (
-    <div className="flex items-baseline gap-2 px-0.5">
-      <span className="text-label font-semibold text-foreground/70">{title}</span>
-      {typeof count === "number" ? <span className="text-data text-meta font-semibold leading-none text-foreground/45">{count}</span> : null}
-    </div>
-  );
-}
 
 type ProjectMembersEditSheetProps = {
   projectId: string;
@@ -118,7 +60,9 @@ type ProjectMembersEditSheetProps = {
 };
 
 export function ProjectMembersEditSheet({
-  projectId, initialMembers }: ProjectMembersEditSheetProps) {
+  projectId,
+  initialMembers,
+}: ProjectMembersEditSheetProps) {
   const client = useProjectsUiClient();
   const dictionary = useProjectsUiDictionary();
   const router = useRouter();
@@ -126,14 +70,17 @@ export function ProjectMembersEditSheet({
   const [open, setOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isRemovalConfirmationOpen, setIsRemovalConfirmationOpen] = useState(false);
+  const [view, setView] = useState<"allocated" | "add">("allocated");
   const [memberSearch, setMemberSearch] = useState("");
+  const [pendingMemberRoles, setPendingMemberRoles] = useState<Record<string, ProjectMemberRole>>({});
   const [memberOptions, setMemberOptions] = useState<ProjectMemberOption[]>([]);
-  const [selectedMembers, setSelectedMembers] = useState<Record<string, ProjectMemberRole>>(() => (
-    initialMembers.reduce<Record<string, ProjectMemberRole>>((acc, member) => {
-      acc[member.profileId] = member.role;
-      return acc;
-    }, {})
-  ));
+  const [savedMembers, setSavedMembers] = useState<Record<string, ProjectMemberRole>>(
+    () => projectMemberRoles(initialMembers),
+  );
+  const [selectedMembers, setSelectedMembers] = useState<Record<string, ProjectMemberRole>>(
+    () => projectMemberRoles(initialMembers),
+  );
 
   useEffect(() => {
     setIsClientMounted(true);
@@ -141,7 +88,9 @@ export function ProjectMembersEditSheet({
 
   useEffect(() => {
     if (open) return;
+    setView("allocated");
     setMemberSearch("");
+    setPendingMemberRoles({});
   }, [open]);
 
   useEffect(() => {
@@ -163,18 +112,26 @@ export function ProjectMembersEditSheet({
           throw new Error(message);
         }
 
-        const options = ((Array.isArray(payload?.data) ? payload.data : []) as Array<ProjectMemberOption & { organizationRole: string }>)
-          .filter((option): option is ProjectMemberOption => option.organizationRole === "staff" || option.organizationRole === "admin");
+        const options = (
+          (Array.isArray(payload?.data) ? payload.data : []) as Array<
+            ProjectMemberOption & { organizationRole: string }
+          >
+        ).filter(
+          (option): option is ProjectMemberOption => (
+            option.organizationRole === "staff" || option.organizationRole === "admin"
+          ),
+        );
         if (!isMounted) return;
 
         setMemberOptions(options);
-        setSelectedMembers(() => {
-          const fromApi = options.reduce<Record<string, ProjectMemberRole>>((acc, option) => {
-            if (option.projectRole) acc[option.profileId] = option.projectRole;
-            return acc;
-          }, {});
-          return fromApi;
-        });
+        setView("allocated");
+        setPendingMemberRoles({});
+        const fromApi = options.reduce<Record<string, ProjectMemberRole>>((acc, option) => {
+          if (option.projectRole) acc[option.profileId] = option.projectRole;
+          return acc;
+        }, {});
+        setSavedMembers(fromApi);
+        setSelectedMembers(fromApi);
       } catch (error) {
         if (!isMounted) return;
         toast.error(error instanceof Error ? error.message : dictionary.team.loadFallbackError);
@@ -194,29 +151,62 @@ export function ProjectMembersEditSheet({
     return new Map(memberOptions.map((option) => [option.profileId, option]));
   }, [memberOptions]);
 
-  // Allocated internal people stay visible and are sorted by name.
+  // Allocated internal people stay visible, with the responsible person first.
   const teamMembers = useMemo(() => {
     return Object.keys(selectedMembers)
       .map((profileId) => optionsByProfile.get(profileId))
       .filter((option): option is ProjectMemberOption => Boolean(option))
-      .sort((a, b) => a.label.localeCompare(b.label, "pt"));
+      .sort((a, b) => {
+        const ownerOrder = Number(selectedMembers[b.profileId] === "owner")
+          - Number(selectedMembers[a.profileId] === "owner");
+        return ownerOrder || a.label.localeCompare(b.label, "pt");
+      });
   }, [optionsByProfile, selectedMembers]);
 
-  // Addition candidates only appear after a search.
+  // Show every available internal person by default; search only narrows the list.
   const addResults = useMemo(() => {
-    const needle = memberSearch.trim().toLowerCase();
-    if (!needle) return [];
-    return memberOptions
-      .filter((member) => !selectedMembers[member.profileId])
-      .filter((member) => (
-        member.label.toLowerCase().includes(needle)
-        || (member.email ?? "").toLowerCase().includes(needle)
-      ))
-      .sort((a, b) => a.label.localeCompare(b.label, "pt"));
+    return filterAvailableProjectMembers(memberOptions, selectedMembers, memberSearch);
   }, [memberOptions, memberSearch, selectedMembers]);
 
-  const addMember = (member: ProjectMemberOption) => {
-    setSelectedMembers((current) => ({ ...current, [member.profileId]: defaultRoleFor() }));
+  const togglePendingMember = (profileId: string) => {
+    setPendingMemberRoles((current) => {
+      if (current[profileId]) {
+        const next = { ...current };
+        delete next[profileId];
+        return next;
+      }
+      return {
+        ...current,
+        [profileId]: defaultRoleForProjectTeam({ ...selectedMembers, ...current }),
+      };
+    });
+  };
+
+  const setPendingMemberRole = (profileId: string, role: ProjectMemberRole) => {
+    setPendingMemberRoles((current) => {
+      if (!current[profileId]) return current;
+      const next = { ...current };
+      if (role === "owner") {
+        for (const [id, assignedRole] of Object.entries(next)) {
+          if (id !== profileId && assignedRole === "owner") next[id] = "contributor";
+        }
+      }
+      next[profileId] = role;
+      return next;
+    });
+  };
+
+  const confirmPendingMembers = () => {
+    setSelectedMembers((current) => applyProjectTeamMemberRoles(current, pendingMemberRoles));
+    setPendingMemberRoles({});
+    setMemberSearch("");
+    setView("allocated");
+  };
+
+  const returnToAllocatedTeam = () => {
+    setView("allocated");
+    setPendingMemberRoles({});
+    setMemberSearch("");
   };
 
   const removeMember = (profileId: string) => {
@@ -242,10 +232,7 @@ export function ProjectMembersEditSheet({
     });
   };
 
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (isSaving) return;
-
+  const persistMembers = async () => {
     const membersPayload = Object.entries(selectedMembers).map(([profileId, role]) => ({ profileId, role }));
     setIsSaving(true);
     try {
@@ -260,7 +247,11 @@ export function ProjectMembersEditSheet({
         throw new Error(message);
       }
 
-      toast.success(dictionary.team.updated);
+      toast.success(
+        removedMemberIds.length > 0
+          ? dictionary.team.membersRemoved(removedMemberIds.length)
+          : dictionary.team.updated,
+      );
       setOpen(false);
       router.refresh();
     } catch (error) {
@@ -268,6 +259,21 @@ export function ProjectMembersEditSheet({
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const removedMemberIds = findRemovedProjectTeamMemberIds(savedMembers, selectedMembers);
+  const removedMemberLabels = removedMemberIds.map((profileId) => (
+    optionsByProfile.get(profileId)?.label ?? dictionary.people.member
+  ));
+
+  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (isSaving || view !== "allocated") return;
+    if (removedMemberIds.length > 0) {
+      setIsRemovalConfirmationOpen(true);
+      return;
+    }
+    void persistMembers();
   };
 
   if (!isClientMounted) {
@@ -279,56 +285,74 @@ export function ProjectMembersEditSheet({
   }
 
   const needle = memberSearch.trim();
+  const pendingMemberCount = Object.keys(pendingMemberRoles).length;
 
   return (
     <TooltipProvider>
       <Sheet open={open} onOpenChange={setOpen}>
         <SectionIconButton icon={Pencil} label={dictionary.team.edit} onClick={() => setOpen(true)} />
         <SheetContent className={sheetShellClassName}>
-        <AppSheetHeader
-          icon={Users}
-          editing
-          eyebrow={dictionary.board.editEyebrow}
-          title={<>{dictionary.detail.allocatedTeam}</>}
-          description={<>{dictionary.team.description}</>}
-        />
+          <AppSheetHeader
+            icon={view === "allocated" ? Users : UserPlus}
+            editing
+            eyebrow={dictionary.board.editEyebrow}
+            title={<>{view === "allocated" ? dictionary.detail.allocatedTeam : dictionary.team.addMember}</>}
+            description={<>{view === "allocated" ? dictionary.team.description : dictionary.team.addMemberDescription}</>}
+          />
 
-        <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
-          <div className={`${sheetBodyClassName} space-y-5`}>
+          <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
+            <AppSheetBody>
             {isLoading ? (
-              <div className="space-y-2">
+              <SheetSection title={dictionary.team.inProject} editing bodyClassName="divide-y divide-[color:var(--border)]">
                 {[0, 1, 2, 3].map((i) => (
-                  <div key={i} className="flex items-center gap-2 rounded-xl border border-black/8 px-3 py-2 dark:border-white/10">
-                    <Skeleton rounded="999px" className="h-[0.6rem] w-[40%]" />
-                    <Skeleton rounded="999px" className="ml-auto h-5 w-16 shrink-0" />
+                  <div key={i} className="grid grid-cols-[2rem_minmax(0,1fr)] gap-x-3 gap-y-2.5 px-4 py-3.5">
+                    <Skeleton rounded="999px" className={TEAM_MEMBER_AVATAR_CLASS_NAME} />
+                    <div className="space-y-1.5">
+                      <Skeleton rounded="999px" className="h-3 w-2/5" />
+                      <Skeleton rounded="999px" className="h-2.5 w-3/5" />
+                    </div>
+                    <Skeleton rounded="8px" className="col-span-2 h-9 w-full" />
                   </div>
                 ))}
-              </div>
+              </SheetSection>
             ) : (
-              <>
-                {/* Existing project members */}
-                <section className="space-y-2">
-                  <SectionHeading title={dictionary.team.inProject} count={teamMembers.length} />
-                  {teamMembers.length === 0 ? (
-                    <p className="text-meta text-foreground/60">{dictionary.team.noneAllocated}</p>
-                  ) : (
-                    <div className="space-y-2">
-                      {teamMembers.map((member) => (
-                        <TeamMemberRow
-                          key={member.profileId}
-                          member={member}
-                          role={selectedMembers[member.profileId]}
-                          onRoleChange={(role) => setMemberRole(member.profileId, role)}
-                          onRemove={() => removeMember(member.profileId)}
-                        />
-                      ))}
-                    </div>
-                  )}
-                </section>
+              view === "allocated" ? (
+                <>
+                  <div className="space-y-3">
+                    <SheetSection
+                      title={dictionary.team.inProject}
+                      editing
+                      aside={<span className="rounded-full bg-muted px-2 py-0.5 text-data text-meta font-semibold text-muted-foreground">{teamMembers.length}</span>}
+                      bodyClassName="divide-y divide-[color:var(--border)]"
+                    >
+                      {teamMembers.length === 0 ? (
+                        <p className="px-4 py-6 text-center text-meta text-muted-foreground">{dictionary.team.noneAllocated}</p>
+                      ) : (
+                        <div className="divide-y divide-[color:var(--border)]">
+                          {teamMembers.map((member) => (
+                            <TeamMemberRow
+                              key={member.profileId}
+                              member={member}
+                              role={selectedMembers[member.profileId]}
+                              roleLabel={dictionary.team.memberRoleLabel(member.label)}
+                              removeLabel={dictionary.team.remove}
+                              removeTitle={dictionary.team.removeFromProject}
+                              onRoleChange={(role) => setMemberRole(member.profileId, role)}
+                              onRemove={() => removeMember(member.profileId)}
+                            />
+                          ))}
+                        </div>
+                      )}
+                    </SheetSection>
+                  </div>
 
-                {/* Search-driven member addition */}
-                <section className="space-y-2">
-                  <SectionHeading title={dictionary.team.addPeople} />
+                  <Button type="button" variant="outline" className="w-full justify-center" onClick={() => setView("add")}>
+                    <Plus className="mr-2 size-4" />
+                    {dictionary.team.addMember}
+                  </Button>
+                </>
+              ) : (
+                <section className="space-y-3">
                   <SearchField
                     size="sm"
                     value={memberSearch}
@@ -336,14 +360,23 @@ export function ProjectMembersEditSheet({
                     onClear={() => setMemberSearch("")}
                     placeholder={dictionary.team.searchPlaceholder}
                   />
-                  {needle === "" ? (
-                    <p className="text-meta text-foreground/55">{dictionary.team.searchHint}</p>
-                  ) : addResults.length === 0 ? (
-                    <p className="text-meta text-foreground/55">{dictionary.team.noResults(needle)}</p>
+                  {addResults.length === 0 ? (
+                    <p className="text-meta text-foreground/55">
+                      {needle ? dictionary.team.noResults(needle) : dictionary.team.noneAvailable}
+                    </p>
                   ) : (
                     <div className="space-y-2">
                       {addResults.slice(0, MAX_ADD_RESULTS).map((member) => (
-                        <AddResultRow key={member.profileId} member={member} onAdd={() => addMember(member)} />
+                        <AddResultRow
+                          key={member.profileId}
+                          member={member}
+                          role={pendingMemberRoles[member.profileId] ?? null}
+                          roleLabel={dictionary.team.memberRoleLabel(member.label)}
+                          selectLabel={dictionary.team.selectMemberLabel(member.label)}
+                          lockOwner={false}
+                          onToggle={() => togglePendingMember(member.profileId)}
+                          onRoleChange={(role) => setPendingMemberRole(member.profileId, role)}
+                        />
                       ))}
                       {addResults.length > MAX_ADD_RESULTS ? (
                         <p className="text-meta text-foreground/55">
@@ -353,22 +386,71 @@ export function ProjectMembersEditSheet({
                     </div>
                   )}
                 </section>
+              )
+            )}
+            </AppSheetBody>
+
+            <AppSheetFooter className="flex-row">
+            {view === "allocated" ? (
+              <>
+                <Button type="submit" className="flex-1" disabled={isSaving || isLoading}>
+                  <Save className="mr-2 h-4 w-4" />
+                  {isSaving ? dictionary.actions.saving : dictionary.team.save}
+                </Button>
+                <Button type="button" variant="outline" className="flex-1" onClick={() => setOpen(false)} disabled={isSaving}>
+                  {dictionary.actions.cancel}
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button
+                  type="button"
+                  className="flex-1"
+                  disabled={pendingMemberCount === 0}
+                  onClick={confirmPendingMembers}
+                >
+                  <UserPlus className="mr-2 size-4" />
+                  {dictionary.team.addSelectedMembers(pendingMemberCount)}
+                </Button>
+                <Button type="button" variant="outline" className="flex-1" onClick={returnToAllocatedTeam}>
+                  <ArrowLeft className="mr-2 size-4" />
+                  {dictionary.team.backToTeam}
+                </Button>
               </>
             )}
-          </div>
-
-          <SheetFooter className={`${sheetFooterClassName} flex-row gap-2`}>
-            <Button type="submit" className="flex-1" disabled={isSaving || isLoading}>
-              <Save className="mr-2 h-4 w-4" />
-              {isSaving ? dictionary.actions.saving : dictionary.team.save}
-            </Button>
-            <Button type="button" variant="outline" className="flex-1" onClick={() => setOpen(false)} disabled={isSaving}>
-              {dictionary.actions.cancel}
-            </Button>
-          </SheetFooter>
-        </form>
+            </AppSheetFooter>
+          </form>
         </SheetContent>
       </Sheet>
+
+      <AlertDialog
+        open={isRemovalConfirmationOpen}
+        onOpenChange={(next) => {
+          if (!next && !isSaving) setIsRemovalConfirmationOpen(false);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{dictionary.team.removeConfirmationTitle(removedMemberIds.length)}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {dictionary.team.removeConfirmationDescription(removedMemberLabels)}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isSaving}>{dictionary.team.keepMembers}</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={isSaving}
+              onClick={() => {
+                setIsRemovalConfirmationOpen(false);
+                void persistMembers();
+              }}
+            >
+              {dictionary.team.confirmRemoval}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </TooltipProvider>
   );
 }

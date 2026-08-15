@@ -18,6 +18,7 @@ export default async function ProjectPreviewDetailPage({
     <ProjectDetailPageLiveMount
       initialData={initialData}
       projectRole={access.projectRole}
+      viewerProfileId={access.viewerProfileId}
       permissions={access.permissions}
       navigation={{
         listHref: "/projects",

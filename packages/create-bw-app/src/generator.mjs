@@ -1044,7 +1044,7 @@ export function createModuleToolbarControlsConfig(selectedModules) {
   }
   if (selectedModules.includes("projects")) {
     imports.push('import { ProjectBoardToolbarControls, ProjectsToolbarControls } from "@brightweblabs/module-projects/ui";');
-    entries.push('  projects: () => <ProjectsToolbarControls />,');
+    entries.push('  projects: (canCreateProjects) => <ProjectsToolbarControls canCreateProjects={canCreateProjects} />,');
     entries.push('  "project-board": () => <ProjectBoardToolbarControls />,');
   }
   if (selectedModules.includes("marketing")) {
@@ -1060,13 +1060,13 @@ export function createModuleToolbarControlsConfig(selectedModules) {
     "// MANAGED BY BRIGHTWEB — regenerated when modules are added, removed, or updated.",
     ...imports,
     "",
-    "const toolbarControlBySurface: Partial<Record<ShellToolbarSurface, () => ReactNode>> = {",
+    "const toolbarControlBySurface: Partial<Record<ShellToolbarSurface, (canCreateProjects: boolean) => ReactNode>> = {",
     ...entries,
     "};",
     "",
-    "export function getModuleToolbarControls(pathname: string, toolbarRoutes: ShellToolbarRouteConfig[]) {",
+    "export function getModuleToolbarControls(pathname: string, toolbarRoutes: ShellToolbarRouteConfig[], canCreateProjects = false) {",
     "  const surface = resolveShellToolbarSurface(pathname, toolbarRoutes);",
-    "  return surface ? toolbarControlBySurface[surface]?.() ?? null : null;",
+    "  return surface ? toolbarControlBySurface[surface]?.(canCreateProjects) ?? null : null;",
     "}",
     "",
   ].join("\n");

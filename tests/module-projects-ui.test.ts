@@ -26,6 +26,13 @@ import {
   createProjectsTasksPostHandler,
 } from "../packages/module-projects/src/http.ts";
 import { getClientProjectHealth } from "../packages/module-projects/src/server.ts";
+import {
+  applyProjectTeamMemberRoles,
+  findRemovedProjectTeamMemberIds,
+  defaultRoleForProjectTeam,
+  filterAvailableProjectMembers,
+  hasProjectTeamOwner,
+} from "../packages/module-projects/src/ui/project-members-edit-sheet.tsx";
 import { defaultProjectsUiDictionary } from "../packages/module-projects/src/ui/dictionary.ts";
 import { clientProjectsDictionary } from "../packages/module-projects/src/ui/client/dictionary.ts";
 import { defaultDashboardDictionary } from "../packages/app-shell/src/dashboard/dictionary.ts";
@@ -189,7 +196,8 @@ test("create-project organization choices never present unresolved or failed dat
   assert.match(source, /requestClose[\s\S]*dirty[\s\S]*setDiscardDialogOpen\(true\)[\s\S]*performClose\(\)/);
   assert.match(source, /if \(!defaultOrganizationIdRef\.current && nextOrganizations\[0\]\?\.id\)/);
   assert.match(source, /latestCreatedOrganizationRef\.current[\s\S]*reconcileLoadedOrganizationOptions\(nextOrganizations, latestCreated\)/);
-  assert.match(source, /additionalOrganizationIds[\s\S]*participatingOrganizationIds/);
+  assert.match(source, /projectForm\.organizationId \? \[projectForm\.organizationId\] : \[\]/);
+  assert.doesNotMatch(source, /additionalOrganizationIds|otherOrganizations/);
   assert.match(source, /disabled=\{!hasOrganizations \|\| !projectForm\.isFormValid\}/);
 });
 
@@ -358,7 +366,7 @@ test("every Projects write handler rejects non-staff access before invoking data
   assert.equal(dependencyCalls, 0);
 });
 
-test("assignable profiles GET rejects clients and allows staff", async () => {
+test("project member GET allows only global admins and project owners", async () => {
   let clientListCalls = 0;
   const context = { params: Promise.resolve({ id: project.id }) };
   const clientHandler = createProjectsAssignableProfilesGetHandler({
@@ -386,8 +394,9 @@ test("assignable profiles GET rejects clients and allows staff", async () => {
     label: "Staff Member",
     email: "staff@example.test",
     organizationRole: "staff",
-    projectRole: null,
+    projectRole: "owner",
   }];
+  let ownerAccessChecks = 0;
   const staffHandler = createProjectsAssignableProfilesGetHandler({
     getAccess: async () => ({
       ok: true,
@@ -395,15 +404,178 @@ test("assignable profiles GET rejects clients and allows staff", async () => {
       profileId: "profile-staff",
       role: "staff",
     }),
+    getProjectAccess: async () => {
+      ownerAccessChecks += 1;
+      return { projectRole: "contributor", permissions: {} };
+    },
     listAssignableProfiles: async () => staffOptions,
   } as never);
 
-  const allowed = await staffHandler(
+  const staffForbidden = await staffHandler(
     new Request(`https://example.test/api/projects/${project.id}/members`),
     context,
   );
-  assert.equal(allowed.status, 200);
-  assert.deepEqual(await allowed.json(), staffOptions);
+  assert.equal(staffForbidden.status, 403);
+  assert.equal(ownerAccessChecks, 1);
+
+  const ownerHandler = createProjectsAssignableProfilesGetHandler({
+    getAccess: async () => ({ ok: true, supabase: {}, profileId: "profile-owner", role: "staff" }),
+    getProjectAccess: async () => ({ projectRole: "owner", permissions: {} }),
+    listAssignableProfiles: async () => staffOptions,
+  } as never);
+  const ownerAllowed = await ownerHandler(
+    new Request(`https://example.test/api/projects/${project.id}/members`),
+    context,
+  );
+  assert.equal(ownerAllowed.status, 200);
+  assert.deepEqual(await ownerAllowed.json(), { data: staffOptions });
+
+  const adminHandler = createProjectsAssignableProfilesGetHandler({
+    getAccess: async () => ({ ok: true, supabase: {}, profileId: "profile-admin", role: "admin" }),
+    getProjectAccess: async () => {
+      throw new Error("global admins must not need a project membership lookup");
+    },
+    listAssignableProfiles: async () => staffOptions,
+  } as never);
+  assert.equal((await adminHandler(
+    new Request(`https://example.test/api/projects/${project.id}/members`),
+    context,
+  )).status, 200);
+});
+
+test("project member PUT rejects contributors before synchronizing and allows owners", async () => {
+  let syncCalls = 0;
+  const request = () => new Request(`https://example.test/api/projects/${project.id}/members`, {
+    method: "PUT",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ members: [{ profileId: "profile-owner", role: "owner" }] }),
+  });
+  const context = { params: Promise.resolve({ id: project.id }) };
+  const dependencies = (projectRole: "owner" | "contributor") => ({
+    getAccess: async () => ({ ok: true, supabase: {}, profileId: "profile-staff", role: "staff" }),
+    getProjectAccess: async () => ({ projectRole, permissions: {} }),
+    syncMembers: async () => { syncCalls += 1; },
+    getDashboard: async () => dashboard,
+  });
+
+  assert.equal((await createProjectsMembersPutHandler(dependencies("contributor") as never)(request(), context)).status, 403);
+  assert.equal(syncCalls, 0);
+  assert.equal((await createProjectsMembersPutHandler(dependencies("owner") as never)(request(), context)).status, 200);
+  assert.equal(syncCalls, 1);
+});
+
+test("project teams may stay without a manager and new people default to collaborator", () => {
+  assert.equal(hasProjectTeamOwner({}), false);
+  assert.equal(defaultRoleForProjectTeam({}), "contributor");
+  assert.equal(defaultRoleForProjectTeam({ "profile-observer": "observer" }), "contributor");
+  assert.equal(defaultRoleForProjectTeam({ "profile-owner": "owner" }), "contributor");
+
+  const editor = readFileSync(
+    join(process.cwd(), "packages/module-projects/src/ui/project-members-edit-sheet.tsx"),
+    "utf8",
+  );
+  assert.doesNotMatch(editor, /dictionary\.team\.ownerRequired/);
+  assert.doesNotMatch(editor, /dictionary\.team\.firstPersonBecomesOwner/);
+  assert.doesNotMatch(editor, /disabled=\{isSaving \|\| isLoading \|\| !hasOwner\}/);
+  assert.match(editor, /lockOwner=\{false\}/);
+});
+
+test("internal team candidates appear by default and search only filters them", () => {
+  const candidates = [
+    { profileId: "z", label: "Tiago Candidate", email: "tiago@example.test", organizationRole: "staff", projectRole: null },
+    { profileId: "a", label: "Dev Admin", email: "dev@example.test", organizationRole: "admin", projectRole: null },
+    { profileId: "s", label: "Sara Owner", email: "sara@example.test", organizationRole: "staff", projectRole: "owner" },
+  ] as const;
+
+  assert.deepEqual(
+    filterAvailableProjectMembers([...candidates], { s: "owner" }, "").map((member) => member.profileId),
+    ["a", "z"],
+  );
+  assert.deepEqual(
+    filterAvailableProjectMembers([...candidates], { s: "owner" }, "tiago").map((member) => member.profileId),
+    ["z"],
+  );
+  assert.deepEqual(filterAvailableProjectMembers([...candidates], { s: "owner" }, "unknown"), []);
+});
+
+test("internal team picker stages additions and transfers responsibility without invalid drafts", () => {
+  assert.equal(defaultProjectsUiDictionary.team.addSelectedMembers(0), "Adicionar membros");
+  assert.equal(defaultProjectsUiDictionary.team.addSelectedMembers(1), "Adicionar 1 membro");
+  assert.equal(defaultProjectsUiDictionary.team.addSelectedMembers(2), "Adicionar 2 membros");
+  assert.equal(defaultProjectsUiDictionary.team.membersRemoved(1), "Membro removido da equipa.");
+  assert.equal(defaultProjectsUiDictionary.team.membersRemoved(2), "2 membros removidos da equipa.");
+  assert.deepEqual(applyProjectTeamMemberRoles({ sara: "owner" }, { tiago: "observer" }), {
+    sara: "owner",
+    tiago: "observer",
+  });
+  assert.deepEqual(applyProjectTeamMemberRoles({ sara: "owner" }, { tiago: "owner", ana: "contributor" }), {
+    sara: "contributor",
+    tiago: "owner",
+    ana: "contributor",
+  });
+  assert.deepEqual(
+    findRemovedProjectTeamMemberIds(
+      { sara: "owner", tiago: "contributor", ana: "observer" },
+      { sara: "owner", ana: "contributor", joao: "observer" },
+    ),
+    ["tiago"],
+  );
+
+  const editor = readFileSync(
+    join(process.cwd(), "packages/module-projects/src/ui/project-members-edit-sheet.tsx"),
+    "utf8",
+  );
+  const rows = readFileSync(
+    join(process.cwd(), "packages/module-projects/src/ui/project-team-members.tsx"),
+    "utf8",
+  );
+  assert.match(editor, /<SheetSection[\s\S]*title=\{dictionary\.team\.inProject\}/);
+  assert.match(rows, /<ProjectOwnerAvatar[\s\S]*roleColor=\{role === "owner" \? "manager" : "team"\}[\s\S]*<MemberIdentity member=\{member\}/);
+  assert.match(rows, /<SheetSelect[\s\S]*<Button[\s\S]*\{removeLabel\}/);
+  assert.match(rows, /<Checkbox[\s\S]*<ProjectOwnerAvatar[\s\S]*label=\{member\.label\}[\s\S]*size="md"[\s\S]*roleColor=\{role === "owner" \? "manager" : "team"\}[\s\S]*<MemberIdentity member=\{member\}/);
+  assert.match(rows, /\{role \? \([\s\S]*<SheetSelect[\s\S]*onRoleChange/);
+  assert.match(editor, /if \(removedMemberIds\.length > 0\)[\s\S]*setIsRemovalConfirmationOpen\(true\)/);
+  assert.match(editor, /<AlertDialog[\s\S]*removeConfirmationTitle[\s\S]*removeConfirmationDescription[\s\S]*confirmRemoval/);
+  assert.match(editor, /toast\.success\([\s\S]*dictionary\.team\.membersRemoved/);
+  assert.doesNotMatch(editor, /window\.confirm/);
+  assert.equal((rows.match(/className=\{TEAM_MEMBER_AVATAR_CLASS_NAME\}/g) ?? []).length, 2);
+});
+
+test("assignable internal profiles use a privileged server directory after manager authorization", () => {
+  const server = readFileSync(join(process.cwd(), "packages/module-projects/src/server.ts"), "utf8");
+  const handlers = readFileSync(join(process.cwd(), "packages/module-projects/src/handlers.ts"), "utf8");
+  assert.match(server, /const internalDirectory = createProjectsServiceRoleClient\(\)/);
+  assert.match(server, /internalDirectory[\s\S]*\.from\("user_role_assignments"\)[\s\S]*role_code", \["staff", "admin"\]/);
+  assert.match(server, /profile:profiles!user_role_assignments_profile_id_fkey/);
+  assert.match(server, /listProjectMembers\(internalDirectory, projectId\)/);
+  assert.match(server, /export async function listProjectSetupOptionsForManagement/);
+  assert.match(server, /listProjectSetupOptionsFromDirectory\([\s\S]*internalDirectory/);
+  assert.match(handlers, /listProjectSetupOptions: listProjectSetupOptionsForManagement/);
+});
+
+test("project member response preserves existing roles in the standard data envelope", () => {
+  const handler = readFileSync(join(process.cwd(), "packages/module-projects/src/http.ts"), "utf8");
+  const editor = readFileSync(join(process.cwd(), "packages/module-projects/src/ui/project-members-edit-sheet.tsx"), "utf8");
+  assert.match(handler, /json\(\{ data: await dependencies\.listAssignableProfiles/);
+  assert.match(editor, /Array\.isArray\(payload\?\.data\)/);
+  assert.match(editor, /if \(option\.projectRole\) acc\[option\.profileId\] = option\.projectRole/);
+});
+
+test("internal project detail hydrates only already-visible owner and member profile ids", () => {
+  const server = readFileSync(join(process.cwd(), "packages/module-projects/src/server.ts"), "utf8");
+  assert.match(server, /loadInternalProjectProfiles\(rows\.flatMap/);
+  assert.match(server, /loadInternalProjectProfiles\(\[projectRow\.owner_profile_id\]\)/);
+  const data = readFileSync(join(process.cwd(), "packages/module-projects/src/data.ts"), "utf8");
+  assert.doesNotMatch(data, /@brightweblabs\/infra\/server|createServiceRoleClient/);
+});
+
+test("internal team role pills share one action row with contact controls", () => {
+  const card = readFileSync(
+    join(process.cwd(), "packages/module-projects/src/ui/project-detail-team-card.tsx"),
+    "utf8",
+  );
+  assert.match(card, /className="ml-auto flex shrink-0 items-center gap-2"[\s\S]*<MemberRoleBadge[\s\S]*<ContactActionButtons/);
+  assert.doesNotMatch(card, /absolute right-3 top-1\/2/);
 });
 
 test("Projects detail provider accepts package dashboard payloads", () => {
@@ -593,6 +765,20 @@ test("Projects board toolbar waits for authoritative page actions", () => {
   assert.match(toolbar, /disabled=\{!newTaskActionReady\}/);
   assert.match(milestoneHook, /useShellAction<ProjectsBoardSetMilestoneDetail>\(PROJECTS_EVENTS\.setBoardMilestone/);
   assert.match(taskMount, /useShellAction\(PROJECTS_EVENTS\.openNewTask/);
+});
+
+test("project creation controls fail closed unless the viewer is explicitly an administrator", () => {
+  const toolbar = readFileSync(
+    join(process.cwd(), "packages/module-projects/src/ui/toolbar-controls.tsx"),
+    "utf8",
+  );
+  const shell = readFileSync(
+    join(process.cwd(), "apps/platform-preview/app/(shell)/shell-layout-client.tsx"),
+    "utf8",
+  );
+  assert.match(toolbar, /canCreateProjects = false/);
+  assert.match(toolbar, /\{canCreateProjects \? <Button/);
+  assert.match(shell, /getModuleToolbarControls\(pathname, toolbarRoutes, viewer\.isAdmin\)/);
 });
 
 test("Projects UI barrel exposes only the supported documented component families", () => {

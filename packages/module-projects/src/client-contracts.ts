@@ -78,6 +78,7 @@ export type ProjectClientAccessEligibleClient = {
   profileId: string;
   label: string;
   email: string | null;
+  organizationRole: "admin" | "member" | null;
 };
 
 export type ProjectClientAccessOrganization = {
