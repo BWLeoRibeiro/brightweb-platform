@@ -11,6 +11,6 @@
     "@brightweblabs/module-projects": "0.18.5",
     "@brightweblabs/theme": "0.8.3",
     "@brightweblabs/ui": "1.5.4",
-    "create-bw-app": "0.25.1"
+    "create-bw-app": "0.25.2"
   }
 }

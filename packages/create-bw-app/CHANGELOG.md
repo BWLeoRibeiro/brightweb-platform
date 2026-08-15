@@ -1,5 +1,11 @@
 # create-bw-app
 
+## 0.25.2
+
+### Patch Changes
+
+- cf3dbb2: Publish the shared project access migrations and generated shell permission wiring so existing BrightWeb applications receive the complete `module-projects` 0.18.5 database and UI contract through `bw upgrade`.
+
 ## 0.25.1
 
 ### Patch Changes
