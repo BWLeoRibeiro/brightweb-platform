@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import { ArrowRight, CalendarDays, Flag } from "lucide-react";
 import { Card } from "@brightweblabs/ui";
@@ -14,6 +16,7 @@ import {
 } from "./shared";
 import { ProjectStatusBadge } from "../project-state-badge";
 import { ProjectProgressBar } from "../shared/project-progress";
+import { useProjectsNow } from "../shared/use-projects-now";
 
 export function ProjectListCard({
   project,
@@ -26,8 +29,9 @@ export function ProjectListCard({
   emphasis?: boolean;
   headingLevel?: "h2" | "h3";
 }) {
+  const now = useProjectsNow();
   const milestoneProgressPct = project.progress.percent;
-  const overdue = isClientProjectDateOverdue(project.targetDate)
+  const overdue = isClientProjectDateOverdue(project.targetDate, now)
     && project.status !== "completed"
     && project.status !== "canceled";
   const href = resolveClientProjectDetailHref(false, project.id);

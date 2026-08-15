@@ -5,6 +5,7 @@ import type { ProjectTask } from "../../types";
 import { tintPill } from "@brightweblabs/theme/tint";
 import { cn } from "../utils";
 import { defaultProjectsUiDictionary } from "../dictionary";
+import { formatProjectDayMonth } from "./formatters";
 
 /** A canonical tint plus the bespoke "medium priority" accent tint. */
 type TintResult = { className: string; style?: CSSProperties };
@@ -28,10 +29,7 @@ export const taskStatusLabels: Record<string, string> = {
 };
 
 export function formatTaskShortDate(value: string | null | undefined) {
-  if (!value) return "-";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "-";
-  return new Intl.DateTimeFormat("pt-PT", { day: "2-digit", month: "short" }).format(date);
+  return formatProjectDayMonth(value);
 }
 
 // Small pill used in task meta rows. Keeps the icon/label rhythm consistent.

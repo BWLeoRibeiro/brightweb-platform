@@ -11,18 +11,13 @@ import { getCompletionPercent } from "./project-progress";
 import { Card, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@brightweblabs/ui";
 import type { ProjectListItem } from "../../types";
 import { useProjectsNavigation, useProjectsUiDictionary } from "../context";
+import { formatProjectDayMonth } from "./formatters";
+import { useProjectsNow } from "./use-projects-now";
 
 export type ProjectSummaryCardItem = Pick<
   ProjectListItem,
   "id" | "organizationName" | "name" | "code" | "status" | "health" | "ownerLabel" | "targetDate" | "taskStats"
 >;
-
-function formatShortDate(iso: string | null | undefined) {
-  if (!iso) return "-";
-  const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) return "-";
-  return new Intl.DateTimeFormat("pt-PT", { day: "2-digit", month: "short" }).format(date);
-}
 
 function codeOf(project: ProjectSummaryCardItem) {
   return project.code ?? project.id.slice(0, 8).toUpperCase();
@@ -31,6 +26,7 @@ function codeOf(project: ProjectSummaryCardItem) {
 export function ProjectSummaryCard({ project }: { project: ProjectSummaryCardItem }) {
   const navigation = useProjectsNavigation();
   const dictionary = useProjectsUiDictionary();
+  const now = useProjectsNow();
   const projectStatusMeta: Record<ProjectSummaryCardItem["status"], { label: string }> = {
     planned: { label: dictionary.status.planned },
     active: { label: dictionary.status.active },
@@ -40,7 +36,7 @@ export function ProjectSummaryCard({ project }: { project: ProjectSummaryCardIte
     canceled: { label: dictionary.status.canceled },
   };
   const statusMeta = projectStatusMeta[project.status] ?? projectStatusMeta.active;
-  const risk = resolveProjectRisk(project);
+  const risk = resolveProjectRisk(project, now);
   const riskMeta = risk ? PROJECT_RISK_META[risk] : null;
   const progress = getCompletionPercent(project.taskStats?.done ?? 0, project.taskStats?.total ?? 0);
   const isComplete = progress >= 100;
@@ -164,7 +160,7 @@ export function ProjectSummaryCard({ project }: { project: ProjectSummaryCardIte
               <span className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap" style={{ color: dateTone }}>
                 <CalendarDays aria-hidden className="h-3.5 w-3.5 opacity-70" strokeWidth={1.75} />
                 <span className={`${MONO} font-bold`} style={{ color: dateTone }}>
-                  {formatShortDate(project.targetDate)}
+                  {formatProjectDayMonth(project.targetDate)}
                 </span>
               </span>
             </TooltipTrigger>

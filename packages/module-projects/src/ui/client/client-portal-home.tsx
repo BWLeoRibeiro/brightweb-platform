@@ -26,6 +26,8 @@ import {
   resolveClientProjectDetailHref,
   storeClientOrganizationFilter,
 } from "./shared";
+import { getProjectDateKey, PROJECTS_TIME_ZONE } from "../shared/formatters";
+import { useProjectsNow } from "../shared/use-projects-now";
 
 type PortalState =
   | { status: "loading" }
@@ -47,7 +49,7 @@ type UpcomingBriefingMeta = {
   delayed: boolean;
 };
 
-function buildUpcomingBriefing(projects: ClientProjectListItem[]): UpcomingBriefingMeta[] {
+function buildUpcomingBriefing(projects: ClientProjectListItem[], now: Date | null): UpcomingBriefingMeta[] {
   return projects
     .flatMap((project) => project.metaPreview
       .filter((meta) => meta.status !== "achieved" && meta.targetDate)
@@ -57,7 +59,7 @@ function buildUpcomingBriefing(projects: ClientProjectListItem[]): UpcomingBrief
         projectName: project.name,
         title: meta.title,
         targetDate: meta.targetDate as string,
-        delayed: meta.status === "delayed" || isClientProjectDateOverdue(meta.targetDate),
+        delayed: meta.status === "delayed" || isClientProjectDateOverdue(meta.targetDate, now),
       })))
     .sort((left, right) => left.targetDate.localeCompare(right.targetDate))
     .slice(0, 4);
@@ -76,6 +78,7 @@ function formatPortalCalendarDate(date: Date) {
     weekday: "long",
     day: "numeric",
     month: "long",
+    timeZone: PROJECTS_TIME_ZONE,
   }).format(date);
   return label.charAt(0).toLocaleUpperCase("pt-PT") + label.slice(1);
 }
@@ -159,14 +162,7 @@ export function ClientPortalHome({ firstName, email = null, initialData = null }
   const [state, setState] = useState<PortalState>(() => initialData ? { status: "ready", data: initialData } : { status: "loading" });
   const [selectedOrganizationId, setSelectedOrganizationId] = useState("all");
   const [reloadKey, setReloadKey] = useState(0);
-  const [today, setToday] = useState<Date | null>(null);
-
-  useEffect(() => {
-    const update = () => setToday(new Date());
-    update();
-    const interval = window.setInterval(update, 60_000);
-    return () => window.clearInterval(interval);
-  }, []);
+  const today = useProjectsNow();
 
   useEffect(() => {
     setSelectedOrganizationId(readStoredClientOrganizationFilter());
@@ -202,7 +198,7 @@ export function ClientPortalHome({ firstName, email = null, initialData = null }
     return data.items.filter((project) => project.organizations.some((organization) => organization.id === selectedOrganizationId));
   }, [data, selectedOrganizationId]);
   const ongoingProjects = useMemo(() => visibleProjects.filter(isOngoingProject), [visibleProjects]);
-  const upcomingBriefing = useMemo(() => buildUpcomingBriefing(ongoingProjects), [ongoingProjects]);
+  const upcomingBriefing = useMemo(() => buildUpcomingBriefing(ongoingProjects, today), [ongoingProjects, today]);
   const nearestDelivery = useMemo(() => findNearestDelivery(ongoingProjects), [ongoingProjects]);
   const displayName = firstName?.trim() || clientProjectsDictionary.portal.clientFallbackName;
 
@@ -220,7 +216,7 @@ export function ClientPortalHome({ firstName, email = null, initialData = null }
     ? organizations.find((organization) => organization.id === selectedOrganizationId) ?? null
     : null;
   const nextMeta = upcomingBriefing[0] ?? null;
-  const deliveryOverdue = nearestDelivery ? isClientProjectDateOverdue(nearestDelivery.targetDate) : false;
+  const deliveryOverdue = nearestDelivery ? isClientProjectDateOverdue(nearestDelivery.targetDate, today) : false;
 
   return (
     <div>
@@ -285,7 +281,7 @@ export function ClientPortalHome({ firstName, email = null, initialData = null }
             <UpcomingBriefing
               items={upcomingBriefing}
               dateLabel={today ? formatPortalCalendarDate(today) : null}
-              dateTime={today ? today.toISOString().slice(0, 10) : null}
+              dateTime={getProjectDateKey(today)}
             />
             <div className={`grid gap-4 lg:col-start-1 lg:row-start-1 ${ongoingProjects.length > 1 ? "md:grid-cols-2" : ""}`}>{ongoingProjects.slice(0, 4).map((project) => (
               <ProjectListCard key={project.id} project={project} showOrganizations={!singleOrganization && !focusedOrganization} headingLevel="h3" />

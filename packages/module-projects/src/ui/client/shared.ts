@@ -1,5 +1,6 @@
 import { clientProjectsDictionary } from "./dictionary";
 import type { ClientProjectMeta } from "../../client-contracts";
+import { formatProjectShortDate, isProjectDatePast } from "../shared/formatters";
 
 export function resolveClientMetaPreview(metas: ClientProjectMeta[]) {
   const ordered = [...metas].sort((left, right) => {
@@ -23,9 +24,11 @@ export function resolveClientMetaPreview(metas: ClientProjectMeta[]) {
 
 export function resolveNextClientMeta(
   metas: ClientProjectMeta[],
-  todayKey = new Date().toISOString().slice(0, 10),
+  todayKey: string | null,
 ) {
   const incomplete = metas.filter((meta) => meta.status !== "achieved");
+  if (!todayKey) return [...incomplete].sort((left, right) => left.position - right.position)[0] ?? null;
+
   const upcoming = incomplete
     .filter((meta) => meta.targetDate && meta.targetDate >= todayKey)
     .sort((left, right) => left.targetDate!.localeCompare(right.targetDate!) || left.position - right.position);
@@ -40,20 +43,14 @@ export function resolveNextClientMeta(
 }
 
 export function formatClientProjectDate(dateLike: string | null): string {
-  if (!dateLike) return clientProjectsDictionary.common.noDate;
-  const value = dateLike.includes("T")
-    ? new Date(dateLike)
-    : new Date(`${dateLike}T00:00:00`);
-  if (Number.isNaN(value.getTime())) return clientProjectsDictionary.common.noDate;
-  return new Intl.DateTimeFormat("pt-PT", { dateStyle: "medium" }).format(value);
+  if (!dateLike || Number.isNaN(new Date(dateLike).getTime())) {
+    return clientProjectsDictionary.common.noDate;
+  }
+  return formatProjectShortDate(dateLike, clientProjectsDictionary.common.noDate);
 }
 
-export function isClientProjectDateOverdue(dateLike: string | null): boolean {
-  if (!dateLike) return false;
-  const value = dateLike.includes("T")
-    ? new Date(dateLike)
-    : new Date(`${dateLike}T00:00:00`);
-  return !Number.isNaN(value.getTime()) && value < new Date();
+export function isClientProjectDateOverdue(dateLike: string | null, now: Date | null): boolean {
+  return isProjectDatePast(dateLike, now);
 }
 
 const CLIENT_ORGANIZATION_FILTER_STORAGE_KEY = "bw-client-organization-filter";

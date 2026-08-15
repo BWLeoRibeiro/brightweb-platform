@@ -16,6 +16,7 @@ import { ArrowUpRight } from "lucide-react";
 import { useRouter } from "next/navigation";
 import type { ReactNode } from "react";
 import { useProjectsNavigation, useProjectsUiDictionary } from "./context";
+import { useProjectsNow } from "./shared/use-projects-now";
 
 type ProjectDetailHeroProps = {
   canOpenEditProject: boolean;
@@ -84,7 +85,8 @@ function ProjectHeroActions({
   project: ProjectListItem;
   canOpenEditProject: boolean;
 }) {
-  const risk = resolveProjectRisk(project);
+  const now = useProjectsNow();
+  const risk = resolveProjectRisk(project, now);
   const riskMeta = risk ? PROJECT_RISK_META[risk] : null;
 
   return (
@@ -148,9 +150,10 @@ function ProjectHeroFactGrid({
   canViewOrganization: boolean;
 }) {
   const dictionary = useProjectsUiDictionary();
+  const now = useProjectsNow();
   const completion = getCompletionPercent(project.taskStats.done, project.taskStats.total);
   const isComplete = completion >= 100;
-  const risk = resolveProjectRisk(project);
+  const risk = resolveProjectRisk(project, now);
   const deadlineTone = risk ? PROJECT_RISK_META[risk].var : undefined;
   const hasStartDate = Boolean(project.startDate);
   const hasTargetDate = Boolean(project.targetDate);

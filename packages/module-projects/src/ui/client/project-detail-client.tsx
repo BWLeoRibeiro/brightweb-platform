@@ -11,6 +11,8 @@ import { formatClientProjectDate, isClientProjectDateOverdue, resolveNextClientM
 import { ClientProjectDetailLoading } from "./projects-loading";
 import { ProjectStatusBadge } from "../project-state-badge";
 import { ProjectProgressBar } from "../shared/project-progress";
+import { getProjectDateKey } from "../shared/formatters";
+import { useProjectsNow } from "../shared/use-projects-now";
 
 const META_ICONS: Record<MilestoneStatus, ReactNode> = {
   pending: <Circle className="size-3.5" />,
@@ -257,6 +259,7 @@ function ProjectRoadmap({ metas, currentMetaId }: { metas: ClientProjectDetail["
 }
 
 export function ClientProjectDetailClient({ projectId, initialProject }: { projectId: string; initialProject?: ClientProjectDetail | null }) {
+  const now = useProjectsNow();
   const [project, setProject] = useState<ClientProjectDetail | null>(() => initialProject ?? null);
   const [state, setState] = useState<"loading" | "ready" | "not_found" | "error">(() => (
     initialProject === undefined ? "loading" : initialProject ? "ready" : "not_found"
@@ -294,10 +297,10 @@ export function ClientProjectDetailClient({ projectId, initialProject }: { proje
   if (state === "not_found") return <Message title={clientProjectsDictionary.safeUi.notFoundTitle}><p className="text-body text-muted-foreground">{clientProjectsDictionary.safeUi.notFoundDescription}</p></Message>;
   if (state === "error" || !project) return <Message title={clientProjectsDictionary.safeUi.openErrorTitle}><p className="text-body text-muted-foreground">{clientProjectsDictionary.safeUi.openErrorDescription}</p><Button type="button" variant="outline" size="sm" onClick={() => setReloadKey((current) => current + 1)}>{clientProjectsDictionary.safeUi.retry}</Button></Message>;
 
-  const overdue = isClientProjectDateOverdue(project.targetDate) && !["completed", "canceled"].includes(project.status);
+  const overdue = isClientProjectDateOverdue(project.targetDate, now) && !["completed", "canceled"].includes(project.status);
   const achievedCount = metas.filter((meta) => meta.status === "achieved").length;
   const displayPercent = project.progress.percent ?? (metas.length > 0 ? Math.round((achievedCount / metas.length) * 100) : null);
-  const nextMeta = resolveNextClientMeta(metas);
+  const nextMeta = resolveNextClientMeta(metas, getProjectDateKey(now));
 
   return (
     <article className="space-y-8 sm:space-y-10">

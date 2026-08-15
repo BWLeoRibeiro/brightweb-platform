@@ -267,7 +267,8 @@ test("client portal adapts its hierarchy to organization and project counts", ()
   assert.match(organizationFilter, /surface === "hero"/);
   assert.match(organizationFilter, /focus-visible:border-ring focus-visible:ring-ring/);
   assert.match(portal, /showOrganizations=\{!singleOrganization && !focusedOrganization\}/);
-  assert.match(portal, /buildUpcomingBriefing\(ongoingProjects\)/);
+  assert.match(portal, /buildUpcomingBriefing\(ongoingProjects, today\)/);
+  assert.match(portal, /dateTime=\{getProjectDateKey\(today\)\}/);
   assert.match(portal, /findNearestDelivery\(ongoingProjects\)/);
   assert.match(portal, /clientProjectsDictionary\.portal\.upNext/);
   assert.match(portal, /<CoverHeader>/);

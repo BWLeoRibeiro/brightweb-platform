@@ -13,6 +13,8 @@ import { ProjectOwnerAvatar } from "./project-owner-avatar";
 import { ProjectPill } from "./project-pill";
 import { PROJECT_RISK_META, resolveProjectRisk } from "./project-risk";
 import { formatNaturalDisplayName } from "./natural-display-name";
+import { formatProjectDayMonth, getProjectCalendarDayDifference } from "./formatters";
+import { useProjectsNow } from "./use-projects-now";
 
 const ATTENTION_META = {
   overdue: {
@@ -37,22 +39,6 @@ const ATTENTION_META = {
   },
 } as const;
 
-function formatShortDate(iso: string | null) {
-  if (!iso) return "–";
-  const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) return "–";
-  return new Intl.DateTimeFormat("pt-PT", { day: "2-digit", month: "short" }).format(date);
-}
-
-function getCalendarDayDifference(iso: string | null) {
-  if (!iso) return null;
-  const target = new Date(`${iso.slice(0, 10)}T00:00:00`);
-  if (Number.isNaN(target.getTime())) return null;
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  return Math.round((target.getTime() - today.getTime()) / 86_400_000);
-}
-
 export function DashboardProjectAttentionCard({
   project,
   rank,
@@ -62,6 +48,7 @@ export function DashboardProjectAttentionCard({
 }) {
   const navigation = useProjectsNavigation();
   const dictionary = useProjectsUiDictionary();
+  const now = useProjectsNow();
   const statusMeta: Record<DashboardProjectAttentionItem["status"], { label: string }> = {
     planned: { label: dictionary.status.planned },
     active: { label: dictionary.status.active },
@@ -72,11 +59,11 @@ export function DashboardProjectAttentionCard({
   };
   const status = statusMeta[project.status] ?? statusMeta.active;
   const attention = ATTENTION_META[project.attentionReason];
-  const risk = resolveProjectRisk(project);
+  const risk = resolveProjectRisk(project, now);
   const riskMeta = risk ? PROJECT_RISK_META[risk] : null;
   const progress = getCompletionPercent(project.taskStats.done, project.taskStats.total);
   const remainingTasks = Math.max(0, project.taskStats.total - project.taskStats.done);
-  const targetDayDifference = getCalendarDayDifference(project.targetDate);
+  const targetDayDifference = getProjectCalendarDayDifference(project.targetDate, now);
   const reason = (() => {
     switch (project.attentionReason) {
       case "overdue": return dictionary.dashboard.reasons.overdue;
@@ -170,7 +157,7 @@ export function DashboardProjectAttentionCard({
           <span className="project-attention-date">
             <CalendarDays aria-hidden className="project-attention-date-icon opacity-70" strokeWidth={1.75} />
             <span className={project.targetDate ? undefined : "font-semibold text-[color:var(--foreground)] group-hover:text-[color:var(--accent)]"}>
-              {project.targetDate ? formatShortDate(project.targetDate) : `${dictionary.dashboard.defineDeadline} →`}
+              {project.targetDate ? formatProjectDayMonth(project.targetDate, "–") : `${dictionary.dashboard.defineDeadline} →`}
             </span>
           </span>
         </div>
