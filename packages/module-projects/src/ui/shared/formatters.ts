@@ -1,3 +1,5 @@
+const PROJECTS_TIME_ZONE = "Europe/Lisbon";
+
 export function formatProjectDate(value: string | null, fallback = "-") {
   if (!value) return fallback;
   const date = new Date(value);
@@ -6,6 +8,7 @@ export function formatProjectDate(value: string | null, fallback = "-") {
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
+    timeZone: PROJECTS_TIME_ZONE,
   });
 }
 
@@ -17,6 +20,7 @@ export function formatProjectShortDate(value: string | null, fallback = "-") {
     day: "2-digit",
     month: "short",
     year: "numeric",
+    timeZone: PROJECTS_TIME_ZONE,
   });
 }
 
@@ -29,6 +33,7 @@ export function formatProjectDateTime(value: string | null, fallback = "-") {
     month: "2-digit",
     hour: "2-digit",
     minute: "2-digit",
+    timeZone: PROJECTS_TIME_ZONE,
   });
 }
 
@@ -39,6 +44,7 @@ export function formatProjectMonthYear(value: string | null, fallback = "-") {
   return date.toLocaleDateString("pt-PT", {
     month: "long",
     year: "numeric",
+    timeZone: PROJECTS_TIME_ZONE,
   });
 }
 
