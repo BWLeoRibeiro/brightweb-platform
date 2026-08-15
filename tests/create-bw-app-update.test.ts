@@ -397,6 +397,8 @@ test("projects scaffolding resolves organizations without CRM", async (t) => {
     "0030_projects__20260811121700_project_client_meta_preview.sql",
     "0031_projects__20260811122000_project_client_access_identity_cleanup.sql",
     "0032_projects__20260811122500_remove_project_client_next_steps.sql",
+    "0033_projects__20260815120000_project_client_access_member_roles.sql",
+    "0034_projects__20260815133000_project_admin_creation_and_task_permissions.sql",
   ]);
   assert.equal(migrations.some((fileName) => fileName.includes("_crm__")), false);
 

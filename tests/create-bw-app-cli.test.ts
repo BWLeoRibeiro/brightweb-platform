@@ -430,7 +430,7 @@ test("scaffolded shell derives its title and resolves registered module controls
   assert.match(toolbarControls, /ProjectBoardToolbarControls/);
   assert.match(toolbarControls, /resolveShellToolbarSurface\(pathname, toolbarRoutes\)/);
   assert.match(toolbarControls, /crm: \(\) => <CrmToolbarControls/);
-  assert.match(toolbarControls, /projects: \(\) => <ProjectsToolbarControls/);
+  assert.match(toolbarControls, /projects: \(canCreateProjects\) => <ProjectsToolbarControls canCreateProjects=\{canCreateProjects\}/);
   assert.match(toolbarControls, /"project-board": \(\) => <ProjectBoardToolbarControls/);
   assert.doesNotMatch(toolbarControls, /AdminToolbarControls/);
 });
@@ -734,7 +734,7 @@ test("bw add projects resolves orgs, writes overlays, migrations, and manifest s
   const release = await readJson(path.join(REPO_ROOT, "brightweb-release.json"));
   assert.equal(updated.modules.orgs.version, release.packages["@brightweblabs/module-orgs"]);
   assert.equal(updated.modules.projects.version, release.packages["@brightweblabs/module-projects"]);
-  assert.equal(updated.migrationCursor.projects, "20260811122500_remove_project_client_next_steps.sql");
+  assert.equal(updated.migrationCursor.projects, "20260815133000_project_admin_creation_and_task_permissions.sql");
   assert.match(await fs.readFile(path.join(targetDir, "app", "globals.css"), "utf8"), /@source "\.\.\/node_modules\/@brightweblabs\/module-projects\/src";/);
   assert.match(
     await fs.readFile(path.join(targetDir, "config", "module-toolbar-controls.tsx"), "utf8"),
@@ -764,6 +764,8 @@ test("bw add projects resolves orgs, writes overlays, migrations, and manifest s
       "0035_projects__20260811121700_project_client_meta_preview.sql",
       "0036_projects__20260811122000_project_client_access_identity_cleanup.sql",
       "0037_projects__20260811122500_remove_project_client_next_steps.sql",
+      "0038_projects__20260815120000_project_client_access_member_roles.sql",
+      "0039_projects__20260815133000_project_admin_creation_and_task_permissions.sql",
     ],
   );
   const doctor = await doctorBrightwebApp({ targetDir }, { workspaceRoot: REPO_ROOT });
@@ -844,6 +846,8 @@ test("bw upgrade stops at a safe enforcement boundary and requires explicit dest
   const metaPreviewMigration = "20260811121700_project_client_meta_preview.sql";
   const identityCleanupMigration = "20260811122000_project_client_access_identity_cleanup.sql";
   const nextStepsCleanupMigration = "20260811122500_remove_project_client_next_steps.sql";
+  const memberRolesMigration = "20260815120000_project_client_access_member_roles.sql";
+  const projectPermissionsMigration = "20260815133000_project_admin_creation_and_task_permissions.sql";
   const firstPhase = await upgradeBrightwebApp(
     "projects",
     { targetDir, refreshStarters: true },
@@ -854,7 +858,12 @@ test("bw upgrade stops at a safe enforcement boundary and requires explicit dest
     firstPhase.migrationPlan.writes.map((entry) => entry.originalFileName),
     [foundationMigration, expandMigration, memberSyncMigration, enforcementMigration, clientOrganizationsMigration, metaPreviewMigration],
   );
-  assert.deepEqual(firstPhase.migrationPlan.deferred.map((entry) => entry.fileName), [identityCleanupMigration, nextStepsCleanupMigration]);
+  assert.deepEqual(firstPhase.migrationPlan.deferred.map((entry) => entry.fileName), [
+    identityCleanupMigration,
+    nextStepsCleanupMigration,
+    memberRolesMigration,
+    projectPermissionsMigration,
+  ]);
   assert.ok(firstPhase.plan.packageUpdates.some((entry) => entry.packageName === "@brightweblabs/module-projects"));
   assert.ok(firstPhase.plan.fileWrites.some((entry) => entry.relativePath === setupRoute));
   await fs.access(path.join(targetDir, setupRoute));
@@ -868,7 +877,12 @@ test("bw upgrade stops at a safe enforcement boundary and requires explicit dest
     { workspaceRoot: REPO_ROOT, fetchImpl: mockNpmFetch },
   );
   assert.equal(safeDefault.migrationPlan.writes.length, 0);
-  assert.deepEqual(safeDefault.migrationPlan.deferred.map((entry) => entry.fileName), [identityCleanupMigration, nextStepsCleanupMigration]);
+  assert.deepEqual(safeDefault.migrationPlan.deferred.map((entry) => entry.fileName), [
+    identityCleanupMigration,
+    nextStepsCleanupMigration,
+    memberRolesMigration,
+    projectPermissionsMigration,
+  ]);
 
   const cleanupPhase = await upgradeBrightwebApp(
     "projects",
@@ -877,10 +891,10 @@ test("bw upgrade stops at a safe enforcement boundary and requires explicit dest
   );
   assert.deepEqual(
     cleanupPhase.migrationPlan.writes.map((entry) => entry.originalFileName),
-    [identityCleanupMigration, nextStepsCleanupMigration],
+    [identityCleanupMigration, nextStepsCleanupMigration, memberRolesMigration, projectPermissionsMigration],
   );
   upgradedManifest = await readJson(manifestPath);
-  assert.equal(upgradedManifest.migrationCursor.projects, nextStepsCleanupMigration);
+  assert.equal(upgradedManifest.migrationCursor.projects, projectPermissionsMigration);
 });
 
 test("bw upgrade rejects ambiguous, unknown, and backwards migration cutoffs before writing", async (t) => {

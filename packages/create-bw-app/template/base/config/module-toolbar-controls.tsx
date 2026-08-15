@@ -8,16 +8,16 @@ import { ProjectBoardToolbarControls, ProjectsToolbarControls } from "@brightweb
 import { MarketingToolbarControls } from "@brightweblabs/module-marketing/ui";
 
 // MANAGED BY BRIGHTWEB — regenerated when modules are added, removed, or updated.
-const toolbarControlBySurface: Partial<Record<ShellToolbarSurface, () => ReactNode>> = {
+const toolbarControlBySurface: Partial<Record<ShellToolbarSurface, (canCreateProjects: boolean) => ReactNode>> = {
   "admin-users": () => <AdminToolbarControls />,
   crm: () => <CrmToolbarControls />,
   "crm-organizations": () => <CrmOrganizationsToolbarControls />,
-  projects: () => <ProjectsToolbarControls />,
+  projects: (canCreateProjects) => <ProjectsToolbarControls canCreateProjects={canCreateProjects} />,
   "project-board": () => <ProjectBoardToolbarControls />,
   marketing: () => <MarketingToolbarControls />,
 };
 
-export function getModuleToolbarControls(pathname: string, toolbarRoutes: ShellToolbarRouteConfig[]) {
+export function getModuleToolbarControls(pathname: string, toolbarRoutes: ShellToolbarRouteConfig[], canCreateProjects = false) {
   const surface = resolveShellToolbarSurface(pathname, toolbarRoutes);
-  return surface ? toolbarControlBySurface[surface]?.() ?? null : null;
+  return surface ? toolbarControlBySurface[surface]?.(canCreateProjects) ?? null : null;
 }

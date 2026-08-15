@@ -84,7 +84,7 @@ function ShellLayoutInner({
     viewer.email ||
     "Conta";
   const projectsBaseHref = pathname.startsWith("/projects") ? "/projects" : "/projetos";
-  const toolbarControls = getModuleToolbarControls(pathname, toolbarRoutes);
+  const toolbarControls = getModuleToolbarControls(pathname, toolbarRoutes, viewer.isAdmin);
 
   const dispatchShellAction = useShellActionDispatch();
   useShellAction("projects-back-to-portfolio", () => {

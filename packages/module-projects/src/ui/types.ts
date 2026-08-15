@@ -19,6 +19,7 @@ export type ProjectsNavigationConfig = {
 export type ProjectDetailPermissions = {
   canOpenEditProject: boolean;
   canEditProjectItems: boolean;
+  canUpdateAssignedTasks: boolean;
   canCreateProjectLinks: boolean;
   canManageProjectLinks: boolean;
   canManageClientContent: boolean;

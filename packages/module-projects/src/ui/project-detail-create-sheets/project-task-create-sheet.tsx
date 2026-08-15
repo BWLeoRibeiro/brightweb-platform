@@ -30,7 +30,7 @@ import { cn } from "../utils";
 type ProjectTaskCreateSheetProps = {
   projectId: string;
   milestones: Array<{ id: string; title: string }>;
-  members: Array<{ profileId: string; label: string }>;
+  members: Array<{ profileId: string; label: string; role?: "owner" | "contributor" | "observer" }>;
   initialOpen?: boolean;
 };
 
@@ -59,6 +59,7 @@ export function ProjectTaskCreateSheet({
   const memberOptions = useMemo(
     () =>
       members
+        .filter((member) => member.role !== "observer")
         .map((member) => ({
           profileId: member.profileId,
           label: member.label.trim() || dictionary.people.noName,

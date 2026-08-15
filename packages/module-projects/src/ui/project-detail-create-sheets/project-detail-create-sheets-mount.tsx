@@ -8,7 +8,7 @@ import { useOptionalProjectDetailData } from "../project-detail-data-provider";
 import { useWindowEventBridge } from "../window-events";
 
 type MilestoneOption = { id: string; title: string };
-type MemberOption = { profileId: string; label: string };
+type MemberOption = { profileId: string; label: string; role?: "owner" | "contributor" | "observer" };
 
 type ProjectDetailCreateSheetsMountProps = {
   projectId: string;
@@ -92,7 +92,9 @@ export function ProjectDetailCreateSheetsMount({
     ? detailData.milestones.map((milestone) => ({ id: milestone.id, title: milestone.title }))
     : milestoneProps;
   const memberOptions = detailData
-    ? detailData.members.map((member) => ({ profileId: member.profileId, label: member.label }))
+    ? detailData.members
+      .filter((member) => member.role === "owner" || member.role === "contributor")
+      .map((member) => ({ profileId: member.profileId, label: member.label, role: member.role }))
     : memberProps;
 
   return (

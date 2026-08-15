@@ -182,6 +182,11 @@ function normalizeEligibleClients(value: unknown): ProjectClientAccessEligibleCl
       profileId,
       label: nullableString(item.label) ?? profileLabel(item),
       email: nullableString(item.email),
+      organizationRole: item.organization_role === "admin" || item.organizationRole === "admin"
+        ? "admin"
+        : item.organization_role === "member" || item.organizationRole === "member"
+          ? "member"
+          : null,
     }];
   });
 }
@@ -289,10 +294,14 @@ export async function createProjectWithAccess(
   supabase: SupabaseClient,
   input: CreateProjectWithAccessInput,
 ): Promise<CreateProjectWithAccessResult> {
-  const organizationIds = Array.from(new Set([
-    input.project.organizationId,
-    ...input.participatingOrganizationIds,
-  ]));
+  if (
+    input.participatingOrganizationIds.some((organizationId) => organizationId !== input.project.organizationId)
+    || input.clientAccess.organizations.length > 1
+    || input.clientAccess.organizations.some((organization) => organization.organizationId !== input.project.organizationId)
+  ) {
+    throw new Error("O projeto e o acesso de clientes devem usar a mesma organização.");
+  }
+  const organizationIds = [input.project.organizationId];
   const profileGrants = input.clientAccess.organizations.flatMap((organization) =>
     organization.selectedProfileIds.map((profileId) => ({
       organization_id: organization.organizationId,
@@ -342,7 +351,7 @@ export async function listProjectSetupOptions(
     supabase.from("user_role_assignments").select("profile_id, role_code").in("role_code", ["staff", "admin", "client"]),
     uniqueOrganizationIds.length === 0
       ? Promise.resolve({ data: [], error: null })
-      : supabase.from("organization_members").select("organization_id, profile_id").in("organization_id", uniqueOrganizationIds),
+      : supabase.from("organization_members").select("organization_id, profile_id, role").in("organization_id", uniqueOrganizationIds),
   ]);
   throwIfError(organizationResult.error);
   throwIfError(roleResult.error);
@@ -393,6 +402,7 @@ export async function listProjectSetupOptions(
       profileId: membership.profile_id,
       label: profileLabel(profile),
       email: nullableString(profile.email),
+      organizationRole: membership.role === "admin" ? "admin" : membership.role === "member" ? "member" : null,
     });
     membersByOrganization.set(membership.organization_id, current);
   }

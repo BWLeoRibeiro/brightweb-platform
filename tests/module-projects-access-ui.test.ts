@@ -20,7 +20,7 @@ test("project creation is one four-step local-state wizard with one aggregate su
   const wizard = source("create-project-sheet.tsx");
   const copy = source("project-access-dictionary.ts");
 
-  for (const label of ["Projeto e organizações", "Equipa interna", "Acesso de clientes", "Rever e criar"]) {
+  for (const label of ["Projeto e organização", "Equipa interna", "Acesso de clientes", "Rever e criar"]) {
     assert.match(copy, new RegExp(label));
   }
   assert.match(wizard, /projectAccessDictionary\.wizard\.steps/);
@@ -30,30 +30,73 @@ test("project creation is one four-step local-state wizard with one aggregate su
   assert.match(wizard, /participatingOrganizationIds,/);
   assert.match(wizard, /members: Object\.entries\(members\)/);
   assert.match(wizard, /clientAccess: clientAccessDraftToPayload\(clientAccess\)/);
+  assert.match(wizard, /return \{ mode: "all_org_clients", organizations: \[\] \}/);
+  assert.match(wizard, /selected: current\.mode !== "hidden"/);
+  assert.doesNotMatch(wizard, /additionalOrganizationIds|otherOrganizations/);
   assert.doesNotMatch(wizard, /window\.prompt|useProjectSetupState|createProject\(client/);
+});
+
+test("project creation uses a searchable single-organization picker", () => {
+  const wizard = source("create-project-sheet.tsx");
+
+  assert.match(wizard, /function OrganizationPicker/);
+  assert.match(wizard, /role="combobox"/);
+  assert.match(wizard, /<SearchField[\s\S]*projectAccessDictionary\.wizard\.searchOrganizations/);
+  assert.match(wizard, /visibleOptions\.map/);
+  assert.match(wizard, /role="option"/);
+  assert.match(wizard, /grid-cols-\[minmax\(0,1fr\)_2\.25rem\]/);
+  assert.match(wizard, /className="min-w-0"/);
+  assert.doesNotMatch(wizard, /<SheetSelect[\s\S]{0,300}id="project-organization"/);
+});
+
+test("project creation progress uses the shared neutral surface", () => {
+  const wizard = source("create-project-sheet.tsx");
+
+  assert.match(wizard, /WizardProgress[\s\S]*bg-\[color:var\(--muted\)\]\/35/);
+  assert.doesNotMatch(wizard, /WizardProgress[\s\S]*bg-(?:gray|zinc|slate)-/);
+});
+
+test("project and client-access feedback uses the shared themed Sonner host", () => {
+  const wizard = source("create-project-sheet.tsx");
+  const accessCard = source("project-client-access-card.tsx");
+  const appShell = readFileSync(join(process.cwd(), "packages/app-shell/src/components/app-shell-frame.tsx"), "utf8");
+  const toaster = readFileSync(join(process.cwd(), "packages/ui/src/components/sonner.tsx"), "utf8");
+
+  assert.match(wizard, /toast\.success\(clientAccess\.mode === "hidden"/);
+  assert.match(wizard, /toast\.success\(dictionary\.projectCreate\.organizationCreated\)/);
+  assert.match(wizard, /toast\.error\(error instanceof Error/);
+  assert.match(accessCard, /toast\.success\(projectAccessDictionary\.card\.updated\)/);
+  assert.match(accessCard, /toast\.error\(error instanceof Error/);
+  assert.match(appShell, /toaster = <Toaster \/>/);
+  assert.match(toaster, /richColors/);
+  assert.match(toaster, /--success-bg.*--error-bg/s);
 });
 
 test("client access editor keeps external grants separate and supports all three audience modes", () => {
   const editor = source("project-client-access-editor.tsx");
   const copy = source("project-access-dictionary.ts");
 
-  assert.match(copy, /Privado à equipa/);
-  assert.match(copy, /Todos os clientes das organizações selecionadas/);
-  assert.match(copy, /Apenas clientes selecionados/);
+  assert.match(copy, /title: "Todos os clientes"/);
+  assert.match(copy, /title: "Clientes selecionados"/);
+  assert.match(copy, /title: "Privado"/);
   assert.match(copy, /Dar acesso a um cliente não o adiciona à equipa/);
+  assert.match(editor, /all_org_clients:[\s\S]*selected_clients:[\s\S]*hidden:/);
   assert.match(editor, /projectAccessDictionary\.editor/);
-  assert.match(editor, /organizations\.filter\(\(organization\) => organization\.selected\)/);
+  assert.match(editor, /organizations\.find\(\(item\) => item\.isPrimary\)/);
   assert.match(editor, /eligibleClients/);
+  assert.doesNotMatch(editor, /selectOrganization|selectedOrganizations/);
 });
 
-test("internal detail presents distinct organizations, team and client access surfaces", () => {
+test("internal detail presents one project organization through the project and client-access context", () => {
   const detail = source("project-detail-page.tsx");
   const teamEditor = source("project-members-edit-sheet.tsx");
   const copy = source("project-access-dictionary.ts");
 
   assert.match(copy, /Pessoas e acesso/);
   assert.match(detail, /projectAccessDictionary\.detail\.peopleAndAccess/);
-  assert.match(detail, /ProjectDetailOrganizationsCard/);
+  assert.doesNotMatch(detail, /ProjectDetailOrganizationsSummary/);
+  assert.match(detail, /organizationName=\{initialData\.project\.organizationName\}/);
+  assert.match(detail, /project-people-access-heading[\s\S]*?xl:grid-cols-2/);
   assert.match(detail, /ProjectDetailTeamCard/);
   assert.match(detail, /ProjectClientAccessCard/);
   assert.doesNotMatch(teamEditor, /org_admin|org_member|clientes entram como observadores|Client role is fixed/);
@@ -81,43 +124,39 @@ test("client detail renders only explicit client-facing project fields", () => {
   assert.doesNotMatch(detail, /project\.tasks|project\.activity|project\.budget/);
 });
 
-test("selected-client access requires an audience in every selected organization", () => {
+test("selected-client access requires an audience in the project organization", () => {
   const draft: ClientAccessDraft = {
     mode: "selected_clients",
     organizations: [
       {
         organizationId: "org-1",
         organizationName: "Alpha",
+        isPrimary: true,
         selected: true,
-        eligibleClients: [{ profileId: "client-1", label: "Ana", email: null }],
-        selectedProfileIds: ["client-1"],
-      },
-      {
-        organizationId: "org-2",
-        organizationName: "Beta",
-        selected: true,
-        eligibleClients: [{ profileId: "client-2", label: "Bruno", email: null }],
+        eligibleClients: [{ profileId: "client-1", label: "Ana", email: null, organizationRole: "admin" }],
         selectedProfileIds: [],
       },
     ],
   };
 
   assert.equal(hasSelectedClientOrganizationWithoutAudience(draft.mode, draft.organizations), true);
-  assert.match(getClientAccessDraftError(draft) ?? "", /cada organização/);
+  assert.match(getClientAccessDraftError(draft) ?? "", /pelo menos um cliente/);
   const html = renderToStaticMarkup(createElement(ProjectClientAccessEditor, { value: draft, onChange() {} }));
-  assert.match(html, /Seleciona pelo menos um cliente de Beta/);
+  assert.match(html, /Organização do projeto/);
+  assert.match(html, /Administrador/);
+  assert.match(html, /Seleciona pelo menos um cliente/);
+  assert.equal((html.match(/role="alert"/g) ?? []).length, 1);
 });
 
-test("creation keeps staff ownership and responsible contact selection coherent with the internal team", () => {
+test("creation permits an unassigned manager and derives the client contact when one is selected", () => {
   const wizard = source("create-project-sheet.tsx");
   const copy = source("project-access-dictionary.ts");
 
-  assert.match(wizard, /creator\?\.globalRole === "staff"/);
-  assert.match(wizard, /ownerLockedToCreator && profileId === currentActor\?\.profileId/);
-  assert.match(wizard, /ownerLockedToCreator && \(profileId === currentActor\?\.profileId \|\| role === "owner"\)/);
-  assert.match(copy, /Como membro de staff, permaneces responsável/);
-  assert.match(wizard, /\.filter\(\(person\) => Boolean\(members\[person\.profileId\]\)\)/);
-  assert.match(wizard, /clientContactProfileId === profileId\) setClientContactProfileId\(""\)/);
+  assert.match(wizard, /useState<Record<string, ProjectMemberRole>>\(\{\}\)/);
+  assert.doesNotMatch(wizard, /ownerLockedToCreator/);
+  assert.match(copy, /O gestor de projeto pode ser atribuído mais tarde/);
+  assert.match(wizard, /clientContactProfileId: owner\?\.profileId/);
+  assert.doesNotMatch(wizard, /id="project-client-contact"/);
 });
 
 test("creation review names the exact external audience and new controls expose accessible state", () => {
@@ -127,8 +166,10 @@ test("creation review names the exact external audience and new controls expose 
 
   assert.match(wizard, /selectedAccessOrganizations\.map\(\(organization\) => organization\.organizationName\)\.join/);
   assert.match(wizard, /selectedClientNames\.join/);
-  assert.match(wizard, /htmlFor="project-client-summary"/);
-  assert.match(wizard, /aria-label=\{projectAccessDictionary\.wizard\.roleFor\(person\.label\)\}/);
+  assert.doesNotMatch(wizard, /htmlFor="project-client-summary"/);
+  assert.doesNotMatch(wizard, /htmlFor="project-client-scope"/);
+  assert.match(wizard, /roleLabel=\{dictionary\.team\.memberRoleLabel\(person\.label\)\}/);
+  assert.match(wizard, /showIntroduction=\{false\}/);
   assert.match(list, /<PillTabs/);
   assert.match(list, /ariaLabel=\{clientProjectsDictionary\.safeUi\.filterLabel\}/);
   assert.doesNotMatch(list, /<PillTabs[\s\S]{0,200}className=/);
@@ -140,17 +181,21 @@ test("creation review names the exact external audience and new controls expose 
   assert.match(detail, /brand-panel rounded-\[var\(--radius-card\)\]/);
 });
 
-test("participating organizations remain editable by project managers through the protected route", () => {
-  const card = source("project-detail-organizations-card.tsx");
+test("project detail no longer exposes multi-organization management", () => {
   const detail = source("project-detail-page.tsx");
 
-  assert.match(detail, /ProjectDetailOrganizationsCard canManage=\{projectRole === "admin" \|\| projectRole === "owner"\}/);
-  assert.match(card, /client\.listOrganizations/);
-  assert.match(card, /`\/api\/projects\/\$\{project\.id\}\/organizations`/);
-  assert.match(card, /method: "PATCH"/);
-  assert.match(card, /disabled=\{primary \|\| isSaving\}/);
-  assert.match(card, /organizationEditor\.revokeConfirm/);
-  assert.match(card, /loadState === "error"/);
+  assert.doesNotMatch(detail, /ProjectDetailOrganizationsSummary/);
+  assert.match(detail, /ProjectClientAccessCard/);
+});
+
+test("client access changes use the shared alert dialog instead of browser confirmation", () => {
+  const card = source("project-client-access-card.tsx");
+
+  assert.match(card, /<AlertDialog/);
+  assert.match(card, /confirmIntent === "revoke"/);
+  assert.match(card, /projectAccessDictionary\.card\.discardTitle/);
+  assert.match(card, /projectAccessDictionary\.card\.revokeTitle/);
+  assert.doesNotMatch(card, /window\.confirm/);
 });
 
 test("client publication permissions are separate from ordinary contribution", () => {

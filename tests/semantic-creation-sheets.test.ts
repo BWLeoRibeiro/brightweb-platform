@@ -32,7 +32,7 @@ test("project creation follows project, internal team, client access, and review
     read("packages/module-projects/src/ui/project-access-dictionary.ts"),
   ]);
   const headings = [
-    'title: "Projeto e organizações"',
+    'title: "Projeto e organização"',
     'title: "Equipa interna"',
     'title: "Acesso de clientes"',
     'title: "Rever e criar"',

@@ -135,7 +135,7 @@ export const ptProjectActivityDictionary: ProjectActivityDictionary = {
     },
   },
   priorityLabels: { low: "Baixa", medium: "Média", high: "Alta", urgent: "Urgente" },
-  roleLabels: { owner: "Responsável", contributor: "Colaborador", observer: "Observador" },
+  roleLabels: { owner: "Gestor de projeto", contributor: "Colaborador", observer: "Observador" },
   fieldLabels: {
     title: "Título",
     name: "Nome",
@@ -147,7 +147,7 @@ export const ptProjectActivityDictionary: ProjectActivityDictionary = {
     role: "Função",
     completed_at: "Concluído em",
     assignee_profile_id: "Responsável",
-    owner_profile_id: "Responsável",
+    owner_profile_id: "Gestor de projeto",
     milestone_id: "Meta",
     blocked_reason: "Motivo de bloqueio",
     description: "Descrição",

@@ -24,6 +24,12 @@ if (statusResult.status !== 0) {
 }
 
 const local = JSON.parse(statusResult.stdout);
+const localSecretKey = local.SECRET_KEY;
+if (typeof localSecretKey !== "string" || !localSecretKey.startsWith("sb_secret_")) {
+  console.error("Local Supabase did not provide an sb_secret_ key. Update the Supabase CLI and restart the local stack.");
+  process.exit(1);
+}
+
 const child = spawn(command, args, {
   cwd: rootDir,
   env: {
@@ -31,7 +37,7 @@ const child = spawn(command, args, {
     NEXT_PUBLIC_APP_URL: "http://localhost:3000",
     NEXT_PUBLIC_SUPABASE_URL: local.API_URL,
     NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY: local.ANON_KEY,
-    SUPABASE_SECRET_DEFAULT_KEY: local.SERVICE_ROLE_KEY,
+    SUPABASE_SECRET_DEFAULT_KEY: localSecretKey,
     NEXT_PUBLIC_ENABLE_CRM: "true",
     NEXT_PUBLIC_ENABLE_PROJECTS: "true",
     NEXT_PUBLIC_ENABLE_ADMIN: "true",

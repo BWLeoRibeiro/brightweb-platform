@@ -40,7 +40,11 @@ import { cn } from "./utils";
 import { isProjectDatePast } from "./shared/formatters";
 import { useProjectsNow } from "./shared/use-projects-now";
 
-type ProjectBoardKanbanProps = { canEditItems: boolean };
+type ProjectBoardKanbanProps = {
+  canManageItems: boolean;
+  canUpdateAssignedTasks?: boolean;
+  viewerProfileId?: string;
+};
 type SheetMode = "view" | "edit";
 type TaskFormState = {
   title: string;
@@ -104,7 +108,7 @@ function normalizeTaskForm(form: TaskFormState) {
   return { ...form, title: form.title.trim(), description: form.description.trim(), blockedReason: form.blockedReason.trim() };
 }
 
-export function ProjectBoardKanban({ canEditItems }: ProjectBoardKanbanProps) {
+export function ProjectBoardKanban({ canManageItems, canUpdateAssignedTasks = false, viewerProfileId }: ProjectBoardKanbanProps) {
   const dictionary = useProjectsUiDictionary();
   const now = useProjectsNow();
   const client = useProjectsUiClient();
@@ -139,7 +143,19 @@ export function ProjectBoardKanban({ canEditItems }: ProjectBoardKanbanProps) {
   const taskDueDateValue = useMemo(() => parseIsoDate(taskDueDate), [taskDueDate]);
   const milestoneById = useMemo(() => new Map(milestones.map((milestone) => [milestone.id, milestone])), [milestones]);
   const filteredTasks = useMemo(() => tasks.filter((task) => milestoneFilter === "all" ? true : milestoneFilter === "__none__" ? !task.milestoneId : task.milestoneId === milestoneFilter), [milestoneFilter, tasks]);
+  const assignableMembers = useMemo(
+    () => members.filter((member) => member.role === "owner" || member.role === "contributor"),
+    [members],
+  );
   const columns = (["todo", "in_progress", "blocked", "done"] as const).map((key) => ({ key, label: dictionary.board.columns[key], ...columnStyles[key] }));
+  const canUpdateTask = (task: ProjectTask | null | undefined) => Boolean(
+    task
+    && (canManageItems || (
+      canUpdateAssignedTasks
+      && viewerProfileId
+      && task.assigneeProfileId === viewerProfileId
+    )),
+  );
 
   useProjectBoardMilestoneEvents({ milestones, milestoneFilter, onSetMilestoneFilter: setMilestoneFilter });
 
@@ -199,7 +215,7 @@ export function ProjectBoardKanban({ canEditItems }: ProjectBoardKanbanProps) {
 
   async function performMoveTask(taskId: string, nextStatus: TaskStatus, blockedReason?: string) {
     const originalTask = tasks.find((task) => task.id === taskId);
-    if (!originalTask || originalTask.status === nextStatus || movingTaskId || !canEditItems) return;
+    if (!originalTask || originalTask.status === nextStatus || movingTaskId || !canUpdateTask(originalTask)) return;
     const nextPosition = tasks.reduce((highest, task) => task.id === taskId || task.status !== nextStatus ? highest : Math.max(highest, task.position), 0) + 1;
     const previousDashboard = data;
     replaceDashboard({ ...data, tasks: tasks.map((task) => task.id === taskId ? { ...task, status: nextStatus, position: nextPosition, blockedReason: nextStatus === "blocked" ? blockedReason ?? task.blockedReason : task.blockedReason } : task) });
@@ -232,7 +248,7 @@ export function ProjectBoardKanban({ canEditItems }: ProjectBoardKanbanProps) {
 
   async function submitTask(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!selectedTask || taskMode !== "edit" || !canEditItems || isSavingTask || !taskTitle.trim() || !isTaskEditDirty) return;
+    if (!selectedTask || taskMode !== "edit" || !canUpdateTask(selectedTask) || isSavingTask || !taskTitle.trim() || !isTaskEditDirty) return;
     if (taskStatus === "blocked" && !taskBlockedReason.trim()) {
       toast.error(dictionary.board.blockedReasonRequired);
       return;
@@ -243,7 +259,7 @@ export function ProjectBoardKanban({ canEditItems }: ProjectBoardKanbanProps) {
     }
     setIsSavingTask(true);
     try {
-      replaceDashboard(await client.updateTask(project.id, selectedTask.id, {
+      replaceDashboard(await client.updateTask(project.id, selectedTask.id, canManageItems ? {
         title: taskTitle.trim(),
         description: taskDescription.trim() || null,
         status: taskStatus,
@@ -252,6 +268,9 @@ export function ProjectBoardKanban({ canEditItems }: ProjectBoardKanbanProps) {
         assigneeProfileId: taskAssigneeProfileId || null,
         startDate: taskStartDate || null,
         dueDate: taskDueDate || null,
+        blockedReason: taskStatus === "blocked" ? taskBlockedReason.trim() : null,
+      } : {
+        status: taskStatus,
         blockedReason: taskStatus === "blocked" ? taskBlockedReason.trim() : null,
       }));
       setTaskMode("view");
@@ -265,7 +284,7 @@ export function ProjectBoardKanban({ canEditItems }: ProjectBoardKanbanProps) {
   }
 
   async function deleteTask() {
-    if (!selectedTask || !canEditItems || isDeletingTask) return;
+    if (!selectedTask || !canManageItems || isDeletingTask) return;
     setIsDeletingTask(true);
     try {
       replaceDashboard(await client.deleteTask(project.id, selectedTask.id));
@@ -288,8 +307,8 @@ export function ProjectBoardKanban({ canEditItems }: ProjectBoardKanbanProps) {
               <article
                 key={column.key}
                 className={cn("flex flex-col rounded-[var(--radius-panel)] border p-3 transition", column.surfaceClassName, dropTarget === column.key && "ring-2 ring-[color:var(--project-board-drop-ring)] ring-offset-2 ring-offset-transparent")}
-                onDragOver={(event) => { if (canEditItems) { event.preventDefault(); if (dragTaskId) event.dataTransfer.dropEffect = "move"; } }}
-                onDragEnter={() => { if (canEditItems) setDropTarget(column.key); }}
+                onDragOver={(event) => { if (dragTaskId && canUpdateTask(tasks.find((task) => task.id === dragTaskId))) { event.preventDefault(); event.dataTransfer.dropEffect = "move"; } }}
+                onDragEnter={() => { if (dragTaskId && canUpdateTask(tasks.find((task) => task.id === dragTaskId))) setDropTarget(column.key); }}
                 onDragLeave={(event) => { const nextTarget = event.relatedTarget; if (!(nextTarget instanceof Node && event.currentTarget.contains(nextTarget))) setDropTarget((current) => current === column.key ? null : current); }}
                 onDrop={(event) => { event.preventDefault(); setDropTarget(null); void moveTaskToStatus(column.key); }}
               >
@@ -305,12 +324,12 @@ export function ProjectBoardKanban({ canEditItems }: ProjectBoardKanbanProps) {
                       <button
                         key={task.id}
                         type="button"
-                        draggable={canEditItems && movingTaskId !== task.id}
-                        title={canEditItems ? dictionary.board.openAndDragHint : task.title}
+                        draggable={canUpdateTask(task) && movingTaskId !== task.id}
+                        title={canUpdateTask(task) ? dictionary.board.openAndDragHint : task.title}
                         onDragStart={(event) => { setDragTaskId(task.id); event.dataTransfer.setData("text/plain", task.id); event.dataTransfer.effectAllowed = "move"; }}
                         onDragEnd={() => { setDropTarget(null); setDragTaskId(null); }}
                         onClick={() => { if (!dragTaskId) openTaskSheet(task); }}
-                        className={cn("w-full rounded-[var(--radius-card)] border border-[color:var(--border)] bg-[color:var(--card)] p-2.5 text-left shadow-[var(--project-board-card-shadow)] transition hover:border-[color:var(--project-board-card-hover-border)] hover:shadow-[var(--project-board-card-hover-shadow)]", movingTaskId === task.id ? "cursor-wait opacity-70" : canEditItems ? "cursor-grab active:cursor-grabbing" : "cursor-pointer")}
+                        className={cn("w-full rounded-[var(--radius-card)] border border-[color:var(--border)] bg-[color:var(--card)] p-2.5 text-left shadow-[var(--project-board-card-shadow)] transition hover:border-[color:var(--project-board-card-hover-border)] hover:shadow-[var(--project-board-card-hover-shadow)]", movingTaskId === task.id ? "cursor-wait opacity-70" : canUpdateTask(task) ? "cursor-grab active:cursor-grabbing" : "cursor-pointer")}
                         data-status={column.key}
                       >
                         <div className="flex items-start justify-between gap-2"><p className="text-body text-foreground min-w-0 flex-1 font-semibold leading-snug line-clamp-2" title={task.title}>{task.title}</p><TaskPriorityTag task={task} /></div>
@@ -332,28 +351,28 @@ export function ProjectBoardKanban({ canEditItems }: ProjectBoardKanbanProps) {
             <AppSheetHeader icon={ListChecks} editing={taskMode === "edit"} eyebrow={taskMode === "view" ? dictionary.board.viewEyebrow : dictionary.board.editEyebrow} title={<>{taskMode === "view" ? taskTitle.trim() || dictionary.board.task : dictionary.forms.editTask}</>} description={<>{taskMode === "view" ? selectedTask?.createdAt ? dictionary.board.createdAt(format(new Date(selectedTask.createdAt), "dd/MM/yyyy")) : dictionary.board.task : dictionary.board.editDescription}</>} />
             <form onSubmit={submitTask} className="flex min-h-0 flex-1 flex-col">
               <div className={`${sheetBodyClassName} space-y-4`}>
-                <SheetSection title={dictionary.board.contentSection} editing={taskMode === "edit"} bodyClassName="space-y-3 px-4 py-3">
-                  {taskMode === "edit" ? <div><label className={sheetFieldLabelClassName} htmlFor="board-task-title">{dictionary.forms.title}</label><Input id="board-task-title" value={taskTitle} onChange={(event) => setTaskTitle(event.target.value)} required className={cn(sheetEditControlClassName, "mt-1.5")} /></div> : null}
-                  <div><label className={sheetFieldLabelClassName} htmlFor="board-task-description">{dictionary.board.optionalDescription}</label>{taskMode === "view" ? <p className={cn(sheetViewValueClassName, "whitespace-pre-wrap")}>{taskDescription.trim() || dictionary.board.noDescription}</p> : <textarea id="board-task-description" value={taskDescription} onChange={(event) => setTaskDescription(event.target.value)} rows={3} className={cn(sheetAccentTextareaClassName, "mt-1.5 min-h-[72px]")} />}</div>
+                <SheetSection title={dictionary.board.contentSection} editing={taskMode === "edit" && canManageItems} bodyClassName="space-y-3 px-4 py-3">
+                  {taskMode === "edit" && canManageItems ? <div><label className={sheetFieldLabelClassName} htmlFor="board-task-title">{dictionary.forms.title}</label><Input id="board-task-title" value={taskTitle} onChange={(event) => setTaskTitle(event.target.value)} required className={cn(sheetEditControlClassName, "mt-1.5")} /></div> : null}
+                  <div><label className={sheetFieldLabelClassName} htmlFor="board-task-description">{dictionary.board.optionalDescription}</label>{taskMode === "view" || !canManageItems ? <p className={cn(sheetViewValueClassName, "whitespace-pre-wrap")}>{taskDescription.trim() || dictionary.board.noDescription}</p> : <textarea id="board-task-description" value={taskDescription} onChange={(event) => setTaskDescription(event.target.value)} rows={3} className={cn(sheetAccentTextareaClassName, "mt-1.5 min-h-[72px]")} />}</div>
                 </SheetSection>
                 <SheetSection title={dictionary.board.executionSection} editing={taskMode === "edit"} bodyClassName="space-y-3 px-4 py-3">
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div><label className={sheetFieldLabelClassName} htmlFor="board-task-status">{dictionary.forms.status}</label>{taskMode === "view" ? <div className="mt-1.5"><TaskStatusTag task={{ status: taskStatus, blockedReason: taskBlockedReason }} /></div> : <StyledSelect id="board-task-status" value={taskStatus} onChange={(event) => setTaskStatus(event.target.value as TaskStatus)} className={cn(sheetEditControlClassName, "mt-1.5 block w-full text-foreground outline-none")}>{columns.map((column) => <option key={column.key} value={column.key}>{column.label}</option>)}</StyledSelect>}</div>
-                    <div><label className={sheetFieldLabelClassName} htmlFor="board-task-priority">{dictionary.forms.priority}</label>{taskMode === "view" ? <div className="mt-1.5"><TaskPriorityTag task={{ priority: taskPriority, status: taskStatus }} /></div> : <StyledSelect id="board-task-priority" value={taskPriority} onChange={(event) => setTaskPriority(event.target.value as ProjectTask["priority"])} className={cn(sheetEditControlClassName, "mt-1.5 block w-full text-foreground outline-none")}>{Object.entries(dictionary.board.priority).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</StyledSelect>}</div>
+                    <div><label className={sheetFieldLabelClassName} htmlFor="board-task-priority">{dictionary.forms.priority}</label>{taskMode === "view" || !canManageItems ? <div className="mt-1.5"><TaskPriorityTag task={{ priority: taskPriority, status: taskStatus }} /></div> : <StyledSelect id="board-task-priority" value={taskPriority} onChange={(event) => setTaskPriority(event.target.value as ProjectTask["priority"])} className={cn(sheetEditControlClassName, "mt-1.5 block w-full text-foreground outline-none")}>{Object.entries(dictionary.board.priority).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</StyledSelect>}</div>
                   </div>
                   {taskStatus === "blocked" ? <div><label className={sheetFieldLabelClassName} htmlFor="board-task-blocked">{dictionary.forms.blockedReason}</label>{taskMode === "view" ? <p className="mt-1.5 rounded-md border border-[color:var(--project-board-blocked-reason-border)] bg-[color:var(--project-board-blocked-reason-surface)] px-3 py-2 text-body text-[color:var(--project-risk-at-risk-strong)]">{taskBlockedReason.trim() || dictionary.board.noBlockedReason}</p> : <Input id="board-task-blocked" value={taskBlockedReason} onChange={(event) => setTaskBlockedReason(event.target.value)} required className={cn(sheetEditControlClassName, "mt-1.5")} />}</div> : null}
                 </SheetSection>
-                <SheetSection title={dictionary.board.planningSection} editing={taskMode === "edit"} bodyClassName="space-y-3 px-4 py-3">
+                <SheetSection title={dictionary.board.planningSection} editing={taskMode === "edit" && canManageItems} bodyClassName="space-y-3 px-4 py-3">
                   <div className="grid gap-4 sm:grid-cols-2">
-                    <div><label className={sheetFieldLabelClassName} htmlFor="board-task-milestone">{dictionary.board.optionalMilestone}</label>{taskMode === "view" ? <p className={sheetViewValueClassName}>{milestones.find((item) => item.id === taskMilestoneId)?.title ?? dictionary.board.noMilestone}</p> : <StyledSelect id="board-task-milestone" value={taskMilestoneId} onChange={(event) => setTaskMilestoneId(event.target.value)} className={cn(sheetEditControlClassName, "mt-1.5 block w-full text-foreground outline-none")}><option value="">{dictionary.board.noMilestone}</option>{milestones.map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}</StyledSelect>}</div>
-                    <div><label className={sheetFieldLabelClassName} htmlFor="board-task-assignee">{dictionary.board.optionalAssignee}</label>{taskMode === "view" ? <p className={sheetViewValueClassName}>{members.find((item) => item.profileId === taskAssigneeProfileId)?.label ?? dictionary.board.noAssignee}</p> : <StyledSelect id="board-task-assignee" value={taskAssigneeProfileId} onChange={(event) => setTaskAssigneeProfileId(event.target.value)} className={cn(sheetEditControlClassName, "mt-1.5 block w-full text-foreground outline-none")}><option value="">{dictionary.board.noAssignee}</option>{members.map((item) => <option key={item.profileId} value={item.profileId}>{item.label}</option>)}</StyledSelect>}</div>
+                    <div><label className={sheetFieldLabelClassName} htmlFor="board-task-milestone">{dictionary.board.optionalMilestone}</label>{taskMode === "view" || !canManageItems ? <p className={sheetViewValueClassName}>{milestones.find((item) => item.id === taskMilestoneId)?.title ?? dictionary.board.noMilestone}</p> : <StyledSelect id="board-task-milestone" value={taskMilestoneId} onChange={(event) => setTaskMilestoneId(event.target.value)} className={cn(sheetEditControlClassName, "mt-1.5 block w-full text-foreground outline-none")}><option value="">{dictionary.board.noMilestone}</option>{milestones.map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}</StyledSelect>}</div>
+                    <div><label className={sheetFieldLabelClassName} htmlFor="board-task-assignee">{dictionary.board.optionalAssignee}</label>{taskMode === "view" || !canManageItems ? <p className={sheetViewValueClassName}>{members.find((item) => item.profileId === taskAssigneeProfileId)?.label ?? dictionary.board.noAssignee}</p> : <StyledSelect id="board-task-assignee" value={taskAssigneeProfileId} onChange={(event) => setTaskAssigneeProfileId(event.target.value)} className={cn(sheetEditControlClassName, "mt-1.5 block w-full text-foreground outline-none")}><option value="">{dictionary.board.noAssignee}</option>{assignableMembers.map((item) => <option key={item.profileId} value={item.profileId}>{item.label}</option>)}</StyledSelect>}</div>
                   </div>
                 </SheetSection>
-                <SheetSection title={dictionary.board.calendarSection} editing={taskMode === "edit"} bodyClassName="px-4 py-3">
+                <SheetSection title={dictionary.board.calendarSection} editing={taskMode === "edit" && canManageItems} bodyClassName="px-4 py-3">
                   <div className="grid gap-4 sm:grid-cols-2">
                   <div>
                     <label className={sheetFieldLabelClassName} htmlFor="board-task-start">{dictionary.board.optionalStartDate}</label>
-                    {taskMode === "view" ? (
+                    {taskMode === "view" || !canManageItems ? (
                       <p className={sheetViewValueClassName}>{taskStartDateValue ? format(taskStartDateValue, "dd/MM/yyyy") : dictionary.board.noDate}</p>
                     ) : (
                       <Popover><PopoverTrigger asChild><Button id="board-task-start" type="button" variant="ghost" className={cn(sheetEditControlClassName, "mt-1.5 h-9 w-full justify-start px-2.5 text-body", taskStartDateValue ? "text-foreground" : "text-foreground/45")}><CalendarIcon className="mr-2 size-4" />{taskStartDateValue ? format(taskStartDateValue, "dd/MM/yyyy") : dictionary.board.selectDate}</Button></PopoverTrigger><PopoverContent className="w-auto p-0" align="start"><Calendar mode="single" captionLayout="dropdown" className="rounded-lg border" selected={taskStartDateValue} onSelect={(date) => setTaskStartDate(toIsoDate(date))} initialFocus /></PopoverContent></Popover>
@@ -361,7 +380,7 @@ export function ProjectBoardKanban({ canEditItems }: ProjectBoardKanbanProps) {
                   </div>
                   <div>
                     <label className={sheetFieldLabelClassName} htmlFor="board-task-due">{dictionary.board.optionalDueDate}</label>
-                    {taskMode === "view" ? (
+                    {taskMode === "view" || !canManageItems ? (
                       <p className={sheetViewValueClassName}>{taskDueDateValue ? format(taskDueDateValue, "dd/MM/yyyy") : dictionary.board.noDate}</p>
                     ) : (
                       <Popover>
@@ -378,12 +397,12 @@ export function ProjectBoardKanban({ canEditItems }: ProjectBoardKanbanProps) {
                     )}
                   </div>
                   </div>
-                  {taskMode === "edit" && taskStartDate && taskDueDate && taskDueDate < taskStartDate ? <p className="mt-2 text-meta text-[color:var(--destructive)]">{dictionary.board.invalidDateRange}</p> : null}
+                  {taskMode === "edit" && canManageItems && taskStartDate && taskDueDate && taskDueDate < taskStartDate ? <p className="mt-2 text-meta text-[color:var(--destructive)]">{dictionary.board.invalidDateRange}</p> : null}
                 </SheetSection>
-                {taskMode === "edit" && canEditItems ? <Button type="button" variant="link" size="link" className="w-fit p-0 text-body text-[color:var(--destructive)]" onClick={() => setTaskDeleteDialogOpen(true)} disabled={isDeletingTask || isSavingTask}><Trash2 className="mr-1.5 size-3.5" />{dictionary.board.deleteTask}</Button> : null}
+                {taskMode === "edit" && canManageItems ? <Button type="button" variant="link" size="link" className="w-fit p-0 text-body text-[color:var(--destructive)]" onClick={() => setTaskDeleteDialogOpen(true)} disabled={isDeletingTask || isSavingTask}><Trash2 className="mr-1.5 size-3.5" />{dictionary.board.deleteTask}</Button> : null}
               </div>
               <SheetFooter className={`${sheetFooterClassName} gap-2`}>
-                {taskMode === "view" ? canEditItems ? (
+                {taskMode === "view" ? canUpdateTask(selectedTask) ? (
                   <Button type="button" className="w-full" onClick={() => {
                     setTaskEditBaseline({ title: taskTitle, description: taskDescription, status: taskStatus, priority: taskPriority, milestoneId: taskMilestoneId, assigneeProfileId: taskAssigneeProfileId, startDate: taskStartDate, dueDate: taskDueDate, blockedReason: taskBlockedReason });
                     setTaskMode("edit");

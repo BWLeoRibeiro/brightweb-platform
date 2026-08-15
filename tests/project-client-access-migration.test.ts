@@ -21,6 +21,8 @@ const clientOrganizationsMigrationName = "20260811121500_project_client_organiza
 const metaPreviewMigrationName = "20260811121700_project_client_meta_preview.sql";
 const identityCleanupMigrationName = "20260811122000_project_client_access_identity_cleanup.sql";
 const nextStepsCleanupMigrationName = "20260811122500_remove_project_client_next_steps.sql";
+const memberRolesMigrationName = "20260815120000_project_client_access_member_roles.sql";
+const projectPermissionsMigrationName = "20260815133000_project_admin_creation_and_task_permissions.sql";
 
 function readMigrationPair(name: string) {
   const canonical = readFileSync(join(
@@ -41,6 +43,29 @@ test("project client access migration stays aligned with the app template", () =
   const template = readFileSync(templatePath, "utf8");
 
   assert.equal(template, canonical);
+});
+
+test("project client access candidates expose their real organization role", () => {
+  const { canonical, template } = readMigrationPair(memberRolesMigrationName);
+  assert.equal(template, canonical);
+  assert.match(canonical, /'organization_role', org_member\.role/);
+  assert.match(canonical, /FROM public\.organization_members org_member/);
+  assert.match(canonical, /REVOKE ALL ON FUNCTION public\.get_project_access_configuration\(uuid\)/);
+  assert.match(canonical, /GRANT EXECUTE ON FUNCTION public\.get_project_access_configuration\(uuid\)[\s\S]*TO authenticated/);
+});
+
+test("project permissions keep creation administrative and task work project-scoped", () => {
+  const { canonical, template } = readMigrationPair(projectPermissionsMigrationName);
+  assert.equal(template, canonical);
+  assert.match(canonical, /v_actor_role <> 'admin'/);
+  assert.match(canonical, /A project can have at most one internal project manager/);
+  assert.doesNotMatch(canonical, /Exactly one internal project owner is required/);
+  assert.match(canonical, /Tasks can only be assigned to project managers or collaborators/);
+  assert.match(canonical, /Reassign or unassign open tasks before removing/);
+  assert.match(canonical, /Collaborators can only update the state of their assigned tasks/);
+  assert.match(canonical, /CREATE POLICY "Administrators create projects"/);
+  assert.match(canonical, /CREATE POLICY "Administrators delete projects"/);
+  assert.match(canonical, /CREATE POLICY "Project team update permitted tasks"/);
 });
 
 test("project client access migration defaults to private and enforces explicit audiences", () => {

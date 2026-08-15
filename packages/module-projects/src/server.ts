@@ -1,7 +1,11 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createServiceRoleClient } from "@brightweblabs/infra/server";
 import { fetchAllRows, getProjectTaskStats } from "./data";
-import { getClientProject } from "./client-access";
+import {
+  getClientProject,
+  listProjectSetupOptions as listProjectSetupOptionsFromDirectory,
+} from "./client-access";
+import type { ProjectSetupOptions } from "./client-contracts";
 import {
   type CreateProjectInput,
   type CreateProjectOrganizationInput,
@@ -701,6 +705,24 @@ function normalizeMemberRows(rows: unknown[]): ProjectDashboardData["members"] {
   });
 }
 
+async function loadInternalProjectProfiles(profileIds: string[]): Promise<Map<string, Record<string, unknown>>> {
+  const uniqueProfileIds = Array.from(new Set(profileIds.filter(Boolean)));
+  if (uniqueProfileIds.length === 0) return new Map();
+  const internalDirectory = createProjectsServiceRoleClient();
+  if (!internalDirectory) return new Map();
+
+  const { data, error } = await internalDirectory
+    .from("profiles")
+    .select("id, first_name, last_name, email")
+    .in("id", uniqueProfileIds);
+  if (error) throw new Error(error.message);
+  return new Map((data ?? []).flatMap((profile) => (
+    typeof profile.id === "string"
+      ? [[profile.id, profile as Record<string, unknown>] as const]
+      : []
+  )));
+}
+
 async function listProjectMembers(supabase: SupabaseClient, projectId: string): Promise<ProjectDashboardData["members"]> {
   const { data, error } = await supabase
     .from("project_members")
@@ -711,7 +733,14 @@ async function listProjectMembers(supabase: SupabaseClient, projectId: string): 
     .order("created_at", { ascending: true });
 
   if (error) throw new Error(error.message);
-  return normalizeMemberRows(data ?? []);
+  const rows = (data ?? []) as Array<Record<string, unknown>>;
+  const profiles = await loadInternalProjectProfiles(rows.flatMap((row) => (
+    typeof row.profile_id === "string" ? [row.profile_id] : []
+  )));
+  return normalizeMemberRows(rows.map((row) => ({
+    ...row,
+    profile: typeof row.profile_id === "string" ? profiles.get(row.profile_id) ?? row.profile : row.profile,
+  })));
 }
 
 async function listProjectParticipatingOrganizations(
@@ -784,7 +813,13 @@ async function getProjectDashboardProjectRow(supabase: SupabaseClient, projectId
   if (error) throw new Error(error.message);
   if (!data) throw new Error("Projeto não encontrado.");
 
-  return data;
+  const projectRow = data as Record<string, unknown>;
+  if (typeof projectRow.owner_profile_id === "string") {
+    const profiles = await loadInternalProjectProfiles([projectRow.owner_profile_id]);
+    projectRow.owner = profiles.get(projectRow.owner_profile_id) ?? projectRow.owner;
+  }
+
+  return projectRow;
 }
 
 export async function getProjectDashboard(
@@ -1218,12 +1253,14 @@ export async function getProjectAccess(
   permissions: {
     canOpenEditProject: boolean;
     canEditProjectItems: boolean;
+    canUpdateAssignedTasks: boolean;
     canCreateProjectLinks: boolean;
     canManageProjectLinks: boolean;
     canManageClientContent: boolean;
     canManageMembers: boolean;
     canViewOrganization: boolean;
   };
+  viewerProfileId: string;
 }> {
   const { data: project, error: projectError } = await supabase
     .from("projects")
@@ -1250,19 +1287,35 @@ export async function getProjectAccess(
   }
 
   const canManageProject = projectRole === "admin" || projectRole === "owner";
-  const canContribute = canManageProject || projectRole === "contributor";
   return {
     projectRole,
+    viewerProfileId: profileId,
     permissions: {
-      canOpenEditProject: true,
-      canEditProjectItems: canContribute,
-      canCreateProjectLinks: canContribute,
-      canManageProjectLinks: canContribute,
+      canOpenEditProject: canManageProject,
+      canEditProjectItems: canManageProject,
+      canUpdateAssignedTasks: projectRole === "contributor",
+      canCreateProjectLinks: canManageProject,
+      canManageProjectLinks: canManageProject,
       canManageClientContent: canManageProject,
       canManageMembers: canManageProject,
       canViewOrganization: true,
     },
   };
+}
+
+export async function getProjectTaskAssignment(
+  supabase: SupabaseClient,
+  projectId: string,
+  taskId: string,
+): Promise<{ assigneeProfileId: string | null } | null> {
+  const { data, error } = await supabase
+    .from("project_tasks")
+    .select("assignee_profile_id")
+    .eq("project_id", projectId)
+    .eq("id", taskId)
+    .maybeSingle<{ assignee_profile_id: string | null }>();
+  if (error) throw new Error(error.message);
+  return data ? { assigneeProfileId: data.assignee_profile_id } : null;
 }
 
 async function nextPosition(supabase: SupabaseClient, table: "project_tasks" | "project_milestones", projectId: string) {
@@ -1679,18 +1732,27 @@ export async function listProjectAssignableProfiles(
   if (projectError) throw new Error(projectError.message);
   if (!project?.id || !project.organization_id) throw new Error("Projeto não encontrado.");
 
+  // Candidate identities are an internal management concern. Profiles are
+  // deliberately self-visible under normal RLS, so resolve only staff/admin
+  // candidates with a server-only client after the HTTP layer has verified
+  // that the caller is a global admin or this project's owner.
+  const internalDirectory = createProjectsServiceRoleClient();
+  if (!internalDirectory) {
+    throw new Error("Não foi possível carregar as pessoas elegíveis para a equipa interna.");
+  }
+
   const [
     { data: roleAssignments, error: roleAssignmentsError },
     projectMembers,
   ] = await Promise.all([
-    supabase
+    internalDirectory
       .from("user_role_assignments")
       .select(
         "profile_id, role_code, profile:profiles!user_role_assignments_profile_id_fkey(first_name, last_name, email)",
       )
       .in("role_code", ["staff", "admin"])
       .order("assigned_at", { ascending: false }),
-    listProjectMembers(supabase, projectId),
+    listProjectMembers(internalDirectory, projectId),
   ]);
 
   if (roleAssignmentsError) throw new Error(roleAssignmentsError.message);
@@ -1725,6 +1787,25 @@ export async function listProjectAssignableProfiles(
   return Array.from(uniqueByProfile.values())
     .filter((item) => item.profileId.length > 0)
     .toSorted((a, b) => a.label.localeCompare(b.label, "pt-PT"));
+}
+
+export async function listProjectSetupOptionsForManagement(
+  _supabase: SupabaseClient,
+  currentProfileId: string,
+  organizationIds: string[],
+): Promise<ProjectSetupOptions> {
+  // The HTTP layer has already verified that the caller is staff/admin.
+  // Creation must resolve the same internal and client identities as the
+  // existing-project editors, without widening authenticated profile RLS.
+  const internalDirectory = createProjectsServiceRoleClient();
+  if (!internalDirectory) {
+    throw new Error("Não foi possível carregar as pessoas elegíveis para o projeto.");
+  }
+  return listProjectSetupOptionsFromDirectory(
+    internalDirectory,
+    currentProfileId,
+    organizationIds,
+  );
 }
 
 export async function syncProjectMembers(

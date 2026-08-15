@@ -171,7 +171,7 @@ export function ProjectEditSheet({
 
   const canEditAnyField = editableFields.length > 0;
   const editing = canEditAnyField;
-  const canDeleteProject = role === "admin" || role === "owner";
+  const canDeleteProject = role === "admin";
   const controlClass = (field: (typeof allEditableFields)[number]) =>
     isFieldEditable(field) ? sheetEditControlClassName : sheetViewControlClassName;
   const textareaClass = (field: (typeof allEditableFields)[number]) =>

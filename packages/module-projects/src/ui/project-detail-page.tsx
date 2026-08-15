@@ -12,7 +12,6 @@ import { ProjectMilestonesAndTasksCards } from "./project-detail-editable-cards"
 import { ProjectDetailHero } from "./project-detail-hero";
 import { ProjectDetailMetadataStrip } from "./project-detail-metadata-strip";
 import { ProjectDetailTeamCard } from "./project-detail-team-card";
-import { ProjectDetailOrganizationsCard } from "./project-detail-organizations-card";
 import { ProjectEditSheetLazy } from "./project-lazy-panels";
 import { ProjectLinksCard } from "./project-links-card";
 import type { RoleColor } from "./shared/role-colors";
@@ -20,13 +19,14 @@ import { CompactCollectionCardSkeleton } from "./shared/compact-collection-skele
 import type { ProjectDetailPermissions, ProjectDetailSlots, ProjectsNavigationConfig, ProjectsUiClient, ProjectsUiDictionary } from "./types";
 import { projectAccessDictionary } from "./project-access-dictionary";
 
-const DEFAULT_PERMISSIONS: ProjectDetailPermissions = { canOpenEditProject: true, canEditProjectItems: false, canCreateProjectLinks: false, canManageProjectLinks: false, canManageClientContent: false, canManageMembers: false, canViewOrganization: true };
+const DEFAULT_PERMISSIONS: ProjectDetailPermissions = { canOpenEditProject: false, canEditProjectItems: false, canUpdateAssignedTasks: false, canCreateProjectLinks: false, canManageProjectLinks: false, canManageClientContent: false, canManageMembers: false, canViewOrganization: true };
 
 export type ProjectDetailPageProps = {
   client?: ProjectsUiClient;
   initialData: ProjectDashboardData;
   permissions?: Partial<ProjectDetailPermissions>;
   projectRole?: "admin" | "owner" | "contributor" | "observer";
+  viewerProfileId?: string;
   memberColorRoles?: Record<string, RoleColor>;
   dictionary?: ProjectsUiDictionary;
   navigation?: Partial<ProjectsNavigationConfig>;
@@ -35,7 +35,7 @@ export type ProjectDetailPageProps = {
 
 function LowerCardFallback() { return <CompactCollectionCardSkeleton />; }
 
-export function ProjectDetailPage({ client, initialData, permissions, projectRole = "observer", memberColorRoles = {}, dictionary = defaultProjectsUiDictionary, navigation, slots }: ProjectDetailPageProps) {
+export function ProjectDetailPage({ client, initialData, permissions, projectRole = "observer", viewerProfileId, memberColorRoles = {}, dictionary = defaultProjectsUiDictionary, navigation, slots }: ProjectDetailPageProps) {
   const access = { ...DEFAULT_PERMISSIONS, ...permissions };
   return <ProjectsUiProvider client={client} dictionary={dictionary} navigation={navigation}>
     <ProjectDetailDataProvider initialData={initialData}>
@@ -44,7 +44,7 @@ export function ProjectDetailPage({ client, initialData, permissions, projectRol
           <ProjectDetailHero canOpenEditProject={access.canOpenEditProject} canViewOrganization={access.canViewOrganization} />
         </section>
         {slots?.afterHero}
-        <section className="grid items-stretch gap-lg xl:grid-cols-3"><ProjectMilestonesAndTasksCards projectId={initialData.project.id} canEditItems={access.canEditProjectItems} canManageClientContent={access.canManageClientContent} /></section>
+        <section className="grid items-stretch gap-lg xl:grid-cols-3"><ProjectMilestonesAndTasksCards projectId={initialData.project.id} canManageItems={access.canEditProjectItems} canUpdateAssignedTasks={access.canUpdateAssignedTasks} viewerProfileId={viewerProfileId} canManageClientContent={access.canManageClientContent} /></section>
         <section aria-labelledby="project-people-access-heading" className="space-y-3">
           <div className="flex items-end justify-between gap-4 px-0.5">
             <div>
@@ -53,16 +53,13 @@ export function ProjectDetailPage({ client, initialData, permissions, projectRol
             </div>
             <p className="hidden max-w-[28rem] text-right text-meta text-muted-foreground md:block">{projectAccessDictionary.detail.peopleDescription}</p>
           </div>
-          <div className="grid items-start gap-lg xl:grid-cols-3">
-            <ProjectDetailOrganizationsCard canManage={projectRole === "admin" || projectRole === "owner"} />
+          <div className="grid items-start gap-lg xl:grid-cols-2">
             <Suspense fallback={<LowerCardFallback />}><ProjectDetailTeamCard canManageMembers={access.canManageMembers} memberColorRoles={memberColorRoles} /></Suspense>
             <ProjectClientAccessCard
               projectId={initialData.project.id}
               canManage={projectRole === "admin" || projectRole === "owner"}
+              organizationName={initialData.project.organizationName}
               summary={(initialData.project as typeof initialData.project & { clientAccessSummary?: import("./project-client-access-card").ProjectClientAccessReadSummary | null }).clientAccessSummary}
-              internalContactOptions={initialData.members
-                .filter((member) => memberColorRoles[member.profileId] !== "client")
-                .map((member) => ({ profileId: member.profileId, label: member.label, email: member.email }))}
             />
           </div>
         </section>

@@ -49,6 +49,7 @@ import {
   deleteProjectTask,
   getProjectDashboard,
   getProjectAccess,
+  getProjectTaskAssignment,
   listProjectActivity,
   queryProjectActivity,
   listProjectAssignableProfiles,
@@ -137,6 +138,7 @@ export type ProjectsHttpDependencies = {
   listProjectSetupOptions: typeof listProjectSetupOptions;
   createProjectWithAccess: typeof createProjectWithAccess;
   getProjectAccess: typeof getProjectAccess;
+  getProjectTaskAssignment: typeof getProjectTaskAssignment;
 };
 
 const PROJECT_DUE_WINDOWS = ["all", "overdue", "next_7_days", "next_30_days"] as const;
@@ -190,6 +192,12 @@ function requireStaffAccess(access: Extract<ServerUserAccess, { ok: true }>): Re
     : json(publicError("FORBIDDEN", "Forbidden."), { status: 403 });
 }
 
+function requireAdminAccess(access: Extract<ServerUserAccess, { ok: true }>): Response | null {
+  return access.role === "admin"
+    ? null
+    : json(publicError("FORBIDDEN", "Forbidden."), { status: 403 });
+}
+
 const PROJECT_DOMAIN_ERRORS = {
   "Projeto não encontrado.": {
     code: "PROJECT_NOT_FOUND",
@@ -208,7 +216,9 @@ function projectsErrorResponse(error: unknown, context: string, status = 500) {
   }
   if (
     message === "Only authenticated staff can create projects."
-    || message === "Staff creators must own the projects they create."
+    || message === "Only administrators can create projects."
+    || message === "Collaborators can only update their own assigned tasks."
+    || message === "Collaborators can only update task state."
     || message.startsWith("Only project owners or administrators can")
   ) {
     return json(publicError("FORBIDDEN", "Forbidden."), { status: 403 });
@@ -230,8 +240,12 @@ function projectsErrorResponse(error: unknown, context: string, status = 500) {
     || message === "The client contact must be an internal project team member."
     || message === "Every project member requires a valid profile and role."
     || message === "The responsible client contact must remain in the internal project team."
+    || message === "Tasks can only be assigned to project managers or collaborators."
   ) {
     return json(publicError("INVALID_INPUT", message), { status: 400 });
+  }
+  if (message.startsWith("Reassign or unassign open tasks before removing")) {
+    return json(publicError("OPEN_TASK_ASSIGNMENTS", message), { status: 409 });
   }
 
   const envelope = sanitizePublicError(
@@ -337,7 +351,7 @@ function requireClientAccess(access: Extract<ServerUserAccess, { ok: true }>): R
     : json(publicError("FORBIDDEN", "Forbidden."), { status: 403 });
 }
 
-async function requireProjectClientAccessManager(
+async function requireProjectManager(
   dependencies: ProjectsHttpDependencies,
   access: Extract<ServerUserAccess, { ok: true }>,
   projectId: string,
@@ -564,6 +578,9 @@ function parseClientAccessInput(value: unknown): UpdateProjectClientAccessInput 
     seenOrganizationIds.add(organization.organizationId);
     organizations.push({ organizationId: organization.organizationId, selectedProfileIds });
   }
+  if (organizations.length > 1) {
+    return invalidPayload("Client access can include only the project's organization.");
+  }
   if (value.mode !== "hidden" && organizations.length === 0) {
     return invalidPayload("Visible client access requires at least one organization.");
   }
@@ -621,14 +638,16 @@ function parseAtomicCreateInput(payload: Record<string, unknown>): CreateProject
     memberProfileIds.add(member.profileId);
     members.push({ profileId: member.profileId, role: member.role });
   }
-  if (members.filter((member) => member.role === "owner").length !== 1) {
-    return invalidPayload("Project creation requires exactly one owner.");
+  if (members.filter((member) => member.role === "owner").length > 1) {
+    return invalidPayload("Project creation accepts at most one owner.");
   }
   const clientAccess = parseClientAccessInput(payload.clientAccess);
   if (isResponse(clientAccess)) return clientAccess;
-  const participantIds = new Set([projectInput.organizationId, ...participatingOrganizationIds]);
-  if (clientAccess.organizations.some((organization) => !participantIds.has(organization.organizationId))) {
-    return invalidPayload("Client access organizations must participate in the project.");
+  if (participatingOrganizationIds.some((organizationId) => organizationId !== projectInput.organizationId)) {
+    return invalidPayload("A project can include only its primary organization.");
+  }
+  if (clientAccess.organizations.some((organization) => organization.organizationId !== projectInput.organizationId)) {
+    return invalidPayload("Client access must use the project's primary organization.");
   }
   if (projectInput.startDate && projectInput.targetDate && projectInput.targetDate < projectInput.startDate) {
     return invalidPayload("A data alvo não pode ser anterior à data de início.");
@@ -778,7 +797,7 @@ export function createClientProjectDetailGetHandler(dependencies: ProjectsHttpDe
 export function createProjectClientAccessGetHandler(dependencies: ProjectsHttpDependencies) {
   return withStaffAccess(dependencies, "projects.client-access.get", async (access, _request, context) => {
     const { id } = await getRouteParams(context);
-    const forbidden = await requireProjectClientAccessManager(dependencies, access, id);
+    const forbidden = await requireProjectManager(dependencies, access, id);
     if (forbidden) return forbidden;
     return json({ data: await dependencies.getProjectClientAccess(access.supabase as SupabaseClient, id) });
   });
@@ -787,12 +806,22 @@ export function createProjectClientAccessGetHandler(dependencies: ProjectsHttpDe
 export function createProjectClientAccessPatchHandler(dependencies: ProjectsHttpDependencies) {
   return withStaffAccess(dependencies, "projects.client-access.update", async (access, request, context) => {
     const { id } = await getRouteParams(context);
-    const forbidden = await requireProjectClientAccessManager(dependencies, access, id);
+    const forbidden = await requireProjectManager(dependencies, access, id);
     if (forbidden) return forbidden;
     const payload = await parseJsonObject(request);
     if (!payload) return invalidPayload();
     const input = parseClientAccessInput(payload);
     if (isResponse(input)) return input;
+    const current = await dependencies.getProjectClientAccess(access.supabase as SupabaseClient, id);
+    const primaryOrganization = current.organizations.find((organization) => organization.isPrimary)
+      ?? current.organizations[0];
+    if (input.mode !== "hidden" && (
+      !primaryOrganization
+      || input.organizations.length !== 1
+      || input.organizations[0]?.organizationId !== primaryOrganization.organizationId
+    )) {
+      return invalidPayload("Client access must use the project's primary organization.");
+    }
     const data = await dependencies.updateProjectClientAccess(access.supabase as SupabaseClient, id, input);
     return json({ data });
   });
@@ -801,11 +830,11 @@ export function createProjectClientAccessPatchHandler(dependencies: ProjectsHttp
 export function createProjectOrganizationsPatchHandler(dependencies: ProjectsHttpDependencies) {
   return withStaffAccess(dependencies, "projects.organizations.update", async (access, request, context) => {
     const { id } = await getRouteParams(context);
-    const forbidden = await requireProjectClientAccessManager(dependencies, access, id);
+    const forbidden = await requireProjectManager(dependencies, access, id);
     if (forbidden) return forbidden;
     const payload = await parseJsonObject(request);
     const organizationIds = payload ? uniqueStrings(payload.organizationIds) : null;
-    if (!organizationIds || organizationIds.length === 0) {
+    if (!organizationIds || organizationIds.length !== 1) {
       return invalidPayload('Invalid "organizationIds" field.');
     }
     return json({
@@ -820,6 +849,8 @@ export function createProjectOrganizationsPatchHandler(dependencies: ProjectsHtt
 
 export function createProjectsSetupOptionsGetHandler(dependencies: ProjectsHttpDependencies) {
   return withStaffAccessWithoutContext(dependencies, "projects.setup-options", async (access, request) => {
+    const forbidden = requireAdminAccess(access);
+    if (forbidden) return forbidden;
     if (!access.profileId) return json(publicError("FORBIDDEN", "Forbidden."), { status: 403 });
     const raw = new URL(request.url).searchParams.get("organizationIds") ?? "";
     const organizationIds = Array.from(new Set(raw.split(",").map((item) => item.trim()).filter(Boolean)));
@@ -839,7 +870,9 @@ export function createProjectsSetupOptionsGetHandler(dependencies: ProjectsHttpD
 export function createProjectsAssignableProfilesGetHandler(dependencies: ProjectsHttpDependencies) {
   return withStaffAccess(dependencies, "projects.members.list", async (access, _request, context) => {
     const { id } = await getRouteParams(context);
-    return json(await dependencies.listAssignableProfiles(access.supabase as never, id));
+    const forbidden = await requireProjectManager(dependencies, access, id);
+    if (forbidden) return forbidden;
+    return json({ data: await dependencies.listAssignableProfiles(access.supabase as never, id) });
   });
 }
 
@@ -861,6 +894,8 @@ export function createProjectsOrganizationsPostHandler(dependencies: ProjectsHtt
 
 export function createProjectsPostHandler(dependencies: ProjectsHttpDependencies) {
   return withStaffAccess(dependencies, "projects.create", async (access, request) => {
+    const forbidden = requireAdminAccess(access);
+    if (forbidden) return forbidden;
     const payload = await parseJsonObject(request);
     if (!payload) return invalidPayload();
     const atomicInput = parseAtomicCreateInput(payload);
@@ -886,7 +921,7 @@ export function createProjectsPostHandler(dependencies: ProjectsHttpDependencies
     );
     if (isResponse(input)) return input;
     if (!access.profileId) return json(publicError("FORBIDDEN", "Forbidden."), { status: 403 });
-    const ownerProfileId = input.ownerProfileId || access.profileId;
+    const ownerProfileId = input.ownerProfileId || null;
     const result = await dependencies.createProjectWithAccess(access.supabase as SupabaseClient, {
       idempotencyKey: crypto.randomUUID(),
       project: {
@@ -900,7 +935,7 @@ export function createProjectsPostHandler(dependencies: ProjectsHttpDependencies
         summary: input.summary,
       },
       participatingOrganizationIds: [input.organizationId],
-      members: [{ profileId: ownerProfileId, role: "owner" }],
+      members: ownerProfileId ? [{ profileId: ownerProfileId, role: "owner" }] : [],
       clientAccess: { mode: "hidden", organizations: [] },
     });
     return json({
@@ -916,6 +951,8 @@ export function createProjectsPostHandler(dependencies: ProjectsHttpDependencies
 export function createProjectsPatchHandler(dependencies: ProjectsHttpDependencies) {
   return withStaffAccess(dependencies, "projects.update", async (access, request, context) => {
     const { id } = await getRouteParams(context);
+    const forbidden = await requireProjectManager(dependencies, access, id);
+    if (forbidden) return forbidden;
     const payload = await parseJsonObject(request);
     if (!payload) return invalidPayload();
     const input = validateInput<UpdateProjectInput>(
@@ -932,6 +969,8 @@ export function createProjectsPatchHandler(dependencies: ProjectsHttpDependencie
 
 export function createProjectsDeleteHandler(dependencies: ProjectsHttpDependencies) {
   return withStaffAccess(dependencies, "projects.delete", async (access, _request, context) => {
+    const forbidden = requireAdminAccess(access);
+    if (forbidden) return forbidden;
     const { id } = await getRouteParams(context);
     await dependencies.deleteProject(
       access.supabase as never,
@@ -945,6 +984,8 @@ export function createProjectsDeleteHandler(dependencies: ProjectsHttpDependenci
 export function createProjectsMembersPutHandler(dependencies: ProjectsHttpDependencies) {
   return withStaffAccess(dependencies, "projects.members.sync", async (access, request, context) => {
     const { id } = await getRouteParams(context);
+    const forbidden = await requireProjectManager(dependencies, access, id);
+    if (forbidden) return forbidden;
     const payload = await parseJsonObject(request);
     if (!payload || !Array.isArray(payload.members)) {
       return invalidPayload('Invalid "members" field.');
@@ -969,6 +1010,8 @@ export function createProjectsMembersPutHandler(dependencies: ProjectsHttpDepend
 export function createProjectsMilestonesPostHandler(dependencies: ProjectsHttpDependencies) {
   return withStaffAccess(dependencies, "projects.milestones.create", async (access, request, context) => {
     const { id } = await getRouteParams(context);
+    const forbidden = await requireProjectManager(dependencies, access, id);
+    if (forbidden) return forbidden;
     const payload = await parseJsonObject(request);
     if (!payload) return invalidPayload();
     const input = validateInput<CreateProjectMilestoneInput>(
@@ -986,6 +1029,8 @@ export function createProjectsMilestonesPostHandler(dependencies: ProjectsHttpDe
 export function createProjectsMilestonesPatchHandler(dependencies: ProjectsHttpDependencies) {
   return withStaffAccess(dependencies, "projects.milestones.update", async (access, request, context) => {
     const { id, itemId } = await getItemRouteParams(context);
+    const forbidden = await requireProjectManager(dependencies, access, id);
+    if (forbidden) return forbidden;
     const payload = await parseJsonObject(request);
     if (!payload) return invalidPayload();
     const input = validateInput<UpdateProjectMilestoneInput>(
@@ -1002,6 +1047,8 @@ export function createProjectsMilestonesPatchHandler(dependencies: ProjectsHttpD
 export function createProjectsMilestonesDeleteHandler(dependencies: ProjectsHttpDependencies) {
   return withStaffAccess(dependencies, "projects.milestones.delete", async (access, _request, context) => {
     const { id, itemId } = await getItemRouteParams(context);
+    const forbidden = await requireProjectManager(dependencies, access, id);
+    if (forbidden) return forbidden;
     await dependencies.deleteMilestone(access.supabase as never, id, itemId);
     return json({ data: await dependencies.getDashboard(access.supabase as never, id) });
   });
@@ -1010,6 +1057,8 @@ export function createProjectsMilestonesDeleteHandler(dependencies: ProjectsHttp
 export function createProjectsTasksPostHandler(dependencies: ProjectsHttpDependencies) {
   return withStaffAccess(dependencies, "projects.tasks.create", async (access, request, context) => {
     const { id } = await getRouteParams(context);
+    const forbidden = await requireProjectManager(dependencies, access, id);
+    if (forbidden) return forbidden;
     const payload = await parseJsonObject(request);
     if (!payload) return invalidPayload();
     const input = validateInput<CreateProjectTaskInput>(
@@ -1029,6 +1078,31 @@ export function createProjectsTasksPatchHandler(dependencies: ProjectsHttpDepend
     const { id, itemId } = await getItemRouteParams(context);
     const payload = await parseJsonObject(request);
     if (!payload) return invalidPayload();
+    if (!access.profileId) return json(publicError("FORBIDDEN", "Forbidden."), { status: 403 });
+    const projectAccess = await dependencies.getProjectAccess(
+      access.supabase as SupabaseClient,
+      id,
+      access.profileId,
+      access.role ?? null,
+    );
+    const canManageTask = projectAccess.projectRole === "admin" || projectAccess.projectRole === "owner";
+    if (!canManageTask) {
+      if (projectAccess.projectRole !== "contributor") {
+        return json(publicError("FORBIDDEN", "Forbidden."), { status: 403 });
+      }
+      const contributorFields = new Set(["status", "position", "blockedReason"]);
+      if (Object.keys(payload).some((field) => !contributorFields.has(field))) {
+        return json(publicError("FORBIDDEN", "Forbidden."), { status: 403 });
+      }
+      const assignment = await dependencies.getProjectTaskAssignment(
+        access.supabase as SupabaseClient,
+        id,
+        itemId,
+      );
+      if (!assignment || assignment.assigneeProfileId !== access.profileId) {
+        return json(publicError("FORBIDDEN", "Forbidden."), { status: 403 });
+      }
+    }
     const input = validateInput<UpdateProjectTaskInput>(
       payload,
       taskFields,
@@ -1043,6 +1117,8 @@ export function createProjectsTasksPatchHandler(dependencies: ProjectsHttpDepend
 export function createProjectsTasksDeleteHandler(dependencies: ProjectsHttpDependencies) {
   return withStaffAccess(dependencies, "projects.tasks.delete", async (access, _request, context) => {
     const { id, itemId } = await getItemRouteParams(context);
+    const forbidden = await requireProjectManager(dependencies, access, id);
+    if (forbidden) return forbidden;
     await dependencies.deleteTask(access.supabase as never, id, itemId);
     return json({ data: await dependencies.getDashboard(access.supabase as never, id) });
   });
@@ -1051,6 +1127,8 @@ export function createProjectsTasksDeleteHandler(dependencies: ProjectsHttpDepen
 export function createProjectsLinksPostHandler(dependencies: ProjectsHttpDependencies) {
   return withStaffAccess(dependencies, "projects.links.create", async (access, request, context) => {
     const { id } = await getRouteParams(context);
+    const forbidden = await requireProjectManager(dependencies, access, id);
+    if (forbidden) return forbidden;
     const payload = await parseJsonObject(request);
     if (!payload) return invalidPayload();
     const input = validateInput<CreateProjectLinkInput>(
@@ -1068,6 +1146,8 @@ export function createProjectsLinksPostHandler(dependencies: ProjectsHttpDepende
 export function createProjectsLinksPatchHandler(dependencies: ProjectsHttpDependencies) {
   return withStaffAccess(dependencies, "projects.links.update", async (access, request, context) => {
     const { id, itemId } = await getItemRouteParams(context);
+    const forbidden = await requireProjectManager(dependencies, access, id);
+    if (forbidden) return forbidden;
     const payload = await parseJsonObject(request);
     if (!payload) return invalidPayload();
     const input = validateInput<UpdateProjectLinkInput>(
@@ -1084,6 +1164,8 @@ export function createProjectsLinksPatchHandler(dependencies: ProjectsHttpDepend
 export function createProjectsLinksDeleteHandler(dependencies: ProjectsHttpDependencies) {
   return withStaffAccess(dependencies, "projects.links.delete", async (access, _request, context) => {
     const { id, itemId } = await getItemRouteParams(context);
+    const forbidden = await requireProjectManager(dependencies, access, id);
+    if (forbidden) return forbidden;
     const links = await dependencies.deleteLink(access.supabase as never, id, itemId);
     return json({ data: links });
   });
