@@ -26,19 +26,13 @@ import { ActivityMessage } from "@brightweblabs/ui";
 import { activityActorName, composeProjectMessage } from "../activity-messages";
 import type { ProjectActivityItem } from "../types";
 import { useProjectsUiClient, useProjectsUiDictionary } from "./context";
+import { formatProjectDateTime } from "./shared/formatters";
 
 type ProjectRecentActivityProps = {
   projectId: string;
   activity: ProjectActivityItem[];
   total: number;
 };
-
-function formatDateTime(value: string | null) {
-  if (!value) return "-";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return date.toLocaleString("pt-PT", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
-}
 
 function getChangedByText(item: ProjectActivityItem) {
   return activityActorName(item.actorLabel ?? item.actorProfileId);
@@ -59,7 +53,7 @@ function ActivityRow({ item, showDetails = false }: { item: ProjectActivityItem;
         <div className="flex items-start gap-2">
           <p className="text-body text-foreground min-w-0 flex-1 leading-snug"><ActivityMessage segs={message} /></p>
           <span className={`${MONO} text-micro text-muted-foreground shrink-0 text-right`}>
-            {formatDateTime(item.createdAt)}
+            {formatProjectDateTime(item.createdAt)}
           </span>
         </div>
         <ActivityChangeRows changes={changes} />
