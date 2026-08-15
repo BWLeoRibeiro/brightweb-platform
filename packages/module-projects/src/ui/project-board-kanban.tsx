@@ -37,6 +37,8 @@ import { TaskAssigneeMeta, TaskDueMeta, TaskMilestoneMeta, TaskPriorityTag, Task
 import { useProjectDetailActions, useProjectDetailData } from "./project-detail-data-provider";
 import { useProjectBoardMilestoneEvents } from "./hooks/use-project-board-milestone-events";
 import { cn } from "./utils";
+import { isProjectDatePast } from "./shared/formatters";
+import { useProjectsNow } from "./shared/use-projects-now";
 
 type ProjectBoardKanbanProps = { canEditItems: boolean };
 type SheetMode = "view" | "edit";
@@ -79,14 +81,9 @@ const columnStyles: Record<TaskStatus, { surfaceClassName: string; headingClassN
   },
 };
 
-function isTaskOverdue(task: ProjectTask) {
+function isTaskOverdue(task: ProjectTask, now: Date | null) {
   if (!task.dueDate || task.status === "done") return false;
-  const due = new Date(task.dueDate);
-  if (Number.isNaN(due.getTime())) return false;
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  due.setHours(0, 0, 0, 0);
-  return due.getTime() < today.getTime();
+  return isProjectDatePast(task.dueDate, now);
 }
 
 function toIsoDate(value?: Date): string {
@@ -109,6 +106,7 @@ function normalizeTaskForm(form: TaskFormState) {
 
 export function ProjectBoardKanban({ canEditItems }: ProjectBoardKanbanProps) {
   const dictionary = useProjectsUiDictionary();
+  const now = useProjectsNow();
   const client = useProjectsUiClient();
   const data = useProjectDetailData();
   const { replaceDashboard } = useProjectDetailActions();
@@ -317,7 +315,7 @@ export function ProjectBoardKanban({ canEditItems }: ProjectBoardKanbanProps) {
                       >
                         <div className="flex items-start justify-between gap-2"><p className="text-body text-foreground min-w-0 flex-1 font-semibold leading-snug line-clamp-2" title={task.title}>{task.title}</p><TaskPriorityTag task={task} /></div>
                         {task.description?.trim() ? <p className="text-meta text-muted-foreground mt-1 line-clamp-2 text-[color:var(--muted-foreground)]" title={task.description}>{task.description}</p> : null}
-                        <div className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1"><TaskDueMeta dueDate={task.dueDate} isOverdue={isTaskOverdue(task)} /><TaskMilestoneMeta title={milestone?.title ?? null} /></div>
+                        <div className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1"><TaskDueMeta dueDate={task.dueDate} isOverdue={isTaskOverdue(task, now)} /><TaskMilestoneMeta title={milestone?.title ?? null} /></div>
                         <div className="mt-1.5"><TaskAssigneeMeta label={task.assigneeLabel} /></div>
                         {task.status === "blocked" && task.blockedReason ? <p className="text-micro text-muted-foreground mt-2 line-clamp-2 rounded-md border border-[color:var(--project-board-reason-border)] bg-[color:var(--project-board-reason-surface)] px-1.5 py-1 text-[color:var(--project-risk-overdue-strong)]" title={task.blockedReason}>{task.blockedReason}</p> : null}
                       </button>

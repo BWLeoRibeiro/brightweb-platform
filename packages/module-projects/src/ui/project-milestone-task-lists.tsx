@@ -21,6 +21,14 @@ import { cn } from "./utils";
 import { useProjectsNavigation, useProjectsUiDictionary } from "./context";
 import type { ProjectsUiDictionary } from "./types";
 import { defaultProjectsUiDictionary } from "./dictionary";
+import {
+  addProjectCalendarDays,
+  formatProjectDayOfMonth,
+  formatProjectWeekday,
+  getProjectCalendarDayDifference,
+  getProjectDateKey,
+} from "./shared/formatters";
+import { useProjectsNow } from "./shared/use-projects-now";
 
 type ProjectMilestonesAndTasksListsProps = {
   projectId: string;
@@ -95,19 +103,6 @@ const initialCollapsedTaskGroups: CollapsedTaskGroupsState = {
   later: false,
 };
 
-function toDateKey(date: Date) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
-
-function addDays(date: Date, amount: number) {
-  const copy = new Date(date);
-  copy.setDate(copy.getDate() + amount);
-  return copy;
-}
-
 function getTaskGroup(dueDate: string | null, todayKey: string, endOfWeekKey: string): TaskGroupKey {
   if (!dueDate) return "later";
   if (dueDate < todayKey) return "overdue";
@@ -147,28 +142,16 @@ function milestoneVisualHealth(milestone: ProjectMilestone): "off_track" | "at_r
 }
 
 function formatWeekday(value: string | null | undefined) {
-  if (!value) return "-";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "-";
-  return new Intl.DateTimeFormat("pt-PT", { weekday: "short" }).format(date).replace(".", "");
+  return formatProjectWeekday(value);
 }
 
 function formatDayOfMonth(value: string | null | undefined) {
-  if (!value) return "--";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "--";
-  return String(date.getDate()).padStart(2, "0");
+  return formatProjectDayOfMonth(value);
 }
 
-function formatRelativeDue(value: string | null | undefined, dictionary: ProjectsUiDictionary): string | null {
-  if (!value) return null;
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return null;
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const target = new Date(date);
-  target.setHours(0, 0, 0, 0);
-  const days = Math.round((target.getTime() - today.getTime()) / 86_400_000);
+function formatRelativeDue(value: string | null | undefined, dictionary: ProjectsUiDictionary, now: Date | null): string | null {
+  const days = getProjectCalendarDayDifference(value, now);
+  if (days === null) return null;
   if (days === 0) return dictionary.detail.today;
   if (days === 1) return dictionary.detail.tomorrow;
   if (days === -1) return dictionary.detail.yesterday;
@@ -312,6 +295,7 @@ export function ProjectMilestonesAndTasksLists({
 }: ProjectMilestonesAndTasksListsProps) {
   const navigation = useProjectsNavigation();
   const dictionary = useProjectsUiDictionary();
+  const now = useProjectsNow();
   const milestoneStatusLabels: Record<string, string> = { pending: dictionary.status.pending, in_progress: dictionary.status.in_progress, achieved: dictionary.status.achieved, delayed: dictionary.status.delayed };
   const [collapsedTaskGroups, setCollapsedTaskGroups] = useState<CollapsedTaskGroupsState>(initialCollapsedTaskGroups);
 
@@ -332,10 +316,8 @@ export function ProjectMilestonesAndTasksLists({
   }, [tasks]);
 
   const groupedTasks = useMemo(() => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const todayKey = toDateKey(today);
-    const endOfWeekKey = toDateKey(addDays(today, 6));
+    const todayKey = getProjectDateKey(now);
+    const endOfWeekKey = addProjectCalendarDays(now, 6);
     const groups: Record<TaskGroupKey, ProjectTask[]> = {
       overdue: [],
       today: [],
@@ -344,7 +326,7 @@ export function ProjectMilestonesAndTasksLists({
     };
 
     for (const task of visibleTasks) {
-      groups[getTaskGroup(task.dueDate, todayKey, endOfWeekKey)].push(task);
+      groups[todayKey && endOfWeekKey ? getTaskGroup(task.dueDate, todayKey, endOfWeekKey) : "later"].push(task);
     }
 
     for (const groupKey of Object.keys(groups) as TaskGroupKey[]) {
@@ -355,7 +337,7 @@ export function ProjectMilestonesAndTasksLists({
       ...group,
       tasks: groups[group.key],
     }));
-  }, [visibleTasks]);
+  }, [now, visibleTasks]);
 
   // The bento is a focused preview: fill it with the most urgent tasks first
   // (overdue → today → this week → later) up to PREVIEW_TASK_LIMIT, then send
@@ -401,7 +383,7 @@ export function ProjectMilestonesAndTasksLists({
             ) : null}
             {milestones.map((milestone) => {
               const progress = taskProgressByMilestone.get(milestone.id);
-              const relativeDue = formatRelativeDue(milestone.targetDate, dictionary);
+              const relativeDue = formatRelativeDue(milestone.targetDate, dictionary, now);
               const isProgressComplete = progress ? progress.total > 0 && progress.done >= progress.total : false;
               const isAchieved = milestone.status === "achieved";
               const isOverdue = !isAchieved && milestoneVisualHealth(milestone) === "off_track";

@@ -7,6 +7,7 @@ import { monoTabularClassName as MONO } from "./shared/typography";
 import { Popover, PopoverContent, PopoverTrigger } from "@brightweblabs/ui";
 import { formatElapsedSince, formatProjectDateTime } from "./shared/formatters";
 import { useProjectsUiDictionary } from "./context";
+import { useProjectsNow } from "./shared/use-projects-now";
 
 function MetadataRow({ icon: Icon, label, value }: { icon: LucideIcon; label: string; value: string }) {
   const isEmpty = value === "-" || value === "–";
@@ -28,10 +29,11 @@ function MetadataRow({ icon: Icon, label, value }: { icon: LucideIcon; label: st
 export function ProjectDetailMetadataStrip() {
   const dictionary = useProjectsUiDictionary();
   const project = useProjectDetailProject();
+  const now = useProjectsNow();
 
   const items: Array<{ icon: LucideIcon; label: string; value: string }> = [
     { icon: CalendarClock, label: dictionary.detail.created, value: formatProjectDateTime(project.createdAt) },
-    { icon: Hourglass, label: dictionary.detail.age, value: formatElapsedSince(project.createdAt) },
+    { icon: Hourglass, label: dictionary.detail.age, value: formatElapsedSince(project.createdAt, now) },
     { icon: Zap, label: dictionary.detail.activated, value: formatProjectDateTime(project.activatedAt) },
     { icon: History, label: dictionary.detail.updated, value: formatProjectDateTime(project.updatedAt) },
     ...(project.completedAt
