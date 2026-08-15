@@ -1,5 +1,11 @@
 # @brightweblabs/module-projects
 
+## 0.18.3
+
+### Patch Changes
+
+- 2f36882: Render project dates and activity timestamps in the Lisbon timezone so server and browser output stays identical during hydration.
+
 ## 0.18.2
 
 ### Patch Changes
