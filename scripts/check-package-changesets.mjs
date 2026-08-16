@@ -44,6 +44,30 @@ export function changedPublishablePackages(changedFiles, publishablePackages) {
   return changed;
 }
 
+async function hasConsumedChangeset(repoRoot, changedFiles) {
+  const changesetFiles = changedFiles.filter(
+    (fileName) => fileName.startsWith(".changeset/") && fileName.endsWith(".md") && fileName !== ".changeset/README.md",
+  );
+  for (const fileName of changesetFiles) {
+    try {
+      await fs.access(path.join(repoRoot, fileName));
+    } catch (error) {
+      if (error?.code === "ENOENT") return true;
+      throw error;
+    }
+  }
+  return false;
+}
+
+function packageHasOnlyReleaseMetadataChanges(packagePrefix, changedFiles) {
+  const packageFiles = changedFiles
+    .filter((fileName) => fileName.startsWith(packagePrefix))
+    .map((fileName) => fileName.slice(packagePrefix.length));
+  return packageFiles.length > 0 && packageFiles.every(
+    (fileName) => fileName === "package.json" || fileName === "CHANGELOG.md",
+  );
+}
+
 export async function declaredChangesetPackages(repoRoot, changedFiles, baseRef) {
   const changesetFiles = changedFiles.filter(
     (fileName) => fileName.startsWith(".changeset/") && fileName.endsWith(".md") && fileName !== ".changeset/README.md",
@@ -89,7 +113,17 @@ export async function checkPackageChangesets({ repoRoot = defaultRepoRoot, baseR
   const publishablePackages = await loadPublishablePackages(repoRoot);
   const changedPackages = changedPublishablePackages(files, publishablePackages);
   const declaredPackages = await declaredChangesetPackages(repoRoot, files, baseRef);
-  const missing = Array.from(changedPackages).filter((packageName) => !declaredPackages.has(packageName)).sort();
+  const consumedChangeset = await hasConsumedChangeset(repoRoot, files);
+  const releaseMetadataOnlyPackages = new Set(
+    consumedChangeset
+      ? Array.from(publishablePackages)
+        .filter(([packagePrefix]) => packageHasOnlyReleaseMetadataChanges(packagePrefix, files))
+        .map(([, packageName]) => packageName)
+      : [],
+  );
+  const missing = Array.from(changedPackages).filter(
+    (packageName) => !declaredPackages.has(packageName) && !releaseMetadataOnlyPackages.has(packageName),
+  ).sort();
   return {
     ok: missing.length === 0,
     changedPackages: Array.from(changedPackages).sort(),
