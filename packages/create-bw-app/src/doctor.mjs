@@ -1,7 +1,8 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { stdout as output } from "node:process";
-import { cursorMigrationStatus } from "./migrations.mjs";
+import { APP_DEPENDENCY_DEFAULTS, BRIGHTWEB_PACKAGE_NAMES } from "./constants.mjs";
+import { cursorMigrationStatus, exactMigrationCompatibilityStatus } from "./migrations.mjs";
 import { findWorkspaceRoot, loadModuleCatalog, MODULE_PACKAGES, readAppManifest, readConfiguredModuleFlags, satisfiesVersion, validateAppManifest, writeAppManifest } from "./app-manifest.mjs";
 import { loadAppEnvironment, readFirstEnvironmentValue } from "./env.mjs";
 import { pathExists, readJsonIfPresent } from "./generator.mjs";
@@ -10,6 +11,143 @@ import { scaffoldDrift } from "./scaffold.mjs";
 
 const HELP = `Usage: bw doctor [options]\n\nOptions:\n  --target-dir <path>       App directory (defaults to cwd)\n  --workspace-root <path>   BrightWeb workspace root\n  --deployment-url <url>    Deployed app URL (defaults to PUBLIC_APP_URL/NEXT_PUBLIC_APP_URL)\n  --supabase-region <id>    Current Supabase project region override\n  --strict                  Treat warnings as failures\n  --report                  Stamp lastDoctor in the app manifest\n  --help                    Show this help`;
 const RUNTIME_PACKAGE_NAMES = ["react", "react-dom", "next"];
+const LOCAL_DEPENDENCY_PREFIXES = ["file:", "link:", "workspace:", "patch:"];
+
+async function findUp(startDir, fileName) {
+  let current = path.resolve(startDir);
+  while (true) {
+    const candidate = path.join(current, fileName);
+    if (await pathExists(candidate)) return candidate;
+    const parent = path.dirname(current);
+    if (parent === current) return null;
+    current = parent;
+  }
+}
+
+function exactVersionFromDefault(packageName) {
+  const requested = APP_DEPENDENCY_DEFAULTS[packageName];
+  return typeof requested === "string" ? requested.match(/^(?:\^|~)?(.+)$/)?.[1] ?? null : null;
+}
+
+function escapeRegExp(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+export function lockfileIntegrityForPackage(lockfile, packageName, version) {
+  const keyPattern = new RegExp(`^  ['\"]?${escapeRegExp(`${packageName}@${version}`)}['\"]?:$`);
+  const lines = lockfile.split("\n");
+  const start = lines.findIndex((line) => keyPattern.test(line));
+  if (start < 0) return null;
+  const block = [];
+  for (let index = start + 1; index < lines.length; index += 1) {
+    if (/^  \S/.test(lines[index])) break;
+    block.push(lines[index]);
+  }
+  return block.join("\n").match(/^    resolution:\s*\{[^}\n]*integrity:\s*([^,}\s]+)[^}\n]*\}/m)?.[1] ?? null;
+}
+
+export function lockfileImporterResolution(lockfile, importerKey, packageName) {
+  const lines = lockfile.split("\n");
+  const importersIndex = lines.findIndex((line) => /^importers:\s*$/.test(line));
+  if (importersIndex < 0) return null;
+  const normalizedKey = importerKey || ".";
+  const importerPattern = new RegExp(`^  ['\"]?${escapeRegExp(normalizedKey)}['\"]?:\\s*$`);
+  const importerStart = lines.findIndex((line, index) => index > importersIndex && importerPattern.test(line));
+  if (importerStart < 0) return null;
+  let importerEnd = lines.length;
+  for (let index = importerStart + 1; index < lines.length; index += 1) {
+    if (/^  \S/.test(lines[index])) { importerEnd = index; break; }
+  }
+  const dependencyPattern = new RegExp(`^      ['\"]?${escapeRegExp(packageName)}['\"]?:\\s*$`);
+  const dependencyStart = lines.findIndex(
+    (line, index) => index > importerStart && index < importerEnd && dependencyPattern.test(line),
+  );
+  if (dependencyStart < 0) return null;
+  const block = [];
+  for (let index = dependencyStart + 1; index < importerEnd; index += 1) {
+    if (/^      \S/.test(lines[index]) || /^    \S/.test(lines[index])) break;
+    block.push(lines[index]);
+  }
+  return {
+    specifier: block.join("\n").match(/^        specifier:\s*['\"]?([^'\"\s]+)['\"]?\s*$/m)?.[1] ?? null,
+    version: block.join("\n").match(/^        version:\s*['\"]?([^'\"\s]+)['\"]?\s*$/m)?.[1] ?? null,
+  };
+}
+
+async function inspectPackageProvenance(targetDir, dependencyMap) {
+  const issues = [];
+  const verified = [];
+  const lockPath = await findUp(targetDir, "pnpm-lock.yaml");
+  const installRoot = path.join(targetDir, "node_modules");
+  if (!lockPath || !(await pathExists(installRoot))) {
+    return { issues, verified, lockPath, available: false };
+  }
+  const lockfile = lockPath ? await fs.readFile(lockPath, "utf8") : null;
+  const importerKey = lockPath
+    ? path.relative(path.dirname(lockPath), targetDir).split(path.sep).join("/") || "."
+    : ".";
+  const workspaceManifest = lockPath ? await readJsonIfPresent(path.join(path.dirname(lockPath), "package.json")) : null;
+  const overrideMaps = [
+    workspaceManifest?.pnpm?.overrides,
+    workspaceManifest?.pnpm?.patchedDependencies,
+    workspaceManifest?.overrides,
+    workspaceManifest?.resolutions,
+  ].filter((value) => value && typeof value === "object");
+  for (const packageName of BRIGHTWEB_PACKAGE_NAMES) {
+    const requested = dependencyMap[packageName];
+    if (!requested) continue;
+    if (LOCAL_DEPENDENCY_PREFIXES.some((prefix) => String(requested).startsWith(prefix))) {
+      issues.push(`${packageName}: local override ${JSON.stringify(requested)} is forbidden`);
+      continue;
+    }
+    const overrideKey = overrideMaps.flatMap((overrides) => Object.keys(overrides)).find(
+      (key) => key === packageName || key.startsWith(`${packageName}@`),
+    );
+    if (overrideKey) {
+      issues.push(`${packageName}: workspace override or patch ${JSON.stringify(overrideKey)} is forbidden`);
+      continue;
+    }
+    const expectedVersion = exactVersionFromDefault(packageName);
+    if (!expectedVersion) {
+      issues.push(`${packageName}: create-bw-app has no exact compatibility version`);
+      continue;
+    }
+    const manifest = await readJsonIfPresent(path.join(targetDir, "node_modules", packageName, "package.json"));
+    if (!manifest) {
+      issues.push(`${packageName}: installed package manifest is missing`);
+      continue;
+    }
+    if (manifest.version !== expectedVersion) {
+      issues.push(`${packageName}: installed ${manifest.version ?? "unknown"}, expected exact ${expectedVersion}`);
+      continue;
+    }
+    if (!lockfile) {
+      issues.push(`${packageName}: pnpm-lock.yaml was not found`);
+      continue;
+    }
+    const importerResolution = lockfileImporterResolution(lockfile, importerKey, packageName);
+    if (!importerResolution) {
+      issues.push(`${packageName}: target importer ${importerKey} has no lockfile resolution`);
+      continue;
+    }
+    if (LOCAL_DEPENDENCY_PREFIXES.some((prefix) => String(importerResolution.version).startsWith(prefix))) {
+      issues.push(`${packageName}: target importer resolves through forbidden ${JSON.stringify(importerResolution.version)}`);
+      continue;
+    }
+    const resolvedVersion = importerResolution.version?.split("(")[0] ?? null;
+    if (resolvedVersion !== expectedVersion) {
+      issues.push(`${packageName}: target importer resolves ${resolvedVersion ?? "unknown"}, expected exact ${expectedVersion}`);
+      continue;
+    }
+    const integrity = lockfileIntegrityForPackage(lockfile, packageName, expectedVersion);
+    if (!integrity?.startsWith("sha512-")) {
+      issues.push(`${packageName}@${expectedVersion}: registry integrity is missing from pnpm-lock.yaml`);
+      continue;
+    }
+    verified.push(`${packageName}@${expectedVersion}`);
+  }
+  return { issues, verified, lockPath, available: true };
+}
 
 function isLocalDeploymentUrl(value) {
   try {
@@ -202,6 +340,17 @@ export async function doctorBrightwebApp(argvOptions = {}, runtimeOptions = {}) 
   }
   add(packageProblems.length ? "FAIL" : "PASS", "packages", packageProblems.join("; ") || "Installed module packages agree with the manifest.");
 
+  const provenance = await inspectPackageProvenance(targetDir, dependencyMap);
+  if (!provenance.available) {
+    add("INFO", "package-provenance", "SKIP exact registry provenance check; install dependencies with a pnpm lockfile first.");
+  } else {
+    add(
+      provenance.issues.length ? "FAIL" : "PASS",
+      "package-provenance",
+      provenance.issues.join("; ") || `${provenance.verified.length} BrightWeb packages match the exact compatibility set and pnpm registry integrity records.`,
+    );
+  }
+
   const runtimeVersions = await findInstalledRuntimeVersions(targetDir);
   const duplicateRuntimes = Object.entries(runtimeVersions)
     .filter(([, versions]) => versions.length > 1)
@@ -276,6 +425,31 @@ export async function doctorBrightwebApp(argvOptions = {}, runtimeOptions = {}) 
     if (status.shipsMigrations && status.missing.length > 0) migrationProblems.push(`${key}: ${status.missing.join(", ")}`);
   }
   add(migrationProblems.length ? "FAIL" : "PASS", "migrations", migrationProblems.join("; ") || "Migration cursors and flattened files agree.");
+  for (const key of migrationKeys) {
+    const cursor = appManifest.migrationCursor?.[key];
+    if (cursor == null && appManifest.adoptionNotes?.allowUncursored) {
+      add("WARN", `migration-provenance-${key}`, `${key}: exact migration provenance is unavailable because uncursored adoption is enabled.`);
+      continue;
+    }
+    const status = await exactMigrationCompatibilityStatus({
+      targetDir,
+      moduleKey: key,
+      cursor,
+      catalogEntry: catalog[key],
+    });
+    if (!status.shipsMigrations) continue;
+    add(
+      status.issues.length ? "FAIL" : "PASS",
+      `migration-provenance-${key}`,
+      status.issues.join("; ") || `${status.verified.length} ${key} migration files match compatible package provenance, source filename, current cursor, and sha256 content.`,
+    );
+    if (status.deferred?.length) {
+      add("INFO", `migration-deferred-${key}`, `${key}: ${status.deferred.length} later package migration${status.deferred.length === 1 ? " is" : "s are"} intentionally outside cursor ${cursor}: ${status.deferred.join(", ")}.`);
+    }
+    if (status.legacyEquivalent?.length) {
+      add("INFO", `migration-legacy-equivalent-${key}`, `${key}: ${status.legacyEquivalent.length} immutable historical migration file${status.legacyEquivalent.length === 1 ? " matches" : "s match"} a reviewed SQL-equivalent legacy hash.`);
+    }
+  }
   add("WARN", "db-objects", "SKIP live database checks are not available yet.");
   return finish(checks, argvOptions, appManifest, targetDir);
 }

@@ -8,6 +8,10 @@ import {
   createOrganizationsStaffAccessGuard,
   type OrganizationAccessDependencies,
 } from "../packages/module-orgs/src/access.ts";
+import {
+  removeOrganizationMember,
+  updateOrganizationMemberRole,
+} from "../packages/module-orgs/src/data.ts";
 
 const user = {
   id: "user-1",
@@ -129,4 +133,105 @@ test("organization management RLS removes direct organization-admin writes", asy
   assert.match(migration, /DROP POLICY IF EXISTS "Org admins manage org members"/);
   assert.match(migration, /DROP POLICY IF EXISTS "Org admins manage organization invitations"/);
   assert.doesNotMatch(migration, /CREATE POLICY/);
+});
+
+function organizationMemberMutationClient() {
+  const writes: Array<{ operation: string; value?: unknown }> = [];
+  const member = {
+    id: "membership-1",
+    organization_id: "org-1",
+    profile_id: "profile-1",
+    role: "admin",
+    joined_at: "2026-08-16T00:00:00.000Z",
+  };
+  return {
+    writes,
+    client: {
+      from(table: string) {
+        if (table === "organizations") {
+          return {
+            update(value: Record<string, unknown>) {
+              writes.push({ operation: "sync-primary-contact", value });
+              return { eq: async () => ({ error: null }) };
+            },
+          };
+        }
+        assert.equal(table, "organization_members");
+        return {
+          select(columns?: string) {
+            if (columns === "profile_id") {
+              return {
+                eq() {
+                  return {
+                    eq() {
+                      return {
+                        order() {
+                          return { limit: async () => ({ data: [], error: null }) };
+                        },
+                      };
+                    },
+                  };
+                },
+              };
+            }
+            return {
+              eq() {
+                return {
+                  eq() {
+                    return { maybeSingle: async () => ({ data: member, error: null }) };
+                  },
+                };
+              },
+            };
+          },
+          upsert(value: Record<string, unknown>) {
+            writes.push({ operation: "upsert", value });
+            return {
+              select() {
+                return {
+                  single: async () => ({
+                    data: { ...member, role: value.role },
+                    error: null,
+                  }),
+                };
+              },
+            };
+          },
+          delete() {
+            writes.push({ operation: "delete" });
+            return {
+              eq() {
+                return { eq: async () => ({ error: null }) };
+              },
+            };
+          },
+        };
+      },
+    },
+  };
+}
+
+test("staff may demote or remove the final organization administrator", async () => {
+  const demotion = organizationMemberMutationClient();
+  const updated = await updateOrganizationMemberRole(
+    demotion.client as never,
+    "org-1",
+    "profile-1",
+    "member",
+  );
+  assert.equal(updated.role, "member");
+  assert.deepEqual(demotion.writes, [{
+    operation: "upsert",
+    value: { organization_id: "org-1", profile_id: "profile-1", role: "member" },
+  }, {
+    operation: "sync-primary-contact",
+    value: { primary_contact_id: null },
+  }]);
+
+  const removal = organizationMemberMutationClient();
+  await removeOrganizationMember(removal.client as never, "org-1", "profile-1");
+  assert.deepEqual(removal.writes, [{ operation: "delete" }, {
+    operation: "sync-primary-contact",
+    value: { primary_contact_id: null },
+  }]);
 });

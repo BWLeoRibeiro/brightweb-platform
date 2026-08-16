@@ -10,7 +10,7 @@ import { hashFile, loadModuleCatalog, validateAppManifest } from "../packages/cr
 import { runBwCli } from "../packages/create-bw-app/src/bw.mjs";
 import { MODULE_STARTER_FILES, PLATFORM_STARTER_FILES } from "../packages/create-bw-app/src/constants.mjs";
 import { diffBrightwebScaffold } from "../packages/create-bw-app/src/diff.mjs";
-import { doctorBrightwebApp } from "../packages/create-bw-app/src/doctor.mjs";
+import { doctorBrightwebApp, lockfileImporterResolution, lockfileIntegrityForPackage } from "../packages/create-bw-app/src/doctor.mjs";
 import { createBrightwebClientApp, resolveModuleOrder as resolveGeneratorModuleOrder } from "../packages/create-bw-app/src/generator.mjs";
 import { removeBrightwebModule } from "../packages/create-bw-app/src/remove.mjs";
 import { normalizeSafeRelativePath, resolveSafeRelativePath } from "../packages/create-bw-app/src/safe-path.mjs";
@@ -430,7 +430,7 @@ test("scaffolded shell derives its title and resolves registered module controls
   assert.match(toolbarControls, /ProjectBoardToolbarControls/);
   assert.match(toolbarControls, /resolveShellToolbarSurface\(pathname, toolbarRoutes\)/);
   assert.match(toolbarControls, /crm: \(\) => <CrmToolbarControls/);
-  assert.match(toolbarControls, /projects: \(canCreateProjects\) => <ProjectsToolbarControls canCreateProjects=\{canCreateProjects\}/);
+  assert.match(toolbarControls, /projects: \(viewer\) => <ProjectsToolbarControls viewer=\{viewer\}/);
   assert.match(toolbarControls, /"project-board": \(\) => <ProjectBoardToolbarControls/);
   assert.doesNotMatch(toolbarControls, /AdminToolbarControls/);
 });
@@ -678,14 +678,13 @@ test("full-modules scaffold mounts shell, auth, account, dashboard, projects, ad
   assert.match(shellConfig, /dashboardModuleRegistration/);
   assert.match(shellConfig, /dashboardContributions/);
 
-  const projectsBoundary = await fs.readFile(
-    path.join(targetDir, "app", "(shell)", "projetos", "projetos-live-mounts.tsx"),
+  const projectsPage = await fs.readFile(
+    path.join(targetDir, "app", "(shell)", "projetos", "page.tsx"),
     "utf8",
   );
-  assert.match(projectsBoundary, /^"use client";/);
-  for (const pageName of ["ProjectsPage", "ProjectDetailPage", "ProjectBoardPage", "ProjectTasksPage"]) {
-    assert.match(projectsBoundary, new RegExp(pageName));
-  }
+  assert.match(projectsPage, /ProjectsPortugueseRoutePage as default/);
+  await assert.rejects(fs.access(path.join(targetDir, "app", "(shell)", "projetos", "projetos-live-mounts.tsx")));
+  await assert.rejects(fs.access(path.join(targetDir, "app", "(shell)", "projetos", "projetos-server-mounts.tsx")));
 
   const stack = await readJson(
     path.join(targetDir, "supabase", "clients", "cli-test", "stack.json"),
@@ -753,19 +752,19 @@ test("bw add projects resolves orgs, writes overlays, migrations, and manifest s
       .filter((name) => name.includes("_projects__202608"))
       .toSorted(),
     [
-      "0027_projects__20260801122000_project_member_sync.sql",
-      "0028_projects__20260804120000_project_task_start_date.sql",
-      "0029_projects__20260804123000_project_start_date.sql",
-      "0030_projects__20260810120000_project_client_access.sql",
-      "0031_projects__20260811120000_project_client_access_expand.sql",
-      "0032_projects__20260811120500_project_member_sync_hardening.sql",
-      "0033_projects__20260811121000_project_client_access_enforcement.sql",
-      "0034_projects__20260811121500_project_client_organization_memberships.sql",
-      "0035_projects__20260811121700_project_client_meta_preview.sql",
-      "0036_projects__20260811122000_project_client_access_identity_cleanup.sql",
-      "0037_projects__20260811122500_remove_project_client_next_steps.sql",
-      "0038_projects__20260815120000_project_client_access_member_roles.sql",
-      "0039_projects__20260815133000_project_admin_creation_and_task_permissions.sql",
+      "0028_projects__20260801122000_project_member_sync.sql",
+      "0029_projects__20260804120000_project_task_start_date.sql",
+      "0030_projects__20260804123000_project_start_date.sql",
+      "0031_projects__20260810120000_project_client_access.sql",
+      "0032_projects__20260811120000_project_client_access_expand.sql",
+      "0033_projects__20260811120500_project_member_sync_hardening.sql",
+      "0034_projects__20260811121000_project_client_access_enforcement.sql",
+      "0035_projects__20260811121500_project_client_organization_memberships.sql",
+      "0036_projects__20260811121700_project_client_meta_preview.sql",
+      "0037_projects__20260811122000_project_client_access_identity_cleanup.sql",
+      "0038_projects__20260811122500_remove_project_client_next_steps.sql",
+      "0039_projects__20260815120000_project_client_access_member_roles.sql",
+      "0040_projects__20260815133000_project_admin_creation_and_task_permissions.sql",
     ],
   );
   const doctor = await doctorBrightwebApp({ targetDir }, { workspaceRoot: REPO_ROOT });
@@ -798,13 +797,14 @@ test("bw upgrade appends only unapplied migrations and preserves drifted scaffol
       || name.includes("_crm__20260421201523_")
       || name.includes("_crm__20260724120000_")
       || name.includes("_crm__20260731130200_")
+      || name.includes("_crm__20260816120000_")
     ) await fs.rm(path.join(migrationsDir, name));
   }
   const starterPath = path.join(targetDir, "app", "(shell)", "crm", "page.tsx");
   await fs.appendFile(starterPath, "\n// app-owned drift\n");
 
   const result = await upgradeBrightwebApp("crm", { targetDir, refreshStarters: true }, { workspaceRoot: REPO_ROOT, fetchImpl: mockNpmFetch });
-  assert.equal(result.migrationPlan.writes.length, 4);
+  assert.equal(result.migrationPlan.writes.length, 5);
   assert.ok(result.drifted.includes("app/(shell)/crm/page.tsx"));
   assert.match(await fs.readFile(starterPath, "utf8"), /app-owned drift/);
   const appended = await fs.readFile(result.migrationPlan.writes[0].targetPath, "utf8");
@@ -883,6 +883,9 @@ test("bw upgrade stops at a safe enforcement boundary and requires explicit dest
     memberRolesMigration,
     projectPermissionsMigration,
   ]);
+  const boundedDoctor = await doctorBrightwebApp({ targetDir }, { workspaceRoot: REPO_ROOT });
+  assert.equal(boundedDoctor.checks.find((entry: { id: string }) => entry.id === "migration-provenance-projects")?.status, "PASS");
+  assert.match(boundedDoctor.checks.find((entry: { id: string }) => entry.id === "migration-deferred-projects")?.message ?? "", /4 later package migrations/);
 
   const cleanupPhase = await upgradeBrightwebApp(
     "projects",
@@ -939,6 +942,34 @@ test("bw upgrade synchronizes manifest module versions without an installed pack
   const packageManifest = await readJson(path.join(targetDir, "package.json"));
   const upgradedManifest = await readJson(manifestPath);
   assert.equal(upgradedManifest.modules.crm.version, packageManifest.dependencies["@brightweblabs/module-crm"].replace(/^\^/, ""));
+});
+
+test("bw upgrade removes only explicitly retired clean project mounts", async (t) => {
+  const { root, targetDir } = await scaffold(["projects"]);
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+  const retired = [
+    "app/(shell)/projetos/projetos-live-mounts.tsx",
+    "app/(shell)/projetos/projetos-server-mounts.tsx",
+    "app/api/projects/_handlers.ts",
+  ];
+  const manifestPath = path.join(targetDir, ".brightweb", "app-manifest.json");
+  const manifest = await readJson(manifestPath);
+  for (const relativePath of retired) {
+    const targetPath = path.join(targetDir, relativePath);
+    await fs.writeFile(targetPath, "// legacy generated mount\n", "utf8");
+    manifest.scaffoldFiles[relativePath] = {
+      module: "projects",
+      hash: await hashFile(targetPath),
+      status: "current",
+    };
+  }
+  await writeJson(manifestPath, manifest);
+
+  const result = await upgradeBrightwebApp("projects", { targetDir, refreshStarters: true }, { workspaceRoot: REPO_ROOT, fetchImpl: mockNpmFetch });
+
+  assert.deepEqual(result.plan.fileDeletes.map((entry) => entry.relativePath).sort(), retired.sort());
+  for (const relativePath of retired) await assert.rejects(fs.access(path.join(targetDir, relativePath)));
+  assert.ok(await fs.readFile(path.join(targetDir, "app", "(shell)", "account", "perfil", "page.tsx"), "utf8"));
 });
 
 test("bw upgrade installs and tracks deletion routes introduced after the original scaffold", async (t) => {
@@ -1044,6 +1075,60 @@ test("bw doctor passes a fresh scaffold", async (t) => {
   const result = await doctorBrightwebApp({ targetDir }, { workspaceRoot: REPO_ROOT });
   assert.equal(result.ok, true);
   assert.equal(result.checks.find((entry: { id: string }) => entry.id === "runtime-singletons")?.status, "PASS");
+  assert.equal(result.checks.find((entry: { id: string }) => entry.id === "migration-provenance-crm")?.status, "PASS");
+});
+
+test("bw doctor reads exact scoped-package integrity from a pnpm lockfile", () => {
+  const lockfile = [
+    "lockfileVersion: '9.0'",
+    "",
+    "packages:",
+    "",
+    "  '@brightweblabs/module-orgs@0.6.3':",
+    "    resolution: {integrity: sha512-exact-registry-integrity}",
+    "    peerDependencies:",
+    "      react: ^19.0.0",
+    "",
+    "  react@19.2.4:",
+    "    resolution: {integrity: sha512-react}",
+  ].join("\n");
+  assert.equal(
+    lockfileIntegrityForPackage(lockfile, "@brightweblabs/module-orgs", "0.6.3"),
+    "sha512-exact-registry-integrity",
+  );
+  assert.equal(lockfileIntegrityForPackage(lockfile, "@brightweblabs/module-orgs", "0.6.2"), null);
+  const importerLockfile = [
+    "lockfileVersion: '9.0'", "", "importers:", "", "  apps/portal-next:", "    dependencies:",
+    "      '@brightweblabs/module-orgs':", "        specifier: ^0.6.3", "        version: 0.6.3(react@19.2.4)",
+  ].join("\n");
+  assert.deepEqual(lockfileImporterResolution(importerLockfile, "apps/portal-next", "@brightweblabs/module-orgs"), {
+    specifier: "^0.6.3",
+    version: "0.6.3(react@19.2.4)",
+  });
+  assert.deepEqual(lockfileImporterResolution(importerLockfile.replace("0.6.3(react@19.2.4)", "link:../../packages/module-orgs"), "apps/portal-next", "@brightweblabs/module-orgs"), {
+    specifier: "^0.6.3",
+    version: "link:../../packages/module-orgs",
+  });
+});
+
+test("bw doctor rejects a generated migration whose content no longer matches the package source", async (t) => {
+  const { root, targetDir } = await scaffold(["crm"]);
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+  const migrations = await fs.readdir(path.join(targetDir, "supabase", "migrations"));
+  const migration = migrations.find((fileName) => fileName.includes("_crm__20260316092000_crm_v1.sql"));
+  assert.ok(migration);
+  await fs.appendFile(path.join(targetDir, "supabase", "migrations", migration), "\n-- consumer drift\n");
+
+  const result = await doctorBrightwebApp({ targetDir }, { workspaceRoot: REPO_ROOT });
+  assert.equal(result.ok, false);
+  const check = result.checks.find((entry: { id: string }) => entry.id === "migration-provenance-crm");
+  assert.equal(check?.status, "FAIL");
+  assert.match(check?.message ?? "", /sha256/);
+
+  const preview = await upgradeBrightwebApp("crm", { targetDir, dryRun: true }, { workspaceRoot: REPO_ROOT, fetchImpl: mockNpmFetch });
+  assert.deepEqual(preview.migrationPlan.repairs, []);
+  assert.equal(preview.migrationPlan.writes.some((entry: { targetFileName: string }) => entry.targetFileName === migration), false);
+  assert.match(check?.message ?? "", /sha256/);
 });
 
 test("bw doctor warns when x-vercel-id reports a deployed function outside the mapped Supabase region", async (t) => {

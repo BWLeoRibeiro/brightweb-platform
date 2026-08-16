@@ -289,6 +289,25 @@ export async function setOrganizationMemberRole(
   return data as OrganizationMember;
 }
 
+export async function syncOrganizationPrimaryContactFromAdmins(
+  supabase: SupabaseClient,
+  organizationId: string,
+): Promise<void> {
+  const { data, error } = await supabase
+    .from("organization_members")
+    .select("profile_id")
+    .eq("organization_id", organizationId)
+    .eq("role", "admin")
+    .order("joined_at", { ascending: true })
+    .limit(1);
+  if (error) throw new Error(error.message);
+  const { error: updateError } = await supabase
+    .from("organizations")
+    .update({ primary_contact_id: typeof data?.[0]?.profile_id === "string" ? data[0].profile_id : null })
+    .eq("id", organizationId);
+  if (updateError) throw new Error(updateError.message);
+}
+
 async function requireSafeOrganizationMemberMutation(
   supabase: SupabaseClient,
   organizationId: string,
@@ -305,21 +324,6 @@ async function requireSafeOrganizationMemberMutation(
   return member;
 }
 
-async function assertOrganizationKeepsAdmin(
-  supabase: SupabaseClient,
-  organizationId: string,
-  member: OrganizationMember,
-): Promise<void> {
-  if (member.role !== "admin") return;
-  const { count, error } = await supabase
-    .from("organization_members")
-    .select("id", { count: "exact", head: true })
-    .eq("organization_id", organizationId)
-    .eq("role", "admin");
-  if (error) throw new Error(error.message);
-  if ((count ?? 0) <= 1) throw new Error("A organização deve manter pelo menos um Administrador.");
-}
-
 export async function updateOrganizationMemberRole(
   supabase: SupabaseClient,
   organizationId: string,
@@ -328,8 +332,11 @@ export async function updateOrganizationMemberRole(
 ): Promise<OrganizationMember> {
   const member = await requireSafeOrganizationMemberMutation(supabase, organizationId, profileId);
   if (member.role === role) return member;
-  if (role === "member") await assertOrganizationKeepsAdmin(supabase, organizationId, member);
-  return setOrganizationMemberRole(supabase, organizationId, profileId, role);
+  const updated = await setOrganizationMemberRole(supabase, organizationId, profileId, role);
+  if (member.role === "admin" || role === "admin") {
+    await syncOrganizationPrimaryContactFromAdmins(supabase, organizationId);
+  }
+  return updated;
 }
 
 export async function removeOrganizationMember(
@@ -338,11 +345,11 @@ export async function removeOrganizationMember(
   profileId: string,
 ): Promise<void> {
   const member = await requireSafeOrganizationMemberMutation(supabase, organizationId, profileId);
-  await assertOrganizationKeepsAdmin(supabase, organizationId, member);
   const { error } = await supabase
     .from("organization_members")
     .delete()
     .eq("organization_id", organizationId)
     .eq("profile_id", profileId);
   if (error) throw new Error(error.message);
+  if (member.role === "admin") await syncOrganizationPrimaryContactFromAdmins(supabase, organizationId);
 }

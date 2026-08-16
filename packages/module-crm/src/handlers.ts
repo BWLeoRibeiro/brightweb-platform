@@ -1,4 +1,5 @@
 import { requireServerUserAccess } from "@brightweblabs/core-auth/server";
+import { createOrganizationRequestHandlers } from "@brightweblabs/module-orgs";
 import {
   createCrmContactsDeleteHandler,
   createCrmContactsGetHandler,
@@ -24,6 +25,7 @@ import {
   bulkSetCrmContactStatus,
   createCrmContact,
   deleteCrmContact,
+  ensureCrmContactForProfile,
   updateCrmContact,
 } from "./server";
 
@@ -62,3 +64,8 @@ export const handleCrmOwnersGetRequest = createCrmOwnersGetHandler(crmDependenci
 export const handleCrmTimelineGetRequest = createCrmTimelineGetHandler(crmDependencies);
 
 export const handleCrmReportGetRequest = createCrmReportGetHandler(crmDependencies);
+
+const organizationAccessHandlers = createOrganizationRequestHandlers({ ensureCrmContactForProfile });
+export const handleCrmOrganizationsPostRequest = organizationAccessHandlers.organizationsPost;
+export const handleCrmOrganizationPatchRequest = organizationAccessHandlers.organizationPatch;
+export const handleCrmOrganizationInvitationsPostRequest = organizationAccessHandlers.invitationsPost;

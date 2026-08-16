@@ -6,6 +6,6 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
 }
 
 export async function POST(request: Request, context: { params: Promise<{ id: string }> }) {
-  const { handleOrganizationInvitationsPostRequest } = await import("@brightweblabs/module-orgs");
-  return handleOrganizationInvitationsPostRequest(request, context);
+  const { handleCrmOrganizationInvitationsPostRequest } = await import("@brightweblabs/module-crm");
+  return handleCrmOrganizationInvitationsPostRequest(request, context);
 }

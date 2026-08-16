@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import type { UiRequestMetricObserver } from "@brightweblabs/infra/request-observability";
+import type { OrganizationInviteOutcome, OrganizationInviteSummary } from "@brightweblabs/module-orgs";
 
 import type {
   CrmContact,
@@ -58,6 +59,12 @@ export type CrmOrganizationWriteInput = Omit<CrmOrganization, "id" | "created_at
   zipCode?: string | null;
   country?: string | null;
   invitations?: Array<{ email: string; role: "admin" | "member" }>;
+};
+
+export type CrmOrganizationWriteResult = {
+  organization: CrmOrganization;
+  outcomes: OrganizationInviteOutcome[];
+  inviteSummary?: OrganizationInviteSummary;
 };
 
 export type CrmOrganizationMember = {
@@ -342,12 +349,14 @@ export type CrmUiClient = {
   queryOrganizations?: (params?: CrmOrganizationsListParams, options?: { signal?: AbortSignal }) => Promise<CrmOrganizationsListResult>;
   getOrganization: (organizationId: string, options?: { signal?: AbortSignal }) => Promise<CrmOrganization>;
   createOrganization: (input: CrmOrganizationWriteInput) => Promise<CrmOrganization>;
+  createOrganizationWithAccessOutcomes?: (input: CrmOrganizationWriteInput) => Promise<CrmOrganizationWriteResult>;
   updateOrganization: (organizationId: string, input: CrmOrganizationWriteInput) => Promise<CrmOrganization>;
   deleteOrganization: (organizationId: string) => Promise<void>;
   listOrganizationInvitations: (organizationId: string) => Promise<Array<{ id: string; email: string; role: "admin" | "member" }>>;
   revokeOrganizationInvitation: (organizationId: string, invitationId: string) => Promise<void>;
+  resendOrganizationInvitation: (organizationId: string, invitationId: string) => Promise<void>;
   getOrganizationAccess: (organizationId: string, options?: { includeHistory?: boolean; signal?: AbortSignal }) => Promise<CrmOrganizationAccess>;
-  inviteOrganizationMember: (organizationId: string, input: { email: string; role: "admin" | "member" }) => Promise<void>;
+  inviteOrganizationMember: (organizationId: string, input: { email: string; role: "admin" | "member" }) => Promise<OrganizationInviteOutcome>;
   updateOrganizationMemberRole: (organizationId: string, profileId: string, role: "admin" | "member") => Promise<void>;
   removeOrganizationMember: (organizationId: string, profileId: string) => Promise<void>;
   listTimeline: (contactId?: string, options?: { signal?: AbortSignal }) => Promise<CrmStatusLog[]>;

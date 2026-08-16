@@ -8,16 +8,18 @@ import { ProjectBoardToolbarControls, ProjectsToolbarControls } from "@brightweb
 import { MarketingToolbarControls } from "@brightweblabs/module-marketing/ui";
 
 // MANAGED BY BRIGHTWEB — regenerated when modules are added, removed, or updated.
-const toolbarControlBySurface: Partial<Record<ShellToolbarSurface, (canCreateProjects: boolean) => ReactNode>> = {
+type ModuleToolbarViewer = { isAdmin: boolean };
+
+const toolbarControlBySurface: Partial<Record<ShellToolbarSurface, (viewer: ModuleToolbarViewer) => ReactNode>> = {
   "admin-users": () => <AdminToolbarControls />,
   crm: () => <CrmToolbarControls />,
   "crm-organizations": () => <CrmOrganizationsToolbarControls />,
-  projects: (canCreateProjects) => <ProjectsToolbarControls canCreateProjects={canCreateProjects} />,
+  projects: (viewer) => <ProjectsToolbarControls viewer={viewer} />,
   "project-board": () => <ProjectBoardToolbarControls />,
   marketing: () => <MarketingToolbarControls />,
 };
 
-export function getModuleToolbarControls(pathname: string, toolbarRoutes: ShellToolbarRouteConfig[], canCreateProjects = false) {
+export function getModuleToolbarControls(pathname: string, toolbarRoutes: ShellToolbarRouteConfig[], viewer: ModuleToolbarViewer) {
   const surface = resolveShellToolbarSurface(pathname, toolbarRoutes);
-  return surface ? toolbarControlBySurface[surface]?.(canCreateProjects) ?? null : null;
+  return surface ? toolbarControlBySurface[surface]?.(viewer) ?? null : null;
 }

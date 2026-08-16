@@ -45,6 +45,18 @@ function contactName(contact: CrmContact) {
   return [contact.first_name, contact.last_name].filter(Boolean).join(" ") || contact.email || "Sem nome";
 }
 
+function inviteOutcomeMessage(status: Awaited<ReturnType<CrmUiClient["inviteOrganizationMember"]>>["status"], email: string) {
+  switch (status) {
+    case "immediate_access": return `Acesso concedido imediatamente a ${email}.`;
+    case "membership_updated": return `A função de ${email} foi atualizada.`;
+    case "already_member": return `${email} já é membro desta organização.`;
+    case "pending_invitation": return `Convite enviado para ${email}.`;
+    case "duplicate_pending": return `Já existe um convite pendente para ${email}.`;
+    case "email_failed": return `O email para ${email} falhou e o convite não foi guardado.`;
+    default: return `Não foi possível preparar o acesso de ${email}.`;
+  }
+}
+
 export function CrmOrganizationPage({ organizationId, client: providedClient, backHref = "/crm" }: CrmOrganizationPageProps) {
   const client = useMemo(() => providedClient ?? createCrmUiClient(), [providedClient]);
   const [organization, setOrganization] = useState<CrmOrganization | null>(null);
@@ -98,9 +110,11 @@ export function CrmOrganizationPage({ organizationId, client: providedClient, ba
     if (!email || saving) return;
     setSaving(true);
     try {
-      await client.inviteOrganizationMember(organizationId, { email, role: inviteRole });
-      toast.success(`Acesso preparado para ${email}.`);
-      setInviteOpen(false);
+      const outcome = await client.inviteOrganizationMember(organizationId, { email, role: inviteRole });
+      const message = inviteOutcomeMessage(outcome.status, email);
+      if (outcome.status === "email_failed" || outcome.status === "api_failed") toast.error(outcome.message || message);
+      else toast.success(message);
+      if (outcome.status !== "email_failed" && outcome.status !== "api_failed") setInviteOpen(false);
       await load();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Não foi possível adicionar o membro.");
@@ -145,6 +159,15 @@ export function CrmOrganizationPage({ organizationId, client: providedClient, ba
       toast.success("Convite revogado.");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Não foi possível revogar o convite.");
+    }
+  };
+
+  const resendInvitation = async (invitation: CrmOrganizationInvitation) => {
+    try {
+      await client.resendOrganizationInvitation(organizationId, invitation.id);
+      toast.success(`Convite reenviado para ${invitation.email}.`);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Não foi possível reenviar o convite.");
     }
   };
 
@@ -205,7 +228,7 @@ export function CrmOrganizationPage({ organizationId, client: providedClient, ba
       {activeTab === "people" ? (
         <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1.4fr)_minmax(300px,0.7fr)]">
           <SurfaceCard className="overflow-hidden"><div className="flex items-start justify-between gap-4 border-b border-[color:var(--hairline)] p-lg"><div><h2 className="text-title font-semibold">Membros com acesso</h2><p className="mt-1 text-body text-[color:var(--muted-foreground)]">Contas que podem entrar nesta organização.</p></div><Button type="button" variant="brand" onClick={() => openInvite()}><UserPlus className="size-4" />Adicionar membro</Button></div><div className="border-l-2 border-[color:var(--accent)] bg-[color:var(--elevate-2)] px-4 py-3 text-meta text-[color:var(--muted-foreground)]">Estas alterações afetam apenas <strong className="text-[color:var(--foreground)]">{organization.name}</strong>. A função global não muda.</div><div className="divide-y divide-[color:var(--hairline)]">{access.members.map((member) => <div key={member.id} className="grid gap-3 px-lg py-4 sm:grid-cols-[minmax(0,1fr)_170px_auto] sm:items-center"><div className="min-w-0"><p className="truncate text-body font-semibold">{member.label}</p><p className="truncate text-meta text-[color:var(--muted-foreground)]">{member.email || member.profileId}</p></div><StyledSelect aria-label={`Função de ${member.label}`} value={member.role} onChange={(event) => void updateRole(member, event.target.value === "admin" ? "admin" : "member")} className="h-9 rounded-[var(--radius)] border border-[color:var(--hairline-strong)] bg-[color:var(--elevate-1)] px-3 text-body"><option value="member">Membro</option><option value="admin">Administrador</option></StyledSelect><Button type="button" variant="ghost" size="icon-sm" aria-label={`Remover ${member.label}`} onClick={() => void removeMember(member)} className="text-[color:var(--muted-foreground)] hover:text-[color:var(--destructive)]"><Trash2 className="size-4" /></Button></div>)}{access.members.length === 0 ? <EmptyState icon={Users} title="Sem membros" hint="Adicione a primeira pessoa com acesso ao portal." /> : null}</div></SurfaceCard>
-          <div className="grid gap-5"><SurfaceCard className="overflow-hidden"><div className="border-b border-[color:var(--hairline)] p-lg"><h2 className="text-title font-semibold">Convites pendentes</h2><p className="mt-1 text-body text-[color:var(--muted-foreground)]">A aguardar registo ou aceitação.</p></div><div className="divide-y divide-[color:var(--hairline)]">{pendingInvitations.map((invitation) => <div key={invitation.id} className="p-4"><p className="break-all text-body font-semibold">{invitation.email}</p><div className="mt-2 flex items-center justify-between gap-3"><Badge variant="outline">{roleLabel(invitation.role)}</Badge><Button type="button" variant="ghost" size="sm" onClick={() => void revokeInvitation(invitation)} className="text-[color:var(--destructive)]">Revogar</Button></div></div>)}{pendingInvitations.length === 0 ? <p className="p-lg text-body text-[color:var(--muted-foreground)]">Sem convites pendentes.</p> : null}</div></SurfaceCard><SurfaceCard className="p-lg"><div className="flex items-center gap-2"><ShieldCheck className="size-4 text-[color:var(--accent)]" /><h2 className="text-body font-semibold">Regra de segurança</h2></div><p className="mt-2 text-meta leading-relaxed text-[color:var(--muted-foreground)]">A organização deve manter pelo menos um Administrador.</p></SurfaceCard></div>
+          <div className="grid gap-5"><SurfaceCard className="overflow-hidden"><div className="border-b border-[color:var(--hairline)] p-lg"><h2 className="text-title font-semibold">Convites pendentes</h2><p className="mt-1 text-body text-[color:var(--muted-foreground)]">A aguardar registo ou aceitação.</p></div><div className="divide-y divide-[color:var(--hairline)]">{pendingInvitations.map((invitation) => <div key={invitation.id} className="p-4"><p className="break-all text-body font-semibold">{invitation.email}</p><div className="mt-2 flex items-center justify-between gap-3"><Badge variant="outline">{roleLabel(invitation.role)}</Badge><div className="flex items-center gap-1"><Button type="button" variant="ghost" size="sm" onClick={() => void resendInvitation(invitation)}>Reenviar</Button><Button type="button" variant="ghost" size="sm" onClick={() => void revokeInvitation(invitation)} className="text-[color:var(--destructive)]">Revogar</Button></div></div></div>)}{pendingInvitations.length === 0 ? <p className="p-lg text-body text-[color:var(--muted-foreground)]">Sem convites pendentes.</p> : null}</div></SurfaceCard><SurfaceCard className="p-lg"><div className="flex items-center gap-2"><ShieldCheck className="size-4 text-[color:var(--accent)]" /><h2 className="text-body font-semibold">Gestão de acesso</h2></div><p className="mt-2 text-meta leading-relaxed text-[color:var(--muted-foreground)]">O acesso é gerido apenas pela equipa BrightWeb. A função na organização não concede permissões globais de gestão.</p></SurfaceCard></div>
         </div>
       ) : null}
 

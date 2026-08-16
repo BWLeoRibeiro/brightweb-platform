@@ -1044,7 +1044,7 @@ export function createModuleToolbarControlsConfig(selectedModules) {
   }
   if (selectedModules.includes("projects")) {
     imports.push('import { ProjectBoardToolbarControls, ProjectsToolbarControls } from "@brightweblabs/module-projects/ui";');
-    entries.push('  projects: (canCreateProjects) => <ProjectsToolbarControls canCreateProjects={canCreateProjects} />,');
+    entries.push('  projects: (viewer) => <ProjectsToolbarControls viewer={viewer} />,');
     entries.push('  "project-board": () => <ProjectBoardToolbarControls />,');
   }
   if (selectedModules.includes("marketing")) {
@@ -1060,13 +1060,15 @@ export function createModuleToolbarControlsConfig(selectedModules) {
     "// MANAGED BY BRIGHTWEB — regenerated when modules are added, removed, or updated.",
     ...imports,
     "",
-    "const toolbarControlBySurface: Partial<Record<ShellToolbarSurface, (canCreateProjects: boolean) => ReactNode>> = {",
+    "type ModuleToolbarViewer = { isAdmin: boolean };",
+    "",
+    "const toolbarControlBySurface: Partial<Record<ShellToolbarSurface, (viewer: ModuleToolbarViewer) => ReactNode>> = {",
     ...entries,
     "};",
     "",
-    "export function getModuleToolbarControls(pathname: string, toolbarRoutes: ShellToolbarRouteConfig[], canCreateProjects = false) {",
+    "export function getModuleToolbarControls(pathname: string, toolbarRoutes: ShellToolbarRouteConfig[], viewer: ModuleToolbarViewer) {",
     "  const surface = resolveShellToolbarSurface(pathname, toolbarRoutes);",
-    "  return surface ? toolbarControlBySurface[surface]?.(canCreateProjects) ?? null : null;",
+    "  return surface ? toolbarControlBySurface[surface]?.(viewer) ?? null : null;",
     "}",
     "",
   ].join("\n");
@@ -1074,11 +1076,11 @@ export function createModuleToolbarControlsConfig(selectedModules) {
 
 function createOrganizationRoute(methods, enabled) {
   const lines = ['export const dynamic = "force-dynamic";', ""];
-  for (const { method, handler, context = false } of methods) {
+  for (const { method, handler, context = false, packageName = "@brightweblabs/module-orgs" } of methods) {
     if (enabled) {
       lines.push(
         `export async function ${method}(request: Request${context ? ', context: { params: Promise<{ id: string }> }' : ""}) {`,
-        `  const { ${handler} } = await import("@brightweblabs/module-orgs");`,
+        `  const { ${handler} } = await import("${packageName}");`,
         `  return ${handler}(request${context ? ", context" : ""});`,
         "}",
         "",
@@ -1214,19 +1216,33 @@ export function createOptionalModuleRouteFiles(selectedModules) {
   return {
     "app/api/invitations/_dependencies.ts": invitationDependencies,
     "app/api/organizations/route.ts": createOrganizationRoute([
-      { method: "POST", handler: "handleOrganizationsPostRequest" },
+      crmEnabled
+        ? { method: "POST", handler: "handleCrmOrganizationsPostRequest", packageName: "@brightweblabs/module-crm" }
+        : { method: "POST", handler: "handleOrganizationsPostRequest" },
     ], orgsEnabled),
     "app/api/organizations/[id]/route.ts": createOrganizationRoute([
-      { method: "PATCH", handler: "handleOrganizationPatchRequest", context: true },
+      crmEnabled
+        ? { method: "PATCH", handler: "handleCrmOrganizationPatchRequest", packageName: "@brightweblabs/module-crm", context: true }
+        : { method: "PATCH", handler: "handleOrganizationPatchRequest", context: true },
       { method: "DELETE", handler: "handleOrganizationDeleteRequest", context: true },
     ], orgsEnabled),
     "app/api/organizations/[id]/invitations/route.ts": createOrganizationRoute([
       { method: "GET", handler: "handleOrganizationInvitationsGetRequest", context: true },
-      { method: "POST", handler: "handleOrganizationInvitationsPostRequest", context: true },
+      crmEnabled
+        ? { method: "POST", handler: "handleCrmOrganizationInvitationsPostRequest", packageName: "@brightweblabs/module-crm", context: true }
+        : { method: "POST", handler: "handleOrganizationInvitationsPostRequest", context: true },
     ], orgsEnabled),
     "app/api/organizations/[id]/invitations/[invitationId]/route.ts": orgsEnabled
       ? [
         'export const dynamic = "force-dynamic";',
+        "",
+        "export async function POST(",
+        "  request: Request,",
+        "  context: { params: Promise<{ id: string; invitationId: string }> },",
+        ") {",
+        '  const { handleOrganizationInvitationResendRequest } = await import("@brightweblabs/module-orgs");',
+        "  return handleOrganizationInvitationResendRequest(request, context);",
+        "}",
         "",
         "export async function DELETE(",
         "  request: Request,",
@@ -1241,6 +1257,10 @@ export function createOptionalModuleRouteFiles(selectedModules) {
         'export const dynamic = "force-dynamic";',
         "",
         'type RouteContext = { params: Promise<{ id: string; invitationId: string }> };',
+        "",
+        "export async function POST(_request: Request, _context: RouteContext) {",
+        "  return new Response(null, { status: 404 });",
+        "}",
         "",
         "export async function DELETE(_request: Request, _context: RouteContext) {",
         "  return new Response(null, { status: 404 });",

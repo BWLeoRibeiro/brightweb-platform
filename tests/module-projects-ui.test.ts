@@ -776,9 +776,9 @@ test("project creation controls fail closed unless the viewer is explicitly an a
     join(process.cwd(), "apps/platform-preview/app/(shell)/shell-layout-client.tsx"),
     "utf8",
   );
-  assert.match(toolbar, /canCreateProjects = false/);
-  assert.match(toolbar, /\{canCreateProjects \? <Button/);
-  assert.match(shell, /getModuleToolbarControls\(pathname, toolbarRoutes, viewer\.isAdmin\)/);
+  assert.match(toolbar, /const mayCreateProjects = viewer\?\.isAdmin \?\? canCreateProjects \?\? false/);
+  assert.match(toolbar, /\{mayCreateProjects \? <Button/);
+  assert.match(shell, /getModuleToolbarControls\(pathname, toolbarRoutes, viewer\)/);
 });
 
 test("Projects UI barrel exposes only the supported documented component families", () => {
@@ -831,7 +831,7 @@ test("Projects Portuguese UI copy is owned by the dictionary", () => {
 test("Projects preview exposes list, detail, board, and tasks routes", () => {
   const previewRoot = join(process.cwd(), "apps/platform-preview/app/(shell)/projects");
   for (const route of ["page.tsx", "[id]/page.tsx", "[id]/board/page.tsx", "[id]/tasks/page.tsx"]) {
-    assert.match(readFileSync(join(previewRoot, route), "utf8"), /ProjectsPage|ProjectDetailPage|ProjectBoardPage|ProjectTasksPage/);
+    assert.match(readFileSync(join(previewRoot, route), "utf8"), /ProjectsRoutePage|ProjectDetailRoutePage|ProjectBoardRoutePage|ProjectTasksRoutePage/);
   }
 });
 
