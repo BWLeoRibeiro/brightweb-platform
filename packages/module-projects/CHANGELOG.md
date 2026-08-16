@@ -1,5 +1,14 @@
 # @brightweblabs/module-projects
 
+## 0.19.1
+
+### Patch Changes
+
+- 80915d3: Route dashboard project attention links through each consumer app's registered projects base path.
+- Updated dependencies [80915d3]
+  - @brightweblabs/app-shell@0.16.1
+  - @brightweblabs/module-orgs@0.7.1
+
 ## 0.19.0
 
 ### Minor Changes

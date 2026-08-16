@@ -1,5 +1,11 @@
 # @brightweblabs/app-shell
 
+## 0.16.1
+
+### Patch Changes
+
+- 80915d3: Route dashboard project attention links through each consumer app's registered projects base path.
+
 ## 0.16.0
 
 ### Minor Changes
