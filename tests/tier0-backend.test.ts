@@ -356,3 +356,15 @@ test("CRM multi-organization migration preserves a primary compatibility project
   assert.match(migration, /CREATE OR REPLACE FUNCTION public\.link_crm_contact_organization/);
   assert.doesNotMatch(migration, /DROP COLUMN\s+organization_id/i);
 });
+
+test("CRM contact reads disambiguate the primary organization relationship", async () => {
+  const [dataSource, serverSource] = await Promise.all([
+    readFile("packages/module-crm/src/data.ts", "utf8"),
+    readFile("packages/module-crm/src/server.ts", "utf8"),
+  ]);
+  const relationship = "organizations:organizations!crm_contacts_organization_id_fkey(name)";
+  assert.match(dataSource, new RegExp(relationship.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  assert.match(serverSource, new RegExp(relationship.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  assert.doesNotMatch(dataSource, /(?<!:)organizations\(name\)/);
+  assert.doesNotMatch(serverSource, /(?<!:)organizations\(name\)/);
+});

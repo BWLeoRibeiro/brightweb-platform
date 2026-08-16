@@ -42,7 +42,7 @@ export type CrmBulkWriteOutcome =
   | { id: string; ok: false; code: "CONTACT_NOT_FOUND" | "WRITE_FAILED" };
 
 const CRM_CONTACT_SELECT =
-  "id, first_name, last_name, email, phone, status, source, owner_id, organization_id, created_at, updated_at, organizations(name)";
+  "id, first_name, last_name, email, phone, status, source, owner_id, organization_id, created_at, updated_at, organizations:organizations!crm_contacts_organization_id_fkey(name)";
 const CRM_CONTACT_STATUS_SET = new Set<string>(CRM_CONTACT_STATUSES);
 
 function crmInfrastructureError(context: string, error: unknown): Error {
