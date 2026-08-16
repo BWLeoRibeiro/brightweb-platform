@@ -186,14 +186,14 @@ export const PLATFORM_STARTER_FILES = [
 ];
 
 export const APP_DEPENDENCY_DEFAULTS = {
-  "@brightweblabs/app-shell": "^0.16.0",
+  "@brightweblabs/app-shell": "^0.16.1",
   "@brightweblabs/core-auth": "^0.12.0",
   "@brightweblabs/infra": "^0.7.0",
-  "@brightweblabs/module-admin": "^0.9.4",
-  "@brightweblabs/module-crm": "^0.18.1",
-  "@brightweblabs/module-marketing": "^0.4.24",
-  "@brightweblabs/module-orgs": "^0.7.0",
-  "@brightweblabs/module-projects": "^0.19.0",
+  "@brightweblabs/module-admin": "^0.9.5",
+  "@brightweblabs/module-crm": "^0.18.2",
+  "@brightweblabs/module-marketing": "^0.4.25",
+  "@brightweblabs/module-orgs": "^0.7.1",
+  "@brightweblabs/module-projects": "^0.19.1",
   "@brightweblabs/theme": "^0.8.3",
   "@brightweblabs/ui": "^1.5.4",
   "geist": "1.7.2",
