@@ -129,6 +129,14 @@ export function validateAppManifest(manifest) {
     try { normalizeSafeRelativePath(relativePath, `scaffoldFiles path`); } catch (error) { errors.push(error.message); }
     if (!entry || typeof entry.module !== "string" || !/^sha256:[a-f0-9]{64}$/.test(entry.hash || "") || !["current", "drifted", "missing"].includes(entry.status) || (entry.intent != null && !["managed", "owned", "skipped"].includes(entry.intent))) errors.push(`scaffoldFiles.${relativePath} is invalid`);
   }
+  if (manifest.migrationDeferrals != null) {
+    if (typeof manifest.migrationDeferrals !== "object" || Array.isArray(manifest.migrationDeferrals)) errors.push("migrationDeferrals must be an object");
+    else for (const [key, entry] of Object.entries(manifest.migrationDeferrals)) {
+      if (!entry || entry.reason !== "destructive" || typeof entry.cursor !== "string" || typeof entry.nextMigration !== "string") {
+        errors.push(`migrationDeferrals.${key} is invalid`);
+      }
+    }
+  }
   if (manifest.lastDoctor != null && (typeof manifest.lastDoctor.at !== "string" || typeof manifest.lastDoctor.ok !== "boolean")) errors.push("lastDoctor is invalid");
   if (
     manifest.infrastructure != null

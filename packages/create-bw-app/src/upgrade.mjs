@@ -134,6 +134,20 @@ export async function upgradeBrightwebApp(moduleKey, argvOptions = {}, runtimeOp
   }
   await applyMigrationWrites(migrationPlan.writes);
   appManifest.migrationCursor = migrationPlan.nextCursor;
+  appManifest.migrationDeferrals ??= {};
+  for (const key of moduleKeys) {
+    const firstDeferred = migrationPlan.deferred.find((entry) => entry.moduleKey === key);
+    if (firstDeferred?.destructive) {
+      appManifest.migrationDeferrals[key] = {
+        reason: "destructive",
+        cursor: migrationPlan.nextCursor[key],
+        nextMigration: firstDeferred.fileName,
+      };
+    } else {
+      delete appManifest.migrationDeferrals[key];
+    }
+  }
+  if (Object.keys(appManifest.migrationDeferrals).length === 0) delete appManifest.migrationDeferrals;
   for (const [key, entry] of Object.entries(appManifest.modules)) {
     const packageName = catalog[key]?.packageName;
     if (catalog[key]?.packageRoot || plan.targetVersions?.[packageName]) entry.version = catalog[key].version;

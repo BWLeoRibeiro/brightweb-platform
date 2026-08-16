@@ -436,14 +436,20 @@ export async function doctorBrightwebApp(argvOptions = {}, runtimeOptions = {}) 
       moduleKey: key,
       cursor,
       catalogEntry: catalog[key],
+      allowDeferred: appManifest.migrationDeferrals?.[key]?.reason === "destructive"
+        && appManifest.migrationDeferrals[key].cursor === cursor,
     });
     if (!status.shipsMigrations) continue;
+    const deferral = appManifest.migrationDeferrals?.[key];
+    if (deferral && (!status.deferred?.length || deferral.nextMigration !== status.deferred[0] || !status.nextDeferredIsDestructive)) {
+      status.issues.push(`recorded destructive deferral ${deferral.nextMigration} does not match the next destructive package migration`);
+    }
     add(
       status.issues.length ? "FAIL" : "PASS",
       `migration-provenance-${key}`,
       status.issues.join("; ") || `${status.verified.length} ${key} migration files match compatible package provenance, source filename, current cursor, and sha256 content.`,
     );
-    if (status.deferred?.length) {
+    if (status.deferred?.length && status.issues.length === 0) {
       add("INFO", `migration-deferred-${key}`, `${key}: ${status.deferred.length} later package migration${status.deferred.length === 1 ? " is" : "s are"} intentionally outside cursor ${cursor}: ${status.deferred.join(", ")}.`);
     }
     if (status.legacyEquivalent?.length) {

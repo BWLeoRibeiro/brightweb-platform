@@ -158,7 +158,7 @@ function compareSemver(left, right) {
   return 0;
 }
 
-export async function exactMigrationCompatibilityStatus({ targetDir, moduleKey, cursor, catalogEntry }) {
+export async function exactMigrationCompatibilityStatus({ targetDir, moduleKey, cursor, catalogEntry, allowDeferred = false }) {
   const migrations = await getModuleMigrations(moduleKey, catalogEntry);
   if (migrations.length === 0) return { shipsMigrations: false, issues: [], verified: [] };
   const issues = [];
@@ -170,6 +170,9 @@ export async function exactMigrationCompatibilityStatus({ targetDir, moduleKey, 
     issues.push(`cursor ${cursor} does not exist in the shipped migration history`);
   } else {
     migrationsInScope = migrations.filter((entry) => entry.fileName <= cursor);
+    if (cursor !== latest && !allowDeferred) {
+      issues.push(`cursor ${cursor} is stale; exact package compatibility requires ${latest}`);
+    }
   }
 
   const migrationsDir = await findAppMigrationsDirectory(targetDir);
@@ -224,14 +227,17 @@ export async function exactMigrationCompatibilityStatus({ targetDir, moduleKey, 
     verified.push({ fileName, originalFileName: entry.fileName, sha256: expectedHash });
   }
 
+  const deferredEntries = cursor && migrations.some((entry) => entry.fileName === cursor)
+    ? migrations.filter((entry) => entry.fileName > cursor)
+    : [];
+
   return {
     shipsMigrations: true,
     latest,
     issues,
     verified,
     legacyEquivalent,
-    deferred: cursor && migrations.some((entry) => entry.fileName === cursor)
-      ? migrations.filter((entry) => entry.fileName > cursor).map((entry) => entry.fileName)
-      : [],
+    deferred: deferredEntries.map((entry) => entry.fileName),
+    nextDeferredIsDestructive: deferredEntries[0]?.destructive === true,
   };
 }

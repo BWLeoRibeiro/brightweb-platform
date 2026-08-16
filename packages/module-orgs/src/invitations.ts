@@ -490,9 +490,15 @@ export async function inviteOrganizationMembers(
   const failedEmailDeliveries = outcomes.filter((outcome) => outcome.status === "email_failed").length;
   const failedContactLinks = outcomes.filter((outcome) => outcome.status === "api_failed" && outcome.failureKind === "crm_link").length;
   const failedApiOperations = outcomes.filter((outcome) => outcome.status === "api_failed").length;
+  let invitations: OrganizationInvitation[] = [];
+  try {
+    invitations = await listOrganizationInvitations(supabase, organizationId, { status: "pending" });
+  } catch (error) {
+    console.error("[organizations.invite-members.refresh]", error);
+  }
 
   return {
-    invitations: await listOrganizationInvitations(supabase, organizationId, { status: "pending" }),
+    invitations,
     outcomes,
     summary: {
       pendingInvitations: outcomes.filter((outcome) => outcome.status === "pending_invitation").length,

@@ -1131,6 +1131,20 @@ test("bw doctor rejects a generated migration whose content no longer matches th
   assert.match(check?.message ?? "", /sha256/);
 });
 
+test("bw doctor rejects an unrecorded non-destructive migration deferral", async (t) => {
+  const { root, targetDir } = await scaffold(["crm"]);
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+  const manifestPath = path.join(targetDir, ".brightweb", "app-manifest.json");
+  const manifest = await readJson(manifestPath);
+  manifest.migrationCursor.crm = "20260731130200_crm_collection_indexes.sql";
+  await writeJson(manifestPath, manifest);
+  const result = await doctorBrightwebApp({ targetDir }, { workspaceRoot: REPO_ROOT });
+  assert.equal(result.ok, false);
+  const check = result.checks.find((entry: { id: string }) => entry.id === "migration-provenance-crm");
+  assert.equal(check?.status, "FAIL");
+  assert.match(check?.message ?? "", /cursor .* is stale/);
+});
+
 test("bw doctor warns when x-vercel-id reports a deployed function outside the mapped Supabase region", async (t) => {
   const { root, targetDir } = await scaffold(["crm"]);
   t.after(() => fs.rm(root, { recursive: true, force: true }));

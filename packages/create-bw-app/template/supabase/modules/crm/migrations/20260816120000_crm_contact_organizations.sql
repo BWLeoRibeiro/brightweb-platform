@@ -94,9 +94,9 @@ GRANT EXECUTE ON FUNCTION public.link_crm_contact_organization(uuid, uuid)
 ALTER TABLE public.crm_contact_organizations ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "Staff manage crm contact organizations" ON public.crm_contact_organizations;
-CREATE POLICY "Staff manage crm contact organizations"
+DROP POLICY IF EXISTS "Staff read crm contact organizations" ON public.crm_contact_organizations;
+CREATE POLICY "Staff read crm contact organizations"
   ON public.crm_contact_organizations
-  FOR ALL
+  FOR SELECT
   TO authenticated
-  USING (public.is_staff())
-  WITH CHECK (public.is_staff());
+  USING (public.is_staff());

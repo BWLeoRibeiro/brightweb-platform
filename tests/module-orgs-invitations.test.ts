@@ -216,3 +216,45 @@ test("resend keeps a pending invitation when email delivery fails", async () => 
   );
   assert.equal(writes, 0);
 });
+
+test("a failed final invitation refresh does not discard completed per-person outcomes", async () => {
+  let invitationSelects = 0;
+  const client = {
+    from(table: string) {
+      if (table === "organization_members") {
+        return {
+          select: () => queryResult({ data: [], error: null }),
+          upsert: () => queryResult({ data: null, error: null }),
+        };
+      }
+      if (table === "profiles") return { select: () => queryResult({ data: [{ id: "profile-1", email: "person@example.com" }], error: null }) };
+      if (table === "organizations") {
+        return {
+          select: () => queryResult({ data: { name: "Acme" }, error: null }),
+          update: () => queryResult({ data: null, error: null }),
+        };
+      }
+      if (table === "organization_invitations") {
+        return {
+          select: () => {
+            invitationSelects += 1;
+            return queryResult(invitationSelects === 1
+              ? { data: [], error: null }
+              : { data: null, error: { message: "refresh failed" } });
+          },
+          update: () => queryResult({ data: null, error: null }),
+        };
+      }
+      throw new Error(`unexpected table ${table}`);
+    },
+  };
+  const result = await inviteOrganizationMembers(
+    client as never,
+    "org-1",
+    [{ email: "person@example.com", role: "member" }],
+    "actor-1",
+    { ensureCrmContactForProfile: async () => ({ success: true, contactId: "contact-1" }) },
+  );
+  assert.equal(result.outcomes[0]?.status, "immediate_access");
+  assert.deepEqual(result.invitations, []);
+});

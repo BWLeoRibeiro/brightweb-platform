@@ -44,13 +44,23 @@ export function changedPublishablePackages(changedFiles, publishablePackages) {
   return changed;
 }
 
-export async function declaredChangesetPackages(repoRoot, changedFiles) {
+export async function declaredChangesetPackages(repoRoot, changedFiles, baseRef) {
   const changesetFiles = changedFiles.filter(
     (fileName) => fileName.startsWith(".changeset/") && fileName.endsWith(".md") && fileName !== ".changeset/README.md",
   );
   const packages = new Set();
   for (const fileName of changesetFiles) {
-    const source = await fs.readFile(path.join(repoRoot, fileName), "utf8");
+    let source;
+    try {
+      source = await fs.readFile(path.join(repoRoot, fileName), "utf8");
+    } catch (error) {
+      if (error?.code !== "ENOENT" || !baseRef) throw error;
+      try {
+        ({ stdout: source } = await execFile("git", ["show", `${baseRef}:${fileName}`], { cwd: repoRoot }));
+      } catch {
+        throw new Error(`Changed changeset ${fileName} is absent and could not be read from ${baseRef}.`);
+      }
+    }
     for (const packageName of parseChangesetPackages(source)) packages.add(packageName);
   }
   return packages;
@@ -78,7 +88,7 @@ export async function checkPackageChangesets({ repoRoot = defaultRepoRoot, baseR
   const files = changedFiles ?? await gitChangedFiles(repoRoot, baseRef);
   const publishablePackages = await loadPublishablePackages(repoRoot);
   const changedPackages = changedPublishablePackages(files, publishablePackages);
-  const declaredPackages = await declaredChangesetPackages(repoRoot, files);
+  const declaredPackages = await declaredChangesetPackages(repoRoot, files, baseRef);
   const missing = Array.from(changedPackages).filter((packageName) => !declaredPackages.has(packageName)).sort();
   return {
     ok: missing.length === 0,
