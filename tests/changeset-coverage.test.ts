@@ -98,3 +98,69 @@ test("a consumed changeset can cover the Changesets version commit", async (t) =
   assert.equal(result.ok, true);
   assert.deepEqual(result.declaredPackages, ["@brightweblabs/module-orgs"]);
 });
+
+test("a Changesets version commit ignores metadata-only dependent bumps", async (t) => {
+  const repoRoot = await fs.mkdtemp(path.join(os.tmpdir(), "bw-dependent-version-bump-"));
+  t.after(() => fs.rm(repoRoot, { recursive: true, force: true }));
+  await Promise.all([
+    fs.mkdir(path.join(repoRoot, "packages", "module-projects"), { recursive: true }),
+    fs.mkdir(path.join(repoRoot, "packages", "module-orgs"), { recursive: true }),
+    fs.mkdir(path.join(repoRoot, ".changeset"), { recursive: true }),
+  ]);
+  await Promise.all([
+    fs.writeFile(path.join(repoRoot, "packages", "module-projects", "package.json"), JSON.stringify({ name: "@brightweblabs/module-projects", private: false })),
+    fs.writeFile(path.join(repoRoot, "packages", "module-orgs", "package.json"), JSON.stringify({ name: "@brightweblabs/module-orgs", private: false })),
+  ]);
+  await execFile("git", ["init"], { cwd: repoRoot });
+  await execFile("git", ["config", "user.email", "test@example.com"], { cwd: repoRoot });
+  await execFile("git", ["config", "user.name", "Test"], { cwd: repoRoot });
+  await fs.writeFile(path.join(repoRoot, ".changeset", "release.md"), '---\n"@brightweblabs/module-projects": patch\n---\n');
+  await execFile("git", ["add", "."], { cwd: repoRoot });
+  await execFile("git", ["commit", "-m", "feature"], { cwd: repoRoot });
+  const { stdout: baseRef } = await execFile("git", ["rev-parse", "HEAD"], { cwd: repoRoot });
+  await fs.unlink(path.join(repoRoot, ".changeset", "release.md"));
+
+  const result = await checkPackageChangesets({
+    repoRoot,
+    baseRef: baseRef.trim(),
+    changedFiles: [
+      "packages/module-projects/package.json",
+      "packages/module-projects/CHANGELOG.md",
+      "packages/module-orgs/package.json",
+      "packages/module-orgs/CHANGELOG.md",
+      ".changeset/release.md",
+    ],
+  });
+
+  assert.equal(result.ok, true);
+  assert.deepEqual(result.missing, []);
+});
+
+test("a consumed changeset does not hide unversioned package source changes", async (t) => {
+  const repoRoot = await fs.mkdtemp(path.join(os.tmpdir(), "bw-version-source-change-"));
+  t.after(() => fs.rm(repoRoot, { recursive: true, force: true }));
+  await fs.mkdir(path.join(repoRoot, "packages", "create-bw-app", "src"), { recursive: true });
+  await fs.mkdir(path.join(repoRoot, ".changeset"), { recursive: true });
+  await fs.writeFile(path.join(repoRoot, "packages", "create-bw-app", "package.json"), JSON.stringify({ name: "create-bw-app", private: false }));
+  await execFile("git", ["init"], { cwd: repoRoot });
+  await execFile("git", ["config", "user.email", "test@example.com"], { cwd: repoRoot });
+  await execFile("git", ["config", "user.name", "Test"], { cwd: repoRoot });
+  await fs.writeFile(path.join(repoRoot, ".changeset", "release.md"), '---\n"@brightweblabs/module-projects": patch\n---\n');
+  await execFile("git", ["add", "."], { cwd: repoRoot });
+  await execFile("git", ["commit", "-m", "feature"], { cwd: repoRoot });
+  const { stdout: baseRef } = await execFile("git", ["rev-parse", "HEAD"], { cwd: repoRoot });
+  await fs.unlink(path.join(repoRoot, ".changeset", "release.md"));
+
+  const result = await checkPackageChangesets({
+    repoRoot,
+    baseRef: baseRef.trim(),
+    changedFiles: [
+      "packages/create-bw-app/package.json",
+      "packages/create-bw-app/src/constants.mjs",
+      ".changeset/release.md",
+    ],
+  });
+
+  assert.equal(result.ok, false);
+  assert.deepEqual(result.missing, ["create-bw-app"]);
+});
