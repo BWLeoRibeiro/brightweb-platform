@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Building2 } from "lucide-react";
+import { toast } from "sonner";
 import { useShellAction } from "@brightweblabs/app-shell";
 import { Badge, EmptyState, Skeleton, SurfaceCard, Table, TableBody, TableCell, TableHead, TableHeader, TablePagination, TableRow } from "@brightweblabs/ui";
 import { createCrmUiClient } from "./client";
@@ -92,7 +93,20 @@ export function CrmOrganizationsPage({ client: providedClient, navigation }: { c
   }, [industries, industry, search, sort]);
 
   const createOrganization = async (input: CrmOrganizationFormInput) => {
-    const created = await client.createOrganization(input);
+    const result = client.createOrganizationWithAccessOutcomes
+      ? await client.createOrganizationWithAccessOutcomes(input)
+      : { organization: await client.createOrganization(input), outcomes: [] };
+    const created = result.organization;
+    for (const outcome of result.outcomes) {
+      const message = outcome.status === "immediate_access" ? `Acesso imediato concedido a ${outcome.email}.`
+        : outcome.status === "membership_updated" ? `Função atualizada para ${outcome.email}.`
+          : outcome.status === "already_member" ? `${outcome.email} já era membro.`
+            : outcome.status === "pending_invitation" ? `Convite enviado para ${outcome.email}.`
+              : outcome.status === "duplicate_pending" ? `Já existia um convite pendente para ${outcome.email}.`
+                : outcome.message || `Não foi possível preparar o acesso de ${outcome.email}.`;
+      if (outcome.status === "email_failed" || outcome.status === "api_failed") toast.error(message);
+      else toast.success(message);
+    }
     setOrganizations((items) => [...items, created]);
     setCreateOpen(false);
     selectOrganization(created);

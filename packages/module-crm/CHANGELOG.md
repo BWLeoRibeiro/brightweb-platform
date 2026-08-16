@@ -1,5 +1,22 @@
 # @brightweblabs/module-crm
 
+## 0.18.1
+
+### Patch Changes
+
+- b62b862: Disambiguate the primary CRM contact organization relationship after enabling multi-organization links.
+
+## 0.18.0
+
+### Minor Changes
+
+- b4a578d: Centralize organization member outcomes, CRM profile linkage, resend support, zero-admin access management, project route orchestration, and exact package and migration provenance checks in the shared BrightWeb packages.
+
+### Patch Changes
+
+- Updated dependencies [b4a578d]
+  - @brightweblabs/module-orgs@0.7.0
+
 ## 0.17.4
 
 ### Patch Changes

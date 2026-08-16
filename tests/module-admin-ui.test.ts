@@ -119,7 +119,7 @@ test("preview mounts the live packaged admin page and routes", async () => {
   assert.match(invitationsRoute, /handleAdminUserInvitationsPostRequest/);
   assert.match(revokeRoute, /handleAdminUserInvitationDeleteRequest/);
   assert.match(layout, /AppShellFrame/);
-  assert.match(layout, /getModuleToolbarControls\(pathname, toolbarRoutes, viewer\.isAdmin\)/);
+  assert.match(layout, /getModuleToolbarControls\(pathname, toolbarRoutes, viewer\)/);
   assert.match(toolbarConfig, /AdminToolbarControls/);
   assert.match(toolbarConfig, /"admin-users"/);
 });

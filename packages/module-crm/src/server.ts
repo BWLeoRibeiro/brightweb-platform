@@ -42,7 +42,7 @@ export type CrmBulkWriteOutcome =
   | { id: string; ok: false; code: "CONTACT_NOT_FOUND" | "WRITE_FAILED" };
 
 const CRM_CONTACT_SELECT =
-  "id, first_name, last_name, email, phone, status, source, owner_id, organization_id, created_at, updated_at, organizations(name)";
+  "id, first_name, last_name, email, phone, status, source, owner_id, organization_id, created_at, updated_at, organizations:organizations!crm_contacts_organization_id_fkey(name)";
 const CRM_CONTACT_STATUS_SET = new Set<string>(CRM_CONTACT_STATUSES);
 
 function crmInfrastructureError(context: string, error: unknown): Error {
@@ -68,7 +68,7 @@ export async function ensureCrmContactForProfile(
     }
     if (!profile) return { success: false, error: "Perfil não encontrado." };
     const normalizedEmail = profile.email ? profile.email.toLowerCase().trim() : null;
-    let query = serviceClient.from("crm_contacts").select("id, profile_id").limit(1);
+    let query = serviceClient.from("crm_contacts").select("id, profile_id, organization_id").limit(1);
     query = normalizedEmail
       ? query.or(`profile_id.eq.${profileId},email.ilike.${normalizedEmail}`)
       : query.eq("profile_id", profileId);
@@ -95,17 +95,29 @@ export async function ensureCrmContactForProfile(
       }
       return { success: true, contactId: inserted.id };
     }
+    if (existing.profile_id && existing.profile_id !== profile.id) {
+      return { success: false, error: "O contacto CRM já está ligado a outro perfil." };
+    }
     if (!existing.profile_id || existing.profile_id === profile.id) {
       const payload: Record<string, unknown> = {
         profile_id: profile.id,
         updated_at: new Date().toISOString(),
       };
-      if (options?.organizationId !== undefined) payload.organization_id = options.organizationId;
       const { error: updateError } = await serviceClient.from("crm_contacts")
         .update(payload)
         .eq("id", existing.id);
       if (updateError) {
         console.error("[crm.profile-sync.update]", updateError);
+        return { success: false, error: "CRM_PROFILE_SYNC_FAILED" };
+      }
+    }
+    if (options?.organizationId) {
+      const { error: linkError } = await serviceClient.rpc("link_crm_contact_organization", {
+        p_contact_id: existing.id,
+        p_organization_id: options.organizationId,
+      });
+      if (linkError) {
+        console.error("[crm.profile-sync.organization-link]", linkError);
         return { success: false, error: "CRM_PROFILE_SYNC_FAILED" };
       }
     }

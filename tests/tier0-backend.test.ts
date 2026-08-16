@@ -21,6 +21,7 @@ import {
   createOrganizationsPostHandler,
 } from "../packages/module-orgs/src/http.ts";
 import { createCrmUiClient } from "../packages/module-crm/src/ui/client.ts";
+import { ensureCrmContactForProfile } from "../packages/module-crm/src/server.ts";
 
 test("shared organization creation normalizes invitations and preserves the submitted payload", () => {
   const first = addOrganizationCreateInvitation([], { email: "  ADA@Example.COM ", role: "admin" });
@@ -34,6 +35,43 @@ test("shared organization creation normalizes invitations and preserves the subm
     buildOrganizationCreateSheetInput({ name: "Analytical Engines" }, first.invitations),
     { name: "Analytical Engines", invitations: first.invitations },
   );
+});
+
+test("CRM profile linkage adds a secondary organization without replacing the primary organization", async () => {
+  const updates: Array<Record<string, unknown>> = [];
+  const rpcCalls: Array<{ name: string; args: Record<string, unknown> }> = [];
+  const resultQuery = (result: unknown) => {
+    const query: Record<string, unknown> = {};
+    for (const method of ["select", "eq", "or", "limit", "update"] as const) query[method] = (value: unknown) => {
+      if (method === "update") updates.push(value as Record<string, unknown>);
+      return query;
+    };
+    query.maybeSingle = async () => result;
+    query.then = (resolve: (value: unknown) => unknown) => Promise.resolve(result).then(resolve);
+    return query;
+  };
+  const client = {
+    from(table: string) {
+      if (table === "profiles") return resultQuery({ data: { id: "profile-1", email: "person@example.com", first_name: "Ada", last_name: "Lovelace" }, error: null });
+      if (table === "crm_contacts") return resultQuery({ data: { id: "contact-1", profile_id: "profile-1", organization_id: "org-primary" }, error: null });
+      throw new Error(`Unexpected table ${table}`);
+    },
+    async rpc(name: string, args: Record<string, unknown>) {
+      rpcCalls.push({ name, args });
+      return { error: null };
+    },
+  };
+  const result = await ensureCrmContactForProfile("profile-1", {
+    organizationId: "org-secondary",
+    source: "organization_member_direct_access",
+    serviceClient: client as never,
+  });
+  assert.equal(result.success, true);
+  assert.equal(updates.some((payload) => Object.hasOwn(payload, "organization_id")), false);
+  assert.deepEqual(rpcCalls, [{
+    name: "link_crm_contact_organization",
+    args: { p_contact_id: "contact-1", p_organization_id: "org-secondary" },
+  }]);
 });
 
 test("organization writes use MQ field normalization and preserve ownership fields", async () => {
@@ -272,6 +310,18 @@ test("CRM client maps its organization form contract to the MQ organization API"
     taxIdentifierValue: "123",
     invitations: [{ email: "member@example.com", role: "member" }],
   });
+
+  const resultClient = createCrmUiClient("/api/crm", (async () => new Response(JSON.stringify({
+    data: {
+      organization: { id: "org-2", name: "Outcome Org" },
+      outcomes: [{ email: "member@example.com", role: "member", status: "email_failed", message: "Email indisponível." }],
+      inviteSummary: { pendingInvitations: 0, duplicatePendingInvitations: 0, directAssignments: 0, updatedExistingMembers: 0, unchangedExistingMembers: 0, failedEmailDeliveries: 1, failedContactLinks: 0, failedApiOperations: 0 },
+    },
+  }), { status: 201, headers: { "content-type": "application/json" } })) as typeof fetch);
+  const result = await resultClient.createOrganizationWithAccessOutcomes?.({ name: "Outcome Org" });
+  assert.equal(result?.organization.id, "org-2");
+  assert.equal(result?.outcomes[0]?.status, "email_failed");
+  assert.equal(result?.inviteSummary?.failedEmailDeliveries, 1);
 });
 
 test("canonical and scaffold invitation migrations remain identical", async () => {
@@ -292,4 +342,29 @@ test("canonical and scaffold invitation migrations remain identical", async () =
   );
   assert.equal(clientInvitations, scaffoldClientInvitations);
   assert.match(clientInvitations, /role_code IN \('client', 'staff', 'admin'\)/);
+});
+
+test("CRM multi-organization migration preserves a primary compatibility projection", async () => {
+  const migration = await readFile(
+    "packages/create-bw-app/template/supabase/modules/crm/migrations/20260816120000_crm_contact_organizations.sql",
+    "utf8",
+  );
+  assert.match(migration, /CREATE TABLE IF NOT EXISTS public\.crm_contact_organizations/);
+  assert.match(migration, /PRIMARY KEY \(contact_id, organization_id\)/);
+  assert.match(migration, /WHERE is_primary/);
+  assert.match(migration, /SELECT contact\.id, contact\.organization_id, true/);
+  assert.match(migration, /CREATE OR REPLACE FUNCTION public\.link_crm_contact_organization/);
+  assert.doesNotMatch(migration, /DROP COLUMN\s+organization_id/i);
+});
+
+test("CRM contact reads disambiguate the primary organization relationship", async () => {
+  const [dataSource, serverSource] = await Promise.all([
+    readFile("packages/module-crm/src/data.ts", "utf8"),
+    readFile("packages/module-crm/src/server.ts", "utf8"),
+  ]);
+  const relationship = "organizations:organizations!crm_contacts_organization_id_fkey(name)";
+  assert.match(dataSource, new RegExp(relationship.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  assert.match(serverSource, new RegExp(relationship.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  assert.doesNotMatch(dataSource, /(?<!:)organizations\(name\)/);
+  assert.doesNotMatch(serverSource, /(?<!:)organizations\(name\)/);
 });

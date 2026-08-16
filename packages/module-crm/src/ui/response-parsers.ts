@@ -7,7 +7,8 @@ import type {
   CrmReportData,
   CrmStatusLog,
 } from "../data";
-import type { CrmOrganization } from "./types";
+import type { OrganizationInviteOutcome, OrganizationInviteSummary } from "@brightweblabs/module-orgs";
+import type { CrmOrganization, CrmOrganizationWriteResult } from "./types";
 
 type RecordValue = Record<string, unknown>;
 
@@ -165,9 +166,58 @@ export function parseCrmOrganizationsListResponse(value: unknown): CrmOrganizati
   };
 }
 
-export function parseCrmOrganizationWriteResponse(value: unknown): CrmOrganization {
+const organizationInviteStatuses = new Set<OrganizationInviteOutcome["status"]>([
+  "immediate_access", "membership_updated", "already_member", "pending_invitation",
+  "duplicate_pending", "email_failed", "api_failed",
+]);
+
+function parseOrganizationInviteOutcome(value: unknown): OrganizationInviteOutcome {
+  const item = record(value, "organization access outcome");
+  const status = string(item.status, "organization access outcome") as OrganizationInviteOutcome["status"];
+  if (!organizationInviteStatuses.has(status) || (item.role !== "admin" && item.role !== "member")) {
+    throw new Error("Invalid organization access outcome response.");
+  }
+  const failureKind = item.failureKind === undefined ? undefined : string(item.failureKind, "organization access outcome");
+  if (failureKind !== undefined && !["crm_link", "membership", "invitation"].includes(failureKind)) {
+    throw new Error("Invalid organization access outcome failure kind response.");
+  }
+  return {
+    email: string(item.email, "organization access outcome"),
+    role: item.role,
+    status,
+    profileId: item.profileId === undefined ? undefined : string(item.profileId, "organization access outcome"),
+    invitationId: item.invitationId === undefined ? undefined : string(item.invitationId, "organization access outcome"),
+    message: item.message === undefined ? undefined : string(item.message, "organization access outcome"),
+    failureKind: failureKind as OrganizationInviteOutcome["failureKind"],
+  };
+}
+
+function parseOrganizationInviteSummary(value: unknown): OrganizationInviteSummary {
+  const item = record(value, "organization access summary");
+  return {
+    pendingInvitations: number(item.pendingInvitations, "organization access summary"),
+    duplicatePendingInvitations: number(item.duplicatePendingInvitations, "organization access summary"),
+    directAssignments: number(item.directAssignments, "organization access summary"),
+    updatedExistingMembers: number(item.updatedExistingMembers, "organization access summary"),
+    unchangedExistingMembers: number(item.unchangedExistingMembers, "organization access summary"),
+    failedEmailDeliveries: number(item.failedEmailDeliveries, "organization access summary"),
+    failedContactLinks: number(item.failedContactLinks, "organization access summary"),
+    failedApiOperations: number(item.failedApiOperations, "organization access summary"),
+  };
+}
+
+export function parseCrmOrganizationWriteResult(value: unknown): CrmOrganizationWriteResult {
   const payload = record(value, "CRM organization write");
-  return parseOrganization(record(payload.data, "CRM organization write").organization);
+  const data = record(payload.data, "CRM organization write");
+  return {
+    organization: parseOrganization(data.organization),
+    outcomes: data.outcomes === undefined ? [] : array(data.outcomes, parseOrganizationInviteOutcome, "organization access outcomes"),
+    inviteSummary: data.inviteSummary === undefined ? undefined : parseOrganizationInviteSummary(data.inviteSummary),
+  };
+}
+
+export function parseCrmOrganizationWriteResponse(value: unknown): CrmOrganization {
+  return parseCrmOrganizationWriteResult(value).organization;
 }
 
 function parseTimelineItem(value: unknown): CrmStatusLog {

@@ -1,5 +1,23 @@
 # create-bw-app
 
+## 0.26.1
+
+### Patch Changes
+
+- b62b862: Disambiguate the primary CRM contact organization relationship after enabling multi-organization links.
+
+## 0.26.0
+
+### Minor Changes
+
+- b4a578d: Centralize organization member outcomes, CRM profile linkage, resend support, zero-admin access management, project route orchestration, and exact package and migration provenance checks in the shared BrightWeb packages.
+
+## 0.25.2
+
+### Patch Changes
+
+- cf3dbb2: Publish the shared project access migrations and generated shell permission wiring so existing BrightWeb applications receive the complete `module-projects` 0.18.5 database and UI contract through `bw upgrade`.
+
 ## 0.25.1
 
 ### Patch Changes

@@ -49,6 +49,10 @@ jobs:
         if: github.head_ref != 'changeset-release/main'
         run: pnpm release:check
 
+      - name: Require a changeset for every changed publishable package
+        if: github.head_ref != 'changeset-release/main'
+        run: pnpm check:package-changesets --base "${{ github.event_name == 'pull_request' && github.base_ref || github.event.before }}"
+
       - name: Check module manifests
         run: pnpm check:module-manifest
 

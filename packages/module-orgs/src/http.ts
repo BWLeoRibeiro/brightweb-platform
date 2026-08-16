@@ -6,6 +6,7 @@ import type {
   logOrganizationActivity,
   listOrganizationInvitations,
   listOrganizationMemberViews,
+  resendOrganizationInvitation,
   revokeOrganizationInvitation,
 } from "./invitations";
 
@@ -36,6 +37,7 @@ type OrganizationInvitationDependencies = {
   listInvitations: typeof listOrganizationInvitations;
   listMembers: typeof listOrganizationMemberViews;
   revokeInvitation: typeof revokeOrganizationInvitation;
+  resendInvitation: typeof resendOrganizationInvitation;
   logActivity: typeof logOrganizationActivity;
 };
 
@@ -90,9 +92,10 @@ function organizationError(error: unknown): Response {
   if (message === "Convite pendente não encontrado.") {
     return json({ error: message }, { status: 404 });
   }
-  if (message.startsWith("Não foi possível enviar o email de convite.")) {
+  if (message.startsWith("Não foi possível enviar o email de convite.") || message.startsWith("Não foi possível reenviar o email de convite.")) {
     return json({ error: message }, { status: 502 });
   }
+  if (message === "Este convite expirou.") return json({ error: message }, { status: 410 });
   return json({ error: message || "Erro interno do servidor." }, { status: 500 });
 }
 
@@ -120,10 +123,13 @@ export function createOrganizationsPostHandler(dependencies: OrganizationWriteDe
         payload: {
           organization_id: organization.id,
           pending_invitations: result.summary.pendingInvitations,
+          duplicate_pending_invitations: result.summary.duplicatePendingInvitations,
           direct_assignments: result.summary.directAssignments,
+          failed_email_deliveries: result.summary.failedEmailDeliveries,
+          failed_api_operations: result.summary.failedApiOperations,
         },
       });
-      return json({ data: { organization, invitations: result.invitations, inviteSummary: result.summary } }, { status: 201 });
+      return json({ data: { organization, invitations: result.invitations, outcomes: result.outcomes, inviteSummary: result.summary } }, { status: 201 });
     } catch (error) {
       return organizationError(error);
     }
@@ -161,9 +167,12 @@ export function createOrganizationPatchHandler(dependencies: OrganizationWriteDe
           pending_invitations: result.summary.pendingInvitations,
           direct_assignments: result.summary.directAssignments,
           updated_existing_members: result.summary.updatedExistingMembers,
+          duplicate_pending_invitations: result.summary.duplicatePendingInvitations,
+          failed_email_deliveries: result.summary.failedEmailDeliveries,
+          failed_api_operations: result.summary.failedApiOperations,
         },
       });
-      return json({ data: { organization, invitations: result.invitations, inviteSummary: result.summary } });
+      return json({ data: { organization, invitations: result.invitations, outcomes: result.outcomes, inviteSummary: result.summary } });
     } catch (error) {
       return organizationError(error);
     }
@@ -245,9 +254,12 @@ export function createOrganizationInvitationsHandler(dependencies: OrganizationI
             pending_invitations: result.summary.pendingInvitations,
             direct_assignments: result.summary.directAssignments,
             updated_existing_members: result.summary.updatedExistingMembers,
+            duplicate_pending_invitations: result.summary.duplicatePendingInvitations,
+            failed_email_deliveries: result.summary.failedEmailDeliveries,
+            failed_api_operations: result.summary.failedApiOperations,
           },
         });
-        return json({ data: { invitations: result.invitations, inviteSummary: result.summary } }, { status: 201 });
+        return json({ data: { invitations: result.invitations, outcomes: result.outcomes, inviteSummary: result.summary } }, { status: 201 });
       } catch (error) {
         return organizationError(error);
       }
@@ -332,6 +344,31 @@ export function createOrganizationInvitationDeleteHandler(dependencies: Organiza
         payload: { organization_id: id, invitation_id: invitationId },
       });
       return json({ data: { success: true } });
+    } catch (error) {
+      return organizationError(error);
+    }
+  };
+}
+
+export function createOrganizationInvitationResendHandler(dependencies: OrganizationInvitationDependencies) {
+  return async function handleOrganizationInvitationResendRequest(
+    _request: Request,
+    context: { params: Promise<{ id: string; invitationId: string }> },
+  ): Promise<Response> {
+    const { id, invitationId } = await context.params;
+    if (!id || !invitationId) return json({ error: "id e invitationId são obrigatórios." }, { status: 400 });
+    const access = await dependencies.getManageAccess(id);
+    if (!access.ok) return json({ error: access.error }, { status: access.status });
+    try {
+      const invitation = await dependencies.resendInvitation(access.serviceSupabase, id, invitationId);
+      await dependencies.logActivity(access.serviceSupabase, {
+        actorProfileId: access.profileId,
+        organizationId: id,
+        eventType: "crm_organization_invitation_resent",
+        summary: "Convite da organização CRM reenviado.",
+        payload: { organization_id: id, invitation_id: invitationId },
+      });
+      return json({ data: { invitation } });
     } catch (error) {
       return organizationError(error);
     }

@@ -29,7 +29,15 @@ const HEALTH_SWATCHES: Partial<Record<ProjectsHealthFilter, string>> = {
   off_track: "var(--project-risk-overdue)",
 };
 
-export function ProjectsToolbarControls({ canCreateProjects = false }: { canCreateProjects?: boolean }) {
+export function ProjectsToolbarControls({
+  canCreateProjects,
+  viewer,
+}: {
+  /** @deprecated Pass the shared viewer shape so the projects package owns the policy decision. */
+  canCreateProjects?: boolean;
+  viewer?: { isAdmin: boolean };
+}) {
+  const mayCreateProjects = viewer?.isAdmin ?? canCreateProjects ?? false;
   const dictionary = useProjectsUiDictionary();
   const dispatchShellAction = useShellActionDispatch();
   const newProjectReady = useShellActionReady(PROJECTS_EVENTS.openNewProject);
@@ -119,7 +127,7 @@ export function ProjectsToolbarControls({ canCreateProjects = false }: { canCrea
         </PopoverContent>
       </Popover>
 
-      {canCreateProjects ? <Button type="button" disabled={!newProjectReady} onClick={() => dispatchShellAction(PROJECTS_EVENTS.openNewProject)}>
+      {mayCreateProjects ? <Button type="button" disabled={!newProjectReady} onClick={() => dispatchShellAction(PROJECTS_EVENTS.openNewProject)}>
         <Plus data-icon="inline-start" aria-hidden />
         {dictionary.toolbar.newProject}
       </Button> : null}

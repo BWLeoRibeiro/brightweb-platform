@@ -71,11 +71,20 @@ export function CrmOrganizationWorkspaceSheet({ open, organization, client, onOp
     if (!normalized || saving) return;
     setSaving(true);
     try {
-      await client.inviteOrganizationMember(organization.id, { email: normalized, role });
-      setEmail("");
-      setAddMemberOpen(false);
+      const outcome = await client.inviteOrganizationMember(organization.id, { email: normalized, role });
+      const successful = outcome.status !== "email_failed" && outcome.status !== "api_failed";
+      if (successful) {
+        setEmail("");
+        setAddMemberOpen(false);
+      }
       await load();
-      toast.success("Acesso preparado.");
+      const message = outcome.status === "immediate_access" ? "Acesso concedido imediatamente."
+        : outcome.status === "membership_updated" ? "Função do membro atualizada."
+          : outcome.status === "already_member" ? "Esta pessoa já é membro."
+            : outcome.status === "pending_invitation" ? "Convite enviado por email."
+              : outcome.status === "duplicate_pending" ? "Já existe um convite pendente."
+                : outcome.message || "Não foi possível preparar o acesso.";
+      if (successful) toast.success(message); else toast.error(message);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Não foi possível adicionar o membro.");
     } finally {
@@ -105,6 +114,13 @@ export function CrmOrganizationWorkspaceSheet({ open, organization, client, onOp
       await client.revokeOrganizationInvitation(organization.id, invitation.id);
       setAccess((current) => ({ ...current, invitations: current.invitations.map((item) => item.id === invitation.id ? { ...item, status: "revoked" } : item) }));
     } catch (error) { toast.error(error instanceof Error ? error.message : "Não foi possível revogar o convite."); }
+  };
+
+  const resend = async (invitation: CrmOrganizationInvitation) => {
+    try {
+      await client.resendOrganizationInvitation(organization.id, invitation.id);
+      toast.success("Convite reenviado.");
+    } catch (error) { toast.error(error instanceof Error ? error.message : "Não foi possível reenviar o convite."); }
   };
 
   const updateOrganization = async (input: CrmOrganizationFormInput) => {
@@ -145,7 +161,7 @@ export function CrmOrganizationWorkspaceSheet({ open, organization, client, onOp
                 {access.members.length === 0 ? <EmptyState icon={Users} title="Sem membros" hint="Adicione a primeira pessoa com acesso a esta organização." /> : null}
               </SheetSection>
               <SheetSection title={`Convites pendentes · ${pending.length}`} bodyClassName="divide-y divide-[color:var(--border)]">
-                {pending.map((invitation) => <div key={invitation.id} className="flex items-center justify-between gap-3 px-4 py-3"><div className="min-w-0"><p className="truncate text-body font-semibold">{invitation.email}</p><div className="mt-1 flex flex-wrap items-center gap-2"><Badge variant="outline"><ShieldCheck className="mr-1 size-3" />{invitation.role === "admin" ? "Administrador" : "Membro"}</Badge><span className="text-meta text-[color:var(--muted-foreground)]">A aguardar resposta</span></div></div><Button type="button" variant="ghost" size="sm" onClick={() => void revoke(invitation)}>Revogar</Button></div>)}
+                {pending.map((invitation) => <div key={invitation.id} className="flex items-center justify-between gap-3 px-4 py-3"><div className="min-w-0"><p className="truncate text-body font-semibold">{invitation.email}</p><div className="mt-1 flex flex-wrap items-center gap-2"><Badge variant="outline"><ShieldCheck className="mr-1 size-3" />{invitation.role === "admin" ? "Administrador" : "Membro"}</Badge><span className="text-meta text-[color:var(--muted-foreground)]">A aguardar resposta</span></div></div><div className="flex items-center gap-1"><Button type="button" variant="ghost" size="sm" onClick={() => void resend(invitation)}>Reenviar</Button><Button type="button" variant="ghost" size="sm" onClick={() => void revoke(invitation)}>Revogar</Button></div></div>)}
                 {pending.length === 0 ? <p className="px-4 py-5 text-body text-[color:var(--muted-foreground)]">Não existem convites a aguardar resposta.</p> : null}
               </SheetSection>
             </AppSheetBody>

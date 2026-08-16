@@ -1,1 +1,1 @@
-export { ProjectBoardServerMount as default } from "../../projetos-server-mounts";
+export { ProjectBoardPortugueseRoutePage as default } from "@brightweblabs/module-projects/routes";

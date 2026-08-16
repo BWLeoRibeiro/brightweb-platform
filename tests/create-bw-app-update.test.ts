@@ -295,6 +295,7 @@ test("published platform scaffolds resolved supabase migrations for the selected
       "0018_crm__20260421201523_portal_read_indexes.sql",
       "0019_crm__20260724120000_crm_status_authorization.sql",
       "0020_crm__20260731130200_crm_collection_indexes.sql",
+      "0021_crm__20260816120000_crm_contact_organizations.sql",
     ],
   );
 

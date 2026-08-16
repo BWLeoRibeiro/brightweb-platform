@@ -113,8 +113,6 @@ export const MODULE_STARTER_FILES = {
   projects: [
     "app/(shell)/projetos/layout.tsx",
     "app/(shell)/projetos/page.tsx",
-    "app/(shell)/projetos/projetos-live-mounts.tsx",
-    "app/(shell)/projetos/projetos-server-mounts.tsx",
     "app/(shell)/projetos/[projectId]/page.tsx",
     "app/(shell)/projetos/[projectId]/quadro/page.tsx",
     "app/(shell)/projetos/[projectId]/tarefas/page.tsx",
@@ -122,7 +120,6 @@ export const MODULE_STARTER_FILES = {
     "app/(shell)/account/projetos/loading.tsx",
     "app/(shell)/account/projetos/[projectId]/page.tsx",
     "app/(shell)/account/projetos/[projectId]/loading.tsx",
-    "app/api/projects/_handlers.ts",
     "app/api/account/projects/route.ts",
     "app/api/account/projects/[id]/route.ts",
     "app/api/dashboard/projects/route.ts",
@@ -142,6 +139,14 @@ export const MODULE_STARTER_FILES = {
     "app/api/projects/[id]/milestones/[itemId]/route.ts",
     "app/api/projects/[id]/tasks/route.ts",
     "app/api/projects/[id]/tasks/[itemId]/route.ts",
+  ],
+};
+
+export const RETIRED_MODULE_STARTER_FILES = {
+  projects: [
+    "app/(shell)/projetos/projetos-live-mounts.tsx",
+    "app/(shell)/projetos/projetos-server-mounts.tsx",
+    "app/api/projects/_handlers.ts",
   ],
 };
 
@@ -185,10 +190,10 @@ export const APP_DEPENDENCY_DEFAULTS = {
   "@brightweblabs/core-auth": "^0.12.0",
   "@brightweblabs/infra": "^0.7.0",
   "@brightweblabs/module-admin": "^0.9.4",
-  "@brightweblabs/module-crm": "^0.17.4",
+  "@brightweblabs/module-crm": "^0.18.1",
   "@brightweblabs/module-marketing": "^0.4.24",
-  "@brightweblabs/module-orgs": "^0.6.3",
-  "@brightweblabs/module-projects": "^0.18.5",
+  "@brightweblabs/module-orgs": "^0.7.0",
+  "@brightweblabs/module-projects": "^0.19.0",
   "@brightweblabs/theme": "^0.8.3",
   "@brightweblabs/ui": "^1.5.4",
   "geist": "1.7.2",
