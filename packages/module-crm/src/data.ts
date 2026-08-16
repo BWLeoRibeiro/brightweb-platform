@@ -259,8 +259,8 @@ export async function listCrmContacts(
   const search = params.search?.trim() ?? "";
 
   const contactSelect = params.organizationId
-    ? "id, first_name, last_name, email, phone, status, source, owner_id, organization_id, created_at, updated_at, organizations(name), crm_contact_organizations!inner(organization_id)"
-    : "id, first_name, last_name, email, phone, status, source, owner_id, organization_id, created_at, updated_at, organizations(name)";
+    ? "id, first_name, last_name, email, phone, status, source, owner_id, organization_id, created_at, updated_at, organizations:organizations!crm_contacts_organization_id_fkey(name), crm_contact_organizations!inner(organization_id)"
+    : "id, first_name, last_name, email, phone, status, source, owner_id, organization_id, created_at, updated_at, organizations:organizations!crm_contacts_organization_id_fkey(name)";
   let query = supabase
     .from("crm_contacts")
     .select(contactSelect, { count: "exact" });
