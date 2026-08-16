@@ -1,5 +1,11 @@
 # @brightweblabs/module-crm
 
+## 0.18.1
+
+### Patch Changes
+
+- b62b862: Disambiguate the primary CRM contact organization relationship after enabling multi-organization links.
+
 ## 0.18.0
 
 ### Minor Changes

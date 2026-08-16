@@ -1,5 +1,11 @@
 # create-bw-app
 
+## 0.26.1
+
+### Patch Changes
+
+- b62b862: Disambiguate the primary CRM contact organization relationship after enabling multi-organization links.
+
 ## 0.26.0
 
 ### Minor Changes
