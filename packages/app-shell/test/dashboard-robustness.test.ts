@@ -503,6 +503,7 @@ test("projects dashboard provides a quick-create handoff to the projects module"
 test("dashboard project links resolve against the registered consumer route", () => {
   assert.equal(buildDashboardProjectHref("/projetos", "project-1"), "/projetos/project-1");
   assert.equal(buildDashboardProjectHref("/projects", "project-1"), "/projects/project-1");
+  assert.equal(buildDashboardProjectHref("/projetos", "project /?"), "/projetos/project%20%2F%3F");
 });
 
 test("dashboard renders the restored branded overview with live KPI content", () => {

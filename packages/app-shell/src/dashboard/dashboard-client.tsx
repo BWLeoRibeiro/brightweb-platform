@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { createContext, useContext, useEffect, useMemo, useRef, useState, type CSSProperties, type RefObject } from "react";
+import { createContext, useContext, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode, type RefObject } from "react";
 import {
   AlertTriangle,
   ArrowUpRight,
@@ -31,9 +31,13 @@ function useProjectComponents() { return useContext(ProjectComponentsContext); }
 function useDashboardDictionary() { return useContext(DashboardDictionaryContext); }
 function useProjectBaseHref() { return useProjectComponents()?.projectBaseHref ?? "/projects"; }
 function useTasksBaseHref() { const value = useProjectComponents(); return value?.tasksBaseHref ?? value?.projectBaseHref ?? "/projects"; }
-export function buildDashboardProjectHref(baseHref: string, projectId?: string) { return projectId ? `${baseHref}/${projectId}` : baseHref; }
+export function buildDashboardProjectHref(baseHref: string, projectId?: string) { return projectId ? `${baseHref}/${encodeURIComponent(projectId)}` : baseHref; }
 function ProjectAttentionCard({ project, rank }: { project: DashboardProjectAttentionItem; rank: number }) { const value = useProjectComponents(); const href = buildDashboardProjectHref(value?.projectBaseHref ?? "/projects", project.id); return value?.ProjectAttentionCard ? <value.ProjectAttentionCard project={project} rank={rank} href={href} /> : value ? <value.ProjectSummaryCard project={project} /> : null; }
 function DashboardTaskListRow(props: { task: DashboardAssignedTask; href: string; attentionState?: DashboardTaskAttentionState; attentionLabel?: string }) { const value = useProjectComponents(); return value ? <value.DashboardTaskRow {...props} /> : null; }
+
+export function DashboardProjectComponentsProvider({ value, children }: { value: DashboardProjectComponents | null; children: ReactNode }) {
+  return <ProjectComponentsContext.Provider value={value}>{children}</ProjectComponentsContext.Provider>;
+}
 
 /* ──────────────────────────────────────────────────────────────────
    V6 — real data. Welcome → hero 4-card grid →
@@ -1844,7 +1848,7 @@ export function AppDashboard({ client, contributions, initialData, viewerFirstNa
 
   return (
     <DashboardDictionaryContext.Provider value={dictionary}>
-    <ProjectComponentsContext.Provider value={projectComponents}>
+    <DashboardProjectComponentsProvider value={projectComponents}>
     <div
       className="dashboard-root min-h-0"
       style={
@@ -1894,7 +1898,7 @@ export function AppDashboard({ client, contributions, initialData, viewerFirstNa
         </div>
       </div>
     </div>
-    </ProjectComponentsContext.Provider>
+    </DashboardProjectComponentsProvider>
     </DashboardDictionaryContext.Provider>
   );
 }
