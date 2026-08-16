@@ -42,9 +42,11 @@ const ATTENTION_META = {
 export function DashboardProjectAttentionCard({
   project,
   rank,
+  href,
 }: {
   project: DashboardProjectAttentionItem;
   rank: number;
+  href?: string;
 }) {
   const navigation = useProjectsNavigation();
   const dictionary = useProjectsUiDictionary();
@@ -101,7 +103,7 @@ export function DashboardProjectAttentionCard({
 
   return (
     <Link
-      href={navigation.detailHref(project.id)}
+      href={href ?? navigation.detailHref(project.id)}
       prefetch={false}
       className="project-attention-row group focus-visible:z-[2] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--ring)]"
       style={{

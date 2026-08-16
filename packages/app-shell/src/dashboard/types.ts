@@ -156,7 +156,12 @@ export type DashboardProjectComponents = {
   tasksBaseHref?: string;
   ProjectSummaryCard: ComponentType<{ project: DashboardProjectItem }>;
   ProjectSummaryCardSkeleton: ComponentType;
-  ProjectAttentionCard?: ComponentType<{ project: DashboardProjectAttentionItem; rank: number }>;
+  ProjectAttentionCard?: ComponentType<{
+    project: DashboardProjectAttentionItem;
+    rank: number;
+    /** Resolved consumer route for this project. */
+    href?: string;
+  }>;
   TaskDueMeta: ComponentType<{ dueDate: string | null; isOverdue?: boolean }>;
   TaskPriorityTag: ComponentType<{ task: Pick<DashboardAssignedTask, "status" | "priority"> }>;
   TaskStatusTag: ComponentType<{ task: Pick<DashboardAssignedTask, "status" | "blockedReason"> }>;
