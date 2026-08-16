@@ -6,6 +6,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 
 import {
   AppDashboard,
+  buildDashboardProjectHref,
   buildUpcomingMilestoneDays,
   buildUpcomingTaskDays,
   buildProjectQuickCreateHref,
@@ -497,6 +498,11 @@ test("projects dashboard provides a quick-create handoff to the projects module"
   assert.equal(customAction.props.href, "/projetos?create=project");
   assert.equal(buildProjectQuickCreateHref("/projetos?view=grid#recent"), "/projetos?view=grid&create=project#recent");
   assert.equal(buildTaskQuickCreateHref("/projetos?view=tasks#urgent"), "/projetos?view=tasks&create=task#urgent");
+});
+
+test("dashboard project links resolve against the registered consumer route", () => {
+  assert.equal(buildDashboardProjectHref("/projetos", "project-1"), "/projetos/project-1");
+  assert.equal(buildDashboardProjectHref("/projects", "project-1"), "/projects/project-1");
 });
 
 test("dashboard renders the restored branded overview with live KPI content", () => {

@@ -31,8 +31,8 @@ function useProjectComponents() { return useContext(ProjectComponentsContext); }
 function useDashboardDictionary() { return useContext(DashboardDictionaryContext); }
 function useProjectBaseHref() { return useProjectComponents()?.projectBaseHref ?? "/projects"; }
 function useTasksBaseHref() { const value = useProjectComponents(); return value?.tasksBaseHref ?? value?.projectBaseHref ?? "/projects"; }
-function projectHref(baseHref: string, projectId?: string) { return projectId ? `${baseHref}/${projectId}` : baseHref; }
-function ProjectAttentionCard({ project, rank }: { project: DashboardProjectAttentionItem; rank: number }) { const value = useProjectComponents(); return value?.ProjectAttentionCard ? <value.ProjectAttentionCard project={project} rank={rank} /> : value ? <value.ProjectSummaryCard project={project} /> : null; }
+export function buildDashboardProjectHref(baseHref: string, projectId?: string) { return projectId ? `${baseHref}/${projectId}` : baseHref; }
+function ProjectAttentionCard({ project, rank }: { project: DashboardProjectAttentionItem; rank: number }) { const value = useProjectComponents(); const href = buildDashboardProjectHref(value?.projectBaseHref ?? "/projects", project.id); return value?.ProjectAttentionCard ? <value.ProjectAttentionCard project={project} rank={rank} href={href} /> : value ? <value.ProjectSummaryCard project={project} /> : null; }
 function DashboardTaskListRow(props: { task: DashboardAssignedTask; href: string; attentionState?: DashboardTaskAttentionState; attentionLabel?: string }) { const value = useProjectComponents(); return value ? <value.DashboardTaskRow {...props} /> : null; }
 
 /* ──────────────────────────────────────────────────────────────────
@@ -550,7 +550,7 @@ function buildTasks(tasks: DashboardTasksData | null, projectBaseHref: string): 
     priority: task.priority,
     blockedReason: task.blockedReason,
     dueDate: task.dueDate,
-    href: projectHref(projectBaseHref, task.projectId),
+    href: buildDashboardProjectHref(projectBaseHref, task.projectId),
   }));
 }
 
@@ -770,7 +770,7 @@ function MilestonesPanel({ items, isLoading = false, className = "" }: { items: 
           {items.map((m) => (
             <li key={m.id}>
               <Link
-                href={projectHref(projectBaseHref, m.projectId)}
+                href={buildDashboardProjectHref(projectBaseHref, m.projectId)}
                 prefetch={false}
                 className="group relative flex items-center gap-3 rounded-[var(--radius-card)] py-1.5 pl-2 pr-3"
               >
@@ -1772,7 +1772,7 @@ function AttentionTasksCard({
         <div>
           {visibleTasks.map((task) => {
             const attentionState = attentionStateFromTask(task, tasks!.generatedAt);
-            return <DashboardTaskListRow key={task.id} task={task} href={projectHref(projectBaseHref, task.projectId)} attentionState={attentionState ?? undefined} attentionLabel={attentionState ? labels[attentionState] : undefined} />;
+            return <DashboardTaskListRow key={task.id} task={task} href={buildDashboardProjectHref(projectBaseHref, task.projectId)} attentionState={attentionState ?? undefined} attentionLabel={attentionState ? labels[attentionState] : undefined} />;
           })}
         </div>
       )}

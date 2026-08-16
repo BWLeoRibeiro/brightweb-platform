@@ -2,6 +2,8 @@ import assert from "node:assert/strict";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 import ts from "typescript";
 
 import type { ProjectDashboardData, ProjectLink } from "../packages/module-projects/src/types.ts";
@@ -45,6 +47,7 @@ import {
   hasCompactCollectionOverflow,
 } from "../packages/module-projects/src/ui/shared/compact-collection-model.ts";
 import { formatNaturalDisplayName } from "../packages/module-projects/src/ui/shared/natural-display-name.ts";
+import { DashboardProjectAttentionCard } from "../packages/module-projects/src/ui/shared/dashboard-project-attention-card.tsx";
 
 function collectDictionaryStrings(value: unknown): string[] {
   if (typeof value === "string") return [value];
@@ -629,6 +632,28 @@ test("Projects UI ships Portuguese defaults and configurable shell registration"
   assert.deepEqual(registration.toolbarActions?.projects?.map((item) => item.action), ["projects-refresh", "projects-new-menu"]);
   assert.deepEqual(registration.toolbarActions?.["project-detail"]?.map((item) => [item.label, item.placement]), [["Projetos", "back"], ["Ver tarefas", "contextual"]]);
   assert.deepEqual(registration.toolbarActions?.["project-board"]?.map((item) => item.action), ["projects-back-to-portfolio"]);
+});
+
+test("dashboard project attention rows honor the consumer project route", () => {
+  const html = renderToStaticMarkup(createElement(DashboardProjectAttentionCard, {
+    project: {
+      id: "project /?",
+      organizationName: "BrightWeb",
+      name: "Platform",
+      code: null,
+      status: "active",
+      health: "at_risk",
+      ownerLabel: null,
+      targetDate: "2026-08-20",
+      taskStats: { total: 2, done: 1, overdue: 0, blocked: 0 },
+      attentionReason: "at_risk",
+    },
+    rank: 1,
+    href: "/projetos/project%20%2F%3F",
+  }));
+
+  assert.match(html, /href="\/projetos\/project%20%2F%3F"/);
+  assert.doesNotMatch(html, /href="\/projects\//);
 });
 
 test("Projects navigation patterns resolve URL-encoded identifiers", () => {
