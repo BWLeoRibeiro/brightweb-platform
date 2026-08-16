@@ -1,5 +1,11 @@
 # @brightweblabs/module-orgs
 
+## 0.7.0
+
+### Minor Changes
+
+- b4a578d: Centralize organization member outcomes, CRM profile linkage, resend support, zero-admin access management, project route orchestration, and exact package and migration provenance checks in the shared BrightWeb packages.
+
 ## 0.6.3
 
 ### Patch Changes
