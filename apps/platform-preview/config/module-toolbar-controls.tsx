@@ -6,15 +6,17 @@ import { AdminToolbarControls } from "@brightweblabs/module-admin/ui";
 import { CrmOrganizationsToolbarControls, CrmToolbarControls } from "@brightweblabs/module-crm/ui";
 import { ProjectBoardToolbarControls, ProjectsToolbarControls } from "@brightweblabs/module-projects/ui";
 
-const toolbarControlBySurface: Partial<Record<ShellToolbarSurface, (canCreateProjects: boolean) => ReactNode>> = {
+type ModuleToolbarViewer = { isAdmin: boolean };
+
+const toolbarControlBySurface: Partial<Record<ShellToolbarSurface, (viewer: ModuleToolbarViewer) => ReactNode>> = {
   "admin-users": () => <AdminToolbarControls />,
   crm: () => <CrmToolbarControls />,
   "crm-organizations": () => <CrmOrganizationsToolbarControls />,
-  projects: (canCreateProjects) => <ProjectsToolbarControls canCreateProjects={canCreateProjects} />,
+  projects: (viewer) => <ProjectsToolbarControls viewer={viewer} />,
   "project-board": () => <ProjectBoardToolbarControls />,
 };
 
-export function getModuleToolbarControls(pathname: string, toolbarRoutes: ShellToolbarRouteConfig[], canCreateProjects = false) {
+export function getModuleToolbarControls(pathname: string, toolbarRoutes: ShellToolbarRouteConfig[], viewer: ModuleToolbarViewer) {
   const surface = resolveShellToolbarSurface(pathname, toolbarRoutes);
-  return surface ? toolbarControlBySurface[surface]?.(canCreateProjects) ?? null : null;
+  return surface ? toolbarControlBySurface[surface]?.(viewer) ?? null : null;
 }

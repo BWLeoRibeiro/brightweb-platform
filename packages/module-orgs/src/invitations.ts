@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { OrganizationMemberRole } from "./data";
+import { syncOrganizationPrimaryContactFromAdmins, type OrganizationMemberRole } from "./data";
 import { sendOrganizationInviteEmail } from "./invite-email";
 
 const INVITE_EXPIRY_DAYS = 14;
@@ -38,10 +38,32 @@ export type OrganizationInvitationDetails = {
 
 export type OrganizationInviteSummary = {
   pendingInvitations: number;
+  duplicatePendingInvitations: number;
   directAssignments: number;
   updatedExistingMembers: number;
   unchangedExistingMembers: number;
   failedEmailDeliveries: number;
+  failedContactLinks: number;
+  failedApiOperations: number;
+};
+
+export type OrganizationInviteOutcomeStatus =
+  | "immediate_access"
+  | "membership_updated"
+  | "already_member"
+  | "pending_invitation"
+  | "duplicate_pending"
+  | "email_failed"
+  | "api_failed";
+
+export type OrganizationInviteOutcome = {
+  email: string;
+  role: OrganizationMemberRole;
+  status: OrganizationInviteOutcomeStatus;
+  profileId?: string;
+  invitationId?: string;
+  message?: string;
+  failureKind?: "crm_link" | "membership" | "invitation";
 };
 
 export type OrganizationMemberView = {
@@ -57,6 +79,8 @@ export type EnsureCrmContact = (
   profileId: string,
   options: { source: string; organizationId?: string | null; serviceClient: SupabaseClient },
 ) => Promise<{ success: boolean; contactId?: string; error?: string }>;
+
+export type SendOrganizationInvite = typeof sendOrganizationInviteEmail;
 
 export async function logOrganizationActivity(
   supabase: SupabaseClient,
@@ -89,14 +113,16 @@ function normalizeStatus(value: unknown): OrganizationInvitation["status"] {
 }
 
 function normalizeInvitation(raw: Record<string, unknown>): OrganizationInvitation {
+  const expiresAt = String(raw.expires_at);
+  const storedStatus = normalizeStatus(raw.status);
   return {
     id: String(raw.id),
     organizationId: String(raw.organization_id),
     email: typeof raw.invited_email === "string" ? normalizeEmail(raw.invited_email) : "",
     role: raw.role === "admin" ? "admin" : "member",
-    status: normalizeStatus(raw.status),
+    status: storedStatus === "pending" && isInvitationExpired(expiresAt) ? "expired" : storedStatus,
     createdAt: String(raw.created_at),
-    expiresAt: String(raw.expires_at),
+    expiresAt,
     invitedByProfileId: typeof raw.invited_by_profile_id === "string" ? raw.invited_by_profile_id : null,
     acceptedAt: typeof raw.accepted_at === "string" ? raw.accepted_at : null,
     acceptedByProfileId: typeof raw.accepted_by_profile_id === "string" ? raw.accepted_by_profile_id : null,
@@ -113,25 +139,6 @@ function isInvitationExpired(expiresAt: string): boolean {
 function isExistingAccountError(error: { message?: string } | null): boolean {
   const message = (error?.message ?? "").toLowerCase();
   return message.includes("already") || message.includes("exists") || message.includes("registered");
-}
-
-async function syncOrganizationPrimaryContactFromAdmins(
-  supabase: SupabaseClient,
-  organizationId: string,
-): Promise<void> {
-  const { data, error } = await supabase
-    .from("organization_members")
-    .select("profile_id")
-    .eq("organization_id", organizationId)
-    .eq("role", "admin")
-    .order("joined_at", { ascending: true })
-    .limit(1);
-  if (error) throw new Error(error.message);
-  const { error: updateError } = await supabase
-    .from("organizations")
-    .update({ primary_contact_id: typeof data?.[0]?.profile_id === "string" ? data[0].profile_id : null })
-    .eq("id", organizationId);
-  if (updateError) throw new Error(updateError.message);
 }
 
 async function findAuthUserIdByEmail(supabase: SupabaseClient, email: string): Promise<string | null> {
@@ -254,24 +261,33 @@ export async function inviteOrganizationMembers(
   organizationId: string,
   invites: OrganizationInviteDraft[],
   actorProfileId: string,
-): Promise<{ invitations: OrganizationInvitation[]; summary: OrganizationInviteSummary }> {
+  options?: {
+    ensureCrmContactForProfile?: EnsureCrmContact;
+    sendInviteEmail?: SendOrganizationInvite;
+  },
+): Promise<{ invitations: OrganizationInvitation[]; outcomes: OrganizationInviteOutcome[]; summary: OrganizationInviteSummary }> {
   const normalized = dedupeInviteDrafts(invites);
   const emptySummary = {
     pendingInvitations: 0,
+    duplicatePendingInvitations: 0,
     directAssignments: 0,
     updatedExistingMembers: 0,
     unchangedExistingMembers: 0,
     failedEmailDeliveries: 0,
+    failedContactLinks: 0,
+    failedApiOperations: 0,
   };
-  if (normalized.length === 0) return { invitations: [], summary: emptySummary };
+  if (normalized.length === 0) return { invitations: [], outcomes: [], summary: emptySummary };
 
   const emails = normalized.map((invite) => invite.email);
-  const [{ data: existingMembers, error: memberError }, { data: profiles, error: profileError }] = await Promise.all([
+  const [{ data: existingMembers, error: memberError }, { data: profiles, error: profileError }, { data: existingInvitations, error: invitationError }] = await Promise.all([
     supabase.from("organization_members").select("profile_id, role, profile:profiles!organization_members_profile_id_fkey(email)").eq("organization_id", organizationId),
     supabase.from("profiles").select("id, email").in("email", emails),
+    supabase.from("organization_invitations").select("id, invited_email, role, status, expires_at").eq("organization_id", organizationId).in("invited_email", emails),
   ]);
   if (memberError) throw new Error(memberError.message);
   if (profileError) throw new Error(profileError.message);
+  if (invitationError) throw new Error(invitationError.message);
   const { data: organization, error: organizationError } = await supabase
     .from("organizations")
     .select("name")
@@ -294,23 +310,64 @@ export async function inviteOrganizationMembers(
       profileByEmail.set(normalizeEmail(profile.email), profile.id);
     }
   }
+  const pendingInvitationByEmail = new Map<string, { id: string; role: OrganizationMemberRole }>();
+  for (const invitation of existingInvitations ?? []) {
+    if (
+      invitation.status !== "pending"
+      || typeof invitation.id !== "string"
+      || typeof invitation.invited_email !== "string"
+      || isInvitationExpired(String(invitation.expires_at))
+    ) continue;
+    pendingInvitationByEmail.set(normalizeEmail(invitation.invited_email), {
+      id: invitation.id,
+      role: invitation.role === "admin" ? "admin" : "member",
+    });
+  }
 
   const pendingRows: Array<Record<string, unknown>> = [];
   const resolvedProfilesByEmail = new Map<string, string>();
+  const outcomes: OrganizationInviteOutcome[] = [];
   let directAssignments = 0;
   let updatedExistingMembers = 0;
   let unchangedExistingMembers = 0;
   for (const invite of normalized) {
     const member = memberByEmail.get(invite.email);
     if (member) {
-      resolvedProfilesByEmail.set(invite.email, member.profileId);
-      if (member.role === invite.role) unchangedExistingMembers += 1;
+      if (member.role === invite.role) {
+        if (options?.ensureCrmContactForProfile) {
+          const linked = await options.ensureCrmContactForProfile(member.profileId, {
+            source: "organization_member_direct_access", organizationId, serviceClient: supabase,
+          });
+          if (!linked.success) {
+            outcomes.push({ email: invite.email, role: invite.role, status: "api_failed", profileId: member.profileId, message: "Não foi possível ligar o contacto CRM.", failureKind: "crm_link" });
+            continue;
+          }
+        }
+        unchangedExistingMembers += 1;
+        outcomes.push({ email: invite.email, role: invite.role, status: "already_member", profileId: member.profileId });
+      }
       else {
         const { error } = await supabase.from("organization_members").update({ role: invite.role })
           .eq("organization_id", organizationId).eq("profile_id", member.profileId);
-        if (error) throw new Error(error.message);
+        if (error) {
+          outcomes.push({ email: invite.email, role: invite.role, status: "api_failed", profileId: member.profileId, message: "Não foi possível atualizar a função do membro.", failureKind: "membership" });
+          continue;
+        }
+        if (options?.ensureCrmContactForProfile) {
+          const linked = await options.ensureCrmContactForProfile(member.profileId, {
+            source: "organization_member_direct_access", organizationId, serviceClient: supabase,
+          });
+          if (!linked.success) {
+            const { error: rollbackError } = await supabase.from("organization_members").update({ role: member.role })
+              .eq("organization_id", organizationId).eq("profile_id", member.profileId);
+            outcomes.push({ email: invite.email, role: invite.role, status: "api_failed", profileId: member.profileId, message: rollbackError ? "Não foi possível ligar o contacto CRM nem reverter a alteração de função; é necessária reconciliação." : "Não foi possível ligar o contacto CRM; a alteração de função foi revertida.", failureKind: "crm_link" });
+            continue;
+          }
+        }
         updatedExistingMembers += 1;
+        outcomes.push({ email: invite.email, role: invite.role, status: "membership_updated", profileId: member.profileId });
       }
+      resolvedProfilesByEmail.set(invite.email, member.profileId);
       continue;
     }
     const profileId = profileByEmail.get(invite.email);
@@ -320,9 +377,29 @@ export async function inviteOrganizationMembers(
         profile_id: profileId,
         role: invite.role,
       }, { onConflict: "organization_id,profile_id" });
-      if (error) throw new Error(error.message);
+      if (error) {
+        outcomes.push({ email: invite.email, role: invite.role, status: "api_failed", profileId, message: "Não foi possível conceder o acesso à organização.", failureKind: "membership" });
+        continue;
+      }
+      if (options?.ensureCrmContactForProfile) {
+        const linked = await options.ensureCrmContactForProfile(profileId, {
+          source: "organization_member_direct_access", organizationId, serviceClient: supabase,
+        });
+        if (!linked.success) {
+          const { error: rollbackError } = await supabase.from("organization_members").delete()
+            .eq("organization_id", organizationId).eq("profile_id", profileId);
+          outcomes.push({ email: invite.email, role: invite.role, status: "api_failed", profileId, message: rollbackError ? "Não foi possível ligar o contacto CRM nem reverter o acesso; é necessária reconciliação." : "Não foi possível ligar o contacto CRM; o acesso não foi mantido.", failureKind: "crm_link" });
+          continue;
+        }
+      }
       resolvedProfilesByEmail.set(invite.email, profileId);
       directAssignments += 1;
+      outcomes.push({ email: invite.email, role: invite.role, status: "immediate_access", profileId });
+      continue;
+    }
+    const pendingInvitation = pendingInvitationByEmail.get(invite.email);
+    if (pendingInvitation) {
+      outcomes.push({ email: invite.email, role: pendingInvitation.role, status: "duplicate_pending", invitationId: pendingInvitation.id });
       continue;
     }
     pendingRows.push({
@@ -340,7 +417,7 @@ export async function inviteOrganizationMembers(
   }
 
   if (directAssignments > 0 || updatedExistingMembers > 0) {
-    await syncOrganizationPrimaryContactFromAdmins(supabase, organizationId);
+    try { await syncOrganizationPrimaryContactFromAdmins(supabase, organizationId); } catch { /* Retry on the next idempotent member operation. */ }
   }
   if (resolvedProfilesByEmail.size > 0) {
     const acceptedAt = new Date().toISOString();
@@ -350,7 +427,8 @@ export async function inviteOrganizationMembers(
         accepted_at: acceptedAt,
         accepted_by_profile_id: profileId,
       }).eq("organization_id", organizationId).eq("invited_email", email).eq("status", "pending");
-      if (error) throw new Error(error.message);
+      // Access is already effective. Leave a pending row for the next idempotent call to reconcile.
+      if (error) return;
     }));
   }
   if (pendingRows.length > 0) {
@@ -358,17 +436,29 @@ export async function inviteOrganizationMembers(
       onConflict: "organization_id,invited_email",
       ignoreDuplicates: false,
     });
-    if (error) throw new Error(error.message);
-    const { data: inserted, error: selectError } = await supabase
+    if (error) {
+      outcomes.push(...pendingRows.map((row) => ({
+        email: String(row.invited_email), role: row.role === "admin" ? "admin" as const : "member" as const,
+        status: "api_failed" as const, message: "Não foi possível criar o convite.", failureKind: "invitation" as const,
+      })));
+    }
+    const { data: inserted, error: selectError } = error ? { data: [], error: null } : await supabase
       .from("organization_invitations")
       .select("id, invited_email, role, expires_at")
       .eq("organization_id", organizationId)
       .in("invited_email", pendingRows.map((row) => String(row.invited_email)))
       .eq("status", "pending");
-    if (selectError) throw new Error(selectError.message);
+    if (selectError) {
+      outcomes.push(...pendingRows.map((row) => ({
+        email: String(row.invited_email), role: row.role === "admin" ? "admin" as const : "member" as const,
+        status: "api_failed" as const, message: "Não foi possível confirmar o convite criado.", failureKind: "invitation" as const,
+      })));
+    }
     const deliveries = await Promise.all((inserted ?? []).map(async (invitation) => ({
       id: String(invitation.id),
-      delivered: await sendOrganizationInviteEmail({
+      email: normalizeEmail(String(invitation.invited_email)),
+      role: invitation.role === "admin" ? "admin" as const : "member" as const,
+      delivered: await (options?.sendInviteEmail ?? sendOrganizationInviteEmail)({
         invitationId: String(invitation.id),
         organizationName,
         invitedEmail: String(invitation.invited_email),
@@ -383,21 +473,84 @@ export async function inviteOrganizationMembers(
         .delete()
         .in("id", failedIds)
         .eq("status", "pending");
-      if (deleteError) throw new Error(deleteError.message);
-      throw new Error(ORGANIZATION_INVITE_EMAIL_DELIVERY_ERROR);
+      // Preserve the email failure outcome. A remaining row is safe to revoke/retry and stays visible as pending.
+      void deleteError;
+    }
+    for (const delivery of deliveries) {
+      outcomes.push({
+        email: delivery.email,
+        role: delivery.role,
+        status: delivery.delivered ? "pending_invitation" : "email_failed",
+        invitationId: delivery.delivered ? delivery.id : undefined,
+        message: delivery.delivered ? undefined : ORGANIZATION_INVITE_EMAIL_DELIVERY_ERROR,
+      });
     }
   }
 
+  const failedEmailDeliveries = outcomes.filter((outcome) => outcome.status === "email_failed").length;
+  const failedContactLinks = outcomes.filter((outcome) => outcome.status === "api_failed" && outcome.failureKind === "crm_link").length;
+  const failedApiOperations = outcomes.filter((outcome) => outcome.status === "api_failed").length;
+  let invitations: OrganizationInvitation[] = [];
+  try {
+    invitations = await listOrganizationInvitations(supabase, organizationId, { status: "pending" });
+  } catch (error) {
+    console.error("[organizations.invite-members.refresh]", error);
+  }
+
   return {
-    invitations: await listOrganizationInvitations(supabase, organizationId, { status: "pending" }),
+    invitations,
+    outcomes,
     summary: {
-      pendingInvitations: pendingRows.length,
+      pendingInvitations: outcomes.filter((outcome) => outcome.status === "pending_invitation").length,
+      duplicatePendingInvitations: outcomes.filter((outcome) => outcome.status === "duplicate_pending").length,
       directAssignments,
       updatedExistingMembers,
       unchangedExistingMembers,
-      failedEmailDeliveries: 0,
+      failedEmailDeliveries,
+      failedContactLinks,
+      failedApiOperations,
     },
   };
+}
+
+export async function resendOrganizationInvitation(
+  supabase: SupabaseClient,
+  organizationId: string,
+  invitationId: string,
+  options?: { sendInviteEmail?: SendOrganizationInvite },
+): Promise<OrganizationInvitation> {
+  const { data, error } = await supabase
+    .from("organization_invitations")
+    .select("id, organization_id, invited_email, role, status, invited_by_profile_id, accepted_at, accepted_by_profile_id, accepted_contact_id, revoked_at, expires_at, created_at, organizations(name)")
+    .eq("id", invitationId)
+    .eq("organization_id", organizationId)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!data || data.status !== "pending") throw new Error("Convite pendente não encontrado.");
+  if (isInvitationExpired(String(data.expires_at))) {
+    const { error: expireError } = await supabase
+      .from("organization_invitations")
+      .update({ status: "expired" })
+      .eq("id", invitationId)
+      .eq("status", "pending");
+    if (expireError) throw new Error(expireError.message);
+    throw new Error("Este convite expirou.");
+  }
+  const organizationRaw = Array.isArray(data.organizations) ? data.organizations[0] ?? null : data.organizations;
+  const organizationName = organizationRaw && typeof organizationRaw === "object" && typeof organizationRaw.name === "string"
+    ? organizationRaw.name
+    : "Organização";
+  const delivered = await (options?.sendInviteEmail ?? sendOrganizationInviteEmail)({
+    invitationId,
+    organizationName,
+    invitedEmail: String(data.invited_email),
+    role: data.role === "admin" ? "admin" : "member",
+    expiresAt: String(data.expires_at),
+  });
+  if (!delivered) {
+    throw new Error("Não foi possível reenviar o email de convite. O convite pendente foi mantido.");
+  }
+  return normalizeInvitation(data as Record<string, unknown>);
 }
 
 export async function revokeOrganizationInvitation(

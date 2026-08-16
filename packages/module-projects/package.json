@@ -22,6 +22,8 @@
     "./activity-messages": "./src/activity-messages.ts",
     "./contracts": "./src/contracts.ts",
     "./registration": "./src/registration.ts",
+    "./routes": "./src/routes.tsx",
+    "./route-handlers": "./src/route-handlers.ts",
     "./server": "./src/server.ts",
     "./types": "./src/types.ts",
     "./ui": "./src/ui/index.ts",

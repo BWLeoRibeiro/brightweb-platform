@@ -6,6 +6,7 @@ import { pathExists, runInstall } from "./generator.mjs";
 import { applyMigrationWrites, getModuleMigrations, planMigrationAppends } from "./migrations.mjs";
 import { buildBrightwebAppUpdatePlan } from "./update.mjs";
 import { resolveSafeRelativePath } from "./safe-path.mjs";
+import { RETIRED_MODULE_STARTER_FILES } from "./constants.mjs";
 
 const HELP = `Usage: bw upgrade [moduleKey] [options]\n\nOptions:\n  --target-dir <path>                 App directory (defaults to cwd)\n  --workspace-root <path>             BrightWeb workspace root\n  --through-migration <file>          Advance the named module only through this migration\n  --include-destructive-migrations    Explicitly include held destructive migrations\n  --allow-stale-fallback              Use baked-in versions if npm lookup fails\n  --install                           Install changed dependencies\n  --refresh-starters                  Refresh unchanged starter files\n  --dry-run                           Print the upgrade plan without writing\n  --help                              Show this help`;
 
@@ -40,6 +41,19 @@ export async function upgradeBrightwebApp(moduleKey, argvOptions = {}, runtimeOp
     if (await hashFile(filePath) !== record.hash) drifted.push(relativePath);
   }
   const protectedPaths = new Set([...drifted, ...intentional]);
+  const obsoleteScaffoldFiles = [];
+  if (argvOptions.refreshStarters) {
+    for (const moduleKey of Object.keys(appManifest.modules)) {
+      for (const relativePath of RETIRED_MODULE_STARTER_FILES[moduleKey] ?? []) {
+        const record = appManifest.scaffoldFiles[relativePath];
+        if (!record || protectedPaths.has(relativePath)) continue;
+        const targetPath = resolveSafeRelativePath(targetDir, relativePath, "Obsolete scaffold file path");
+        if (!(await pathExists(targetPath)) || await hashFile(targetPath) !== record.hash) continue;
+        obsoleteScaffoldFiles.push({ relativePath, targetPath });
+      }
+    }
+  }
+  plan.fileDeletes = obsoleteScaffoldFiles;
   plan.fileWrites = plan.fileWrites.filter((entry) => entry.type !== "starter" || !protectedPaths.has(entry.relativePath));
   plan.starterFilesToRefresh = plan.fileWrites.filter((entry) => entry.type === "starter").map((entry) => entry.relativePath);
   plan.starterFilesDrifted = Array.from(new Set([...plan.starterFilesDrifted, ...drifted]));
@@ -93,7 +107,7 @@ export async function upgradeBrightwebApp(moduleKey, argvOptions = {}, runtimeOp
     migrationCursor: appManifest.migrationCursor,
     migrationUpperBounds,
   });
-  output.write(`bw upgrade\nPackages to update: ${plan.packageUpdates.length}\nManaged files to write: ${plan.fileWrites.length}\nMigrations to append: ${migrationPlan.writes.length}\n`);
+  output.write(`bw upgrade\nPackages to update: ${plan.packageUpdates.length}\nManaged files to write: ${plan.fileWrites.length}\nObsolete managed files to remove: ${plan.fileDeletes.length}\nMigrations to append: ${migrationPlan.appends.length}\n`);
   if (throughMigration) output.write(`Migration cutoff: ${moduleKey} through ${throughMigration}\n`);
   for (const boundary of safetyBoundaries) {
     output.write(`Migration safety boundary: ${boundary.moduleKey} through ${boundary.boundary}; held ${boundary.destructiveMigration}\n`);
@@ -107,14 +121,33 @@ export async function upgradeBrightwebApp(moduleKey, argvOptions = {}, runtimeOp
   for (const relativePath of missing) output.write(`- missing: ${relativePath}\n`);
   for (const relativePath of drifted) output.write(`- drifted: ${relativePath}\n`);
   for (const relativePath of intentional) output.write(`- intent-protected: ${relativePath}\n`);
+  for (const entry of plan.fileDeletes) output.write(`- obsolete managed file: ${entry.relativePath}\n`);
   if (argvOptions.dryRun) return { dryRun: true, plan, migrationPlan, drifted, missing };
 
   for (const write of plan.fileWrites) {
     await fs.mkdir(path.dirname(write.targetPath), { recursive: true });
     await fs.writeFile(write.targetPath, write.content, "utf8");
   }
+  for (const deletion of plan.fileDeletes) {
+    await fs.unlink(deletion.targetPath);
+    delete appManifest.scaffoldFiles[deletion.relativePath];
+  }
   await applyMigrationWrites(migrationPlan.writes);
   appManifest.migrationCursor = migrationPlan.nextCursor;
+  appManifest.migrationDeferrals ??= {};
+  for (const key of moduleKeys) {
+    const firstDeferred = migrationPlan.deferred.find((entry) => entry.moduleKey === key);
+    if (firstDeferred?.destructive) {
+      appManifest.migrationDeferrals[key] = {
+        reason: "destructive",
+        cursor: migrationPlan.nextCursor[key],
+        nextMigration: firstDeferred.fileName,
+      };
+    } else {
+      delete appManifest.migrationDeferrals[key];
+    }
+  }
+  if (Object.keys(appManifest.migrationDeferrals).length === 0) delete appManifest.migrationDeferrals;
   for (const [key, entry] of Object.entries(appManifest.modules)) {
     const packageName = catalog[key]?.packageName;
     if (catalog[key]?.packageRoot || plan.targetVersions?.[packageName]) entry.version = catalog[key].version;
@@ -144,7 +177,7 @@ export async function upgradeBrightwebApp(moduleKey, argvOptions = {}, runtimeOp
     const runner = runtimeOptions.installRunner || runInstall;
     await runner(plan.packageManager, plan.dependencyMode === "workspace" && plan.workspaceRoot ? plan.workspaceRoot : targetDir);
   }
-  output.write(`Applied ${plan.fileWrites.length} managed change${plan.fileWrites.length === 1 ? "" : "s"} and ${migrationPlan.writes.length} migration${migrationPlan.writes.length === 1 ? "" : "s"}.\n`);
+  output.write(`Applied ${plan.fileWrites.length} managed change${plan.fileWrites.length === 1 ? "" : "s"}, removed ${plan.fileDeletes.length} obsolete managed file${plan.fileDeletes.length === 1 ? "" : "s"}, and added ${migrationPlan.appends.length} new migration${migrationPlan.appends.length === 1 ? "" : "s"}.\n`);
   return { dryRun: false, plan, migrationPlan, drifted, missing };
 }
 

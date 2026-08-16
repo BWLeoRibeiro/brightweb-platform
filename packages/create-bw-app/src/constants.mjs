@@ -113,8 +113,6 @@ export const MODULE_STARTER_FILES = {
   projects: [
     "app/(shell)/projetos/layout.tsx",
     "app/(shell)/projetos/page.tsx",
-    "app/(shell)/projetos/projetos-live-mounts.tsx",
-    "app/(shell)/projetos/projetos-server-mounts.tsx",
     "app/(shell)/projetos/[projectId]/page.tsx",
     "app/(shell)/projetos/[projectId]/quadro/page.tsx",
     "app/(shell)/projetos/[projectId]/tarefas/page.tsx",
@@ -122,7 +120,6 @@ export const MODULE_STARTER_FILES = {
     "app/(shell)/account/projetos/loading.tsx",
     "app/(shell)/account/projetos/[projectId]/page.tsx",
     "app/(shell)/account/projetos/[projectId]/loading.tsx",
-    "app/api/projects/_handlers.ts",
     "app/api/account/projects/route.ts",
     "app/api/account/projects/[id]/route.ts",
     "app/api/dashboard/projects/route.ts",
@@ -142,6 +139,14 @@ export const MODULE_STARTER_FILES = {
     "app/api/projects/[id]/milestones/[itemId]/route.ts",
     "app/api/projects/[id]/tasks/route.ts",
     "app/api/projects/[id]/tasks/[itemId]/route.ts",
+  ],
+};
+
+export const RETIRED_MODULE_STARTER_FILES = {
+  projects: [
+    "app/(shell)/projetos/projetos-live-mounts.tsx",
+    "app/(shell)/projetos/projetos-server-mounts.tsx",
+    "app/api/projects/_handlers.ts",
   ],
 };
 

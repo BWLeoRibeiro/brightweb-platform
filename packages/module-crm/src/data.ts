@@ -258,12 +258,12 @@ export async function listCrmContacts(
   const to = from + pageSize - 1;
   const search = params.search?.trim() ?? "";
 
+  const contactSelect = params.organizationId
+    ? "id, first_name, last_name, email, phone, status, source, owner_id, organization_id, created_at, updated_at, organizations(name), crm_contact_organizations!inner(organization_id)"
+    : "id, first_name, last_name, email, phone, status, source, owner_id, organization_id, created_at, updated_at, organizations(name)";
   let query = supabase
     .from("crm_contacts")
-    .select(
-      "id, first_name, last_name, email, phone, status, source, owner_id, organization_id, created_at, updated_at, organizations(name)",
-      { count: "exact" },
-    );
+    .select(contactSelect, { count: "exact" });
 
   if (params.sort === "name") {
     query = query.order("first_name", { ascending: true }).order("last_name", { ascending: true });
@@ -290,7 +290,7 @@ export async function listCrmContacts(
   }
 
   if (params.organizationId) {
-    query = query.eq("organization_id", params.organizationId);
+    query = query.eq("crm_contact_organizations.organization_id", params.organizationId);
   }
 
   if (params.ownerProfileId) {
@@ -302,7 +302,7 @@ export async function listCrmContacts(
     throw new Error(error.message);
   }
 
-  const items = ((data ?? []) as Array<CrmContact | (Omit<CrmContact, "organizations"> & {
+  const items = ((data ?? []) as unknown as Array<CrmContact | (Omit<CrmContact, "organizations"> & {
     organizations?: Array<{ name: string | null }> | { name: string | null } | null;
   })>).map(normalizeCrmContact);
 

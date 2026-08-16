@@ -8,6 +8,7 @@ import {
   parseCrmContactsResponse,
   parseCrmDeleteOrStatusResponse,
   parseCrmOrganizationWriteResponse,
+  parseCrmOrganizationWriteResult,
   parseCrmOrganizationsListResponse,
   parseCrmOrganizationsResponse,
   parseCrmOwnersResponse,
@@ -121,6 +122,15 @@ export function createCrmUiClient(
         })),
       );
     },
+    async createOrganizationWithAccessOutcomes(input) {
+      return parseCrmOrganizationWriteResult(
+        await readPayload(await fetcher(organizationsRoot, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify(organizationPayload(input)),
+        })),
+      );
+    },
     async updateOrganization(organizationId, input) {
       return parseCrmOrganizationWriteResponse(
         await readPayload(await fetcher(`${organizationsRoot}/${encodeURIComponent(organizationId)}`, {
@@ -158,6 +168,12 @@ export function createCrmUiClient(
         { method: "DELETE" },
       ));
     },
+    async resendOrganizationInvitation(organizationId, invitationId) {
+      await readPayload(await fetcher(
+        `${organizationsRoot}/${encodeURIComponent(organizationId)}/invitations/${encodeURIComponent(invitationId)}`,
+        { method: "POST" },
+      ));
+    },
     async getOrganizationAccess(organizationId, requestOptions = {}) {
       const query = requestOptions.includeHistory ? "?status=all" : "";
       const payload = await readPayload(await fetcher(
@@ -175,11 +191,30 @@ export function createCrmUiClient(
       } as CrmOrganizationAccess;
     },
     async inviteOrganizationMember(organizationId, input) {
-      await readPayload(await fetcher(`${organizationsRoot}/${encodeURIComponent(organizationId)}/invitations`, {
+      const payload = await readPayload(await fetcher(`${organizationsRoot}/${encodeURIComponent(organizationId)}/invitations`, {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ invitations: [input] }),
       }));
+      const data = payload && typeof payload === "object" && "data" in payload
+        ? (payload as { data?: unknown }).data
+        : null;
+      const outcomes = data && typeof data === "object" && "outcomes" in data
+        ? (data as { outcomes?: unknown }).outcomes
+        : null;
+      const outcome = Array.isArray(outcomes) ? outcomes[0] : null;
+      const allowedStatuses = new Set(["immediate_access", "membership_updated", "already_member", "pending_invitation", "duplicate_pending", "email_failed", "api_failed"]);
+      if (
+        !outcome
+        || typeof outcome !== "object"
+        || typeof outcome.status !== "string"
+        || !allowedStatuses.has(outcome.status)
+        || typeof outcome.email !== "string"
+        || (outcome.role !== "admin" && outcome.role !== "member")
+      ) {
+        throw new Error("A API não devolveu o resultado do acesso.");
+      }
+      return outcome as Awaited<ReturnType<CrmUiClient["inviteOrganizationMember"]>>;
     },
     async updateOrganizationMemberRole(organizationId, profileId, role) {
       await readPayload(await fetcher(`${organizationsRoot}/${encodeURIComponent(organizationId)}/members/${encodeURIComponent(profileId)}`, {
