@@ -30,7 +30,8 @@
     "./worker": "./src/worker.ts",
     "./email": "./src/email/index.ts",
     "./tokens.css": "./tokens.css",
-    "./marketing.css": "./marketing.css"
+    "./marketing.css": "./marketing.css",
+    "./social-media": "./src/social-media/page.tsx"
   },
   "dependencies": {
     "@brightweblabs/app-shell": "workspace:*",

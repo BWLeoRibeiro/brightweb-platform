@@ -1,0 +1,76 @@
+@layer components {
+  .measurement {
+    --measurement-accent: var(--brand-accent, var(--primary));
+    --measurement-on-accent: var(--brand-accent-foreground, var(--primary-foreground));
+    --measurement-tint: color-mix(in srgb, var(--measurement-accent) 6%, var(--card));
+    display: grid; gap: 2.75rem; padding: var(--space-lg-plus) 0 var(--space-xl);
+  }
+  .measurement p { margin: 0; }
+  .measurement .eyebrow { color: var(--measurement-accent); font-size: var(--text-body); font-weight: var(--font-weight-semibold); line-height: var(--type-leading-140); }
+  .overview { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(17rem, 1fr); gap: 3.5rem; align-items: center; }
+  .overview:not(:has(> .delivery)), .reviewIntroduction:not(:has(> .baseline)) { grid-template-columns: minmax(0, 1fr); }
+  .measurement .overview > header h2 { max-width: 21ch; }
+  .delivery { padding: var(--space-lg) 0 var(--space-lg) var(--space-xl); border-left: 1px solid var(--border); }
+  .measurement .delivery h3 { margin: 0 0 var(--space-md); font-size: var(--text-body); font-weight: var(--font-weight-semibold); color: var(--measurement-accent); }
+  .delivery dl { margin: 0; display: grid; gap: 1.25rem; }
+  .delivery dl > div { position: relative; padding-left: 4.5rem; }
+  .delivery dt { font-size: var(--social-text-lead); font-weight: var(--social-weight-heading); }
+  .delivery dd { margin: 0; }
+  .delivery dd strong { position: absolute; left: 0; top: 0; color: var(--measurement-accent); font-size: var(--social-text-metric); line-height: var(--type-leading-none); letter-spacing: var(--social-tracking-metric); font-weight: var(--social-weight-emphasis); font-variant-numeric: tabular-nums; }
+  .delivery dd span { display: block; max-width: 38ch; margin-top: .35rem; font-size: var(--text-body); line-height: var(--type-leading-155); color: var(--muted-foreground); }
+  .sectionHeading { margin-bottom: 1.25rem; }
+  .measurement .sectionHeading h3 { margin: 0; font-size: var(--text-heading-2); letter-spacing: var(--type-tracking-n025); line-height: var(--type-leading-tight); font-weight: var(--social-weight-heading); }
+  .sectionHeading > p { margin-top: var(--space-xs); font-size: var(--text-title); color: var(--muted-foreground); }
+  .signalWorkspace { display: grid; grid-template-columns: minmax(16rem, .85fr) minmax(0, 1.7fr); border: 1px solid color-mix(in srgb, var(--measurement-accent) 18%, var(--border)); border-radius: var(--radius-panel); overflow: hidden; }
+  .signalChoices { display: grid; align-content: center; gap: var(--space-xs); padding: var(--space-md); background: var(--measurement-tint); }
+  .signalChoices button { display: flex; align-items: center; gap: .85rem; width: 100%; padding: var(--space-button-y) var(--space-md); text-align: left; border-radius: var(--radius); font-size: var(--text-body-lg); line-height: var(--type-leading-140); font-weight: var(--social-weight-emphasis); cursor: pointer; color: var(--foreground); transition: background-color 140ms ease, color 140ms ease; }
+  .signalChoices button span { flex: 1; min-width: 0; }
+  .signalChoices button svg { width: 1.125rem; height: 1.125rem; flex: none; }
+  .signalChoices button > svg:last-child { width: 1rem; opacity: 0; }
+  .signalChoices button:hover { background: color-mix(in srgb, var(--measurement-accent) 12%, var(--card)); }
+  .signalChoices button[aria-pressed="true"] { color: var(--measurement-on-accent); background: var(--measurement-accent); }
+  .signalChoices button[aria-pressed="true"] > svg:last-child { opacity: 1; }
+  .signalChoices button:focus-visible { outline: 2px solid var(--ring); outline-offset: 3px; }
+  .signalDetail { padding: var(--space-xl) 2.25rem; min-height: 20rem; display: flex; flex-direction: column; align-items: flex-start; }
+  .measurement .signalDetail h4 { max-width: 32ch; margin: var(--space-sm) 0 0; font-size: var(--social-text-question); line-height: var(--type-leading-tight); font-weight: var(--font-weight-semibold); letter-spacing: var(--type-tracking-n025); text-wrap: balance; }
+  .measurement .interpretation { margin-top: var(--space-md); max-width: 68ch; font-size: var(--text-body-lg); line-height: var(--type-leading-165); color: var(--muted-foreground); }
+  .indicatorGroup { padding-top: var(--space-lg); margin-top: auto; }
+  .indicatorGroup > p { font-size: var(--text-ui-action); font-weight: var(--font-weight-semibold); color: var(--muted-foreground); }
+  .measurement .indicatorGroup ul { display: flex; flex-wrap: wrap; gap: var(--space-xs); padding: 0; margin: .6rem 0 0; list-style: none; }
+  .measurement .indicatorGroup li { margin: 0; padding: .35rem .7rem; background: var(--measurement-tint); border-radius: var(--radius); font-size: var(--text-ui-action); font-weight: var(--social-weight-emphasis); color: var(--measurement-accent); }
+  .reviewIntroduction { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: var(--space-3xl); align-items: start; margin-bottom: var(--space-xl); }
+  .reviewIntroduction .sectionHeading { margin-bottom: 0; padding-top: var(--space-xs); }
+  .reviewIntroduction .sectionHeading > p { max-width: 58ch; margin-top: var(--space-md); font-size: var(--text-body-lg); line-height: var(--type-leading-165); }
+  .baseline { padding: var(--space-lg); border-radius: var(--radius); background: var(--measurement-tint); }
+  .measurement .baseline .eyebrow { font-size: var(--text-ui-action); }
+  .measurement .baselineFact { margin-top: .65rem; font-size: var(--text-heading-4); font-weight: var(--social-weight-emphasis); }
+  .baselineFact strong { font-weight: var(--social-weight-heading); color: var(--measurement-accent); }
+  .baseline > p:last-child { margin-top: var(--space-sm); font-size: var(--text-title); line-height: var(--type-leading-160); color: var(--muted-foreground); }
+  .measurement .timeline { list-style: none; padding: 0; margin: 0; border-top: 1px solid var(--border); }
+  .timeline li { display: grid; grid-template-columns: minmax(8rem, .5fr) minmax(0, 1.35fr) minmax(0, 1fr); gap: var(--space-xl); padding: var(--space-lg-plus) 0; border-bottom: 1px solid var(--border); align-items: start; }
+  .timeline li:not(:has(> .reviewOutcome)) { grid-template-columns: minmax(8rem, .5fr) minmax(0, 2.35fr); }
+  .measurement .timeline li + li { margin-top: 0; }
+  .timeline li > .eyebrow { max-width: 18ch; padding-top: .2rem; }
+  .measurement .timeline h4 { margin: 0; font-size: var(--text-heading-4); line-height: var(--type-leading-140); font-weight: var(--font-weight-semibold); max-width: 36ch; }
+  .reviewQuestion > p { margin-top: var(--space-sm); font-size: var(--text-title); line-height: var(--type-leading-165); color: var(--muted-foreground); }
+  .reviewOutcome { padding: var(--space-md) 1.25rem; border-radius: var(--radius); background: var(--measurement-tint); }
+  .measurement .reviewOutcome .eyebrow { font-size: var(--text-ui-action); }
+  .reviewOutcome > p:last-child { margin-top: .6rem; font-size: var(--text-title); line-height: var(--type-leading-160); }
+  .references { border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+  .references summary { display: flex; align-items: center; justify-content: space-between; padding: 1.25rem 0; cursor: pointer; list-style: none; font-weight: var(--font-weight-semibold); }
+  .references summary::-webkit-details-marker { display: none; }
+  .references summary small { display: block; font-weight: var(--font-weight-normal); margin-top: var(--space-2xs); }
+  .references summary svg { width: 1rem; height: 1rem; }
+  .references[open] summary svg { transform: rotate(180deg); }
+  .references summary:hover { color: var(--measurement-accent); }
+  .references summary:focus-visible { outline: 2px solid var(--ring); outline-offset: 4px; }
+  .referenceContent { padding: 0 0 var(--space-lg); }
+  .referenceContent > p { max-width: 85ch; margin-bottom: var(--space-md); font-size: var(--text-title); }
+  .referenceContent table { font-variant-numeric: tabular-nums; }
+  @media (prefers-reduced-motion: reduce) { .signalChoices button { transition: none; } }
+  @media (max-width: 760px) {
+    .overview, .signalWorkspace, .reviewIntroduction, .timeline li, .timeline li:not(:has(> .reviewOutcome)) { grid-template-columns: 1fr; }
+    .delivery { border-left: 0; padding-left: 0; }
+    .timeline li { padding-bottom: var(--space-lg); }
+  }
+}
