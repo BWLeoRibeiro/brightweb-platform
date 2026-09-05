@@ -1,0 +1,9 @@
+@layer components {
+  .hero { min-width: 0; }
+  .hero .eyebrow { margin: 0; color: var(--brand-accent, var(--primary)); font-size: var(--text-body); font-weight: var(--font-weight-semibold); line-height: var(--type-leading-140); }
+  .hero .title { max-width: 28ch; margin: .85rem 0 0; color: var(--foreground); font-size: var(--social-text-hero); font-weight: var(--social-weight-heading); letter-spacing: var(--type-tracking-n040); line-height: var(--social-leading-hero); text-wrap: balance; }
+  .title > span { color: var(--brand-accent, var(--primary)); }
+  .hero .lead { max-width: 58ch; margin-top: 1.25rem; color: var(--muted-foreground); font-size: var(--social-text-lead); line-height: var(--type-leading-165); }
+  .hero .lead p { margin: 0; color: inherit; font-size: inherit; line-height: inherit; }
+  .hero .lead p + p { margin-top: var(--space-sm); }
+}
