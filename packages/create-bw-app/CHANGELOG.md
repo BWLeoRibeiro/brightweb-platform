@@ -1,5 +1,11 @@
 # create-bw-app
 
+## 0.27.0
+
+### Minor Changes
+
+- 18621d6: Add opt-in `bw setup social-media` with an app-owned empty content plan, thin page, and composed navigation. Preflight installed support and safe paths, preserve existing client files on reruns and updates, and support a write-free dry run.
+
 ## 0.26.2
 
 ### Patch Changes
