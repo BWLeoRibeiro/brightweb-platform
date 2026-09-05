@@ -1,5 +1,22 @@
 # @brightweblabs/module-marketing
 
+## 0.5.0
+
+### Minor Changes
+
+- 18621d6: Add an authenticated, read-only Social Media plan surface with a monthly calendar, publication filters, briefs and copyable drafts. Client applications supply their own plan data and opt into navigation; the surface reuses portal UI and theme tokens.
+
+### Patch Changes
+
+- 18621d6: Separate client-owned social media content from shared presentation using a validated structured plan. Strategy screens now receive editorial text and semantic content from the website, while shared components own layout, styling, and interactions. Preserve staff/admin access and support omitted optional sections.
+- 18621d6: Add structured Social Media measurement content with distinct deliveries, an interactive signal explorer, baseline and decision timing. Improve desktop hierarchy and preserve section navigation in the URL.
+
+  Remove superseded Social Media styles, reuse theme spacing and typography tokens, and respect reduced motion in disclosure controls.
+
+  Unify Plan, Campaigns and Measurement opening headers with a shared component and consistent typography, accent labels and spacing.
+
+- 18621d6: Remove retired social media renderer styles, share reference URL validation, tighten reference types, and simplify category counts and filters. Avoid nested main landmarks and empty source disclosures; make standalone positioning rhythm optional. Standalone positioning fills the available width when its optional rhythm is absent.
+
 ## 0.4.25
 
 ### Patch Changes
