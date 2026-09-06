@@ -1,5 +1,15 @@
 # @brightweblabs/module-crm
 
+## 0.18.3
+
+### Patch Changes
+
+- Updated dependencies [ebdc5fc]
+  - @brightweblabs/core-auth@0.12.1
+  - @brightweblabs/app-shell@0.16.2
+  - @brightweblabs/ui@1.5.5
+  - @brightweblabs/module-orgs@0.7.2
+
 ## 0.18.2
 
 ### Patch Changes

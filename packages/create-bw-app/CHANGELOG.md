@@ -1,5 +1,11 @@
 # create-bw-app
 
+## 0.27.1
+
+### Patch Changes
+
+- ebdc5fc: Establish the same theme, base, components, utilities cascade order before every shared layered stylesheet and starter reset entry point. Independently emitted production CSS chunks can now load in any order without allowing the reset to erase authentication padding, heading typography, or calendar spacing. Existing component layers and client customization remain intact.
+
 ## 0.27.0
 
 ### Minor Changes
