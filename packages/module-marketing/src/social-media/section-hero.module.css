@@ -1,3 +1,5 @@
+@layer theme, base, components, utilities;
+
 @layer components {
   .hero { min-width: 0; }
   .hero .eyebrow { margin: 0; color: var(--brand-accent, var(--primary)); font-size: var(--text-body); font-weight: var(--font-weight-semibold); line-height: var(--type-leading-140); }

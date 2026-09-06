@@ -222,7 +222,7 @@ test("canonical typography roles expose complete color-independent recipes and c
 
 test("the base reset contains one complete base layer and no outside rules", async () => {
   const css = stripComments(await read("src/base.css"));
-  assert.match(css, /^@layer\s+base\s*\{/);
+  assert.match(css, /^@layer theme, base, components, utilities;\s*@layer\s+base\s*\{/);
   assert.match(css, /button,\s*\n\s*input\s*\{\s*font:\s*inherit;/);
   assert.match(css, /html,\s*\n\s*body\s*\{[\s\S]*scrollbar-gutter:\s*stable;/);
 
