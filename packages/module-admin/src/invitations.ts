@@ -4,6 +4,10 @@ import { sendAdminUserInviteEmail } from "./invite-email";
 export const ADMIN_USER_INVITE_EXPIRY_DAYS = 14;
 export const ADMIN_USER_INVITE_EMAIL_DELIVERY_ERROR =
   "Não foi possível enviar o email de convite. O convite não foi guardado. Verifique a configuração do Resend.";
+export const ADMIN_USER_INVITE_CLEANUP_FAILED_ERROR =
+  "Não foi possível enviar o email. O convite pendente foi mantido; revogue-o antes de tentar novamente.";
+export const ADMIN_USER_INVITE_STATE_CHANGED_ERROR =
+  "O estado do convite mudou durante o envio. Atualize a lista para confirmar o resultado.";
 export const ADMIN_USER_INVITE_SCHEMA_MISSING_ERROR =
   "A tabela de convites de utilizadores ainda não existe na base de dados. Aplique a migration admin_user_invitations.";
 
@@ -27,6 +31,7 @@ export type AdminUserInvitationDetails = {
   role: AdminInviteRole;
   status: AdminUserInvitation["status"];
   expiresAt: string;
+  acceptedByProfileId?: string | null;
 };
 
 function normalizeEmail(value: string): string {
@@ -58,7 +63,10 @@ function normalizeInvitation(raw: Record<string, unknown>): AdminUserInvitation 
 }
 
 function isMissingSchemaError(error: { code?: string; message?: string } | null): boolean {
-  return error?.code === "42P01" || (error?.message ?? "").toLowerCase().includes("admin_user_invitations");
+  const message = (error?.message ?? "").toLowerCase();
+  return error?.code === "42P01" || error?.code === "PGRST205"
+    || (message.includes("admin_user_invitations")
+      && (message.includes("does not exist") || message.includes("could not find the table")));
 }
 
 function throwInviteError(error: { code?: string; message?: string } | null): never {
@@ -141,33 +149,6 @@ async function ensureInvitationProfile(
   return data;
 }
 
-async function assignInvitedUserRole(
-  supabase: SupabaseClient,
-  params: { profileId: string; role: AdminInviteRole; invitedByProfileId: string | null },
-): Promise<void> {
-  const { data: current, error } = await supabase.from("user_role_assignments").select("role_code")
-    .eq("profile_id", params.profileId).maybeSingle<{ role_code: string | null }>();
-  if (error) throw new Error(error.message);
-  const { error: upsertError } = await supabase.from("user_role_assignments").upsert({
-    profile_id: params.profileId,
-    role_code: params.role,
-    assigned_by_profile_id: params.invitedByProfileId,
-    assigned_at: new Date().toISOString(),
-    reason: "Convite de utilizador do portal aceite.",
-  }, { onConflict: "profile_id" });
-  if (upsertError) throw new Error(upsertError.message);
-  if (params.invitedByProfileId) {
-    const { error: auditError } = await supabase.from("role_change_audit").insert({
-      target_profile_id: params.profileId,
-      changed_by_profile_id: params.invitedByProfileId,
-      old_role_code: current?.role_code ?? null,
-      new_role_code: params.role,
-      reason: "Convite de utilizador do portal aceite.",
-    });
-    if (auditError) throw new Error(auditError.message);
-  }
-}
-
 export async function listAdminUserInvitations(supabase: SupabaseClient): Promise<AdminUserInvitation[]> {
   await expirePendingAdminUserInvitations(supabase);
   const { data, error } = await supabase.from("admin_user_invitations")
@@ -182,7 +163,7 @@ export async function getAdminUserInvitationDetails(
   invitationId: string,
 ): Promise<AdminUserInvitationDetails | null> {
   const { data, error } = await supabase.from("admin_user_invitations")
-    .select("id, invited_email, role_code, status, expires_at")
+    .select("id, invited_email, role_code, status, expires_at, accepted_by_profile_id")
     .eq("id", invitationId).maybeSingle<Record<string, unknown>>();
   if (error) throwInviteError(error);
   if (!data) return null;
@@ -192,12 +173,14 @@ export async function getAdminUserInvitationDetails(
     role: normalizeRole(data.role_code),
     status: normalizeStatus(data.status),
     expiresAt: String(data.expires_at),
+    acceptedByProfileId: typeof data.accepted_by_profile_id === "string" ? data.accepted_by_profile_id : null,
   };
 }
 
 export async function createAdminUserInvitation(
   supabase: SupabaseClient,
   params: { email: string; role: AdminInviteRole; invitedByProfileId: string },
+  options: { sendInviteEmail?: typeof sendAdminUserInviteEmail } = {},
 ): Promise<AdminUserInvitation> {
   const email = normalizeEmail(params.email);
   if (!email) throw new Error("EMAIL_REQUIRED");
@@ -215,14 +198,17 @@ export async function createAdminUserInvitation(
     throwInviteError(error);
   }
   const invitation = normalizeInvitation(data);
-  const delivered = await sendAdminUserInviteEmail({
+  const delivered = await (options.sendInviteEmail ?? sendAdminUserInviteEmail)({
     invitationId: invitation.id,
     invitedEmail: invitation.email,
     role: invitation.role,
     expiresAt: invitation.expiresAt,
   });
   if (!delivered) {
-    await supabase.from("admin_user_invitations").delete().eq("id", invitation.id);
+    const { data: removed, error: cleanupError } = await supabase.from("admin_user_invitations").delete()
+      .eq("id", invitation.id).eq("status", "pending").select("id");
+    if (cleanupError) throw new Error(ADMIN_USER_INVITE_CLEANUP_FAILED_ERROR);
+    if (!(removed ?? []).some((row) => row.id === invitation.id)) throw new Error(ADMIN_USER_INVITE_STATE_CHANGED_ERROR);
     throw new Error(ADMIN_USER_INVITE_EMAIL_DELIVERY_ERROR);
   }
   await logAdminInvitationEvent(supabase, {
@@ -240,10 +226,11 @@ export async function revokeAdminUserInvitation(
   invitationId: string,
   options: { revokedByProfileId?: string | null } = {},
 ): Promise<void> {
-  const { error } = await supabase.from("admin_user_invitations")
+  const { data, error } = await supabase.from("admin_user_invitations")
     .update({ status: "revoked", revoked_at: new Date().toISOString() })
-    .eq("id", invitationId).eq("status", "pending");
+    .eq("id", invitationId).eq("status", "pending").select("id");
   if (error) throwInviteError(error);
+  if (!(data ?? []).some((row) => row.id === invitationId)) throw new Error("INVITATION_NOT_PENDING");
   await logAdminInvitationEvent(supabase, {
     actorProfileId: options.revokedByProfileId ?? null,
     invitationId,
@@ -257,53 +244,17 @@ export async function acceptAdminUserInvitation(
   supabase: SupabaseClient,
   params: { invitationId: string; profileId: string; userEmail: string },
 ): Promise<{ role: AdminInviteRole }> {
-  const invitation = await getAdminUserInvitationDetails(supabase, params.invitationId);
-  if (!invitation) throw new Error("Convite não encontrado.");
-  if (invitation.status !== "pending") throw new Error("Este convite já não está disponível.");
-  if (isInvitationExpired(invitation.expiresAt)) {
-    const { error } = await supabase.from("admin_user_invitations")
-      .update({ status: "expired" }).eq("id", invitation.id).eq("status", "pending");
-    if (error) throwInviteError(error);
-    await logAdminInvitationEvent(supabase, {
-      actorProfileId: params.profileId,
-      invitationId: invitation.id,
-      eventType: "admin_user_invitation_expired",
-      summary: `Convite expirado para ${invitation.invitedEmail}.`,
-      payload: { email: invitation.invitedEmail, role: invitation.role, status: "expired" },
-    });
-    throw new Error("Este convite expirou.");
-  }
-  if (normalizeEmail(params.userEmail) !== invitation.invitedEmail) {
-    throw new Error("Este convite pertence a outro email.");
-  }
-  const { data: row, error: rowError } = await supabase.from("admin_user_invitations")
-    .select("invited_by_profile_id").eq("id", invitation.id)
-    .single<{ invited_by_profile_id: string | null }>();
-  if (rowError) throwInviteError(rowError);
-  await assignInvitedUserRole(supabase, {
-    profileId: params.profileId,
-    role: invitation.role,
-    invitedByProfileId: row.invited_by_profile_id,
+  const { data, error } = await supabase.rpc("accept_admin_user_invitation", {
+    p_invitation_id: params.invitationId,
+    p_profile_id: params.profileId,
+    p_user_email: normalizeEmail(params.userEmail),
   });
-  const { error: updateError } = await supabase.from("admin_user_invitations").update({
-    status: "accepted",
-    accepted_at: new Date().toISOString(),
-    accepted_by_profile_id: params.profileId,
-  }).eq("id", invitation.id).eq("status", "pending");
-  if (updateError) throwInviteError(updateError);
-  await logAdminInvitationEvent(supabase, {
-    actorProfileId: params.profileId,
-    invitationId: invitation.id,
-    eventType: "admin_user_invitation_accepted",
-    summary: `Convite aceite por ${invitation.invitedEmail}.`,
-    payload: {
-      email: invitation.invitedEmail,
-      role: invitation.role,
-      status: "accepted",
-      accepted_by_profile_id: params.profileId,
-    },
-  });
-  return { role: invitation.role };
+  if (error) throw new Error(error.message);
+  if (data?.status === "expired") throw new Error("Este convite expirou.");
+  if (data?.status !== "accepted" || !["client", "staff", "admin"].includes(data.role)) {
+    throw new Error("Não foi possível confirmar a aceitação do convite.");
+  }
+  return { role: data.role as AdminInviteRole };
 }
 
 export async function registerUserFromAdminInvitation(
@@ -312,8 +263,17 @@ export async function registerUserFromAdminInvitation(
 ): Promise<{ email: string; role: AdminInviteRole }> {
   const invitation = await getAdminUserInvitationDetails(supabase, params.invitationId);
   if (!invitation) throw new Error("INVITATION_NOT_FOUND");
-  if (invitation.status !== "pending") throw new Error("INVITATION_NOT_AVAILABLE");
-  if (isInvitationExpired(invitation.expiresAt)) {
+  if (invitation.status !== "pending" && invitation.status !== "accepted") throw new Error("INVITATION_NOT_AVAILABLE");
+  if (invitation.status === "accepted") {
+    if (!invitation.acceptedByProfileId) throw new Error("INVITATION_NOT_AVAILABLE");
+    const accepted = await acceptAdminUserInvitation(supabase, {
+      invitationId: invitation.id,
+      profileId: invitation.acceptedByProfileId,
+      userEmail: invitation.invitedEmail,
+    });
+    return { email: invitation.invitedEmail, ...accepted };
+  }
+  if (invitation.status === "pending" && isInvitationExpired(invitation.expiresAt)) {
     const { error } = await supabase.from("admin_user_invitations")
       .update({ status: "expired" }).eq("id", invitation.id).eq("status", "pending");
     if (error) throwInviteError(error);
@@ -335,51 +295,24 @@ export async function registerUserFromAdminInvitation(
     user_metadata: { first_name: firstName || null, last_name: lastName || null },
   });
   let userId = data.user?.id ?? null;
-  let createdUserId = userId;
   if (error) {
     if (!isExistingAccountError(error)) throw new Error(error.message);
     userId = await findAuthUserIdByEmail(supabase, invitation.invitedEmail);
     if (!userId) throw new Error("ACCOUNT_ALREADY_EXISTS");
-    createdUserId = null;
   }
   if (!userId) throw new Error("Não foi possível criar utilizador.");
-  try {
-    const profile = await ensureInvitationProfile(supabase, {
-      userId,
-      email: invitation.invitedEmail,
-      firstName,
-      lastName,
-    });
-    const { data: row, error: rowError } = await supabase.from("admin_user_invitations")
-      .select("invited_by_profile_id").eq("id", invitation.id)
-      .single<{ invited_by_profile_id: string | null }>();
-    if (rowError) throwInviteError(rowError);
-    await assignInvitedUserRole(supabase, {
-      profileId: profile.id,
-      role: invitation.role,
-      invitedByProfileId: row.invited_by_profile_id,
-    });
-    const { error: updateError } = await supabase.from("admin_user_invitations").update({
-      status: "accepted",
-      accepted_at: new Date().toISOString(),
-      accepted_by_profile_id: profile.id,
-    }).eq("id", invitation.id).eq("status", "pending");
-    if (updateError) throwInviteError(updateError);
-    await logAdminInvitationEvent(supabase, {
-      actorProfileId: profile.id,
-      invitationId: invitation.id,
-      eventType: "admin_user_invitation_accepted",
-      summary: `Convite aceite por ${invitation.invitedEmail}.`,
-      payload: {
-        email: invitation.invitedEmail,
-        role: invitation.role,
-        status: "accepted",
-        accepted_by_profile_id: profile.id,
-      },
-    });
-  } catch (caught) {
-    if (createdUserId) await supabase.auth.admin.deleteUser(createdUserId);
-    throw caught;
-  }
-  return { email: invitation.invitedEmail, role: invitation.role };
+  // Keep the identity on failure: an RPC transport error may follow a committed
+  // acceptance. Retrying resolves this same account and the transaction is idempotent.
+  const profile = await ensureInvitationProfile(supabase, {
+    userId,
+    email: invitation.invitedEmail,
+    firstName,
+    lastName,
+  });
+  const accepted = await acceptAdminUserInvitation(supabase, {
+    invitationId: invitation.id,
+    profileId: profile.id,
+    userEmail: invitation.invitedEmail,
+  });
+  return { email: invitation.invitedEmail, ...accepted };
 }

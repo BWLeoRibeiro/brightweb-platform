@@ -12,10 +12,16 @@ export function filterPublications(events: SocialMediaPublication[], month: stri
 export function calendarDays(month: string) {
   if (!/^\d{4}-\d{2}$/.test(month)) return [];
   const [year, monthNumber] = month.split("-").map(Number);
-  const offset = (new Date(Date.UTC(year, monthNumber - 1, 1)).getUTCDay() + 6) % 7;
-  const days = new Date(Date.UTC(year, monthNumber, 0)).getUTCDate();
+  if (monthNumber < 1 || monthNumber > 12) return [];
+  const dateAt = (monthIndex: number, day: number) => {
+    const date = new Date(0);
+    date.setUTCFullYear(year, monthIndex, day);
+    return date;
+  };
+  const offset = (dateAt(monthNumber - 1, 1).getUTCDay() + 6) % 7;
+  const days = dateAt(monthNumber, 0).getUTCDate();
   return Array.from({ length: Math.ceil((offset + days) / 7) * 7 }, (_, index) => {
-    const date = new Date(Date.UTC(year, monthNumber - 1, index - offset + 1)).toISOString().slice(0, 10);
+    const date = dateAt(monthNumber - 1, index - offset + 1).toISOString().split("T")[0];
     return { date, day: Number(date.slice(-2)), inMonth: date.startsWith(month) };
   });
 }

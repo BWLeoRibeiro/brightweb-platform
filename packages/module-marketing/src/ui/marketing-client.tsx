@@ -2,7 +2,7 @@
 
 import { StyledSelect } from "@brightweblabs/ui";
 
-import { CalendarClock, Check, Clock3, Mail, Plus, RotateCcw, Send, Trash2, Users, X } from "lucide-react";
+import { CalendarClock, Check, Clock3, Mail, RotateCcw, Send, Trash2, Users, X } from "lucide-react";
 import {
   Badge,
   Button,
@@ -24,6 +24,9 @@ import { createLatestRequestController, isAbortError } from "@brightweblabs/infr
 import { PillTabs, useShellAction } from "@brightweblabs/app-shell";
 import { useMarketingUiClient } from "./context";
 import { defaultMarketingUiDictionary } from "./dictionary";
+import { useCampaignEditor } from "./use-campaign-editor";
+import { RecipientPanel } from "./campaign-recipient-panel";
+import { toLocalDateTime } from "./schedule-time";
 import { SegmentWorkspace } from "./segment-workspace";
 import {
   AnalyticsWorkspace,
@@ -38,8 +41,6 @@ import type {
 } from "../analytics";
 import type {
   MarketingCampaign,
-  MarketingCampaignInput,
-  MarketingCampaignRecipient,
   MarketingCampaignStatus,
   MarketingCollectionQuery,
   MarketingCollectionResult,
@@ -50,28 +51,6 @@ import type {
   MarketingWorkflowStatus,
 } from "./types";
 
-type CampaignForm = {
-  name: string;
-  subject: string;
-  preheader: string;
-  fromName: string;
-  fromEmail: string;
-  topicId: string;
-  segmentId: string;
-  bodyHtml: string;
-};
-
-const emptyForm: CampaignForm = {
-  name: "",
-  subject: "",
-  preheader: "",
-  fromName: "",
-  fromEmail: "",
-  topicId: "",
-  segmentId: "",
-  bodyHtml: "",
-};
-
 const statusTone: Record<MarketingCampaignStatus, string> = {
   draft: "border-border bg-muted text-muted-foreground",
   scheduled: "border-info/25 bg-info/10 text-info",
@@ -80,45 +59,6 @@ const statusTone: Record<MarketingCampaignStatus, string> = {
   canceled: "border-border bg-muted text-muted-foreground",
   failed: "border-destructive/25 bg-destructive/10 text-destructive",
 };
-
-const recipientTone: Record<MarketingCampaignRecipient["status"], string> = {
-  queued: "bg-muted text-muted-foreground",
-  sending: "bg-warning/10 text-warning",
-  sent: "bg-success/10 text-success",
-  failed: "bg-destructive/10 text-destructive",
-  suppressed: "bg-muted text-muted-foreground",
-  skipped: "bg-muted text-muted-foreground",
-};
-
-function toForm(campaign: MarketingCampaign): CampaignForm {
-  return {
-    name: campaign.name,
-    subject: campaign.subject,
-    preheader: campaign.preheader ?? "",
-    fromName: campaign.fromName ?? "",
-    fromEmail: campaign.fromEmail ?? "",
-    topicId: campaign.topicId,
-    segmentId: campaign.segmentId ?? "",
-    bodyHtml: campaign.bodyHtml ?? "",
-  };
-}
-
-function toInput(form: CampaignForm): MarketingCampaignInput {
-  return {
-    name: form.name.trim(),
-    subject: form.subject.trim(),
-    preheader: form.preheader.trim() || null,
-    fromName: form.fromName.trim() || null,
-    fromEmail: form.fromEmail.trim() || null,
-    topicId: form.topicId,
-    segmentId: form.segmentId || null,
-    bodyHtml: form.bodyHtml,
-  };
-}
-
-function isValid(form: CampaignForm) {
-  return Boolean(form.name.trim() && form.subject.trim() && form.topicId && form.bodyHtml.trim());
-}
 
 function formatDate(value: string, locale: string) {
   const date = new Date(value);
@@ -157,76 +97,6 @@ function StatusPill({ status, dictionary }: {
   dictionary: MarketingUiDictionary;
 }) {
   return <Badge variant="outline" className={statusTone[status]}>{dictionary.statuses[status]}</Badge>;
-}
-
-function RecipientPanel({ recipients, loadState, dictionary, onRemove }: {
-  recipients: MarketingCampaignRecipient[];
-  loadState: "pending" | "fulfilled" | "rejected";
-  dictionary: MarketingUiDictionary;
-  onRemove?: (recipient: MarketingCampaignRecipient) => void;
-}) {
-  const counts = useMemo(() => {
-    const next = { queued: 0, sending: 0, sent: 0, failed: 0, suppressed: 0, skipped: 0 };
-    for (const recipient of recipients) next[recipient.status] += 1;
-    return next;
-  }, [recipients]);
-
-  return (
-    <section className="marketing-recipient-panel" aria-labelledby="marketing-recipients-title">
-      <div>
-        <p className="marketing-kicker" id="marketing-recipients-title">{dictionary.recipients.title}</p>
-        <p className="mt-1 text-body text-muted-foreground">{dictionary.recipients.subtitle}</p>
-      </div>
-      {loadState === "pending" ? (
-        <div className="marketing-count-grid" aria-hidden="true">
-          {Array.from({ length: 6 }, (_, index) => <Skeleton key={index} className="h-16 rounded-lg" />)}
-        </div>
-      ) : loadState === "fulfilled" ? (
-        <div className="marketing-count-grid">
-          {(Object.keys(counts) as Array<keyof typeof counts>).map((status) => (
-            <div className="marketing-count" key={status}>
-              <strong className="text-data text-[length:var(--text-heading-3)] font-semibold">{counts[status]}</strong>
-              <span className="text-label">{dictionary.recipients.statuses[status]}</span>
-            </div>
-          ))}
-        </div>
-      ) : null}
-      {loadState === "pending" ? (
-        <div className="space-y-2" aria-busy="true" aria-label={dictionary.recipients.title}>
-          <Skeleton className="h-12 w-full rounded-lg" />
-          <Skeleton className="h-12 w-full rounded-lg" />
-          <Skeleton className="h-12 w-full rounded-lg" />
-        </div>
-      ) : loadState === "rejected" ? (
-        <p role="alert" className="rounded-lg border border-destructive/30 bg-destructive/10 p-4 text-body text-destructive">
-          {dictionary.feedback.genericError}
-        </p>
-      ) : recipients.length === 0 ? (
-        <p className="rounded-lg border border-dashed p-4 text-body text-muted-foreground">
-          {dictionary.recipients.empty}
-        </p>
-      ) : (
-        <div className="marketing-recipient-list">
-          {recipients.map((recipient) => (
-            <div className="marketing-recipient-row" key={recipient.id}>
-              <div className="min-w-0">
-                <p className="truncate text-body font-semibold">{recipient.email}</p>
-                {recipient.error ? <p className="truncate text-meta text-destructive">{recipient.error}</p> : null}
-              </div>
-              <Badge className={recipientTone[recipient.status]}>
-                {dictionary.recipients.statuses[recipient.status]}
-              </Badge>
-              {["queued", "suppressed", "skipped"].includes(recipient.status) && onRemove ? (
-                <Button type="button" size="icon" variant="ghost" className="text-destructive hover:text-destructive" aria-label={`Remover ${recipient.email}`} onClick={() => onRemove(recipient)}>
-                  <Trash2 aria-hidden="true" />
-                </Button>
-              ) : null}
-            </div>
-          ))}
-        </div>
-      )}
-    </section>
-  );
 }
 
 export type MarketingClientProps = {
@@ -284,16 +154,6 @@ export function MarketingClient({
   const [overview, setOverview] = useState(initialOverview);
   const [campaignAnalytics, setCampaignAnalytics] = useState(initialCampaignAnalytics);
   const [activeView, setActiveView] = useState<"campaigns" | "segments" | "topics" | "analytics" | "workflows">("campaigns");
-  const [activeCampaign, setActiveCampaign] = useState<MarketingCampaign | null>(null);
-  const [form, setForm] = useState<CampaignForm>(emptyForm);
-  const [recipients, setRecipients] = useState<MarketingCampaignRecipient[]>([]);
-  const [recipientsLoadState, setRecipientsLoadState] = useState<"pending" | "fulfilled" | "rejected">("fulfilled");
-  const [editorOpen, setEditorOpen] = useState(false);
-  const [busy, setBusy] = useState<string | null>(null);
-  const [scheduledAt, setScheduledAt] = useState("");
-  const [testEmail, setTestEmail] = useState("");
-  const campaignDetailRequestRef = useRef(createLatestRequestController());
-  const campaignEditorGenerationRef = useRef(0);
   const collectionRequestRef = useRef(createLatestRequestController());
   const analyticsRequestRef = useRef(createLatestRequestController());
   const segmentOptionsControllerRef = useRef(createLatestRequestController());
@@ -323,7 +183,6 @@ export function MarketingClient({
   const initialLoadedViewsRef = useRef(new Set<MarketingCollectionView>(
     initialCollectionsLoaded ? ["campaigns", "segments", "workflows"] : [],
   ));
-  const campaignLoadGeneration = useRef(0);
 
   const ensureSegmentOptions = useCallback((selectedId?: string | null) => {
     if (segmentOptionsLoadedRef.current && (!selectedId || segmentOptions.some((item) => item.id === selectedId))) return Promise.resolve(segmentOptions);
@@ -364,154 +223,23 @@ export function MarketingClient({
     [topics],
   );
 
-  const replaceCampaign = (campaign: MarketingCampaign) => {
-    setCampaigns((current) => {
-      const exists = current.some((item) => item.id === campaign.id);
-      return exists
-        ? current.map((item) => item.id === campaign.id ? campaign : item)
-        : [campaign, ...current];
-    });
-    setActiveCampaign(campaign);
-    setForm(toForm(campaign));
-  };
-
-  const beginCreate = () => {
-    campaignEditorGenerationRef.current += 1;
-    campaignDetailRequestRef.current.abort();
-    campaignLoadGeneration.current += 1;
-    setActiveCampaign(null);
-    setForm(emptyForm);
-    setRecipients([]);
-    setRecipientsLoadState("fulfilled");
-    setBusy(null);
-    setScheduledAt("");
-    setTestEmail("");
-    setEditorOpen(true);
-    void ensureSegmentOptions();
-  };
-
-  const openCampaign = async (campaign: MarketingCampaign) => {
-    campaignEditorGenerationRef.current += 1;
-    const latest = campaignDetailRequestRef.current.begin();
-    const generation = ++campaignLoadGeneration.current;
-    setActiveCampaign(campaign);
-    setForm(toForm(campaign));
-    setRecipients([]);
-    setRecipientsLoadState("pending");
-    setScheduledAt(campaign.scheduledAt ? new Date(campaign.scheduledAt).toISOString().slice(0, 16) : "");
-    setEditorOpen(true);
-    void ensureSegmentOptions(campaign.segmentId);
-    setBusy("load");
-    try {
-      const [detail, nextRecipients, analytics] = await Promise.all([
-        client.getCampaign(campaign.id, { signal: latest.signal }),
-        client.listRecipients(campaign.id, { signal: latest.signal }),
-        client.getCampaignAnalytics(campaign.id, { signal: latest.signal }),
-      ]);
-      if (!latest.isCurrent()) return;
-      if (generation !== campaignLoadGeneration.current) return;
-      replaceCampaign(detail);
-      setRecipients(nextRecipients);
-      setRecipientsLoadState("fulfilled");
-      setCampaignAnalytics((current) => ({ ...current, [campaign.id]: analytics }));
-    } catch (error) {
-      if (isAbortError(error) || !latest.isCurrent() || generation !== campaignLoadGeneration.current) return;
-      setRecipientsLoadState("rejected");
-      toast.error(error instanceof Error ? error.message : dictionary.feedback.genericError);
-    } finally {
-      const current = latest.isCurrent();
-      latest.finish();
-      if (current && generation === campaignLoadGeneration.current) setBusy(null);
-    }
-  };
-
-  const persist = async (successMessage?: string) => {
-    if (!isValid(form)) {
-      toast.error(dictionary.feedback.campaignRequired ?? dictionary.feedback.required);
-      return null;
-    }
-    const editorGeneration = campaignEditorGenerationRef.current;
-    setBusy("save");
-    try {
-      const saved = activeCampaign
-        ? await client.updateCampaign(activeCampaign.id, toInput(form))
-        : await client.createCampaign(toInput(form));
-      if (editorGeneration !== campaignEditorGenerationRef.current) return null;
-      replaceCampaign(saved);
-      setCollectionRefreshNonce((current) => current + 1);
-      toast.success(successMessage ?? (activeCampaign ? dictionary.feedback.saved : dictionary.feedback.created));
-      return saved;
-    } catch (error) {
-      if (editorGeneration === campaignEditorGenerationRef.current) toast.error(error instanceof Error ? error.message : dictionary.feedback.genericError);
-      return null;
-    } finally {
-      if (editorGeneration === campaignEditorGenerationRef.current) setBusy(null);
-    }
-  };
-
-  const runAction = async (
-    action: string,
-    operation: (campaign: MarketingCampaign) => Promise<MarketingCampaign>,
-    message: string,
-  ) => {
-    const campaign = activeCampaign ?? await persist();
-    if (!campaign) return;
-    const editorGeneration = campaignEditorGenerationRef.current;
-    setBusy(action);
-    try {
-      const updated = await operation(campaign);
-      if (editorGeneration !== campaignEditorGenerationRef.current) return;
-      replaceCampaign(updated);
-      const [nextRecipients, analytics, nextOverview] = await Promise.all([
-        client.listRecipients(updated.id),
-        client.getCampaignAnalytics(updated.id),
-        client.getOverview(),
-      ]);
-      if (editorGeneration !== campaignEditorGenerationRef.current) return;
-      setRecipients(nextRecipients);
-      setCampaignAnalytics((current) => ({ ...current, [updated.id]: analytics }));
-      setOverview(nextOverview);
-      setCollectionRefreshNonce((current) => current + 1);
-      toast.success(message);
-    } catch (error) {
-      if (editorGeneration === campaignEditorGenerationRef.current) toast.error(error instanceof Error ? error.message : dictionary.feedback.genericError);
-    } finally {
-      if (editorGeneration === campaignEditorGenerationRef.current) setBusy(null);
-    }
-  };
-
-  const removeCampaign = async () => {
-    if (!activeCampaign || !["draft", "canceled"].includes(activeCampaign.status)) return;
-    if (!window.confirm(`Eliminar definitivamente a campanha “${activeCampaign.name}”?`)) return;
-    const campaignId = activeCampaign.id;
-    setBusy("delete");
-    try {
-      await client.deleteCampaign(campaignId);
-      setCampaigns((current) => current.filter((campaign) => campaign.id !== campaignId));
-      setEditorOpen(false);
-      setActiveCampaign(null);
-      toast.success("Campanha eliminada.");
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : dictionary.feedback.genericError);
-    } finally {
-      setBusy(null);
-    }
-  };
-
-  const removeRecipient = async (recipient: MarketingCampaignRecipient) => {
-    if (!activeCampaign || !window.confirm(`Remover ${recipient.email} desta campanha?`)) return;
-    try {
-      await client.deleteRecipient(activeCampaign.id, recipient.id);
-      setRecipients((current) => current.filter((item) => item.id !== recipient.id));
-      replaceCampaign({ ...activeCampaign, totalRecipients: Math.max(0, activeCampaign.totalRecipients - 1) });
-      toast.success("Destinatário removido.");
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : dictionary.feedback.genericError);
-    }
-  };
+  const {
+    draft: { form, setForm, scheduledAt, setScheduledAt, testEmail, setTestEmail, hasUnsavedDraft, saveBeforeActionMessage },
+    session: { activeCampaign, editorOpen, busy, recipients, recipientsLoadState },
+    commands: { beginCreate, openCampaign, persist, runAction, removeCampaign, removeRecipient, sendTest, handleEditorOpenChange },
+  } = useCampaignEditor({ client, dictionary, ensureSegmentOptions, mutations: {
+    replace: (campaign) => setCampaigns((current) => current.some((item) => item.id === campaign.id)
+      ? current.map((item) => item.id === campaign.id ? campaign : item)
+      : [campaign, ...current]),
+    remove: (campaignId) => setCampaigns((current) => current.filter((item) => item.id !== campaignId)),
+    removeRecipient: (campaignId) => setCampaigns((current) => current.map((item) => item.id === campaignId
+      ? { ...item, totalRecipients: Math.max(0, item.totalRecipients - 1) } : item)),
+    analytics: (campaignId, analytics) => setCampaignAnalytics((current) => ({ ...current, [campaignId]: analytics })),
+    overview: setOverview,
+    refresh: () => setCollectionRefreshNonce((current) => current + 1),
+  } });
 
   useEffect(() => () => {
-    campaignDetailRequestRef.current.abort();
     collectionRequestRef.current.abort();
     analyticsRequestRef.current.abort();
     segmentOptionsControllerRef.current.abort();
@@ -656,14 +384,6 @@ export function MarketingClient({
     });
   }, [activeQuery?.search, activeQuery?.status, activeView]);
 
-  const handleEditorOpenChange = (open: boolean) => {
-    if (!open) {
-      campaignDetailRequestRef.current.abort();
-      campaignEditorGenerationRef.current += 1;
-    }
-    setEditorOpen(open);
-  };
-
   const insertToken = (token: string) => {
     const textarea = bodyRef.current;
     const start = textarea?.selectionStart ?? form.bodyHtml.length;
@@ -676,27 +396,6 @@ export function MarketingClient({
       textarea?.focus();
       textarea?.setSelectionRange(start + token.length, start + token.length);
     });
-  };
-
-  const sendTest = async () => {
-    const email = testEmail.trim();
-    if (!email) {
-      toast.error(dictionary.feedback.testEmailRequired ?? dictionary.feedback.required);
-      return;
-    }
-    const campaign = activeCampaign ?? await persist();
-    if (!campaign) return;
-    const editorGeneration = campaignEditorGenerationRef.current;
-    setBusy("test");
-    try {
-      await client.sendTest(campaign.id, email);
-      if (editorGeneration !== campaignEditorGenerationRef.current) return;
-      toast.success(dictionary.feedback.testSent);
-    } catch (error) {
-      if (editorGeneration === campaignEditorGenerationRef.current) toast.error(error instanceof Error ? error.message : dictionary.feedback.genericError);
-    } finally {
-      if (editorGeneration === campaignEditorGenerationRef.current) setBusy(null);
-    }
   };
 
   return (
@@ -973,24 +672,25 @@ export function MarketingClient({
             <Separator />
 
             <section className="marketing-action-deck" aria-label="Ações de envio">
+              {hasUnsavedDraft ? <p id="campaign-save-required" role="status" className="text-body text-muted-foreground">{saveBeforeActionMessage}</p> : null}
               <div className="marketing-action-card marketing-action-primary">
                 <div className="marketing-action-title"><Send aria-hidden="true" /><span>{dictionary.editor.sendNow}</span></div>
-                <Button disabled={busy !== null} onClick={() => void runAction("send", (campaign) => client.sendCampaign(campaign.id), dictionary.feedback.sent)}>
+                <Button disabled={busy !== null || hasUnsavedDraft} aria-describedby={hasUnsavedDraft ? "campaign-save-required" : undefined} onClick={() => void runAction("send")}>
                   {dictionary.editor.sendNow}
                 </Button>
               </div>
               <div className="marketing-action-alternatives">
                 <div className="marketing-action-row">
                   <div className="marketing-action-title"><CalendarClock aria-hidden="true" /><Label htmlFor="campaign-schedule">{dictionary.editor.schedule}</Label></div>
-                  <Input id="campaign-schedule" min={new Date().toISOString().slice(0, 16)} onChange={(event) => setScheduledAt(event.target.value)} type="datetime-local" value={scheduledAt} />
-                  <Button disabled={busy !== null || !scheduledAt} onClick={() => void runAction("schedule", (campaign) => client.scheduleCampaign(campaign.id, new Date(scheduledAt).toISOString()), dictionary.feedback.scheduled)} variant="outline">
+                  <Input id="campaign-schedule" min={toLocalDateTime(new Date().toISOString())} onChange={(event) => setScheduledAt(event.target.value)} type="datetime-local" value={scheduledAt} />
+                  <Button disabled={busy !== null || hasUnsavedDraft || !scheduledAt} aria-describedby={hasUnsavedDraft ? "campaign-save-required" : undefined} onClick={() => void runAction("schedule")} variant="outline">
                     {dictionary.editor.schedule}
                   </Button>
                 </div>
                 <div className="marketing-action-row">
                   <div className="marketing-action-title"><Mail aria-hidden="true" /><Label htmlFor="campaign-test">{dictionary.editor.sendTest}</Label></div>
                   <Input id="campaign-test" onChange={(event) => setTestEmail(event.target.value)} placeholder={dictionary.editor.placeholders.testEmail} type="email" value={testEmail} />
-                  <Button disabled={busy !== null} onClick={() => void sendTest()} variant="outline">{dictionary.editor.sendTest}</Button>
+                  <Button disabled={busy !== null || hasUnsavedDraft} aria-describedby={hasUnsavedDraft ? "campaign-save-required" : undefined} onClick={() => void sendTest()} variant="outline">{dictionary.editor.sendTest}</Button>
                 </div>
               </div>
             </section>
@@ -1004,12 +704,12 @@ export function MarketingClient({
                     </Button>
                   ) : null}
                   {["draft", "scheduled", "sending"].includes(activeCampaign.status) ? (
-                    <Button disabled={busy !== null} onClick={() => void runAction("cancel", (campaign) => client.cancelCampaign(campaign.id), dictionary.feedback.canceled)} variant="outline">
+                    <Button disabled={busy !== null} onClick={() => void runAction("cancel")} variant="outline">
                       <X aria-hidden="true" />{dictionary.editor.cancel}
                     </Button>
                   ) : null}
                   {activeCampaign.failedCount > 0 || activeCampaign.status === "failed" ? (
-                    <Button disabled={busy !== null} onClick={() => void runAction("retry", (campaign) => client.retryCampaign(campaign.id), dictionary.feedback.retried)} variant="outline">
+                    <Button disabled={busy !== null} onClick={() => void runAction("retry")} variant="outline">
                       <RotateCcw aria-hidden="true" />{dictionary.editor.retry}
                     </Button>
                   ) : null}

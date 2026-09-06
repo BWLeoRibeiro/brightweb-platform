@@ -69,7 +69,8 @@
       "touch_admin_user_invitations_updated_at",
       "trg_touch_admin_user_invitations_updated_at",
       "normalize_admin_user_invitation_email",
-      "trg_normalize_admin_user_invitation_email"
+      "trg_normalize_admin_user_invitation_email",
+      "accept_admin_user_invitation"
     ]
   }
 }

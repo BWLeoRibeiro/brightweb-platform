@@ -17,6 +17,17 @@ test("calendar is Monday-first and includes both adjacent-month boundaries", () 
   assert.deepEqual(calendarDays(""), []);
 });
 
+test("calendar preserves four-digit early years and leap-year boundaries", () => {
+  const days = calendarDays("0099-02");
+  const publications = days.filter((day) => day.inMonth);
+  assert.equal(publications.length, 28);
+  assert.equal(publications[0].date, "0099-02-01");
+  assert.equal(publications.at(-1)?.date, "0099-02-28");
+  assert.ok(days.every((day) => day.date.startsWith("0099-")));
+  assert.equal(calendarDays("0000-02").filter((day) => day.inMonth).length, 29);
+  for (const month of ["0099-00", "0099-13", "99-02"]) assert.deepEqual(calendarDays(month), []);
+});
+
 test("filters preserve co-dated website and social posts, month years, and empty/reverse states", () => {
   const events = [event("2026-10-01"), event("2026-09-10", "website"), event("2026-09-10"), event("2027-09-01")];
   assert.deepEqual(publicationMonths(events), ["2026-09", "2026-10", "2027-09"]);

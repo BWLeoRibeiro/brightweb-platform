@@ -1,3 +1,4 @@
+import { DATABASE_INVITATION_CONTACT_INTEGRATION } from "@brightweblabs/module-orgs";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createServiceRoleClient } from "@brightweblabs/infra/server";
 import { validateBoundedUuidBatch } from "@brightweblabs/infra/robustness";
@@ -127,6 +128,9 @@ export async function ensureCrmContactForProfile(
     return { success: false, error: "CRM_PROFILE_SYNC_FAILED" };
   }
 }
+
+Object.defineProperty(ensureCrmContactForProfile, DATABASE_INVITATION_CONTACT_INTEGRATION, { value: true });
+
 
 function normalizeOptionalString(value: string | null | undefined): string | null {
   return typeof value === "string" ? value.trim() || null : null;

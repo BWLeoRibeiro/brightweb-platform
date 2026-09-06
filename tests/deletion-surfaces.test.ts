@@ -26,7 +26,8 @@ test("platform packages expose every supported destructive UI surface", () => {
 
   const campaignEditor = source("packages/module-marketing/src/ui/marketing-client.tsx");
   assert.match(campaignEditor, /Eliminar campanha/);
-  assert.match(campaignEditor, /deleteRecipient/);
+  assert.match(campaignEditor, /onRemove=\{.*removeRecipient/);
+  assert.match(source("packages/module-marketing/src/ui/use-campaign-editor.ts"), /client\.deleteRecipient/);
   assert.match(campaignEditor, /\["draft", "canceled"\]/);
 
   const segmentEditor = source("packages/module-marketing/src/ui/segment-workspace.tsx");

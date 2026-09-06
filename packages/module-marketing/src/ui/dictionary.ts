@@ -292,6 +292,7 @@ export const defaultMarketingUiDictionary: MarketingUiDictionary = {
     failed: "Falhou",
   },
   feedback: {
+    saveBeforeAction: "Guarde as alterações antes de enviar, agendar ou testar a campanha.",
     created: "Campanha criada.",
     saved: "Rascunho guardado.",
     sent: "Envio iniciado.",

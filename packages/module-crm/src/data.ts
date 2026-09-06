@@ -208,14 +208,6 @@ function buildProfileDisplayName(profile: {
   return safeCombinedFirstLast || null;
 }
 
-function buildContactDisplayName(contact: {
-  first_name?: string | null;
-  last_name?: string | null;
-  email?: string | null;
-}) {
-  return [contact.first_name, contact.last_name].filter(Boolean).join(" ") || contact.email || "Contacto";
-}
-
 function normalizeLimit(limit: number | undefined, fallback: number, max = Number.POSITIVE_INFINITY) {
   const normalized = Number.isFinite(limit) && (limit ?? 0) > 0 ? Math.floor(limit as number) : fallback;
   return Math.min(normalized, max);
@@ -524,18 +516,44 @@ function reportSource(value: string | null) {
   return value?.trim().toLowerCase() || "manual";
 }
 
+async function readBoundedReportRows(supabase: SupabaseClient, table: string, columns: string) {
+  const rows: Record<string, unknown>[] = [];
+  const seenIds = new Set<unknown>();
+  let expectedCount: number | null = null;
+  while (true) {
+    const { data, error, count } = await supabase.from(table)
+      .select(columns, { count: "exact" })
+      .order("id", { ascending: true })
+      .range(rows.length, Math.min(rows.length + 999, CRM_REPORT_MAX_RECORDS));
+    if (error) throw new Error(error.message);
+    if (count != null) {
+      if (count > CRM_REPORT_MAX_RECORDS) throw new Error("CRM_REPORT_TOO_LARGE");
+      if (expectedCount != null && expectedCount !== count) throw new Error("CRM_REPORT_CHANGED_DURING_READ");
+      expectedCount = count;
+    }
+    const page = (data ?? []) as unknown as Record<string, unknown>[];
+    if (page.length === 0) {
+      if (expectedCount != null && rows.length !== expectedCount) throw new Error("CRM_REPORT_INCOMPLETE");
+      return rows;
+    }
+    for (const row of page) {
+      if (seenIds.has(row.id)) throw new Error("CRM_REPORT_CHANGED_DURING_READ");
+      seenIds.add(row.id);
+      rows.push(row);
+    }
+    if (rows.length > CRM_REPORT_MAX_RECORDS) throw new Error("CRM_REPORT_TOO_LARGE");
+    if (expectedCount != null && rows.length >= expectedCount) {
+      if (rows.length !== expectedCount) throw new Error("CRM_REPORT_INCOMPLETE");
+      return rows;
+    }
+    // A short page may be an API response cap, not the end of the dataset.
+  }
+}
+
 export async function getCrmReportData(supabase: SupabaseClient): Promise<CrmReportData> {
   const [contactsResult, organizationsResult, timeline] = await Promise.all([
-    supabase
-      .from("crm_contacts")
-      .select("id, first_name, last_name, email, status, source, owner_id, organization_id")
-      .order("updated_at", { ascending: false })
-      .limit(CRM_REPORT_MAX_RECORDS + 1),
-    supabase
-      .from("organizations")
-      .select("id, name, industry, website_url")
-      .order("created_at", { ascending: false })
-      .limit(CRM_REPORT_MAX_RECORDS + 1),
+    readBoundedReportRows(supabase, "crm_contacts", "id, first_name, last_name, email, status, source, owner_id, organization_id"),
+    readBoundedReportRows(supabase, "organizations", "id, name, industry, website_url"),
     listCrmStatusTimeline(supabase, {
       limit: 12,
       since: "1970-01-01T00:00:00.000Z",
@@ -543,15 +561,10 @@ export async function getCrmReportData(supabase: SupabaseClient): Promise<CrmRep
     }),
   ]);
 
-  if (contactsResult.error) throw new Error(contactsResult.error.message);
-  if (organizationsResult.error) throw new Error(organizationsResult.error.message);
-  if ((contactsResult.data?.length ?? 0) > CRM_REPORT_MAX_RECORDS) throw new Error("CRM_REPORT_TOO_LARGE");
-  if ((organizationsResult.data?.length ?? 0) > CRM_REPORT_MAX_RECORDS) throw new Error("CRM_REPORT_TOO_LARGE");
-
   type ReportContact = Pick<CrmContact, "id" | "first_name" | "last_name" | "email" | "status" | "source" | "owner_id" | "organization_id">;
   type ReportOrganization = { id: string; name: string; industry: string | null; website_url: string | null };
-  const contacts = (contactsResult.data ?? []) as ReportContact[];
-  const organizations = (organizationsResult.data ?? []) as ReportOrganization[];
+  const contacts = contactsResult as ReportContact[];
+  const organizations = organizationsResult as ReportOrganization[];
   const totalContacts = contacts.length;
   const qualifiedContacts = contacts.filter((contact) => ["qualified", "proposal", "won"].includes(contact.status)).length;
   const wonContacts = contacts.filter((contact) => contact.status === "won").length;

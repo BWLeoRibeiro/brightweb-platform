@@ -752,19 +752,19 @@ test("bw add projects resolves orgs, writes overlays, migrations, and manifest s
       .filter((name) => name.includes("_projects__202608"))
       .toSorted(),
     [
-      "0028_projects__20260801122000_project_member_sync.sql",
-      "0029_projects__20260804120000_project_task_start_date.sql",
-      "0030_projects__20260804123000_project_start_date.sql",
-      "0031_projects__20260810120000_project_client_access.sql",
-      "0032_projects__20260811120000_project_client_access_expand.sql",
-      "0033_projects__20260811120500_project_member_sync_hardening.sql",
-      "0034_projects__20260811121000_project_client_access_enforcement.sql",
-      "0035_projects__20260811121500_project_client_organization_memberships.sql",
-      "0036_projects__20260811121700_project_client_meta_preview.sql",
-      "0037_projects__20260811122000_project_client_access_identity_cleanup.sql",
-      "0038_projects__20260811122500_remove_project_client_next_steps.sql",
-      "0039_projects__20260815120000_project_client_access_member_roles.sql",
-      "0040_projects__20260815133000_project_admin_creation_and_task_permissions.sql",
+      "0033_projects__20260801122000_project_member_sync.sql",
+      "0034_projects__20260804120000_project_task_start_date.sql",
+      "0035_projects__20260804123000_project_start_date.sql",
+      "0036_projects__20260810120000_project_client_access.sql",
+      "0037_projects__20260811120000_project_client_access_expand.sql",
+      "0038_projects__20260811120500_project_member_sync_hardening.sql",
+      "0039_projects__20260811121000_project_client_access_enforcement.sql",
+      "0040_projects__20260811121500_project_client_organization_memberships.sql",
+      "0041_projects__20260811121700_project_client_meta_preview.sql",
+      "0042_projects__20260811122000_project_client_access_identity_cleanup.sql",
+      "0043_projects__20260811122500_remove_project_client_next_steps.sql",
+      "0044_projects__20260815120000_project_client_access_member_roles.sql",
+      "0045_projects__20260815133000_project_admin_creation_and_task_permissions.sql",
     ],
   );
   const doctor = await doctorBrightwebApp({ targetDir }, { workspaceRoot: REPO_ROOT });
@@ -798,13 +798,14 @@ test("bw upgrade appends only unapplied migrations and preserves drifted scaffol
       || name.includes("_crm__20260724120000_")
       || name.includes("_crm__20260731130200_")
       || name.includes("_crm__20260816120000_")
+      || name.includes("_crm__20260906101616_")
     ) await fs.rm(path.join(migrationsDir, name));
   }
   const starterPath = path.join(targetDir, "app", "(shell)", "crm", "page.tsx");
   await fs.appendFile(starterPath, "\n// app-owned drift\n");
 
   const result = await upgradeBrightwebApp("crm", { targetDir, refreshStarters: true }, { workspaceRoot: REPO_ROOT, fetchImpl: mockNpmFetch });
-  assert.equal(result.migrationPlan.writes.length, 5);
+  assert.equal(result.migrationPlan.writes.length, 6);
   assert.ok(result.drifted.includes("app/(shell)/crm/page.tsx"));
   assert.match(await fs.readFile(starterPath, "utf8"), /app-owned drift/);
   const appended = await fs.readFile(result.migrationPlan.writes[0].targetPath, "utf8");
@@ -916,7 +917,7 @@ test("bw upgrade rejects ambiguous, unknown, and backwards migration cutoffs bef
   );
   await assert.rejects(
     () => upgradeBrightwebApp("projects", { targetDir, throughMigration: "20260811122000_project_client_access_identity_cleanup.sql" }, { workspaceRoot: REPO_ROOT, fetchImpl: mockNpmFetch }),
-    /includes destructive migration.*--include-destructive-migrations/,
+    /is before the current projects cursor/,
   );
   await assert.rejects(
     () => upgradeBrightwebApp("projects", { targetDir, throughMigration: "20990101000000_missing.sql" }, { workspaceRoot: REPO_ROOT, fetchImpl: mockNpmFetch }),
@@ -1043,7 +1044,7 @@ test("full bw upgrade includes core migrations recorded outside the optional mod
   const result = await upgradeBrightwebApp(undefined, { targetDir }, { workspaceRoot: REPO_ROOT, fetchImpl: mockNpmFetch });
   assert.ok(result.migrationPlan.writes.some((entry) => entry.moduleKey === "core"));
   const updated = await readJson(manifestPath);
-  assert.equal(updated.migrationCursor.core, "20260801120000_core_notification_dismissals.sql");
+  assert.equal(updated.migrationCursor.core, "20260906111323_restrict_profile_identity_sync.sql");
 });
 
 test("bw upgrade never refreshes an owned scaffold file", async (t) => {
@@ -1387,7 +1388,7 @@ test("bw remove deletes clean scaffold files, leaves drifted files, and never to
   t.after(() => fs.rm(root, { recursive: true, force: true }));
   const driftedPath = path.join(targetDir, "app", "(shell)", "crm", "page.tsx");
   const cleanPath = path.join(targetDir, "app", "api", "crm", "contacts", "route.ts");
-  await fs.appendFile(driftedPath, "\n// keep me\n");
+  await fs.writeFile(driftedPath, "export default function ClientPage() { return null; }\n// keep me\n");
   const migrationsBefore = await migrationSnapshot(targetDir);
   const preview = await removeBrightwebModule("crm", { targetDir }, { workspaceRoot: REPO_ROOT });
   assert.equal(preview.dryRun, true);
@@ -1399,7 +1400,8 @@ test("bw remove deletes clean scaffold files, leaves drifted files, and never to
   const manifest = await readJson(path.join(targetDir, ".brightweb", "app-manifest.json"));
   assert.equal(packageJson.dependencies["@brightweblabs/module-crm"], undefined);
   assert.equal(manifest.modules.crm, undefined);
-  assert.equal(manifest.scaffoldFiles["app/(shell)/crm/page.tsx"], undefined);
+  assert.equal(manifest.scaffoldFiles["app/(shell)/crm/page.tsx"].module, "crm");
+  assert.equal(manifest.scaffoldFiles["app/api/crm/contacts/route.ts"], undefined);
   assert.doesNotMatch(
     await fs.readFile(path.join(targetDir, "config", "module-toolbar-controls.tsx"), "utf8"),
     /CrmToolbarControls/,
@@ -1407,7 +1409,10 @@ test("bw remove deletes clean scaffold files, leaves drifted files, and never to
   assert.deepEqual(await migrationSnapshot(targetDir), migrationsBefore);
   const doctor = await doctorBrightwebApp({ targetDir }, { workspaceRoot: REPO_ROOT });
   assert.equal(doctor.ok, true);
-  assert.equal(doctor.checks.find((entry: { id: string }) => entry.id === "scaffold")?.status, "PASS");
+  assert.equal(doctor.checks.find((entry: { id: string }) => entry.id === "scaffold")?.status, "WARN");
+  await addBrightwebModule("crm", { targetDir }, { workspaceRoot: REPO_ROOT });
+  assert.equal(await fs.readFile(driftedPath, "utf8"), "export default function ClientPage() { return null; }\n// keep me\n");
+  await fs.access(cleanPath);
 });
 
 test("bw doctor fails a null migration cursor unless adoption allows it", async (t) => {
@@ -1489,4 +1494,172 @@ test("rebranding survives update because brand marks live outside the managed sh
   assert.doesNotMatch(shellConfig, /logo-mark\.svg/);
   assert.doesNotMatch(shellConfig, /logo-light\.svg/);
   assert.doesNotMatch(shellConfig, /logo-dark\.svg/);
+});
+
+for (const addedModule of ["projects", "crm"]) {
+  test(`bw add ${addedModule} preserves customized scaffold baselines before removal`, async (t) => {
+    const { root, targetDir } = await scaffold(["crm"]);
+    t.after(() => fs.rm(root, { recursive: true, force: true }));
+    const relativePath = "app/(shell)/crm/page.tsx";
+    const filePath = path.join(targetDir, relativePath);
+    await fs.writeFile(filePath, "export default function ClientPage() { return null; }\n// app customization\n");
+    const customized = await fs.readFile(filePath, "utf8");
+    const manifestPath = path.join(targetDir, ".brightweb/app-manifest.json");
+    const before = await readJson(manifestPath);
+    await addBrightwebModule(addedModule, { targetDir }, { workspaceRoot: REPO_ROOT });
+    const after = await readJson(manifestPath);
+    assert.deepEqual(after.scaffoldFiles[relativePath], before.scaffoldFiles[relativePath]);
+    if (addedModule === "crm") assert.deepEqual(after, before);
+    await removeBrightwebModule("crm", { targetDir, yes: true }, { workspaceRoot: REPO_ROOT });
+    assert.equal(await fs.readFile(filePath, "utf8"), customized);
+    await assert.rejects(fs.access(path.join(targetDir, "app/api/crm/contacts/route.ts")));
+  });
+}
+
+test("bw manage retains canonical baseline and historical recorded drift survives removal", async (t) => {
+  const { root, targetDir } = await scaffold(["crm"]);
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+  const relativePath = "app/(shell)/crm/page.tsx";
+  const filePath = path.join(targetDir, relativePath);
+  const manifestPath = path.join(targetDir, ".brightweb/app-manifest.json");
+  const original = await readJson(manifestPath);
+  await fs.writeFile(filePath, "export default function ClientPage() { return null; }\n// owned customization\n");
+  await scaffoldBrightwebApp("own", [relativePath], { targetDir }, { workspaceRoot: REPO_ROOT });
+  await scaffoldBrightwebApp("manage", [relativePath], { targetDir }, { workspaceRoot: REPO_ROOT });
+  const managed = await readJson(manifestPath);
+  assert.equal(managed.scaffoldFiles[relativePath].hash, original.scaffoldFiles[relativePath].hash);
+  assert.equal(managed.scaffoldFiles[relativePath].status, "drifted");
+  // Historical manage recorded customized bytes as baseline but retained this marker.
+  managed.scaffoldFiles[relativePath].hash = await hashFile(filePath);
+  await writeJson(manifestPath, managed);
+  const customized = await fs.readFile(filePath, "utf8");
+  const upgrade = await upgradeBrightwebApp("crm", { targetDir, refreshStarters: true }, { workspaceRoot: REPO_ROOT, fetchImpl: mockNpmFetch });
+  assert.ok(upgrade.drifted.includes(relativePath));
+  assert.equal(await fs.readFile(filePath, "utf8"), customized);
+  await removeBrightwebModule("crm", { targetDir, yes: true }, { workspaceRoot: REPO_ROOT });
+  assert.equal(await fs.readFile(filePath, "utf8"), customized);
+});
+
+for (const intent of ["owned", "skipped", "drifted"]) {
+  for (const refreshStarters of [false, true]) {
+    test(`bw upgrade applies while preserving ${intent} tracked config route (refresh=${refreshStarters})`, async (t) => {
+      const { root, targetDir } = await scaffold(["crm"]);
+      t.after(() => fs.rm(root, { recursive: true, force: true }));
+      const relativePath = "app/api/organizations/route.ts";
+      const filePath = path.join(targetDir, relativePath);
+      if (intent === "skipped") {
+        await fs.rm(filePath);
+        await scaffoldBrightwebApp("skip", [relativePath], { targetDir }, { workspaceRoot: REPO_ROOT });
+      } else {
+        await fs.appendFile(filePath, "\n// app organization adapter\n");
+        if (intent === "owned") await scaffoldBrightwebApp("own", [relativePath], { targetDir }, { workspaceRoot: REPO_ROOT });
+      }
+      const before = await readJson(path.join(targetDir, ".brightweb/app-manifest.json"));
+      const bytes = intent === "skipped" ? null : await fs.readFile(filePath, "utf8");
+      if (intent !== "drifted") {
+        await updateBrightwebApp({ targetDir, refreshStarters }, { workspaceRoot: REPO_ROOT, fetchImpl: mockNpmFetch });
+        if (bytes === null) await assert.rejects(fs.access(filePath));
+        else assert.equal(await fs.readFile(filePath, "utf8"), bytes);
+      }
+      const result = await upgradeBrightwebApp("crm", { targetDir, refreshStarters }, { workspaceRoot: REPO_ROOT, fetchImpl: mockNpmFetch });
+      assert.equal(result.plan.fileWrites.some((entry: { relativePath: string }) => entry.relativePath === relativePath), false);
+      if (bytes === null) await assert.rejects(fs.access(filePath));
+      else assert.equal(await fs.readFile(filePath, "utf8"), bytes);
+      const after = await readJson(path.join(targetDir, ".brightweb/app-manifest.json"));
+      assert.deepEqual(after.scaffoldFiles[relativePath], before.scaffoldFiles[relativePath]);
+    });
+  }
+}
+
+test("module topology changes update clean adapters while add/remove preserve owned and skipped adapters", async (t) => {
+  const { root, targetDir } = await scaffold(["crm"]);
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+  const owned = "app/api/organizations/route.ts";
+  const skipped = "app/api/organizations/[id]/route.ts";
+  const original = await fs.readFile(path.join(targetDir, owned), "utf8");
+  await fs.appendFile(path.join(targetDir, owned), "\n// local adapter\n");
+  const custom = await fs.readFile(path.join(targetDir, owned), "utf8");
+  await scaffoldBrightwebApp("own", [owned], { targetDir }, { workspaceRoot: REPO_ROOT });
+  await fs.rm(path.join(targetDir, skipped));
+  await scaffoldBrightwebApp("skip", [skipped], { targetDir }, { workspaceRoot: REPO_ROOT });
+  const before = await readJson(path.join(targetDir, ".brightweb/app-manifest.json"));
+  await addBrightwebModule("projects", { targetDir }, { workspaceRoot: REPO_ROOT });
+  await removeBrightwebModule("projects", { targetDir, yes: true }, { workspaceRoot: REPO_ROOT });
+  assert.equal(await fs.readFile(path.join(targetDir, owned), "utf8"), custom);
+  await assert.rejects(fs.access(path.join(targetDir, skipped)));
+  const after = await readJson(path.join(targetDir, ".brightweb/app-manifest.json"));
+  assert.deepEqual(after.scaffoldFiles[owned], before.scaffoldFiles[owned]);
+  assert.deepEqual(after.scaffoldFiles[skipped], before.scaffoldFiles[skipped]);
+  await fs.writeFile(path.join(targetDir, owned), original);
+  await scaffoldBrightwebApp("manage", [owned], { targetDir }, { workspaceRoot: REPO_ROOT });
+  // Canonical managed adapters remain eligible for ordinary upgrade writes.
+  const result = await upgradeBrightwebApp("crm", { targetDir }, { workspaceRoot: REPO_ROOT, fetchImpl: mockNpmFetch });
+  assert.equal(result.drifted.includes(owned), false);
+  assert.equal(await fs.readFile(path.join(targetDir, owned), "utf8"), original);
+});
+
+for (const collisionPath of ["app/(shell)/projetos/page.tsx", "app/(shell)/projetos", "app/api/organizations/route.ts"]) {
+test(`bw add refuses overlay collision at ${collisionPath} before changing any app files`, async (t) => {
+  const { root, targetDir } = await scaffold(["crm"]);
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+  const relativePath = collisionPath;
+  const filePath = path.join(targetDir, relativePath);
+  await fs.mkdir(path.dirname(filePath), { recursive: true });
+  await fs.writeFile(filePath, "// existing app-owned projects page\n");
+  async function snapshot(directory: string): Promise<Record<string, string>> {
+    const result: Record<string, string> = {};
+    for (const entry of await fs.readdir(directory, { withFileTypes: true })) {
+      const fullPath = path.join(directory, entry.name);
+      if (entry.isDirectory()) {
+        for (const [key, value] of Object.entries(await snapshot(fullPath))) result[`${entry.name}/${key}`] = value;
+      } else result[entry.name] = await hashFile(fullPath);
+    }
+    return result;
+  }
+  const manifestPath = path.join(targetDir, ".brightweb/app-manifest.json");
+  const manifest = await readJson(manifestPath);
+  delete manifest.scaffoldFiles[relativePath];
+  await writeJson(manifestPath, manifest);
+  const before = await snapshot(targetDir);
+  if (relativePath === "app/api/organizations/route.ts") {
+    await assert.rejects(upgradeBrightwebApp("crm", { targetDir }, { workspaceRoot: REPO_ROOT, fetchImpl: mockNpmFetch }), /Untracked app file conflicts/);
+    assert.deepEqual(await snapshot(targetDir), before);
+    await assert.rejects(updateBrightwebApp({ targetDir }, { workspaceRoot: REPO_ROOT, fetchImpl: mockNpmFetch }), /Untracked app file conflicts/);
+    assert.deepEqual(await snapshot(targetDir), before);
+  }
+  await assert.rejects(addBrightwebModule("projects", { targetDir }, { workspaceRoot: REPO_ROOT }), /Cannot add projects:.*projetos|Untracked app file conflicts/);
+  assert.deepEqual(await snapshot(targetDir), before);
+});
+}
+
+test("lifecycle commands preserve the supported brand, theme and shell customization files", async (t) => {
+  const { root, targetDir } = await scaffold(["crm"]);
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+  const files = {
+    "config/shell.overrides.ts": `${await fs.readFile(path.join(targetDir, "config/shell.overrides.ts"), "utf8")}\nshellRegistrationOverrides.crm = (registration) => ({ ...registration, navItems: registration.navItems?.map((item) => ({ ...item, label: "Client CRM" })) });\n`,
+    "app/theme.css": `${await fs.readFile(path.join(targetDir, "app/theme.css"), "utf8")}\n:root { --brand-local: #123456; }\n`,
+    "config/brand.ts": `${await fs.readFile(path.join(targetDir, "config/brand.ts"), "utf8")}\nstarterBrandConfig.companyName = "Client brand";\nstarterShellBrand.ariaLabel = "Client brand home";\n`,
+    "public/brand/logo-mark.svg": '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10"><circle cx="5" cy="5" r="4" /></svg>\n',
+  };
+  for (const [relativePath, content] of Object.entries(files)) await fs.writeFile(path.join(targetDir, relativePath), content);
+  await addBrightwebModule("projects", { targetDir }, { workspaceRoot: REPO_ROOT });
+  await updateBrightwebApp({ targetDir, refreshStarters: true }, { workspaceRoot: REPO_ROOT, fetchImpl: mockNpmFetch });
+  await upgradeBrightwebApp("crm", { targetDir, refreshStarters: true }, { workspaceRoot: REPO_ROOT, fetchImpl: mockNpmFetch });
+  await removeBrightwebModule("projects", { targetDir, yes: true }, { workspaceRoot: REPO_ROOT });
+  for (const [relativePath, content] of Object.entries(files)) assert.equal(await fs.readFile(path.join(targetDir, relativePath), "utf8"), content);
+});
+
+test("bw remove refuses to overwrite retained untracked organization adapters", async (t) => {
+  const { root, targetDir } = await scaffold(["crm", "projects"]);
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+  const relativePath = "app/api/organizations/route.ts";
+  const manifestPath = path.join(targetDir, ".brightweb/app-manifest.json");
+  const manifest = await readJson(manifestPath);
+  delete manifest.scaffoldFiles[relativePath];
+  await writeJson(manifestPath, manifest);
+  await fs.appendFile(path.join(targetDir, relativePath), "\n// local organization mount\n");
+  const guardedPaths = ["package.json", ".brightweb/app-manifest.json", relativePath, "app/(shell)/projetos/page.tsx", "app/globals.css"];
+  const before = await Promise.all(guardedPaths.map((file) => fs.readFile(path.join(targetDir, file), "utf8")));
+  await assert.rejects(removeBrightwebModule("projects", { targetDir, yes: true }, { workspaceRoot: REPO_ROOT }), /Untracked app file conflicts/);
+  assert.deepEqual(await Promise.all(guardedPaths.map((file) => fs.readFile(path.join(targetDir, file), "utf8"))), before);
 });

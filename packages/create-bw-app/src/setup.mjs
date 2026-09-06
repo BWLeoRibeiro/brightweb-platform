@@ -1,4 +1,5 @@
 import fs from "node:fs/promises";
+import { assertMutationTargets } from "./mutation-paths.mjs";
 import path from "node:path";
 import { createRequire } from "node:module";
 import { readAppManifest, readConfiguredModuleFlags } from "./app-manifest.mjs";
@@ -26,23 +27,12 @@ export default function Page() {
 }
 `;
 
-// Generated paths must remain real directories/files inside the app, even when
-// an intermediate directory or an existing target is a symlink.
 async function inspectTarget(root, relativePath) {
-  let current = root;
-  const parts = relativePath.split("/");
-  for (const [index, part] of parts.entries()) {
-    current = path.join(current, part);
-    let stat;
-    try { stat = await fs.lstat(current); } catch (error) {
-      if (error.code === "ENOENT") return null;
-      throw error;
-    }
-    if (stat.isSymbolicLink()) throw new Error(`Setup does not follow symlinks: ${relativePath}`);
-    if (index < parts.length - 1 && !stat.isDirectory()) throw new Error(`Expected a directory at ${current}`);
-    if (index === parts.length - 1 && !stat.isFile()) throw new Error(`Expected a file at ${relativePath}`);
-  }
-  return fs.readFile(current, "utf8");
+  await assertMutationTargets(root, [relativePath]);
+  return fs.readFile(path.join(root, relativePath), "utf8").catch((error) => {
+    if (error.code === "ENOENT") return null;
+    throw error;
+  });
 }
 
 function navigationSource(source) {

@@ -346,7 +346,7 @@ test("CRM organization links hand off from Contacts to the canonical Organizatio
   assert.match(organizationsSource, /onOpenContact=\{openContact\}/);
   const contactsTableSource = readFileSync(join(process.cwd(), "packages/module-crm/src/ui/contacts-table.tsx"), "utf8");
   assert.match(contactsTableSource, /onOrganizationClick\(contact\.organization_id!\)/);
-  const dashboardClientSource = readFileSync(join(process.cwd(), "packages/app-shell/src/dashboard/dashboard-client.tsx"), "utf8");
+  const dashboardClientSource = readFileSync(join(process.cwd(), "packages/app-shell/src/dashboard/clients-view.tsx"), "utf8");
   assert.match(dashboardClientSource, /\/crm\?contact=\$\{encodeURIComponent\(c\.id\)\}/);
 });
 

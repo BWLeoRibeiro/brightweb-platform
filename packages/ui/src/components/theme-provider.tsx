@@ -15,6 +15,7 @@ import {
   BW_THEME_MEDIA_QUERY,
   BW_THEME_STORAGE_KEY,
   getSystemTheme,
+  getThemeStorage,
   persistTheme,
   readStoredTheme,
   resolveTheme,
@@ -77,7 +78,7 @@ export function ThemeProvider({
 
   useLayoutEffect(() => {
     const mediaQuery = window.matchMedia(BW_THEME_MEDIA_QUERY);
-    setThemeState(readStoredTheme(window.localStorage, defaultTheme));
+    setThemeState(readStoredTheme(getThemeStorage(), defaultTheme));
     setSystemTheme(getSystemTheme(mediaQuery));
     setIsReady(true);
   }, [defaultTheme]);
@@ -96,7 +97,7 @@ export function ThemeProvider({
   useEffect(() => {
     const handleStorage = (event: StorageEvent) => {
       if (event.key !== BW_THEME_STORAGE_KEY) return;
-      setThemeState(readStoredTheme(window.localStorage, defaultTheme));
+      setThemeState(readStoredTheme(getThemeStorage(), defaultTheme));
     };
     window.addEventListener("storage", handleStorage);
     return () => window.removeEventListener("storage", handleStorage);
@@ -104,7 +105,7 @@ export function ThemeProvider({
 
   const setTheme = useCallback((nextTheme: ThemeMode) => {
     setThemeState(nextTheme);
-    persistTheme(window.localStorage, nextTheme);
+    persistTheme(getThemeStorage(), nextTheme);
   }, []);
 
   const value = useMemo<ThemeContextValue>(

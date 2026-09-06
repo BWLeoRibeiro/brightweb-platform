@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { collectMaterializedFiles, rootDir } from "./_db-modules.mjs";
 
 function parseArgs(argv) {
@@ -19,9 +20,41 @@ function parseArgs(argv) {
   return args;
 }
 
-function ensureEmptyDir(dirPath) {
-  fs.rmSync(dirPath, { recursive: true, force: true });
-  fs.mkdirSync(dirPath, { recursive: true });
+export function prepareMaterializationDirectory(dirPath, expectedFiles) {
+  const absolute = path.resolve(dirPath);
+  let current = path.parse(absolute).root;
+  for (const part of absolute.slice(current.length).split(path.sep).filter(Boolean)) {
+    current = path.join(current, part);
+    let stat;
+    try { stat = fs.lstatSync(current); } catch (error) {
+      if (error.code === "ENOENT") break;
+      throw error;
+    }
+    if (stat.isSymbolicLink() || !stat.isDirectory()) {
+      throw new Error(`Materialization output must use real directories: ${current}`);
+    }
+  }
+  if (fs.existsSync(absolute) && fs.readdirSync(absolute).length > 0) {
+    const unchanged = expectedFiles && Object.entries(expectedFiles).every(([relative, expected]) => {
+      let file = absolute;
+      for (const part of relative.split("/")) {
+        file = path.join(file, part);
+        try { if (fs.lstatSync(file).isSymbolicLink()) return false; } catch { return false; }
+      }
+      try {
+        const actual = fs.readFileSync(file, "utf8");
+        if (relative !== "manifest.json") return actual === expected;
+        const oldManifest = JSON.parse(actual), newManifest = JSON.parse(expected);
+        delete oldManifest.generatedAt;
+        delete newManifest.generatedAt;
+        return JSON.stringify(oldManifest) === JSON.stringify(newManifest);
+      } catch { return false; }
+    });
+    if (unchanged) return false;
+    throw new Error("Materialization output differs or is not generated; choose a new output directory. Existing files are never removed.");
+  }
+  fs.mkdirSync(absolute, { recursive: true });
+  return true;
 }
 
 function createGeneratedSupabaseConfig(clientSlug) {
@@ -60,10 +93,7 @@ function main() {
   const supabaseDir = path.join(targetDir, "supabase");
   const migrationsDir = path.join(supabaseDir, "migrations");
 
-  ensureEmptyDir(targetDir);
-  fs.mkdirSync(supabaseDir, { recursive: true });
-  fs.mkdirSync(migrationsDir, { recursive: true });
-  fs.writeFileSync(path.join(supabaseDir, "config.toml"), createGeneratedSupabaseConfig(clientSlug));
+  const outputFiles = { "supabase/config.toml": createGeneratedSupabaseConfig(clientSlug) };
 
   const manifest = {
     client: plan.stack.client,
@@ -79,7 +109,7 @@ function main() {
     const destinationPath = path.join(migrationsDir, targetName);
     const sourceContents = fs.readFileSync(file.path, "utf8");
     const header = `-- source: ${file.relativePath}\n-- owner: ${file.step.type}:${file.step.key}\n\n`;
-    fs.writeFileSync(destinationPath, `${header}${sourceContents}`);
+    outputFiles[path.relative(targetDir, destinationPath)] = `${header}${sourceContents}`;
     manifest.files.push({
       order: index + 1,
       module: file.step.key,
@@ -88,8 +118,15 @@ function main() {
     });
   }
 
-  fs.writeFileSync(path.join(targetDir, "manifest.json"), `${JSON.stringify(manifest, null, 2)}\n`);
+  outputFiles["manifest.json"] = `${JSON.stringify(manifest, null, 2)}\n`;
+  if (prepareMaterializationDirectory(targetDir, outputFiles)) {
+    for (const [relative, content] of Object.entries(outputFiles)) {
+      const destination = path.join(targetDir, relative);
+      fs.mkdirSync(path.dirname(destination), { recursive: true });
+      fs.writeFileSync(destination, content, { flag: "wx" });
+    }
+  }
   console.log(targetDir);
 }
 
-main();
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) main();

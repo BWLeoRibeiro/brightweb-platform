@@ -47,7 +47,6 @@ import {
   getTasksDashboardData,
 } from "./dashboard";
 import {
-  createProject,
   createProjectLink,
   createProjectMilestone,
   createProjectOrganization,
@@ -81,7 +80,6 @@ const projectsDependencies = {
   queryActivity: queryProjectActivity,
   listAssignableProfiles: listProjectAssignableProfiles,
   createOrganization: createProjectOrganization,
-  createProject,
   updateProject,
   deleteProject,
   syncMembers: syncProjectMembers,

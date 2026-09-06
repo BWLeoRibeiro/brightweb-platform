@@ -16,13 +16,13 @@ const monthLabel = (month: string) => new Intl.DateTimeFormat("pt-PT", { month: 
 const dateLabel = (date: string) => new Intl.DateTimeFormat("pt-PT", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" }).format(new Date(`${date}T12:00:00Z`));
 
 function PublicationBrief({ event, publicationType }: { event: SocialMediaPublication; publicationType: SocialMediaPublicationType }) {
-  const [copyState, setCopyState] = useState("");
+  const [copyState, setCopyState] = useState<{ text: string; message: string } | null>(null);
   async function copy() {
     try {
       await navigator.clipboard.writeText(event.baseText);
-      setCopyState("Texto copiado.");
+      setCopyState({ text: event.baseText, message: "Texto copiado." });
     } catch {
-      setCopyState("Não foi possível copiar. Selecione o texto abaixo e copie manualmente.");
+      setCopyState({ text: event.baseText, message: "Não foi possível copiar. Selecione o texto abaixo e copie manualmente." });
     }
   }
   return <>
@@ -47,7 +47,7 @@ function PublicationBrief({ event, publicationType }: { event: SocialMediaPublic
       </SheetSection>
 
       <SheetSection title="Texto-base" className="social-draft" bodyClassName="social-draft-content" aside={<Button variant="outline" size="sm" onClick={copy}><Copy aria-hidden="true" />Copiar texto</Button>}>
-        <p className="social-copy-status text-meta" role="status" aria-live="polite">{copyState}</p>
+        <p className="social-copy-status text-meta" role="status" aria-live="polite">{copyState?.text === event.baseText ? copyState.message : ""}</p>
         <div className="social-draft-body"><p className="social-draft-text">{event.baseText}</p></div>
       </SheetSection>
 
@@ -64,9 +64,13 @@ function PublicationBrief({ event, publicationType }: { event: SocialMediaPublic
 
 export function SocialMediaClient({ plan }: { plan: SocialMediaPlan }) {
   const months = publicationMonths(plan.events);
-  const [month, setMonth] = useState(months[0] ?? "");
+  const [requestedMonth, setMonth] = useState(months[0] ?? "");
+  const month = months.includes(requestedMonth) ? requestedMonth : months[0] ?? "";
+  if (month !== requestedMonth) setMonth(month);
   const monthIndex = months.indexOf(month);
-  const [type, setType] = useState("all");
+  const [requestedType, setType] = useState("all");
+  const type = requestedType === "all" || Object.hasOwn(plan.types, requestedType) ? requestedType : "all";
+  if (type !== requestedType) setType(type);
   const [view, setView] = useState<"calendar" | "details">("calendar");
   const [section, setSection] = useState("calendario");
   useEffect(() => {
@@ -87,7 +91,9 @@ export function SocialMediaClient({ plan }: { plan: SocialMediaPlan }) {
     window.history.pushState(null, "", `#${value}`);
     setSection(value);
   }
-  const [selected, setSelected] = useState<SocialMediaPublication | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const selected = plan.events.find((event) => event.id === selectedId && plan.types[event.type]) ?? null;
+  if (selectedId && !selected) setSelectedId(null);
   const publications = filterPublications(plan.events, month, type);
   const websiteCount = publications.filter(event => plan.types[event.type].medium === "website").length;
   const typeFilters = [{ value: "all", label: "Tudo" }, ...Object.entries(plan.types).map(([value, item]) => ({ value, label: item.label }))];
@@ -115,11 +121,11 @@ export function SocialMediaClient({ plan }: { plan: SocialMediaPlan }) {
             {calendarDays(month).map((day) => <div key={day.date} className={`social-day${day.inMonth ? "" : " social-day-outside"}`}>
               <time dateTime={day.date} className="text-meta">{day.day}</time>
               {plan.holidays?.[day.date] ? <span className="social-holiday">{plan.holidays[day.date]}</span> : null}
-              {publications.filter((event) => event.date === day.date).map((event) => <button key={event.id} type="button" className="social-event" data-tone={plan.types[event.type].tone ?? "primary"} onClick={() => setSelected(event)} aria-label={`${dateLabel(event.date)}: ${event.title}`}><span>{plan.types[event.type].label}</span><strong>{event.title}</strong><small>{event.channels}</small></button>)}
+              {publications.filter((event) => event.date === day.date).map((event) => <button key={event.id} type="button" className="social-event" data-tone={plan.types[event.type].tone ?? "primary"} onClick={() => setSelectedId(event.id)} aria-label={`${dateLabel(event.date)}: ${event.title}`}><span>{plan.types[event.type].label}</span><strong>{event.title}</strong><small>{event.channels}</small></button>)}
             </div>)}
           </div>
-        </div> : <div className="social-publications">{publications.map((event) => <button type="button" className="social-publication-row" key={event.id} onClick={() => setSelected(event)}><div><time dateTime={event.date}>{dateLabel(event.date)}</time><Badge variant="outline">{plan.types[event.type].label}</Badge></div><div><strong className="text-title">{event.title}</strong><p className="text-meta text-muted-foreground">{event.channels}</p></div><span className="text-meta social-open-brief">Ver plano →</span></button>)}</div>}
+        </div> : <div className="social-publications">{publications.map((event) => <button type="button" className="social-publication-row" key={event.id} onClick={() => setSelectedId(event.id)}><div><time dateTime={event.date}>{dateLabel(event.date)}</time><Badge variant="outline">{plan.types[event.type].label}</Badge></div><div><strong className="text-title">{event.title}</strong><p className="text-meta text-muted-foreground">{event.channels}</p></div><span className="text-meta social-open-brief">Ver plano →</span></button>)}</div>}
     </CardContent></Card> : section === "decisao" && plan.positioning ? <PositioningScreen content={plan.positioning} /> : <StrategyScreen id={section} plan={plan} />}
-    <Sheet open={selected !== null} onOpenChange={(open) => { if (!open) setSelected(null); }}><SheetContent className="social-brief !w-full sm:!max-w-[45rem]">{selected ? <PublicationBrief key={selected.id} event={selected} publicationType={plan.types[selected.type]} /> : null}</SheetContent></Sheet>
+    <Sheet open={selected !== null} onOpenChange={(open) => { if (!open) setSelectedId(null); }}><SheetContent className="social-brief !w-full sm:!max-w-[45rem]">{selected ? <PublicationBrief key={selected.id} event={selected} publicationType={plan.types[selected.type]} /> : null}</SheetContent></Sheet>
   </div>;
 }

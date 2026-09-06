@@ -43,7 +43,9 @@
       "touch_organization_invitations_updated_at",
       "trg_touch_organization_invitations_updated_at",
       "normalize_organization_invitation_email",
-      "trg_normalize_organization_invitation_email"
+      "trg_normalize_organization_invitation_email",
+      "accept_organization_invitation",
+      "assign_organization_member_atomic"
     ]
   }
 }

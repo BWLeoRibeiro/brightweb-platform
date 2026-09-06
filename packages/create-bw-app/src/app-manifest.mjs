@@ -1,3 +1,6 @@
+import { MANAGED_PLATFORM_FILES, isAppOwnedSeed } from "./file-policy.mjs";
+import semver from "semver";
+import { assertMutationTargets } from "./mutation-paths.mjs";
 import crypto from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
@@ -17,13 +20,7 @@ async function readJsonIfPresent(filePath) {
 }
 
 export const APP_MANIFEST_PATH = path.join(".brightweb", "app-manifest.json");
-export const MANAGED_APP_FILES = [
-  "next.config.ts",
-  "app/globals.css",
-  "config/modules.ts",
-  "config/shell.ts",
-  "docs/ai/app-context.json",
-];
+export const MANAGED_APP_FILES = MANAGED_PLATFORM_FILES;
 
 export const MODULE_PACKAGES = {
   admin: "@brightweblabs/module-admin",
@@ -44,36 +41,13 @@ const FALLBACK_REQUIRES = {
 
 export function cleanVersion(version) {
   if (typeof version !== "string") return null;
-  const match = version.match(/(\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?)/);
-  return match?.[1] || null;
-}
-
-function compareVersions(left, right) {
-  const a = cleanVersion(left)?.split("-")[0].split(".").map(Number) || [];
-  const b = cleanVersion(right)?.split("-")[0].split(".").map(Number) || [];
-  for (let index = 0; index < 3; index += 1) {
-    if ((a[index] || 0) !== (b[index] || 0)) return (a[index] || 0) - (b[index] || 0);
-  }
-  return 0;
+  return semver.valid(version.trim().replace(/^[~^]\s*/, ""));
 }
 
 export function satisfiesVersion(version, range) {
-  const normalized = cleanVersion(version);
-  if (!normalized || typeof range !== "string") return false;
-  if (range === "*" || range === "workspace:*") return true;
-  const expectedMatch = range.match(/(\d+)(?:\.(\d+))?(?:\.(\d+))?/);
-  const expected = expectedMatch ? `${expectedMatch[1]}.${expectedMatch[2] || "0"}.${expectedMatch[3] || "0"}` : null;
-  if (!expected) return false;
-  if (range.trim().startsWith(">=")) return compareVersions(normalized, expected) >= 0;
-  if (range.trim().startsWith("^")) {
-    return normalized.split(".")[0] === expected.split(".")[0] && compareVersions(normalized, expected) >= 0;
-  }
-  if (range.trim().startsWith("~")) {
-    const actualParts = normalized.split(".");
-    const expectedParts = expected.split(".");
-    return actualParts[0] === expectedParts[0] && actualParts[1] === expectedParts[1] && compareVersions(normalized, expected) >= 0;
-  }
-  return normalized === expected;
+  if (typeof version !== "string" || typeof range !== "string" || !semver.valid(version)) return false;
+  if (range === "workspace:*") return true;
+  return semver.satisfies(version, range);
 }
 
 export async function hashFile(filePath) {
@@ -82,6 +56,7 @@ export async function hashFile(filePath) {
 }
 
 export async function readAppManifest(targetDir, { required = true } = {}) {
+  await assertMutationTargets(targetDir, [APP_MANIFEST_PATH]);
   const manifestPath = path.join(targetDir, APP_MANIFEST_PATH);
   const manifest = await readJsonIfPresent(manifestPath);
   if (!manifest && required) {
@@ -95,6 +70,7 @@ export async function readAppManifest(targetDir, { required = true } = {}) {
 }
 
 export async function writeAppManifest(targetDir, manifest) {
+  await assertMutationTargets(targetDir, [APP_MANIFEST_PATH]);
   const manifestPath = path.join(targetDir, APP_MANIFEST_PATH);
   await fs.mkdir(path.dirname(manifestPath), { recursive: true });
   const temporaryPath = `${manifestPath}.${process.pid}.${crypto.randomBytes(6).toString("hex")}.tmp`;
@@ -178,7 +154,7 @@ export async function collectScaffoldFiles(targetDir, selectedModules) {
   const result = {};
   for (const [relativePath, moduleKey] of Array.from(files.entries()).sort()) {
     const targetPath = resolveSafeRelativePath(targetDir, relativePath, "Scaffold file path");
-    if (await pathExists(targetPath)) result[relativePath] = { module: moduleKey, hash: await hashFile(targetPath), status: "current" };
+    if (await pathExists(targetPath)) result[relativePath] = { module: moduleKey, hash: await hashFile(targetPath), status: "current", ...(isAppOwnedSeed(relativePath) ? { intent: "owned" } : {}) };
   }
   return result;
 }

@@ -25,10 +25,11 @@ import {
   createOrganizationsPostHandler,
 } from "./http";
 
-export function createOrganizationRequestHandlers(options?: { ensureCrmContactForProfile?: EnsureCrmContact }) {
+export function createOrganizationRequestHandlers(options?: { ensureCrmContactForProfile?: EnsureCrmContact; contactIntegration?: "database" }) {
   const inviteMembers: typeof inviteOrganizationMembers = (supabase, organizationId, invites, actorProfileId) =>
     inviteOrganizationMembers(supabase, organizationId, invites, actorProfileId, {
       ensureCrmContactForProfile: options?.ensureCrmContactForProfile,
+      contactIntegration: options?.contactIntegration,
     });
   const writeDependencies = {
     getCreateAccess: requireOrganizationsStaffAccess,
