@@ -1,3 +1,5 @@
+@layer theme, base, components, utilities;
+
 @layer components {
   .social-workspace {
     /* Social plan presentation roles: shared defaults, overridable by client themes. */

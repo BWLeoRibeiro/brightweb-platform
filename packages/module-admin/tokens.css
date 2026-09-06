@@ -1,3 +1,5 @@
+@layer theme, base, components, utilities;
+
 :root {
   --admin-tab-hover: var(--elevate-3);
   --admin-tab-active-shadow: var(--shadow-accent-control);

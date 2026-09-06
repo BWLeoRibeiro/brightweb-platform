@@ -1,3 +1,5 @@
+@layer theme, base, components, utilities;
+
 @layer tokens {
   :root {
     --marketing-accent: var(--semantic-info);

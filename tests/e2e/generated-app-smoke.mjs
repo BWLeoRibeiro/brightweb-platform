@@ -21,6 +21,8 @@ import { performance } from "node:perf_hooks";
 import { pathToFileURL } from "node:url";
 import { createBrightwebClientApp } from "../../packages/create-bw-app/src/generator.mjs";
 import { SELECTABLE_MODULES } from "../../packages/create-bw-app/src/constants.mjs";
+import { setupBrightwebFeature } from "../../packages/create-bw-app/src/setup.mjs";
+import { runCssLayerBrowser } from "./css-layer-browser.mjs";
 import { startSupabaseStub } from "./supabase-stub.mjs";
 import { CRM_TOTAL_CONTACTS, SECOND_PROFILE_ID, USER_EMAIL, USER_PASSWORD } from "./fixtures.mjs";
 
@@ -194,6 +196,23 @@ async function main() {
       process.platform === "win32" ? "junction" : "dir",
     );
 
+    await setupBrightwebFeature("social-media", { dryRun: true }, { targetDir: fixtureDir });
+    await setupBrightwebFeature("social-media", {}, { targetDir: fixtureDir });
+    await fs.writeFile(path.join(fixtureDir, "config/social-media-plan.json"), JSON.stringify({
+      title: "Museum social media", period: "February 2028",
+      sections: [{ id: "calendario", title: "Calendário" }, { id: "plano", title: "Editorial" }],
+      editorial: { eyebrow: "Local stories", title: "Discover the collection", introduction: "A museum fixture for visual regression testing." },
+      types: { exhibition: { label: "Exhibition", medium: "social", tone: "info" } },
+      events: [{ id: "opening", date: "2028-02-29", type: "exhibition", title: "The harbour in colour", channels: "Instagram", format: "Photo", summary: "Introduce the collection", interaction: "Share a memory", cta: "Visit", baseText: "Discover the waterfront", service: "Admission", editorialNote: "Test fixture", references: [] }],
+    }, null, 2));
+
+    const preservationPaths = ["config/social-media-plan.json", "config/shell.overrides.ts", "app/(shell)/marketing/social-media/page.tsx"];
+    const preserved = await Promise.all(preservationPaths.map(file => fs.readFile(path.join(fixtureDir, file), "utf8")));
+    await setupBrightwebFeature("social-media", {}, { targetDir: fixtureDir });
+    for (const [index, file] of preservationPaths.entries()) {
+      assert(await fs.readFile(path.join(fixtureDir, file), "utf8") === preserved[index], `setup rerun preserves ${file}`);
+    }
+
     // 3. Runtime env pointed at the stub (NEXT_PUBLIC_* values are inlined at
     //    build time, so this must exist before `next build`). -----------------
     const appPort = await getFreePort();
@@ -331,6 +350,8 @@ async function main() {
       assert(true, `authenticated ${pathname} HTML contains sanity marker "${marker}"`);
       assert(!html.includes("Application error"), `authenticated ${pathname} HTML has no client-side crash banner`);
     }
+
+    await timed("rendered CSS regression", () => runCssLayerBrowser({ appUrl, cookies: jar.getAll() }));
 
     // 8. Dashboard API contract via the REAL app-shell parsers --------------
     console.log("[smoke] dashboard API contract");

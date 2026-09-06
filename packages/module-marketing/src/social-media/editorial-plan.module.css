@@ -1,3 +1,5 @@
+@layer theme, base, components, utilities;
+
 @layer components {
   .plan { display: grid; gap: 2.75rem; padding: var(--space-lg-plus) 0 var(--space-xl); }
   .eyebrow, .sectionHeading > span { display: block; margin-bottom: var(--space-sm); color: var(--brand-accent, var(--primary)); font-size: var(--text-meta); font-weight: var(--font-weight-semibold); }
