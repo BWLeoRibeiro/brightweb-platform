@@ -1,5 +1,14 @@
 # @brightweblabs/core-auth
 
+## 0.12.2
+
+### Patch Changes
+
+- e75c7bb: Keep notification dismissal and pagination responses scoped to their current configuration and list. Recover theme preferences when browser storage cannot be acquired. Split dashboard views and shared request loaders without changing their rendered output, share typography class merging through the UI utility export, and remove unused private authentication and dashboard code.
+- Updated dependencies [e75c7bb]
+- Updated dependencies [e75c7bb]
+  - @brightweblabs/ui@1.5.6
+
 ## 0.12.1
 
 ### Patch Changes

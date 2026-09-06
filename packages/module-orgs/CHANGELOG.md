@@ -1,5 +1,19 @@
 # @brightweblabs/module-orgs
 
+## 0.7.3
+
+### Patch Changes
+
+- e75c7bb: Assign existing organization members through a service-only database transaction so membership, CRM linking, primary-contact selection and pending-invitation reconciliation commit together. Remove snapshot-based compensation that could delete concurrent grants or restore stale roles. Preserve per-person batch outcomes and the client-owned transactional contact hook. Custom asynchronous callbacks must migrate to that hook and explicitly acknowledge database integration before use. Existing applications must apply the new atomic direct-membership migration before upgrading the handlers; new applications include the mirrored migration.
+- e75c7bb: Accept invitations through service-only, row-locked database transactions so access, CRM linkage, audit and invitation status commit together. Reuse acceptance during registration and retain identities after uncertain responses for safe retries. Report retained invitations accurately when delivery cleanup fails. New applications include the mirrored migrations; existing applications must apply the Admin/Orgs acceptance migrations and the CRM contact integration migration before using these acceptance handlers. Stock CRM callbacks are recognized through the shared integration contract; custom callbacks fail before mutation until deliberately migrated to a client-owned transactional hook and acknowledged with contactIntegration. Already accepted registration links never create identities or synchronize profile metadata.
+- Updated dependencies [e75c7bb]
+- Updated dependencies [e75c7bb]
+- Updated dependencies [e75c7bb]
+- Updated dependencies [e75c7bb]
+  - @brightweblabs/app-shell@0.16.3
+  - @brightweblabs/ui@1.5.6
+  - @brightweblabs/core-auth@0.12.2
+
 ## 0.7.2
 
 ### Patch Changes

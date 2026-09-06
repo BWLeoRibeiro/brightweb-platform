@@ -1,5 +1,26 @@
 # @brightweblabs/module-projects
 
+## 0.19.3
+
+### Patch Changes
+
+- e75c7bb: Preserve newer campaign and workflow drafts when detail or save requests complete, serialize editor commands, and detach pending editor work when the client changes. Reload dashboard sections after a client replacement and reject old requests. Deduplicate pending notification dismissals so repeated callbacks do not send duplicate mutations. Keep clipboard feedback tied to the Social Media text actually copied. Remove unused private UI imports and bindings while retaining public props.
+- e75c7bb: Use one Projects listing/statistics implementation for public and HTTP consumers, including dashboard attention filters and compatibility recovery. Share task draft validation and calendar-date conversion between creation surfaces, and remove unused private action wrappers. Read CRM report rows in bounded pages so API response caps cannot silently truncate reports. Remove unused shell styling dependencies.
+
+  Project task and milestone collections now page through API caps, reject incomplete or changing reads, and fail explicitly above 10,000 rows. Detail task statistics use the shared aggregate reader.
+
+- e75c7bb: Preserve reopened task drafts across pending saves, deduplicate task submissions, and isolate task completions by editor, project, and client. Clear notification feed state on endpoint changes and reject dismissals of stale feed items.
+- Updated dependencies [e75c7bb]
+- Updated dependencies [e75c7bb]
+- Updated dependencies [e75c7bb]
+- Updated dependencies [e75c7bb]
+- Updated dependencies [e75c7bb]
+- Updated dependencies [e75c7bb]
+  - @brightweblabs/module-orgs@0.7.3
+  - @brightweblabs/app-shell@0.16.3
+  - @brightweblabs/ui@1.5.6
+  - @brightweblabs/core-auth@0.12.2
+
 ## 0.19.2
 
 ### Patch Changes

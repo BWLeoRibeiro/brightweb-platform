@@ -1,5 +1,13 @@
 # dev-docs
 
+## 0.0.26
+
+### Patch Changes
+
+- Updated dependencies [e75c7bb]
+- Updated dependencies [e75c7bb]
+  - @brightweblabs/ui@1.5.6
+
 ## 0.0.25
 
 ### Patch Changes

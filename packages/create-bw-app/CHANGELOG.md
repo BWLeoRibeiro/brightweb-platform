@@ -1,5 +1,21 @@
 # create-bw-app
 
+## 0.27.2
+
+### Patch Changes
+
+- e75c7bb: Assign existing organization members through a service-only database transaction so membership, CRM linking, primary-contact selection and pending-invitation reconciliation commit together. Remove snapshot-based compensation that could delete concurrent grants or restore stale roles. Preserve per-person batch outcomes and the client-owned transactional contact hook. Custom asynchronous callbacks must migrate to that hook and explicitly acknowledge database integration before use. Existing applications must apply the new atomic direct-membership migration before upgrading the handlers; new applications include the mirrored migration.
+- e75c7bb: Accept invitations through service-only, row-locked database transactions so access, CRM linkage, audit and invitation status commit together. Reuse acceptance during registration and retain identities after uncertain responses for safe retries. Report retained invitations accurately when delivery cleanup fails. New applications include the mirrored migrations; existing applications must apply the Admin/Orgs acceptance migrations and the CRM contact integration migration before using these acceptance handlers. Stock CRM callbacks are recognized through the shared integration contract; custom callbacks fail before mutation until deliberately migrated to a client-owned transactional hook and acknowledged with contactIntegration. Already accepted registration links never create identities or synchronize profile metadata.
+- e75c7bb: Save workflow nodes in one service-only transaction, preserving retained node identities across reordering and rolling back deletions if any write fails. Reject foreign, missing or duplicate supplied node IDs. Delete individual nodes through a targeted transaction that preserves concurrent changes to other nodes. Serialize activation with node editing so a concurrent edit cannot activate an empty workflow. Existing applications must apply the atomic_marketing_workflow_nodes migration before upgrading the handlers; fresh applications include the mirrored migration.
+- e75c7bb: Preserve app-owned MDX package dependencies during removal, reject unknown migration cursors consistently in diagnostics, and reuse the shared filesystem boundary checks during feature setup.
+- e75c7bb: Gate each pending destructive migration after the current cursor, share and validate module-aware generated outputs, and preserve exact-path customization decisions, drift baselines, and removed-module migration history during forced adoption and module remove/re-add transitions.
+- e75c7bb: Preflight physical lifecycle targets before writes, preserving app-root aliases while refusing linked or invalid targets. Share exact generated and app-owned file policy with manifest and app-context inventories; preserve create-once customization files and compare managed adapters with their module-selected rendering. Reject unknown migration cursors, use standard semantic-version matching, and refuse module removal while surviving app files retain package imports.
+- e75c7bb: Reject stale admin invitation revocations without false audit events, and preserve invitations accepted during failed email delivery cleanup. Distinguish permission failures from missing migrations. Remove unused CRM formatting code and redundant private report result wrappers and guards.
+
+  The bundled core forward migration restricts the privileged profile identity synchronization function to the service role. Auth triggers continue to run under their owner; existing databases must apply this migration to close anonymous/authenticated direct execution.
+
+- e75c7bb: Preserve scaffold baselines and explicit ownership across module addition, removal and upgrade, including overlapping config routes. Returning a file to management now records its canonical template baseline. Legacy update respects owned and skipped files while retaining explicit starter refresh behavior. Reject untracked module overlay collisions before writing application files.
+
 ## 0.27.1
 
 ### Patch Changes
