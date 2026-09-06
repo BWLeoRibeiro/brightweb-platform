@@ -1,5 +1,14 @@
 # @brightweblabs/module-orgs
 
+## 0.7.2
+
+### Patch Changes
+
+- Updated dependencies [ebdc5fc]
+  - @brightweblabs/core-auth@0.12.1
+  - @brightweblabs/app-shell@0.16.2
+  - @brightweblabs/ui@1.5.5
+
 ## 0.7.1
 
 ### Patch Changes

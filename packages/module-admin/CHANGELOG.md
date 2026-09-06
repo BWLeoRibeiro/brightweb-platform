@@ -1,5 +1,15 @@
 # @brightweblabs/module-admin
 
+## 0.9.6
+
+### Patch Changes
+
+- ebdc5fc: Establish the same theme, base, components, utilities cascade order before every shared layered stylesheet and starter reset entry point. Independently emitted production CSS chunks can now load in any order without allowing the reset to erase authentication padding, heading typography, or calendar spacing. Existing component layers and client customization remain intact.
+- Updated dependencies [ebdc5fc]
+  - @brightweblabs/core-auth@0.12.1
+  - @brightweblabs/app-shell@0.16.2
+  - @brightweblabs/ui@1.5.5
+
 ## 0.9.5
 
 ### Patch Changes
