@@ -16,6 +16,7 @@
     "access": "public"
   },
   "exports": {
+    "./utils": "./src/lib/utils.ts",
     ".": "./src/index.ts",
     "./action": "./src/components/action.tsx",
     "./activity-format": "./src/lib/activity-format.ts",

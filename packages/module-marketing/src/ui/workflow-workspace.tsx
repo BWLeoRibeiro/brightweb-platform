@@ -27,174 +27,27 @@ import {
   SheetDescription,
   SheetHeader,
   SheetTitle,
-  Skeleton,
 } from "@brightweblabs/ui";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type Dispatch, type SetStateAction } from "react";
 import { createLatestRequestController, isAbortError } from "@brightweblabs/infra/request-observability";
 import { toast } from "sonner";
+import { useWorkflowCommand } from "./use-workflow-command";
+import { WorkflowRunViewer } from "./workflow-run-viewer";
+import { emptyForm, toForm, createDraftNode, toDraftNode, toWorkflowInput, toNodeInput, isNodeValid, type DraftNode, type WorkflowForm } from "./workflow-editor-model";
 import { useMarketingUiClient } from "./context";
 import type {
   MarketingUiDictionary,
   MarketingWorkflow,
-  MarketingWorkflowInput,
-  MarketingWorkflowNode,
-  MarketingWorkflowNodeInput,
   MarketingWorkflowNodeType,
   MarketingWorkflowRun,
   MarketingWorkflowTriggerType,
 } from "./types";
-
-type WorkflowForm = {
-  name: string;
-  description: string;
-  triggerType: MarketingWorkflowTriggerType;
-  triggerValue: string;
-};
-
-type DraftNode = {
-  key: string;
-  id?: string;
-  type: MarketingWorkflowNodeType;
-  subject: string;
-  body: string;
-  topic: string;
-  duration: string;
-  durationUnit: "minutes" | "hours" | "days";
-  tag: string;
-};
-
-const emptyForm: WorkflowForm = {
-  name: "",
-  description: "",
-  triggerType: "contact_subscribed",
-  triggerValue: "",
-};
 
 const workflowStatusTone: Record<MarketingWorkflow["status"], string> = {
   draft: "border-border bg-muted text-muted-foreground",
   active: "border-success/25 bg-success/10 text-success",
   paused: "border-warning/25 bg-warning/10 text-warning",
 };
-
-const runStatusTone: Record<MarketingWorkflowRun["status"], string> = {
-  active: "border-info/25 bg-info/10 text-info",
-  completed: "border-success/25 bg-success/10 text-success",
-  failed: "border-destructive/25 bg-destructive/10 text-destructive",
-  canceled: "border-border bg-muted text-muted-foreground",
-};
-
-function triggerValue(workflow: MarketingWorkflow) {
-  const config = workflow.triggerConfig;
-  if (workflow.triggerType === "contact_subscribed") {
-    return String(config.topicId ?? config.topic ?? "");
-  }
-  if (workflow.triggerType === "form_submitted") {
-    return String(config.formId ?? config.form ?? "");
-  }
-  return String(config.toStatus ?? config.targetStatus ?? "");
-}
-
-function toForm(workflow: MarketingWorkflow): WorkflowForm {
-  return {
-    name: workflow.name,
-    description: workflow.description ?? "",
-    triggerType: workflow.triggerType,
-    triggerValue: triggerValue(workflow),
-  };
-}
-
-function createDraftNode(type: MarketingWorkflowNodeType, index: number): DraftNode {
-  return {
-    key: `new-${Date.now()}-${index}`,
-    type,
-    subject: "",
-    body: "",
-    topic: "",
-    duration: "1",
-    durationUnit: "hours",
-    tag: "",
-  };
-}
-
-function toDraftNode(node: MarketingWorkflowNode): DraftNode {
-  const durationMinutes = Number(node.config.durationMinutes ?? node.config.duration_minutes ?? 60);
-  const durationUnit = durationMinutes > 0 && durationMinutes % 1440 === 0
-    ? "days"
-    : durationMinutes > 0 && durationMinutes % 60 === 0 ? "hours" : "minutes";
-  const divisor = durationUnit === "days" ? 1440 : durationUnit === "hours" ? 60 : 1;
-  return {
-    key: node.id,
-    id: node.id,
-    type: node.type,
-    subject: String(node.config.subject ?? ""),
-    body: String(node.config.bodyHtml ?? node.config.body ?? ""),
-    topic: String(node.config.topicId ?? node.config.topic ?? ""),
-    duration: String(Math.max(1, durationMinutes / divisor)),
-    durationUnit,
-    tag: String(node.config.tag ?? ""),
-  };
-}
-
-function toWorkflowInput(form: WorkflowForm): MarketingWorkflowInput {
-  const value = form.triggerValue.trim();
-  const triggerConfig = form.triggerType === "contact_subscribed"
-    ? { topicId: value }
-    : form.triggerType === "form_submitted"
-      ? { formId: value }
-      : { toStatus: value };
-  return {
-    name: form.name.trim(),
-    description: form.description.trim() || null,
-    triggerType: form.triggerType,
-    triggerConfig,
-  };
-}
-
-function toNodeInput(node: DraftNode, position: number): MarketingWorkflowNodeInput {
-  if (node.type === "send_email") {
-    return {
-      id: node.id,
-      nodeType: node.type,
-      position,
-      config: {
-        subject: node.subject.trim(),
-        bodyHtml: node.body,
-        ...(node.topic.trim() ? { topicId: node.topic.trim() } : {}),
-      },
-    };
-  }
-  if (node.type === "wait") {
-    const multiplier = node.durationUnit === "days" ? 1440 : node.durationUnit === "hours" ? 60 : 1;
-    return {
-      id: node.id,
-      nodeType: node.type,
-      position,
-      config: { durationMinutes: Math.max(1, Number(node.duration) || 1) * multiplier },
-    };
-  }
-  return {
-    id: node.id,
-    nodeType: node.type,
-    position,
-    config: { tag: node.tag.trim() },
-  };
-}
-
-function formatDateTime(value: string | null, locale: string) {
-  if (!value) return "—";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return new Intl.DateTimeFormat(locale, {
-    dateStyle: "short",
-    timeStyle: "short",
-  }).format(date);
-}
-
-function isNodeValid(node: DraftNode) {
-  if (node.type === "send_email") return Boolean(node.subject.trim() && node.body.trim());
-  if (node.type === "wait") return Number(node.duration) > 0;
-  return Boolean(node.tag.trim());
-}
 
 export type WorkflowWorkspaceProps = {
   initialWorkflows: MarketingWorkflow[];
@@ -212,15 +65,26 @@ export function WorkflowWorkspace({
   const client = useMarketingUiClient();
   const [workflows, setWorkflows] = useState(initialWorkflows);
   const [active, setActive] = useState<MarketingWorkflow | null>(null);
-  const [form, setForm] = useState<WorkflowForm>(emptyForm);
-  const [nodes, setNodes] = useState<DraftNode[]>([]);
+  const [form, setFormState] = useState<WorkflowForm>(emptyForm);
+  const [nodes, setNodesState] = useState<DraftNode[]>([]);
+  const draftRevisionRef = useRef(0);
+  const setForm: Dispatch<SetStateAction<WorkflowForm>> = (update) => {
+    draftRevisionRef.current += 1;
+    setFormState(update);
+  };
+  const setNodes: Dispatch<SetStateAction<DraftNode[]>> = (update) => {
+    draftRevisionRef.current += 1;
+    setNodesState(update);
+  };
   const [runs, setRuns] = useState<MarketingWorkflowRun[]>([]);
   const [runsLoadState, setRunsLoadState] = useState<"pending" | "fulfilled" | "rejected">("fulfilled");
   const [open, setOpen] = useState(false);
-  const [busy, setBusy] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
   const [addType, setAddType] = useState<MarketingWorkflowNodeType>("send_email");
   const workflowLoadGeneration = useRef(0);
   const editorGenerationRef = useRef(0);
+  const command = useWorkflowCommand(client, editorGenerationRef, dictionary.feedback.genericError);
+  const busy = command.busy ?? (loading ? "load" : null);
   const workflowRequestRef = useRef(createLatestRequestController());
   const handledCreateRequestRef = useRef(createRequest);
 
@@ -252,7 +116,6 @@ export function WorkflowWorkspace({
         ? current.map((item) => item.id === workflow.id ? workflow : item)
         : [workflow, ...current];
     });
-    setActive(workflow);
   };
 
   const beginCreate = () => {
@@ -264,7 +127,7 @@ export function WorkflowWorkspace({
     setNodes([]);
     setRuns([]);
     setRunsLoadState("fulfilled");
-    setBusy(null);
+    setLoading(false);
     setOpen(true);
   };
 
@@ -281,19 +144,24 @@ export function WorkflowWorkspace({
     setActive(workflow);
     setForm(toForm(workflow));
     setNodes(workflow.nodes.map(toDraftNode));
+    const revision = draftRevisionRef.current;
     setRuns([]);
     setRunsLoadState("pending");
     setOpen(true);
-    setBusy("load");
+    setLoading(true);
     try {
       const [detail, recentRuns] = await Promise.all([
         client.getWorkflow(workflow.id, { signal: latest.signal }),
         client.listWorkflowRuns(workflow.id, { signal: latest.signal }),
       ]);
       if (!latest.isCurrent() || generation !== workflowLoadGeneration.current) return;
-      replaceWorkflow({ ...detail, runCount: recentRuns.length, countsKnown: true });
-      setForm(toForm(detail));
-      setNodes(detail.nodes.map(toDraftNode));
+      const complete = { ...detail, runCount: recentRuns.length, countsKnown: true };
+      replaceWorkflow(complete);
+      setActive(complete);
+      if (revision === draftRevisionRef.current) {
+        setForm(toForm(detail));
+        setNodes(detail.nodes.map(toDraftNode));
+      }
       setRuns(recentRuns);
       setRunsLoadState("fulfilled");
     } catch (error) {
@@ -303,16 +171,29 @@ export function WorkflowWorkspace({
     } finally {
       const current = latest.isCurrent();
       latest.finish();
-      if (current && generation === workflowLoadGeneration.current) setBusy(null);
+      if (current && generation === workflowLoadGeneration.current) setLoading(false);
     }
   };
 
-  useEffect(() => () => workflowRequestRef.current.abort(), []);
+  useEffect(() => {
+    setOpen(false);
+    setActive(null);
+    setFormState(emptyForm);
+    setNodesState([]);
+    setRuns([]);
+    setRunsLoadState("fulfilled");
+    setLoading(false);
+    return () => {
+      workflowRequestRef.current.abort();
+      editorGenerationRef.current += 1;
+    };
+  }, [client]);
 
   const handleOpenChange = (nextOpen: boolean) => {
     if (!nextOpen) {
       workflowRequestRef.current.abort();
       editorGenerationRef.current += 1;
+      setLoading(false);
     }
     setOpen(nextOpen);
   };
@@ -332,72 +213,70 @@ export function WorkflowWorkspace({
   };
 
   const save = async () => {
+    if (loading) return;
+    const revision = draftRevisionRef.current;
     if (!form.name.trim() || !form.triggerValue.trim() || nodes.some((node) => !isNodeValid(node))) {
       toast.error(dictionary.feedback.workflowRequired ?? dictionary.feedback.required);
       return;
     }
-    const editorGeneration = editorGenerationRef.current;
-    setBusy("save");
-    try {
+    await command.run("save", async (owner) => {
       const saved = active
         ? await client.updateWorkflow(active.id, toWorkflowInput(form))
         : await client.createWorkflow(toWorkflowInput(form));
+      // Metadata has already persisted: retain a new workflow's identity even if nodes fail.
+      if (owner.ownsCollection()) {
+        replaceWorkflow(saved);
+        onMutated?.();
+      }
+      if (owner.ownsEditor()) setActive(saved);
       const savedNodes = await client.saveWorkflowNodes(
         saved.id,
         nodes.map((node, index) => toNodeInput(node, index)),
       );
-      if (editorGeneration !== editorGenerationRef.current) return;
       const complete = { ...saved, nodes: savedNodes, nodeCount: savedNodes.length };
-      replaceWorkflow(complete);
-      setNodes(savedNodes.map(toDraftNode));
-      onMutated?.();
-      toast.success(active ? dictionary.workflows.saved : dictionary.workflows.created);
-    } catch (error) {
-      if (editorGeneration === editorGenerationRef.current) toast.error(error instanceof Error ? error.message : dictionary.feedback.genericError);
-    } finally {
-      if (editorGeneration === editorGenerationRef.current) setBusy(null);
-    }
+      if (owner.ownsCollection()) {
+        replaceWorkflow(complete);
+        onMutated?.();
+      }
+      if (!owner.ownsEditor()) return;
+      setActive(complete);
+      if (revision === draftRevisionRef.current) setNodes(savedNodes.map(toDraftNode));
+      else {
+        const savedIds = new Map(nodes.map((node, position) => [node.key, savedNodes.find((savedNode) => savedNode.position === position)?.id]));
+        setNodes((current) => current.map((node) => {
+          const id = savedIds.get(node.key);
+          return id ? { ...node, id } : node;
+        }));
+      }
+    }, active ? dictionary.workflows.saved : dictionary.workflows.created);
   };
 
   const runStatusAction = async (action: "activate" | "pause") => {
-    if (!active) return;
-    const editorGeneration = editorGenerationRef.current;
-    setBusy(action);
-    try {
+    if (loading || !active) return;
+    await command.run(action, async (owner) => {
       const updated = action === "activate"
         ? await client.activateWorkflow(active.id)
         : await client.pauseWorkflow(active.id);
-      if (editorGeneration !== editorGenerationRef.current) return;
-      replaceWorkflow({ ...updated, nodes: updated.nodes.length ? updated.nodes : active.nodes });
-      onMutated?.();
-      toast.success(
-        action === "activate" ? dictionary.workflows.activated : dictionary.workflows.paused,
-      );
-    } catch (error) {
-      if (editorGeneration === editorGenerationRef.current) toast.error(error instanceof Error ? error.message : dictionary.feedback.genericError);
-    } finally {
-      if (editorGeneration === editorGenerationRef.current) setBusy(null);
-    }
+      const complete = { ...updated, nodes: updated.nodes.length ? updated.nodes : active.nodes };
+      if (owner.ownsCollection()) {
+        replaceWorkflow(complete);
+        onMutated?.();
+      }
+      if (owner.ownsEditor()) setActive(complete);
+    }, action === "activate" ? dictionary.workflows.activated : dictionary.workflows.paused);
   };
 
   const removeWorkflow = async () => {
-    if (!active) return;
-    if (active.status !== "draft") return;
+    if (loading || command.busy || !active || active.status !== "draft") return;
     if (!window.confirm(`Eliminar definitivamente o fluxo “${active.name}”?`)) return;
-    const editorGeneration = editorGenerationRef.current;
-    setBusy("delete");
-    try {
+    await command.run("delete", async (owner) => {
       await client.deleteWorkflow(active.id);
-      if (editorGeneration !== editorGenerationRef.current) return;
-      setWorkflows((current) => current.filter((item) => item.id !== active.id));
-      setOpen(false);
-      onMutated?.();
-      toast.success(dictionary.workflows.deleted);
-    } catch (error) {
-      if (editorGeneration === editorGenerationRef.current) toast.error(error instanceof Error ? error.message : dictionary.feedback.genericError);
-    } finally {
-      if (editorGeneration === editorGenerationRef.current) setBusy(null);
-    }
+      if (owner.ownsCollection()) {
+        setWorkflows((current) => current.filter((item) => item.id !== active.id));
+        onMutated?.();
+      }
+      if (owner.ownsEditor()) setOpen(false);
+    }, dictionary.workflows.deleted);
   };
 
   return (
@@ -689,61 +568,7 @@ export function WorkflowWorkspace({
             {active ? (
               <>
                 <Separator />
-                <section className="space-y-4">
-                  <div>
-                    <h3 className="text-heading-4">{dictionary.workflows.runs.title}</h3>
-                    <p className="text-body text-muted-foreground">{dictionary.workflows.runs.subtitle}</p>
-                  </div>
-                  {runsLoadState === "pending" ? (
-                    <div className="space-y-2" aria-busy="true" aria-label={dictionary.workflows.runs.title}>
-                      <Skeleton className="h-12 w-full rounded-xl" />
-                      <Skeleton className="h-12 w-full rounded-xl" />
-                      <Skeleton className="h-12 w-full rounded-xl" />
-                    </div>
-                  ) : runsLoadState === "rejected" ? (
-                    <div role="alert" className="rounded-xl border border-destructive/30 bg-destructive/10 p-6 text-center text-body text-destructive">
-                      {dictionary.feedback.genericError}
-                    </div>
-                  ) : runs.length === 0 ? (
-                    <div className="rounded-xl border border-dashed p-6 text-center text-body text-muted-foreground">
-                      {dictionary.workflows.runs.empty}
-                    </div>
-                  ) : (
-                    <div className="overflow-x-auto rounded-xl border">
-                      <table className="w-full text-left text-body">
-                        <thead className="border-b bg-muted/40 text-meta text-muted-foreground">
-                          <tr>
-                            <th className="px-4 py-3 font-semibold">{dictionary.workflows.runs.contact}</th>
-                            <th className="px-4 py-3 font-semibold">{dictionary.workflows.runs.status}</th>
-                            <th className="px-4 py-3 font-semibold">{dictionary.workflows.runs.currentStep}</th>
-                            <th className="px-4 py-3 font-semibold">{dictionary.workflows.runs.nextRun}</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y">
-                          {runs.map((run) => (
-                            <tr key={run.id}>
-                              <td className="px-4 py-3">
-                                <p className="text-body font-semibold">{run.contactName || run.contactEmail || "—"}</p>
-                                {run.contactName && run.contactEmail ? (
-                                  <p className="text-meta text-muted-foreground">{run.contactEmail}</p>
-                                ) : null}
-                              </td>
-                              <td className="px-4 py-3">
-                                <Badge variant="outline" className={runStatusTone[run.status]}>
-                                  {dictionary.workflows.runs.statuses[run.status]}
-                                </Badge>
-                              </td>
-                              <td className="px-4 py-3 text-data">
-                                {run.currentStep === null ? "—" : run.currentStep + 1}
-                              </td>
-                              <td className="px-4 py-3 text-data">{formatDateTime(run.nextRunAt, dictionary.locale)}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
-                </section>
+                <WorkflowRunViewer runs={runs} runsLoadState={runsLoadState} dictionary={dictionary} />
               </>
             ) : null}
 

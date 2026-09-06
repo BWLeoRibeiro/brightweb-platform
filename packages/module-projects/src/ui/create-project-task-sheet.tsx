@@ -1,5 +1,10 @@
 "use client";
 
+import { toIsoDate, parseIsoDate } from "./project-detail-create-sheets/date-utils";
+
+import { useTaskSubmission } from "./use-task-submission";
+
+import { validateTaskDraft } from "./task-form";
 import { StyledSelect } from "@brightweblabs/ui";
 
 import { useProjectsUiClient, useProjectsUiDictionary } from "./context";
@@ -38,25 +43,9 @@ type CreateProjectTaskSheetProps = {
   initialOpen?: boolean;
 };
 
-function toIsoDate(value?: Date): string {
-  if (!value) return "";
-  const year = value.getFullYear();
-  const month = String(value.getMonth() + 1).padStart(2, "0");
-  const day = String(value.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
-
-function parseIsoDate(value: string): Date | undefined {
-  if (!value) return undefined;
-  const date = new Date(`${value}T00:00:00`);
-  return Number.isNaN(date.getTime()) ? undefined : date;
-}
-
 export function CreateProjectTaskSheet({ projects, initialOpen = false }: CreateProjectTaskSheetProps) {
   const client = useProjectsUiClient();
   const dictionary = useProjectsUiDictionary();
-  const [open, setOpen] = useState(initialOpen);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [projectId, setProjectId] = useState(projects[0]?.id ?? "");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -65,11 +54,10 @@ export function CreateProjectTaskSheet({ projects, initialOpen = false }: Create
   const [startDate, setStartDate] = useState("");
   const [dueDate, setDueDate] = useState("");
   const [blockedReason, setBlockedReason] = useState("");
+  const { open, onOpenChange, isSubmitting, submit } = useTaskSubmission(client, projectId, initialOpen);
 
-  const canSubmit = useMemo(
-    () => projectId.trim().length > 0 && title.trim().length > 0 && (status !== "blocked" || blockedReason.trim().length > 0) && (!startDate || !dueDate || dueDate >= startDate),
-    [blockedReason, dueDate, projectId, startDate, status, title],
-  );
+  const taskDraft = validateTaskDraft({ projectId, title, status, blockedReason, startDate, dueDate });
+  const canSubmit = taskDraft.valid;
   const startDateValue = useMemo(() => parseIsoDate(startDate), [startDate]);
   const dueDateValue = useMemo(() => parseIsoDate(dueDate), [dueDate]);
   const isBlockedStatus = status === "blocked";
@@ -86,7 +74,7 @@ export function CreateProjectTaskSheet({ projects, initialOpen = false }: Create
   };
 
   useShellAction(PROJECTS_EVENTS.openNewTask, () => {
-    setOpen(true);
+    onOpenChange(true);
   });
 
   useEffect(() => {
@@ -111,30 +99,27 @@ export function CreateProjectTaskSheet({ projects, initialOpen = false }: Create
     event.preventDefault();
     if (!canSubmit || isSubmitting) return;
 
-    setIsSubmitting(true);
-    try {
-      await createTask(client, projectId, {
-        title,
+    await submit({
+      save: () => createTask(client, projectId, {
+        ...taskDraft.input,
         description: description.trim() || undefined,
         status,
         priority,
-        startDate: startDate || undefined,
-        dueDate: dueDate || undefined,
-        blockedReason: isBlockedStatus ? (blockedReason.trim() || undefined) : undefined,
-      });
-      toast.success(dictionary.create.taskCreated);
-      setOpen(false);
-      resetForm();
-      dispatchProjectsEvent(PROJECTS_EVENTS.refresh);
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : dictionary.create.taskCreateFallbackError);
-    } finally {
-      setIsSubmitting(false);
-    }
+      }),
+      onPersisted: () => dispatchProjectsEvent(PROJECTS_EVENTS.refresh),
+      onSuccess: () => {
+        toast.success(dictionary.create.taskCreated);
+        onOpenChange(false);
+        resetForm();
+      },
+      onError: (error) => {
+        toast.error(error instanceof Error ? error.message : dictionary.create.taskCreateFallbackError);
+      },
+    });
   };
 
   return (
-    <Sheet open={open} onOpenChange={setOpen}>
+    <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className={sheetShellClassName}>
         <AppSheetHeader
           icon={ClipboardList}
@@ -287,7 +272,7 @@ export function CreateProjectTaskSheet({ projects, initialOpen = false }: Create
               <Save className="mr-2 h-4 w-4" />
               {isSubmitting ? dictionary.create.creating : dictionary.create.createTask}
             </Button>
-            <Button type="button" variant="outline" className="flex-1" onClick={() => setOpen(false)} disabled={isSubmitting}>
+            <Button type="button" variant="outline" className="flex-1" onClick={() => onOpenChange(false)} disabled={isSubmitting}>
               {dictionary.actions.cancel}
             </Button>
           </SheetFooter>

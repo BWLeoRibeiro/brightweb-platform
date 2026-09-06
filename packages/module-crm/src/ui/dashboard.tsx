@@ -49,7 +49,7 @@ export type CrmDashboardProps = {
   pageSize?: number;
 };
 
-export function CrmDashboard({ client: providedClient, initialData, dictionary = defaultCrmUiDictionary, columns, organizationFields, slots, stages, navigation = defaultCrmNavigation, pageSize = 20 }: CrmDashboardProps) {
+export function CrmDashboard({ client: providedClient, initialData, dictionary = defaultCrmUiDictionary, columns, slots, stages, navigation = defaultCrmNavigation, pageSize = 20 }: CrmDashboardProps) {
   const client = useMemo(() => providedClient ?? createCrmUiClient(), [providedClient]);
   const resolvedStages = resolveCrmStages(dictionary, stages);
   const [params, setParams] = useState<CrmContactsListParams>({ page: 1, pageSize, sort: "date_desc" });

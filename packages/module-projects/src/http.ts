@@ -116,7 +116,8 @@ export type ProjectsHttpDependencies = {
   queryActivity: typeof queryProjectActivity;
   listAssignableProfiles: typeof listProjectAssignableProfiles;
   createOrganization: typeof createProjectOrganization;
-  createProject: typeof createProject;
+  /** @deprecated POST uses createProjectWithAccess; retained for source compatibility. */
+  createProject?: typeof createProject;
   updateProject: typeof updateProject;
   deleteProject: typeof deleteProject;
   syncMembers: typeof syncProjectMembers;

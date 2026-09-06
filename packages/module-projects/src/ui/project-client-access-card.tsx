@@ -95,7 +95,7 @@ export function ProjectClientAccessCard({
       name: organization.organizationName,
       selectedClientCount: organization.selectedProfileIds.length,
     }))
-    : (organizationName ? [organizationName] : (summary?.organizationNames ?? []).slice(0, 1)).map((name, index, organizations) => ({
+    : (organizationName ? [organizationName] : (summary?.organizationNames ?? []).slice(0, 1)).map((name, _index, organizations) => ({
       key: name,
       name,
       selectedClientCount: summary?.mode === "selected_clients" && organizations.length === 1

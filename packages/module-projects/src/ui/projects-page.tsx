@@ -1,6 +1,5 @@
 "use client";
 
-import type { ReactNode } from "react";
 import type { ProjectsPortfolioStats } from "../data";
 import { ProjectsUiProvider } from "./context";
 import { defaultProjectsUiDictionary } from "./dictionary";

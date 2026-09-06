@@ -41,7 +41,15 @@ export function resolveModuleOrder(registry, enabledModules) {
   return resolved;
 }
 
+export function validateClientSlug(clientSlug) {
+  if (typeof clientSlug !== "string" || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(clientSlug)) {
+    throw new Error("Client slug must contain lowercase letters, digits, and single hyphens only.");
+  }
+  return clientSlug;
+}
+
 export function readClientStack(clientSlug) {
+  validateClientSlug(clientSlug);
   const stackPath = path.join(rootDir, "supabase", "clients", clientSlug, "stack.json");
   if (!fs.existsSync(stackPath)) {
     throw new Error(`Client stack file not found: ${stackPath}`);

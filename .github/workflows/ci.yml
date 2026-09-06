@@ -65,6 +65,9 @@ jobs:
       - name: Check scaffold template contracts
         run: pnpm check:create-bw-app-templates
 
+      - name: Check canonical database module bundle
+        run: pnpm check:db-module-parity
+
       - name: Check packed release install
         run: pnpm check:packed-release
 

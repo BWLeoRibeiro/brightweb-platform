@@ -1,3 +1,4 @@
+import { emailableContact } from "./eligibility";
 import type {
   MarketingEmailMessage,
   MarketingEmailSender,
@@ -278,20 +279,12 @@ async function setWorkflowStatus(
   workflowId: string,
   status: Extract<WorkflowStatus, "active" | "paused">,
 ) {
-  if (status === "active") {
-    const workflow = await getWorkflow(supabase, workflowId);
-    if (!workflow) throw new Error("Workflow not found.");
-    if (!workflow.nodes.length) {
-      throw new Error("A workflow must have at least one node before activation.");
-    }
-  }
-  const result = await db(supabase)
-    .from("marketing_workflows")
-    .update({ status })
-    .eq("id", workflowId)
-    .select("*")
-    .single();
+  const result = await db(supabase).rpc("set_marketing_workflow_status", {
+    p_workflow_id: workflowId,
+    p_status: status,
+  });
   throwIfError(result.error);
+  if (!result.data) throw new Error("Workflow status could not be confirmed.");
   return workflowFromRow(result.data as WorkflowRow);
 }
 
@@ -308,39 +301,21 @@ export async function upsertWorkflowNodes(
   workflowId: string,
   nodes: UpsertWorkflowNodeInput[],
 ) {
-  const workflow = await getWorkflow(supabase, workflowId);
-  if (!workflow) throw new Error("Workflow not found.");
-  if (workflow.status === "active") {
-    throw new Error("Pause the workflow before editing its nodes.");
-  }
   const normalized = nodes
     .slice()
     .sort((left, right) => left.position - right.position)
-    .map((node, position) => ({
+    .map((node) => ({
       ...(node.id ? { id: node.id } : {}),
-      workflow_id: workflowId,
-      position,
       node_type: node.nodeType,
       config: node.config ?? {},
     }));
-  const existingIds = new Set(nodes.flatMap((node) => node.id ? [node.id] : []));
-  for (const existing of workflow.nodes) {
-    if (!existingIds.has(existing.id)) {
-      const deletion = await db(supabase)
-        .from("marketing_workflow_nodes")
-        .delete()
-        .eq("id", existing.id)
-        .eq("workflow_id", workflowId);
-      throwIfError(deletion.error);
-    }
-  }
-  if (normalized.length) {
-    const upsert = await db(supabase)
-      .from("marketing_workflow_nodes")
-      .upsert(normalized, { onConflict: "id" });
-    throwIfError(upsert.error);
-  }
-  return (await getWorkflow(supabase, workflowId))!.nodes;
+  const result = await db(supabase).rpc("replace_marketing_workflow_nodes", {
+    p_workflow_id: workflowId,
+    p_nodes: normalized,
+  });
+  throwIfError(result.error);
+  if (!Array.isArray(result.data)) throw new Error("Workflow nodes could not be confirmed.");
+  return (result.data as NodeRow[]).map(nodeFromRow);
 }
 
 export async function deleteWorkflowNode(
@@ -348,20 +323,13 @@ export async function deleteWorkflowNode(
   workflowId: string,
   nodeId: string,
 ) {
-  const workflow = await getWorkflow(supabase, workflowId);
-  if (!workflow) throw new Error("Workflow not found.");
-  return upsertWorkflowNodes(
-    supabase,
-    workflowId,
-    workflow.nodes
-      .filter((node) => node.id !== nodeId)
-      .map((node) => ({
-        id: node.id,
-        position: node.position,
-        nodeType: node.nodeType,
-        config: node.config,
-      })),
-  );
+  const result = await db(supabase).rpc("delete_marketing_workflow_node", {
+    p_workflow_id: workflowId,
+    p_node_id: nodeId,
+  });
+  throwIfError(result.error);
+  if (!Array.isArray(result.data)) throw new Error("Workflow nodes could not be confirmed.");
+  return (result.data as NodeRow[]).map(nodeFromRow);
 }
 
 export async function listWorkflowRuns(supabase: unknown, workflowId: string) {
@@ -645,27 +613,8 @@ export async function scanActivityTriggers(
   return { scanned: events.length, enqueued };
 }
 
-async function contactForSend(
-  supabase: unknown,
-  contactId: string,
-  topicId: string | null,
-) {
-  if (!topicId || !(await (await import("./server")).isEmailable(
-    supabase,
-    contactId,
-    topicId,
-  ))) {
-    return null;
-  }
-  const contactResult = await db(supabase)
-    .from("crm_contacts")
-    .select("id,email")
-    .eq("id", contactId)
-    .maybeSingle();
-  throwIfError(contactResult.error);
-  const email = contactResult.data?.email;
-  if (typeof email !== "string" || !email.trim()) return null;
-  return { email: email.trim() };
+async function contactForSend(supabase: unknown, contactId: string, topicId: string | null) {
+  return topicId ? emailableContact(supabase, contactId, topicId) : null;
 }
 
 async function completedStep(

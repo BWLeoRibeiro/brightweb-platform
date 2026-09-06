@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { emailableContact } from "../packages/module-marketing/src/eligibility.ts";
 import {
   isEmailable,
   setSubscription,
@@ -7,6 +8,40 @@ import {
 } from "../packages/module-marketing/src/server.ts";
 
 type QueryResult = { data: unknown; error: null };
+
+test("workflow eligibility fails closed at each read and returns the single checked contact", async () => {
+  for (const scenario of ["allowed", "missing-subscription", "unsubscribed", "missing-contact", "blank-email", "suppressed", "subscription-error", "contact-error", "suppression-error"]) {
+    const reads: string[] = [];
+    const supabase = {
+      from(table: string) {
+        reads.push(table);
+        return {
+          select() { return this; },
+          eq() { return this; },
+          async maybeSingle() {
+            if (table === "marketing_subscriptions") return {
+              data: scenario === "missing-subscription" ? null : { status: scenario === "unsubscribed" ? "unsubscribed" : "subscribed" },
+              error: scenario === "subscription-error" ? { message: "subscription unavailable" } : null,
+            };
+            if (table === "crm_contacts") return {
+              data: scenario === "missing-contact" ? null : { email: scenario === "blank-email" ? "  " : " Person@Example.COM " },
+              error: scenario === "contact-error" ? { message: "contact unavailable" } : null,
+            };
+            assert.equal(table, "marketing_suppressions");
+            return { data: scenario === "suppressed" ? { id: "suppression" } : null, error: scenario === "suppression-error" ? { message: "suppression unavailable" } : null };
+          },
+        };
+      },
+    };
+    if (scenario.endsWith("-error")) {
+      await assert.rejects(emailableContact(supabase, "contact", "topic"), /unavailable/);
+    } else {
+      assert.deepEqual(await emailableContact(supabase, "contact", "topic"), scenario === "allowed" ? { email: "Person@Example.COM" } : null);
+    }
+    assert.ok(reads.filter((table) => table === "crm_contacts").length <= 1);
+    if (["missing-subscription", "unsubscribed", "subscription-error"].includes(scenario)) assert.deepEqual(reads, ["marketing_subscriptions"]);
+  }
+});
 
 function terminal(result: QueryResult) {
   return {

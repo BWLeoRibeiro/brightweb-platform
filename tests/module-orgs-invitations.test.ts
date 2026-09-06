@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  DATABASE_INVITATION_CONTACT_INTEGRATION,
   inviteOrganizationMembers,
   resendOrganizationInvitation,
 } from "../packages/module-orgs/src/invitations.ts";
@@ -17,54 +18,63 @@ function queryResult<T>(result: T) {
   return query;
 }
 
-test("existing portal members are linked to CRM before reporting existing access", async () => {
-  const linked: Array<Record<string, unknown>> = [];
-  const client = {
+test("same-role retries reconcile CRM and pending invitations through the database transaction", async () => {
+  const calls: Array<Record<string, unknown>> = [];
+  const client = directMemberClient({
+    members: [{ profile_id: "profile-1", role: "member", profile: { email: "person@example.com" } }],
+    rpc: async (args) => { calls.push(args); return { data: { status: "already_member" }, error: null }; },
+  });
+  const callback = async () => { throw new Error("contact linking must execute inside the transaction"); };
+  Object.defineProperty(callback, DATABASE_INVITATION_CONTACT_INTEGRATION, { value: true });
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    const result = await inviteOrganizationMembers(client as never, "org-1", [{ email: " Person@Example.com ", role: "member" }], "actor-1", { ensureCrmContactForProfile: callback });
+    assert.deepEqual(result.outcomes, [{ email: "person@example.com", role: "member", status: "already_member", profileId: "profile-1" }]);
+    assert.equal(result.summary.unchangedExistingMembers, 1);
+  }
+  assert.deepEqual(calls, [0, 1].map(() => ({ p_organization_id: "org-1", p_profile_id: "profile-1", p_email: "person@example.com", p_role: "member", p_actor_profile_id: "actor-1" })));
+});
+
+function directMemberClient(options: {
+  members?: Array<Record<string, unknown>>;
+  profiles?: Array<Record<string, unknown>>;
+  rpc: (args: Record<string, unknown>) => Promise<unknown>;
+}) {
+  return {
     from(table: string) {
-      if (table === "organization_members") {
-        return {
-          select: () => queryResult({
-            data: [{ profile_id: "profile-1", role: "member", profile: { email: "person@example.com" } }],
-            error: null,
-          }),
-        };
-      }
-      if (table === "profiles") return { select: () => queryResult({ data: [], error: null }) };
-      if (table === "organizations") return { select: () => queryResult({ data: { name: "Acme" }, error: null }) };
-      if (table === "organization_invitations") {
-        return {
-          select: () => queryResult({ data: [], error: null }),
-          update: () => queryResult({ data: [], error: null }),
-        };
-      }
+      // No mutation methods: all direct-member side effects belong to the RPC.
+      if (table === "organization_members") return { select: () => queryResult({ data: options.members ?? [], error: null }) };
+      if (table === "profiles") return { select: () => queryResult({ data: options.profiles ?? options.members?.map((member) => ({ id: member.profile_id, email: (member.profile as { email: string }).email })) ?? [], error: null }) };
+      if (table === "organization_invitations") return { select: () => queryResult({ data: [], error: null }) };
+      if (table === "organizations") return { select: () => queryResult({ data: { name: "Synthetic" }, error: null }) };
       throw new Error(`unexpected table ${table}`);
     },
-  };
-
-  const result = await inviteOrganizationMembers(
-    client as never,
-    "org-1",
-    [{ email: "Person@Example.com", role: "member" }],
-    "actor-1",
-    {
-      ensureCrmContactForProfile: async (profileId, options) => {
-        linked.push({ profileId, organizationId: options.organizationId, source: options.source });
-        return { success: true, contactId: "contact-1" };
-      },
+    async rpc(name: string, args: Record<string, unknown>) {
+      assert.equal(name, "assign_organization_member_atomic");
+      return options.rpc(args);
     },
-  );
+  };
+}
 
-  assert.deepEqual(linked, [{
-    profileId: "profile-1",
-    organizationId: "org-1",
-    source: "organization_member_direct_access",
-  }]);
-  assert.deepEqual(result.outcomes, [{
-    email: "person@example.com",
-    role: "member",
-    status: "already_member",
-    profileId: "profile-1",
-  }]);
+for (const explicitDatabaseIntegration of [false, true]) test(`custom contact callback ${explicitDatabaseIntegration ? "delegates to an explicitly migrated database hook" : "is rejected before accessing the database"}`, async () => {
+  let databaseCalls = 0;
+  const callback = async () => { throw new Error("custom JavaScript callback cannot join a database transaction"); };
+  const client = directMemberClient({
+    profiles: [{ id: "profile-1", email: "person@example.com" }],
+    rpc: async () => { databaseCalls += 1; return { data: { status: "immediate_access" }, error: null }; },
+  });
+  const originalFrom = client.from;
+  client.from = (table) => { databaseCalls += 1; return originalFrom(table); };
+  const operation = () => inviteOrganizationMembers(client as never, "org-1", [{ email: "person@example.com", role: "member" }], "actor-1", {
+    ensureCrmContactForProfile: callback,
+    ...(explicitDatabaseIntegration ? { contactIntegration: "database" as const } : {}),
+  });
+  if (explicitDatabaseIntegration) {
+    assert.equal((await operation()).outcomes[0]?.status, "immediate_access");
+    assert.ok(databaseCalls > 0);
+  } else {
+    await assert.rejects(operation, /INVITATION_CONTACT_INTEGRATION_MIGRATION_REQUIRED/);
+    assert.equal(databaseCalls, 0);
+  }
 });
 
 test("email delivery failure is a per-person outcome and removes only the failed new invitation", async () => {
@@ -146,34 +156,57 @@ test("an expired pending row is replaced with a fresh invitation instead of repo
   assert.equal(result.outcomes[0]?.invitationId, "fresh-invite");
 });
 
-test("a membership write failure is returned as a per-person API outcome", async () => {
-  const client = {
-    from(table: string) {
-      if (table === "organization_members") {
-        return {
-          select: () => queryResult({ data: [], error: null }),
-          upsert: () => queryResult({ data: null, error: { message: "write failed" } }),
-        };
-      }
-      if (table === "profiles") return { select: () => queryResult({ data: [{ id: "profile-1", email: "person@example.com" }], error: null }) };
-      if (table === "organizations") return { select: () => queryResult({ data: { name: "Acme" }, error: null }) };
-      if (table === "organization_invitations") return { select: () => queryResult({ data: [], error: null }) };
-      throw new Error(`unexpected table ${table}`);
-    },
-  };
+test("transaction failures remain per-person outcomes and later members still succeed", async () => {
+  const attempted: unknown[] = [];
+  const profiles = ["write-failure", "crm-failure", "success"].map((id) => ({ id, email: `${id}@example.com` }));
+  const client = directMemberClient({ profiles, rpc: async (args) => {
+    attempted.push(args.p_profile_id);
+    if (args.p_profile_id === "write-failure") return { data: null, error: { message: "write failed" } };
+    if (args.p_profile_id === "crm-failure") return { data: null, error: { code: "BW001", message: "synthetic contact integration failure" } };
+    return { data: { status: "immediate_access" }, error: null };
+  } });
+  const result = await inviteOrganizationMembers(client as never, "org-1", profiles.map(({ email }) => ({ email, role: "member" as const })), "actor-1");
+  assert.deepEqual(attempted, ["write-failure", "crm-failure", "success"]);
+  assert.deepEqual(result.outcomes.map(({ status, failureKind }) => ({ status, failureKind })), [
+    { status: "api_failed", failureKind: "membership" },
+    { status: "api_failed", failureKind: "crm_link" },
+    { status: "immediate_access", failureKind: undefined },
+  ]);
+  assert.equal(result.summary.failedApiOperations, 2);
+  assert.equal(result.summary.failedContactLinks, 1);
+  assert.equal(result.summary.directAssignments, 1);
+});
 
-  const result = await inviteOrganizationMembers(
-    client as never,
-    "org-1",
-    [{ email: "person@example.com", role: "member" }],
-    "actor-1",
-    { ensureCrmContactForProfile: async () => ({ success: true, contactId: "contact-1" }) },
-  );
-
-  assert.equal(result.outcomes[0]?.status, "api_failed");
-  assert.match(result.outcomes[0]?.message ?? "", /conceder o acesso/);
+for (const response of [
+  { data: { status: "unexpected" }, error: null },
+  { data: null, error: null },
+  { data: null, error: { code: "", message: "Failed to fetch" } },
+]) test(`unconfirmed transaction result ${JSON.stringify(response)} stays a per-person failure with no compensation`, async () => {
+  let attempts = 0;
+  const client = directMemberClient({
+    profiles: [{ id: "profile-1", email: "person@example.com" }, { id: "profile-2", email: "next@example.com" }],
+    rpc: async () => ++attempts === 1 ? response : { data: { status: "immediate_access" }, error: null },
+  });
+  const result = await inviteOrganizationMembers(client as never, "org-1", [
+    { email: "person@example.com", role: "member" }, { email: "next@example.com", role: "member" },
+  ], "actor-1");
+  assert.deepEqual(result.outcomes.map(({ status }) => status), ["api_failed", "immediate_access"]);
+  assert.equal(result.outcomes[0]?.failureKind, "membership");
   assert.equal(result.summary.failedApiOperations, 1);
   assert.equal(result.summary.failedContactLinks, 0);
+  assert.equal(attempts, 2);
+});
+
+for (const status of ["immediate_access", "membership_updated", "already_member"] as const) test(`the locked database result determines ${status}, without inferring outcomes from profile existence`, async () => {
+  const client = directMemberClient({
+    members: [{ profile_id: "profile-1", role: "member", profile: { email: "person@example.com" } }],
+    rpc: async () => ({ data: { status }, error: null }),
+  });
+  const result = await inviteOrganizationMembers(client as never, "org-1", [{ email: "person@example.com", role: "admin" }], "actor-1");
+  assert.equal(result.outcomes[0]?.status, status);
+  assert.equal(result.summary.directAssignments, Number(status === "immediate_access"));
+  assert.equal(result.summary.updatedExistingMembers, Number(status === "membership_updated"));
+  assert.equal(result.summary.unchangedExistingMembers, Number(status === "already_member"));
 });
 
 test("resend keeps a pending invitation when email delivery fails", async () => {
@@ -219,42 +252,38 @@ test("resend keeps a pending invitation when email delivery fails", async () => 
 
 test("a failed final invitation refresh does not discard completed per-person outcomes", async () => {
   let invitationSelects = 0;
-  const client = {
-    from(table: string) {
-      if (table === "organization_members") {
-        return {
-          select: () => queryResult({ data: [], error: null }),
-          upsert: () => queryResult({ data: null, error: null }),
-        };
-      }
-      if (table === "profiles") return { select: () => queryResult({ data: [{ id: "profile-1", email: "person@example.com" }], error: null }) };
-      if (table === "organizations") {
-        return {
-          select: () => queryResult({ data: { name: "Acme" }, error: null }),
-          update: () => queryResult({ data: null, error: null }),
-        };
-      }
-      if (table === "organization_invitations") {
-        return {
-          select: () => {
-            invitationSelects += 1;
-            return queryResult(invitationSelects === 1
-              ? { data: [], error: null }
-              : { data: null, error: { message: "refresh failed" } });
-          },
-          update: () => queryResult({ data: null, error: null }),
-        };
-      }
-      throw new Error(`unexpected table ${table}`);
-    },
+  const client = directMemberClient({
+    profiles: [{ id: "profile-1", email: "person@example.com" }],
+    rpc: async () => ({ data: { status: "immediate_access" }, error: null }),
+  });
+  const originalFrom = client.from;
+  client.from = (table) => {
+    if (table === "organization_invitations") return { select: () => {
+      invitationSelects += 1;
+      return queryResult(invitationSelects === 1 ? { data: [], error: null } : { data: null, error: { message: "refresh failed" } });
+    } };
+    return originalFrom(table);
   };
-  const result = await inviteOrganizationMembers(
-    client as never,
-    "org-1",
-    [{ email: "person@example.com", role: "member" }],
-    "actor-1",
-    { ensureCrmContactForProfile: async () => ({ success: true, contactId: "contact-1" }) },
-  );
+  const result = await inviteOrganizationMembers(client as never, "org-1", [{ email: "person@example.com", role: "member" }], "actor-1");
   assert.equal(result.outcomes[0]?.status, "immediate_access");
   assert.deepEqual(result.invitations, []);
+});
+
+test("failed email cleanup retains invitation identity and accurate retry guidance", async () => {
+  const client = {
+    from(table: string) {
+      if (table === "organization_members" || table === "profiles") return { select: () => queryResult({ data: [], error: null }) };
+      if (table === "organizations") return { select: () => queryResult({ data: { name: "Synthetic" }, error: null }) };
+      return {
+        select: () => queryResult({ data: [{ id: "invite-retained", invited_email: "synthetic@example.invalid", role: "member", expires_at: "2099-01-01" }], error: null }),
+        upsert: () => queryResult({ data: null, error: null }),
+        delete: () => queryResult({ error: { message: "synthetic cleanup failure" } }),
+      };
+    },
+  };
+  const result = await inviteOrganizationMembers(client as never, "org-1", [{ email: "synthetic@example.invalid", role: "member" }], "actor-1", { sendInviteEmail: async () => false });
+  assert.equal(result.outcomes[0]?.status, "email_failed");
+  assert.equal(result.outcomes[0]?.invitationId, "invite-retained");
+  assert.match(result.outcomes[0]?.message ?? "", /mantido/);
+  assert.doesNotMatch(result.outcomes[0]?.message ?? "", /não foi guardado/);
 });

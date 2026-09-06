@@ -33,6 +33,7 @@ export {
 } from "./handlers";
 export {
   ORGANIZATION_INVITE_EMAIL_DELIVERY_ERROR,
+  DATABASE_INVITATION_CONTACT_INTEGRATION,
   acceptOrganizationInvitation,
   getOrganizationInvitationDetails,
   inviteOrganizationMembers,

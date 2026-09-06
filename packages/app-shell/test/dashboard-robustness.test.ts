@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import test from "node:test";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -30,126 +30,13 @@ import {
   parseErrorFromPayload,
 } from "../src/dashboard/dashboard-response-parser.ts";
 
-const projects = {
-  generatedAt: "2026-07-24T12:00:00.000Z",
-  kpis: {
-    projectsActive: 1,
-    projectsAtRisk: 0,
-    projectsOverdue: 1,
-    projectsDueNext7Days: 0,
-    projectsWithoutOwner: 0,
-    projectBlockedTasks: 1,
-    projectsAttention: 1,
-    projectsOnTrack: 0,
-  },
-  projects: {
-    overdue: [{
-      id: "project-1",
-      organizationName: "BrightWeb",
-      name: "Platform",
-      code: null,
-      status: "active",
-      health: "at_risk",
-      ownerLabel: null,
-      targetDate: "2026-07-25",
-      taskStats: { total: 2, done: 1, overdue: 1, blocked: 1 },
-    }],
-    attention: [{
-      id: "project-1",
-      organizationName: "BrightWeb",
-      name: "Platform",
-      code: null,
-      status: "active",
-      health: "at_risk",
-      ownerLabel: null,
-      targetDate: "2026-07-25",
-      taskStats: { total: 2, done: 1, overdue: 1, blocked: 1 },
-      attentionReason: "overdue",
-    }],
-    milestones: [{
-      id: "milestone-1",
-      projectId: "project-1",
-      projectName: "Platform",
-      projectCode: null,
-      title: "Dashboard shipped",
-      status: "in_progress",
-      targetDate: "2026-07-25",
-    }],
-    milestonesNext7Days: [{
-      id: "milestone-week-1",
-      projectId: "project-1",
-      projectName: "Platform",
-      projectCode: null,
-      title: "Weekly dashboard shipped",
-      status: "pending",
-      targetDate: "2026-07-26",
-    }],
-  },
-};
+function dashboardPresentationSource() {
+  const directory = new URL("../src/dashboard/", import.meta.url);
+  return readdirSync(directory).filter((file) => file.endsWith(".tsx"))
+    .map((file) => readFileSync(new URL(file, directory), "utf8")).join("\n");
+}
 
-const crm = {
-  generatedAt: "2026-07-24T12:00:00.000Z",
-  kpis: {
-    crmTotalContacts: 2,
-    crmNewLast7Days: 1,
-    crmNewLast30Days: 1,
-    crmNewLastYear: 2,
-    crmUnassignedContacts: 0,
-  },
-  crm: {
-    statusBreakdown: { lead: 1, qualified: 1, proposal: 0, won: 0, lost: 0 },
-    recentChanges: [{
-      id: "change-1",
-      contactId: "contact-1",
-      contactLabel: "Ada",
-      previousStatus: null,
-      newStatus: "lead",
-      changedAt: "2026-07-24T12:00:00.000Z",
-    }],
-    recentContacts: [{
-      id: "contact-1",
-      name: "Ada",
-      company: null,
-      status: "lead",
-      lastChangedAt: "2026-07-24T12:00:00.000Z",
-    }],
-  },
-};
-
-const tasks = {
-  generatedAt: "2026-07-24T12:00:00.000Z",
-  kpis: { total: 1, dueThisWeek: 1, overdue: 0, blocked: 0 },
-  tasks: [{
-    id: "task-1",
-    projectId: "project-1",
-    projectName: "Platform",
-    projectCode: null,
-    title: "Harden dashboard",
-    status: "in_progress",
-    priority: "high",
-    dueDate: null,
-    blockedReason: null,
-    milestoneId: null,
-    updatedAt: "2026-07-24T12:00:00.000Z",
-  }],
-  attention: {
-    total: 1,
-    tasks: [{
-      id: "task-1",
-      projectId: "project-1",
-      projectName: "Platform",
-      projectCode: null,
-      title: "Harden dashboard",
-      status: "in_progress",
-      priority: "high",
-      dueDate: null,
-      blockedReason: null,
-      milestoneId: null,
-      updatedAt: "2026-07-24T12:00:00.000Z",
-    }],
-  },
-  pagination: { page: 1, pageSize: 50, hasMore: false },
-};
+import { projects, crm, tasks } from "../../../tests/support/dashboard-fixtures.ts";
 
 test("attention preview capacity uses whole rows in the space below the card", () => {
   assert.equal(getAttentionPreviewCapacity(390, 1_200), 3);
@@ -246,7 +133,7 @@ test("dashboard section errors accumulate independently and clear only refreshed
   });
 
   const hookSource = readFileSync(new URL("../src/dashboard/use-dashboard-data.ts", import.meta.url), "utf8");
-  const clientSource = readFileSync(new URL("../src/dashboard/dashboard-client.tsx", import.meta.url), "utf8");
+  const clientSource = dashboardPresentationSource();
   assert.match(hookSource, /errors: DashboardSectionErrors/);
   assert.match(hookSource, /setDashboardSectionError\(current, "projects", messages\.projectsUnavailable\)/);
   assert.match(hookSource, /setDashboardSectionError\(current, "crm", messages\.crmUnavailable\)/);
@@ -343,7 +230,7 @@ test("dashboard parsers read publicError envelopes, plain strings, and reject ga
 });
 
 test("dashboard overview preserves the branded bento layout", () => {
-  const clientSource = readFileSync(new URL("../src/dashboard/dashboard-client.tsx", import.meta.url), "utf8");
+  const clientSource = dashboardPresentationSource();
   const stylesheet = readFileSync(new URL("../src/dashboard/dashboard.css", import.meta.url), "utf8");
 
   assert.match(clientSource, /className="brand-panel relative overflow-hidden/);
@@ -366,7 +253,7 @@ test("dashboard overview preserves the branded bento layout", () => {
 });
 
 test("projects dashboard presents one coherent, accessible health story", () => {
-  const clientSource = readFileSync(new URL("../src/dashboard/dashboard-client.tsx", import.meta.url), "utf8");
+  const clientSource = dashboardPresentationSource();
   const stylesheet = readFileSync(new URL("../src/dashboard/dashboard.css", import.meta.url), "utf8");
 
   assert.match(clientSource, /projectsAttention \?\? 0/);
@@ -466,7 +353,7 @@ test("contacts dashboard keeps the summary hierarchy, aligned chart labels, and 
 });
 
 test("dashboard tabs share quick-create, count-pill, and empty-state primitives", () => {
-  const clientSource = readFileSync(new URL("../src/dashboard/dashboard-client.tsx", import.meta.url), "utf8");
+  const clientSource = dashboardPresentationSource();
   const primitivesSource = readFileSync(new URL("../src/dashboard/primitives.tsx", import.meta.url), "utf8");
 
   assert.match(primitivesSource, /export function QuickCreateAction/);

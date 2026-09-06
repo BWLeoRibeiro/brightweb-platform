@@ -23,19 +23,21 @@ bw doctor
 
 ### Upgrade an app
 
-`bw upgrade [moduleKey]` performs the managed package/config update and appends only migrations after each module's recorded cursor. It will not overwrite a tracked scaffold file whose recorded hash has drifted, or any file recorded as `owned` or `skipped`, including when `--refresh-starters` is used. `create-bw-app update` remains available with its original behavior for compatibility.
+`bw upgrade [moduleKey]` performs the managed package/config update and appends only migrations after each module's recorded cursor. It will not overwrite a tracked scaffold file whose recorded hash has drifted, or any file recorded as `owned` or `skipped`, including when `--refresh-starters` is used. `create-bw-app update` retains its legacy managed-config synchronization and explicit `--refresh-starters` drift replacement, but respects tracked `owned` and `skipped` intent for every output, including config routes. Use `bw upgrade` to preserve undecided drift as well.
 
 Use `bw upgrade <moduleKey> --through-migration <filename>` when a rollout needs a deliberate compatibility boundary. The command still updates packages and managed mounts, but advances only that module's migration cursor through the exact named migration. Later migrations remain pending and appear on the next `bw upgrade <moduleKey>`. The cutoff requires an explicit module key, must name a shipped migration, and cannot move a cursor backwards; it never places an implicit cutoff on other modules.
 
-Migrations marked `bw-migration-safety: destructive` are held by default during `bw upgrade`, including an unqualified upgrade across several modules. The plan stops immediately before the first marked migration and reports what was deferred. Applying held migrations requires an explicit module-scoped opt-in:
+Migrations marked `bw-migration-safety: destructive` are held by default during `bw upgrade`, including an unqualified upgrade across several modules. The plan stops immediately before the first pending marked migration and reports what was deferred. Applying held migrations requires an explicit module-scoped opt-in:
 
 ```bash
 bw upgrade projects --include-destructive-migrations
 ```
 
-The opt-in is deliberately separate from `--through-migration`: naming a destructive migration as a cutoff is rejected unless `--include-destructive-migrations` is also present. Review the SQL, back up affected data, and deploy compatible readers and writers before using it. `bw add` still installs a new module's complete schema because there is no legacy module data to normalize.
+The opt-in is deliberately separate from `--through-migration`: including a pending destructive migration within a cutoff is rejected unless `--include-destructive-migrations` is also present. Review the SQL, back up affected data, and deploy compatible readers and writers before using it. `bw add` still installs a new module's complete schema because there is no legacy module data to normalize.
 
-An adopted module with a null migration cursor is blocked from upgrade until an operator records an explicit cursor. This prevents an unknown legacy history from being treated as a new database.
+An adopted module with a null migration cursor, or any cursor absent from the shipped history, is blocked from upgrade until an operator explicitly reconciles it. A cursor never silently moves backward. This prevents an unknown legacy history from being treated as a new database.
+
+Upgrade safety is evaluated from the current migration cursor: every pending destructive migration requires explicit opt-in, including later destructive steps after an earlier approved cutoff. An explicit cutoff at the existing cursor does not reauthorize already completed steps.
 
 ### Adopt an existing app
 
@@ -60,6 +62,8 @@ The baseline heuristic stamps only the shipped v1 baseline. If the installed pac
 ```bash
 bw adopt --force --cursor crm=20260316092000_crm_v1.sql
 ```
+
+Forced re-adoption reconciles the manifest while preserving existing exact-path `owned` and `skipped` decisions and recorded owned surfaces, including paths from removed modules. It also retains unresolved drift baselines and exact migration cursors for removed modules; an unknown retained cursor requires a reviewed `--cursor` override instead of being discarded or inferred from later files. A cursor repair therefore keeps deliberately absent files absent. Use `bw scaffold manage` to explicitly return an installed module’s path to management.
 
 Use `--allow-uncursored` only to make the doctor result advisory while investigating; it does not unblock upgrades. Repeated `--owned-surface <name>` options record app-owned areas such as `shell` for doctor to report. The more precise, repeatable `--own <path>` and `--skip <path>` options acknowledge existing and missing tracked scaffold files during adoption. A path cannot be owned if it is missing or skipped if it exists.
 
@@ -112,6 +116,8 @@ bw remove crm
 bw remove crm --yes
 ```
 
+Owned and skipped path records remain in the manifest after removal, and re-adding the module respects them. Drifted files also keep their recorded baselines, so retained custom files do not become untracked collisions. Clean removed files return when the module is re-added.
+
 Removal never touches the database or migration history. It prints the module's declared owned database objects as a commented manual-removal notice. Dropping those objects is a separate deliberate operator action; applied migrations remain append-only.
 
 ### Check app health
@@ -139,6 +145,8 @@ Scaffold health follows the recorded per-file decision:
 
 The scaffold summary reports current, owned, skipped, undecided drift/missing, and intent-mismatch counts. Use `bw scaffold own` or `bw scaffold skip` only after reviewing the divergence; these commands record a decision rather than changing app files.
 
+Initial scaffolding, add, remove, and update render managed platform files through one module-aware output planner. The planner rejects missing or undeclared policy keys before writing; missing module-dependent routes are repaired from that planner.
+
 ## Safe workflow
 
 1. Commit or stash app-owned work.
@@ -151,6 +159,9 @@ Apps without `.brightweb/app-manifest.json` must run `bw adopt` before add, upgr
 
 ## Related
 
+- [Customization Boundaries](./customization-boundaries.md)
 - [Installation](./installation.md)
 - [Add Modules After Scaffold](../recipes/add-modules-after-scaffold.md)
 - [Using BrightWeb Modules](../modules/using-modules.md)
+
+Version requirements use standard semantic-version range matching, including zero-major caret ranges and prerelease rules. See [customization boundaries](./customization-boundaries.md) for app-root preflight, create-once files and safe module removal diagnostics.

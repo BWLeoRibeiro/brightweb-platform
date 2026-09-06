@@ -1,3 +1,4 @@
+import semver from "semver";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { createHash } from "node:crypto";
@@ -66,6 +67,9 @@ export async function planMigrationAppends({
   for (const moduleKey of moduleKeys) {
     const migrations = await getModuleMigrations(moduleKey, catalog[moduleKey]);
     const cursor = migrationCursor[moduleKey];
+    if (cursor != null && !migrations.some((entry) => entry.fileName === cursor)) {
+      throw new Error(`Migration cursor ${cursor} does not exist in the shipped ${moduleKey} history; reconcile it explicitly before upgrading.`);
+    }
     const upperBound = migrationUpperBounds[moduleKey];
     let migrationsInScope = migrations;
     if (upperBound) {
@@ -75,9 +79,6 @@ export async function planMigrationAppends({
       }
       if (cursor) {
         const cursorIndex = migrations.findIndex((entry) => entry.fileName === cursor);
-        if (cursorIndex === -1) {
-          throw new Error(`Migration cutoff blocked: current cursor ${cursor} does not exist in the shipped ${moduleKey} migration history.`);
-        }
         if (upperBoundIndex < cursorIndex) {
           throw new Error(`Migration cutoff ${upperBound} is before the current ${moduleKey} cursor ${cursor}.`);
         }
@@ -117,6 +118,9 @@ export async function cursorMigrationStatus({ targetDir, moduleKey, cursor, cata
   const migrations = await getModuleMigrations(moduleKey, catalogEntry);
   if (migrations.length === 0) return { shipsMigrations: false, missing: [] };
   if (!cursor) return { shipsMigrations: true, missing: ["migration cursor"] };
+  if (!migrations.some((entry) => entry.fileName === cursor)) {
+    return { shipsMigrations: true, missing: [`cursor ${cursor} does not exist in the shipped migration history`] };
+  }
   const expected = migrations.filter((entry) => entry.fileName <= cursor);
   const migrationsDir = await findAppMigrationsDirectory(targetDir);
   const installed = [];
@@ -149,13 +153,7 @@ const REVIEWED_LEGACY_MIGRATION_HASHES = new Map([
 ]);
 
 function compareSemver(left, right) {
-  const leftParts = String(left).split(".").map((value) => Number.parseInt(value, 10));
-  const rightParts = String(right).split(".").map((value) => Number.parseInt(value, 10));
-  if (leftParts.length !== 3 || rightParts.length !== 3 || [...leftParts, ...rightParts].some(Number.isNaN)) return null;
-  for (let index = 0; index < 3; index += 1) {
-    if (leftParts[index] !== rightParts[index]) return leftParts[index] < rightParts[index] ? -1 : 1;
-  }
-  return 0;
+  return semver.valid(left) && semver.valid(right) ? semver.compare(left, right) : null;
 }
 
 export async function exactMigrationCompatibilityStatus({ targetDir, moduleKey, cursor, catalogEntry, allowDeferred = false }) {

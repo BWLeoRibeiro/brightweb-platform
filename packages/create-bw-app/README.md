@@ -62,7 +62,7 @@ Current updater behavior:
 - fails the update if npm resolution fails unless you pass `--allow-stale-fallback`
 - re-syncs managed BrightWeb config files such as `next.config.ts`, `config/modules.ts`, and `config/shell.ts`
 - preserves app-owned shell customizations in the scaffolded `config/shell.overrides.ts`
-- reports missing or drifted scaffold mounts and only rewrites them with `--refresh-starters`
+- reports missing or drifted scaffold mounts and only rewrites them with `--refresh-starters`; tracked `owned` and `skipped` files remain protected, including managed config routes
 - prints the follow-up install command unless `--install` is passed
 - preserves unrelated third-party dependencies and app-owned product pages
 
@@ -139,3 +139,11 @@ on generated paths. Existing JSON and page files are never replaced, even when
 empty or customized; reruns preserve them. These files are not managed templates
 or refreshable starters, and `bw update --refresh-starters` preserves them and
 shell overrides. New marketing apps do not receive this feature until opted in.
+
+## File and compatibility safety
+
+Lifecycle commands resolve the selected app root and reject symlinks or invalid file types beneath it before writing planned outputs. Root aliases are supported; concurrent filesystem edits are outside this preflight guarantee. App-owned brand, theme, shell override and social content seeds are preserved. The generated app context lists exact generated/scaffold paths, defaults unknown paths to app ownership, and shares its generated inventory with the CLI.
+
+Upgrade refuses unknown migration cursors and uses standard semantic-version ranges. Module removal refuses surviving literal imports of the removed package before changing files; reconcile the app-owned dependents explicitly. This conservative scan is not a complete bundler analysis.
+
+Forced re-adoption and module removal preserve exact-path `owned` and `skipped` decisions. Re-adding a module respects retained decisions; use `bw scaffold manage` after re-adding to reset a path deliberately. Every pending destructive migration requires opt-in, even after a previous destructive step was approved. Managed platform outputs share one renderer across scaffolding, add, remove, and update, with enforced ownership-inventory parity.

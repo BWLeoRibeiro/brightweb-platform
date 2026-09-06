@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import { validateClientSlug } from "./_db-modules.mjs";
 
 const rootDir = path.resolve(import.meta.dirname, "..");
 const registryPath = path.join(rootDir, "supabase", "module-registry.json");
@@ -47,7 +48,7 @@ function main() {
 
   let baseDir;
   if (target.startsWith("client:")) {
-    const clientSlug = target.slice("client:".length);
+    const clientSlug = validateClientSlug(target.slice("client:".length));
     baseDir = path.join(rootDir, "supabase", "clients", clientSlug, "migrations");
   } else {
     const moduleConfig = registry.modules[target];

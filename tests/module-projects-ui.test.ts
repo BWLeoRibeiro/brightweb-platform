@@ -786,7 +786,7 @@ test("dashboard attention cards use the canonical editorial attention-row recipe
     "utf8",
   );
   const projectTokens = readFileSync(join(process.cwd(), "packages/module-projects/tokens.css"), "utf8");
-  const dashboard = readFileSync(join(process.cwd(), "packages/app-shell/src/dashboard/dashboard-client.tsx"), "utf8");
+  const dashboard = readFileSync(join(process.cwd(), "packages/app-shell/src/dashboard/projects-view.tsx"), "utf8");
   const dashboardStyles = readFileSync(join(process.cwd(), "packages/app-shell/src/dashboard/dashboard.css"), "utf8");
 
   assert.match(card, /className="project-attention-row group/);

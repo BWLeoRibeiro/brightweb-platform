@@ -1,8 +1,9 @@
+import fs from "node:fs/promises";
 import path from "node:path";
 import { stdout as output } from "node:process";
 import { findWorkspaceRoot, hashFile, readAppManifest, writeAppManifest } from "./app-manifest.mjs";
 import { pathExists } from "./generator.mjs";
-import { findTrackedTemplate, scaffoldDrift } from "./scaffold.mjs";
+import { canonicalScaffoldHash, scaffoldDrift } from "./scaffold.mjs";
 import { normalizeSafeRelativePath, resolveSafeRelativePath } from "./safe-path.mjs";
 
 const HELP = `Usage: bw scaffold <action> [paths...] [options]\n\nActions:\n  list                List tracked files, live status, and intent\n  own <path>...       Mark existing tracked files as app-owned\n  skip <path>...      Mark missing tracked files as intentionally absent\n  manage <path>...    Return tracked files to BrightWeb management\n\nOptions:\n  --target-dir <path>       App directory (defaults to cwd)\n  --workspace-root <path>   BrightWeb workspace root\n  --help                    Show this help`;
@@ -14,7 +15,7 @@ export async function scaffoldBrightwebApp(action, paths = [], argvOptions = {},
   if (action !== "list" && paths.length === 0) throw new Error(`bw scaffold ${action} requires at least one tracked <path>.`);
   if (action === "list" && paths.length > 0) throw new Error("bw scaffold list does not accept file paths.");
 
-  const targetDir = path.resolve(runtimeOptions.targetDir || argvOptions.targetDir || process.cwd());
+  const targetDir = await fs.realpath(path.resolve(runtimeOptions.targetDir || argvOptions.targetDir || process.cwd()));
   const manifest = await readAppManifest(targetDir);
   const live = await scaffoldDrift(targetDir, manifest.scaffoldFiles);
   if (action === "list") {
@@ -43,15 +44,14 @@ export async function scaffoldBrightwebApp(action, paths = [], argvOptions = {},
     const appPath = resolveSafeRelativePath(targetDir, relativePath, "Manifest scaffold file path");
     const exists = await pathExists(appPath);
     if (action === "manage") {
-      const located = await findTrackedTemplate({ relativePath, manifest, targetDir, workspaceRoot });
-      if (!located.templatePath) throw new Error(`Installed-package template unavailable for ${relativePath}; cannot manage it safely.`);
-      const templateHash = await hashFile(located.templatePath);
+      const templateHash = await canonicalScaffoldHash({ relativePath, manifest, targetDir, workspaceRoot });
+      if (!templateHash) throw new Error(`Installed-package template unavailable for ${relativePath}; cannot manage it safely.`);
       if (exists) {
-        record.hash = await hashFile(appPath);
-        record.status = record.hash === templateHash ? "current" : "drifted";
+        record.status = await hashFile(appPath) === templateHash ? "current" : "drifted";
       } else {
         record.status = "missing";
       }
+      record.hash = templateHash;
     } else {
       record.status = liveByPath.get(relativePath).status;
     }

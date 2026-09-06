@@ -32,7 +32,9 @@
     "start:docs": "pnpm --filter dev-docs start",
     "test": "node --experimental-strip-types --loader ./tests/support/ts-extension-loader.mjs --test \"./tests/**/*.test.ts\" \"./packages/*/test/**/*.test.ts\" \"./packages/*/src/**/*.test.ts\"",
     "lint": "pnpm --filter platform-preview lint",
-    "lint:docs": "pnpm --filter dev-docs lint"
+    "lint:docs": "pnpm --filter dev-docs lint",
+    "db:sync": "node scripts/sync-db-module-migrations.mjs --write",
+    "check:db-module-parity": "node scripts/sync-db-module-migrations.mjs --check"
   },
   "devDependencies": {
     "@changesets/cli": "^2.31.1",

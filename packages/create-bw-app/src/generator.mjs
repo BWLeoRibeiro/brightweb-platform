@@ -1,3 +1,4 @@
+import { fileOwnership, assertGeneratedFileInventory, MANAGED_PLATFORM_FILES, MODULE_SELECTED_FILES } from "./file-policy.mjs";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -690,20 +691,7 @@ export function createAppContextFile({
         },
         starterRoutes: getSiteStarterRoutes(),
         ownership: {
-          appOwned: [
-            "config/**",
-            "docs/ai/**",
-            "public/**",
-            "AGENTS.md",
-            "README.md",
-          ],
-          scaffoldManaged: [
-            "app/layout.tsx",
-            "app/globals.css",
-            "next.config.ts",
-            "postcss.config.mjs",
-            "tsconfig.json",
-          ],
+          ...fileOwnership({ template: "site" }),
           packageOwned: [],
         },
         agentRules: {
@@ -753,22 +741,7 @@ export function createAppContextFile({
       },
       starterRoutes: getPlatformStarterRoutes(selectedModules),
       ownership: {
-        appOwned: [
-          "config/**",
-          "docs/ai/**",
-          "public/brand/**",
-          "AGENTS.md",
-          "README.md",
-        ],
-        scaffoldManaged: [
-          "app/layout.tsx",
-          "app/globals.css",
-          "app/**/page.tsx",
-          "app/**/route.ts",
-          "next.config.ts",
-          "postcss.config.mjs",
-          "tsconfig.json",
-        ],
+        ...fileOwnership({ template: "platform", modules: selectedModules }),
         packageOwned: [
           ...CORE_PACKAGES,
           ...(selectedModules.includes("crm") || selectedModules.includes("marketing") || selectedModules.includes("projects") ? [ORGS_PACKAGE_NAME] : []),
@@ -1182,7 +1155,7 @@ export function createOptionalModuleRouteFiles(selectedModules) {
       'const acceptOrganizationInvitation = async (_client: never, _input: unknown): Promise<never> => { throw new Error("Convite não encontrado."); };',
     ] : []),
     ...(!crmEnabled ? [
-      "const ensureCrmContactForProfile = async () => ({ success: true as const });",
+      "const ensureCrmContactForProfile = undefined;",
     ] : []),
     (!adminEnabled || !orgsEnabled || !crmEnabled) ? "" : null,
     "export const invitationHttpDependencies = {",
@@ -1213,7 +1186,7 @@ export function createOptionalModuleRouteFiles(selectedModules) {
     "",
     ].filter((line) => line !== null).join("\n");
 
-  return {
+  return assertGeneratedFileInventory({
     "app/api/invitations/_dependencies.ts": invitationDependencies,
     "app/api/organizations/route.ts": createOrganizationRoute([
       crmEnabled
@@ -1287,7 +1260,20 @@ export function createOptionalModuleRouteFiles(selectedModules) {
         "}",
         "",
       ].join("\n"),
-  };
+  }, MODULE_SELECTED_FILES, "Module-selected routes");
+}
+
+/** The same module-aware outputs drive initial scaffolding and every topology refresh. */
+export async function createManagedPlatformFiles({ slug, selectedModules, dbInstallPlan }) {
+  return assertGeneratedFileInventory({
+    "next.config.ts": createNextConfig({ template: "platform", selectedModules }),
+    "app/globals.css": await createPlatformGlobalsCss(selectedModules),
+    "config/module-toolbar-controls.tsx": createModuleToolbarControlsConfig(selectedModules),
+    "config/modules.ts": createPlatformModulesConfigFile(selectedModules),
+    "config/shell.ts": createShellConfig(selectedModules),
+    ...createOptionalModuleRouteFiles(selectedModules),
+    "docs/ai/app-context.json": createAppContextFile({ slug, template: "platform", selectedModules, dbInstallPlan }),
+  }, MANAGED_PLATFORM_FILES, "Managed platform files");
 }
 
 function createSiteConfigFile(slug) {
@@ -1628,6 +1614,7 @@ async function scaffoldPlatformProject({
   dbRegistry,
 }) {
   const brandValues = createDerivedBrandValues(answers.slug);
+  const managedFiles = await createManagedPlatformFiles({ slug: answers.slug, selectedModules, dbInstallPlan });
   const baseTemplateDir = path.join(TEMPLATE_ROOT, "base");
 
   await ensureDirectory(path.dirname(targetDir));
@@ -1659,30 +1646,14 @@ async function scaffoldPlatformProject({
       2,
     )}\n`,
   );
-  await fs.writeFile(path.join(targetDir, "next.config.ts"), createNextConfig({ template: "platform", selectedModules }));
-  await fs.writeFile(path.join(targetDir, "app", "globals.css"), await createPlatformGlobalsCss(selectedModules));
   await fs.writeFile(
     path.join(targetDir, "config", "brand.ts"),
     createPlatformBrandConfigFile({ slug: answers.slug, brandValues }),
   );
-  await fs.writeFile(path.join(targetDir, "config", "modules.ts"), createPlatformModulesConfigFile(selectedModules));
-  await fs.writeFile(
-    path.join(targetDir, "config", "module-toolbar-controls.tsx"),
-    createModuleToolbarControlsConfig(selectedModules),
-  );
-  await fs.writeFile(path.join(targetDir, "config", "shell.ts"), createShellConfig(selectedModules));
-  for (const [relativePath, content] of Object.entries(createOptionalModuleRouteFiles(selectedModules))) {
+  for (const [relativePath, content] of Object.entries(managedFiles)) {
+    await ensureDirectory(path.dirname(path.join(targetDir, relativePath)));
     await fs.writeFile(path.join(targetDir, relativePath), content);
   }
-  await fs.writeFile(
-    path.join(targetDir, "docs", "ai", "app-context.json"),
-    createAppContextFile({
-      slug: answers.slug,
-      template: "platform",
-      selectedModules,
-      dbInstallPlan,
-    }),
-  );
 
   const vercelConfig = createVercelConfig(answers.supabaseRegion);
 

@@ -1,3 +1,5 @@
+import { assertMutationTargets } from "./mutation-paths.mjs";
+import { MANAGED_PLATFORM_FILES, MANAGED_SITE_FILES, MODULE_SELECTED_FILES, isAppOwnedSeed } from "./file-policy.mjs";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { stdout as output } from "node:process";
@@ -13,13 +15,8 @@ import {
   TEMPLATE_ROOT,
   createAppContextFile,
   createDbInstallPlan,
-  createModuleToolbarControlsConfig,
-  createNextConfig,
-  createOptionalModuleRouteFiles,
+  createManagedPlatformFiles,
   createPackageJson,
-  createPlatformGlobalsCss,
-  createPlatformModulesConfigFile,
-  createShellConfig,
   detectPackageManager,
   getDbModuleRegistry,
   getVersionMap,
@@ -27,33 +24,10 @@ import {
   readJsonIfPresent,
   runInstall,
 } from "./generator.mjs";
-import { readAppManifest } from "./app-manifest.mjs";
+import { assertNoUntrackedScaffoldWrites, scaffoldDrift } from "./scaffold.mjs";
+import { hashFile, writeAppManifest, readAppManifest } from "./app-manifest.mjs";
 
-const MANAGED_PLATFORM_FILES = [
-  "next.config.ts",
-  path.join("app", "globals.css"),
-  path.join("config", "module-toolbar-controls.tsx"),
-  path.join("config", "modules.ts"),
-  path.join("config", "shell.ts"),
-  path.join("app", "api", "invitations", "_dependencies.ts"),
-  path.join("app", "api", "organizations", "route.ts"),
-  path.join("app", "api", "organizations", "[id]", "route.ts"),
-  path.join("app", "api", "organizations", "[id]", "invitations", "route.ts"),
-  path.join("app", "api", "organizations", "[id]", "invitations", "[invitationId]", "route.ts"),
-  path.join("docs", "ai", "app-context.json"),
-];
-
-const MANAGED_SITE_FILES = [
-  path.join("docs", "ai", "app-context.json"),
-];
-
-const MODULE_SELECTED_PLATFORM_FILES = new Set([
-  path.join("app", "api", "invitations", "_dependencies.ts"),
-  path.join("app", "api", "organizations", "route.ts"),
-  path.join("app", "api", "organizations", "[id]", "route.ts"),
-  path.join("app", "api", "organizations", "[id]", "invitations", "route.ts"),
-  path.join("app", "api", "organizations", "[id]", "invitations", "[invitationId]", "route.ts"),
-]);
+const MODULE_SELECTED_PLATFORM_FILES = new Set(MODULE_SELECTED_FILES);
 
 const REFRESHABLE_PLATFORM_STARTER_FILES = new Set([
   path.join("app", "api", "notifications", "route.ts"),
@@ -459,8 +433,9 @@ function renderPlanSummary(plan, options = {}) {
 }
 
 export async function buildBrightwebAppUpdatePlan(argvOptions = {}, runtimeOptions = {}) {
-  const targetDir = resolveUpdateTargetDirectory(runtimeOptions, argvOptions);
-  await readAppManifest(targetDir, { required: false });
+  const targetDir = await fs.realpath(resolveUpdateTargetDirectory(runtimeOptions, argvOptions));
+  const appManifest = await readAppManifest(targetDir, { required: false });
+  await assertMutationTargets(targetDir, ["package.json", ...Object.keys(appManifest?.scaffoldFiles || {})]);
   const packageJsonPath = path.join(targetDir, "package.json");
   const manifest = await readJsonIfPresent(packageJsonPath);
 
@@ -527,20 +502,7 @@ export async function buildBrightwebAppUpdatePlan(argvOptions = {}, runtimeOptio
   }
 
   if (template === "platform") {
-    const canonicalConfigFiles = {
-      "next.config.ts": createNextConfig({ template: "platform", selectedModules: installedModules }),
-      [path.join("app", "globals.css")]: await createPlatformGlobalsCss(installedModules),
-      [path.join("config", "module-toolbar-controls.tsx")]: createModuleToolbarControlsConfig(installedModules),
-      [path.join("config", "modules.ts")]: createPlatformModulesConfigFile(installedModules),
-      [path.join("config", "shell.ts")]: createShellConfig(installedModules),
-      ...createOptionalModuleRouteFiles(installedModules),
-      [path.join("docs", "ai", "app-context.json")]: createAppContextFile({
-        slug: manifest.name || path.basename(targetDir),
-        template: "platform",
-        selectedModules: installedModules,
-        dbInstallPlan,
-      }),
-    };
+    const canonicalConfigFiles = await createManagedPlatformFiles({ slug: manifest.name || path.basename(targetDir), selectedModules: installedModules, dbInstallPlan });
 
     for (const relativePath of MANAGED_PLATFORM_FILES) {
       const targetPath = path.join(targetDir, relativePath);
@@ -588,7 +550,8 @@ export async function buildBrightwebAppUpdatePlan(argvOptions = {}, runtimeOptio
 
   if (argvOptions.refreshStarters) {
     for (const entry of starterFiles.filter((candidate) =>
-      candidate.status !== "current" && (candidate.status === "missing" || candidate.refreshable !== false))) {
+      !MANAGED_PLATFORM_FILES.includes(candidate.relativePath)
+      && candidate.status !== "current" && (candidate.status === "missing" || candidate.refreshable !== false))) {
       fileWrites.push({
         moduleKey: entry.moduleKey,
         relativePath: entry.relativePath,
@@ -598,6 +561,22 @@ export async function buildBrightwebAppUpdatePlan(argvOptions = {}, runtimeOptio
       });
     }
   }
+
+  // Legacy update may explicitly refresh drift, but never overrides ownership intent.
+  const liveScaffold = await scaffoldDrift(targetDir, appManifest?.scaffoldFiles);
+  const intentionalPaths = new Set(liveScaffold.intentional);
+  for (let index = fileWrites.length - 1; index >= 0; index -= 1) {
+    if (intentionalPaths.has(fileWrites[index].relativePath) || isAppOwnedSeed(fileWrites[index].relativePath)) fileWrites.splice(index, 1);
+  }
+
+  if (appManifest) await assertNoUntrackedScaffoldWrites({
+    targetDir,
+    scaffoldFiles: appManifest.scaffoldFiles,
+    moduleKeys: installedModules,
+    relativePaths: fileWrites.map((entry) => entry.relativePath),
+  });
+
+  await assertMutationTargets(targetDir, [".brightweb/app-manifest.json", ...fileWrites.map((write) => write.relativePath)]);
 
   const modulesConfigMismatch = template === "platform"
     ? await detectModulesConfigMismatch(targetDir, installedModules)
@@ -613,6 +592,7 @@ export async function buildBrightwebAppUpdatePlan(argvOptions = {}, runtimeOptio
     installedModules,
     installedBrightwebPackages: Array.from(installedBrightwebPackagesMap.keys()).sort(),
     targetVersions: canonicalVersions,
+    appManifest,
     packageUpdates: packageJsonUpdate.packageUpdates,
     configFilesToWrite: fileWrites.filter((entry) => entry.type === "config").map((entry) => entry.relativePath),
     starterFilesMissing: starterFilesMissing.map((entry) => entry.relativePath),
@@ -646,6 +626,18 @@ export async function updateBrightwebApp(argvOptions = {}, runtimeOptions = {}) 
   for (const fileWrite of plan.fileWrites) {
     await fs.mkdir(path.dirname(fileWrite.targetPath), { recursive: true });
     await fs.writeFile(fileWrite.targetPath, fileWrite.content, "utf8");
+  }
+
+  if (plan.appManifest) {
+    let scaffoldChanged = false;
+    for (const write of plan.fileWrites) {
+      const record = plan.appManifest.scaffoldFiles[write.relativePath];
+      if (!record) continue;
+      record.hash = await hashFile(write.targetPath);
+      record.status = "current";
+      scaffoldChanged = true;
+    }
+    if (scaffoldChanged) await writeAppManifest(plan.targetDir, plan.appManifest);
   }
 
   const packageJsonChanged = plan.fileWrites.some((entry) => entry.relativePath === "package.json");
