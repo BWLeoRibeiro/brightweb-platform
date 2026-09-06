@@ -2,6 +2,8 @@ import assert from "node:assert/strict";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 import ts from "typescript";
 
 import type { ProjectDashboardData, ProjectLink } from "../packages/module-projects/src/types.ts";
@@ -36,6 +38,7 @@ import {
 import { defaultProjectsUiDictionary } from "../packages/module-projects/src/ui/dictionary.ts";
 import { clientProjectsDictionary } from "../packages/module-projects/src/ui/client/dictionary.ts";
 import { defaultDashboardDictionary } from "../packages/app-shell/src/dashboard/dictionary.ts";
+import { DashboardProjectComponentsProvider, ProjectsView } from "../packages/app-shell/src/dashboard/dashboard-client.tsx";
 import { resolveProjectsNavigation } from "../packages/module-projects/src/ui/navigation.ts";
 import { parseProjectBoardApiError, parseTaskListPayload } from "../packages/module-projects/src/ui/project-board-response-parser.ts";
 import { parseProjectDashboardPayload, parseProjectLinksPayload, projectDetailDataReducer } from "../packages/module-projects/src/ui/project-detail-data-provider.tsx";
@@ -45,6 +48,7 @@ import {
   hasCompactCollectionOverflow,
 } from "../packages/module-projects/src/ui/shared/compact-collection-model.ts";
 import { formatNaturalDisplayName } from "../packages/module-projects/src/ui/shared/natural-display-name.ts";
+import { DashboardProjectAttentionCard } from "../packages/module-projects/src/ui/shared/dashboard-project-attention-card.tsx";
 
 function collectDictionaryStrings(value: unknown): string[] {
   if (typeof value === "string") return [value];
@@ -629,6 +633,71 @@ test("Projects UI ships Portuguese defaults and configurable shell registration"
   assert.deepEqual(registration.toolbarActions?.projects?.map((item) => item.action), ["projects-refresh", "projects-new-menu"]);
   assert.deepEqual(registration.toolbarActions?.["project-detail"]?.map((item) => [item.label, item.placement]), [["Projetos", "back"], ["Ver tarefas", "contextual"]]);
   assert.deepEqual(registration.toolbarActions?.["project-board"]?.map((item) => item.action), ["projects-back-to-portfolio"]);
+});
+
+test("dashboard project attention rows honor the consumer project route", () => {
+  const html = renderToStaticMarkup(createElement(DashboardProjectAttentionCard, {
+    project: {
+      id: "project /?",
+      organizationName: "BrightWeb",
+      name: "Platform",
+      code: null,
+      status: "active",
+      health: "at_risk",
+      ownerLabel: null,
+      targetDate: "2026-08-20",
+      taskStats: { total: 2, done: 1, overdue: 0, blocked: 0 },
+      attentionReason: "at_risk",
+    },
+    rank: 1,
+    href: "/projetos/project%20%2F%3F",
+  }));
+
+  assert.match(html, /href="\/projetos\/project%20%2F%3F"/);
+  assert.doesNotMatch(html, /href="\/projects\//);
+});
+
+test("projects dashboard composes its registered route into attention row links", () => {
+  const project = {
+    id: "project /?",
+    organizationName: "BrightWeb",
+    name: "Platform",
+    code: null,
+    status: "active" as const,
+    health: "at_risk" as const,
+    ownerLabel: null,
+    targetDate: "2026-08-20",
+    taskStats: { total: 2, done: 1, overdue: 0, blocked: 0 },
+    attentionReason: "at_risk" as const,
+  };
+  const registration = createProjectsModuleRegistration("/projetos");
+  const components = registration.dashboardContribution?.projectComponents;
+  assert.ok(components);
+
+  const html = renderToStaticMarkup(createElement(
+    DashboardProjectComponentsProvider,
+    { value: components },
+    createElement(ProjectsView, {
+      projects: {
+        generatedAt: "2026-08-16T12:00:00.000Z",
+        kpis: {
+          projectsActive: 1,
+          projectsAtRisk: 1,
+          projectsOverdue: 0,
+          projectsDueNext7Days: 0,
+          projectsWithoutOwner: 0,
+          projectBlockedTasks: 0,
+          projectsAttention: 1,
+          projectsOnTrack: 0,
+        },
+        projects: { overdue: [], attention: [project], milestones: [], milestonesNext7Days: [] },
+      },
+      isLoading: false,
+    }),
+  ));
+
+  assert.match(html, /href="\/projetos\/project%20%2F%3F"/);
+  assert.doesNotMatch(html, /href="\/projects\//);
 });
 
 test("Projects navigation patterns resolve URL-encoded identifiers", () => {

@@ -1,7 +1,7 @@
 {
   "name": "@brightweblabs/module-marketing",
   "private": false,
-  "version": "0.4.24",
+  "version": "0.5.1",
   "main": "./src/index.ts",
   "types": "./src/index.ts",
   "files": [
@@ -30,7 +30,8 @@
     "./worker": "./src/worker.ts",
     "./email": "./src/email/index.ts",
     "./tokens.css": "./tokens.css",
-    "./marketing.css": "./marketing.css"
+    "./marketing.css": "./marketing.css",
+    "./social-media": "./src/social-media/page.tsx"
   },
   "dependencies": {
     "@brightweblabs/app-shell": "workspace:*",

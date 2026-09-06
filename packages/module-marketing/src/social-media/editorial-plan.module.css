@@ -1,0 +1,60 @@
+@layer theme, base, components, utilities;
+
+@layer components {
+  .plan { display: grid; gap: 2.75rem; padding: var(--space-lg-plus) 0 var(--space-xl); }
+  .eyebrow, .sectionHeading > span { display: block; margin-bottom: var(--space-sm); color: var(--brand-accent, var(--primary)); font-size: var(--text-meta); font-weight: var(--font-weight-semibold); }
+  .monthlySystem { display: grid; grid-template-columns: minmax(0, 1fr) minmax(16rem, .38fr); gap: var(--space-xl); padding: var(--space-xl); border: 1px solid color-mix(in srgb, var(--brand-accent, var(--primary)) 18%, var(--border)); border-radius: var(--radius-panel); background: color-mix(in srgb, var(--brand-accent, var(--primary)) 5%, var(--card)); }
+  .monthlySystem:not(:has(> .campaignDefinition)), .direction:not(:has(> .principles > div)) { grid-template-columns: 1fr; }
+  .sectionHeading { grid-column: 1 / -1; }
+  .sectionHeading > span { margin-bottom: var(--space-xs); }
+  .sectionHeading h2 { max-width: 35ch; margin: 0; color: var(--foreground); font-size: var(--text-heading-2); font-weight: var(--font-weight-bold); line-height: var(--type-leading-130); }
+  .sequence > p { max-width: 70ch; margin: 0; color: var(--muted-foreground); }
+  .sequence :global(.social-content-content-sequence) { grid-template-columns: repeat(var(--social-sequence-columns, 4), minmax(0, 1fr)); gap: 0; margin: var(--space-2xl) 0 0; }
+  .sequence :global(.social-content-content-step) { position: relative; min-width: 0; padding: var(--space-lg) var(--space-md) 0 0; border: 0; border-top: 1px solid color-mix(in srgb, var(--brand-accent, var(--primary)) 30%, var(--border)); border-radius: 0; background: transparent; }
+  .sequence :global(.social-content-content-step) > span { display: grid; place-items: center; width: 2rem; height: 2rem; margin: -2.55rem 0 var(--space-md); border-radius: 50%; background: var(--brand-accent, var(--primary)); color: var(--brand-accent-foreground, var(--primary-foreground)); font-weight: var(--font-weight-semibold); }
+  .sequence :global(.social-content-content-step) > b { display: block; margin-bottom: var(--space-xs); }
+  .sequence :global(.social-content-content-step) p { margin: 0; color: var(--muted-foreground); font-size: var(--text-meta); line-height: var(--type-leading-160); }
+  .campaignDefinition { align-self: start; padding: var(--space-lg); border: 1px solid var(--border); border-radius: var(--radius-card); background: var(--card); }
+  .campaignDefinition h3 { margin: 0 0 var(--space-sm); font-size: var(--text-title); }
+  .campaignDefinition p, .campaignDefinition ul { color: var(--muted-foreground); font-size: var(--text-meta); line-height: var(--type-leading-160); }
+  .campaignDefinition ul { margin-bottom: 0; }
+
+  .direction { display: grid; grid-template-columns: minmax(0, .85fr) minmax(0, 1.15fr); gap: var(--space-2xl); padding: var(--space-xl) 0; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+  .direction h2 { max-width: 24ch; margin: 0; color: var(--foreground); font-size: var(--text-heading-2); font-weight: var(--font-weight-bold); line-height: var(--type-leading-130); }
+  .direction header > p { max-width: 58ch; margin: var(--space-md) 0 0; color: var(--muted-foreground); line-height: var(--type-leading-160); }
+  .principles { display: grid; align-content: start; }
+  .principles > div { padding: var(--space-md) 0; border-top: 1px solid var(--border); }
+  .principles > div:first-child { padding-top: 0; border-top: 0; }
+  .principles h3 { margin: 0 0 var(--space-xs); font-size: var(--text-title); }
+  .principles p { max-width: 62ch; margin: 0; color: var(--muted-foreground); line-height: var(--type-leading-160); }
+
+  .distribution, .productionReference { min-width: 0; }
+  .distribution > p { max-width: 78ch; margin: var(--space-md) 0 var(--space-lg); color: var(--muted-foreground); }
+  .channels, .formats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 var(--space-xl); border-top: 1px solid var(--border); }
+  .reference { min-width: 0; padding: var(--space-md) 0; border-bottom: 1px solid var(--border); }
+  .reference summary { display: flex; align-items: center; gap: var(--space-md); min-height: 2.5rem; color: var(--foreground); font-size: var(--text-title); font-weight: var(--font-weight-semibold); cursor: pointer; list-style: none; }
+  .reference summary::-webkit-details-marker { display: none; }
+  .reference summary:hover { color: var(--brand-accent, var(--primary)); }
+  .reference summary:focus-visible { border-radius: var(--radius); outline: 2px solid var(--ring); outline-offset: 4px; }
+  .reference[open] summary { margin-bottom: var(--space-md); }
+  .reference[open] .chevron { transform: rotate(180deg); }
+  .reference p, .reference ul { color: var(--muted-foreground); }
+  .chevron { width: 1rem; height: 1rem; margin-left: auto; flex: none; color: var(--muted-foreground); }
+  .channelIcon { display: grid; place-items: center; width: 2.5rem; height: 2.5rem; flex: none; border-radius: var(--radius); background: var(--muted); color: var(--brand-accent, var(--primary)); }
+  .channelIcon svg { width: 1.15rem; height: 1.15rem; }
+  .channelName :global(.social-content-priority) { margin: 0; font-size: var(--text-meta); font-weight: var(--font-weight-normal); }
+  .productionReference { display: grid; grid-template-columns: 1fr; gap: var(--space-lg); padding-top: var(--space-xl); border-top: 1px solid var(--border); }
+  .example { border-bottom: 0; }
+
+  @media (max-width: 900px) {
+    .monthlySystem, .direction { grid-template-columns: 1fr; }
+    .campaignDefinition { grid-column: 1; }
+  }
+
+  @media (max-width: 720px) {
+    .plan { gap: var(--space-xl); }
+    .monthlySystem { padding: var(--space-lg); }
+    .sequence :global(.social-content-content-sequence), .channels, .formats { grid-template-columns: 1fr; }
+    .sequence :global(.social-content-content-sequence) { row-gap: var(--space-xl); }
+  }
+}

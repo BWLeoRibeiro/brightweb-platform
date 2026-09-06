@@ -1,3 +1,5 @@
+@layer theme, base, components, utilities;
+
 @layer components {
   .dashboard-root {
   --dashboard-status-lead: var(--semantic-info, var(--accent));

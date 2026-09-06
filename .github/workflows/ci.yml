@@ -112,5 +112,8 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Install browser for rendered CSS regression
+        run: pnpm exec playwright install --with-deps chromium
+
       - name: Generated app runtime smoke
         run: node tests/e2e/generated-app-smoke.mjs

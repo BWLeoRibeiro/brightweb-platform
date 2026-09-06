@@ -106,3 +106,36 @@ The scaffold records `SUPABASE_PROJECT_REGION` in `.env.local` and infrastructur
 - `packages/create-bw-app/template/site/base`
 - `packages/create-bw-app/template/modules`
 - `packages/create-bw-app/template/supabase`
+
+### Opt-in social media viewer
+
+For a platform app with marketing enabled, first install a marketing release that
+exports `social-media` and `withSocialMediaNavigation`, then run:
+
+```sh
+bw setup social-media --dry-run
+bw setup social-media
+```
+
+Use `--target-dir <path>` to select another app directory. Setup creates
+`config/social-media-plan.json` with an empty, neutral plan and the thin page at
+`app/(shell)/marketing/social-media/page.tsx`. All client copy belongs in that
+app-owned JSON; components, styles, validation, and interactions stay in marketing.
+No database or publishing service is created.
+
+Setup appends navigation wiring to the standard app-owned
+`config/shell.overrides.ts`, which must declare
+`export const shellRegistrationOverrides: ShellRegistrationOverrides = { ... };`.
+Existing marketing overrides are composed through the shared helper:
+
+```ts
+import { withSocialMediaNavigation } from "@brightweblabs/module-marketing/registration";
+shellRegistrationOverrides.marketing = withSocialMediaNavigation(shellRegistrationOverrides.marketing);
+```
+
+Custom shell export shapes require manual wiring before adopting the standard
+shape. Setup checks prerequisites and paths before writing and rejects symlinks
+on generated paths. Existing JSON and page files are never replaced, even when
+empty or customized; reruns preserve them. These files are not managed templates
+or refreshable starters, and `bw update --refresh-starters` preserves them and
+shell overrides. New marketing apps do not receive this feature until opted in.
