@@ -1,5 +1,21 @@
 # @brightweblabs/module-marketing
 
+## 0.5.2
+
+### Patch Changes
+
+- e75c7bb: Save workflow nodes in one service-only transaction, preserving retained node identities across reordering and rolling back deletions if any write fails. Reject foreign, missing or duplicate supplied node IDs. Delete individual nodes through a targeted transaction that preserves concurrent changes to other nodes. Serialize activation with node editing so a concurrent edit cannot activate an empty workflow. Existing applications must apply the atomic_marketing_workflow_nodes migration before upgrading the handlers; fresh applications include the mirrored migration.
+- e75c7bb: Preserve newer campaign and workflow drafts when detail or save requests complete, serialize editor commands, and detach pending editor work when the client changes. Reload dashboard sections after a client replacement and reject old requests. Deduplicate pending notification dismissals so repeated callbacks do not send duplicate mutations. Keep clipboard feedback tied to the Social Media text actually copied. Remove unused private UI imports and bindings while retaining public props.
+- e75c7bb: Keep late campaign deletion responses scoped to their editor, retain workflow identity after partial saves, and preserve local scheduling times. Require saving campaign drafts before send, schedule, or test actions. Give campaign draft, identity and commands one editor owner while collection updates remain ID-scoped; separate workflow run presentation. Extract editor models and recipient presentation, and share consent eligibility without a server/workflow import cycle or duplicate contact read. Reconcile Social Media selection and filters when plan content refreshes, including early calendar years.
+- e75c7bb: Finish workflow saves after closing the editor and reconcile completed save, activation, pause, and deletion commands without replacing a newer draft or client collection.
+- Updated dependencies [e75c7bb]
+- Updated dependencies [e75c7bb]
+- Updated dependencies [e75c7bb]
+- Updated dependencies [e75c7bb]
+  - @brightweblabs/app-shell@0.16.3
+  - @brightweblabs/ui@1.5.6
+  - @brightweblabs/core-auth@0.12.2
+
 ## 0.5.1
 
 ### Patch Changes

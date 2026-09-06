@@ -1,5 +1,12 @@
 # @brightweblabs/ui
 
+## 1.5.6
+
+### Patch Changes
+
+- e75c7bb: Keep notification dismissal and pagination responses scoped to their current configuration and list. Recover theme preferences when browser storage cannot be acquired. Split dashboard views and shared request loaders without changing their rendered output, share typography class merging through the UI utility export, and remove unused private authentication and dashboard code.
+- e75c7bb: Preserve newer campaign and workflow drafts when detail or save requests complete, serialize editor commands, and detach pending editor work when the client changes. Reload dashboard sections after a client replacement and reject old requests. Deduplicate pending notification dismissals so repeated callbacks do not send duplicate mutations. Keep clipboard feedback tied to the Social Media text actually copied. Remove unused private UI imports and bindings while retaining public props.
+
 ## 1.5.5
 
 ### Patch Changes
