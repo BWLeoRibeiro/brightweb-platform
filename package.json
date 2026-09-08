@@ -34,7 +34,8 @@
     "lint": "pnpm --filter platform-preview lint",
     "lint:docs": "pnpm --filter dev-docs lint",
     "db:sync": "node scripts/sync-db-module-migrations.mjs --write",
-    "check:db-module-parity": "node scripts/sync-db-module-migrations.mjs --check"
+    "check:db-module-parity": "node scripts/sync-db-module-migrations.mjs --check",
+    "test:database:admin": "node tests/database/admin-profile-visibility.mjs"
   },
   "devDependencies": {
     "@changesets/cli": "^2.31.1",

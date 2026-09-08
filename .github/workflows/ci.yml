@@ -120,3 +120,14 @@ jobs:
 
       - name: Generated app runtime smoke
         run: node tests/e2e/generated-app-smoke.mjs
+
+  database-admin:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Verify admin directory on real PostgreSQL
+        run: node tests/database/admin-profile-visibility.mjs
