@@ -1,5 +1,14 @@
 # create-bw-app
 
+## 0.27.3
+
+### Patch Changes
+
+- 528d44a: Ship an idempotent admin migration granting authenticated administrators the profile reads required by the shared user directory. Existing consumers receive the forward migration through `bw upgrade`; apply it to their database to restore directory visibility without expanding staff or client access.
+- 528d44a: Warn when preserved app-owned scaffold files have unreconciled upstream template changes, including shells that still match an older baseline. Explicitly report that live database objects, applied migrations and authenticated permissions are not verified by local doctor checks.
+
+  Track the projects client profile route in the starter inventory so existing apps can restore `/account/perfil` with `bw upgrade projects --refresh-starters`.
+
 ## 0.27.2
 
 ### Patch Changes
