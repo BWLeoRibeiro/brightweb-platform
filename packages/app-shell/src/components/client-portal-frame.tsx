@@ -50,7 +50,7 @@ export function ClientPortalFrame({
               priority
             />
             <span className="hidden border-l border-border/65 pl-3 sm:block">
-              <span className="block text-label font-bold">BrightWeb</span>
+              <span className="block text-label font-bold">{brand.alt}</span>
               <span className="block text-meta text-muted-foreground">Portal do cliente</span>
             </span>
           </Link>
