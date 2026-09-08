@@ -116,6 +116,7 @@ export const MODULE_STARTER_FILES = {
     "app/(shell)/projetos/[projectId]/page.tsx",
     "app/(shell)/projetos/[projectId]/quadro/page.tsx",
     "app/(shell)/projetos/[projectId]/tarefas/page.tsx",
+    "app/(shell)/account/perfil/page.tsx",
     "app/(shell)/account/projetos/page.tsx",
     "app/(shell)/account/projetos/loading.tsx",
     "app/(shell)/account/projetos/[projectId]/page.tsx",

@@ -727,8 +727,11 @@ test("bw add projects resolves orgs, writes overlays, migrations, and manifest s
   await writeJson(appManifestPath, appManifest);
   await writeJson(packagePath, packageJson);
 
+  const profileRoute = path.join(targetDir, "app/(shell)/account/perfil/page.tsx");
+  await assert.rejects(fs.access(profileRoute), { code: "ENOENT" });
   const result = await addBrightwebModule("projects", { targetDir }, { workspaceRoot: REPO_ROOT });
   assert.deepEqual(result.newModules, ["orgs", "projects"]);
+  assert.equal(await fs.readFile(profileRoute, "utf8"), 'export { ClientProfilePage as default } from "@brightweblabs/module-projects";\n');
   const updated = await readJson(appManifestPath);
   const release = await readJson(path.join(REPO_ROOT, "brightweb-release.json"));
   assert.equal(updated.modules.orgs.version, release.packages["@brightweblabs/module-orgs"]);
@@ -750,26 +753,47 @@ test("bw add projects resolves orgs, writes overlays, migrations, and manifest s
   assert.deepEqual(
     migrations
       .filter((name) => name.includes("_projects__202608"))
-      .toSorted(),
+      .toSorted()
+      .map((name) => name.replace(/^\d+_/, "")),
     [
-      "0033_projects__20260801122000_project_member_sync.sql",
-      "0034_projects__20260804120000_project_task_start_date.sql",
-      "0035_projects__20260804123000_project_start_date.sql",
-      "0036_projects__20260810120000_project_client_access.sql",
-      "0037_projects__20260811120000_project_client_access_expand.sql",
-      "0038_projects__20260811120500_project_member_sync_hardening.sql",
-      "0039_projects__20260811121000_project_client_access_enforcement.sql",
-      "0040_projects__20260811121500_project_client_organization_memberships.sql",
-      "0041_projects__20260811121700_project_client_meta_preview.sql",
-      "0042_projects__20260811122000_project_client_access_identity_cleanup.sql",
-      "0043_projects__20260811122500_remove_project_client_next_steps.sql",
-      "0044_projects__20260815120000_project_client_access_member_roles.sql",
-      "0045_projects__20260815133000_project_admin_creation_and_task_permissions.sql",
+      "projects__20260801122000_project_member_sync.sql",
+      "projects__20260804120000_project_task_start_date.sql",
+      "projects__20260804123000_project_start_date.sql",
+      "projects__20260810120000_project_client_access.sql",
+      "projects__20260811120000_project_client_access_expand.sql",
+      "projects__20260811120500_project_member_sync_hardening.sql",
+      "projects__20260811121000_project_client_access_enforcement.sql",
+      "projects__20260811121500_project_client_organization_memberships.sql",
+      "projects__20260811121700_project_client_meta_preview.sql",
+      "projects__20260811122000_project_client_access_identity_cleanup.sql",
+      "projects__20260811122500_remove_project_client_next_steps.sql",
+      "projects__20260815120000_project_client_access_member_roles.sql",
+      "projects__20260815133000_project_admin_creation_and_task_permissions.sql",
     ],
   );
   const doctor = await doctorBrightwebApp({ targetDir }, { workspaceRoot: REPO_ROOT });
   assert.equal(doctor.ok, true);
   assert.equal(doctor.checks.find((entry: { id: string }) => entry.id === "scaffold")?.status, "PASS");
+});
+
+test("projects profile route is tracked for fresh apps and restored for existing apps", async (t) => {
+  const { root, targetDir } = await scaffold(["projects"]);
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+  const relativePath = "app/(shell)/account/perfil/page.tsx";
+  const routePath = path.join(targetDir, relativePath);
+  const expected = 'export { ClientProfilePage as default } from "@brightweblabs/module-projects";\n';
+  assert.equal(await fs.readFile(routePath, "utf8"), expected);
+  const manifestPath = path.join(targetDir, ".brightweb", "app-manifest.json");
+  const manifest = await readJson(manifestPath);
+  assert.equal(manifest.scaffoldFiles[relativePath]?.module, "projects");
+
+  // Existing apps missed this route and its ownership record in previous releases.
+  await fs.rm(routePath);
+  delete manifest.scaffoldFiles[relativePath];
+  await writeJson(manifestPath, manifest);
+  await upgradeBrightwebApp("projects", { targetDir, refreshStarters: true }, { workspaceRoot: REPO_ROOT, fetchImpl: mockNpmFetch });
+  assert.equal(await fs.readFile(routePath, "utf8"), expected);
+  assert.equal((await readJson(manifestPath)).scaffoldFiles[relativePath]?.module, "projects");
 });
 
 test("bw add reports a clean module version conflict", async (t) => {
@@ -1239,6 +1263,56 @@ test("bw doctor warns on undecided scaffold drift and fails it only in strict mo
   assert.equal(advisory.checks.find((entry: { id: string }) => entry.id === "scaffold")?.status, "WARN");
   const strict = await doctorBrightwebApp({ targetDir, strict: true }, { workspaceRoot: REPO_ROOT });
   assert.equal(strict.ok, false);
+});
+
+test("bw doctor flags preserved owned files against a newer template and clears after review", async (t) => {
+  const { root, targetDir } = await scaffold(["crm"]);
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+  const relativePath = "app/(shell)/layout.tsx";
+  const appPath = path.join(targetDir, relativePath);
+  const canonicalContent = await fs.readFile(appPath, "utf8");
+  const manifestPath = path.join(targetDir, ".brightweb", "app-manifest.json");
+  const manifest = await readJson(manifestPath);
+  // Simulate an upgrade preserving an owned shell at its old template baseline.
+  await fs.writeFile(appPath, "// previous shell template\n");
+  manifest.scaffoldFiles[relativePath] = {
+    ...manifest.scaffoldFiles[relativePath],
+    intent: "owned",
+    status: "current",
+    hash: await hashFile(appPath),
+  };
+  await writeJson(manifestPath, manifest);
+  const before = await doctorBrightwebApp({ targetDir }, { workspaceRoot: REPO_ROOT });
+  const warning = before.checks.find((entry: { id: string }) => entry.id === "scaffold-owned-template-updates");
+  assert.equal(warning?.status, "WARN");
+  assert.ok(warning?.message.includes(relativePath));
+  assert.match(warning?.message || "", /NOT VERIFIED.*bw diff/);
+  assert.equal(before.checks.find((entry: { id: string }) => entry.id === "scaffold")?.status, "WARN");
+
+  // Exact reconciliation needs no bookkeeping to clear the compatibility warning.
+  await fs.writeFile(appPath, canonicalContent);
+  const exact = await doctorBrightwebApp({ targetDir }, { workspaceRoot: REPO_ROOT });
+  assert.equal(exact.checks.some((entry: { id: string }) => entry.id === "scaffold-owned-template-updates"), false);
+
+  // Reviewed customizations can retain ownership with the current template baseline.
+  await fs.appendFile(appPath, "\n// reviewed app customization\n");
+  const reviewedContent = await fs.readFile(appPath, "utf8");
+  await scaffoldBrightwebApp("manage", [relativePath], { targetDir }, { workspaceRoot: REPO_ROOT });
+  await scaffoldBrightwebApp("own", [relativePath], { targetDir }, { workspaceRoot: REPO_ROOT });
+  const reviewed = await doctorBrightwebApp({ targetDir }, { workspaceRoot: REPO_ROOT });
+  assert.equal(reviewed.checks.some((entry: { id: string }) => entry.id === "scaffold-owned-template-updates"), false);
+  assert.equal(await fs.readFile(appPath, "utf8"), reviewedContent);
+});
+
+test("bw doctor explicitly distinguishes local migration checks from live permission verification", async (t) => {
+  const { root, targetDir } = await scaffold(["crm"]);
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+  const result = await doctorBrightwebApp({ targetDir }, { workspaceRoot: REPO_ROOT });
+  assert.equal(result.checks.find((entry: { id: string }) => entry.id === "migrations")?.status, "PASS");
+  const databaseCheck = result.checks.find((entry: { id: string }) => entry.id === "db-objects");
+  assert.equal(databaseCheck?.status, "WARN");
+  assert.match(databaseCheck?.message || "", /NOT VERIFIED: live database objects, applied migrations, and authenticated row-level permissions/);
+  assert.match(databaseCheck?.message || "", /does not establish deployed behavior/);
 });
 
 test("bw scaffold own and skip acknowledge divergence, while reality mismatches fail doctor", async (t) => {
