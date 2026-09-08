@@ -12,6 +12,7 @@ import { MODULE_STARTER_FILES, PLATFORM_STARTER_FILES } from "../packages/create
 import { diffBrightwebScaffold } from "../packages/create-bw-app/src/diff.mjs";
 import { doctorBrightwebApp, lockfileImporterResolution, lockfileIntegrityForPackage } from "../packages/create-bw-app/src/doctor.mjs";
 import { createBrightwebClientApp, resolveModuleOrder as resolveGeneratorModuleOrder } from "../packages/create-bw-app/src/generator.mjs";
+import { assertMigrationMutationTargets } from "../packages/create-bw-app/src/migrations.mjs";
 import { removeBrightwebModule } from "../packages/create-bw-app/src/remove.mjs";
 import { normalizeSafeRelativePath, resolveSafeRelativePath } from "../packages/create-bw-app/src/safe-path.mjs";
 import { scaffoldBrightwebApp } from "../packages/create-bw-app/src/scaffold-cmd.mjs";
@@ -29,6 +30,28 @@ async function scaffold(modules = ["crm"]) {
   const targetDir = path.join(root, "app");
   await createBrightwebClientApp({ name: "cli-test", template: "platform", modules: modules.join(","), install: false, yes: true }, { targetDir, dependencyMode: "published", workspaceRoot: REPO_ROOT, banner: "test" });
   return { root, targetDir };
+}
+
+async function scaffoldConsumerWorkspace() {
+  const { root: temporaryRoot, targetDir: originalTarget } = await scaffold(["admin", "crm"]);
+  const root = await fs.realpath(temporaryRoot);
+  const workspace = path.join(root, "workspace");
+  const targetDir = path.join(workspace, "apps", "portal");
+  await fs.mkdir(path.dirname(targetDir), { recursive: true });
+  await fs.rename(originalTarget, targetDir);
+  await fs.rm(path.join(targetDir, "pnpm-workspace.yaml"), { force: true });
+  await fs.writeFile(path.join(workspace, "pnpm-workspace.yaml"), "packages:\n  - apps/*\n");
+  await fs.mkdir(path.join(workspace, "supabase"));
+  const migrationsDir = path.join(workspace, "supabase", "migrations");
+  await fs.rename(path.join(targetDir, "supabase", "migrations"), migrationsDir);
+  const manifestPath = path.join(targetDir, ".brightweb", "app-manifest.json");
+  const manifest = await readJson(manifestPath);
+  const latest = manifest.migrationCursor.admin;
+  const currentFile = (await fs.readdir(migrationsDir)).find((name) => name.endsWith(`_admin__${latest}`));
+  await fs.rm(path.join(migrationsDir, currentFile!));
+  manifest.migrationCursor.admin = "20260906101616_atomic_admin_invitation_acceptance.sql";
+  await writeJson(manifestPath, manifest);
+  return { root, workspace, targetDir, migrationsDir, manifestPath, latest };
 }
 
 async function mockNpmFetch(url: string) {
@@ -794,6 +817,70 @@ test("projects profile route is tracked for fresh apps and restored for existing
   await upgradeBrightwebApp("projects", { targetDir, refreshStarters: true }, { workspaceRoot: REPO_ROOT, fetchImpl: mockNpmFetch });
   assert.equal(await fs.readFile(routePath, "utf8"), expected);
   assert.equal((await readJson(manifestPath)).scaffoldFiles[relativePath]?.module, "projects");
+});
+
+test("bw upgrade appends and repeats safely with workspace-root migrations", async (t) => {
+  const fixture = await scaffoldConsumerWorkspace();
+  const { root, targetDir, migrationsDir, manifestPath, latest } = fixture;
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+  const before = await fs.readFile(manifestPath, "utf8");
+  const runtime = { workspaceRoot: REPO_ROOT, fetchImpl: mockNpmFetch };
+  const dryRun = await upgradeBrightwebApp("admin", { targetDir, dryRun: true }, runtime);
+  assert.equal(dryRun.migrationPlan.writes.length, 1);
+  assert.equal(path.dirname(dryRun.migrationPlan.writes[0].targetPath), await fs.realpath(migrationsDir));
+  assert.equal(await fs.readFile(manifestPath, "utf8"), before);
+  await assert.rejects(fs.access(dryRun.migrationPlan.writes[0].targetPath), { code: "ENOENT" });
+  await upgradeBrightwebApp("admin", { targetDir }, runtime);
+  assert.match(await fs.readFile(dryRun.migrationPlan.writes[0].targetPath, "utf8"), /CREATE POLICY "Admins can view profiles"/);
+  assert.equal((await readJson(manifestPath)).migrationCursor.admin, latest);
+  const repeated = await upgradeBrightwebApp("admin", { targetDir, dryRun: true }, runtime);
+  assert.equal(repeated.migrationPlan.writes.length, 0);
+  await assert.rejects(fs.access(path.join(targetDir, "supabase", "migrations")), { code: "ENOENT" });
+});
+
+test("bw add places module migrations in the consumer workspace", async (t) => {
+  const { root, targetDir, migrationsDir } = await scaffoldConsumerWorkspace();
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+  await addBrightwebModule("projects", { targetDir }, { workspaceRoot: REPO_ROOT });
+  assert.ok((await fs.readdir(migrationsDir)).some((name) => name.includes("_projects__")));
+  await assert.rejects(fs.access(path.join(targetDir, "supabase", "migrations")), { code: "ENOENT" });
+});
+
+for (const operation of ["upgrade", "add"] as const) {
+  for (const unsafe of ["outside workspace", "supabase symlink", "migrations symlink"] as const) {
+    test(`bw ${operation} rejects ${unsafe} before changing app state`, async (t) => {
+      const { root, workspace, targetDir, migrationsDir, manifestPath } = await scaffoldConsumerWorkspace();
+      t.after(() => fs.rm(root, { recursive: true, force: true }));
+      if (unsafe === "outside workspace") {
+        await fs.rename(path.join(workspace, "supabase"), path.join(root, "supabase"));
+      } else {
+        const source = unsafe === "supabase symlink" ? path.dirname(migrationsDir) : migrationsDir;
+        const external = path.join(root, "external");
+        await fs.rename(source, external);
+        await fs.symlink(external, source, "dir");
+      }
+      const beforeManifest = await fs.readFile(manifestPath, "utf8");
+      const beforePackage = await fs.readFile(path.join(targetDir, "package.json"), "utf8");
+      const run = operation === "upgrade"
+        ? upgradeBrightwebApp("admin", { targetDir }, { workspaceRoot: REPO_ROOT, fetchImpl: mockNpmFetch })
+        : addBrightwebModule("projects", { targetDir }, { workspaceRoot: REPO_ROOT });
+      await assert.rejects(run, /parent-directory traversal|do not follow symlinks/);
+      assert.equal(await fs.readFile(manifestPath, "utf8"), beforeManifest);
+      assert.equal(await fs.readFile(path.join(targetDir, "package.json"), "utf8"), beforePackage);
+    });
+  }
+}
+
+test("migration preflight refuses sibling targets and symlinked destination files", async (t) => {
+  const { root, targetDir, migrationsDir } = await scaffoldConsumerWorkspace();
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+  await assert.rejects(assertMigrationMutationTargets(targetDir, [{ targetPath: path.join(root, "sibling.sql") }]), /discovered migrations directory/);
+  const external = path.join(root, "external.sql");
+  await fs.writeFile(external, "untouched");
+  const destination = path.join(migrationsDir, "9999_admin__test.sql");
+  await fs.symlink(external, destination);
+  await assert.rejects(assertMigrationMutationTargets(targetDir, [{ targetPath: destination }]), /do not follow symlinks/);
+  assert.equal(await fs.readFile(external, "utf8"), "untouched");
 });
 
 test("bw add reports a clean module version conflict", async (t) => {

@@ -6,7 +6,7 @@ import { SELECTABLE_MODULES } from "./constants.mjs";
 import { TEMPLATE_ROOT, createDbInstallPlan, createManagedPlatformFiles, getDbModuleRegistry, getVersionMap, pathExists, readJsonIfPresent } from "./generator.mjs";
 import { collectScaffoldFiles, findWorkspaceRoot, loadModuleCatalog, MODULE_PACKAGES, readAppManifest, resolveModuleClosure, satisfiesVersion, writeAppManifest } from "./app-manifest.mjs";
 import { assertNoUntrackedScaffoldWrites, scaffoldDrift } from "./scaffold.mjs";
-import { applyMigrationWrites, planMigrationAppends } from "./migrations.mjs";
+import { assertMigrationMutationTargets, applyMigrationWrites, planMigrationAppends } from "./migrations.mjs";
 
 const HELP = `Usage: bw add <moduleKey> [options]\n\nOptions:\n  --target-dir <path>       App directory (defaults to cwd)\n  --workspace-root <path>   BrightWeb workspace root\n  --dry-run                 Print the install plan without writing\n  --help                    Show this help`;
 
@@ -109,7 +109,8 @@ export async function addBrightwebModule(moduleKey, argvOptions = {}, runtimeOpt
     }
   }
 
-  await assertMutationTargets(targetDir, ["package.json", ".brightweb/app-manifest.json", ...Object.keys(managedWrites), ...overlayFiles, ...migrationPlan.writes.map((write) => path.relative(targetDir, write.targetPath))]);
+  await assertMutationTargets(targetDir, ["package.json", ".brightweb/app-manifest.json", ...Object.keys(managedWrites), ...overlayFiles]);
+  await assertMigrationMutationTargets(targetDir, migrationPlan.writes);
 
   const summary = [
     "bw add",
