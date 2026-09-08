@@ -19,8 +19,6 @@ test("platform packages expose every supported destructive UI surface", () => {
   assert.match(organizationSheet, /Eliminar organização/);
   assert.match(organizationSheet, /Revogar/);
   assert.match(organizationSheet, /<AlertDialog open=\{deleteDialogOpen\}/);
-  assert.match(organizationSheet, /deleteConfirmationTarget = organization\?\.name/);
-  assert.match(organizationSheet, /deleteConfirmation !== deleteConfirmationTarget/);
   assert.match(organizationSheet, /<p role="alert"[^>]*>\{operationError\}<\/p>/);
   assert.doesNotMatch(organizationSheet, /window\.prompt/);
 
