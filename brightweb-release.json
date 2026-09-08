@@ -5,7 +5,7 @@
     "@brightweblabs/core-auth": "0.12.2",
     "@brightweblabs/infra": "0.7.0",
     "@brightweblabs/module-admin": "0.9.8",
-    "@brightweblabs/module-crm": "0.18.5",
+    "@brightweblabs/module-crm": "0.18.6",
     "@brightweblabs/module-marketing": "0.5.3",
     "@brightweblabs/module-orgs": "0.7.4",
     "@brightweblabs/module-projects": "0.19.4",
