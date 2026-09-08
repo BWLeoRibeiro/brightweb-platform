@@ -4,7 +4,7 @@ import path from "node:path";
 import { stdout as output } from "node:process";
 import { hashFile, findWorkspaceRoot, loadModuleCatalog, readAppManifest, writeAppManifest, cleanVersion } from "./app-manifest.mjs";
 import { pathExists, runInstall } from "./generator.mjs";
-import { applyMigrationWrites, getModuleMigrations, planMigrationAppends } from "./migrations.mjs";
+import { assertMigrationMutationTargets, applyMigrationWrites, getModuleMigrations, planMigrationAppends } from "./migrations.mjs";
 import { buildBrightwebAppUpdatePlan } from "./update.mjs";
 import { resolveSafeRelativePath } from "./safe-path.mjs";
 import { scaffoldDrift } from "./scaffold.mjs";
@@ -102,7 +102,8 @@ export async function upgradeBrightwebApp(moduleKey, argvOptions = {}, runtimeOp
     migrationCursor: appManifest.migrationCursor,
     migrationUpperBounds,
   });
-  await assertMutationTargets(targetDir, [".brightweb/app-manifest.json", ...plan.fileWrites.map((write) => write.relativePath), ...plan.fileDeletes.map((entry) => entry.relativePath), ...migrationPlan.writes.map((write) => path.relative(targetDir, write.targetPath))]);
+  await assertMutationTargets(targetDir, [".brightweb/app-manifest.json", ...plan.fileWrites.map((write) => write.relativePath), ...plan.fileDeletes.map((entry) => entry.relativePath)]);
+  await assertMigrationMutationTargets(targetDir, migrationPlan.writes);
   output.write(`bw upgrade\nPackages to update: ${plan.packageUpdates.length}\nManaged files to write: ${plan.fileWrites.length}\nObsolete managed files to remove: ${plan.fileDeletes.length}\nMigrations to append: ${migrationPlan.appends.length}\n`);
   if (throughMigration) output.write(`Migration cutoff: ${moduleKey} through ${throughMigration}\n`);
   for (const boundary of safetyBoundaries) {

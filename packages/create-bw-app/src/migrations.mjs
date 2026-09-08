@@ -1,4 +1,5 @@
 import semver from "semver";
+import { assertMutationTargets } from "./mutation-paths.mjs";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { createHash } from "node:crypto";
@@ -14,6 +15,33 @@ export async function findAppMigrationsDirectory(targetDir) {
     if (parent === current) return path.join(path.resolve(targetDir), "supabase", "migrations");
     current = parent;
   }
+}
+
+// Database migrations may belong to the containing consumer workspace, while
+// app files remain bounded to the app itself. Never realpath the migration
+// directory: that would hide links below the legitimate workspace boundary.
+export async function assertMigrationMutationTargets(targetDir, writes) {
+  if (writes.length === 0) return;
+  const appRoot = await fs.realpath(path.resolve(targetDir));
+  let boundary = appRoot;
+  let current = appRoot;
+  while (true) {
+    if (await pathExists(path.join(current, "pnpm-workspace.yaml"))
+      || await pathExists(path.join(current, ".git"))) {
+      boundary = current;
+      break;
+    }
+    const parent = path.dirname(current);
+    if (parent === current) break;
+    current = parent;
+  }
+  const migrationsDir = await findAppMigrationsDirectory(appRoot);
+  for (const write of writes) {
+    if (path.dirname(write.targetPath) !== migrationsDir) {
+      throw new Error("Migration write must target the app's discovered migrations directory.");
+    }
+  }
+  await assertMutationTargets(boundary, writes.map((write) => path.relative(boundary, write.targetPath)));
 }
 
 export async function getModuleMigrations(moduleKey, catalogEntry = {}) {
