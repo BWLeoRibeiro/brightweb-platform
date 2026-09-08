@@ -1,5 +1,12 @@
 # create-bw-app
 
+## 0.27.4
+
+### Patch Changes
+
+- a7dbad1: Display the configured company name beside the client portal logo instead of a hardcoded BrightWeb title. Update the starter compatibility defaults to consume the corrected shell package.
+- 0f721b9: Allow module upgrades and additions to append migrations in the containing workspace’s canonical Supabase directory. Keep app writes bounded to the app and reject migration writes outside the nearest workspace/repository boundary or through symlinks.
+
 ## 0.27.3
 
 ### Patch Changes
