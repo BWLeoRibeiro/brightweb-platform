@@ -1,5 +1,11 @@
 # @brightweblabs/app-shell
 
+## 0.16.4
+
+### Patch Changes
+
+- a7dbad1: Display the configured company name beside the client portal logo instead of a hardcoded BrightWeb title. Update the starter compatibility defaults to consume the corrected shell package.
+
 ## 0.16.3
 
 ### Patch Changes
