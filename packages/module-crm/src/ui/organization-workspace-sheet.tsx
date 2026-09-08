@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { Building2, Pencil, Send, ShieldCheck, Trash2, UserPlus, Users } from "lucide-react";
 import { toast } from "sonner";
-import { AppSheetBody, AppSheetHeader, PillTabs, SheetSection, SheetSelect, sheetEditControlClassName, sheetFieldLabelClassName, sheetShellClassName } from "@brightweblabs/app-shell";
+import { AppSheetBody, AppSheetFooter, AppSheetHeader, PillTabs, SheetSection, SheetSelect, sheetEditControlClassName, sheetFieldLabelClassName, sheetShellClassName } from "@brightweblabs/app-shell";
 import { Badge, Button, EmptyState, Field, FieldContent, FieldLabel, Input, Sheet, SheetContent, Skeleton } from "@brightweblabs/ui";
 
 import type { CrmContact } from "../data";
@@ -17,6 +17,7 @@ export type CrmOrganizationWorkspaceSheetProps = {
   organization: CrmOrganization | null;
   client: CrmUiClient;
   onOpenChange: (open: boolean) => void;
+  onOrganizationDelete?: (organization: CrmOrganization) => void;
   onOrganizationChange?: (organization: CrmOrganization) => void;
   onOpenContact?: (contact: CrmContact) => void;
 };
@@ -25,7 +26,7 @@ function contactName(contact: CrmContact) {
   return [contact.first_name, contact.last_name].filter(Boolean).join(" ") || contact.email || "Sem nome";
 }
 
-export function CrmOrganizationWorkspaceSheet({ open, organization, client, onOpenChange, onOrganizationChange, onOpenContact }: CrmOrganizationWorkspaceSheetProps) {
+export function CrmOrganizationWorkspaceSheet({ open, organization, client, onOpenChange, onOrganizationChange, onOrganizationDelete, onOpenContact }: CrmOrganizationWorkspaceSheetProps) {
   const [tab, setTab] = useState<WorkspaceTab>("info");
   const [access, setAccess] = useState<CrmOrganizationAccess>({ members: [], invitations: [] });
   const [contacts, setContacts] = useState<CrmContact[]>([]);
@@ -56,6 +57,7 @@ export function CrmOrganizationWorkspaceSheet({ open, organization, client, onOp
   useEffect(() => {
     if (!open) return;
     setTab("info");
+    setEditOpen(false);
     setAddMemberOpen(false);
     setEmail("");
     setRole("member");
@@ -132,7 +134,7 @@ export function CrmOrganizationWorkspaceSheet({ open, organization, client, onOp
     <>
       <Sheet open={open} onOpenChange={onOpenChange}>
         <SheetContent className={sheetShellClassName}>
-          <AppSheetHeader icon={Building2} title={organization.name ?? "Organização"} description={organization.industry || "Registo CRM da organização"} aside={tab === "info" ? <Button type="button" variant="outline" size="sm" onClick={() => setEditOpen(true)}><Pencil className="mr-1.5 size-3.5" />Editar</Button> : undefined} />
+          <AppSheetHeader icon={Building2} title={organization.name ?? "Organização"} description={organization.industry || "Registo CRM da organização"} />
           <div className="px-5 pt-3">
             <PillTabs ariaLabel="Organização" items={[{ value: "info", label: "Informação" }, { value: "people", label: `Membros · ${access.members.length}` }]} value={tab} onValueChange={setTab} />
           </div>
@@ -166,9 +168,15 @@ export function CrmOrganizationWorkspaceSheet({ open, organization, client, onOp
               </SheetSection>
             </AppSheetBody>
           )}
+          {tab === "info" ? <AppSheetFooter><Button type="button" className="w-full" onClick={() => setEditOpen(true)}><Pencil className="mr-2 size-4" />Editar</Button></AppSheetFooter> : null}
         </SheetContent>
       </Sheet>
-      <CrmOrganizationSheet open={editOpen} initialMode="edit" organization={organization} onOpenChange={setEditOpen} onSubmit={updateOrganization} />
+      <CrmOrganizationSheet open={editOpen} initialMode="edit" organization={organization} onOpenChange={setEditOpen} onSubmit={updateOrganization} onDelete={async (target) => {
+        await client.deleteOrganization(target.id);
+        setEditOpen(false);
+        onOpenChange(false);
+        onOrganizationDelete?.(target);
+      }} />
     </>
   );
 }
