@@ -27,10 +27,27 @@ test("CRM creation sheets use entity-specific semantic sections", async () => {
 });
 
 test("project creation follows project, internal team, client access, and review order", async () => {
-  const source = await read("packages/module-projects/src/ui/create-project-sheet.tsx");
+  const [source, dictionary] = await Promise.all([
+    read("packages/module-projects/src/ui/create-project-sheet.tsx"),
+    read("packages/module-projects/src/ui/project-access-dictionary.ts"),
+  ]);
+  const headings = [
+    'title: "Projeto e organização"',
+    'title: "Equipa interna"',
+    'title: "Acesso ao projeto"',
+    'title: "Rever e criar"',
+  ];
+  const wizardDictionary = dictionary.slice(dictionary.indexOf("wizard: {"));
+  let previous = -1;
+  for (const heading of headings) {
+    const index = wizardDictionary.indexOf(heading);
+    assert.ok(index > previous, `${heading} should appear in semantic order`);
+    previous = index;
+  }
+
   const wizardBody = source.slice(source.indexOf("<WizardProgress step={step}"));
   const stepBranches = ["{step === 1 ? (", "{step === 2 ? (", "{step === 3 ? (", "{step === 4 ? ("];
-  let previous = -1;
+  previous = -1;
   for (const branch of stepBranches) {
     const index = wizardBody.indexOf(branch, previous + 1);
     assert.ok(index > previous, `${branch} should render in wizard order`);
@@ -47,13 +64,14 @@ test("project creation follows project, internal team, client access, and review
   assert.match(source, /projectAccessDictionary\.wizard\.invalidDateRange/);
 });
 
-test("creation sheets use the shared selector primitive", async () => {
+test("creation sheets use the shared styled selector popup", async () => {
   const [select, appSheet, projectFields] = await Promise.all([
     read("packages/ui/src/components/select.tsx"),
     read("packages/app-shell/src/components/app-sheet.tsx"),
     read("packages/module-projects/src/ui/project-create/shared-fields.tsx"),
   ]);
   assert.match(select, /SelectPrimitive\.Content/);
+  assert.match(select, /rounded-xl/);
   assert.match(select, /SelectPrimitive\.ItemIndicator/);
   assert.match(appSheet, /export function SheetSelect/);
   assert.match(projectFields, /<SheetSelect/);

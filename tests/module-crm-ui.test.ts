@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
 import { createElement as h } from "react";
@@ -94,6 +94,12 @@ test("CRM dashboard follows the MQ table, right rail, and report hero compositio
   assert.match(html, /Relatório do CRM/);
   assert.doesNotMatch(html, /Visão geral do funil/);
   assert.ok(html.indexOf("Ada Lovelace") < html.indexOf("Relatório do CRM"));
+});
+
+test("CRM contacts table remains edge-to-edge inside the shared card surface", () => {
+  const html = renderToStaticMarkup(h(CrmContactsTable, { data: contacts }));
+
+  assert.match(html, /^<article\b(?=[^>]*class="[^"]*!p-0[^"]*")(?=[^>]*data-density="none")[^>]*>/);
 });
 
 test("CRM summary consumers render pending state instead of transient empty UI", () => {
@@ -259,6 +265,21 @@ test("CRM organization view exposes the website as a safe external link", () => 
   assert.match(organizationSource, /<ExternalLink className="size-3\.5 shrink-0" aria-hidden/);
 });
 
+test("CRM sheets consume the canonical natural-case typography recipes", () => {
+  const contactSource = readFileSync(join(process.cwd(), "packages/module-crm/src/ui/contact-dialog.tsx"), "utf8");
+  const organizationSource = readFileSync(join(process.cwd(), "packages/module-crm/src/ui/organization-sheet.tsx"), "utf8");
+  const appSheetSource = readFileSync(join(process.cwd(), "packages/app-shell/src/components/app-sheet.tsx"), "utf8");
+  const accountMenuSource = readFileSync(join(process.cwd(), "packages/app-shell/src/components/account-menu.tsx"), "utf8");
+
+  assert.match(contactSource, /sheetFieldLabelClassName/);
+  assert.match(organizationSource, /sheetFieldLabelClassName/);
+  assert.doesNotMatch(contactSource, /text-micro uppercase tracking-wider/);
+  assert.doesNotMatch(organizationSource, /text-micro uppercase tracking-wider/);
+  assert.match(appSheetSource, /normal-case tracking-normal/);
+  assert.match(appSheetSource, /text-heading-4/);
+  assert.match(accountMenuSource, /block truncate text-meta/);
+});
+
 test("CRM contact and organization fields have stable accessible-name associations", () => {
   const contactSource = readFileSync(join(process.cwd(), "packages/module-crm/src/ui/contact-dialog.tsx"), "utf8");
   const organizationSource = readFileSync(join(process.cwd(), "packages/module-crm/src/ui/organization-sheet.tsx"), "utf8");
@@ -351,8 +372,7 @@ test("CRM list requests debounce only search and expose pending state immediatel
   assert.match(tableSource, /aria-busy=\{loading\}/);
 });
 
-test("CRM UI dictionary defaults to Portuguese and supports rendered label overrides", () => {
-  assert.equal(defaultCrmUiDictionary.locale, "pt-PT");
+test("CRM UI dictionary overrides every rendered label source", () => {
   const dictionary: CrmUiDictionary = {
     ...defaultCrmUiDictionary,
     table: { ...defaultCrmUiDictionary.table, searchPlaceholder: "Encontrar pessoas", columns: { ...defaultCrmUiDictionary.table.columns, name: "Pessoa" } },
@@ -366,6 +386,7 @@ test("CRM table nests contact details under the name and uses MQ's short updated
   const html = renderToStaticMarkup(h(CrmContactsTable, { data: contacts }));
   assert.match(html, /Ada Lovelace.*ada@example\.com/s);
   assert.match(html, /18\/07/);
+  assert.match(html, /text-data-sm font-normal text-muted-foreground[^>]*>18\/07</);
   assert.doesNotMatch(html, />Email</);
 });
 
@@ -404,7 +425,29 @@ test("CRM report slots are composable", () => {
   assert.match(html, /Depois das distribuições/);
 });
 
+test("CRM default dictionary is Portuguese and covers a substantial full-page contract", () => {
+  const leaves = (value: unknown): number => typeof value === "string" || typeof value === "function" ? 1 : value && typeof value === "object" ? Object.values(value).reduce((sum, item) => sum + leaves(item), 0) : 0;
+  assert.equal(defaultCrmUiDictionary.locale, "pt-PT");
+  assert.ok(leaves(defaultCrmUiDictionary) >= 120);
+  assert.equal(defaultCrmUiDictionary.stages.lead, "Novo");
+  assert.equal(defaultCrmUiDictionary.report.eyebrow, "Relatório operacional");
+});
+
+test("CRM UI files use canonical package typography utilities", () => {
+  const directory = join(process.cwd(), "packages/module-crm/src/ui");
+  const source = readdirSync(directory).filter((file) => /\.(ts|tsx)$/.test(file)).map((file) => readFileSync(join(directory, file), "utf8")).join("\n");
+  assert.doesNotMatch(source, /#[0-9a-f]{3,8}\b/i);
+  assert.doesNotMatch(source, /\bfont-medium\b/);
+  assert.match(source, /\btext-(?:heading-[1-4]|title|body|meta|label|micro|metric)\b/);
+  assert.doesNotMatch(source, /(?<!--)\bportal-/);
+  assert.match(source, /\bproject-(?:surface|item|hero)/);
+});
+
 test("CRM controller hooks and host event contract are exported", () => {
   for (const hook of [useCrmDashboardController, useCrmDataSync, useCrmDerivedState, useCrmContactActions, useCrmOrganizationActions, useCrmBulkActions, useCrmMutations, useCrmWindowEvents]) assert.equal(typeof hook, "function");
   assert.equal(CRM_UI_EVENTS.openTimeline, "brightweb:crm:open-timeline");
+});
+
+test("CRM organization search uses the shared Portuguese verb", () => {
+  assert.equal(defaultCrmUiDictionary.organizations.searchPlaceholder, "Procurar organizações…");
 });
