@@ -1,5 +1,11 @@
 # create-bw-app
 
+## 0.27.6
+
+### Patch Changes
+
+- fabd657: Use member terminology for portal accounts and organisation access while retaining CRM contacts and organisations. Make project access and team management actions visible, highlight selected members, and show member identities to existing access managers without changing permissions or role identifiers.
+
 ## 0.27.5
 
 ### Patch Changes

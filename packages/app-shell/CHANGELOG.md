@@ -1,5 +1,13 @@
 # @brightweblabs/app-shell
 
+## 0.16.5
+
+### Patch Changes
+
+- fabd657: Use member terminology for portal accounts and organisation access while retaining CRM contacts and organisations. Make project access and team management actions visible, highlight selected members, and show member identities to existing access managers without changing permissions or role identifiers.
+- Updated dependencies [fabd657]
+  - @brightweblabs/ui@1.5.7
+
 ## 0.16.4
 
 ### Patch Changes

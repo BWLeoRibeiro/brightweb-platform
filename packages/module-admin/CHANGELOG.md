@@ -1,5 +1,18 @@
 # @brightweblabs/module-admin
 
+## 0.9.10
+
+### Patch Changes
+
+- fabd657: Clarify copy for CRM records, organisation membership, internal project teams, project sharing and invitation acceptance. Explain queued member additions, immediate versus invited access, future-member project sharing and separately saved organisations. Show the selected invitation scope and distinguish portal profiles from organisation roles without changing permissions, defaults or invitation delivery behaviour.
+- fabd657: Use member terminology for portal accounts and organisation access while retaining CRM contacts and organisations. Make project access and team management actions visible, highlight selected members, and show member identities to existing access managers without changing permissions or role identifiers.
+- Updated dependencies [fabd657]
+- Updated dependencies [fabd657]
+- Updated dependencies [fabd657]
+  - @brightweblabs/core-auth@0.12.3
+  - @brightweblabs/ui@1.5.7
+  - @brightweblabs/app-shell@0.16.5
+
 ## 0.9.9
 
 ### Patch Changes
