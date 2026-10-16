@@ -33,7 +33,11 @@ for (const workspace of [false, true]) {
     // Ordinary installs must still honor CI's frozen-lockfile policy.
     await assert.rejects(exec(process.execPath, ["--input-type=module", "-e",
       `import { runInstall } from ${JSON.stringify(generator)}; await runInstall("pnpm", ${JSON.stringify(root)});`,
-    ], { cwd: root, env }), /ERR_PNPM_LOCKFILE_CONFIG_MISMATCH/);
+    ], { cwd: root, env }), (error: any) => {
+      // pnpm reports diagnostics on different streams across platforms/reporters.
+      assert.match(`${error.stdout}\n${error.stderr}`, /ERR_PNPM_LOCKFILE_CONFIG_MISMATCH/);
+      return true;
+    });
     assert.equal(await fs.readFile(lockfile, "utf8"), before);
 
     const plan = { targetDir, workspaceRoot: workspace ? root : null, dependencyMode: workspace ? "workspace" : "published", packageManager: "pnpm" };
