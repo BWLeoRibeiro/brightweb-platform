@@ -299,7 +299,7 @@ export async function createProjectWithAccess(
     || input.clientAccess.organizations.length > 1
     || input.clientAccess.organizations.some((organization) => organization.organizationId !== input.project.organizationId)
   ) {
-    throw new Error("O projeto e o acesso de clientes devem usar a mesma organização.");
+    throw new Error("O projeto e o acesso de membros devem usar a mesma organização.");
   }
   const organizationIds = [input.project.organizationId];
   const profileGrants = input.clientAccess.organizations.flatMap((organization) =>

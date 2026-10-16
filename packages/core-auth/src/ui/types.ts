@@ -183,6 +183,7 @@ export type AuthUiDictionary = {
     invitedEmailLabel?: string;
     activeSession: string;
     sameAccount: string;
+    accept?: string;
     otherAccount: string;
     sameAccountDescription: string;
     otherAccountDescription: string;

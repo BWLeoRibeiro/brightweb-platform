@@ -206,7 +206,7 @@ export function ClientProjectsListClient({ initialProjects = null }: { initialPr
           </div>
           {showSearch ? (
             <div className="min-w-0 sm:w-64">
-              <SearchField value={search} onChange={setSearch} onClear={() => setSearch("")} className="[&>button]:size-11 [&>button]:right-0" inputClassName="h-11 bg-background" placeholder={clientProjectsDictionary.safeUi.searchPlaceholder} />
+              <SearchField value={search} onChange={setSearch} onClear={() => setSearch("")} clearLabel={clientProjectsDictionary.safeUi.clearSearch} className="[&>button]:size-11 [&>button]:right-0" inputClassName="h-11 bg-background" placeholder={clientProjectsDictionary.safeUi.searchPlaceholder} />
             </div>
           ) : null}
         </div>

@@ -1,5 +1,7 @@
 "use client";
 
+import { organizationAccessCopy } from "./organization-access-copy";
+
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { Building2, Pencil, Send, ShieldCheck, Trash2, UserPlus, Users } from "lucide-react";
 import { toast } from "sonner";
@@ -78,9 +80,9 @@ export function CrmOrganizationWorkspaceSheet({ open, organization, client, onOp
         setAddMemberOpen(false);
       }
       await load();
-      const message = outcome.status === "immediate_access" ? "Acesso concedido imediatamente."
-        : outcome.status === "membership_updated" ? "Função do membro atualizada."
-          : outcome.status === "already_member" ? "Esta pessoa já é membro."
+      const message = outcome.status === "immediate_access" ? "Membro adicionado à organização com acesso imediato."
+        : outcome.status === "membership_updated" ? "Função do membro nesta organização atualizada."
+          : outcome.status === "already_member" ? "Esta pessoa já é membro desta organização."
             : outcome.status === "pending_invitation" ? "Convite enviado por email."
               : outcome.status === "duplicate_pending" ? "Já existe um convite pendente."
                 : outcome.message || "Não foi possível preparar o acesso.";
@@ -97,12 +99,12 @@ export function CrmOrganizationWorkspaceSheet({ open, organization, client, onOp
     try {
       await client.updateOrganizationMemberRole(organization.id, member.profileId, nextRole);
       setAccess((current) => ({ ...current, members: current.members.map((item) => item.profileId === member.profileId ? { ...item, role: nextRole } : item) }));
-      toast.success("Função atualizada.");
+      toast.success("Função nesta organização atualizada.");
     } catch (error) { toast.error(error instanceof Error ? error.message : "Não foi possível atualizar a função."); }
   };
 
   const removeMember = async (member: CrmOrganizationMember) => {
-    if (!window.confirm(`Remover o acesso de ${member.label}?`)) return;
+    if (!window.confirm(organizationAccessCopy.removeConfirmation(member.label, organization.name ?? "esta organização"))) return;
     try {
       await client.removeOrganizationMember(organization.id, member.profileId);
       setAccess((current) => ({ ...current, members: current.members.filter((item) => item.profileId !== member.profileId) }));
@@ -150,17 +152,18 @@ export function CrmOrganizationWorkspaceSheet({ open, organization, client, onOp
             <AppSheetBody>
               <div className="flex items-start justify-between gap-4">
                 <div className="min-w-0"><p className="text-body font-semibold text-[color:var(--foreground)]">Acesso à organização</p><p className="mt-0.5 text-meta text-[color:var(--muted-foreground)]">{access.members.length} {access.members.length === 1 ? "membro" : "membros"} · {pending.length} {pending.length === 1 ? "convite pendente" : "convites pendentes"}</p></div>
-                <Button type="button" variant={addMemberOpen ? "outline" : "brand"} size="sm" onClick={() => setAddMemberOpen((current) => !current)}><UserPlus className="size-4" />{addMemberOpen ? "Cancelar" : "Adicionar membro"}</Button>
+                <Button type="button" variant={addMemberOpen ? "outline" : "brand"} size="sm" onClick={() => setAddMemberOpen((current) => !current)}><UserPlus className="size-4" />{addMemberOpen ? "Cancelar" : organizationAccessCopy.addMember}</Button>
               </div>
-              {addMemberOpen ? <SheetSection title="Adicionar membro" editing bodyClassName="p-4">
-                <p className="mb-4 text-meta leading-relaxed text-[color:var(--muted-foreground)]">Se já existir uma conta, o acesso é adicionado imediatamente. Caso contrário, será enviado um convite por email.</p>
-                <form onSubmit={invite} className="space-y-3"><Field><FieldLabel htmlFor="workspace-member-email" className={sheetFieldLabelClassName}>Email</FieldLabel><FieldContent><Input id="workspace-member-email" name="email" type="email" autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="email@empresa.pt" className={`${sheetEditControlClassName} mt-1.5`} required /></FieldContent></Field><Field><FieldLabel htmlFor="workspace-member-role" className={sheetFieldLabelClassName}>Função</FieldLabel><FieldContent><SheetSelect id="workspace-member-role" name="role" className="mt-1.5" value={role} onValueChange={(value) => setRole(value === "admin" ? "admin" : "member")} options={[{ value: "member", label: "Membro" }, { value: "admin", label: "Administrador" }]} /></FieldContent></Field><Button type="submit" className="w-full" disabled={saving || !email.trim()}><Send className="size-4" />{saving ? "A adicionar…" : "Confirmar acesso"}</Button></form>
+              {addMemberOpen ? <SheetSection title={organizationAccessCopy.addTitle} editing bodyClassName="p-4">
+                <p className="mb-4 text-meta leading-relaxed text-[color:var(--muted-foreground)]">{organizationAccessCopy.accountHint} {organizationAccessCopy.projectScopeHint}</p>
+                <form onSubmit={invite} className="space-y-3"><Field><FieldLabel htmlFor="workspace-member-email" className={sheetFieldLabelClassName}>Email</FieldLabel><FieldContent><Input id="workspace-member-email" name="email" type="email" autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="email@empresa.pt" className={`${sheetEditControlClassName} mt-1.5`} required /></FieldContent></Field><Field><FieldLabel htmlFor="workspace-member-role" className={sheetFieldLabelClassName}>{organizationAccessCopy.roleLabel}</FieldLabel><FieldContent><SheetSelect id="workspace-member-role" name="role" className="mt-1.5" value={role} onValueChange={(value) => setRole(value === "admin" ? "admin" : "member")} options={[{ value: "member", label: "Membro" }, { value: "admin", label: "Administrador" }]} /></FieldContent></Field><Button type="submit" className="w-full" disabled={saving || !email.trim()}><Send className="size-4" />{saving ? organizationAccessCopy.adding : organizationAccessCopy.addAction}</Button></form>
               </SheetSection> : null}
-              <SheetSection title={`Membros · ${access.members.length}`} bodyClassName="divide-y divide-[color:var(--border)]">
-                {access.members.map((member) => <div key={member.id} className="grid grid-cols-[minmax(0,1fr)_160px_auto] items-center gap-2 px-4 py-3"><div className="min-w-0"><p className="truncate text-body font-semibold">{member.label}</p><p className="truncate text-meta text-[color:var(--muted-foreground)]">{member.email || member.profileId}</p></div><SheetSelect name={`member-role-${member.profileId}`} aria-label={`Função de ${member.label}`} value={member.role} onValueChange={(value) => void updateRole(member, value === "admin" ? "admin" : "member")} options={[{ value: "member", label: "Membro" }, { value: "admin", label: "Administrador" }]} /><Button type="button" variant="ghost" size="icon-sm" aria-label={`Remover ${member.label}`} onClick={() => void removeMember(member)}><Trash2 className="size-4" /></Button></div>)}
-                {access.members.length === 0 ? <EmptyState icon={Users} title="Sem membros" hint="Adicione a primeira pessoa com acesso a esta organização." /> : null}
+              <SheetSection title={`${organizationAccessCopy.members} · ${access.members.length}`} bodyClassName="divide-y divide-[color:var(--border)]">
+                {access.members.map((member) => <div key={member.id} className="grid grid-cols-[minmax(0,1fr)_160px_auto] items-center gap-2 px-4 py-3"><div className="min-w-0"><p className="truncate text-body font-semibold">{member.label}</p><p className="truncate text-meta text-[color:var(--muted-foreground)]">{member.email || member.profileId}</p></div><SheetSelect name={`member-role-${member.profileId}`} aria-label={organizationAccessCopy.roleFor(member.label)} value={member.role} onValueChange={(value) => void updateRole(member, value === "admin" ? "admin" : "member")} options={[{ value: "member", label: "Membro" }, { value: "admin", label: "Administrador" }]} /><Button type="button" variant="ghost" size="icon-sm" aria-label={organizationAccessCopy.removeLabel(member.label)} onClick={() => void removeMember(member)}><Trash2 className="size-4" /></Button></div>)}
+                {access.members.length === 0 ? <EmptyState icon={Users} title="Sem membros" hint={organizationAccessCopy.emptyHint} /> : null}
               </SheetSection>
               <SheetSection title={`Convites pendentes · ${pending.length}`} bodyClassName="divide-y divide-[color:var(--border)]">
+                <p className="px-4 py-3 text-meta text-muted-foreground">{organizationAccessCopy.pendingHint}</p>
                 {pending.map((invitation) => <div key={invitation.id} className="flex items-center justify-between gap-3 px-4 py-3"><div className="min-w-0"><p className="truncate text-body font-semibold">{invitation.email}</p><div className="mt-1 flex flex-wrap items-center gap-2"><Badge variant="outline"><ShieldCheck className="mr-1 size-3" />{invitation.role === "admin" ? "Administrador" : "Membro"}</Badge><span className="text-meta text-[color:var(--muted-foreground)]">A aguardar resposta</span></div></div><div className="flex items-center gap-1"><Button type="button" variant="ghost" size="sm" onClick={() => void resend(invitation)}>Reenviar</Button><Button type="button" variant="ghost" size="sm" onClick={() => void revoke(invitation)}>Revogar</Button></div></div>)}
                 {pending.length === 0 ? <p className="px-4 py-5 text-body text-[color:var(--muted-foreground)]">Não existem convites a aguardar resposta.</p> : null}
               </SheetSection>
