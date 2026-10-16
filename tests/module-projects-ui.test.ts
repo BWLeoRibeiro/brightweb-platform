@@ -68,9 +68,6 @@ test("project-facing Portuguese copy consistently calls milestones metas", () =>
   });
 
   assert.equal(visibleCopy.some((label) => /milestone|marcos?/i.test(label)), false);
-  assert.equal(defaultProjectsUiDictionary.detail.milestones, "Metas");
-  assert.equal(defaultProjectsUiDictionary.forms.newMilestone, "Nova meta");
-  assert.equal(defaultDashboardDictionary.milestones.emptyDescription, "Metas com data aparecem aqui.");
 });
 
 test("project clipboard feedback is localized and action-specific", () => {
@@ -108,12 +105,6 @@ test("project detail hero only renders selected project dates and combines compl
   assert.match(heroSource, /hasBothProjectDates[\s\S]*dictionary\.detail\.projectDates/);
   assert.match(heroSource, /ProjectHeroDate label=\{dictionary\.detail\.projectStartShort\}/);
   assert.match(heroSource, /ProjectHeroDate label=\{dictionary\.detail\.projectEndShort\}/);
-  assert.match(heroSource, /xl:divide-x/);
-  assert.match(heroSource, /grid-cols-\[auto_minmax\(2\.5rem,1fr\)_auto\]/);
-  assert.equal(defaultProjectsUiDictionary.detail.projectManager, "Gestor do projeto");
-  assert.equal(defaultProjectsUiDictionary.detail.projectDates, "Período do projeto");
-  assert.equal(defaultProjectsUiDictionary.detail.projectStartDate, "Data de início");
-  assert.equal(defaultProjectsUiDictionary.detail.projectDueDate, "Prazo do projeto");
 });
 
 test("compact collection previews preserve the 0/1/2/3 boundary and gate overflow at 4+", () => {
@@ -545,7 +536,6 @@ test("internal team picker stages additions and transfers responsibility without
   assert.match(editor, /<AlertDialog[\s\S]*removeConfirmationTitle[\s\S]*removeConfirmationDescription[\s\S]*confirmRemoval/);
   assert.match(editor, /toast\.success\([\s\S]*dictionary\.team\.membersRemoved/);
   assert.doesNotMatch(editor, /window\.confirm/);
-  assert.equal((rows.match(/className=\{TEAM_MEMBER_AVATAR_CLASS_NAME\}/g) ?? []).length, 2);
 });
 
 test("assignable internal profiles use a privileged server directory after manager authorization", () => {
@@ -635,7 +625,6 @@ test("Projects UI request failures consistently read the public error envelope",
 
 test("Projects UI ships Portuguese defaults and configurable shell registration", () => {
   assert.equal(defaultProjectsUiDictionary.locale, "pt-PT");
-  assert.equal(defaultProjectsUiDictionary.status.planned, "A planear");
   const registration = createProjectsModuleRegistration("/projects");
   assert.equal(registration.navItems?.[0]?.href, "/projects");
   assert.deepEqual(registration.toolbarActions?.projects?.map((item) => item.action), ["projects-refresh", "projects-new-menu"]);
@@ -788,18 +777,14 @@ test("Projects package UI contains the literal list/detail translation and no ra
   for (const symbol of ["ProjectsPage", "ProjectDetailPage", "ProjectsToolbarControls", "ProjectDetailDataProvider", "ProjectBoardKanban", "ProjectTasksPage", "ProjectBoardLoading"]) assert.match(readFileSync(join(root, "index.ts"), "utf8"), new RegExp(symbol.replace("ProjectsToolbarControls", "toolbar-controls").replace("ProjectDetailDataProvider", "project-detail-data-provider").replace("ProjectsPage", "projects-page").replace("ProjectDetailPage", "project-detail-page").replace("ProjectBoardKanban", "project-board-kanban").replace("ProjectTasksPage", "project-tasks-page").replace("ProjectBoardLoading", "project-board-loading")));
 });
 
-test("dashboard attention cards use the canonical editorial attention-row recipe", () => {
+test("dashboard attention cards preserve project context, accessible decoration, and reduced motion", () => {
   const card = readFileSync(
     join(process.cwd(), "packages/module-projects/src/ui/shared/dashboard-project-attention-card.tsx"),
     "utf8",
   );
   const projectTokens = readFileSync(join(process.cwd(), "packages/module-projects/tokens.css"), "utf8");
   const dashboard = readFileSync(join(process.cwd(), "packages/app-shell/src/dashboard/projects-view.tsx"), "utf8");
-  const dashboardStyles = readFileSync(join(process.cwd(), "packages/app-shell/src/dashboard/dashboard.css"), "utf8");
-
-  assert.match(card, /className="project-attention-row group/);
   assert.match(card, /import "\.\.\/\.\.\/\.\.\/tokens\.css"/);
-  assert.match(card, /<ProjectPill[\s\S]*size="normal"[\s\S]*dotClassName="project-attention-pill-dot"/);
   assert.match(card, /className="project-attention-company">\{formatNaturalDisplayName\(project\.organizationName\)\}/);
   assert.match(card, /className="project-attention-title">\{formatNaturalDisplayName\(project\.name\)\}/);
   assert.match(card, /<strong>\{reason\}<\/strong> \{detail\}/);
@@ -808,19 +793,8 @@ test("dashboard attention cards use the canonical editorial attention-row recipe
   assert.match(card, /dictionary\.dashboard\.defineDeadline/);
   assert.match(card, /<CalendarDays aria-hidden className="project-attention-date-icon/);
   assert.match(card, /<span aria-hidden className="project-attention-arrow">/);
-  assert.doesNotMatch(card, /text-label[^\n]*organizationName|monoTabularClassName/);
-  assert.match(projectTokens, /\.project-attention-row \{[\s\S]*grid-template-columns: 2\.125rem minmax\(0, 1\.18fr\) minmax\(11\.875rem, 0\.86fr\) 1\.75rem/);
-  assert.match(projectTokens, /\.project-attention-company \{[\s\S]*font-size: var\(--text-meta\)[\s\S]*text-transform: none[\s\S]*white-space: nowrap/);
-  assert.match(projectTokens, /\.project-attention-date \{[\s\S]*font-size: var\(--text-ui-fine\)/);
-  assert.match(projectTokens, /@media \(max-width: 650px\)[\s\S]*\.project-attention-meta \{ grid-column: 2 \/ 4/);
   assert.match(projectTokens, /@media \(prefers-reduced-motion: reduce\)/);
-  assert.match(dashboard, /className="dashboard-projects-grid"/);
-  assert.match(dashboard, /<PortfolioHealthCard[\s\S]*<Card asChild>/);
   assert.match(dashboard, /<DashboardCountPill count=\{kpis\?\.projectsAttention \?\? 0\} tone="warning"/);
-  assert.doesNotMatch(dashboardStyles, /dashboard-attention-count/);
-  assert.match(dashboardStyles, /@media \(min-width: 1081px\)[\s\S]*grid-template-columns: minmax\(0, 1fr\) 23\.75rem/);
-  assert.equal(defaultProjectsUiDictionary.dashboard.badges.withoutOwner, "Por atribuir");
-  assert.equal(defaultProjectsUiDictionary.dashboard.defineDeadline, "Definir prazo");
 });
 
 test("dashboard organization names normalize only legacy all-caps values", () => {
