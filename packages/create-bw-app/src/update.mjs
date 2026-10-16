@@ -745,7 +745,7 @@ export async function reconcileDependencyInstallation(plan, runtimeOptions = {},
     delete appManifest.lastSuccessfulInstall;
     await writeAppManifest(plan.targetDir, appManifest);
   }
-  await (runtimeOptions.installRunner || runInstall)(plan.packageManager, installCwd);
+  await (runtimeOptions.installRunner || runInstall)(plan.packageManager, installCwd, { updateLockfile: true });
   if (appManifest) {
     appManifest.lastSuccessfulInstall = await inputs();
     await writeAppManifest(plan.targetDir, appManifest);

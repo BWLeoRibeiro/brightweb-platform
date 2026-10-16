@@ -1449,9 +1449,13 @@ async function writeBundledSupabaseBaseline({
   await writeSupabaseCliMigrations({ targetDir, dbInstallPlan });
 }
 
-export async function runInstall(command, cwd) {
+export async function runInstall(command, cwd, { updateLockfile = false } = {}) {
+  // Explicit upgrades change dependency inputs and must reconcile their lockfile,
+  // including in CI. Ordinary/scaffold installs retain the caller's policy.
+  const args = ["install"];
+  if (command === "pnpm" && updateLockfile) args.push("--no-frozen-lockfile");
   return new Promise((resolve, reject) => {
-    const child = spawn(command, ["install"], {
+    const child = spawn(command, args, {
       cwd,
       stdio: "inherit",
       shell: process.platform === "win32",
