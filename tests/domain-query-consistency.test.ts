@@ -67,9 +67,8 @@ test('public and HTTP Projects queries share attention filtering, ordering and p
   assert.ok(client.calls.some((call: any[]) => call[1] === 'range' && call[2] === 10 && call[3] === 19));
   assert.ok(client.calls.some((call: any[]) => call[1] === 'order' && call[2] === 'target_date' && call[3].nullsFirst === false));
   const attention = client.calls.find((call: any[]) => call[1] === 'or')[2];
-  for (const criterion of ['target_date.lte.2026-09-10', 'health.in.(at_risk,off_track)', 'status.eq.blocked', 'owner_profile_id.is.null', '00000000-0000-0000-0000-000000000001']) assert.ok(attention.includes(criterion));
-  assert.ok(!attention.includes('invalid'));
-  assert.ok(client.calls.some((call: any[]) => call[1] === 'not' && call[2] === 'status'));
+  assert.equal(attention, 'target_date.lte.2026-09-10,health.in.(at_risk,off_track),status.eq.blocked,owner_profile_id.is.null,id.in.(00000000-0000-0000-0000-000000000001)');
+  assert.deepEqual(client.calls.filter((call: any[]) => call[1] === 'not'), [['projects', 'not', 'status', 'in', '(completed,canceled)']]);
 });
 test('all status remains unrestricted and recoverable phone schemas retry; real errors propagate', async () => {
   const client = projectClient('column profiles.phone does not exist');

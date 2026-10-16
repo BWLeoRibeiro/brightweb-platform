@@ -21,7 +21,7 @@ BrightWeb resolves module order from the registry, not from ad hoc assumptions. 
 ## Where the order comes from
 
 - `supabase/module-registry.json` defines the module graph.
-- `scripts/_db-modules.mjs` resolves enabled modules into a concrete apply order.
+- `scripts/_db-modules.mjs` resolves enabled modules and merges fresh SQL by authored timestamp, using module dependency order for ties. Module selection order does not mean applying a module’s entire history before the next module.
 
 > Base-only nuance: platform always resolves to the `Core + Admin` database baseline; selecting Admin only controls whether the Admin package mount and wiring are scaffolded.
 

@@ -140,6 +140,10 @@ export const MODULE_STARTER_FILES = {
     "app/api/projects/[id]/milestones/[itemId]/route.ts",
     "app/api/projects/[id]/tasks/route.ts",
     "app/api/projects/[id]/tasks/[itemId]/route.ts",
+    "app/api/projects/[id]/client-tasks/route.ts",
+    "app/api/projects/[id]/client-tasks/[itemId]/route.ts",
+    "app/api/account/projects/[id]/tasks/route.ts",
+    "app/api/account/projects/[id]/tasks/[itemId]/route.ts",
   ],
 };
 

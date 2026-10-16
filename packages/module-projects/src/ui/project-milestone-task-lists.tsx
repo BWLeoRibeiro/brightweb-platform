@@ -1,4 +1,5 @@
 "use client";
+import { clientTasksDictionary as copy } from "./client-tasks/dictionary";
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
@@ -33,6 +34,7 @@ import { useProjectsNow } from "./shared/use-projects-now";
 type ProjectMilestonesAndTasksListsProps = {
   projectId: string;
   canEditItems: boolean;
+  canCreateTasks?: boolean;
   milestones: ProjectMilestone[];
   tasks: ProjectTask[];
   onEditMilestone: (milestone: ProjectMilestone) => void;
@@ -224,6 +226,7 @@ function ProjectTaskRow({
 
       {/* Tertiary: signal tags */}
       <div className="mt-0.5 flex min-w-0 flex-wrap items-center gap-1.5">
+        <span className="text-label font-semibold text-muted-foreground">{task.kind === "client" ? copy.clientKind : copy.internalKind}</span>
         <TaskPriorityTag task={task} />
         <TaskStatusTag task={task} />
         <TaskMilestoneMeta title={milestoneTitle} />
@@ -288,6 +291,7 @@ function ProjectTaskGroupRows({
 export function ProjectMilestonesAndTasksLists({
   projectId,
   canEditItems,
+  canCreateTasks = canEditItems,
   milestones,
   tasks,
   onEditMilestone,
@@ -448,7 +452,7 @@ export function ProjectMilestonesAndTasksLists({
                       {milestone.visibility === "client" ? (
                         <>
                           <span className="text-foreground/25">·</span>
-                          <span className="rounded-full border border-primary/20 bg-primary/5 px-2 py-0.5 text-micro font-semibold text-primary">Cliente</span>
+                          <span className="rounded-full border border-primary/20 bg-primary/5 px-2 py-0.5 text-micro font-semibold text-primary">{copy.clientKind}</span>
                         </>
                       ) : null}
                       {relativeDue ? (
@@ -470,9 +474,9 @@ export function ProjectMilestonesAndTasksLists({
             icon={ListChecks}
             title={dictionary.detail.tasks}
             subtitle={dictionary.detail.tasksSubtitle}
-            rightSlot={canEditItems ? (
+            rightSlot={canCreateTasks ? (
               <SectionAddButton
-                label={dictionary.detail.addTask}
+                label={copy.createInternalTask}
                 onClick={() => dispatchProjectsEvent(PROJECTS_EVENTS.openNewTask)}
               />
             ) : null}

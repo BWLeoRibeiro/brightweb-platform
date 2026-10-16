@@ -1,5 +1,38 @@
 export { getProjectsPortfolioPageData } from "./portfolio-page";
 export {
+  CLIENT_TASK_WORKFLOWS,
+  CLIENT_TASK_LIMITS,
+  ClientTaskBoundaryError,
+  parseClientTaskActionRequest,
+  parseStaffClientTaskActionRequest,
+} from "./client-tasks-contracts";
+export type {
+  ClientTask,
+  ClientTaskAudienceMode,
+  ClientTaskPublication,
+  ClientTaskWorkflow,
+  ClientTaskSubmission,
+  ClientTaskCapabilities,
+  ClientTaskWorkbench,
+  ClientTaskConfigurationInput,
+  ClientTaskActionRequest,
+  StaffClientTask,
+  StaffClientTaskActionRequest,
+} from "./client-tasks-contracts";
+export {
+  listClientProjectTasks,
+  actOnClientProjectTask,
+  getProjectClientTaskWorkbench,
+  manageProjectClientTask,
+} from "./client-tasks";
+export {
+  handleClientProjectTasksGetRequest,
+  handleClientProjectTaskPostRequest,
+  handleProjectClientTasksGetRequest,
+  handleProjectClientTasksPostRequest,
+  handleProjectClientTaskPatchRequest,
+} from "./client-tasks-handlers";
+export {
   ClientAccountPage,
   ClientProfilePage,
   ClientProjectDetailLoading,

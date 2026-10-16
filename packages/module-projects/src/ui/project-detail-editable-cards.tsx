@@ -52,10 +52,12 @@ import { ProjectMilestonesAndTasksLists } from "./project-milestone-task-lists";
 import { TaskPriorityTag, TaskStatusTag } from "./shared/task-tags";
 import type { ProjectMilestone, ProjectTask } from "../types";
 import { defaultProjectsUiDictionary } from "./dictionary";
+import { openClientTaskPanel } from "./client-tasks/staff-client-tasks";
 
 type ProjectMilestonesAndTasksCardsProps = {
   projectId: string;
   canManageItems: boolean;
+  canCreateTasks?: boolean;
   canUpdateAssignedTasks?: boolean;
   viewerProfileId?: string;
   canManageClientContent?: boolean;
@@ -115,6 +117,7 @@ function normalizeTaskForm(form: TaskFormState) {
 export function ProjectMilestonesAndTasksCards({
   projectId,
   canManageItems,
+  canCreateTasks = canManageItems,
   canUpdateAssignedTasks = false,
   viewerProfileId,
   canManageClientContent = false,
@@ -282,6 +285,7 @@ export function ProjectMilestonesAndTasksCards({
   };
 
   const openEditTask = (task: ProjectTask) => {
+    if (task.kind === "client") { openClientTaskPanel(projectId, task.id); return; }
     setTaskMode("view");
     setTaskEditBaseline(null);
     setEditingTask(task);
@@ -396,6 +400,7 @@ export function ProjectMilestonesAndTasksCards({
       <ProjectMilestonesAndTasksLists
         projectId={projectId}
         canEditItems={canManageItems}
+        canCreateTasks={canCreateTasks}
         milestones={milestones}
         tasks={tasks}
         onEditMilestone={openEditMilestone}

@@ -170,3 +170,104 @@ test("removal rejects an app-owned MDX import before changing files", async t =>
   await assert.rejects(removeBrightwebModule("crm", { targetDir, yes: true }, { workspaceRoot }), /custom-page\.mdx/);
   assert.deepEqual(await snapshot(targetDir), before);
 });
+
+for (const linked of [false, true]) {
+  test(`upgrade ${linked ? "rejects linked" : "supports"} parent migration owner without modifying historical SQL`, async t => {
+    const { root, targetDir } = await fixture(t);
+    await fs.writeFile(path.join(root, "package.json"), JSON.stringify({ private: true }));
+    await fs.writeFile(path.join(root, "pnpm-workspace.yaml"), "packages:\n  - app\n");
+    await fs.rename(path.join(targetDir, "supabase"), path.join(root, "supabase"));
+    const migrationDir = path.join(root, "supabase/migrations");
+    const manifestPath = path.join(targetDir, ".brightweb/app-manifest.json");
+    const manifest = JSON.parse(await fs.readFile(manifestPath, "utf8"));
+    const historical = await snapshot(migrationDir);
+    // Rewind one real migration and remove only its materialized file to model
+    // a previous consumer. The next upgrade must actually append a SQL file.
+    const latest = manifest.migrationCursor.crm;
+    const files = await fs.readdir(migrationDir);
+    const missing = files.find(name => name.endsWith(`_crm__${latest}`));
+    assert.ok(missing);
+    await fs.rm(path.join(migrationDir, missing));
+    const sourceNames = (await fs.readdir(path.join(workspaceRoot, "supabase/modules/crm/migrations"))).filter(name => name.endsWith(".sql")).sort();
+    manifest.migrationCursor.crm = sourceNames[sourceNames.indexOf(latest) - 1];
+    await fs.writeFile(manifestPath, JSON.stringify(manifest));
+    if (linked) {
+      await fs.rename(migrationDir, path.join(root, "outside-migrations"));
+      await fs.symlink(path.join(root, "outside-migrations"), migrationDir);
+    }
+    const before = await snapshot(root);
+    if (linked) {
+      await assert.rejects(upgradeBrightwebApp(undefined, { targetDir }, { workspaceRoot, fetchImpl }), /symlinks/);
+      assert.deepEqual(await snapshot(root), before);
+    } else {
+      await upgradeBrightwebApp(undefined, { targetDir }, { workspaceRoot, fetchImpl });
+      const after = await snapshot(migrationDir);
+      for (const [file, hash] of Object.entries(historical)) {
+        if (file !== missing) assert.equal(after[file], hash);
+      }
+      assert.equal(Object.keys(after).length, Object.keys(historical).length);
+      await upgradeBrightwebApp(undefined, { targetDir }, { workspaceRoot, fetchImpl });
+      assert.deepEqual(await snapshot(migrationDir), after);
+    }
+  });
+}
+
+test("published upgrade plans new SQL from its matching release bundle before replacing old installed packages", async t => {
+  const { root, targetDir } = await fixture(t);
+  const oldPackageRoot = path.join(targetDir, "node_modules/@brightweblabs/module-crm");
+  await fs.mkdir(path.join(oldPackageRoot, "migrations"), { recursive: true });
+  await fs.copyFile(path.join(workspaceRoot, "packages/module-crm/brightweb.module.json"), path.join(oldPackageRoot, "brightweb.module.json"));
+  await fs.writeFile(path.join(oldPackageRoot, "package.json"), JSON.stringify({ name: "@brightweblabs/module-crm", version: "0.0.1" }));
+  const sourceDir = path.join(workspaceRoot, "supabase/modules/crm/migrations");
+  const sources = (await fs.readdir(sourceDir)).filter(name => name.endsWith(".sql")).sort();
+  for (const name of sources.slice(0, -1)) await fs.copyFile(path.join(sourceDir, name), path.join(oldPackageRoot, "migrations", name));
+  const manifestPath = path.join(targetDir, ".brightweb/app-manifest.json");
+  const manifest = JSON.parse(await fs.readFile(manifestPath, "utf8"));
+  const migrationsDir = path.join(targetDir, "supabase/migrations");
+  const latest = manifest.migrationCursor.crm;
+  const removed = (await fs.readdir(migrationsDir)).find(name => name.endsWith(`_crm__${latest}`));
+  assert.ok(removed);
+  await fs.rm(path.join(migrationsDir, removed));
+  manifest.migrationCursor.crm = sources.at(-2);
+  await fs.writeFile(manifestPath, JSON.stringify(manifest));
+  const before = await snapshot(migrationsDir);
+  const result = await upgradeBrightwebApp(undefined, { targetDir }, { fetchImpl });
+  assert.equal(result.migrationPlan.appends.length, 1);
+  assert.equal(result.migrationPlan.appends[0].moduleKey, "crm");
+  const after = await snapshot(migrationsDir);
+  assert.equal(Object.keys(after).length, Object.keys(before).length + 1);
+  for (const [name, hash] of Object.entries(before)) assert.equal(after[name], hash);
+  const unchanged = await snapshot(root);
+  await assert.rejects(upgradeBrightwebApp(undefined, { targetDir }, {
+    fetchImpl: async () => ({ ok: true, json: async () => ({ version: "99.0.0" }) }),
+  }), /Migration sources .* unavailable/);
+  assert.deepEqual(await snapshot(root), unchanged, "Unavailable target SQL must fail before any write");
+});
+
+for (const nestedWorkspace of [false, true]) {
+  test(`upgrade rejects ancestor SQL outside ${nestedWorkspace ? "nearest workspace" : "declared ownership"} before writes`, async t => {
+    const { root, targetDir } = await fixture(t);
+    await fs.rename(path.join(targetDir, "supabase"), path.join(root, "supabase"));
+    if (nestedWorkspace) {
+      await fs.writeFile(path.join(root, "package.json"), JSON.stringify({ private: true }));
+      await fs.writeFile(path.join(root, "pnpm-workspace.yaml"), "packages:\n  - app\n");
+      await fs.writeFile(path.join(targetDir, "pnpm-workspace.yaml"), "packages: []\n");
+    }
+    const before = await snapshot(root);
+    await assert.rejects(upgradeBrightwebApp(undefined, { targetDir }, { workspaceRoot, fetchImpl }), /declared workspace/);
+    assert.deepEqual(await snapshot(root), before);
+  });
+}
+
+for (const configuration of ['{"packages": []}', '"packages": []', "{packages: []}"]) {
+  test(`upgrade respects nested workspace syntax ${configuration}`, async t => {
+    const { root, targetDir } = await fixture(t);
+    await fs.writeFile(path.join(root, "package.json"), JSON.stringify({ private: true }));
+    await fs.writeFile(path.join(root, "pnpm-workspace.yaml"), "packages:\n  - app\n");
+    await fs.rename(path.join(targetDir, "supabase"), path.join(root, "supabase"));
+    await fs.writeFile(path.join(targetDir, "pnpm-workspace.yaml"), configuration);
+    const before = await snapshot(root);
+    await assert.rejects(upgradeBrightwebApp(undefined, { targetDir }, { workspaceRoot, fetchImpl }), /declared workspace/);
+    assert.deepEqual(await snapshot(root), before);
+  });
+}

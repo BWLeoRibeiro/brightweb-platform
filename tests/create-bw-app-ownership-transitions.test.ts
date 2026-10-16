@@ -54,6 +54,12 @@ test("pending destructive migrations are gated again after an explicitly staged 
   const manifest = await readAppManifest(targetDir);
   manifest.migrationCursor.projects = first;
   await writeAppManifest(targetDir, manifest);
+  // Model a client that has actually stopped at this cursor, rather than one
+  // with later SQL already persisted by an interrupted attempt.
+  const migrationsDir = path.join(targetDir, "supabase/migrations");
+  for (const name of await fs.readdir(migrationsDir)) {
+    if (name.includes("_projects__") && name.split("_projects__")[1] > first) await fs.rm(path.join(migrationsDir, name));
+  }
   for (const moduleKey of [undefined, "projects"]) {
     const held = await upgradeBrightwebApp(moduleKey, { targetDir, dryRun: true }, runtime);
     assert.equal(held.migrationPlan.nextCursor.projects, first);

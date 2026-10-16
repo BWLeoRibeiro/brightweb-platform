@@ -5,7 +5,7 @@ import { createAdminUserInvitation, revokeAdminUserInvitation, listAdminUserInvi
 function fixture(status = 'pending', error: {message: string; code: string} | null = null) {
   const row = { id: 'invitation', invited_email: 'fixture@example.invalid', role_code: 'staff', status, created_at: '2026-01-01', expires_at: '2099-01-01' };
   const state = { rows: [row], events: 0 };
-  const client = { auth: {admin: {listUsers: async () => ({data:{users:[]},error:null})}}, rpc: async () => {state.events++;return {data:null,error:null};}, from() {
+  const client = { auth: {admin: {listUsers: async () => ({data:{users:[]},error:null})}}, rpc: async (name: string) => {if(name === 'log_app_activity_event')state.events++;return {data:null,error:null};}, from() {
     let action = 'read', patch = {}; const filters: [string,unknown][]=[];
     const query: any = {};
     for (const method of ['select','order','limit','lte']) query[method]=()=>query;

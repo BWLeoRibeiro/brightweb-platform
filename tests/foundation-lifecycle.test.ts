@@ -16,7 +16,15 @@ function deferred<T>() {
 }
 function browser(t: test.TestContext) {
   const previous = Object.getOwnPropertyDescriptor(globalThis, "window");
-  const window = Object.assign(new EventTarget(), { setInterval: () => 1, clearInterval: () => {}, cleanup: [] as Array<() => Promise<void>> });
+  let nextTimerId = 0;
+  const timers = new Map<number, { callback: () => unknown; delay: number }>();
+  const window = Object.assign(new EventTarget(), {
+    timers,
+    setInterval(callback: () => unknown, delay: number) { const id = ++nextTimerId; timers.set(id, { callback, delay }); return id; },
+    clearInterval(id: number) { timers.delete(id); },
+    tick() { for (const timer of [...timers.values()]) timer.callback(); },
+    cleanup: [] as Array<() => Promise<void>>,
+  });
   Object.defineProperty(globalThis, "window", { configurable: true, value: window });
   t.after(async () => { for (const cleanup of window.cleanup) await cleanup(); if (previous) Object.defineProperty(globalThis, "window", previous); else delete globalThis.window; });
   return window;
@@ -276,4 +284,43 @@ test("closed notification feed replacement clears old items while only loading t
   const freshItems = h.calls.findLast(call => call.url === "/new?limit=8")!;
   await act(async () => freshItems.resolve(items("new")));
   assert.deepEqual(h.state().notifications!.map(item => item.id), ["new"]);
+});
+
+
+test("notification polling reads the current endpoint and replaces, disables, restarts and clears its timer", async t => {
+  const h = await notificationHarness(t);
+  const assertTimer = (delay: number) => {
+    assert.equal(h.window.timers.size, 1, "exactly one active interval");
+    assert.equal([...h.window.timers.values()][0].delay, delay);
+  };
+  await act(async () => h.state().onOpenChange!(false));
+  assertTimer(30_000);
+  const tick = async (endpoint: string) => {
+    const before = h.calls.length;
+    await act(async () => h.window.tick());
+    assert.equal(h.calls.length, before + 1, "one summary read per tick");
+    assert.equal(h.calls.at(-1)!.url, `${endpoint}?limit=0`);
+    await act(async () => h.calls.at(-1)!.resolve(items("polled")));
+    assert.equal(h.state().unreadCount, 1, "the polled summary reaches the visible count");
+  };
+  await tick("/old");
+  const originalTimer = [...h.window.timers.keys()][0];
+  await act(async () => h.renderer.update(React.createElement(h.Harness, { endpoint: "/old", refreshIntervalMs: 60_000 })));
+  assertTimer(60_000);
+  assert.equal(h.window.timers.has(originalTimer), false);
+  await tick("/old");
+  await act(async () => h.renderer.update(React.createElement(h.Harness, { endpoint: "/new", enabled: false })));
+  assert.equal(h.window.timers.size, 0);
+  const disabledCalls = h.calls.length;
+  await act(async () => h.window.tick());
+  assert.equal(h.calls.length, disabledCalls);
+  await act(async () => h.renderer.update(React.createElement(h.Harness, { endpoint: "/new" })));
+  assertTimer(30_000);
+  await act(async () => { for (const call of h.calls.slice(disabledCalls)) call.resolve(items("new")); });
+  await tick("/new");
+  await act(async () => h.renderer.unmount());
+  assert.equal(h.window.timers.size, 0);
+  const unmountedCalls = h.calls.length;
+  await act(async () => h.window.tick());
+  assert.equal(h.calls.length, unmountedCalls);
 });
