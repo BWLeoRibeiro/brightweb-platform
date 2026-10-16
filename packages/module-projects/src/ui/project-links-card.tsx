@@ -144,7 +144,7 @@ function LinkVisibilityPill({ visibility }: { visibility: string }) {
           : "border-[color:var(--project-ui-color-17)] bg-[color:var(--project-ui-color-18)] text-[color:var(--project-ui-color-19)]"
       }
     >
-      {isStaff ? dictionary.links.internal : dictionary.people.client}
+      {isStaff ? dictionary.links.internal : dictionary.milestoneVisibility.client}
     </ProjectPill>
   );
 }
@@ -478,7 +478,7 @@ export function ProjectLinksCard({
                       className={cn(linkMode === "view" ? sheetViewControlClassName : sheetEditControlClassName, "mt-1.5 text-foreground outline-none")}
                     >
                       <option value="staff">{dictionary.create.internalTeam}</option>
-                      <option value="client">{dictionary.people.client}</option>
+                      <option value="client">{dictionary.milestoneVisibility.client}</option>
                     </StyledSelect>
                   </label>
                 </div>

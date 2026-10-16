@@ -51,11 +51,11 @@ export function ClientPortalFrame({
             />
             <span className="hidden border-l border-border/65 pl-3 sm:block">
               <span className="block text-label font-bold">{brand.alt}</span>
-              <span className="block text-meta text-muted-foreground">Portal do cliente</span>
+              <span className="block text-meta text-muted-foreground">Portal de membros</span>
             </span>
           </Link>
 
-          <nav className="hidden items-stretch self-stretch sm:flex" aria-label="Navegação do portal do cliente">
+          <nav className="hidden items-stretch self-stretch sm:flex" aria-label="Navegação do portal de membros">
             {CLIENT_NAV_ITEMS.map((item) => {
               const active = isClientNavItemActive(pathname, item);
               return (
@@ -90,7 +90,7 @@ export function ClientPortalFrame({
         {children}
       </main>
 
-      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border/70 bg-background/94 px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-2 backdrop-blur-xl sm:hidden" aria-label="Navegação móvel do portal do cliente">
+      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border/70 bg-background/94 px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-2 backdrop-blur-xl sm:hidden" aria-label="Navegação móvel do portal de membros">
         <div className="mx-auto grid max-w-[28rem] grid-cols-3">
           {CLIENT_NAV_ITEMS.map((item) => {
             const active = isClientNavItemActive(pathname, item);

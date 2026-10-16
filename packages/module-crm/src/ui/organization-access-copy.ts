@@ -1,0 +1,15 @@
+export const organizationAccessCopy = {
+  members: "Membros da organização",
+  addMember: "Adicionar membro",
+  addTitle: "Adicionar membro à organização",
+  addAction: "Adicionar ou convidar",
+  adding: "A adicionar ou convidar…",
+  accountHint: "As contas existentes podem receber acesso imediato à organização. As restantes pessoas recebem um convite por email para criar conta e aceitar a associação.",
+  projectScopeHint: "O acesso inclui os projetos partilhados com todos os membros da organização. Nos projetos com membros selecionados, o acesso é definido em cada projeto.",
+  roleLabel: "Função na organização",
+  roleFor: (label: string) => `Função de ${label} nesta organização`,
+  removeLabel: (label: string) => `Remover ${label} desta organização`,
+  removeConfirmation: (label: string, organization: string) => `Remover ${label} de ${organization}? Será removido o acesso concedido por esta organização. A conta e as associações a outras organizações mantêm-se.`,
+  emptyHint: "Adiciona uma pessoa à organização ou envia-lhe um convite. Os convites pendentes aparecem separadamente dos membros.",
+  pendingHint: "Estas pessoas ainda precisam de aceitar o convite para receber o acesso indicado.",
+} as const;

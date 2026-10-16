@@ -10,6 +10,7 @@ type SearchFieldProps = {
   onChange: (value: string) => void;
   placeholder?: string;
   onClear?: () => void;
+  clearLabel?: string;
   size?: "sm" | "md";
   className?: string;
   inputClassName?: string;
@@ -22,6 +23,7 @@ export function SearchField({
   onChange,
   placeholder = "Search…",
   onClear,
+  clearLabel = "Clear",
   size = "md",
   className,
   inputClassName,
@@ -50,7 +52,7 @@ export function SearchField({
         <button
           type="button"
           onClick={onClear}
-          aria-label="Clear"
+          aria-label={clearLabel}
           className="absolute right-2 top-1/2 flex size-5 -translate-y-1/2 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
         >
           <X className="size-3.5" />

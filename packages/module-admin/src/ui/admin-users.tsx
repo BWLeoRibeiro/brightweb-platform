@@ -442,6 +442,15 @@ export function AdminUsersClient({
                   </Field>
                 </SheetSection>
               ) : null}
+              {dictionary.invitations.scopeSummary ? (
+                <p className="rounded-lg border border-border bg-muted/35 px-4 py-3 text-meta leading-relaxed text-muted-foreground" aria-live="polite" aria-atomic="true">
+                  {dictionary.invitations.scopeSummary(
+                    dictionary.roles[inviteRole],
+                    inviteRole === "client" && inviteOrganizationId ? organizations.find((organization) => organization.id === inviteOrganizationId)?.name ?? dictionary.invitations.organizationLabel : null,
+                    inviteRole === "client" && inviteOrganizationId ? dictionary.invitations.organizationRoles[inviteOrganizationRole] : null,
+                  )}
+                </p>
+              ) : null}
               <p id="admin-user-invite-hint" className="px-1 text-meta leading-relaxed text-[color:var(--muted-foreground)]">{dictionary.invitations.formHint}</p>
               </AppSheetBody>
               <AppSheetFooter className="flex-row"><Button type="submit" className="flex-1" disabled={inviteSubmitting}><Send className="mr-2 size-4" />{inviteSubmitting ? dictionary.invitations.sending : dictionary.invitations.send}</Button><Button type="button" variant="outline" className="flex-1" disabled={inviteSubmitting} onClick={() => setInvitePanelOpen(false)}>{dictionary.invitations.cancel}</Button></AppSheetFooter>
@@ -474,7 +483,7 @@ export function AdminUsersClient({
                   ) : visibleInvitations.map((invite) => (
                     <article key={invite.id} className="border border-[color:var(--border)] bg-[color:var(--elevate-1)] p-sm">
                       <div className="flex items-start justify-between gap-sm">
-                        <div className="min-w-0"><p className="break-all text-body font-semibold text-[color:var(--foreground)]">{invite.email}</p><p className="mt-1 text-meta text-[color:var(--muted-foreground)]">{invite.organizationName ? `${invite.organizationName} · ${invite.organizationRole === "admin" ? "Administrador" : "Membro"}` : "Acesso global"}</p></div>
+                        <div className="min-w-0"><p className="break-all text-body font-semibold text-[color:var(--foreground)]">{invite.email}</p><p className="mt-1 text-meta text-[color:var(--muted-foreground)]">{invite.organizationName ? `${invite.organizationName} · ${invite.organizationRole === "admin" ? "Administrador" : "Membro"}` : "Sem organização associada"}</p></div>
                         <AdminRolePill role={invite.role} dictionary={dictionary} />
                       </div>
                       <div className="mt-sm flex items-center justify-between gap-sm border-t border-[color:var(--border)] pt-sm">
@@ -500,7 +509,7 @@ export function AdminUsersClient({
                         <TableRow key={invite.id} className="admin-row-hover border-[color:var(--border)] [&_td]:py-3">
                           <TableCell className="truncate px-4 text-body font-semibold text-[color:var(--foreground)]">{invite.email}</TableCell>
                           <TableCell className="px-4"><AdminRolePill role={invite.role} dictionary={dictionary} /></TableCell>
-                          <TableCell className="px-4"><div className="min-w-0"><p className="truncate text-body text-[color:var(--foreground)]">{invite.organizationName ?? "Acesso global"}</p><p className="truncate text-meta text-[color:var(--muted-foreground)]">{invite.organizationName ? (invite.organizationRole === "admin" ? "Administrador" : "Membro") : formatAdminDate(invite.createdAt, dictionary.locale)}</p></div></TableCell>
+                          <TableCell className="px-4"><div className="min-w-0"><p className="truncate text-body text-[color:var(--foreground)]">{invite.organizationName ?? "Sem organização associada"}</p><p className="truncate text-meta text-[color:var(--muted-foreground)]">{invite.organizationName ? (invite.organizationRole === "admin" ? "Administrador" : "Membro") : formatAdminDate(invite.createdAt, dictionary.locale)}</p></div></TableCell>
                           <TableCell className="px-4"><InvitationStatus invitation={invite} dictionary={dictionary} /></TableCell>
                           <TableCell className="px-4 text-right">{invite.status === "pending" ? <Button type="button" variant="ghost" size="icon-sm" onClick={() => setPendingRevoke(invite)} disabled={revokingInviteId === invite.id} aria-label={dictionary.invitations.revoke(invite.email)} className="text-[color:var(--muted-foreground)] hover:text-[color:var(--destructive)]"><Trash2 className="size-4" /></Button> : null}</TableCell>
                         </TableRow>

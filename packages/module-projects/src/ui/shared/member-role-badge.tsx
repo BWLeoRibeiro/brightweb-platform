@@ -37,7 +37,7 @@ export function getMemberRoleLabel(role: string) {
 // regardless of the raw membership role (clients are auto-added as observers).
 // "Observador" is therefore reserved for internal people added to watch a project.
 export function getMemberDisplayLabel(role: string, colorRole?: RoleColor | null) {
-  if (colorRole === "client") return defaultProjectsUiDictionary.people.client;
+  if (colorRole === "client") return defaultProjectsUiDictionary.people.member;
   if (colorRole === "manager") return PROJECT_MEMBER_ROLE_LABELS_PT.owner;
   return getMemberRoleLabel(role);
 }

@@ -14,12 +14,12 @@ import { memberRoleToColorFallback, type AvatarRoleColor, type RoleColor } from 
 import { useProjectsUiDictionary } from "./context";
 import { AppSheetHeader } from "./shared/app-sheet";
 import { sheetBodyClassName, sheetShellClassName } from "./constants";
-import { Sheet, SheetContent } from "@brightweblabs/ui";
+import { Button, Sheet, SheetContent } from "@brightweblabs/ui";
 import {
   CompactCollectionHeaderActions,
   compactCollectionRevealClassName,
 } from "./shared/compact-collection";
-import { getCompactCollectionPreview } from "./shared/compact-collection-model";
+import { getCompactCollectionPreview, hasCompactCollectionOverflow } from "./shared/compact-collection-model";
 
 type ProjectDetailTeamCardProps = {
   canManageMembers: boolean;
@@ -59,19 +59,19 @@ export function ProjectDetailTeamCard({ canManageMembers, memberColorRoles }: Pr
     return (
       <li
         key={member.id}
-        className="group relative flex min-h-[3.25rem] items-center gap-3 border-t border-[color:var(--border)] px-3 py-1.5 transition-colors first:border-t-0 hover:bg-[color:var(--project-ui-color-09)]"
+        className="grid min-h-[3.25rem] grid-cols-[2rem_minmax(0,1fr)] items-start gap-x-3 gap-y-2 border-t border-[color:var(--border)] px-3 py-3 transition-colors first:border-t-0 hover:bg-[color:var(--project-ui-color-09)]"
       >
         <ProjectOwnerAvatar label={member.label} size="md" roleColor={colorRole} />
         <div className="min-w-0 flex-1 py-0.5">
-          <p className="truncate text-body font-semibold leading-snug text-foreground">{member.label}</p>
+          <p className="break-words text-body font-semibold leading-snug text-foreground">{member.label}</p>
           {contactText ? (
-            <div className="text-meta text-muted-foreground mt-0.5 truncate">{contactText}</div>
+            <div className="text-meta text-muted-foreground mt-0.5 break-all">{contactText}</div>
           ) : null}
         </div>
-        <div className="ml-auto flex shrink-0 items-center gap-2">
+        <div className="col-start-2 flex flex-wrap items-center gap-2">
           <MemberRoleBadge role={member.role} colorRole={colorRole} />
           {contactCount > 0 ? (
-            <div className="pointer-events-none flex items-center gap-0.5 opacity-0 transition-opacity duration-200 motion-reduce:transition-none group-focus-within:opacity-100 group-hover:opacity-100">
+            <div className="flex items-center gap-0.5">
               <ContactActionButtons
                 label={member.label}
                 email={member.email}
@@ -89,20 +89,21 @@ export function ProjectDetailTeamCard({ canManageMembers, memberColorRoles }: Pr
   });
 
   return (
-    <ProjectSurfaceCard className="self-start">
+    <ProjectSurfaceCard className="min-w-0 self-start">
       <ProjectSurfaceSectionHeader
         icon={Users}
         title={projectAccessDictionary.detail.internalTeam}
         subtitle={projectAccessDictionary.detail.internalTeamSubtitle}
-        rightSlot={<CompactCollectionHeaderActions total={sortedMembers.length} collectionLabel={projectAccessDictionary.detail.internalTeam} expandLabel={dictionary.team.viewAll} onExpand={() => setAllTeamOpen(true)}>
-          {canManageMembers ? (
-            <ProjectMembersEditSheetLazy
-              projectId={project.id}
-              initialMembers={internalMembers.map((member) => ({ profileId: member.profileId, role: member.role }))}
-            />
-          ) : null}
-        </CompactCollectionHeaderActions>}
+        rightSlot={<CompactCollectionHeaderActions total={sortedMembers.length} collectionLabel={projectAccessDictionary.detail.internalTeam} expandLabel={dictionary.team.viewAll} onExpand={() => setAllTeamOpen(true)} />}
       />
+      {canManageMembers ? (
+        <div className="mt-4">
+          <ProjectMembersEditSheetLazy
+            projectId={project.id}
+            initialMembers={internalMembers.map((member) => ({ profileId: member.profileId, role: member.role }))}
+          />
+        </div>
+      ) : null}
       {sortedMembers.length === 0 ? (
         <div className="mt-4">
           <SectionEmptyState message={dictionary.detail.noAllocatedMembers} icon={Users} />
@@ -112,6 +113,11 @@ export function ProjectDetailTeamCard({ canManageMembers, memberColorRoles }: Pr
           {renderMembers(getCompactCollectionPreview(sortedMembers))}
         </ul>
       )}
+      {hasCompactCollectionOverflow(sortedMembers.length) ? (
+        <Button type="button" variant="ghost" className="mt-2 min-h-11 w-full" onClick={() => setAllTeamOpen(true)}>
+          {dictionary.team.viewAll} ({sortedMembers.length})
+        </Button>
+      ) : null}
       <Sheet open={isAllTeamOpen} onOpenChange={setAllTeamOpen}>
         <SheetContent className={sheetShellClassName}>
           <AppSheetHeader

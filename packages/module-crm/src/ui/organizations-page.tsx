@@ -98,8 +98,8 @@ export function CrmOrganizationsPage({ client: providedClient, navigation }: { c
       : { organization: await client.createOrganization(input), outcomes: [] };
     const created = result.organization;
     for (const outcome of result.outcomes) {
-      const message = outcome.status === "immediate_access" ? `Acesso imediato concedido a ${outcome.email}.`
-        : outcome.status === "membership_updated" ? `Função atualizada para ${outcome.email}.`
+      const message = outcome.status === "immediate_access" ? `Acesso à organização concedido imediatamente a ${outcome.email}.`
+        : outcome.status === "membership_updated" ? `Função nesta organização atualizada para ${outcome.email}.`
           : outcome.status === "already_member" ? `${outcome.email} já era membro.`
             : outcome.status === "pending_invitation" ? `Convite enviado para ${outcome.email}.`
               : outcome.status === "duplicate_pending" ? `Já existia um convite pendente para ${outcome.email}.`

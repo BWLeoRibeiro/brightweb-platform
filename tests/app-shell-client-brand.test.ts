@@ -53,7 +53,7 @@ test("custom branding retains client-only navigation and account links", () => {
   for (const href of ["/account", "/account/projetos", "/account/perfil"]) {
     assert.ok(html.includes(`href="${href}"`));
   }
-  assert.match(html, /Portal do cliente/);
+  assert.match(html, /Portal de membros/);
   assert.match(html, /Client work/);
   assert.doesNotMatch(html, /href="\/(dashboard|crm|marketing)"/);
 });

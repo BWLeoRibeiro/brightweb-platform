@@ -24,7 +24,7 @@ export async function sendAdminUserInviteEmail(params: {
     const roleLabel = params.role === "admin"
       ? "Administrador"
       : params.role === "client"
-        ? "Cliente"
+        ? "Membro"
         : "Colaborador";
     const sender = getTransactionalSender();
     const brandName = process.env.EMAIL_BRAND_NAME?.trim() || emailBrandNameFromSender(sender);
@@ -38,13 +38,13 @@ export async function sendAdminUserInviteEmail(params: {
       brandName,
       logoUrl,
       logoAlt: brandName,
-      preheader: `Foi convidado para colaborar no ${brandName}.`,
+      preheader: `Foi convidado para aceder ao ${brandName}.`,
       eyebrow: "Convite para o portal",
       title: "O seu acesso começa aqui",
-      introduction: `Foi convidado para colaborar no ${brandName}. Confirme o convite para criar a sua conta e entrar no portal.`,
+      introduction: `Foi convidado para aceder ao ${brandName}. Aceite o convite para criar a sua conta e entrar no portal com o perfil atribuído.`,
       details: [
-        { label: "Perfil atribuído", value: roleLabel },
-        { label: "Acesso", value: "Portal completo" },
+        { label: "Perfil no portal", value: roleLabel },
+        { label: "Acesso", value: "De acordo com o perfil e as associações da conta" },
       ],
       actionLabel: "Aceitar convite",
       actionUrl: signupUrl,
