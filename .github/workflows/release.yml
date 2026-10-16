@@ -65,7 +65,7 @@ jobs:
         with:
           version: pnpm release:version
           publish: pnpm release:publish
-          commit: "Version packages"
+          commit: "[CF-Pages-Skip] Version packages"
           title: "Version packages"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
