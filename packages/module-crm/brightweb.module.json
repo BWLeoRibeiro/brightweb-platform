@@ -77,6 +77,7 @@
     "integrationObjects": [
       "sync_org_primary_contact_admin_membership",
       "trg_sync_org_primary_contact_admin_membership",
+      "link_organization_invitation_contact",
       "organization_invitations_accepted_contact_id_fkey"
     ]
   }

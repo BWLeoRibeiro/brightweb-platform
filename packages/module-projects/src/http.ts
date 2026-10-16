@@ -116,7 +116,8 @@ export type ProjectsHttpDependencies = {
   queryActivity: typeof queryProjectActivity;
   listAssignableProfiles: typeof listProjectAssignableProfiles;
   createOrganization: typeof createProjectOrganization;
-  createProject: typeof createProject;
+  /** @deprecated POST uses createProjectWithAccess; retained for source compatibility. */
+  createProject?: typeof createProject;
   updateProject: typeof updateProject;
   deleteProject: typeof deleteProject;
   syncMembers: typeof syncProjectMembers;
@@ -1057,8 +1058,11 @@ export function createProjectsMilestonesDeleteHandler(dependencies: ProjectsHttp
 export function createProjectsTasksPostHandler(dependencies: ProjectsHttpDependencies) {
   return withStaffAccess(dependencies, "projects.tasks.create", async (access, request, context) => {
     const { id } = await getRouteParams(context);
-    const forbidden = await requireProjectManager(dependencies, access, id);
-    if (forbidden) return forbidden;
+    if (!access.profileId) return json(publicError("FORBIDDEN", "Forbidden."), { status: 403 });
+    const taskAccess = await dependencies.getProjectAccess(access.supabase as SupabaseClient, id, access.profileId, access.role ?? null);
+    if (!["admin", "owner", "contributor"].includes(taskAccess.projectRole)) {
+      return json(publicError("FORBIDDEN", "Forbidden."), { status: 403 });
+    }
     const payload = await parseJsonObject(request);
     if (!payload) return invalidPayload();
     const input = validateInput<CreateProjectTaskInput>(

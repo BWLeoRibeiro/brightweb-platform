@@ -10,15 +10,16 @@ import {
   findWorkspaceRoot,
   loadModuleCatalog,
   readConfiguredModuleFlags,
+  readAppManifest,
   writeAppManifest,
 } from "./app-manifest.mjs";
 import { pathExists, readJsonIfPresent } from "./generator.mjs";
 import { findAppMigrationsDirectory, getModuleMigrations } from "./migrations.mjs";
-import { inventoryScaffoldFiles, resolveTemplateRoot } from "./scaffold.mjs";
+import { inventoryScaffoldFiles, preserveScaffoldDecisions, resolveTemplateRoot, scaffoldDrift } from "./scaffold.mjs";
 import { detectDependencyMode, detectTemplate } from "./update.mjs";
 
 const PACKAGE_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const HELP = `Usage: bw adopt [options]\n\nOptions:\n  --target-dir <path>                 App directory (defaults to cwd)\n  --workspace-root <path>             BrightWeb workspace root\n  --cursor <key>=<migrationFilename>  Override a migration cursor (repeatable)\n  --owned-surface <name>              Record an app-owned surface (repeatable)\n  --own <path>                        Mark an existing scaffold file app-owned (repeatable)\n  --skip <path>                       Mark a missing scaffold file intentionally absent (repeatable)\n  --allow-uncursored                   Allow doctor to warn instead of fail on null cursors\n  --force                              Replace an existing app manifest\n  --dry-run                            Print the manifest and warnings without writing\n  --help                               Show this help`;
+const HELP = `Usage: bw adopt [options]\n\nOptions:\n  --target-dir <path>                 App directory (defaults to cwd)\n  --workspace-root <path>             BrightWeb workspace root\n  --cursor <key>=<migrationFilename>  Override a migration cursor (repeatable)\n  --owned-surface <name>              Record an app-owned surface (repeatable)\n  --own <path>                        Mark an existing scaffold file app-owned (repeatable)\n  --skip <path>                       Mark a missing scaffold file intentionally absent (repeatable)\n  --allow-uncursored                   Allow doctor to warn instead of fail on null cursors\n  --force                              Reconcile an existing manifest; preserve ownership decisions\n  --dry-run                            Print the manifest and warnings without writing\n  --help                               Show this help`;
 
 function asList(value) {
   if (value == null) return [];
@@ -54,13 +55,19 @@ function leadingBaselineDomain(content) {
   return line?.match(/^\s*--\s*Brightweb\s+(.+?)\s+v1\s+baseline\.?\s*$/i)?.[1]?.trim().toLowerCase() || null;
 }
 
-async function bootstrapCursor({ moduleKey, catalogEntry, appMigrations, override, warnings }) {
+async function bootstrapCursor({ moduleKey, catalogEntry, appMigrations, override, retainedCursor, warnings }) {
   const shipped = await getModuleMigrations(moduleKey, catalogEntry);
-  if (shipped.length === 0) return { shipsMigrations: false, cursor: undefined, strategy: "none" };
   if (override) {
     if (!shipped.some((entry) => entry.fileName === override)) throw new Error(`Cursor override for ${moduleKey} does not name a shipped migration: ${override}`);
     return { shipsMigrations: true, cursor: override, strategy: "override" };
   }
+  if (retainedCursor !== undefined) {
+    if (!shipped.some((entry) => entry.fileName === retainedCursor)) {
+      throw new Error(`Retained migration cursor for removed module ${moduleKey} does not name a shipped migration: ${retainedCursor}. Reconcile it with an explicit --cursor ${moduleKey}=<migrationFilename>.`);
+    }
+    return { shipsMigrations: true, cursor: retainedCursor, strategy: "retained" };
+  }
+  if (shipped.length === 0) return { shipsMigrations: false, cursor: undefined, strategy: "none" };
 
   const escapedKey = moduleKey.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const provenance = latestShippedMatch(shipped, (shippedName) => appMigrations.some(({ content }) => {
@@ -89,9 +96,10 @@ async function bootstrapCursor({ moduleKey, catalogEntry, appMigrations, overrid
 
 export async function adoptBrightwebApp(argvOptions = {}, runtimeOptions = {}) {
   if (argvOptions.help) { output.write(`${HELP}\n`); return { help: true }; }
-  const targetDir = path.resolve(runtimeOptions.targetDir || argvOptions.targetDir || process.cwd());
+  const targetDir = await fs.realpath(path.resolve(runtimeOptions.targetDir || argvOptions.targetDir || process.cwd()));
   const existingManifestPath = path.join(targetDir, APP_MANIFEST_PATH);
-  if (await pathExists(existingManifestPath) && !argvOptions.force) throw new Error(`Refusing to overwrite existing ${APP_MANIFEST_PATH}; pass --force to replace it.`);
+  if (await pathExists(existingManifestPath) && !argvOptions.force) throw new Error(`Refusing to overwrite existing ${APP_MANIFEST_PATH}; pass --force to reconcile it while preserving ownership decisions.`);
+  const previousManifest = await readAppManifest(targetDir, { required: false });
   const packageJson = await readJsonIfPresent(path.join(targetDir, "package.json"));
   if (!packageJson) throw new Error(`Target directory does not contain package.json: ${targetDir}`);
 
@@ -123,6 +131,11 @@ export async function adoptBrightwebApp(argvOptions = {}, runtimeOptions = {}) {
   const scaffold = template === "platform"
     ? await inventoryScaffoldFiles({ targetDir, moduleKeys: Object.keys(modules), templateRoot })
     : { records: {}, unsupported: [] };
+  const previousScaffold = await scaffoldDrift(targetDir, previousManifest?.scaffoldFiles);
+  scaffold.records = preserveScaffoldDecisions(scaffold.records, previousManifest?.scaffoldFiles, previousScaffold.protectedPaths);
+  for (const entry of (await scaffoldDrift(targetDir, scaffold.records)).entries) {
+    scaffold.records[entry.relativePath].status = entry.status;
+  }
   const ownedPaths = new Set(asList(argvOptions.own).map(String));
   const skippedPaths = new Set(asList(argvOptions.skip).map(String));
   for (const relativePath of [...ownedPaths, ...skippedPaths]) {
@@ -144,14 +157,23 @@ export async function adoptBrightwebApp(argvOptions = {}, runtimeOptions = {}) {
   }
 
   const overrides = parseCursorOverrides(argvOptions.cursor);
-  const unknownOverride = Object.keys(overrides).find((key) => !catalog[key]);
+  const unknownOverride = Object.keys(overrides).find((key) => !Object.hasOwn(catalog, key));
   if (unknownOverride) throw new Error(`Unknown module key in --cursor: ${unknownOverride}`);
   const appMigrations = template === "platform" ? await migrationFiles(targetDir) : [];
   const migrationCursor = {};
   const cursorStrategies = {};
-  const migrationKeys = template === "platform" ? Array.from(new Set(["core", "admin", ...Object.keys(modules)])) : [];
+  const installedMigrationKeys = new Set(template === "platform" ? ["core", "admin", ...Object.keys(modules)] : []);
+  const migrationKeys = template === "platform"
+    ? Array.from(new Set([...installedMigrationKeys, ...Object.keys(previousManifest?.migrationCursor || {}), ...Object.keys(overrides)]))
+    : [];
   for (const moduleKey of migrationKeys) {
-    const result = await bootstrapCursor({ moduleKey, catalogEntry: catalog[moduleKey], appMigrations, override: overrides[moduleKey], warnings });
+    if (!Object.hasOwn(catalog, moduleKey)) throw new Error(`Unknown retained migration module: ${moduleKey}. Reconcile its history before re-adopting.`);
+    // Removing package wiring never removes applied history. Preserve an exact
+    // retained cursor rather than advancing it from files copied by older tools.
+    const retainedCursor = !installedMigrationKeys.has(moduleKey)
+      ? previousManifest?.migrationCursor?.[moduleKey]
+      : undefined;
+    const result = await bootstrapCursor({ moduleKey, catalogEntry: catalog[moduleKey], appMigrations, override: overrides[moduleKey], retainedCursor, warnings });
     if (result.shipsMigrations) {
       migrationCursor[moduleKey] = result.cursor;
       cursorStrategies[moduleKey] = result.strategy;
@@ -172,7 +194,7 @@ export async function adoptBrightwebApp(argvOptions = {}, runtimeOptions = {}) {
     scaffoldFiles: scaffold.records,
     managedFiles: template === "platform" ? MANAGED_APP_FILES : ["docs/ai/app-context.json"],
     migrationCursor,
-    ownedSurfaces: Array.from(new Set(asList(argvOptions.ownedSurface).map(String))),
+    ownedSurfaces: Array.from(new Set([...(previousManifest?.ownedSurfaces || []), ...asList(argvOptions.ownedSurface).map(String)])),
     adoptionNotes: {
       allowUncursored: argvOptions.allowUncursored === true,
       cursorStrategies,

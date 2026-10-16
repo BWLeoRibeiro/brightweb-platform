@@ -1,3 +1,5 @@
+@layer theme, base, components, utilities;
+
 /* Legacy MQ primitive aliases for incremental consumer migration. */
 :root {
   --mq-ink-950: var(--brand-ink);

@@ -1,3 +1,6 @@
+import { isAppOwnedSeed } from "./file-policy.mjs";
+import { assertMutationTargets } from "./mutation-paths.mjs";
+import { createHash } from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -34,7 +37,22 @@ export function trackedScaffoldDefinitions(moduleKeys = []) {
   return definitions.sort((left, right) => left.relativePath.localeCompare(right.relativePath));
 }
 
+/** Missing ownership history is not permission to replace an existing scaffold. */
+export async function assertNoUntrackedScaffoldWrites({ targetDir, scaffoldFiles, moduleKeys, relativePaths }) {
+  const tracked = new Set(trackedScaffoldDefinitions(moduleKeys).map((entry) => entry.relativePath));
+  for (const relativePath of relativePaths) {
+    if (!tracked.has(relativePath) || scaffoldFiles[relativePath]) continue;
+    const targetPath = resolveSafeRelativePath(targetDir, relativePath, "Scaffold output path");
+    const exists = await fs.lstat(targetPath).then(() => true, (error) => {
+      if (error.code === "ENOENT") return false;
+      throw error;
+    });
+    if (exists) throw new Error(`Untracked app file conflicts with scaffold output: ${relativePath}. Move or reconcile it explicitly before continuing.`);
+  }
+}
+
 export async function inventoryScaffoldFiles({ targetDir, moduleKeys, templateRoot }) {
+  await assertMutationTargets(targetDir, trackedScaffoldDefinitions(moduleKeys).map((entry) => entry.relativePath));
   const records = {};
   const unsupported = [];
   for (const definition of trackedScaffoldDefinitions(moduleKeys)) {
@@ -47,6 +65,7 @@ export async function inventoryScaffoldFiles({ targetDir, moduleKeys, templateRo
     const templateHash = await hashFile(templatePath);
     const exists = await pathExists(appPath);
     records[definition.relativePath] = {
+      ...(isAppOwnedSeed(definition.relativePath) ? { intent: "owned" } : {}),
       module: definition.moduleKey,
       hash: templateHash,
       status: !exists ? "missing" : await hashFile(appPath) === templateHash ? "current" : "drifted",
@@ -55,14 +74,26 @@ export async function inventoryScaffoldFiles({ targetDir, moduleKeys, templateRo
   return { records, unsupported };
 }
 
+/** Ownership belongs to an exact app path, independently of installed modules. */
+export function preserveScaffoldDecisions(records, previousRecords = {}, protectedPaths = new Set()) {
+  const reconciled = { ...records };
+  for (const [relativePath, record] of Object.entries(previousRecords)) {
+    if (["owned", "skipped"].includes(record.intent) || protectedPaths.has(relativePath)) {
+      reconciled[relativePath] = { ...record };
+    }
+  }
+  return reconciled;
+}
+
 export async function scaffoldDrift(targetDir, scaffoldFiles = {}) {
+  await assertMutationTargets(targetDir, Object.keys(scaffoldFiles));
   const current = [];
   const drifted = [];
   const missing = [];
   const entries = [];
   for (const [relativePath, record] of Object.entries(scaffoldFiles)) {
     const appPath = resolveSafeRelativePath(targetDir, relativePath, "Manifest scaffold file path");
-    const intent = record.intent || "managed";
+    const intent = record.intent === "skipped" ? "skipped" : isAppOwnedSeed(relativePath) ? "owned" : record.intent || "managed";
     let status = "missing";
     if (await pathExists(appPath)) {
       const matchesRecordedHash = await hashFile(appPath) === record.hash;
@@ -73,7 +104,9 @@ export async function scaffoldDrift(targetDir, scaffoldFiles = {}) {
     else if (status === "current") current.push(relativePath);
     else drifted.push(relativePath);
   }
-  return { current, drifted, missing, entries };
+  const intentional = entries.filter((entry) => entry.intent !== "managed").map((entry) => entry.relativePath);
+  const protectedPaths = new Set([...drifted, ...intentional]);
+  return { current, drifted, missing, entries, intentional, protectedPaths };
 }
 
 export async function findTrackedTemplate({ relativePath, manifest, targetDir, workspaceRoot }) {
@@ -88,4 +121,12 @@ export async function findTrackedTemplate({ relativePath, manifest, targetDir, w
 
 export async function readTextFile(filePath) {
   return fs.readFile(filePath, "utf8");
+}
+
+export async function canonicalScaffoldHash({ relativePath, manifest, targetDir, workspaceRoot }) {
+  const { createOptionalModuleRouteFiles } = await import("./generator.mjs");
+  const generated = createOptionalModuleRouteFiles(Object.keys(manifest.modules || {}))[relativePath];
+  if (generated != null) return `sha256:${createHash("sha256").update(generated).digest("hex")}`;
+  const located = await findTrackedTemplate({ relativePath, manifest, targetDir, workspaceRoot });
+  return located.templatePath ? hashFile(located.templatePath) : null;
 }

@@ -119,7 +119,7 @@ test("marketing validation feedback names the action that needs attention", () =
   );
 
   const root = join(process.cwd(), "packages/module-marketing/src/ui");
-  const campaignSource = readFileSync(join(root, "marketing-client.tsx"), "utf8");
+  const campaignSource = readFileSync(join(root, "use-campaign-editor.ts"), "utf8");
   assert.match(campaignSource, /feedback\.campaignRequired \?\? dictionary\.feedback\.required/);
   assert.match(campaignSource, /feedback\.testEmailRequired \?\? dictionary\.feedback\.required/);
   assert.match(readFileSync(join(root, "topic-workspace.tsx"), "utf8"), /feedback\.topicRequired \?\? dictionary\.feedback\.required/);
@@ -128,13 +128,14 @@ test("marketing validation feedback names the action that needs attention", () =
 });
 
 test("marketing editors distinguish pending, unavailable, and fulfilled-empty collections", () => {
-  const campaignSource = readFileSync(join(process.cwd(), "packages/module-marketing/src/ui/marketing-client.tsx"), "utf8");
-  const workflowSource = readFileSync(join(process.cwd(), "packages/module-marketing/src/ui/workflow-workspace.tsx"), "utf8");
+  const campaignSource = readFileSync(join(process.cwd(), "packages/module-marketing/src/ui/use-campaign-editor.ts"), "utf8");
+  const recipientSource = readFileSync(join(process.cwd(), "packages/module-marketing/src/ui/campaign-recipient-panel.tsx"), "utf8");
+  const workflowSource = ["workflow-workspace.tsx", "workflow-run-viewer.tsx"].map((file) => readFileSync(join(process.cwd(), "packages/module-marketing/src/ui", file), "utf8")).join("\n");
   const segmentSource = readFileSync(join(process.cwd(), "packages/module-marketing/src/ui/segment-workspace.tsx"), "utf8");
 
   assert.match(campaignSource, /setRecipientsLoadState\("pending"\)[\s\S]*setEditorOpen\(true\)/);
-  assert.match(campaignSource, /loadState === "pending"[\s\S]*loadState === "rejected"[\s\S]*recipients\.length === 0/);
-  assert.match(campaignSource, /generation !== campaignLoadGeneration\.current/);
+  assert.match(recipientSource, /loadState === "pending"[\s\S]*loadState === "rejected"[\s\S]*recipients\.length === 0/);
+  assert.match(campaignSource, /!latest\.isCurrent\(\)/);
 
   assert.match(workflowSource, /setRunsLoadState\("pending"\)[\s\S]*setOpen\(true\)/);
   assert.match(workflowSource, /runsLoadState === "pending"[\s\S]*runsLoadState === "rejected"[\s\S]*runs\.length === 0/);
@@ -170,7 +171,7 @@ test("marketing collection controls use registered actions and authoritative que
 test("marketing workspace delegates page chrome to the shell and keeps one primary collection action", () => {
   const clientSource = readFileSync(join(process.cwd(), "packages/module-marketing/src/ui/marketing-client.tsx"), "utf8");
   const segmentSource = readFileSync(join(process.cwd(), "packages/module-marketing/src/ui/segment-workspace.tsx"), "utf8");
-  const workflowSource = readFileSync(join(process.cwd(), "packages/module-marketing/src/ui/workflow-workspace.tsx"), "utf8");
+  const workflowSource = ["workflow-workspace.tsx", "workflow-run-viewer.tsx"].map((file) => readFileSync(join(process.cwd(), "packages/module-marketing/src/ui", file), "utf8")).join("\n");
   const stylesheet = readFileSync(join(process.cwd(), "packages/module-marketing/marketing.css"), "utf8");
 
   assert.doesNotMatch(clientSource, /className="marketing-hero"/);

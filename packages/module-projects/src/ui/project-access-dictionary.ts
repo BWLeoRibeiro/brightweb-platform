@@ -8,7 +8,7 @@ export const projectAccessDictionary = {
   } satisfies Record<ProjectClientAccessMode, { title: string; description: string }>,
   editor: {
     separateTitle: "Acesso ao projeto separado da equipa interna",
-    separateDescription: "Dar acesso ao projeto a um membro da organização permite consultar a informação partilhada. Não o adiciona à equipa interna nem lhe mostra tarefas, notas, custos ou ficheiros internos.",
+    separateDescription: "Dar acesso ao projeto a um membro da organização permite consultar a informação partilhada. As tarefas para membros têm um público próprio. Este acesso não o adiciona à equipa interna nem lhe mostra tarefas, notas, custos ou ficheiros internos.",
     audienceQuestion: "Quem pode aceder ao projeto?",
     organizationTitle: "Membros da organização",
     organizationDescription: "Organização cujos membros podem receber acesso ao projeto.",

@@ -1,4 +1,5 @@
 import "server-only";
+export { isSuppressed, isEmailable } from "./eligibility";
 
 import { createServiceRoleClient } from "@brightweblabs/infra/server";
 import type {
@@ -381,43 +382,6 @@ export async function suppress(
   return data;
 }
 
-export async function isSuppressed(supabase: unknown, email: string): Promise<boolean> {
-  const normalizedEmail = email.trim().toLowerCase();
-  if (!normalizedEmail) return true;
-  const { data, error } = await client(supabase)
-    .from("marketing_suppressions")
-    .select("id")
-    .eq("email", normalizedEmail)
-    .maybeSingle();
-  throwIfError(error);
-  return Boolean(data);
-}
-
-export async function isEmailable(
-  supabase: unknown,
-  contactId: string,
-  topicId: string,
-): Promise<boolean> {
-  const subscriptionResult = await client(supabase)
-    .from("marketing_subscriptions")
-    .select("status")
-    .eq("contact_id", contactId)
-    .eq("topic_id", topicId)
-    .maybeSingle();
-  throwIfError(subscriptionResult.error);
-  if (subscriptionResult.data?.status !== "subscribed") return false;
-
-  const contactResult = await client(supabase)
-    .from("crm_contacts")
-    .select("email")
-    .eq("id", contactId)
-    .maybeSingle();
-  throwIfError(contactResult.error);
-  const email = contactResult.data?.email;
-  return typeof email === "string" && email.trim() !== ""
-    ? !(await isSuppressed(supabase, email))
-    : false;
-}
 
 async function suppressPendingRecipientsForContact(
   supabase: unknown,

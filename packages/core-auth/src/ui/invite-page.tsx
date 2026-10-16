@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { Button } from "@brightweblabs/ui/button";
 import { Field, FieldContent, FieldError, FieldLabel } from "@brightweblabs/ui/field";
 import { Input } from "@brightweblabs/ui/input";
@@ -38,7 +38,6 @@ function stateTone(kind: InvitationUnavailableKind) {
 }
 
 export function InvitePage({ invitationId, kind = "organization" }: InvitePageProps) {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const { client, dictionary } = useAuthUi();
   const d = dictionary.invite;

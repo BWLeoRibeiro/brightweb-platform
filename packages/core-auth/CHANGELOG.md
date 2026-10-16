@@ -1,5 +1,21 @@
 # @brightweblabs/core-auth
 
+## 0.12.2
+
+### Patch Changes
+
+- e75c7bb: Keep notification dismissal and pagination responses scoped to their current configuration and list. Recover theme preferences when browser storage cannot be acquired. Split dashboard views and shared request loaders without changing their rendered output, share typography class merging through the UI utility export, and remove unused private authentication and dashboard code.
+- Updated dependencies [e75c7bb]
+- Updated dependencies [e75c7bb]
+  - @brightweblabs/ui@1.5.6
+
+## 0.12.1
+
+### Patch Changes
+
+- ebdc5fc: Establish the same theme, base, components, utilities cascade order before every shared layered stylesheet and starter reset entry point. Independently emitted production CSS chunks can now load in any order without allowing the reset to erase authentication padding, heading typography, or calendar spacing. Existing component layers and client customization remain intact.
+  - @brightweblabs/ui@1.5.5
+
 ## 0.12.0
 
 ### Minor Changes

@@ -124,12 +124,10 @@ function CrmOrganizationDetailSheet({ open, organization, initialMode = "view", 
   const [value, setValue] = useState(() => initialValue(organization));
   const [saving, setSaving] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [deleteConfirmation, setDeleteConfirmation] = useState("");
   const [invitations, setInvitations] = useState<Array<{ id: string; email: string; role: "admin" | "member" }>>([]);
   const [operationError, setOperationError] = useState<string | null>(null);
   const editing = mode !== "view";
   const controlClassName = editing ? sheetEditControlClassName : sheetViewControlClassName;
-  const deleteConfirmationTarget = organization?.name && organization.name.trim().length > 0 ? organization.name : organization?.id ?? "";
   const hasChanges = mode === "create" || hasOrganizationChanges(value, organization);
   const websiteHref = organizationWebsiteHref(value.website_url);
 
@@ -140,7 +138,6 @@ function CrmOrganizationDetailSheet({ open, organization, initialMode = "view", 
     setInvitations([]);
     setOperationError(null);
     setDeleteDialogOpen(false);
-    setDeleteConfirmation("");
   }, [initialMode, open, organization]);
 
   useEffect(() => {
@@ -166,7 +163,6 @@ function CrmOrganizationDetailSheet({ open, organization, initialMode = "view", 
 
   const remove = async () => {
     if (!organization || !onDelete || saving) return;
-    if (deleteConfirmation !== deleteConfirmationTarget) return;
     setOperationError(null);
     setSaving(true);
     try {
@@ -231,21 +227,13 @@ function CrmOrganizationDetailSheet({ open, organization, initialMode = "view", 
                 </div>
               </SheetSection>
             ) : null}
-            {mode === "view" && organization && onDelete ? (
-              <div className="w-full rounded-[var(--radius-card)] border border-destructive/30 bg-destructive/5 p-4">
-                <p className="text-body font-semibold text-destructive">Zona de perigo</p>
-                <p className="mt-1 text-meta text-muted-foreground">A eliminação remove membros e convites, desassocia contactos e é bloqueada enquanto existirem projetos.</p>
-                <Button type="button" variant="destructive" className="mt-3" disabled={saving} onClick={() => { setOperationError(null); setDeleteConfirmation(""); setDeleteDialogOpen(true); }}>
-                  <Trash2 className="mr-2 size-4" />Eliminar organização
-                </Button>
-              </div>
-            ) : null}
             <SheetSection title={dictionary.organizations.profile} editing={editing}>
               <FieldGroup className="grid gap-3 px-4 py-3 sm:grid-cols-2">
                 <Field><FieldLabel htmlFor={`${fieldId}-company-size`} className={sheetFieldLabelClassName}>{dictionary.organizations.companySize}</FieldLabel>{editing ? <SheetSelect id={`${fieldId}-company-size`} name="companySize" className="mt-1.5" value={value.company_size ?? ""} onValueChange={(company_size) => setValue({ ...value, company_size })} options={[{ value: "", label: "—" }, ...companySizes.map((size) => ({ value: size, label: size }))]} /> : <p className="mt-1.5 text-body text-foreground/75">{value.company_size || "—"}</p>}</Field>
                 <Field><FieldLabel htmlFor={`${fieldId}-budget-range`} className={sheetFieldLabelClassName}>{dictionary.organizations.budgetRange}</FieldLabel>{editing ? <SheetSelect id={`${fieldId}-budget-range`} name="budgetRange" className="mt-1.5" value={value.budget_range ?? ""} onValueChange={(budget_range) => setValue({ ...value, budget_range })} options={[{ value: "", label: "—" }, ...budgetRanges.map((range) => ({ value: range, label: range }))]} /> : <p className="mt-1.5 text-body text-foreground/75">{value.budget_range || "—"}</p>}</Field>
               </FieldGroup>
             </SheetSection>
+            {mode === "edit" && onDelete ? <Button type="button" variant="link" size="link" className="w-fit p-0 text-body text-destructive" disabled={saving} onClick={() => { setOperationError(null); setDeleteDialogOpen(true); }}><Trash2 className="mr-1.5 size-3.5" />Eliminar organização</Button> : null}
           </AppSheetBody>
           <AppSheetFooter className={editing ? "flex-row" : undefined}>{mode === "view" ? <Button type="button" className="w-full" onClick={() => setMode("edit")}><Pencil className="mr-2 size-4" />{dictionary.organizations.edit}</Button> : <><Button type="submit" className="flex-1" disabled={saving || !value.name?.trim() || !hasChanges}><Save className="mr-2 size-4" />{saving ? dictionary.organizations.saving : mode === "create" ? dictionary.organizations.create : dictionary.organizations.save}</Button><Button type="button" variant="outline" className="flex-1" onClick={() => organization ? (setValue(initialValue(organization)), setMode("view")) : onOpenChange(false)}>{dictionary.organizations.cancel}</Button></>}</AppSheetFooter>
         </form>
@@ -253,23 +241,16 @@ function CrmOrganizationDetailSheet({ open, organization, initialMode = "view", 
       <AlertDialog open={deleteDialogOpen} onOpenChange={(next) => { if (!saving) setDeleteDialogOpen(next); }}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Eliminar organização?</AlertDialogTitle>
+            <AlertDialogTitle>Eliminar organização</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta ação é permanente. Para confirmar, escreva exatamente <strong>{deleteConfirmationTarget}</strong>.
+              Esta ação elimina permanentemente esta organização, remove membros e convites e desassocia contactos. Organizações com projetos associados não podem ser eliminadas.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <Input
-            aria-label="Nome da organização para confirmar"
-            autoComplete="off"
-            value={deleteConfirmation}
-            onChange={(event) => setDeleteConfirmation(event.target.value)}
-            disabled={saving}
-          />
           {operationError ? <p role="alert" className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-meta text-destructive">{operationError}</p> : null}
           <AlertDialogFooter>
             <Button type="button" variant="outline" disabled={saving} onClick={() => setDeleteDialogOpen(false)}>Cancelar</Button>
-            <Button type="button" variant="destructive" disabled={saving || !organization || deleteConfirmation !== deleteConfirmationTarget} onClick={() => void remove()}>
-              {saving ? "A eliminar…" : "Eliminar definitivamente"}
+            <Button type="button" disabled={saving} onClick={() => void remove()}>
+              {saving ? dictionary.deleteDialog.deleting : dictionary.deleteDialog.confirm}
             </Button>
           </AlertDialogFooter>
         </AlertDialogContent>

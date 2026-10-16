@@ -265,13 +265,6 @@ test("CRM organization view exposes the website as a safe external link", () => 
   assert.match(organizationSource, /<ExternalLink className="size-3\.5 shrink-0" aria-hidden/);
 });
 
-test("CRM organization danger zone aligns with the full-width sheet sections", () => {
-  const organizationSource = readFileSync(join(process.cwd(), "packages/module-crm/src/ui/organization-sheet.tsx"), "utf8");
-
-  assert.match(organizationSource, /className="w-full rounded-\[var\(--radius-card\)\] border border-destructive\/30/);
-  assert.doesNotMatch(organizationSource, /className="mx-4 rounded-xl border border-destructive\/30/);
-});
-
 test("CRM sheets consume the canonical natural-case typography recipes", () => {
   const contactSource = readFileSync(join(process.cwd(), "packages/module-crm/src/ui/contact-dialog.tsx"), "utf8");
   const organizationSource = readFileSync(join(process.cwd(), "packages/module-crm/src/ui/organization-sheet.tsx"), "utf8");
@@ -345,7 +338,7 @@ test("CRM organization links hand off from Contacts to the canonical Organizatio
   assert.match(organizationsSource, /onOpenContact=\{openContact\}/);
   const contactsTableSource = readFileSync(join(process.cwd(), "packages/module-crm/src/ui/contacts-table.tsx"), "utf8");
   assert.match(contactsTableSource, /onOrganizationClick\(contact\.organization_id!\)/);
-  const dashboardClientSource = readFileSync(join(process.cwd(), "packages/app-shell/src/dashboard/dashboard-client.tsx"), "utf8");
+  const dashboardClientSource = readFileSync(join(process.cwd(), "packages/app-shell/src/dashboard/clients-view.tsx"), "utf8");
   assert.match(dashboardClientSource, /\/crm\?contact=\$\{encodeURIComponent\(c\.id\)\}/);
 });
 

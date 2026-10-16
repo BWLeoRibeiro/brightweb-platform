@@ -73,6 +73,15 @@ test("project-facing Portuguese copy consistently calls milestones metas", () =>
   assert.equal(defaultDashboardDictionary.milestones.emptyDescription, "Metas com data aparecem aqui.");
 });
 
+test("project clipboard feedback is localized and action-specific", () => {
+  assert.equal(defaultProjectsUiDictionary.detail.copyProjectId, "Copiar ID do projeto");
+  assert.equal(defaultProjectsUiDictionary.messages.projectIdCopied, "ID do projeto copiado.");
+  assert.equal(
+    defaultProjectsUiDictionary.messages.projectIdCopyError,
+    "Não foi possível copiar o ID do projeto.",
+  );
+});
+
 test("project summary cards use native navigation without swallowing their copy action", () => {
   const source = readFileSync(
     join(process.cwd(), "packages/module-projects/src/ui/shared/project-summary-card.tsx"),
@@ -113,6 +122,26 @@ test("compact collection previews preserve the 0/1/2/3 boundary and gate overflo
     assert.deepEqual(getCompactCollectionPreview(items), items.slice(0, 3));
     assert.equal(hasCompactCollectionOverflow(count), count >= 4);
   }
+});
+
+test("Projects compact cards use natural three-row previews, viewer expansion, and reduced-motion reveals", () => {
+  const uiRoot = join(process.cwd(), "packages/module-projects/src/ui");
+  const cardSources = [
+    "project-recent-activity.tsx",
+    "project-detail-team-card.tsx",
+    "project-links-card.tsx",
+  ].map((file) => readFileSync(join(uiRoot, file), "utf8"));
+  const sharedSource = readFileSync(join(uiRoot, "shared/compact-collection.tsx"), "utf8");
+  const skeletonSource = readFileSync(join(uiRoot, "shared/compact-collection-skeleton.tsx"), "utf8");
+
+  for (const source of cardSources) {
+    assert.match(source, /getCompactCollectionPreview/);
+    assert.match(source, /CompactCollectionHeaderActions/);
+    assert.doesNotMatch(source, /h-\[17\.75rem\]|transition-\[padding\]/);
+  }
+  assert.match(sharedSource, /motion-safe:animate-in[\s\S]*motion-safe:fade-in-0[\s\S]*motion-safe:slide-in-from-bottom-1[\s\S]*motion-safe:duration-200/);
+  assert.match(sharedSource, /^"use client";/);
+  assert.match(skeletonSource, /CompactCollectionContentSkeleton[\s\S]*min-h-\[3\.25rem\]/);
 });
 
 test("Projects activity endpoint keeps the legacy array response and exposes bounded pagination", async () => {
@@ -750,13 +779,22 @@ test("ProjectsNavigationConfig contains no function-typed members", () => {
   );
 });
 
+test("Projects package UI contains the literal list/detail translation and no raw component colors", () => {
+  const root = join(process.cwd(), "packages/module-projects/src/ui");
+  const files = (directory: string): string[] => readdirSync(directory, { withFileTypes: true }).flatMap((entry) => entry.isDirectory() ? files(join(directory, entry.name)) : [join(directory, entry.name)]);
+  const source = files(root).filter((file) => /\.(?:ts|tsx)$/.test(file)).map((file) => readFileSync(file, "utf8")).join("\n");
+  assert.doesNotMatch(source, /#[0-9a-f]{3,8}\b|rgba?\(|color-mix\(/i);
+  assert.doesNotMatch(source, /\bfont-medium\b/);
+  for (const symbol of ["ProjectsPage", "ProjectDetailPage", "ProjectsToolbarControls", "ProjectDetailDataProvider", "ProjectBoardKanban", "ProjectTasksPage", "ProjectBoardLoading"]) assert.match(readFileSync(join(root, "index.ts"), "utf8"), new RegExp(symbol.replace("ProjectsToolbarControls", "toolbar-controls").replace("ProjectDetailDataProvider", "project-detail-data-provider").replace("ProjectsPage", "projects-page").replace("ProjectDetailPage", "project-detail-page").replace("ProjectBoardKanban", "project-board-kanban").replace("ProjectTasksPage", "project-tasks-page").replace("ProjectBoardLoading", "project-board-loading")));
+});
+
 test("dashboard attention cards use the canonical editorial attention-row recipe", () => {
   const card = readFileSync(
     join(process.cwd(), "packages/module-projects/src/ui/shared/dashboard-project-attention-card.tsx"),
     "utf8",
   );
   const projectTokens = readFileSync(join(process.cwd(), "packages/module-projects/tokens.css"), "utf8");
-  const dashboard = readFileSync(join(process.cwd(), "packages/app-shell/src/dashboard/dashboard-client.tsx"), "utf8");
+  const dashboard = readFileSync(join(process.cwd(), "packages/app-shell/src/dashboard/projects-view.tsx"), "utf8");
   const dashboardStyles = readFileSync(join(process.cwd(), "packages/app-shell/src/dashboard/dashboard.css"), "utf8");
 
   assert.match(card, /className="project-attention-row group/);
@@ -843,11 +881,21 @@ test("Projects UI barrel exposes only the supported documented component familie
     assert.match(barrel, new RegExp(`from "${exportPath.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}"`));
   }
   assert.match(barrel, /export \{ TaskDueMeta, TaskPriorityTag, TaskStatusTag \} from "\.\/shared\/task-tags"/);
-  assert.match(barrel, /export type \{ ListProjectsPayload \}/);
   assert.doesNotMatch(barrel, /project-overview-stat-card|project-detail-hero|project-pill|shared-fields/);
   assert.match(ledger, /\| `TaskPriorityTag`, `TaskStatusTag`, `TaskDueMeta` \| `@brightweblabs\/module-projects\/ui` \|/);
   assert.match(ledger, /\| `ProjectDetailHero`, `ProjectDetailMetadataStrip`, `ProjectDetailTeamCard` \| internal to `@brightweblabs\/module-projects` \|/);
   assert.doesNotMatch(ledger, /ProjectOverviewStatCard/);
+});
+
+test("Projects keeps the public list payload type without its dead parser", () => {
+  const parser = readFileSync(join(process.cwd(), "packages/module-projects/src/ui/projects-list-response-parser.ts"), "utf8");
+  const barrel = readFileSync(join(process.cwd(), "packages/module-projects/src/ui/index.ts"), "utf8");
+  const dashboardParser = readFileSync(join(process.cwd(), "packages/app-shell/src/dashboard/dashboard-response-parser.ts"), "utf8");
+
+  assert.match(parser, /export type ListProjectsPayload/);
+  assert.doesNotMatch(parser, /parseListProjectsPayload|isListProjectsPayload|isProjectItem|parseErrorFromPayload/);
+  assert.match(barrel, /export type \{ ListProjectsPayload \}/);
+  assert.match(dashboardParser, /export function parseDashboardBootstrapResponse/);
 });
 
 test("Projects Portuguese UI copy is owned by the dictionary", () => {
@@ -862,4 +910,16 @@ test("Projects preview exposes list, detail, board, and tasks routes", () => {
   for (const route of ["page.tsx", "[id]/page.tsx", "[id]/board/page.tsx", "[id]/tasks/page.tsx"]) {
     assert.match(readFileSync(join(previewRoot, route), "utf8"), /ProjectsRoutePage|ProjectDetailRoutePage|ProjectBoardRoutePage|ProjectTasksRoutePage/);
   }
+});
+
+test("Projects portfolio grid keeps MQ columns at responsive boundaries", () => {
+  const tokens = readFileSync(join(process.cwd(), "packages/module-projects/tokens.css"), "utf8");
+  const tablet = tokens.indexOf("@media (min-width: 768px)");
+  const mqNarrow = tokens.indexOf("@media (max-width: 900px)");
+  const desktop = tokens.indexOf("@media (min-width: 1024px)");
+
+  assert.ok(tablet >= 0 && mqNarrow > tablet && desktop > mqNarrow);
+  assert.match(tokens.slice(tablet, mqNarrow), /grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/);
+  assert.match(tokens.slice(mqNarrow, desktop), /grid-template-columns:\s*1fr/);
+  assert.match(tokens.slice(desktop), /grid-template-columns:\s*repeat\(3,\s*minmax\(0,\s*1fr\)\)/);
 });

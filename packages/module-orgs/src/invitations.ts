@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { syncOrganizationPrimaryContactFromAdmins, type OrganizationMemberRole } from "./data";
+import type { OrganizationMemberRole } from "./data";
 import { sendOrganizationInviteEmail } from "./invite-email";
 
 const INVITE_EXPIRY_DAYS = 14;
@@ -34,6 +34,7 @@ export type OrganizationInvitationDetails = {
   role: OrganizationMemberRole;
   status: OrganizationInvitation["status"];
   expiresAt: string;
+  acceptedByProfileId?: string | null;
 };
 
 export type OrganizationInviteSummary = {
@@ -141,17 +142,42 @@ function isExistingAccountError(error: { message?: string } | null): boolean {
   return message.includes("already") || message.includes("exists") || message.includes("registered");
 }
 
-async function findAuthUserIdByEmail(supabase: SupabaseClient, email: string): Promise<string | null> {
-  const target = normalizeEmail(email);
-  const perPage = 1000;
-  for (let page = 1; page <= 20; page += 1) {
-    const { data, error } = await supabase.auth.admin.listUsers({ page, perPage });
-    if (error) throw new Error(error.message);
-    const match = data.users.find((user) => normalizeEmail(user.email ?? "") === target);
-    if (match?.id) return match.id;
-    if (data.users.length < perPage) return null;
+function throwIdentityError(error: { code?: string; message?: string }): never {
+  const message = error.code === "42883" || error.code === "PGRST202"
+    ? "IDENTITY_MIGRATION_REQUIRED: Aplique as migrations de identidade de Core e Orgs antes de gerir convites."
+    : error.message ?? "Não foi possível confirmar a identidade da conta.";
+  throw Object.assign(new Error(message), { code: error.code });
+}
+
+async function assertIdentityReadiness(supabase: SupabaseClient): Promise<void> {
+  const { error } = await supabase.rpc("assert_orgs_auth_identity_v1");
+  if (error) throwIdentityError(error);
+}
+
+type AuthIdentity = {
+  userId: string;
+  profileId: string | null;
+  email: string;
+  confirmed: boolean;
+};
+
+async function resolveAuthIdentity(supabase: SupabaseClient, email: string): Promise<AuthIdentity | null> {
+  const normalizedEmail = normalizeEmail(email);
+  const { data, error } = await supabase.rpc("resolve_auth_identity", { p_email: normalizedEmail });
+  if (error) throwIdentityError(error);
+  if (data === null) return null;
+  if (!data || Array.isArray(data) || typeof data !== "object"
+      || typeof data.userId !== "string" || !data.userId.trim()
+      || typeof data.email !== "string" || normalizeEmail(data.email) !== normalizedEmail
+      || typeof data.confirmed !== "boolean"
+      || !(data.profileId === null || (typeof data.profileId === "string" && data.profileId.trim().length > 0))) {
+    throw new Error("AUTH_IDENTITY_INVALID_RESPONSE");
   }
-  return null;
+  return data as AuthIdentity;
+}
+
+async function findAuthUserIdByEmail(supabase: SupabaseClient, email: string): Promise<string | null> {
+  return (await resolveAuthIdentity(supabase, email))?.userId ?? null;
 }
 
 async function ensureInvitationProfile(
@@ -163,7 +189,7 @@ async function ensureInvitationProfile(
     p_email: params.email,
     p_metadata: { first_name: params.firstName || null, last_name: params.lastName || null },
   });
-  if (syncError) throw new Error(syncError.message);
+  if (syncError) throwIdentityError(syncError);
   const { data, error } = await supabase
     .from("profiles")
     .select("id")
@@ -180,7 +206,7 @@ export async function getOrganizationInvitationDetails(
 ): Promise<OrganizationInvitationDetails | null> {
   const { data, error } = await supabase
     .from("organization_invitations")
-    .select("id, organization_id, invited_email, role, status, expires_at, organizations(name)")
+    .select("id, organization_id, invited_email, role, status, expires_at, accepted_by_profile_id, organizations(name)")
     .eq("id", invitationId)
     .maybeSingle();
   if (error) throw new Error(error.message);
@@ -199,6 +225,7 @@ export async function getOrganizationInvitationDetails(
     role: raw.role === "admin" ? "admin" : "member",
     status: normalizeStatus(raw.status),
     expiresAt: String(raw.expires_at),
+    acceptedByProfileId: typeof raw.accepted_by_profile_id === "string" ? raw.accepted_by_profile_id : null,
   };
 }
 
@@ -264,8 +291,10 @@ export async function inviteOrganizationMembers(
   options?: {
     ensureCrmContactForProfile?: EnsureCrmContact;
     sendInviteEmail?: SendOrganizationInvite;
+    contactIntegration?: "database";
   },
 ): Promise<{ invitations: OrganizationInvitation[]; outcomes: OrganizationInviteOutcome[]; summary: OrganizationInviteSummary }> {
+  assertInvitationContactIntegration(options ?? {});
   const normalized = dedupeInviteDrafts(invites);
   const emptySummary = {
     pendingInvitations: 0,
@@ -278,15 +307,23 @@ export async function inviteOrganizationMembers(
     failedApiOperations: 0,
   };
   if (normalized.length === 0) return { invitations: [], outcomes: [], summary: emptySummary };
+  await assertIdentityReadiness(supabase);
 
   const emails = normalized.map((invite) => invite.email);
-  const [{ data: existingMembers, error: memberError }, { data: profiles, error: profileError }, { data: existingInvitations, error: invitationError }] = await Promise.all([
-    supabase.from("organization_members").select("profile_id, role, profile:profiles!organization_members_profile_id_fkey(email)").eq("organization_id", organizationId),
-    supabase.from("profiles").select("id, email").in("email", emails),
+  const [identities, { data: existingInvitations, error: invitationError }] = await Promise.all([
+    Promise.all(emails.map(async (email) => {
+      try {
+        const identity = await resolveAuthIdentity(supabase, email);
+        return { email, profileId: identity?.confirmed === true ? identity.profileId : null, reconciliationRequired: false };
+      } catch (error) {
+        if (error instanceof Error && "code" in error && error.code === "BW002") {
+          return { email, profileId: null, reconciliationRequired: true };
+        }
+        throw error;
+      }
+    })),
     supabase.from("organization_invitations").select("id, invited_email, role, status, expires_at").eq("organization_id", organizationId).in("invited_email", emails),
   ]);
-  if (memberError) throw new Error(memberError.message);
-  if (profileError) throw new Error(profileError.message);
   if (invitationError) throw new Error(invitationError.message);
   const { data: organization, error: organizationError } = await supabase
     .from("organizations")
@@ -296,19 +333,10 @@ export async function inviteOrganizationMembers(
   if (organizationError) throw new Error(organizationError.message);
   const organizationName = organization?.name?.trim() || "Organização";
 
-  const memberByEmail = new Map<string, { profileId: string; role: OrganizationMemberRole }>();
-  for (const row of existingMembers ?? []) {
-    const rawProfile = Array.isArray(row.profile) ? row.profile[0] ?? null : row.profile;
-    const email = rawProfile && typeof rawProfile.email === "string" ? normalizeEmail(rawProfile.email) : "";
-    if (email && typeof row.profile_id === "string") {
-      memberByEmail.set(email, { profileId: row.profile_id, role: row.role === "admin" ? "admin" : "member" });
-    }
-  }
+  const reconciliationEmails = new Set(identities.filter((identity) => identity.reconciliationRequired).map((identity) => identity.email));
   const profileByEmail = new Map<string, string>();
-  for (const profile of profiles ?? []) {
-    if (typeof profile.id === "string" && typeof profile.email === "string") {
-      profileByEmail.set(normalizeEmail(profile.email), profile.id);
-    }
+  for (const identity of identities) {
+    if (identity.profileId) profileByEmail.set(identity.email, identity.profileId);
   }
   const pendingInvitationByEmail = new Map<string, { id: string; role: OrganizationMemberRole }>();
   for (const invitation of existingInvitations ?? []) {
@@ -325,76 +353,48 @@ export async function inviteOrganizationMembers(
   }
 
   const pendingRows: Array<Record<string, unknown>> = [];
-  const resolvedProfilesByEmail = new Map<string, string>();
   const outcomes: OrganizationInviteOutcome[] = [];
   let directAssignments = 0;
   let updatedExistingMembers = 0;
   let unchangedExistingMembers = 0;
   for (const invite of normalized) {
-    const member = memberByEmail.get(invite.email);
-    if (member) {
-      if (member.role === invite.role) {
-        if (options?.ensureCrmContactForProfile) {
-          const linked = await options.ensureCrmContactForProfile(member.profileId, {
-            source: "organization_member_direct_access", organizationId, serviceClient: supabase,
-          });
-          if (!linked.success) {
-            outcomes.push({ email: invite.email, role: invite.role, status: "api_failed", profileId: member.profileId, message: "Não foi possível ligar o contacto CRM.", failureKind: "crm_link" });
-            continue;
-          }
-        }
-        unchangedExistingMembers += 1;
-        outcomes.push({ email: invite.email, role: invite.role, status: "already_member", profileId: member.profileId });
-      }
-      else {
-        const { error } = await supabase.from("organization_members").update({ role: invite.role })
-          .eq("organization_id", organizationId).eq("profile_id", member.profileId);
-        if (error) {
-          outcomes.push({ email: invite.email, role: invite.role, status: "api_failed", profileId: member.profileId, message: "Não foi possível atualizar a função do membro.", failureKind: "membership" });
-          continue;
-        }
-        if (options?.ensureCrmContactForProfile) {
-          const linked = await options.ensureCrmContactForProfile(member.profileId, {
-            source: "organization_member_direct_access", organizationId, serviceClient: supabase,
-          });
-          if (!linked.success) {
-            const { error: rollbackError } = await supabase.from("organization_members").update({ role: member.role })
-              .eq("organization_id", organizationId).eq("profile_id", member.profileId);
-            outcomes.push({ email: invite.email, role: invite.role, status: "api_failed", profileId: member.profileId, message: rollbackError ? "Não foi possível ligar o contacto CRM nem reverter a alteração de função; é necessária reconciliação." : "Não foi possível ligar o contacto CRM; a alteração de função foi revertida.", failureKind: "crm_link" });
-            continue;
-          }
-        }
-        updatedExistingMembers += 1;
-        outcomes.push({ email: invite.email, role: invite.role, status: "membership_updated", profileId: member.profileId });
-      }
-      resolvedProfilesByEmail.set(invite.email, member.profileId);
+    if (reconciliationEmails.has(invite.email)) {
+      outcomes.push({
+        email: invite.email, role: invite.role, status: "api_failed", failureKind: "membership",
+        message: "A identidade da conta precisa de reconciliação antes de conceder acesso. Nenhum convite foi criado.",
+      });
       continue;
     }
     const profileId = profileByEmail.get(invite.email);
     if (profileId) {
-      const { error } = await supabase.from("organization_members").upsert({
-        organization_id: organizationId,
-        profile_id: profileId,
-        role: invite.role,
-      }, { onConflict: "organization_id,profile_id" });
-      if (error) {
-        outcomes.push({ email: invite.email, role: invite.role, status: "api_failed", profileId, message: "Não foi possível conceder o acesso à organização.", failureKind: "membership" });
+      // The database resolves current membership under lock and rolls back only
+      // this transaction's writes. Never compensate from an earlier snapshot.
+      const { data, error } = await supabase.rpc("assign_organization_member_atomic", {
+        p_organization_id: organizationId,
+        p_profile_id: profileId,
+        p_email: invite.email,
+        p_role: invite.role,
+        p_actor_profile_id: actorProfileId,
+      });
+      const status = data?.status;
+      if (error || !["immediate_access", "membership_updated", "already_member"].includes(status)) {
+        const contactFailure = error?.code === "BW001";
+        const reconciliationRequired = error?.code === "BW002";
+        outcomes.push({
+          email: invite.email, role: invite.role, status: "api_failed", profileId,
+          message: contactFailure
+            ? "Não foi possível ligar o contacto CRM. Nenhuma alteração de acesso foi guardada."
+            : reconciliationRequired
+              ? "A identidade da conta precisa de reconciliação antes de conceder acesso. Nenhuma alteração foi guardada."
+              : "Não foi possível confirmar a alteração de acesso à organização. Tente novamente.",
+          failureKind: contactFailure ? "crm_link" : "membership",
+        });
         continue;
       }
-      if (options?.ensureCrmContactForProfile) {
-        const linked = await options.ensureCrmContactForProfile(profileId, {
-          source: "organization_member_direct_access", organizationId, serviceClient: supabase,
-        });
-        if (!linked.success) {
-          const { error: rollbackError } = await supabase.from("organization_members").delete()
-            .eq("organization_id", organizationId).eq("profile_id", profileId);
-          outcomes.push({ email: invite.email, role: invite.role, status: "api_failed", profileId, message: rollbackError ? "Não foi possível ligar o contacto CRM nem reverter o acesso; é necessária reconciliação." : "Não foi possível ligar o contacto CRM; o acesso não foi mantido.", failureKind: "crm_link" });
-          continue;
-        }
-      }
-      resolvedProfilesByEmail.set(invite.email, profileId);
-      directAssignments += 1;
-      outcomes.push({ email: invite.email, role: invite.role, status: "immediate_access", profileId });
+      if (status === "immediate_access") directAssignments += 1;
+      else if (status === "membership_updated") updatedExistingMembers += 1;
+      else unchangedExistingMembers += 1;
+      outcomes.push({ email: invite.email, role: invite.role, status, profileId });
       continue;
     }
     const pendingInvitation = pendingInvitationByEmail.get(invite.email);
@@ -416,21 +416,6 @@ export async function inviteOrganizationMembers(
     });
   }
 
-  if (directAssignments > 0 || updatedExistingMembers > 0) {
-    try { await syncOrganizationPrimaryContactFromAdmins(supabase, organizationId); } catch { /* Retry on the next idempotent member operation. */ }
-  }
-  if (resolvedProfilesByEmail.size > 0) {
-    const acceptedAt = new Date().toISOString();
-    await Promise.all(Array.from(resolvedProfilesByEmail, async ([email, profileId]) => {
-      const { error } = await supabase.from("organization_invitations").update({
-        status: "accepted",
-        accepted_at: acceptedAt,
-        accepted_by_profile_id: profileId,
-      }).eq("organization_id", organizationId).eq("invited_email", email).eq("status", "pending");
-      // Access is already effective. Leave a pending row for the next idempotent call to reconcile.
-      if (error) return;
-    }));
-  }
   if (pendingRows.length > 0) {
     const { error } = await supabase.from("organization_invitations").upsert(pendingRows, {
       onConflict: "organization_id,invited_email",
@@ -467,22 +452,24 @@ export async function inviteOrganizationMembers(
       }),
     })));
     const failedIds = deliveries.filter((result) => !result.delivered).map((result) => result.id);
+    let cleanupFailed = false;
     if (failedIds.length > 0) {
       const { error: deleteError } = await supabase
         .from("organization_invitations")
         .delete()
         .in("id", failedIds)
         .eq("status", "pending");
-      // Preserve the email failure outcome. A remaining row is safe to revoke/retry and stays visible as pending.
-      void deleteError;
+      cleanupFailed = Boolean(deleteError);
     }
     for (const delivery of deliveries) {
       outcomes.push({
         email: delivery.email,
         role: delivery.role,
         status: delivery.delivered ? "pending_invitation" : "email_failed",
-        invitationId: delivery.delivered ? delivery.id : undefined,
-        message: delivery.delivered ? undefined : ORGANIZATION_INVITE_EMAIL_DELIVERY_ERROR,
+        invitationId: delivery.delivered || cleanupFailed ? delivery.id : undefined,
+        message: delivery.delivered ? undefined : cleanupFailed
+          ? "Não foi possível enviar o email. O convite pendente foi mantido; reenvie-o ou revogue-o."
+          : ORGANIZATION_INVITE_EMAIL_DELIVERY_ERROR,
       });
     }
   }
@@ -572,61 +559,23 @@ export async function acceptOrganizationInvitation(
     invitationId: string;
     profileId: string;
     userEmail: string;
-    ensureCrmContactForProfile: EnsureCrmContact;
+    ensureCrmContactForProfile?: EnsureCrmContact;
+    contactIntegration?: "database";
   },
 ): Promise<{ organizationId: string }> {
-  const email = normalizeEmail(params.userEmail);
-  const { data: invitation, error } = await supabase
-    .from("organization_invitations")
-    .select("id, organization_id, invited_email, role, status, expires_at")
-    .eq("id", params.invitationId)
-    .maybeSingle<{ id: string; organization_id: string; invited_email: string; role: string; status: string; expires_at: string }>();
-  if (error) throw new Error(error.message);
-  if (!invitation?.id) throw new Error("Convite não encontrado.");
-  if (normalizeEmail(invitation.invited_email) !== email) throw new Error("Este convite pertence a outro email.");
-  if (invitation.status !== "pending") throw new Error("Este convite já não está disponível.");
-  if (isInvitationExpired(invitation.expires_at)) {
-    const { error: expireError } = await supabase.from("organization_invitations")
-      .update({ status: "expired" }).eq("id", invitation.id);
-    if (expireError) throw new Error(expireError.message);
-    throw new Error("Este convite expirou.");
-  }
-
-  const acceptedContact = await params.ensureCrmContactForProfile(params.profileId, {
-    source: "organization_invitation_accept",
-    organizationId: invitation.organization_id,
-    serviceClient: supabase,
+  assertInvitationContactIntegration(params);
+  await assertIdentityReadiness(supabase);
+  const { data, error } = await supabase.rpc("accept_organization_invitation", {
+    p_invitation_id: params.invitationId,
+    p_profile_id: params.profileId,
+    p_user_email: normalizeEmail(params.userEmail),
   });
-  if (!acceptedContact.success) {
-    throw new Error(acceptedContact.error ?? "Não foi possível associar o contacto CRM ao convite.");
+  if (error) throwIdentityError(error);
+  if (data?.status === "expired") throw new Error("Este convite expirou.");
+  if (data?.status !== "accepted" || typeof data.organizationId !== "string") {
+    throw new Error("Não foi possível confirmar a aceitação do convite.");
   }
-  const role: OrganizationMemberRole = invitation.role === "admin" ? "admin" : "member";
-  const { error: memberError } = await supabase.from("organization_members").upsert({
-    organization_id: invitation.organization_id,
-    profile_id: params.profileId,
-    role,
-  }, { onConflict: "organization_id,profile_id" });
-  if (memberError) throw new Error(memberError.message);
-  if (role === "admin") await syncOrganizationPrimaryContactFromAdmins(supabase, invitation.organization_id);
-  const { error: updateError } = await supabase.from("organization_invitations").update({
-    status: "accepted",
-    accepted_at: new Date().toISOString(),
-    accepted_by_profile_id: params.profileId,
-    accepted_contact_id: acceptedContact.contactId ?? null,
-  }).eq("id", invitation.id);
-  if (updateError) throw new Error(updateError.message);
-  await logOrganizationActivity(supabase, {
-    actorProfileId: params.profileId,
-    organizationId: invitation.organization_id,
-    eventType: "crm_organization_invitation_accepted",
-    summary: "Convite de organização aceite.",
-    payload: {
-      invitation_id: invitation.id,
-      organization_id: invitation.organization_id,
-      email,
-    },
-  });
-  return { organizationId: invitation.organization_id };
+  return { organizationId: data.organizationId };
 }
 
 export async function registerUserFromOrganizationInvitation(
@@ -636,13 +585,27 @@ export async function registerUserFromOrganizationInvitation(
     firstName: string;
     lastName: string;
     password: string;
-    ensureCrmContactForProfile: EnsureCrmContact;
+    ensureCrmContactForProfile?: EnsureCrmContact;
+    contactIntegration?: "database";
   },
 ): Promise<{ email: string; organizationId: string }> {
+  assertInvitationContactIntegration(params);
+  await assertIdentityReadiness(supabase);
   const invitation = await getOrganizationInvitationDetails(supabase, params.invitationId);
   if (!invitation) throw new Error("INVITATION_NOT_FOUND");
-  if (invitation.status !== "pending") throw new Error("INVITATION_NOT_AVAILABLE");
-  if (isInvitationExpired(invitation.expiresAt)) {
+  if (invitation.status !== "pending" && invitation.status !== "accepted") throw new Error("INVITATION_NOT_AVAILABLE");
+  if (invitation.status === "accepted") {
+    if (!invitation.acceptedByProfileId) throw new Error("INVITATION_NOT_AVAILABLE");
+    const accepted = await acceptOrganizationInvitation(supabase, {
+      invitationId: invitation.id,
+      profileId: invitation.acceptedByProfileId,
+      userEmail: invitation.invitedEmail,
+      ensureCrmContactForProfile: params.ensureCrmContactForProfile,
+      contactIntegration: params.contactIntegration,
+    });
+    return { email: invitation.invitedEmail, ...accepted };
+  }
+  if (invitation.status === "pending" && isInvitationExpired(invitation.expiresAt)) {
     const { error } = await supabase.from("organization_invitations")
       .update({ status: "expired" }).eq("id", invitation.id).eq("status", "pending");
     if (error) throw new Error(error.message);
@@ -658,31 +621,40 @@ export async function registerUserFromOrganizationInvitation(
     user_metadata: { first_name: firstName || null, last_name: lastName || null },
   });
   let userId = data.user?.id ?? null;
-  let createdUserId = userId;
   if (error) {
     if (!isExistingAccountError(error)) throw new Error(error.message);
     userId = await findAuthUserIdByEmail(supabase, invitation.invitedEmail);
     if (!userId) throw new Error("ACCOUNT_ALREADY_EXISTS");
-    createdUserId = null;
   }
   if (!userId) throw new Error("Não foi possível criar utilizador.");
 
-  try {
-    const profile = await ensureInvitationProfile(supabase, {
-      userId,
-      email: invitation.invitedEmail,
-      firstName,
-      lastName,
-    });
-    await acceptOrganizationInvitation(supabase, {
-      invitationId: invitation.id,
-      profileId: profile.id,
-      userEmail: invitation.invitedEmail,
-      ensureCrmContactForProfile: params.ensureCrmContactForProfile,
-    });
-  } catch (caught) {
-    if (createdUserId) await supabase.auth.admin.deleteUser(createdUserId);
-    throw caught;
+  // A failed/unknown RPC response must not delete an identity whose acceptance
+  // may have committed. The next registration attempt resolves the same account.
+  const profile = await ensureInvitationProfile(supabase, {
+    userId,
+    email: invitation.invitedEmail,
+    firstName,
+    lastName,
+  });
+  const accepted = await acceptOrganizationInvitation(supabase, {
+    invitationId: invitation.id,
+    profileId: profile.id,
+    userEmail: invitation.invitedEmail,
+    ensureCrmContactForProfile: params.ensureCrmContactForProfile,
+    contactIntegration: params.contactIntegration,
+  });
+  return { email: invitation.invitedEmail, ...accepted };
+}
+
+/** Marks a stock callback whose invitation behavior is implemented by the shipped SQL hook. */
+export const DATABASE_INVITATION_CONTACT_INTEGRATION = Symbol.for("brightweb.orgs.database-invitation-contact-integration.v1");
+
+function assertInvitationContactIntegration(params: {
+  ensureCrmContactForProfile?: EnsureCrmContact;
+  contactIntegration?: "database";
+}): void {
+  if (params.ensureCrmContactForProfile && params.contactIntegration !== "database" &&
+      Reflect.get(params.ensureCrmContactForProfile, DATABASE_INVITATION_CONTACT_INTEGRATION) !== true) {
+    throw new Error("INVITATION_CONTACT_INTEGRATION_MIGRATION_REQUIRED");
   }
-  return { email: invitation.invitedEmail, organizationId: invitation.organizationId };
 }

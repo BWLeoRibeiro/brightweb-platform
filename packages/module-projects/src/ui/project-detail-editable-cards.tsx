@@ -1,5 +1,7 @@
 "use client";
 
+import { toIsoDate, parseIsoDate } from "./project-detail-create-sheets/date-utils";
+
 import { StyledSelect } from "@brightweblabs/ui";
 
 import { useProjectsUiClient, useProjectsUiDictionary } from "./context";
@@ -50,10 +52,12 @@ import { ProjectMilestonesAndTasksLists } from "./project-milestone-task-lists";
 import { TaskPriorityTag, TaskStatusTag } from "./shared/task-tags";
 import type { ProjectMilestone, ProjectTask } from "../types";
 import { defaultProjectsUiDictionary } from "./dictionary";
+import { openClientTaskPanel } from "./client-tasks/staff-client-tasks";
 
 type ProjectMilestonesAndTasksCardsProps = {
   projectId: string;
   canManageItems: boolean;
+  canCreateTasks?: boolean;
   canUpdateAssignedTasks?: boolean;
   viewerProfileId?: string;
   canManageClientContent?: boolean;
@@ -88,20 +92,6 @@ type TaskFormState = {
   blockedReason: string;
 };
 
-function toIsoDate(value?: Date): string {
-  if (!value) return "";
-  const year = value.getFullYear();
-  const month = String(value.getMonth() + 1).padStart(2, "0");
-  const day = String(value.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
-
-function parseIsoDate(value: string): Date | undefined {
-  if (!value) return undefined;
-  const date = new Date(`${value}T00:00:00`);
-  return Number.isNaN(date.getTime()) ? undefined : date;
-}
-
 function normalizeMilestoneForm(form: MilestoneFormState) {
   return {
     title: form.title.trim(),
@@ -127,6 +117,7 @@ function normalizeTaskForm(form: TaskFormState) {
 export function ProjectMilestonesAndTasksCards({
   projectId,
   canManageItems,
+  canCreateTasks = canManageItems,
   canUpdateAssignedTasks = false,
   viewerProfileId,
   canManageClientContent = false,
@@ -294,6 +285,7 @@ export function ProjectMilestonesAndTasksCards({
   };
 
   const openEditTask = (task: ProjectTask) => {
+    if (task.kind === "client") { openClientTaskPanel(projectId, task.id); return; }
     setTaskMode("view");
     setTaskEditBaseline(null);
     setEditingTask(task);
@@ -408,6 +400,7 @@ export function ProjectMilestonesAndTasksCards({
       <ProjectMilestonesAndTasksLists
         projectId={projectId}
         canEditItems={canManageItems}
+        canCreateTasks={canCreateTasks}
         milestones={milestones}
         tasks={tasks}
         onEditMilestone={openEditMilestone}

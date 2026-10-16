@@ -474,6 +474,7 @@ export type MarketingUiDictionary = {
   };
   statuses: Record<MarketingCampaignStatus, string>;
   feedback: {
+    saveBeforeAction?: string;
     created: string;
     saved: string;
     sent: string;

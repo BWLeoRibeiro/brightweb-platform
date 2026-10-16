@@ -65,6 +65,7 @@ export function useDashboardData({
   const [isTasksLoadingMore, setIsTasksLoadingMore] = useState(false);
   const [errors, setErrors] = useState<DashboardSectionErrors>({});
   const generationsRef = useRef(createDashboardRequestGenerations());
+  const mountedClientRef = useRef(client);
   const tasksRequestRef = useRef<Promise<boolean> | null>(null);
   const tasksPageRequestRef = useRef<Promise<boolean> | null>(null);
   const overviewRequestController = useRef(createLatestRequestController());
@@ -83,6 +84,7 @@ export function useDashboardData({
     if (!hasTasks) return false;
     if (!force && tasksRequestRef.current) return tasksRequestRef.current;
     tasksPageRequestController.current.abort();
+    tasksPageRequestRef.current = null;
     setIsTasksLoadingMore(false);
     const requestGeneration = generation ?? generationsRef.current.begin(["tasks"]);
     const latest = tasksRequestController.current.begin();
@@ -92,7 +94,7 @@ export function useDashboardData({
     request = client.getTasks({ signal: latest.signal }).then((payload) => {
       const parsed = parseDashboardTasksResponse(payload);
       if (!parsed.data) throw new Error(parsed.error ?? messages.tasksUnavailable);
-      if (!generationsRef.current.isCurrent(requestGeneration, "tasks")) return false;
+      if (!latest.isCurrent() || !generationsRef.current.isCurrent(requestGeneration, "tasks")) return false;
       setTasks(parsed.data);
       return true;
     }).catch((error) => {
@@ -112,7 +114,7 @@ export function useDashboardData({
   }, [client, hasTasks, messages.tasksUnavailable]);
 
   const loadMoreTasks = useCallback(async () => {
-    if (!hasTasks || !tasks?.pagination.hasMore || tasksPageRequestRef.current) return false;
+    if (!hasTasks || !tasks?.pagination.hasMore || tasksRequestRef.current || tasksPageRequestRef.current) return false;
     const expectedPage = tasks.pagination.page + 1;
     const latest = tasksPageRequestController.current.begin();
     setErrors((current) => clearDashboardSectionErrors(current, ["tasks"]));
@@ -127,7 +129,7 @@ export function useDashboardData({
       if (!parsed.data) throw new Error(parsed.error ?? messages.tasksUnavailable);
       if (!latest.isCurrent() || parsed.data.pagination.page !== expectedPage) return false;
       setTasks((current) => {
-        if (!current || current.pagination.page >= parsed.data!.pagination.page) return current;
+        if (current !== tasks || current.pagination.page >= parsed.data!.pagination.page) return current;
         const existingIds = new Set(current.tasks.map((task) => task.id));
         return {
           ...parsed.data!,
@@ -148,6 +150,48 @@ export function useDashboardData({
     tasksPageRequestRef.current = request;
     return request;
   }, [client, hasTasks, messages.tasksUnavailable, tasks]);
+
+  const loadProjects = useCallback(async (generation: DashboardRequestGeneration) => {
+    const latest = projectsRequestController.current.begin();
+    try {
+      const parsed = parseDashboardProjectsResponse(await client.getProjects({ signal: latest.signal }));
+      if (!parsed.data) throw new Error();
+      if (!latest.isCurrent() || !generationsRef.current.isCurrent(generation, "projects")) return false;
+      setProjects(parsed.data);
+      return true;
+    } catch (error) {
+      if (isAbortError(error) || !latest.isCurrent()) return false;
+      if (generationsRef.current.isCurrent(generation, "projects")) {
+        setErrors((current) => setDashboardSectionError(current, "projects", messages.projectsUnavailable));
+      }
+      return false;
+    } finally {
+      const current = latest.isCurrent();
+      latest.finish();
+      if (current && generationsRef.current.isCurrent(generation, "projects")) setIsProjectsLoading(false);
+    }
+  }, [client, messages.projectsUnavailable]);
+
+  const loadCrm = useCallback(async (generation: DashboardRequestGeneration) => {
+    const latest = crmRequestController.current.begin();
+    try {
+      const parsed = parseDashboardCrmResponse(await client.getCrm({ signal: latest.signal }));
+      if (!parsed.data) throw new Error();
+      if (!latest.isCurrent() || !generationsRef.current.isCurrent(generation, "crm")) return false;
+      setCrm(parsed.data);
+      return true;
+    } catch (error) {
+      if (isAbortError(error) || !latest.isCurrent()) return false;
+      if (generationsRef.current.isCurrent(generation, "crm")) {
+        setErrors((current) => setDashboardSectionError(current, "crm", messages.crmUnavailable));
+      }
+      return false;
+    } finally {
+      const current = latest.isCurrent();
+      latest.finish();
+      if (current && generationsRef.current.isCurrent(generation, "crm")) setIsCrmLoading(false);
+    }
+  }, [client, messages.crmUnavailable]);
 
   const load = useCallback(async (options: { notify?: boolean; sections?: DashboardRefreshEventDetail["sections"] } = {}) => {
     const requested = normalizeDashboardRefreshSections(options.sections).filter((section) => sections.includes(section));
@@ -175,36 +219,8 @@ export function useDashboardData({
       } catch (error) {
         if (isAbortError(error) || !latest.isCurrent()) return;
         const fallbacks: Promise<boolean>[] = [];
-        if (generationsRef.current.isCurrent(generation, "projects")) {
-          const projectsLatest = projectsRequestController.current.begin();
-          fallbacks.push(client.getProjects({ signal: projectsLatest.signal }).then(parseDashboardProjectsResponse).then((parsed) => {
-            if (!parsed.data) throw new Error();
-            if (!projectsLatest.isCurrent() || !generationsRef.current.isCurrent(generation, "projects")) return false;
-            setProjects(parsed.data);
-            return true;
-          }).catch((fallbackError) => {
-            if (isAbortError(fallbackError) || !projectsLatest.isCurrent()) return false;
-            if (generationsRef.current.isCurrent(generation, "projects")) {
-              setErrors((current) => setDashboardSectionError(current, "projects", messages.projectsUnavailable));
-            }
-            return false;
-          }).finally(() => projectsLatest.finish()));
-        }
-        if (generationsRef.current.isCurrent(generation, "crm")) {
-          const crmLatest = crmRequestController.current.begin();
-          fallbacks.push(client.getCrm({ signal: crmLatest.signal }).then(parseDashboardCrmResponse).then((parsed) => {
-            if (!parsed.data) throw new Error();
-            if (!crmLatest.isCurrent() || !generationsRef.current.isCurrent(generation, "crm")) return false;
-            setCrm(parsed.data);
-            return true;
-          }).catch((fallbackError) => {
-            if (isAbortError(fallbackError) || !crmLatest.isCurrent()) return false;
-            if (generationsRef.current.isCurrent(generation, "crm")) {
-              setErrors((current) => setDashboardSectionError(current, "crm", messages.crmUnavailable));
-            }
-            return false;
-          }).finally(() => crmLatest.finish()));
-        }
+        if (generationsRef.current.isCurrent(generation, "projects")) fallbacks.push(loadProjects(generation));
+        if (generationsRef.current.isCurrent(generation, "crm")) fallbacks.push(loadCrm(generation));
         const fallbackResults = await Promise.all(fallbacks);
         results.push(...fallbackResults);
       } finally {
@@ -215,60 +231,40 @@ export function useDashboardData({
       }
     } else {
       const sectionResults: Promise<boolean>[] = [];
-      if (shouldProjects) {
-        const latest = projectsRequestController.current.begin();
-        sectionResults.push(client.getProjects({ signal: latest.signal }).then(parseDashboardProjectsResponse).then((parsed) => {
-          if (!parsed.data) throw new Error();
-          if (!latest.isCurrent() || !generationsRef.current.isCurrent(generation, "projects")) return false;
-          setProjects(parsed.data); return true;
-        }).catch((error) => {
-          if (isAbortError(error) || !latest.isCurrent()) return false;
-          if (generationsRef.current.isCurrent(generation, "projects")) {
-            setErrors((current) => setDashboardSectionError(current, "projects", messages.projectsUnavailable));
-          }
-          return false;
-        }).finally(() => {
-          const current = latest.isCurrent();
-          latest.finish();
-          if (current && generationsRef.current.isCurrent(generation, "projects")) setIsProjectsLoading(false);
-        }));
-      }
-      if (shouldCrm) {
-        const latest = crmRequestController.current.begin();
-        sectionResults.push(client.getCrm({ signal: latest.signal }).then(parseDashboardCrmResponse).then((parsed) => {
-          if (!parsed.data) throw new Error();
-          if (!latest.isCurrent() || !generationsRef.current.isCurrent(generation, "crm")) return false;
-          setCrm(parsed.data); return true;
-        }).catch((error) => {
-          if (isAbortError(error) || !latest.isCurrent()) return false;
-          if (generationsRef.current.isCurrent(generation, "crm")) {
-            setErrors((current) => setDashboardSectionError(current, "crm", messages.crmUnavailable));
-          }
-          return false;
-        }).finally(() => {
-          const current = latest.isCurrent();
-          latest.finish();
-          if (current && generationsRef.current.isCurrent(generation, "crm")) setIsCrmLoading(false);
-        }));
-      }
+      if (shouldProjects) sectionResults.push(loadProjects(generation));
+      if (shouldCrm) sectionResults.push(loadCrm(generation));
       results.push(...await Promise.all(sectionResults));
     }
     if (tasksResult) results.push(await tasksResult);
     if (options.notify && results.length && results.every(Boolean)) onNotify?.(messages.updated);
-  }, [client, loadTasks, messages, onNotify, sections]);
+  }, [client, loadTasks, loadProjects, loadCrm, messages, onNotify, sections]);
 
   useEffect(() => {
-    const missing = sections.filter((section) => !initialData?.[section]);
+    const replaced = mountedClientRef.current !== client;
+    mountedClientRef.current = client;
+    if (replaced) {
+      setProjects(null);
+      setCrm(null);
+      setTasks(null);
+      setErrors({});
+      setIsProjectsLoading(hasProjects);
+      setIsCrmLoading(hasCrm);
+      setIsTasksLoading(hasTasks);
+      setIsTasksLoadingMore(false);
+    }
+    const missing = replaced ? sections : sections.filter((section) => !initialData?.[section]);
     if (missing.length) void load({ sections: missing });
-  }, []); // Initial availability and data are intentionally captured once.
-
-  useEffect(() => () => {
-    overviewRequestController.current.abort();
-    projectsRequestController.current.abort();
-    crmRequestController.current.abort();
-    tasksRequestController.current.abort();
-    tasksPageRequestController.current.abort();
-  }, []);
+    return () => {
+      generationsRef.current.begin(["projects", "crm", "tasks"]);
+      overviewRequestController.current.abort();
+      projectsRequestController.current.abort();
+      crmRequestController.current.abort();
+      tasksRequestController.current.abort();
+      tasksPageRequestController.current.abort();
+      tasksRequestRef.current = null;
+      tasksPageRequestRef.current = null;
+    };
+  }, [client]); // Hydration is captured once for each client; replacement starts fresh reads.
 
   const refresh = useCallback(() => { void load({ notify: true }); }, [load]);
   useDashboardRefreshEvents({

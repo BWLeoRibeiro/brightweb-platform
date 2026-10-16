@@ -57,7 +57,9 @@ export function useShellNotifications({
   const [seenAt, setSeenAt] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const pendingDismissalsRef = useRef(new Set<string>());
   const loadedRef = useRef(false);
+  const loadedEndpointRef = useRef<string | null>(null);
   const openRef = useRef(false);
   const requestObserverRef = useRef(requestObserver);
   requestObserverRef.current = requestObserver;
@@ -126,7 +128,8 @@ export function useShellNotifications({
         if (!response.ok || !payload) throw new Error("Não foi possível carregar as notificações.");
         if (!latest.isCurrent()) return;
         loadedRef.current = true;
-        setNotifications(payload.items);
+        loadedEndpointRef.current = endpoint;
+        setNotifications(payload.items.filter((item) => !pendingDismissalsRef.current.has(item.id)));
         setUnreadCount(openRef.current ? 0 : payload.unreadCount);
         setSeenAt(payload.seenAt);
       })
@@ -205,17 +208,39 @@ export function useShellNotifications({
     loadedRef.current = false;
   }, [acknowledge, loadNotifications]);
 
-  const dismiss = useCallback((notificationId: string) => {
-    setNotifications((current) => current.filter((notification) => notification.id !== notificationId));
-    setUnreadCount((current) => Math.max(0, current - 1));
+  const dismissIds = useCallback((requestedIds: string[], operation: "dismiss" | "dismiss.all") => {
+    if (!enabled || loadedEndpointRef.current !== endpoint) return;
+    const visibleIds = new Set(notifications.map((notification) => notification.id));
+    const eventIds = [...new Set(requestedIds)].filter((id) => visibleIds.has(id) && !pendingDismissalsRef.current.has(id));
+    if (eventIds.length === 0) return;
+    const configurationGeneration = configurationGenerationRef.current;
+    for (const id of eventIds) pendingDismissalsRef.current.add(id);
+    const dismissedIds = new Set(eventIds);
+    setNotifications((current) => current.filter((notification) => !dismissedIds.has(notification.id)));
+    setUnreadCount((current) => Math.max(0, current - eventIds.length));
     void observedFetch(fetch, endpoint, {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ eventId: notificationId }),
-    }, { domain: "notifications", operation: "dismiss", observer: requestObserverRef.current })
+      body: JSON.stringify(operation === "dismiss" ? { eventId: eventIds[0] } : { eventIds }),
+    }, { domain: "notifications", operation, observer: requestObserverRef.current })
       .then((response) => { if (!response.ok) throw new Error("dismiss failed"); })
-      .catch(() => { loadedRef.current = false; loadNotifications(true); });
-  }, [endpoint, loadNotifications]);
+      .catch(() => undefined)
+      .finally(() => {
+        if (configurationGeneration !== configurationGenerationRef.current) return;
+        // Any read begun before this mutation settled may contain an obsolete snapshot.
+        itemsControllerRef.current.abort();
+        itemsRequestRef.current = null;
+        itemsRefreshQueuedRef.current = false;
+        for (const id of eventIds) pendingDismissalsRef.current.delete(id);
+        loadedRef.current = false;
+        loadNotifications(true);
+        void loadSummary(true);
+      });
+  }, [enabled, endpoint, loadNotifications, loadSummary, notifications]);
+
+  const dismiss = useCallback((notificationId: string) => {
+    dismissIds([notificationId], "dismiss");
+  }, [dismissIds]);
 
   const dismissAll = useCallback(() => {
     const seenAtMs = seenAt ? new Date(seenAt).getTime() : null;
@@ -226,21 +251,19 @@ export function useShellNotifications({
         return !Number.isFinite(createdAt) || createdAt > seenAtMs;
       })
       .map((notification) => notification.id);
-    if (eventIds.length === 0) return;
-    const dismissedIds = new Set(eventIds);
-    setNotifications((current) => current.filter((notification) => !dismissedIds.has(notification.id)));
-    setUnreadCount((current) => Math.max(0, current - eventIds.length));
-    void observedFetch(fetch, endpoint, {
-      method: "DELETE",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ eventIds }),
-    }, { domain: "notifications", operation: "dismiss.all", observer: requestObserverRef.current })
-      .then((response) => { if (!response.ok) throw new Error("dismiss all failed"); })
-      .catch(() => { loadedRef.current = false; loadNotifications(true); });
-  }, [endpoint, loadNotifications, notifications, seenAt]);
+    dismissIds(eventIds, "dismiss.all");
+  }, [dismissIds, notifications, seenAt]);
 
   useEffect(() => {
     const configurationGeneration = ++configurationGenerationRef.current;
+    pendingDismissalsRef.current.clear();
+    loadedEndpointRef.current = null;
+    loadedRef.current = false;
+    setNotifications([]);
+    setUnreadCount(0);
+    setSeenAt(null);
+    setLoading(false);
+    setError(null);
     if (!enabled) {
       openRef.current = false;
       loadedRef.current = false;
@@ -252,18 +275,12 @@ export function useShellNotifications({
       summaryRequestRef.current = null;
       acknowledgementRef.current = null;
       pendingAcknowledgementRef.current = null;
-      setNotifications([]);
-      setUnreadCount(0);
-      setSeenAt(null);
-      setLoading(false);
-      setError(null);
       return () => {
         if (configurationGenerationRef.current === configurationGeneration) configurationGenerationRef.current += 1;
       };
     }
     void loadSummary();
     if (openRef.current) loadNotifications(true);
-    const interval = window.setInterval(loadSummary, refreshIntervalMs);
     const handleFocus = () => void loadSummary();
     const handleRealtimeRefresh = () => {
       loadedRef.current = false;
@@ -273,7 +290,6 @@ export function useShellNotifications({
     window.addEventListener("focus", handleFocus);
     window.addEventListener(NOTIFICATIONS_REALTIME_REFRESH_EVENT, handleRealtimeRefresh);
     return () => {
-      window.clearInterval(interval);
       window.removeEventListener("focus", handleFocus);
       window.removeEventListener(NOTIFICATIONS_REALTIME_REFRESH_EVENT, handleRealtimeRefresh);
       itemsRefreshQueuedRef.current = false;
@@ -287,7 +303,13 @@ export function useShellNotifications({
       pendingAcknowledgementRef.current = null;
       if (configurationGenerationRef.current === configurationGeneration) configurationGenerationRef.current += 1;
     };
-  }, [enabled, loadNotifications, loadSummary, refreshIntervalMs]);
+  }, [enabled, loadNotifications, loadSummary]);
+
+  useEffect(() => {
+    if (!enabled) return;
+    const interval = window.setInterval(loadSummary, refreshIntervalMs);
+    return () => window.clearInterval(interval);
+  }, [enabled, loadSummary, refreshIntervalMs]);
 
   return {
     notifications,

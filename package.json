@@ -32,15 +32,25 @@
     "start:docs": "pnpm --filter dev-docs start",
     "test": "node --experimental-strip-types --loader ./tests/support/ts-extension-loader.mjs --test \"./tests/**/*.test.ts\" \"./packages/*/test/**/*.test.ts\" \"./packages/*/src/**/*.test.ts\"",
     "lint": "pnpm --filter platform-preview lint",
-    "lint:docs": "pnpm --filter dev-docs lint"
+    "lint:docs": "pnpm --filter dev-docs lint",
+    "db:sync": "node scripts/sync-db-module-migrations.mjs --write",
+    "check:db-module-parity": "node scripts/sync-db-module-migrations.mjs --check",
+    "test:database:admin": "node tests/database/admin-profile-visibility.mjs",
+    "test:database": "node tests/integration/invitation-transactions.mjs",
+    "test:consumer": "node tests/e2e/generated-app-smoke.mjs --real-backend",
+    "verify:release": "pnpm release:check && pnpm check:module-manifest && pnpm check:base-contract && pnpm check:compatibility-set && pnpm check:create-bw-app-templates && pnpm check:db-module-parity && pnpm lint && pnpm lint:docs && pnpm test && pnpm test:database && pnpm test:database:admin && pnpm check:packed-release && pnpm build && pnpm build:docs && pnpm test:runtime && pnpm test:consumer && pnpm audit --prod --audit-level high",
+    "test:runtime": "node tests/e2e/generated-app-smoke.mjs"
   },
   "devDependencies": {
     "@changesets/cli": "^2.31.1",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
+    "embedded-postgres": "17.10.0-beta.17",
+    "playwright": "^1.63.0",
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "react-test-renderer": "19.2.4",
+    "supabase": "2.116.0",
     "typescript": "5.9.3",
     "verdaccio": "^6.9.0"
   }

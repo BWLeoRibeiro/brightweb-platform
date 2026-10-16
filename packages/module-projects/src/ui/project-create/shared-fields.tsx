@@ -1,5 +1,7 @@
 "use client";
 
+import { toIsoDate, parseIsoDate } from "../project-detail-create-sheets/date-utils";
+
 import { Children, isValidElement, type ReactNode } from "react";
 import { format } from "date-fns";
 import { CalendarIcon } from "lucide-react";
@@ -15,20 +17,6 @@ import { Button } from "@brightweblabs/ui";
 import { ProjectCalendar as Calendar } from "../shared/project-calendar";
 import { Field, FieldContent, FieldGroup, FieldLabel } from "@brightweblabs/ui";
 import { Popover, PopoverContent, PopoverTrigger } from "@brightweblabs/ui";
-
-function parseIsoDate(value: string) {
-  if (!value) return undefined;
-  const date = new Date(`${value}T00:00:00`);
-  return Number.isNaN(date.getTime()) ? undefined : date;
-}
-
-function toIsoDate(value?: Date) {
-  if (!value) return "";
-  const year = value.getFullYear();
-  const month = String(value.getMonth() + 1).padStart(2, "0");
-  const day = String(value.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
 
 export function FormSection({
   title,

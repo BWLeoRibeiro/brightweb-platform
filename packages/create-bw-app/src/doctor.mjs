@@ -3,11 +3,11 @@ import path from "node:path";
 import { stdout as output } from "node:process";
 import { APP_DEPENDENCY_DEFAULTS, BRIGHTWEB_PACKAGE_NAMES } from "./constants.mjs";
 import { cursorMigrationStatus, exactMigrationCompatibilityStatus } from "./migrations.mjs";
-import { findWorkspaceRoot, loadModuleCatalog, MODULE_PACKAGES, readAppManifest, readConfiguredModuleFlags, satisfiesVersion, validateAppManifest, writeAppManifest } from "./app-manifest.mjs";
+import { findWorkspaceRoot, hashFile, loadModuleCatalog, MODULE_PACKAGES, readAppManifest, readConfiguredModuleFlags, satisfiesVersion, validateAppManifest, writeAppManifest } from "./app-manifest.mjs";
 import { loadAppEnvironment, readFirstEnvironmentValue } from "./env.mjs";
 import { pathExists, readJsonIfPresent } from "./generator.mjs";
 import { nearestVercelRegion, normalizeSupabaseRegion } from "./regions.mjs";
-import { scaffoldDrift } from "./scaffold.mjs";
+import { canonicalScaffoldHash, scaffoldDrift } from "./scaffold.mjs";
 
 const HELP = `Usage: bw doctor [options]\n\nOptions:\n  --target-dir <path>       App directory (defaults to cwd)\n  --workspace-root <path>   BrightWeb workspace root\n  --deployment-url <url>    Deployed app URL (defaults to PUBLIC_APP_URL/NEXT_PUBLIC_APP_URL)\n  --supabase-region <id>    Current Supabase project region override\n  --strict                  Treat warnings as failures\n  --report                  Stamp lastDoctor in the app manifest\n  --help                    Show this help`;
 const RUNTIME_PACKAGE_NAMES = ["react", "react-dom", "next"];
@@ -378,6 +378,18 @@ export async function doctorBrightwebApp(argvOptions = {}, runtimeOptions = {}) 
   add(topologyProblems.length ? "FAIL" : "PASS", "topology", topologyProblems.join("; ") || "Module requirements are satisfied.");
 
   const scaffold = await scaffoldDrift(targetDir, appManifest.scaffoldFiles);
+  const ownedTemplateUpdates = [];
+  for (const entry of scaffold.entries) {
+    if (entry.intent !== "owned" || entry.status === "missing") continue;
+    const templateHash = await canonicalScaffoldHash({ relativePath: entry.relativePath, manifest: appManifest, targetDir, workspaceRoot });
+    // Ownership preserves the recorded baseline during upgrades; it does not prove
+    // that later starter fixes have been reconciled into the app's custom file.
+    if (templateHash && templateHash !== appManifest.scaffoldFiles[entry.relativePath].hash
+      && templateHash !== await hashFile(path.join(targetDir, entry.relativePath))) {
+      ownedTemplateUpdates.push(entry.relativePath);
+    }
+  }
+  if (ownedTemplateUpdates.length) add("WARN", "scaffold-owned-template-updates", `Current templates changed for preserved app-owned files: ${ownedTemplateUpdates.join(", ")}. Compatibility is NOT VERIFIED. Run bw diff, reconcile relevant fixes and verify behavior. After review, use bw scaffold manage followed by bw scaffold own for each custom file to record the current template baseline; these commands do not replace file contents.`);
   const scaffoldGroups = {
     current: scaffold.entries.filter((entry) => entry.status === "current" && entry.intent !== "skipped"),
     owned: scaffold.entries.filter((entry) => entry.intent === "owned" && entry.status === "drifted"),
@@ -391,7 +403,7 @@ export async function doctorBrightwebApp(argvOptions = {}, runtimeOptions = {}) 
   if (scaffoldGroups.undecidedDrift.length) add("WARN", "scaffold-undecided-drift", `Unacknowledged drift: ${scaffoldGroups.undecidedDrift.map((entry) => entry.relativePath).join(", ")} (use bw scaffold own or bw diff).`);
   if (scaffoldGroups.undecidedMissing.length) add("WARN", "scaffold-undecided-missing", `Unacknowledged missing files: ${scaffoldGroups.undecidedMissing.map((entry) => entry.relativePath).join(", ")} (use bw scaffold skip after review).`);
   if (scaffoldGroups.mismatched.length) add("FAIL", "scaffold-intent-mismatch", `Recorded scaffold intent no longer matches reality: ${scaffoldGroups.mismatched.map((entry) => `${entry.relativePath} (${entry.intent}, ${entry.status})`).join(", ")}.`);
-  const scaffoldStatus = scaffoldGroups.mismatched.length ? "FAIL" : scaffoldGroups.undecidedDrift.length || scaffoldGroups.undecidedMissing.length ? "WARN" : "PASS";
+  const scaffoldStatus = scaffoldGroups.mismatched.length ? "FAIL" : ownedTemplateUpdates.length || scaffoldGroups.undecidedDrift.length || scaffoldGroups.undecidedMissing.length ? "WARN" : "PASS";
   add(scaffoldStatus, "scaffold", `${scaffoldGroups.current.length} current, ${scaffoldGroups.owned.length} owned, ${scaffoldGroups.skipped.length} skipped, ${scaffoldGroups.undecidedDrift.length} undecided-drift, ${scaffoldGroups.undecidedMissing.length} undecided-missing, ${scaffoldGroups.mismatched.length} intent-mismatch.`);
   add("INFO", "owned-surfaces", `Owned surfaces: ${(appManifest.ownedSurfaces || []).join(", ") || "none"}.`);
 
@@ -456,7 +468,7 @@ export async function doctorBrightwebApp(argvOptions = {}, runtimeOptions = {}) 
       add("INFO", `migration-legacy-equivalent-${key}`, `${key}: ${status.legacyEquivalent.length} immutable historical migration file${status.legacyEquivalent.length === 1 ? " matches" : "s match"} a reviewed SQL-equivalent legacy hash.`);
     }
   }
-  add("WARN", "db-objects", "SKIP live database checks are not available yet.");
+  add("WARN", "db-objects", "NOT VERIFIED: live database objects, applied migrations, and authenticated row-level permissions. Local migration provenance does not establish deployed behavior; apply pending migrations and run authenticated admin/client permission checks against the target database.");
   return finish(checks, argvOptions, appManifest, targetDir);
 }
 

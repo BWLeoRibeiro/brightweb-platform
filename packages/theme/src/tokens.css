@@ -1,3 +1,5 @@
+@layer theme, base, components, utilities;
+
 /* ── L0: brand primitives ─────────────────────────────────────────────── */
 :root {
   color-scheme: light;

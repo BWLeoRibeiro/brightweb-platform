@@ -7,7 +7,9 @@ This directory is the canonical home for the Brightweb shared database module ba
 - `module-registry.json`: shared module dependency graph and migration source paths
 - `modules/core`: always-on platform foundations
 - `modules/admin`: RBAC and privileged governance behavior
-- `modules/crm`: organizations, CRM contacts, and invitation flows
+- `modules/orgs`: organizations, membership, and invitation flows
+- `modules/crm`: CRM contacts and organization integration
+- `modules/marketing`: consent, campaigns, segments, analytics, and workflows
 - `modules/projects`: project and work-management data
 - `clients/<client-slug>`: true client-only schema deltas plus the client stack plan
 - `.generated/<client-slug>`: legacy materialized Supabase workdirs produced by the deprecated `pnpm db:materialize` compatibility script
@@ -48,6 +50,15 @@ Create a client-only migration:
 ```bash
 pnpm db:new client:acme bespoke_reporting_table
 ```
+
+After editing a new shared migration, derive the CLI bundle and verify parity:
+
+```bash
+pnpm db:sync
+pnpm check:db-module-parity
+```
+
+Author shared SQL only under `supabase/modules`. The copy in `packages/create-bw-app/template/supabase` is a distribution artifact. Sync copies new migration files and the module registry; it refuses changed or removed shipped SQL. Fix existing schema behavior with a new forward migration. CI checks this boundary. These commands compare or copy repository files; they do not connect to a database or indicate which migrations a client has applied.
 
 Print the effective apply order for a client:
 

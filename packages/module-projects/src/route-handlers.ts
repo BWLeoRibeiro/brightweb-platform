@@ -30,6 +30,14 @@ import {
 type IdRouteContext = { params: Promise<{ id: string }> };
 type ItemRouteContext = { params: Promise<{ id: string; itemId: string }> };
 
+export {
+  handleClientProjectTasksGetRequest as clientProjectTasksGet,
+  handleClientProjectTaskPostRequest as clientProjectTaskPost,
+  handleProjectClientTasksGetRequest as projectClientTasksGet,
+  handleProjectClientTasksPostRequest as projectClientTasksPost,
+  handleProjectClientTaskPatchRequest as projectClientTaskPatch,
+} from "./client-tasks-handlers";
+
 export const projectsGet = (request: Request) => handleProjectsGetRequest(request);
 export const projectsPost = (request: Request) => handleProjectsPostRequest(request);
 export const projectsStatsGet = (request: Request) => handleProjectsStatsGetRequest(request);

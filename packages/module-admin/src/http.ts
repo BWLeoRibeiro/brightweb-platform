@@ -3,6 +3,7 @@ import {
   ADMIN_USERS_MAX_PAGE_SIZE,
   type AdminManagedRole,
 } from "./users-data";
+import { ADMIN_USER_INVITE_CLEANUP_FAILED_ERROR, ADMIN_USER_INVITE_STATE_CHANGED_ERROR } from "./invitations";
 import type { applyAdminRoleChanges } from "./roles";
 import type { listAdminUsers } from "./users-data";
 import type {
@@ -201,6 +202,9 @@ type AdminInvitationHttpDependencies = {
 function adminInvitationError(error: unknown): Response {
   const message = error instanceof Error ? error.message : "";
   const statuses: Record<string, number> = {
+    [ADMIN_USER_INVITE_CLEANUP_FAILED_ERROR]: 502,
+    [ADMIN_USER_INVITE_STATE_CHANGED_ERROR]: 409,
+    INVITATION_NOT_PENDING: 409,
     EMAIL_REQUIRED: 400,
     ACCOUNT_ALREADY_EXISTS: 409,
     PENDING_INVITATION_EXISTS: 409,
@@ -208,6 +212,9 @@ function adminInvitationError(error: unknown): Response {
     "A tabela de convites de utilizadores ainda não existe na base de dados. Aplique a migration admin_user_invitations.": 503,
   };
   const errors: Record<string, { code: string; message: string }> = {
+    [ADMIN_USER_INVITE_STATE_CHANGED_ERROR]: { code: "INVITATION_STATE_CHANGED", message: ADMIN_USER_INVITE_STATE_CHANGED_ERROR },
+    INVITATION_NOT_PENDING: { code: "INVITATION_NOT_PENDING", message: "Convite pendente não encontrado. Atualize a lista." },
+    [ADMIN_USER_INVITE_CLEANUP_FAILED_ERROR]: { code: "INVITATION_CLEANUP_FAILED", message: ADMIN_USER_INVITE_CLEANUP_FAILED_ERROR },
     EMAIL_REQUIRED: { code: "EMAIL_REQUIRED", message: "E-mail obrigatório." },
     ACCOUNT_ALREADY_EXISTS: {
       code: "ACCOUNT_ALREADY_EXISTS",

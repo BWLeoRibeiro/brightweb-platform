@@ -122,7 +122,7 @@ export function CrmOrganizationsPage({ client: providedClient, navigation }: { c
         {visible.length > 0 ? <TablePagination page={1} totalPages={1} onPageChange={() => undefined} summary={`${visible.length} organizações`} previousLabel="Anterior" nextLabel="Seguinte" pageLabel={(page, totalPages) => `Página ${page} de ${totalPages}`} /> : null}
       </SurfaceCard>
       <CrmOrganizationSheet open={createOpen} onOpenChange={setOrganizationCreateOpen} onSubmit={createOrganization} />
-      <CrmOrganizationWorkspaceSheet open={selected !== null} organization={selected} client={client} onOpenChange={(open) => { if (!open) selectOrganization(null); }} onOpenContact={openContact} onOrganizationChange={(updated) => { setSelected(updated); setOrganizations((items) => items.map((item) => item.id === updated.id ? updated : item)); }} />
+      <CrmOrganizationWorkspaceSheet open={selected !== null} organization={selected} client={client} onOpenChange={(open) => { if (!open) selectOrganization(null); }} onOpenContact={openContact} onOrganizationDelete={(deleted) => { setOrganizations((items) => items.filter((item) => item.id !== deleted.id)); selectOrganization(null); }} onOrganizationChange={(updated) => { setSelected(updated); setOrganizations((items) => items.map((item) => item.id === updated.id ? updated : item)); }} />
     </div>
   );
 }

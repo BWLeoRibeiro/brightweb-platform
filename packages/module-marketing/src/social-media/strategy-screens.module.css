@@ -1,0 +1,25 @@
+@layer theme, base, components, utilities;
+
+@layer components {
+  .screen { display: grid; gap: var(--space-md); min-width: 0; }
+
+  .campaignScreen { display: grid; gap: 2.75rem; padding: var(--space-lg-plus) 0 var(--space-xl); }
+
+  .campaignLaunch { display: grid; grid-template-columns: 8rem minmax(0, 1fr); gap: var(--space-xl); padding: var(--space-lg) var(--space-xl); border-radius: var(--radius-card); background: color-mix(in srgb, var(--brand-accent, var(--primary)) 8%, var(--card)); }
+  .campaignLaunch :global(.social-content-launch-date) { color: var(--primary); font-size: var(--text-title); font-weight: var(--font-weight-semibold); }
+  .campaignLaunch h3 { margin: 0 0 var(--space-xs); font-size: var(--text-title); }
+  .campaignLaunch p { max-width: 75ch; margin: 0; color: var(--muted-foreground); }
+  .campaignTimeline { border-top: 1px solid var(--border); }
+  .campaignTimeline > article { display: grid; grid-template-columns: 8rem minmax(0, 1fr); gap: 0 var(--space-xl); padding: var(--space-xl) 0; border-bottom: 1px solid var(--border); }
+  .campaignTimeline > article > :global(.social-content-num) { grid-column: 1; grid-row: 1 / span 3; color: var(--brand-accent, var(--primary)); font-size: var(--social-text-period); font-weight: var(--font-weight-semibold); }
+  .campaignTimeline h3, .campaignTimeline p, .campaignTimeline ul { grid-column: 2; }
+  .campaignTimeline h3 { margin: 0 0 var(--space-xs); font-size: var(--text-heading-3); font-weight: var(--font-weight-semibold); }
+  .campaignTimeline p { margin: 0 0 var(--space-md); color: var(--foreground); font-size: var(--text-title); }
+  .campaignTimeline ul { display: grid; gap: var(--space-xs); max-width: 80ch; margin: 0; color: var(--muted-foreground); }
+
+  @media (max-width: 600px) {
+    .campaignScreen { gap: var(--space-xl); }
+    .campaignLaunch, .campaignTimeline > article { grid-template-columns: 1fr; gap: var(--space-sm); }
+    .campaignTimeline > article > :global(.social-content-num), .campaignTimeline h3, .campaignTimeline p, .campaignTimeline ul { grid-column: 1; grid-row: auto; }
+  }
+}

@@ -13,6 +13,7 @@ import { ProjectStatusBadge } from "../project-state-badge";
 import { ProjectProgressBar } from "../shared/project-progress";
 import { getProjectDateKey } from "../shared/formatters";
 import { useProjectsNow } from "../shared/use-projects-now";
+import { ClientProjectTasks } from "./client-project-tasks";
 
 const META_ICONS: Record<MilestoneStatus, ReactNode> = {
   pending: <Circle className="size-3.5" />,
@@ -377,6 +378,7 @@ export function ClientProjectDetailClient({ projectId, initialProject }: { proje
         ) : null}
 
         <ProjectRoadmap metas={metas} currentMetaId={nextMeta?.id ?? null} />
+        <ClientProjectTasks key={project.id} projectId={project.id} />
       </div>
 
         <section className="border-t border-border/65 pt-8 sm:pt-10" aria-labelledby="client-project-documents-title">

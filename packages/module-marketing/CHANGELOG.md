@@ -1,5 +1,55 @@
 # @brightweblabs/module-marketing
 
+## 0.5.3
+
+### Patch Changes
+
+- Updated dependencies [a7dbad1]
+  - @brightweblabs/app-shell@0.16.4
+
+## 0.5.2
+
+### Patch Changes
+
+- e75c7bb: Save workflow nodes in one service-only transaction, preserving retained node identities across reordering and rolling back deletions if any write fails. Reject foreign, missing or duplicate supplied node IDs. Delete individual nodes through a targeted transaction that preserves concurrent changes to other nodes. Serialize activation with node editing so a concurrent edit cannot activate an empty workflow. Existing applications must apply the atomic_marketing_workflow_nodes migration before upgrading the handlers; fresh applications include the mirrored migration.
+- e75c7bb: Preserve newer campaign and workflow drafts when detail or save requests complete, serialize editor commands, and detach pending editor work when the client changes. Reload dashboard sections after a client replacement and reject old requests. Deduplicate pending notification dismissals so repeated callbacks do not send duplicate mutations. Keep clipboard feedback tied to the Social Media text actually copied. Remove unused private UI imports and bindings while retaining public props.
+- e75c7bb: Keep late campaign deletion responses scoped to their editor, retain workflow identity after partial saves, and preserve local scheduling times. Require saving campaign drafts before send, schedule, or test actions. Give campaign draft, identity and commands one editor owner while collection updates remain ID-scoped; separate workflow run presentation. Extract editor models and recipient presentation, and share consent eligibility without a server/workflow import cycle or duplicate contact read. Reconcile Social Media selection and filters when plan content refreshes, including early calendar years.
+- e75c7bb: Finish workflow saves after closing the editor and reconcile completed save, activation, pause, and deletion commands without replacing a newer draft or client collection.
+- Updated dependencies [e75c7bb]
+- Updated dependencies [e75c7bb]
+- Updated dependencies [e75c7bb]
+- Updated dependencies [e75c7bb]
+  - @brightweblabs/app-shell@0.16.3
+  - @brightweblabs/ui@1.5.6
+  - @brightweblabs/core-auth@0.12.2
+
+## 0.5.1
+
+### Patch Changes
+
+- ebdc5fc: Establish the same theme, base, components, utilities cascade order before every shared layered stylesheet and starter reset entry point. Independently emitted production CSS chunks can now load in any order without allowing the reset to erase authentication padding, heading typography, or calendar spacing. Existing component layers and client customization remain intact.
+- Updated dependencies [ebdc5fc]
+  - @brightweblabs/core-auth@0.12.1
+  - @brightweblabs/app-shell@0.16.2
+  - @brightweblabs/ui@1.5.5
+
+## 0.5.0
+
+### Minor Changes
+
+- 18621d6: Add an authenticated, read-only Social Media plan surface with a monthly calendar, publication filters, briefs and copyable drafts. Client applications supply their own plan data and opt into navigation; the surface reuses portal UI and theme tokens.
+
+### Patch Changes
+
+- 18621d6: Separate client-owned social media content from shared presentation using a validated structured plan. Strategy screens now receive editorial text and semantic content from the website, while shared components own layout, styling, and interactions. Preserve staff/admin access and support omitted optional sections.
+- 18621d6: Add structured Social Media measurement content with distinct deliveries, an interactive signal explorer, baseline and decision timing. Improve desktop hierarchy and preserve section navigation in the URL.
+
+  Remove superseded Social Media styles, reuse theme spacing and typography tokens, and respect reduced motion in disclosure controls.
+
+  Unify Plan, Campaigns and Measurement opening headers with a shared component and consistent typography, accent labels and spacing.
+
+- 18621d6: Remove retired social media renderer styles, share reference URL validation, tighten reference types, and simplify category counts and filters. Avoid nested main landmarks and empty source disclosures; make standalone positioning rhythm optional. Standalone positioning fills the available width when its optional rhythm is absent.
+
 ## 0.4.25
 
 ### Patch Changes

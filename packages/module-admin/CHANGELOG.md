@@ -1,5 +1,45 @@
 # @brightweblabs/module-admin
 
+## 0.9.9
+
+### Patch Changes
+
+- 75841f5: Protect profile identity across browser insert, update and upsert; resolve grants from current confirmed Auth identity and recheck it under transaction locks. Require confirmed first-admin setup and fail closed on conflicting identities. Apply Core/Admin/Orgs identity migrations atomically with checked prerequisites, and refuse invitation operations until their required SQL is installed.
+
+## 0.9.8
+
+### Patch Changes
+
+- Updated dependencies [a7dbad1]
+  - @brightweblabs/app-shell@0.16.4
+
+## 0.9.7
+
+### Patch Changes
+
+- e75c7bb: Accept invitations through service-only, row-locked database transactions so access, CRM linkage, audit and invitation status commit together. Reuse acceptance during registration and retain identities after uncertain responses for safe retries. Report retained invitations accurately when delivery cleanup fails. New applications include the mirrored migrations; existing applications must apply the Admin/Orgs acceptance migrations and the CRM contact integration migration before using these acceptance handlers. Stock CRM callbacks are recognized through the shared integration contract; custom callbacks fail before mutation until deliberately migrated to a client-owned transactional hook and acknowledged with contactIntegration. Already accepted registration links never create identities or synchronize profile metadata.
+- e75c7bb: Reject stale admin invitation revocations without false audit events, and preserve invitations accepted during failed email delivery cleanup. Distinguish permission failures from missing migrations. Remove unused CRM formatting code and redundant private report result wrappers and guards.
+
+  The bundled core forward migration restricts the privileged profile identity synchronization function to the service role. Auth triggers continue to run under their owner; existing databases must apply this migration to close anonymous/authenticated direct execution.
+
+- Updated dependencies [e75c7bb]
+- Updated dependencies [e75c7bb]
+- Updated dependencies [e75c7bb]
+- Updated dependencies [e75c7bb]
+  - @brightweblabs/app-shell@0.16.3
+  - @brightweblabs/ui@1.5.6
+  - @brightweblabs/core-auth@0.12.2
+
+## 0.9.6
+
+### Patch Changes
+
+- ebdc5fc: Establish the same theme, base, components, utilities cascade order before every shared layered stylesheet and starter reset entry point. Independently emitted production CSS chunks can now load in any order without allowing the reset to erase authentication padding, heading typography, or calendar spacing. Existing component layers and client customization remain intact.
+- Updated dependencies [ebdc5fc]
+  - @brightweblabs/core-auth@0.12.1
+  - @brightweblabs/app-shell@0.16.2
+  - @brightweblabs/ui@1.5.5
+
 ## 0.9.5
 
 ### Patch Changes

@@ -1,5 +1,9 @@
 "use client";
 
+import { useTaskSubmission } from "../use-task-submission";
+
+import { validateTaskDraft } from "../task-form";
+
 import { StyledSelect } from "@brightweblabs/ui";
 
 import { useProjectsUiClient, useProjectsUiDictionary } from "../context";
@@ -43,8 +47,6 @@ export function ProjectTaskCreateSheet({
   const client = useProjectsUiClient();
   const dictionary = useProjectsUiDictionary();
   const router = useRouter();
-  const [open, setOpen] = useState(initialOpen);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [status, setStatus] = useState("todo");
@@ -54,6 +56,9 @@ export function ProjectTaskCreateSheet({
   const [startDate, setStartDate] = useState("");
   const [dueDate, setDueDate] = useState("");
   const [blockedReason, setBlockedReason] = useState("");
+  const { open, onOpenChange, isSubmitting, submit } = useTaskSubmission(client, projectId, initialOpen);
+  const taskDraft = validateTaskDraft({ projectId, title, status, blockedReason, startDate, dueDate });
+  useEffect(() => { if (status !== "blocked") setBlockedReason(""); }, [status]);
   const startDateValue = useMemo(() => parseIsoDate(startDate), [startDate]);
   const dueDateValue = useMemo(() => parseIsoDate(dueDate), [dueDate]);
   const memberOptions = useMemo(
@@ -81,7 +86,7 @@ export function ProjectTaskCreateSheet({
   }, [members]);
 
   useShellAction(PROJECTS_EVENTS.openNewTask, () => {
-    setOpen(true);
+    onOpenChange(true);
   });
 
   const resetForm = () => {
@@ -98,38 +103,31 @@ export function ProjectTaskCreateSheet({
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (isSubmitting || !title.trim()) return;
-    if (startDate && dueDate && dueDate < startDate) {
-      toast.error(dictionary.board.invalidDateRange);
-      return;
-    }
+    if (isSubmitting || !taskDraft.valid) return;
 
-    setIsSubmitting(true);
-    try {
-      await createTask(client, projectId, {
-        title,
+    await submit({
+      save: () => createTask(client, projectId, {
+        ...taskDraft.input,
         description: description.trim() || undefined,
         status,
         priority,
         milestoneId: milestoneId || undefined,
         assigneeProfileId: assigneeProfileId || undefined,
-        startDate: startDate || undefined,
-        dueDate: dueDate || undefined,
-        blockedReason: blockedReason.trim() || undefined,
-      });
-      toast.success(dictionary.create.taskCreated);
-      setOpen(false);
-      resetForm();
-      router.refresh();
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : dictionary.create.taskCreateFallbackError);
-    } finally {
-      setIsSubmitting(false);
-    }
+      }),
+      onPersisted: () => router.refresh(),
+      onSuccess: () => {
+        toast.success(dictionary.create.taskCreated);
+        onOpenChange(false);
+        resetForm();
+      },
+      onError: (error) => {
+        toast.error(error instanceof Error ? error.message : dictionary.create.taskCreateFallbackError);
+      },
+    });
   };
 
   return (
-    <Sheet open={open} onOpenChange={setOpen}>
+    <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className={sheetShellClassName}>
         <AppSheetHeader
           icon={ListChecks}
@@ -290,11 +288,11 @@ export function ProjectTaskCreateSheet({
             </SheetSection>
           </div>
           <SheetFooter className={`${sheetFooterClassName} flex-row gap-2`}>
-            <Button type="submit" className="flex-1" disabled={isSubmitting || !title.trim()}>
+            <Button type="submit" className="flex-1" disabled={isSubmitting || !taskDraft.valid}>
               <Save className="mr-2 h-4 w-4" />
               {isSubmitting ? dictionary.create.creating : dictionary.create.createTask}
             </Button>
-            <Button type="button" variant="outline" className="flex-1" onClick={() => setOpen(false)}>
+            <Button type="button" variant="outline" className="flex-1" onClick={() => onOpenChange(false)}>
               {dictionary.actions.cancel}
             </Button>
           </SheetFooter>

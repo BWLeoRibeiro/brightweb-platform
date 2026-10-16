@@ -1,5 +1,58 @@
 # @brightweblabs/module-projects
 
+## 0.20.0
+
+### Minor Changes
+
+- 75841f5: Add deliberately authored client tasks within each project's existing organization audience. Draft publication, current-role task capabilities, versioned client submissions and exact-version staff return/accept preserve private internal work and existing project, milestone and member management permissions. Forward SQL keeps legacy tasks internal, retains the same-project milestone invariant and revokes stale selected task grants.
+
+### Patch Changes
+
+- 75841f5: Refuse client-task migration atomically when any API role is a direct or indirect member of an existing task executor, including SET-only role chains. Existing task data, guards and permissions remain unchanged on refusal; removing the unsafe role grant allows the migration to retry normally.
+- Updated dependencies [75841f5]
+  - @brightweblabs/module-orgs@0.7.5
+
+## 0.19.4
+
+### Patch Changes
+
+- Updated dependencies [a7dbad1]
+  - @brightweblabs/app-shell@0.16.4
+  - @brightweblabs/module-orgs@0.7.4
+
+## 0.19.3
+
+### Patch Changes
+
+- e75c7bb: Preserve newer campaign and workflow drafts when detail or save requests complete, serialize editor commands, and detach pending editor work when the client changes. Reload dashboard sections after a client replacement and reject old requests. Deduplicate pending notification dismissals so repeated callbacks do not send duplicate mutations. Keep clipboard feedback tied to the Social Media text actually copied. Remove unused private UI imports and bindings while retaining public props.
+- e75c7bb: Use one Projects listing/statistics implementation for public and HTTP consumers, including dashboard attention filters and compatibility recovery. Share task draft validation and calendar-date conversion between creation surfaces, and remove unused private action wrappers. Read CRM report rows in bounded pages so API response caps cannot silently truncate reports. Remove unused shell styling dependencies.
+
+  Project task and milestone collections now page through API caps, reject incomplete or changing reads, and fail explicitly above 10,000 rows. Detail task statistics use the shared aggregate reader.
+
+- e75c7bb: Preserve reopened task drafts across pending saves, deduplicate task submissions, and isolate task completions by editor, project, and client. Clear notification feed state on endpoint changes and reject dismissals of stale feed items.
+- Updated dependencies [e75c7bb]
+- Updated dependencies [e75c7bb]
+- Updated dependencies [e75c7bb]
+- Updated dependencies [e75c7bb]
+- Updated dependencies [e75c7bb]
+- Updated dependencies [e75c7bb]
+  - @brightweblabs/module-orgs@0.7.3
+  - @brightweblabs/app-shell@0.16.3
+  - @brightweblabs/ui@1.5.6
+  - @brightweblabs/core-auth@0.12.2
+
+## 0.19.2
+
+### Patch Changes
+
+- ebdc5fc: Establish the same theme, base, components, utilities cascade order before every shared layered stylesheet and starter reset entry point. Independently emitted production CSS chunks can now load in any order without allowing the reset to erase authentication padding, heading typography, or calendar spacing. Existing component layers and client customization remain intact.
+- Updated dependencies [ebdc5fc]
+  - @brightweblabs/theme@0.8.4
+  - @brightweblabs/core-auth@0.12.1
+  - @brightweblabs/app-shell@0.16.2
+  - @brightweblabs/ui@1.5.5
+  - @brightweblabs/module-orgs@0.7.2
+
 ## 0.19.1
 
 ### Patch Changes

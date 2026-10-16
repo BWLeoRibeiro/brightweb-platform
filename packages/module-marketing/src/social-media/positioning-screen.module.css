@@ -1,0 +1,26 @@
+@layer theme, base, components, utilities;
+
+@layer components {
+  .layout { display: grid; grid-template-columns: minmax(0, 1.8fr) minmax(17rem, 1fr); gap: var(--space-md); align-items: start; }
+  .layout:not(:has(> .rhythm)) { grid-template-columns: 1fr; }
+  .main { display: grid; gap: var(--space-md); min-width: 0; }
+  .message, .rhythm { padding: var(--space-lg); }
+  .label { display: flex; align-items: center; gap: var(--space-sm); font-size: var(--text-title); font-weight: var(--font-weight-semibold); }
+  .icon { display: grid; place-items: center; width: 2.25rem; height: 2.25rem; border-radius: 50%; background: var(--shell-nav-active-icon-bg); color: var(--shell-nav-active-icon-fg); }
+  .icon svg { width: 1rem; height: 1rem; }
+  .headline { margin: var(--space-lg) 0 var(--space-md); max-width: 29ch; font-size: var(--text-heading-2); line-height: var(--type-leading-130); font-weight: var(--font-weight-bold); }
+  .statement { max-width: 64ch; font-size: var(--text-body); line-height: var(--type-leading-165); color: var(--muted-foreground); }
+  .principles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-md); }
+  .principle { padding: var(--space-lg); }
+  .principle h3 { margin-bottom: var(--space-xs); font-size: var(--text-title); font-weight: var(--font-weight-semibold); }
+  .principle p { font-size: var(--text-body); line-height: var(--type-leading-165); color: var(--muted-foreground); }
+  .rhythm dl { margin-top: var(--space-md); }
+  .rhythmItem { display: flex; gap: var(--space-sm); padding: var(--space-lg) 0; }
+  .rhythmItem + .rhythmItem { border-top: 1px solid var(--border); }
+  .rhythmItem:last-child { padding-bottom: 0; }
+  .rhythmItem > svg { width: 1rem; height: 1rem; flex: none; margin-top: var(--space-2xs); color: var(--muted-foreground); }
+  .rhythmItem dt { font-size: var(--text-meta); color: var(--muted-foreground); margin-bottom: var(--space-xs); }
+  .rhythmItem dd { font-size: var(--text-body); line-height: var(--type-leading-145); font-weight: var(--font-weight-semibold); }
+  @media (max-width: 540px) { .principles { grid-template-columns: 1fr; } }
+  @media (max-width: 800px) { .layout { grid-template-columns: 1fr; } }
+}

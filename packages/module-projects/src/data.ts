@@ -310,22 +310,40 @@ export async function getProjectPortfolioStats(
 
 const ENRICHMENT_PAGE_SIZE = 1000;
 
-// Supabase/PostgREST caps unbounded selects at 1000 rows, which silently truncates
-// task/milestone enrichment for task-heavy portfolios. Page explicitly until a short
-// page signals the end. Long-term alternative (deferred): a grouped-count RPC so the
-// database aggregates per project instead of shipping every row.
+// Full collection reads are bounded and advance by received rows: an API may cap
+// responses below our requested page size. This detects incomplete/changing reads,
+// but separate requests are not a transactionally consistent snapshot.
+const MAX_COLLECTION_ROWS = 10000;
 export async function fetchAllRows<TRow>(
-  runPageQuery: (from: number, to: number) => PromiseLike<{ data: TRow[] | null; error: { message: string } | null }>,
+  runPageQuery: (from: number, to: number) => PromiseLike<{ data: TRow[] | null; error: { message: string } | null; count?: number | null }>,
 ): Promise<{ data: TRow[]; error: { message: string } | null }> {
   const rows: TRow[] = [];
-  for (let offset = 0; ; offset += ENRICHMENT_PAGE_SIZE) {
-    const { data, error } = await runPageQuery(offset, offset + ENRICHMENT_PAGE_SIZE - 1);
-    if (error) return { data: rows, error };
+  const ids = new Set<string>();
+  let expectedCount: number | null = null;
+  const failure = (message: string) => ({ data: [] as TRow[], error: { message } });
+  while (true) {
+    const { data, error, count } = await runPageQuery(rows.length, Math.min(rows.length + ENRICHMENT_PAGE_SIZE - 1, MAX_COLLECTION_ROWS));
+    if (error) return { data: [], error };
+    if (count != null) {
+      if (count > MAX_COLLECTION_ROWS) return failure("PROJECT_COLLECTION_TOO_LARGE");
+      if (expectedCount != null && expectedCount !== count) return failure("PROJECT_COLLECTION_CHANGED_DURING_READ");
+      expectedCount = count;
+    }
     const page = data ?? [];
+    for (const row of page) {
+      const id = row && typeof row === "object" && "id" in row ? row.id : null;
+      if (typeof id === "string") {
+        if (ids.has(id)) return failure("PROJECT_COLLECTION_CHANGED_DURING_READ");
+        ids.add(id);
+      }
+    }
     rows.push(...page);
-    if (page.length < ENRICHMENT_PAGE_SIZE) break;
+    if (rows.length > MAX_COLLECTION_ROWS) return failure("PROJECT_COLLECTION_TOO_LARGE");
+    if (page.length === 0 || (expectedCount != null && rows.length >= expectedCount)) {
+      if (expectedCount != null && rows.length !== expectedCount) return failure("PROJECT_COLLECTION_INCOMPLETE");
+      return { data: rows, error: null };
+    }
   }
-  return { data: rows, error: null };
 }
 
 type ProjectTaskStatsRow = {
@@ -350,7 +368,7 @@ export async function getProjectTaskStats(
     const { data: taskRows, error: taskRowsError } = await fetchAllRows((from, to) =>
       supabase
         .from("project_tasks")
-        .select("id,project_id,status,due_date")
+        .select("id,project_id,status,due_date", { count: "exact" })
         .in("project_id", projectIds)
         .order("id", { ascending: true })
         .range(from, to),
@@ -485,7 +503,7 @@ export async function listProjects(
     ] = await Promise.all([
       getProjectTaskStats(supabase, ids),
       fetchAllRows((from, to) =>
-        supabase.from("project_milestones").select("project_id, status").in("project_id", ids).order("id", { ascending: true }).range(from, to),
+        supabase.from("project_milestones").select("id, project_id, status", { count: "exact" }).in("project_id", ids).order("id", { ascending: true }).range(from, to),
       ),
     ]);
 

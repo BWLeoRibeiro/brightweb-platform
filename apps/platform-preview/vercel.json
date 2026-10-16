@@ -1,0 +1,10 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "git": {
+    "deploymentEnabled": {
+      "codex/release-security-client-tasks": false,
+      "main": false,
+      "changeset-release/main": false
+    }
+  }
+}

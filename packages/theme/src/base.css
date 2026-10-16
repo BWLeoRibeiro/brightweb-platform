@@ -1,3 +1,5 @@
+@layer theme, base, components, utilities;
+
 /* Keep the reset layered so Tailwind utilities and component variants retain
    precedence over these element defaults. */
 @layer base {

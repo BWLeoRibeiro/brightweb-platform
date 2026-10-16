@@ -40,7 +40,7 @@ bw admin create --email owner@example.com
 - `bw add <moduleKey>` resolves requirements, installs thin package mounts and module wiring, and appends migrations.
 - `bw upgrade [moduleKey]` includes the existing managed update flow plus forward-only module migrations. For a staged database rollout, `bw upgrade <moduleKey> --through-migration <filename>` still updates packages and managed files but appends and records that module only through the named migration.
 - Destructive migrations are held at the preceding safe boundary. After compatible code is deployed and affected data is backed up, apply a held migration with an explicit module-scoped `bw upgrade <moduleKey> --include-destructive-migrations`. A destructive `--through-migration` target also requires that opt-in.
-- `bw doctor` checks package, config, scaffold, environment-name, migration, configured function-region, and deployed function-region consistency. Pass `--deployment-url` to inspect the deployed `x-vercel-id`; add `--report` to stamp the result in the app manifest.
+- `bw doctor` checks package, config, scaffold, environment-name, migration, configured function-region, and deployed function-region consistency. App-owned scaffold files are preserved on upgrade; doctor warns when their recorded template baseline is outdated and their contents differ from the current template. Use `bw diff`, reconcile relevant changes, and verify behavior before recording the reviewed baseline with `bw scaffold manage <path>` followed by `bw scaffold own <path>` (neither replaces file contents). Live database objects, applied migrations, and authenticated permissions are explicitly **NOT VERIFIED** by doctor; a successful local result does not certify deployed behavior. Pass `--deployment-url` to inspect the deployed `x-vercel-id`; add `--report` to stamp the result in the app manifest.
 - `bw admin create --email <email>` creates a passwordless Supabase Auth user, transactionally ensures its profile and `admin` assignment, then sends the Core Auth `/reset-password` flow. It always refuses when the project already has an admin (use the in-app admin role controls to add administrators) and never promotes an existing Auth user.
 - All mutating commands support `--dry-run`.
 
@@ -62,7 +62,7 @@ Current updater behavior:
 - fails the update if npm resolution fails unless you pass `--allow-stale-fallback`
 - re-syncs managed BrightWeb config files such as `next.config.ts`, `config/modules.ts`, and `config/shell.ts`
 - preserves app-owned shell customizations in the scaffolded `config/shell.overrides.ts`
-- reports missing or drifted scaffold mounts and only rewrites them with `--refresh-starters`
+- reports missing or drifted scaffold mounts and only rewrites them with `--refresh-starters`; tracked `owned` and `skipped` files remain protected, including managed config routes
 - prints the follow-up install command unless `--install` is passed
 - preserves unrelated third-party dependencies and app-owned product pages
 
@@ -106,3 +106,44 @@ The scaffold records `SUPABASE_PROJECT_REGION` in `.env.local` and infrastructur
 - `packages/create-bw-app/template/site/base`
 - `packages/create-bw-app/template/modules`
 - `packages/create-bw-app/template/supabase`
+
+### Opt-in social media viewer
+
+For a platform app with marketing enabled, first install a marketing release that
+exports `social-media` and `withSocialMediaNavigation`, then run:
+
+```sh
+bw setup social-media --dry-run
+bw setup social-media
+```
+
+Use `--target-dir <path>` to select another app directory. Setup creates
+`config/social-media-plan.json` with an empty, neutral plan and the thin page at
+`app/(shell)/marketing/social-media/page.tsx`. All client copy belongs in that
+app-owned JSON; components, styles, validation, and interactions stay in marketing.
+No database or publishing service is created.
+
+Setup appends navigation wiring to the standard app-owned
+`config/shell.overrides.ts`, which must declare
+`export const shellRegistrationOverrides: ShellRegistrationOverrides = { ... };`.
+Existing marketing overrides are composed through the shared helper:
+
+```ts
+import { withSocialMediaNavigation } from "@brightweblabs/module-marketing/registration";
+shellRegistrationOverrides.marketing = withSocialMediaNavigation(shellRegistrationOverrides.marketing);
+```
+
+Custom shell export shapes require manual wiring before adopting the standard
+shape. Setup checks prerequisites and paths before writing and rejects symlinks
+on generated paths. Existing JSON and page files are never replaced, even when
+empty or customized; reruns preserve them. These files are not managed templates
+or refreshable starters, and `bw update --refresh-starters` preserves them and
+shell overrides. New marketing apps do not receive this feature until opted in.
+
+## File and compatibility safety
+
+Lifecycle commands resolve the selected app root and reject symlinks or invalid file types beneath it before writing planned outputs. Root aliases are supported; concurrent filesystem edits are outside this preflight guarantee. App-owned brand, theme, shell override and social content seeds are preserved. The generated app context lists exact generated/scaffold paths, defaults unknown paths to app ownership, and shares its generated inventory with the CLI.
+
+Upgrade refuses unknown migration cursors and uses standard semantic-version ranges. Module removal refuses surviving literal imports of the removed package before changing files; reconcile the app-owned dependents explicitly. This conservative scan is not a complete bundler analysis.
+
+Forced re-adoption and module removal preserve exact-path `owned` and `skipped` decisions. Re-adding a module respects retained decisions; use `bw scaffold manage` after re-adding to reset a path deliberately. Every pending destructive migration requires opt-in, even after a previous destructive step was approved. Managed platform outputs share one renderer across scaffolding, add, remove, and update, with enforced ownership-inventory parity.

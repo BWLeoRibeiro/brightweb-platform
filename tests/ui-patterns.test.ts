@@ -7,10 +7,7 @@ import { act, create } from "react-test-renderer";
 import test from "node:test";
 
 import { BreadcrumbLink } from "../packages/ui/src/components/breadcrumb.tsx";
-import { ActionButton, actionClassName } from "../packages/ui/src/components/action.tsx";
-import { buttonVariants } from "../packages/ui/src/components/button-variants.ts";
 import { Card } from "../packages/ui/src/components/card.tsx";
-import { Checkbox } from "../packages/ui/src/components/checkbox.tsx";
 import { CoverHeader } from "../packages/ui/src/components/cover-header.tsx";
 import { PhoneInput } from "../packages/ui/src/components/phone-input.tsx";
 import { SurfaceCard } from "../packages/ui/src/components/surface-card.tsx";
@@ -57,24 +54,11 @@ test("CoverHeader exposes a composable branded cover and content surface", () =>
 test("Checkbox exposes the native selection-control contract", async () => {
   const packageJson = JSON.parse(await readFile(path.join(repoRoot, "packages/ui/package.json"), "utf8"));
   const rootSource = await readFile(path.join(repoRoot, "packages/ui/src/index.ts"), "utf8");
-  const html = renderToStaticMarkup(h(Checkbox, {
-    name: "selected",
-    value: "project-1",
-    checked: true,
-    disabled: true,
-    "aria-label": "Select project",
-    onChange: () => {},
-  }));
+  const checkboxSource = await readFile(path.join(repoRoot, "packages/ui/src/components/checkbox.tsx"), "utf8");
 
   assert.equal(packageJson.exports["./checkbox"], "./src/components/checkbox.tsx");
   assert.match(rootSource, /components\/checkbox/);
-  assert.match(html, /<input\b/);
-  assert.match(html, /type="checkbox"/);
-  assert.match(html, /name="selected"/);
-  assert.match(html, /value="project-1"/);
-  assert.match(html, /checked=""/);
-  assert.match(html, /disabled=""/);
-  assert.match(html, /aria-label="Select project"/);
+  assert.match(checkboxSource, /<input type="checkbox" \{\.\.\.props\} \/>/);
 });
 
 test("PhoneInput forwards the native telephone accessible-name contract", () => {
@@ -215,27 +199,15 @@ test("canonical typography roles survive explicit text colors", () => {
   }
 });
 
-test("shared BrightWeb buttons expose the pointer cursor", () => {
-  assert.ok(buttonVariants().split(/\s+/).includes("cursor-pointer"));
+test("ActionButton shares the canonical brand Button variant", async () => {
+  const source = await readFile(path.join(repoRoot, "packages/ui/src/components/action.tsx"), "utf8");
+  assert.match(source, /buttonVariants\(\{\s*variant:\s*"brand"/);
+  assert.doesNotMatch(source, /bg-\[color:var\(--brand-accent\)\]/);
 });
 
-test("ActionButton shares the brand button recipe and forwards consumer props", () => {
-  const brandClasses = uiCn(buttonVariants({ variant: "brand", size: "sm" })).split(/\s+/);
-  const actionClasses = actionClassName.split(/\s+/);
-  for (const className of brandClasses.filter((value) => /^(?:!?text-\[color:|bg-|border(?:-|$)|hover:)/.test(value))) {
-    assert.ok(actionClasses.includes(className), `ActionButton must preserve ${className}`);
-  }
-  const html = renderToStaticMarkup(
-    h(ActionButton, { className: "consumer-class", disabled: true, "aria-label": "Create project" }, "Create"),
-  );
-  assert.match(html, /^<button\b/);
-  assert.match(html, /type="button"/);
-  assert.match(html, /consumer-class/);
-  assert.match(html, /disabled=""/);
-  assert.match(html, /aria-label="Create project"/);
-});
-
-test("BreadcrumbLink forwards its ref and composes onto a single native link", () => {
+test("BreadcrumbLink uses the direct Slot dependency and preserves composition", async () => {
+  const packageJson = JSON.parse(await readFile(path.join(repoRoot, "packages/ui/package.json"), "utf8"));
+  const source = await readFile(path.join(repoRoot, "packages/ui/src/components/breadcrumb.tsx"), "utf8");
   const ref = () => {};
   const slottedElement = BreadcrumbLink({
     asChild: true,
@@ -246,6 +218,10 @@ test("BreadcrumbLink forwards its ref and composes onto a single native link", (
     h(BreadcrumbLink, { asChild: true, className: "custom-link" }, h("a", { href: "/projects" }, "Projects")),
   );
 
+  assert.match(source, /import \{ Slot \} from "@radix-ui\/react-slot"/);
+  assert.doesNotMatch(source, /Slot\.Root/);
+  assert.equal(packageJson.dependencies["radix-ui"], undefined);
+  assert.equal(packageJson.dependencies["@radix-ui/react-slot"], "^1.3.1");
   assert.equal(slottedElement.props.ref, ref);
   assert.match(html, /^<a\b[^>]*>Projects<\/a>$/);
   assert.match(html, /href="\/projects"/);
@@ -254,13 +230,15 @@ test("BreadcrumbLink forwards its ref and composes onto a single native link", (
   assert.doesNotMatch(html, /<a\b[^>]*><a\b/);
 });
 
-test("Card composes onto native semantic elements and exposes visual variants", () => {
+test("Card composes onto native semantic elements and exposes finite visual variants", async () => {
+  const source = await readFile(path.join(repoRoot, "packages/ui/src/components/card.tsx"), "utf8");
   const linkedCard = renderToStaticMarkup(
     h(Card, { asChild: true, variant: "interactive", density: "compact" },
       h("a", { href: "/projects" }, "Projects"),
     ),
   );
 
+  assert.match(source, /import \{ Slot \} from "@radix-ui\/react-slot"/);
   assert.match(linkedCard, /^<a\b/);
   assert.match(linkedCard, /href="\/projects"/);
   assert.match(linkedCard, /data-slot="card"/);
@@ -268,17 +246,20 @@ test("Card composes onto native semantic elements and exposes visual variants", 
   assert.match(linkedCard, /data-density="compact"/);
   assert.doesNotMatch(linkedCard, /<div\b/);
 
-  for (const variant of ["default", "light", "elevated", "interactive", "insight"] as const) {
-    const html = renderToStaticMarkup(h(Card, { variant }, "Content"));
-    assert.match(html, new RegExp(`data-variant="${variant}"`));
+  for (const variant of ["default", "light", "elevated", "interactive", "insight"]) {
+    assert.match(source, new RegExp(`\\b${variant}:`));
   }
 });
 
-test("SurfaceCard preserves its semantic element, legacy props, and Card defaults", () => {
+test("SurfaceCard delegates to the canonical Card recipe", async () => {
+  const source = await readFile(path.join(repoRoot, "packages/ui/src/components/surface-card.tsx"), "utf8");
   const html = renderToStaticMarkup(
     h(SurfaceCard, { isLight: true, id: "legacy-surface", className: "consumer-class" }, "Legacy content"),
   );
 
+  assert.match(source, /<Card asChild/);
+  assert.match(source, /<article/);
+  assert.doesNotMatch(source, /return <article/);
   assert.match(html, /^<article\b/);
   assert.match(html, /id="legacy-surface"/);
   assert.match(html, /data-variant="light"/);

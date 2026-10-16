@@ -1,3 +1,4 @@
+import { setupBrightwebFeature } from "./setup.mjs";
 import { addBrightwebModule } from "./add.mjs";
 import { createFirstAdmin } from "./admin.mjs";
 import { adoptBrightwebApp } from "./adopt.mjs";
@@ -8,7 +9,7 @@ import { scaffoldBrightwebApp } from "./scaffold-cmd.mjs";
 import { updateBrightwebApp } from "./update.mjs";
 import { upgradeBrightwebApp } from "./upgrade.mjs";
 
-const HELP = `Usage: bw <command> [options]\n\nCommands:\n  add <moduleKey>       Install a module and its requirements\n  admin create          Bootstrap a passwordless administrator safely\n  adopt                 Create an honest manifest for a legacy app\n  diff <relpath>        Compare a tracked scaffold file with its template\n  scaffold <action>     List or record per-file scaffold intent\n  remove <moduleKey>    Conservatively remove module package wiring\n  upgrade [moduleKey]   Upgrade packages, managed files, and migrations\n  update                Alias for the legacy create-bw-app update flow\n  doctor                Validate app health and manifest consistency\n\nRun bw <command> --help for command-specific options.`;
+const HELP = `Usage: bw <command> [options]\n\nCommands:\n  setup social-media   Create app-owned social media content and wiring\n  add <moduleKey>       Install a module and its requirements\n  admin create          Bootstrap a passwordless administrator safely\n  adopt                 Create an honest manifest for a legacy app\n  diff <relpath>        Compare a tracked scaffold file with its template\n  scaffold <action>     List or record per-file scaffold intent\n  remove <moduleKey>    Conservatively remove module package wiring\n  upgrade [moduleKey]   Upgrade packages, managed files, and migrations\n  update                Alias for the legacy create-bw-app update flow\n  doctor                Validate app health and manifest consistency\n\nRun bw <command> --help for command-specific options.`;
 
 function parseOptions(argv) {
   const options = {};
@@ -36,7 +37,8 @@ export async function runBwCli(argv = process.argv.slice(2), runtimeOptions = {}
   if (!command || command === "--help" || command === "help") { process.stdout.write(`${HELP}\n`); return; }
   const { options, positionals } = parseOptions(argv.slice(1));
   try {
-    if (command === "add") await addBrightwebModule(positionals[0], options, runtimeOptions);
+    if (command === "setup") await setupBrightwebFeature(positionals[0], options, runtimeOptions);
+    else if (command === "add") await addBrightwebModule(positionals[0], options, runtimeOptions);
     else if (command === "admin") await createFirstAdmin(positionals[0], options, runtimeOptions);
     else if (command === "adopt") await adoptBrightwebApp(options, runtimeOptions);
     else if (command === "diff") await diffBrightwebScaffold(positionals[0], options, runtimeOptions);

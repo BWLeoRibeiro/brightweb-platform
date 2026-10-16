@@ -18,6 +18,14 @@ export function resolveTheme(mode: ThemeMode, systemTheme: ResolvedTheme, enable
   return mode;
 }
 
+export function getThemeStorage(): ThemeStorage | null {
+  try {
+    return typeof window === "undefined" ? null : window.localStorage;
+  } catch {
+    return null;
+  }
+}
+
 export function readStoredTheme(
   storage: Pick<ThemeStorage, "getItem"> | null | undefined,
   defaultTheme: ThemeMode = "system",

@@ -1,3 +1,5 @@
+@layer theme, base, components, utilities;
+
 :root {
   /* L3 auth experience defaults. */
   --auth-wash: radial-gradient(circle at 50% 0%, color-mix(in srgb, var(--brand-accent) 8%, transparent), transparent 52%);

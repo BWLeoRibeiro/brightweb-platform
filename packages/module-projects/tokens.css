@@ -1,3 +1,5 @@
+@layer theme, base, components, utilities;
+
 :root {
   --sheet-header-surface: linear-gradient(135deg, var(--sheet-header-tint), transparent 60%);
   --sheet-header-tint: color-mix(in srgb, var(--primary) 7%, transparent);

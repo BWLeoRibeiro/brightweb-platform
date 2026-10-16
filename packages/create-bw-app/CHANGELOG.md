@@ -1,5 +1,76 @@
 # create-bw-app
 
+## 0.27.5
+
+### Patch Changes
+
+- 75841f5: Add deliberately authored client tasks within each project's existing organization audience. Draft publication, current-role task capabilities, versioned client submissions and exact-version staff return/accept preserve private internal work and existing project, milestone and member management permissions. Forward SQL keeps legacy tasks internal, retains the same-project milestone invariant and revokes stale selected task grants.
+- 75841f5: Retry explicit installation after a failed or incomplete update/upgrade even when package requirements are unchanged. Reuse a completed install only while package, lock, configuration/patch inputs and installed shared versions still match.
+
+  Validate monorepo migration writes under their Supabase owner directory while retaining symlink and traversal protection. Respect the npm registry environment when resolving upgrade versions, aligning metadata with the installation registry.
+
+  Use migration sources matching the requested package release when existing installed modules still contain the previous SQL bundle; refuse unavailable source versions before writing.
+
+  Order fresh SQL assemblies by authored timestamps, preserving dependency order on equal timestamps, so later Core indexes run after the Admin baseline they reference. Existing numbered SQL files are never reordered.
+
+  Recover interrupted migration appends only when the existing file matches the pending module/source and exact SQL hash. Conflicting or duplicate source files reject before further writes; appends refuse to overwrite a concurrently created file.
+
+  Refuse recovery across missing or reordered SQL sources and confine ancestor migration writes to the declared workspace. Preserve leading blank lines during exact-source recovery.
+
+  Preflight app-owned pnpm patch selectors against target shared package versions before any package, scaffold, manifest or SQL writes. Preserve incompatible patches and partial prior state; require a reviewed compatible app patch before installed retry.
+
+- bc43aa4: Reconcile pnpm lockfiles during explicit update and upgrade installations in CI, where an existing lockfile otherwise defaults to frozen mode after dependency inputs change. Keep ordinary and scaffold installation policy unchanged.
+- 75841f5: Protect profile identity across browser insert, update and upsert; resolve grants from current confirmed Auth identity and recheck it under transaction locks. Require confirmed first-admin setup and fail closed on conflicting identities. Apply Core/Admin/Orgs identity migrations atomically with checked prerequisites, and refuse invitation operations until their required SQL is installed.
+- 75841f5: Ship a forward Projects migration enforcing that each task's optional milestone belongs to the same project, including direct writes and milestone reassignment. Milestone deletion still unlinks tasks without clearing their required project. Invalid existing relationships stop migration with an aggregate preflight result and require a separately reviewed data remediation.
+- 75841f5: Include the Projects profile page in the tracked starter inventory so upgrades
+  with `--refresh-starters` restore a missing `/account/perfil` route. Preserve
+  drifted, app-owned and intentionally skipped pages; refuse untracked custom
+  profile conflicts before writing app files.
+
+## 0.27.4
+
+### Patch Changes
+
+- a7dbad1: Display the configured company name beside the client portal logo instead of a hardcoded BrightWeb title. Update the starter compatibility defaults to consume the corrected shell package.
+- 0f721b9: Allow module upgrades and additions to append migrations in the containing workspace’s canonical Supabase directory. Keep app writes bounded to the app and reject migration writes outside the nearest workspace/repository boundary or through symlinks.
+
+## 0.27.3
+
+### Patch Changes
+
+- 528d44a: Ship an idempotent admin migration granting authenticated administrators the profile reads required by the shared user directory. Existing consumers receive the forward migration through `bw upgrade`; apply it to their database to restore directory visibility without expanding staff or client access.
+- 528d44a: Warn when preserved app-owned scaffold files have unreconciled upstream template changes, including shells that still match an older baseline. Explicitly report that live database objects, applied migrations and authenticated permissions are not verified by local doctor checks.
+
+  Track the projects client profile route in the starter inventory so existing apps can restore `/account/perfil` with `bw upgrade projects --refresh-starters`.
+
+## 0.27.2
+
+### Patch Changes
+
+- e75c7bb: Assign existing organization members through a service-only database transaction so membership, CRM linking, primary-contact selection and pending-invitation reconciliation commit together. Remove snapshot-based compensation that could delete concurrent grants or restore stale roles. Preserve per-person batch outcomes and the client-owned transactional contact hook. Custom asynchronous callbacks must migrate to that hook and explicitly acknowledge database integration before use. Existing applications must apply the new atomic direct-membership migration before upgrading the handlers; new applications include the mirrored migration.
+- e75c7bb: Accept invitations through service-only, row-locked database transactions so access, CRM linkage, audit and invitation status commit together. Reuse acceptance during registration and retain identities after uncertain responses for safe retries. Report retained invitations accurately when delivery cleanup fails. New applications include the mirrored migrations; existing applications must apply the Admin/Orgs acceptance migrations and the CRM contact integration migration before using these acceptance handlers. Stock CRM callbacks are recognized through the shared integration contract; custom callbacks fail before mutation until deliberately migrated to a client-owned transactional hook and acknowledged with contactIntegration. Already accepted registration links never create identities or synchronize profile metadata.
+- e75c7bb: Save workflow nodes in one service-only transaction, preserving retained node identities across reordering and rolling back deletions if any write fails. Reject foreign, missing or duplicate supplied node IDs. Delete individual nodes through a targeted transaction that preserves concurrent changes to other nodes. Serialize activation with node editing so a concurrent edit cannot activate an empty workflow. Existing applications must apply the atomic_marketing_workflow_nodes migration before upgrading the handlers; fresh applications include the mirrored migration.
+- e75c7bb: Preserve app-owned MDX package dependencies during removal, reject unknown migration cursors consistently in diagnostics, and reuse the shared filesystem boundary checks during feature setup.
+- e75c7bb: Gate each pending destructive migration after the current cursor, share and validate module-aware generated outputs, and preserve exact-path customization decisions, drift baselines, and removed-module migration history during forced adoption and module remove/re-add transitions.
+- e75c7bb: Preflight physical lifecycle targets before writes, preserving app-root aliases while refusing linked or invalid targets. Share exact generated and app-owned file policy with manifest and app-context inventories; preserve create-once customization files and compare managed adapters with their module-selected rendering. Reject unknown migration cursors, use standard semantic-version matching, and refuse module removal while surviving app files retain package imports.
+- e75c7bb: Reject stale admin invitation revocations without false audit events, and preserve invitations accepted during failed email delivery cleanup. Distinguish permission failures from missing migrations. Remove unused CRM formatting code and redundant private report result wrappers and guards.
+
+  The bundled core forward migration restricts the privileged profile identity synchronization function to the service role. Auth triggers continue to run under their owner; existing databases must apply this migration to close anonymous/authenticated direct execution.
+
+- e75c7bb: Preserve scaffold baselines and explicit ownership across module addition, removal and upgrade, including overlapping config routes. Returning a file to management now records its canonical template baseline. Legacy update respects owned and skipped files while retaining explicit starter refresh behavior. Reject untracked module overlay collisions before writing application files.
+
+## 0.27.1
+
+### Patch Changes
+
+- ebdc5fc: Establish the same theme, base, components, utilities cascade order before every shared layered stylesheet and starter reset entry point. Independently emitted production CSS chunks can now load in any order without allowing the reset to erase authentication padding, heading typography, or calendar spacing. Existing component layers and client customization remain intact.
+
+## 0.27.0
+
+### Minor Changes
+
+- 18621d6: Add opt-in `bw setup social-media` with an app-owned empty content plan, thin page, and composed navigation. Preflight installed support and safe paths, preserve existing client files on reruns and updates, and support a write-free dry run.
+
 ## 0.26.2
 
 ### Patch Changes

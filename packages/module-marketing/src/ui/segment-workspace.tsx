@@ -2,7 +2,7 @@
 
 import { StyledSelect } from "@brightweblabs/ui";
 
-import { Filter, Plus, Trash2, Users } from "lucide-react";
+import { Filter, Trash2, Users } from "lucide-react";
 import {
   Badge,
   Button,

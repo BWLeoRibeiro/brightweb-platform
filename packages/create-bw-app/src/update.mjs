@@ -1,4 +1,10 @@
+import { assertMutationTargets } from "./mutation-paths.mjs";
+import { MANAGED_PLATFORM_FILES, MANAGED_SITE_FILES, MODULE_SELECTED_FILES, isAppOwnedSeed } from "./file-policy.mjs";
 import fs from "node:fs/promises";
+import semver from "semver";
+import { createHash } from "node:crypto";
+import { homedir } from "node:os";
+import { load as loadYaml } from "js-yaml";
 import path from "node:path";
 import { stdout as output } from "node:process";
 import {
@@ -13,13 +19,8 @@ import {
   TEMPLATE_ROOT,
   createAppContextFile,
   createDbInstallPlan,
-  createModuleToolbarControlsConfig,
-  createNextConfig,
-  createOptionalModuleRouteFiles,
+  createManagedPlatformFiles,
   createPackageJson,
-  createPlatformGlobalsCss,
-  createPlatformModulesConfigFile,
-  createShellConfig,
   detectPackageManager,
   getDbModuleRegistry,
   getVersionMap,
@@ -27,33 +28,10 @@ import {
   readJsonIfPresent,
   runInstall,
 } from "./generator.mjs";
-import { readAppManifest } from "./app-manifest.mjs";
+import { assertNoUntrackedScaffoldWrites, scaffoldDrift } from "./scaffold.mjs";
+import { hashFile, writeAppManifest, readAppManifest } from "./app-manifest.mjs";
 
-const MANAGED_PLATFORM_FILES = [
-  "next.config.ts",
-  path.join("app", "globals.css"),
-  path.join("config", "module-toolbar-controls.tsx"),
-  path.join("config", "modules.ts"),
-  path.join("config", "shell.ts"),
-  path.join("app", "api", "invitations", "_dependencies.ts"),
-  path.join("app", "api", "organizations", "route.ts"),
-  path.join("app", "api", "organizations", "[id]", "route.ts"),
-  path.join("app", "api", "organizations", "[id]", "invitations", "route.ts"),
-  path.join("app", "api", "organizations", "[id]", "invitations", "[invitationId]", "route.ts"),
-  path.join("docs", "ai", "app-context.json"),
-];
-
-const MANAGED_SITE_FILES = [
-  path.join("docs", "ai", "app-context.json"),
-];
-
-const MODULE_SELECTED_PLATFORM_FILES = new Set([
-  path.join("app", "api", "invitations", "_dependencies.ts"),
-  path.join("app", "api", "organizations", "route.ts"),
-  path.join("app", "api", "organizations", "[id]", "route.ts"),
-  path.join("app", "api", "organizations", "[id]", "invitations", "route.ts"),
-  path.join("app", "api", "organizations", "[id]", "invitations", "[invitationId]", "route.ts"),
-]);
+const MODULE_SELECTED_PLATFORM_FILES = new Set(MODULE_SELECTED_FILES);
 
 const REFRESHABLE_PLATFORM_STARTER_FILES = new Set([
   path.join("app", "api", "notifications", "route.ts"),
@@ -113,6 +91,7 @@ async function resolvePublishedBrightwebVersions(installedBrightwebPackages, opt
     throw new Error("Published updates require fetch support to resolve BrightWeb package versions from npm.");
   }
 
+  const registryUrl = (process.env.npm_config_registry || "https://registry.npmjs.org").replace(/\/$/, "");
   const fallbackVersionMap = options.fallbackVersionMap || {};
   const allowStaleFallback = options.allowStaleFallback === true;
   const resolvedVersions = {};
@@ -121,7 +100,7 @@ async function resolvePublishedBrightwebVersions(installedBrightwebPackages, opt
   await Promise.all(
     packageNames.map(async (packageName) => {
       try {
-        const response = await fetchImpl(`https://registry.npmjs.org/${encodeURIComponent(packageName)}/latest`);
+        const response = await fetchImpl(`${registryUrl}/${encodeURIComponent(packageName)}/latest`);
         if (!response?.ok) {
           throw new Error(`npm registry responded with ${response?.status ?? "an unknown error"}`);
         }
@@ -458,9 +437,54 @@ function renderPlanSummary(plan, options = {}) {
   return `${lines.join("\n")}\n`;
 }
 
+// A version-pinned app patch is part of the app's customization contract.
+// Check target versions even when an earlier failed upgrade already wrote them.
+async function assertTargetPatchCompatibility(targetDir, targetVersions) {
+  let directory = targetDir;
+  let lockOwner = null;
+  while (!(await pathExists(path.join(directory, "pnpm-workspace.yaml")))) {
+    if (!lockOwner && await pathExists(path.join(directory, "pnpm-lock.yaml"))) lockOwner = directory;
+    const parent = path.dirname(directory);
+    if (parent === directory) { directory = lockOwner ?? targetDir; break; }
+    directory = parent;
+  }
+  // pnpm selects the nearest settings file even without a packages list. A
+  // child lockfile does not hide an enclosing pnpm workspace's configuration.
+  const manifest = await readJsonIfPresent(path.join(directory, "package.json"));
+  const workspacePath = path.join(directory, "pnpm-workspace.yaml");
+  const workspace = await pathExists(workspacePath)
+    ? loadYaml(await fs.readFile(workspacePath, "utf8")) : null;
+  const source = workspace && Object.hasOwn(workspace, "patchedDependencies") ? "pnpm-workspace.yaml" : "package.json";
+  const patches = source === "pnpm-workspace.yaml" ? workspace.patchedDependencies : manifest?.pnpm?.patchedDependencies;
+  if (patches == null) return;
+  if (typeof patches !== "object" || Array.isArray(patches)) {
+    throw new Error(`Upgrade blocked: invalid patchedDependencies in ${path.join(directory, source)}. Review the app's patch configuration before retrying.`);
+  }
+  for (const selector of Object.keys(patches)) {
+    const separator = selector.indexOf("@", 1);
+    const packageName = separator < 0 ? selector : selector.slice(0, separator);
+    if (!Object.hasOwn(targetVersions, packageName)) continue;
+    const target = targetVersions[packageName];
+    const range = separator < 0 ? "*" : selector.slice(separator + 1);
+    const version = semver.validRange(target) && semver.minVersion(target)?.version;
+    if (version && semver.validRange(range) && semver.satisfies(version, range)) {
+      // Keep the resolver inside the patch's declared support. Exact/finite
+      // selectors must not drift to another release allowed by a caret.
+      if (!semver.subset(target, range)) targetVersions[packageName] = version;
+      continue;
+    }
+    throw new Error(
+      `Upgrade blocked before writes: app-owned patch ${selector} in ${path.join(directory, source)} does not cover target ${packageName}@${target}.\n`
+      + "Keep the patch and customization intact. Review/recreate it against the target package with pnpm patch and pnpm patch-commit, then verify the customized behavior before retrying.\n"
+      + "If a previous attempt already wrote package or SQL files, this refusal preserves that state. After a reviewed compatible patch is ready, rerun the same command with --install; existing migration files/cursors are verified rather than appended twice.",
+    );
+  }
+}
+
 export async function buildBrightwebAppUpdatePlan(argvOptions = {}, runtimeOptions = {}) {
-  const targetDir = resolveUpdateTargetDirectory(runtimeOptions, argvOptions);
-  await readAppManifest(targetDir, { required: false });
+  const targetDir = await fs.realpath(resolveUpdateTargetDirectory(runtimeOptions, argvOptions));
+  const appManifest = await readAppManifest(targetDir, { required: false });
+  await assertMutationTargets(targetDir, ["package.json", ...Object.keys(appManifest?.scaffoldFiles || {})]);
   const packageJsonPath = path.join(targetDir, "package.json");
   const manifest = await readJsonIfPresent(packageJsonPath);
 
@@ -510,6 +534,7 @@ export async function buildBrightwebAppUpdatePlan(argvOptions = {}, runtimeOptio
       ...brightwebVersionOverrides,
     },
   });
+  if (dependencyMode === "published") await assertTargetPatchCompatibility(targetDir, canonicalVersions);
   const packageJsonUpdate = mergeManagedPackageUpdates({
     manifest,
     targetVersions: canonicalVersions,
@@ -527,20 +552,7 @@ export async function buildBrightwebAppUpdatePlan(argvOptions = {}, runtimeOptio
   }
 
   if (template === "platform") {
-    const canonicalConfigFiles = {
-      "next.config.ts": createNextConfig({ template: "platform", selectedModules: installedModules }),
-      [path.join("app", "globals.css")]: await createPlatformGlobalsCss(installedModules),
-      [path.join("config", "module-toolbar-controls.tsx")]: createModuleToolbarControlsConfig(installedModules),
-      [path.join("config", "modules.ts")]: createPlatformModulesConfigFile(installedModules),
-      [path.join("config", "shell.ts")]: createShellConfig(installedModules),
-      ...createOptionalModuleRouteFiles(installedModules),
-      [path.join("docs", "ai", "app-context.json")]: createAppContextFile({
-        slug: manifest.name || path.basename(targetDir),
-        template: "platform",
-        selectedModules: installedModules,
-        dbInstallPlan,
-      }),
-    };
+    const canonicalConfigFiles = await createManagedPlatformFiles({ slug: manifest.name || path.basename(targetDir), selectedModules: installedModules, dbInstallPlan });
 
     for (const relativePath of MANAGED_PLATFORM_FILES) {
       const targetPath = path.join(targetDir, relativePath);
@@ -588,7 +600,8 @@ export async function buildBrightwebAppUpdatePlan(argvOptions = {}, runtimeOptio
 
   if (argvOptions.refreshStarters) {
     for (const entry of starterFiles.filter((candidate) =>
-      candidate.status !== "current" && (candidate.status === "missing" || candidate.refreshable !== false))) {
+      !MANAGED_PLATFORM_FILES.includes(candidate.relativePath)
+      && candidate.status !== "current" && (candidate.status === "missing" || candidate.refreshable !== false))) {
       fileWrites.push({
         moduleKey: entry.moduleKey,
         relativePath: entry.relativePath,
@@ -598,6 +611,22 @@ export async function buildBrightwebAppUpdatePlan(argvOptions = {}, runtimeOptio
       });
     }
   }
+
+  // Legacy update may explicitly refresh drift, but never overrides ownership intent.
+  const liveScaffold = await scaffoldDrift(targetDir, appManifest?.scaffoldFiles);
+  const intentionalPaths = new Set(liveScaffold.intentional);
+  for (let index = fileWrites.length - 1; index >= 0; index -= 1) {
+    if (intentionalPaths.has(fileWrites[index].relativePath) || isAppOwnedSeed(fileWrites[index].relativePath)) fileWrites.splice(index, 1);
+  }
+
+  if (appManifest) await assertNoUntrackedScaffoldWrites({
+    targetDir,
+    scaffoldFiles: appManifest.scaffoldFiles,
+    moduleKeys: installedModules,
+    relativePaths: fileWrites.map((entry) => entry.relativePath),
+  });
+
+  await assertMutationTargets(targetDir, [".brightweb/app-manifest.json", ...fileWrites.map((write) => write.relativePath)]);
 
   const modulesConfigMismatch = template === "platform"
     ? await detectModulesConfigMismatch(targetDir, installedModules)
@@ -613,6 +642,7 @@ export async function buildBrightwebAppUpdatePlan(argvOptions = {}, runtimeOptio
     installedModules,
     installedBrightwebPackages: Array.from(installedBrightwebPackagesMap.keys()).sort(),
     targetVersions: canonicalVersions,
+    appManifest,
     packageUpdates: packageJsonUpdate.packageUpdates,
     configFilesToWrite: fileWrites.filter((entry) => entry.type === "config").map((entry) => entry.relativePath),
     starterFilesMissing: starterFilesMissing.map((entry) => entry.relativePath),
@@ -622,6 +652,105 @@ export async function buildBrightwebAppUpdatePlan(argvOptions = {}, runtimeOptio
     modulesConfigMismatch,
     fileWrites,
   };
+}
+
+// A successful install is reusable only while its inputs and installed shared
+// package versions still match. Failed/incomplete installs never create proof.
+export async function reconcileDependencyInstallation(plan, runtimeOptions = {}, appManifest = plan.appManifest) {
+  const installCwd = plan.dependencyMode === "workspace" && plan.workspaceRoot ? plan.workspaceRoot : plan.targetDir;
+  async function configurationHash(owner) {
+    const directories = new Set([installCwd, owner]);
+    const relativeTarget = path.relative(owner, plan.targetDir);
+    if (relativeTarget !== ".." && !relativeTarget.startsWith(`..${path.sep}`) && !path.isAbsolute(relativeTarget)) {
+      for (let directory = plan.targetDir; ; directory = path.dirname(directory)) {
+        directories.add(directory);
+        if (directory === owner) break;
+      }
+    } else directories.add(plan.targetDir);
+    const hashes = [];
+    for (const directory of directories) {
+      const patches = {};
+      for (const name of ["package.json", "pnpm-workspace.yaml", ".npmrc"]) {
+        const file = path.join(directory, name);
+        hashes.push(await pathExists(file) ? await hashFile(file) : null);
+        if (name === ".npmrc" || !(await pathExists(file))) continue;
+        const source = await fs.readFile(file, "utf8");
+        const config = name === "package.json" ? JSON.parse(source).pnpm : loadYaml(source);
+        Object.assign(patches, config?.patchedDependencies ?? {});
+      }
+      for (const patch of Object.values(patches)) {
+        const relativePath = typeof patch === "string" ? patch : patch?.path;
+        if (typeof relativePath !== "string") return null;
+        const file = path.resolve(directory, relativePath);
+        hashes.push(await pathExists(file) ? await hashFile(file) : null);
+      }
+    }
+    const environment = Object.entries(process.env)
+      .filter(([name]) => /^(npm_config_|pnpm_|NODE_ENV$|CI$)/i.test(name)).sort(([a], [b]) => a.localeCompare(b));
+    const userConfigs = new Set([path.join(homedir(), ".npmrc")]);
+    for (const [name, value] of environment) {
+      if (/(?:userconfig|globalconfig)$/i.test(name) && value) userConfigs.add(path.resolve(installCwd, value));
+    }
+    for (const file of userConfigs) hashes.push(await pathExists(file) ? await hashFile(file) : null);
+    // Configuration can contain credentials; retain only this aggregate digest.
+    return createHash("sha256").update(JSON.stringify({ hashes, environment })).digest("hex");
+  }
+  async function inputs() {
+    let directory = installCwd;
+    while (true) {
+      for (const name of ["pnpm-lock.yaml", "package-lock.json", "yarn.lock", "bun.lock", "bun.lockb"]) {
+        const lock = path.join(directory, name);
+        if (await pathExists(lock)) return {
+          packageManager: plan.packageManager,
+          appPackageHash: await hashFile(path.join(plan.targetDir, "package.json")),
+          installPackageHash: await pathExists(path.join(directory, "package.json")) ? await hashFile(path.join(directory, "package.json")) : null,
+          lockFile: name, lockHash: await hashFile(lock), configurationHash: await configurationHash(directory),
+        };
+      }
+      const parent = path.dirname(directory);
+      if (parent === directory) return { packageManager: plan.packageManager, appPackageHash: await hashFile(path.join(plan.targetDir, "package.json")), installPackageHash: null, lockFile: null, lockHash: null };
+      directory = parent;
+    }
+  }
+  async function installedPackagesMatch() {
+    const pkg = JSON.parse(await fs.readFile(path.join(plan.targetDir, "package.json"), "utf8"));
+    const requirements = Object.entries({ ...pkg.dependencies, ...pkg.devDependencies })
+      .filter(([name]) => BRIGHTWEB_PACKAGE_NAMES.includes(name));
+    if (!requirements.length) return false;
+    for (const [name, range] of requirements) {
+      let directory = plan.targetDir, installed = null;
+      while (true) {
+        const candidate = path.join(directory, "node_modules", ...name.split("/"), "package.json");
+        if (await pathExists(candidate)) {
+          try { installed = JSON.parse(await fs.readFile(candidate, "utf8")); }
+          catch (error) { if (error instanceof SyntaxError || error.code === "ENOENT") return false; throw error; }
+          break;
+        }
+        const parent = path.dirname(directory);
+        if (parent === directory) break;
+        directory = parent;
+      }
+      if (!installed || !semver.valid(installed.version) || (!String(range).startsWith("workspace:") && !semver.satisfies(installed.version, String(range)))) return false;
+    }
+    return true;
+  }
+  const before = await inputs();
+  if (before.lockHash && before.configurationHash && appManifest?.lastSuccessfulInstall
+    && JSON.stringify(appManifest.lastSuccessfulInstall) === JSON.stringify(before)
+    && await installedPackagesMatch()) {
+    output.write("Installed dependencies already match the verified installation; no installation required.\n");
+    return { installed: false };
+  }
+  if (appManifest?.lastSuccessfulInstall) {
+    delete appManifest.lastSuccessfulInstall;
+    await writeAppManifest(plan.targetDir, appManifest);
+  }
+  await (runtimeOptions.installRunner || runInstall)(plan.packageManager, installCwd, { updateLockfile: true });
+  if (appManifest) {
+    appManifest.lastSuccessfulInstall = await inputs();
+    await writeAppManifest(plan.targetDir, appManifest);
+  }
+  return { installed: true };
 }
 
 export async function updateBrightwebApp(argvOptions = {}, runtimeOptions = {}) {
@@ -648,11 +777,21 @@ export async function updateBrightwebApp(argvOptions = {}, runtimeOptions = {}) 
     await fs.writeFile(fileWrite.targetPath, fileWrite.content, "utf8");
   }
 
+  if (plan.appManifest) {
+    let scaffoldChanged = false;
+    for (const write of plan.fileWrites) {
+      const record = plan.appManifest.scaffoldFiles[write.relativePath];
+      if (!record) continue;
+      record.hash = await hashFile(write.targetPath);
+      record.status = "current";
+      scaffoldChanged = true;
+    }
+    if (scaffoldChanged) await writeAppManifest(plan.targetDir, plan.appManifest);
+  }
+
   const packageJsonChanged = plan.fileWrites.some((entry) => entry.relativePath === "package.json");
-  if (argvOptions.install && packageJsonChanged) {
-    const installRunner = runtimeOptions.installRunner || runInstall;
-    const installCwd = plan.dependencyMode === "workspace" && plan.workspaceRoot ? plan.workspaceRoot : plan.targetDir;
-    await installRunner(plan.packageManager, installCwd);
+  if (argvOptions.install) {
+    await reconcileDependencyInstallation(plan, runtimeOptions);
   }
 
   if (!argvOptions.install && packageJsonChanged) {

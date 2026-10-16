@@ -41,7 +41,7 @@ import {
   SheetContent,
   SheetFooter,
 } from "@brightweblabs/ui";
-import { SheetSelect, useShellAction } from "@brightweblabs/app-shell";
+import { useShellAction } from "@brightweblabs/app-shell";
 import { OrganizationCreateSheet, type OrganizationCreateSheetInput } from "@brightweblabs/module-orgs/ui";
 import type { ProjectMemberRole } from "../contracts";
 import { useProjectsUiClient, useProjectsUiDictionary } from "./context";
