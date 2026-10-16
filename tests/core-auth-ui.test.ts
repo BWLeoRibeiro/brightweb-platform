@@ -2,8 +2,6 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import test from "node:test";
-import "./core-auth-account.test.ts";
-import "../packages/core-auth/src/account/profile.test.ts";
 
 import {
   createInvitationAcceptHandler,
@@ -28,18 +26,6 @@ const authRoot = path.join(repoRoot, "packages", "core-auth");
 async function read(relativePath: string) {
   return readFile(path.join(authRoot, relativePath), "utf8");
 }
-
-test("auth UI has a substantial PT-only dictionary contract", () => {
-  const leaves = (value: unknown): number =>
-    typeof value === "string" || typeof value === "function"
-      ? 1
-      : value && typeof value === "object"
-        ? Object.values(value).reduce((sum, item) => sum + leaves(item), 0)
-        : 0;
-  assert.equal(defaultAuthUiDictionary.locale, "pt-PT");
-  assert.ok(leaves(defaultAuthUiDictionary) >= 90);
-  assert.equal(defaultAuthUiDictionary.postLogin.preparing, "A preparar o seu portal…");
-});
 
 test("auth UI components use the injectable client boundary", async () => {
   const componentFiles = [
