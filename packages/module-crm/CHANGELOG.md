@@ -1,5 +1,13 @@
 # @brightweblabs/module-crm
 
+## 0.18.6
+
+### Patch Changes
+
+- a0b27d1: Match CRM contacts by moving the organization workspace Edit action to the full-width sheet footer and exposing organization deletion in the edit sheet. Connect deletion in the workspace and detail page, remove deleted organizations from the list, and show API rejection errors in the confirmation dialog.
+- Updated dependencies [75841f5]
+  - @brightweblabs/module-orgs@0.7.5
+
 ## 0.18.5
 
 ### Patch Changes

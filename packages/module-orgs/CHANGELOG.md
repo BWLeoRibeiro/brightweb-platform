@@ -1,5 +1,11 @@
 # @brightweblabs/module-orgs
 
+## 0.7.5
+
+### Patch Changes
+
+- 75841f5: Protect profile identity across browser insert, update and upsert; resolve grants from current confirmed Auth identity and recheck it under transaction locks. Require confirmed first-admin setup and fail closed on conflicting identities. Apply Core/Admin/Orgs identity migrations atomically with checked prerequisites, and refuse invitation operations until their required SQL is installed.
+
 ## 0.7.4
 
 ### Patch Changes
