@@ -15,6 +15,7 @@ type ProjectDetailCreateSheetsMountProps = {
   milestones?: MilestoneOption[];
   members?: MemberOption[];
   canCreateMilestonesAndTasks?: boolean;
+  canCreateTasks?: boolean;
   canCreateLinks?: boolean;
   canManageClientContent?: boolean;
 };
@@ -84,6 +85,7 @@ export function ProjectDetailCreateSheetsMount({
   milestones: milestoneProps = [],
   members: memberProps = [],
   canCreateMilestonesAndTasks = true,
+  canCreateTasks = canCreateMilestonesAndTasks,
   canCreateLinks = true,
   canManageClientContent = false,
 }: ProjectDetailCreateSheetsMountProps) {
@@ -100,7 +102,7 @@ export function ProjectDetailCreateSheetsMount({
   return (
     <>
       {canCreateMilestonesAndTasks ? <ProjectMilestoneCreateSheetLazy projectId={projectId} canManageClientContent={canManageClientContent} /> : null}
-      {canCreateMilestonesAndTasks ? (
+      {canCreateTasks ? (
         <ProjectTaskCreateSheetLazy projectId={projectId} milestones={milestoneOptions} members={memberOptions} />
       ) : null}
       {canCreateLinks ? <ProjectLinkCreateSheetLazy projectId={projectId} canManageClientContent={canManageClientContent} /> : null}

@@ -40,13 +40,13 @@ pnpm db:new client:acme bespoke_reporting_table
 
 | Client type | Current rule |
 | --- | --- |
-| New client | Provision from the BrightWeb module structure: apply Core, then enabled shared modules in dependency order, then client-only migrations if needed. |
+| New client | Resolve the selected modules, merge their migrations by authored timestamp (module dependency order breaks ties), then apply client-only migrations if needed. |
 | Existing deployed stack | Treat the live schema as authoritative and apply new BrightWeb-owned changes as forward migrations only. |
 
 ## Practical flow
 
 1. Choose the client and confirm its enabled modules.
-2. Resolve apply order from the module registry and stack file.
+2. Resolve module dependencies from the registry and stack file; order fresh shared SQL by authored timestamp.
 3. Use the generated project's Supabase files as the install baseline.
 4. Apply new changes as forward migrations only.
 5. Keep client-only migrations rare and isolated.

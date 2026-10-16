@@ -22,6 +22,7 @@ import { pathToFileURL } from "node:url";
 import { createBrightwebClientApp } from "../../packages/create-bw-app/src/generator.mjs";
 import { SELECTABLE_MODULES } from "../../packages/create-bw-app/src/constants.mjs";
 import { setupBrightwebFeature } from "../../packages/create-bw-app/src/setup.mjs";
+import { runCriticalWorkflowsBrowser, runLoginAndTaskBrowser, runWorkflowBrowser, runInvitationBrowser } from "./critical-workflows-browser.mjs";
 import { runCssLayerBrowser } from "./css-layer-browser.mjs";
 import { startSupabaseStub } from "./supabase-stub.mjs";
 import { CRM_TOTAL_CONTACTS, SECOND_PROFILE_ID, USER_EMAIL, USER_PASSWORD } from "./fixtures.mjs";
@@ -141,7 +142,8 @@ async function waitForServer(baseUrl, timeoutMs = 60_000) {
   let lastError = null;
   while (Date.now() < deadline) {
     try {
-      const response = await fetch(`${baseUrl}/login`, { redirect: "manual" });
+      const response = await fetch(`${baseUrl}/login`, { redirect: "manual", signal: AbortSignal.timeout(2000) });
+      await response.arrayBuffer();
       if (response.status < 500) return;
       lastError = new Error(`GET /login returned ${response.status}`);
     } catch (error) {
@@ -156,14 +158,16 @@ async function main() {
   const overallStart = performance.now();
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), "bw-generated-app-smoke-"));
   const fixtureDir = path.join(tempRoot, "smoke-platform");
+  const realBackend = process.argv.includes("--real-backend");
+  let backend = null;
   let stub = null;
   let appProcess = null;
   let serverOutput = "";
 
   try {
     // 1. Supabase stub -----------------------------------------------------
-    stub = await startSupabaseStub({ log: verbose ? (line) => console.log(`  [stub] ${line}`) : () => {} });
-    console.log(`[smoke] Supabase stub listening on ${stub.url}`);
+    if (!realBackend) stub = await startSupabaseStub({ log: verbose ? (line) => console.log(`  [stub] ${line}`) : () => {} });
+    if (stub) console.log(`[smoke] Supabase stub listening on ${backend?.url ?? stub.url}`);
 
     // 2. Generate the platform fixture (same shape as
     //    scripts/check-create-bw-app-templates.mjs: published dependency mode,
@@ -216,15 +220,21 @@ async function main() {
     // 3. Runtime env pointed at the stub (NEXT_PUBLIC_* values are inlined at
     //    build time, so this must exist before `next build`). -----------------
     const appPort = await getFreePort();
-    const appUrl = `http://127.0.0.1:${appPort}`;
+    // NextURL canonicalizes loopback IPs to localhost; the browser must use
+    // the same origin so callback redirects retain its session cookies.
+    const appUrl = `http://localhost:${appPort}`;
+    if (realBackend) {
+      const { startConsumerBackend } = await import("./consumer-backend.mjs");
+      backend = await timed("real Supabase backend", () => startConsumerBackend({ migrationsDirectory: path.join(fixtureDir, "supabase/migrations"), appUrl }));
+    }
     await fs.writeFile(
       path.join(fixtureDir, ".env.local"),
       [
         `NEXT_PUBLIC_APP_URL=${appUrl}`,
         `PUBLIC_APP_URL=${appUrl}`,
-        `NEXT_PUBLIC_SUPABASE_URL=${stub.url}`,
-        "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY=sb_publishable_smoke_test_key",
-        "SUPABASE_SECRET_DEFAULT_KEY=sb_secret_smoke_test_key",
+        `NEXT_PUBLIC_SUPABASE_URL=${backend?.url ?? stub.url}`,
+        `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY=${backend?.publishableKey ?? "sb_publishable_smoke_test_key"}`,
+        `SUPABASE_SECRET_DEFAULT_KEY=${backend?.secretKey ?? "sb_secret_smoke_test_key"}`,
         "SUPABASE_KEEPALIVE_SECRET=smoke-keepalive-secret",
         "RESEND_API_KEY=re_smoke_test_key",
         "RESEND_WEBHOOK_SECRET=whsec_smoke_test",
@@ -250,7 +260,7 @@ async function main() {
     await timed("next build", () =>
       runCommand("next build", process.execPath, [nextCli, "build", "--webpack"], { cwd: fixtureDir }));
 
-    appProcess = spawn(process.execPath, [nextCli, "start", "-p", String(appPort)], {
+    appProcess = spawn(process.execPath, [nextCli, "start", "--hostname", "127.0.0.1", "-p", String(appPort)], {
       cwd: fixtureDir,
       stdio: ["ignore", "pipe", "pipe"],
       env: { ...process.env, NEXT_TELEMETRY_DISABLED: "1" },
@@ -265,6 +275,21 @@ async function main() {
     appProcess.stderr.on("data", captureServer);
 
     await timed("next start ready", () => waitForServer(appUrl));
+
+    if (backend) {
+      const user = await backend.createUser({ email: "browser-admin@example.invalid", password: "Browser-test-only-2026!" });
+      const project = await backend.createProject({ profileId: user.profileId });
+      const cookies = await timed("real login and persisted task", () => runLoginAndTaskBrowser({ appUrl, additionalOrigins: [backend.url], credentials: user, ...project }));
+      await timed("real persisted campaign and rejected-save recovery", () => runCriticalWorkflowsBrowser({ appUrl, additionalOrigins: [backend.url], cookies }));
+      await timed("real workflow persistence", () => runWorkflowBrowser({ appUrl, additionalOrigins: [backend.url], topicId: backend.topicId, cookies }));
+      const invitedUser = await backend.createUser({ email: "browser-invited@example.invalid", password: "Browser-test-only-2026!", role: "client" });
+      const delivery = await backend.sendMagicLink({ email: invitedUser.email });
+      assert(delivery.delivered === true, "Auth mail must reach the local synthetic sink");
+      const invitation = await backend.createInvitation({ email: invitedUser.email, inviterProfileId: user.profileId });
+      await runInvitationBrowser({ appUrl, additionalOrigins: [backend.url], cookies, invitation, invitedUser });
+      console.log("[smoke] PASS real Supabase consumer: production build, browser login, persisted task and campaign journeys");
+      return;
+    }
 
     // 5. Unauthenticated contract ------------------------------------------
     console.log("[smoke] unauthenticated contract");
@@ -351,7 +376,27 @@ async function main() {
       assert(!html.includes("Application error"), `authenticated ${pathname} HTML has no client-side crash banner`);
     }
 
-    await timed("rendered CSS regression", () => runCssLayerBrowser({ appUrl, cookies: jar.getAll() }));
+    // Realtime delivery is outside this HTTP fixture's scope. A deterministic
+    // Phoenix channel acknowledges subscriptions so unsupported websocket
+    // handshakes cannot obscure genuine console errors. No change events are
+    // generated; realtime semantics remain covered by dedicated tests.
+    const setupContext = async context => {
+      await context.routeWebSocket(`${stub.url.replace("http:", "ws:")}/realtime/v1/websocket*`, socket => {
+        socket.onMessage(message => {
+          const packet = JSON.parse(String(message));
+          const reply = { status: "ok", response: { postgres_changes: [] } };
+          socket.send(JSON.stringify(Array.isArray(packet)
+            ? [packet[0], packet[1], packet[2], "phx_reply", reply]
+            : { topic: packet.topic, event: "phx_reply", ref: packet.ref, payload: reply }));
+        });
+      });
+    };
+    await timed("rendered CSS regression", () => runCssLayerBrowser({ appUrl, cookies: jar.getAll(), setupContext }));
+
+    await timed("critical browser workflows", () => runCriticalWorkflowsBrowser({ appUrl, cookies: jar.getAll(), setupContext }));
+
+    await timed("task browser workflow", () => runLoginAndTaskBrowser({ appUrl, cookies: jar.getAll(), setupContext,
+      projectId: "44444444-4444-4444-8444-444444444401", taskId: "55555555-5555-4555-8555-555555555501", taskTitle: "Rever wireframes" }));
 
     // 8. Dashboard API contract via the REAL app-shell parsers --------------
     console.log("[smoke] dashboard API contract");
@@ -376,7 +421,7 @@ async function main() {
 
     const projectDashboardData = parsedByPath["/api/dashboard/projects"];
     assert(
-      projectDashboardData.projects.milestones.every((milestone) => milestone.status !== "achieved"),
+      projectDashboardData.projects.milestones.length === 1 && projectDashboardData.projects.milestones[0].id === "66666666-6666-4666-8666-666666666601" && projectDashboardData.projects.milestones[0].status === "pending",
       "projects dashboard excludes achieved milestones from the upcoming metas contract",
     );
 
@@ -455,13 +500,9 @@ async function main() {
     const keepalivePayload = await keepalive.json();
     assert(keepalive.status === 200 && keepalivePayload.metrics.profiles === 2, "authorized keepalive reaches the database count query");
 
+    assert(stub.stats.unhandled.length === 0, `all backend requests match the fixture contract: ${[...new Set(stub.stats.unhandled)].join(", ")}`);
     const totalSeconds = (performance.now() - overallStart) / 1_000;
     console.log(`\n[smoke] PASS - ${assertionCount} assertions in ${totalSeconds.toFixed(1)}s`);
-    if (stub.stats.unhandled.length > 0) {
-      const unique = [...new Set(stub.stats.unhandled)];
-      console.log(`[smoke] note: ${unique.length} unhandled stub route(s) were tolerated:`);
-      for (const route of unique) console.log(`  - ${route}`);
-    }
   } catch (error) {
     console.error("\n[smoke] FAIL");
     console.error(error);
@@ -490,6 +531,7 @@ async function main() {
       });
     }
     if (stub) await stub.close();
+    if (backend) await backend.stop();
     await fs.rm(tempRoot, { recursive: true, force: true });
   }
 }

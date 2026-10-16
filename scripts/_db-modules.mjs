@@ -1,3 +1,4 @@
+import { orderFreshMigrationSources } from "../packages/create-bw-app/src/migration-order.mjs";
 import fs from "node:fs";
 import path from "node:path";
 
@@ -115,6 +116,9 @@ export function collectMaterializedFiles(clientSlug) {
 
   return {
     ...plan,
-    files,
+    files: [
+      ...orderFreshMigrationSources(files.filter(file => file.step.type === "module")),
+      ...files.filter(file => file.step.type === "client"),
+    ],
   };
 }

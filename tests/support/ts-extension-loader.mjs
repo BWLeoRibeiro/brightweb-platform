@@ -26,6 +26,13 @@ export async function load(url, context, defaultLoad) {
 }
 
 export async function resolve(specifier, context, defaultResolve) {
+  // Match Next's default-export interop when rendering its CommonJS UI in Node.
+  if (specifier === "next/image" || specifier === "next/link") {
+    const resolved = await defaultResolve(`${specifier}.js`, context, defaultResolve);
+    const source = `export * from ${JSON.stringify(resolved.url)}; import component from ${JSON.stringify(resolved.url)}; export default component.default ?? component;`;
+    return { shortCircuit: true, url: `data:text/javascript,${encodeURIComponent(source)}` };
+  }
+
   if (specifier === "server-only") {
     return {
       shortCircuit: true,

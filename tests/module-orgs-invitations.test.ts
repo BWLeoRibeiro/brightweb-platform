@@ -43,12 +43,18 @@ function directMemberClient(options: {
     from(table: string) {
       // No mutation methods: all direct-member side effects belong to the RPC.
       if (table === "organization_members") return { select: () => queryResult({ data: options.members ?? [], error: null }) };
-      if (table === "profiles") return { select: () => queryResult({ data: options.profiles ?? options.members?.map((member) => ({ id: member.profile_id, email: (member.profile as { email: string }).email })) ?? [], error: null }) };
+      if (table === "profiles") assert.fail("Editable profile email cannot resolve a membership identity");
       if (table === "organization_invitations") return { select: () => queryResult({ data: [], error: null }) };
       if (table === "organizations") return { select: () => queryResult({ data: { name: "Synthetic" }, error: null }) };
       throw new Error(`unexpected table ${table}`);
     },
     async rpc(name: string, args: Record<string, unknown>) {
+      if (name === "assert_orgs_auth_identity_v1") return { data: null, error: null };
+      if (name === "resolve_auth_identity") {
+        const profiles = options.profiles ?? options.members?.map((member) => ({ id: member.profile_id, email: (member.profile as { email: string }).email })) ?? [];
+        const profile = profiles.find((profile) => profile.email === args.p_email);
+        return { data: profile ? { userId: `auth-${profile.id}`, profileId: profile.id, email: args.p_email, confirmed: true } : null, error: null };
+      }
       assert.equal(name, "assign_organization_member_atomic");
       return options.rpc(args);
     },
@@ -80,6 +86,7 @@ for (const explicitDatabaseIntegration of [false, true]) test(`custom contact ca
 test("email delivery failure is a per-person outcome and removes only the failed new invitation", async () => {
   let deletedInvitation = false;
   const client = {
+    rpc: async () => ({ data: null, error: null }),
     from(table: string) {
       if (table === "organization_members" || table === "profiles") {
         return { select: () => queryResult({ data: [], error: null }) };
@@ -121,6 +128,7 @@ test("email delivery failure is a per-person outcome and removes only the failed
 
 test("an expired pending row is replaced with a fresh invitation instead of reported as a duplicate", async () => {
   const client = {
+    rpc: async () => ({ data: null, error: null }),
     from(table: string) {
       if (table === "organization_members" || table === "profiles") {
         return { select: () => queryResult({ data: [], error: null }) };
@@ -227,6 +235,7 @@ test("resend keeps a pending invitation when email delivery fails", async () => 
     organizations: { name: "Acme" },
   };
   const client = {
+    rpc: async () => ({ data: null, error: null }),
     from(table: string) {
       assert.equal(table, "organization_invitations");
       return {
@@ -271,6 +280,7 @@ test("a failed final invitation refresh does not discard completed per-person ou
 
 test("failed email cleanup retains invitation identity and accurate retry guidance", async () => {
   const client = {
+    rpc: async () => ({ data: null, error: null }),
     from(table: string) {
       if (table === "organization_members" || table === "profiles") return { select: () => queryResult({ data: [], error: null }) };
       if (table === "organizations") return { select: () => queryResult({ data: { name: "Synthetic" }, error: null }) };
@@ -286,4 +296,59 @@ test("failed email cleanup retains invitation identity and accurate retry guidan
   assert.equal(result.outcomes[0]?.invitationId, "invite-retained");
   assert.match(result.outcomes[0]?.message ?? "", /mantido/);
   assert.doesNotMatch(result.outcomes[0]?.message ?? "", /não foi guardado/);
+});
+
+for (const identity of [null, { userId: "unconfirmed-linked", email: "person@example.invalid", confirmed: false, profileId: "unconfirmed-profile" }, { userId: "unconfirmed-auth", email: "person@example.invalid", confirmed: false, profileId: null }, { userId: "legacy-auth", email: "person@example.invalid", confirmed: true, profileId: null }]) test(`an identity without a confirmed linked profile retains the pending invitation flow: ${JSON.stringify(identity)}`, async () => {
+  let sent = 0;
+  const client = {
+    async rpc(name: string, args: Record<string, unknown>) {
+      if (name === "assert_orgs_auth_identity_v1") return { data: null, error: null };
+      assert.equal(name, "resolve_auth_identity");
+      assert.deepEqual(args, { p_email: "person@example.invalid" });
+      return { data: identity, error: null };
+    },
+    from(table: string) {
+      if (table === "profiles") assert.fail("legacy or editable profile email must not grant access");
+      if (table === "organizations") return { select: () => queryResult({ data: { name: "Synthetic" }, error: null }) };
+      assert.equal(table, "organization_invitations");
+      return {
+        select(columns: string) {
+          return queryResult({ data: columns === "id, invited_email, role, expires_at"
+            ? [{ id: "pending-1", invited_email: "person@example.invalid", role: "member", expires_at: "2099-01-01" }]
+            : [], error: null });
+        },
+        upsert: () => queryResult({ data: null, error: null }),
+      };
+    },
+  };
+  const result = await inviteOrganizationMembers(client as never, "org-1", [{ email: "person@example.invalid", role: "member" }], "actor-1", {
+    sendInviteEmail: async () => { sent += 1; return true; },
+  });
+  assert.equal(result.outcomes[0]?.status, "pending_invitation");
+  assert.equal(result.summary.directAssignments, 0);
+  assert.equal(sent, 1);
+});
+
+test("identity resolution errors never become authoritative absence or pending invitation writes", async () => {
+  const client = {
+    rpc: async () => ({ data: null, error: { message: "synthetic identity resolution failure" } }),
+    from: () => ({ select: () => queryResult({ data: [], error: null }) }),
+  };
+  await assert.rejects(inviteOrganizationMembers(client as never, "org-1", [{ email: "person@example.invalid", role: "member" }], "actor-1"), /identity resolution failure/);
+});
+
+
+test("identity changes after resolution remain a reconciliation failure without invitation fallback", async () => {
+  const client = directMemberClient({
+    profiles: [{ id: "profile-1", email: "person@example.com" }],
+    rpc: async () => ({ data: null, error: { code: "BW002", message: "identity changed before transaction" } }),
+  });
+  const result = await inviteOrganizationMembers(client as never, "org-1", [{ email: "person@example.com", role: "member" }], "actor-1", {
+    sendInviteEmail: async () => assert.fail("a transaction identity failure must not fall back to invitation delivery"),
+  });
+  assert.equal(result.outcomes[0]?.status, "api_failed");
+  assert.equal(result.outcomes[0]?.failureKind, "membership");
+  assert.equal(result.outcomes[0]?.invitationId, undefined);
+  assert.match(result.outcomes[0]?.message ?? "", /reconciliação/);
+  assert.equal(result.summary.directAssignments, 0);
 });

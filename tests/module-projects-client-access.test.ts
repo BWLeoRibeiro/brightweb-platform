@@ -657,11 +657,11 @@ test("a collaborator may update state only on a task assigned to them", async ()
   assert.equal(updates.length, 1);
 });
 
-test("a collaborator cannot create project tasks", async () => {
+test("an observer cannot create project tasks", async () => {
   let created = false;
   const response = await createProjectsTasksPostHandler({
     getAccess: async () => ({ ok: true as const, supabase: {}, profileId: "staff-1", role: "staff" }),
-    getProjectAccess: async () => ({ projectRole: "contributor", permissions: {}, viewerProfileId: "staff-1" }),
+    getProjectAccess: async () => ({ projectRole: "observer", permissions: {}, viewerProfileId: "staff-1" }),
     createTask: async () => { created = true; },
   } as never)(new Request("https://example.test/api/projects/project-1/tasks", {
     method: "POST",

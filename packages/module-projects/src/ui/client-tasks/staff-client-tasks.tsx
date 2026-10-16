@@ -1,0 +1,139 @@
+"use client";
+import { clientTasksDictionary as copy } from "./dictionary";
+
+import { useEffect, useId, useState, type FormEvent } from "react";
+import { useRouter } from "next/navigation";
+import { Button, Checkbox, Input, Sheet, SheetContent, StyledSelect } from "@brightweblabs/ui";
+import { ListChecks } from "lucide-react";
+import type { ClientTaskConfigurationInput, ClientTaskWorkbench, StaffClientTask } from "../../client-tasks-contracts";
+import { useProjectsUiClient } from "../context";
+import { useProjectDetailData } from "../project-detail-data-provider";
+import { AppSheetHeader } from "../shared/app-sheet";
+import { sheetAccentTextareaClassName, sheetFieldLabelClassName } from "../shared/sheet-section";
+import { sheetBodyClassName, sheetShellClassName } from "../constants";
+import { ClientTaskResourceMessage, ClientTaskState } from "./task-state";
+import { useClientTaskResource } from "./use-client-task-resource";
+
+const OPEN_CLIENT_TASK_EVENT = "projects:open-client-task";
+export function openClientTaskPanel(projectId: string, taskId: string) {
+  window.dispatchEvent(new CustomEvent(OPEN_CLIENT_TASK_EVENT, { detail: { projectId, taskId } }));
+}
+
+type Capabilities = ClientTaskWorkbench["capabilities"];
+type Action = "create" | "configure" | "publish" | "withdraw" | "return" | "accept";
+type Mutate = (task: StaffClientTask | null, action: Action, input: object) => Promise<boolean>;
+
+function ClientTaskConfiguration({ task, organizations, milestones, busy, save }: {
+  task: StaffClientTask | null;
+  organizations: ClientTaskWorkbench["organizations"];
+  milestones: Array<{ id: string; title: string; visibility?: string }>;
+  busy: boolean;
+  save: (input: ClientTaskConfigurationInput) => Promise<void>;
+}) {
+  const id = useId();
+  const [title, setTitle] = useState(task?.clientTitle ?? "");
+  const [instructions, setInstructions] = useState(task?.clientInstructions ?? "");
+  const [organizationId, setOrganizationId] = useState(task?.organizationId ?? organizations[0]?.id ?? "");
+  const [audienceMode, setAudienceMode] = useState<"all_eligible" | "selected">(task?.audienceMode ?? "all_eligible");
+  const [selected, setSelected] = useState(task?.selectedProfileIds ?? []);
+  const [responsible, setResponsible] = useState(task?.responsibleProfileId ?? "");
+  const [milestoneId, setMilestoneId] = useState(task?.milestone?.id ?? "");
+  const [dueDate, setDueDate] = useState(task?.dueDate ?? "");
+  const eligibleClients = organizations.find((organization) => organization.id === organizationId)?.eligibleClients ?? [];
+  const eligibleIds = new Set(eligibleClients.map((client) => client.profileId));
+  const validSelection = selected.filter((profileId) => eligibleIds.has(profileId));
+  const responsibleOptions = audienceMode === "selected" ? eligibleClients.filter((client) => validSelection.includes(client.profileId)) : eligibleClients;
+  const submit = (event: FormEvent) => {
+    event.preventDefault();
+    if (busy || !title.trim() || !instructions.trim() || !organizationId || (audienceMode === "selected" && !validSelection.length)) return;
+    void save({
+      clientTitle: title.trim(), clientInstructions: instructions.trim(), organizationId, audienceMode,
+      selectedProfileIds: audienceMode === "selected" ? validSelection : [],
+      responsibleProfileId: responsibleOptions.some((client) => client.profileId === responsible) ? responsible : null,
+      milestoneId: milestoneId || null, dueDate: dueDate || null,
+    });
+  };
+  return <form onSubmit={submit} className="space-y-4" data-testid="client-task-configuration">
+    <fieldset disabled={busy} className="space-y-4">
+      <div><label className={sheetFieldLabelClassName} htmlFor={`${id}-title`}>{copy.title}</label><Input id={`${id}-title`} className="mt-1.5" required maxLength={240} value={title} onChange={(event) => setTitle(event.target.value)} /></div>
+      <div><label className={sheetFieldLabelClassName} htmlFor={`${id}-instructions`}>{copy.instructions}</label><textarea id={`${id}-instructions`} required rows={5} maxLength={20000} className={`${sheetAccentTextareaClassName} mt-1.5 w-full`} value={instructions} onChange={(event) => setInstructions(event.target.value)} /><p className="mt-1 text-meta text-muted-foreground">{copy.instructionsHint}</p></div>
+      <div><label className={sheetFieldLabelClassName} htmlFor={`${id}-organization`}>{copy.organizationRecipient}</label><StyledSelect id={`${id}-organization`} className="mt-1.5 w-full" required value={organizationId} onChange={(event) => { setOrganizationId(event.target.value); setSelected([]); setResponsible(""); }}><option value="">{copy.selectOrganization}</option>{organizations.map((organization) => <option key={organization.id} value={organization.id}>{organization.name}</option>)}</StyledSelect></div>
+      <div><label className={sheetFieldLabelClassName} htmlFor={`${id}-audience`}>{copy.audience}</label><StyledSelect id={`${id}-audience`} className="mt-1.5 w-full" value={audienceMode} onChange={(event) => { setAudienceMode(event.target.value as "all_eligible" | "selected"); setResponsible(""); }}><option value="all_eligible">{copy.allEligibleOption}</option><option value="selected">{copy.selectedPeople}</option></StyledSelect><p className="mt-1 text-meta text-muted-foreground">{copy.audienceHint}</p></div>
+      {audienceMode === "selected" ? <fieldset className="space-y-2 rounded-xl border border-border p-3"><legend className="px-1 text-label font-semibold">{copy.audiencePeople}</legend>{eligibleClients.length === 0 ? <p className="text-meta text-muted-foreground">{copy.noEligibleClients}</p> : eligibleClients.map((client) => <label key={client.profileId} className="flex min-h-11 items-center gap-3 text-body"><Checkbox checked={validSelection.includes(client.profileId)} onChange={(event) => setSelected((current) => event.target.checked ? [...current, client.profileId] : current.filter((profileId) => profileId !== client.profileId))} />{client.label}</label>)}</fieldset> : null}
+      <div><label className={sheetFieldLabelClassName} htmlFor={`${id}-responsible`}>{copy.responsibleOptional}</label><StyledSelect id={`${id}-responsible`} className="mt-1.5 w-full" value={responsibleOptions.some((client) => client.profileId === responsible) ? responsible : ""} onChange={(event) => setResponsible(event.target.value)}><option value="">{copy.noResponsible}</option>{responsibleOptions.map((client) => <option key={client.profileId} value={client.profileId}>{client.label}</option>)}</StyledSelect><p className="mt-1 text-meta text-muted-foreground">{copy.responsibleHint}</p></div>
+      <div><label className={sheetFieldLabelClassName} htmlFor={`${id}-milestone`}>{copy.milestoneOptional}</label><StyledSelect id={`${id}-milestone`} className="mt-1.5 w-full" value={milestoneId} onChange={(event) => setMilestoneId(event.target.value)}><option value="">{copy.noMilestone}</option>{milestones.filter((milestone) => milestone.visibility === "client").map((milestone) => <option key={milestone.id} value={milestone.id}>{milestone.title}</option>)}</StyledSelect></div>
+      <div><label className={sheetFieldLabelClassName} htmlFor={`${id}-due`}>{copy.dueOptional}</label><Input id={`${id}-due`} className="mt-1.5" type="date" value={dueDate} onChange={(event) => setDueDate(event.target.value)} /></div>
+      {task?.publication === "published" ? <p role="note" className="rounded-xl border border-border bg-muted/30 p-3 text-body">{copy.configurePublishedWarning}</p> : <p className="text-meta text-muted-foreground">{copy.draftHint}</p>}
+      <Button type="submit" disabled={busy || !title.trim() || !instructions.trim() || !organizationId || (audienceMode === "selected" && validSelection.length === 0)}>{busy ? copy.saving : task?.publication === "published" ? copy.saveAndWithdraw : copy.saveDraft}</Button>
+    </fieldset>
+  </form>;
+}
+
+function StaffTaskReview({ task, busy, mutate }: { task: StaffClientTask; busy: boolean; mutate: Mutate }) {
+  const id = useId();
+  const [feedback, setFeedback] = useState("");
+  return <section className="space-y-3 rounded-xl border border-border p-4" data-testid="client-task-review">
+    <h3 className="text-title font-semibold">{copy.reviewVersionPrefix}{task.submissionSequence}</h3>
+    <p className="text-meta text-muted-foreground">{copy.publicationPrefix}{task.publicationGeneration}{copy.exactReviewHint}</p>
+    <p className="whitespace-pre-wrap text-body">{task.response || copy.noWrittenResponse}</p>
+    <label htmlFor={id} className={sheetFieldLabelClassName}>{copy.feedbackRequired}</label>
+    <textarea id={id} value={feedback} rows={3} maxLength={20000} disabled={busy} className={`${sheetAccentTextareaClassName} w-full`} onChange={(event) => setFeedback(event.target.value)} />
+    <div className="flex flex-wrap gap-2"><Button type="button" variant="outline" disabled={busy || !feedback.trim()} onClick={() => void mutate(task, "return", { submissionSequence: task.submissionSequence, feedback: feedback.trim() })}>{copy.returnForCorrection}</Button><Button type="button" disabled={busy} onClick={() => void mutate(task, "accept", { submissionSequence: task.submissionSequence, feedback: feedback.trim() })}>{copy.accept}</Button></div>
+  </section>;
+}
+
+export function StaffClientTasks({ projectId, capabilities }: { projectId: string; capabilities: Capabilities }) {
+  const client = useProjectsUiClient();
+  const router = useRouter();
+  const { milestones } = useProjectDetailData();
+  const url = `/api/projects/${encodeURIComponent(projectId)}/client-tasks`;
+  const resource = useClientTaskResource<ClientTaskWorkbench>(url, client.requestRaw);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [creating, setCreating] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const task = resource.data?.tasks.find((item) => item.id === selectedId) ?? null;
+  const allowed = {
+    canCreateTasks: capabilities.canCreateTasks && resource.data?.capabilities.canCreateTasks,
+    canShareClientTasks: capabilities.canShareClientTasks && resource.data?.capabilities.canShareClientTasks,
+    canReviewClientTasks: capabilities.canReviewClientTasks && resource.data?.capabilities.canReviewClientTasks,
+  };
+  useEffect(() => {
+    const onOpen = (event: Event) => {
+      const detail = (event as CustomEvent<{ projectId: string; taskId: string }>).detail;
+      if (detail?.projectId !== projectId) return;
+      setSelectedId(detail.taskId); setCreating(false); setEditing(false);
+      void resource.refresh();
+    };
+    window.addEventListener(OPEN_CLIENT_TASK_EVENT, onOpen);
+    return () => window.removeEventListener(OPEN_CLIENT_TASK_EVENT, onOpen);
+  }, [projectId, resource.refresh]);
+  const mutate: Mutate = async (current, action, input) => {
+    const succeeded = await resource.mutate(current ? `${url}/${encodeURIComponent(current.id)}` : url, current ? "PATCH" : "POST", { expectedRevision: current?.revision ?? null, action, input });
+    if (succeeded) { setCreating(false); setEditing(false); router.refresh(); }
+    return succeeded;
+  };
+  const close = () => { setSelectedId(null); setCreating(false); setEditing(false); };
+  return <section data-testid="staff-client-tasks" className="space-y-4 rounded-[var(--radius-card)] border border-border bg-card p-5 sm:p-6" aria-labelledby="staff-client-tasks-title">
+    <div className="flex flex-wrap items-center justify-between gap-3"><div><h2 id="staff-client-tasks-title" className="text-title font-semibold">{copy.staffTitle}</h2><p className="mt-1 text-meta text-muted-foreground">{copy.staffDescription}</p></div><div className="flex flex-wrap gap-2"><Button type="button" variant="outline" disabled={resource.busy || resource.state === "loading"} onClick={() => void resource.refresh()}>{copy.staffRefresh}</Button>{allowed.canCreateTasks ? <Button type="button" onClick={() => { setSelectedId(null); setCreating(true); setEditing(false); }}>{copy.createClientTask}</Button> : null}</div></div>
+    {resource.message ? <p role="alert" className="text-body text-muted-foreground">{resource.message}</p> : null}
+    <ClientTaskResourceMessage state={resource.state} refresh={resource.refresh} />
+    {resource.data?.tasks.length === 0 ? <p className="text-body text-muted-foreground">{copy.staffEmpty}</p> : null}
+    {resource.data ? <ul className="divide-y divide-border">{resource.data.tasks.map((item) => <li key={item.id}><button type="button" className="flex min-h-16 w-full flex-wrap items-center justify-between gap-3 py-3 text-left" onClick={() => { setSelectedId(item.id); setCreating(false); setEditing(false); }} data-staff-client-task-id={item.id}><span className="min-w-0"><span className="block text-body font-semibold">{item.clientTitle || copy.untitled}</span><span className="text-meta text-muted-foreground">{copy.clientPrefix}{item.publication === "draft" ? copy.draft : item.publication === "published" ? copy.published : copy.withdrawn}</span></span><ClientTaskState task={item} /></button></li>)}</ul> : null}
+    <Sheet open={Boolean(resource.data && (creating || task))} onOpenChange={(open) => { if (!open && !resource.busy) close(); }}>
+      <SheetContent className={sheetShellClassName}>
+        <AppSheetHeader icon={ListChecks} editing={creating || editing} eyebrow={copy.taskEyebrow} title={creating ? copy.createClientTask : task?.clientTitle || copy.taskEyebrow} description={copy.sheetDescription} />
+        <div className={`${sheetBodyClassName} space-y-5`}>
+          {resource.message ? <p role="alert" className="text-body">{resource.message}</p> : null}
+          {creating || (editing && task) ? <><ClientTaskConfiguration key={task ? `${task.id}:${task.revision}` : "create"} task={task} organizations={resource.data?.organizations ?? []} milestones={milestones} busy={resource.busy} save={async (input) => { await mutate(task, task ? "configure" : "create", input); }} /><Button type="button" variant="outline" disabled={resource.busy} onClick={() => creating ? close() : setEditing(false)}>{copy.cancel}</Button></> : task ? <>
+            <div className="flex flex-wrap items-center gap-2"><ClientTaskState task={task} /><span className="text-meta text-muted-foreground">{task.publication === "published" ? copy.published : task.publication === "draft" ? copy.draftPrivate : copy.withdrawnFromClient}</span></div>
+            <p className="whitespace-pre-wrap text-body">{task.clientInstructions}</p>
+            <dl className="space-y-3 text-body"><div><dt className="text-label text-muted-foreground">{copy.organization}</dt><dd>{resource.data?.organizations.find((organization) => organization.id === task.organizationId)?.name ?? copy.organizationUnavailable}</dd></div><div><dt className="text-label text-muted-foreground">{copy.audienceLabel}</dt><dd>{task.audienceMode === "all_eligible" ? copy.allEligible : copy.selectedCount(task.selectedProfileIds.length)}</dd></div><div><dt className="text-label text-muted-foreground">{copy.responsibleClient}</dt><dd>{task.responsibleLabel ?? copy.noResponsible}</dd></div><div><dt className="text-label text-muted-foreground">{copy.milestoneAndDue}</dt><dd>{task.milestone?.title ?? copy.noMilestone} · {task.dueDate ?? copy.noDueDate}</dd></div></dl>
+            {allowed.canShareClientTasks ? <div className="space-y-3"><Button type="button" variant="outline" disabled={resource.busy} onClick={() => setEditing(true)}>{copy.editConfiguration}</Button>{task.publication === "published" ? <div><p className="mb-2 text-meta text-muted-foreground">{copy.withdrawHint}</p><Button type="button" variant="outline" disabled={resource.busy} onClick={() => void mutate(task, "withdraw", {})}>{copy.withdraw}</Button></div> : <div><p className="mb-2 text-meta text-muted-foreground">{copy.publishHint}</p><Button type="button" disabled={resource.busy || !task.clientTitle.trim() || !task.clientInstructions.trim()} onClick={() => void mutate(task, "publish", {})}>{copy.publish}</Button></div>}</div> : null}
+            {allowed.canReviewClientTasks && task.publication === "published" && task.workflow === "submitted" && task.submissionSequence !== null ? <StaffTaskReview key={`${task.id}:${task.revision}`} task={task} busy={resource.busy} mutate={mutate} /> : null}
+            {task.submissions.length > 0 ? <section className="space-y-3 border-t border-border pt-4"><h3 className="text-title font-semibold">{copy.history}</h3><ol className="space-y-3">{task.submissions.map((submission) => <li key={submission.sequence} className="rounded-xl border border-border p-3"><p className="text-label font-semibold">{copy.versionPrefix}{submission.sequence} {copy.publicationHistoryPrefix}{submission.publicationGeneration}</p><p className="mt-1 text-meta text-muted-foreground">{submission.submittedAt}</p><p className="mt-2 whitespace-pre-wrap text-body">{submission.response || copy.noWrittenResponse}</p>{submission.reviewFeedback ? <p className="mt-2 whitespace-pre-wrap text-body"><strong>{copy.feedbackPrefix}</strong>{submission.reviewFeedback}</p> : null}</li>)}</ol></section> : null}
+          </> : null}
+        </div>
+      </SheetContent>
+    </Sheet>
+  </section>;
+}

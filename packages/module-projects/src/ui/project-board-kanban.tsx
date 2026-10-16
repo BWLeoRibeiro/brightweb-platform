@@ -1,4 +1,5 @@
 "use client";
+import { clientTasksDictionary as copy } from "./client-tasks/dictionary";
 
 import { toIsoDate, parseIsoDate } from "./project-detail-create-sheets/date-utils";
 
@@ -41,6 +42,7 @@ import { useProjectBoardMilestoneEvents } from "./hooks/use-project-board-milest
 import { cn } from "./utils";
 import { isProjectDatePast } from "./shared/formatters";
 import { useProjectsNow } from "./shared/use-projects-now";
+import { openClientTaskPanel } from "./client-tasks/staff-client-tasks";
 
 type ProjectBoardKanbanProps = {
   canManageItems: boolean;
@@ -138,6 +140,7 @@ export function ProjectBoardKanban({ canManageItems, canUpdateAssignedTasks = fa
   const columns = (["todo", "in_progress", "blocked", "done"] as const).map((key) => ({ key, label: dictionary.board.columns[key], ...columnStyles[key] }));
   const canUpdateTask = (task: ProjectTask | null | undefined) => Boolean(
     task
+    && task.kind !== "client"
     && (canManageItems || (
       canUpdateAssignedTasks
       && viewerProfileId
@@ -179,6 +182,7 @@ export function ProjectBoardKanban({ canManageItems, canUpdateAssignedTasks = fa
   }, [taskAssigneeProfileId, taskBlockedReason, taskDescription, taskDueDate, taskEditBaseline, taskMilestoneId, taskMode, taskPriority, taskStartDate, taskStatus, taskTitle]);
 
   function openTaskSheet(task: ProjectTask) {
+    if (task.kind === "client") { openClientTaskPanel(project.id, task.id); return; }
     setSelectedTaskId(task.id);
     setTaskMode("view");
     setTaskEditBaseline(null);
@@ -321,6 +325,7 @@ export function ProjectBoardKanban({ canManageItems, canUpdateAssignedTasks = fa
                         data-status={column.key}
                       >
                         <div className="flex items-start justify-between gap-2"><p className="text-body text-foreground min-w-0 flex-1 font-semibold leading-snug line-clamp-2" title={task.title}>{task.title}</p><TaskPriorityTag task={task} /></div>
+                        <span className="text-label font-semibold text-muted-foreground">{task.kind === "client" ? copy.clientKind : copy.internalKind}</span>
                         {task.description?.trim() ? <p className="text-meta text-muted-foreground mt-1 line-clamp-2 text-[color:var(--muted-foreground)]" title={task.description}>{task.description}</p> : null}
                         <div className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1"><TaskDueMeta dueDate={task.dueDate} isOverdue={isTaskOverdue(task, now)} /><TaskMilestoneMeta title={milestone?.title ?? null} /></div>
                         <div className="mt-1.5"><TaskAssigneeMeta label={task.assigneeLabel} /></div>

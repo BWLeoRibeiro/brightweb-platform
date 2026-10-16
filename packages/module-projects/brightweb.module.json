@@ -40,13 +40,42 @@
     "grants": [
       {
         "name": "projects.manage",
-        "defaultRoles": ["staff", "admin"]
+        "defaultRoles": [
+          "staff",
+          "admin"
+        ]
+      },
+      {
+        "name": "projects.create_tasks",
+        "description": "Current administrators and current staff project owners/contributors may create tasks.",
+        "defaultRoles": [
+          "staff",
+          "admin"
+        ]
+      },
+      {
+        "name": "projects.share_client_tasks",
+        "description": "Current administrators and current staff project owners/contributors may publish authored client tasks within existing project eligibility.",
+        "defaultRoles": [
+          "staff",
+          "admin"
+        ]
+      },
+      {
+        "name": "projects.review_client_tasks",
+        "description": "Current administrators and current staff project owners/contributors may review the exact current submitted version.",
+        "defaultRoles": [
+          "staff",
+          "admin"
+        ]
       }
     ]
   },
   "registration": "./registration",
   "database": {
-    "namespace": ["project"],
+    "namespace": [
+      "project"
+    ],
     "ownedObjects": [
       "projects",
       "project_members",
@@ -114,7 +143,43 @@
       "log_project_links_activity_event",
       "trg_log_project_links_activity_event",
       "log_project_members_activity_event",
-      "trg_log_project_members_activity_event"
+      "trg_log_project_members_activity_event",
+      "aa_project_client_task_write",
+      "ab_delete_project_client_tasks",
+      "ab_unlink_profile_client_tasks",
+      "ab_withdraw_milestone_client_tasks",
+      "act_on_current_client_project_task",
+      "bw_projects_private",
+      "bw_projects_private.client_eligible",
+      "bw_projects_private.delete_project_tasks",
+      "bw_projects_private.guard_task_write",
+      "bw_projects_private.lock_actor",
+      "bw_projects_private.lock_client",
+      "bw_projects_private.lock_task_milestone",
+      "bw_projects_private.requests",
+      "bw_projects_private.revoke_bindings",
+      "bw_projects_private.submissions",
+      "bw_projects_private.task_bindings",
+      "bw_projects_private.task_json",
+      "bw_projects_private.task_visible",
+      "bw_projects_private.unlink_profile_tasks",
+      "bw_projects_private.valid_task_assignee",
+      "bw_projects_private.validate_configuration",
+      "bw_projects_private.withdraw_milestone_tasks",
+      "bw_projects_private.write_bindings",
+      "bw_projects_task_executor",
+      "can_current_user_create_project_tasks",
+      "enforce_project_task_assignee_and_contributor_update",
+      "get_project_client_task_workbench",
+      "list_current_client_project_tasks",
+      "manage_project_client_task",
+      "trg_client_task_membership_revocation",
+      "trg_client_task_participation_revocation",
+      "trg_client_task_profile_revocation",
+      "trg_client_task_project_audience_revocation",
+      "trg_client_task_project_mode_revocation",
+      "trg_client_task_project_profile_revocation",
+      "trg_client_task_role_revocation"
     ]
   }
 }

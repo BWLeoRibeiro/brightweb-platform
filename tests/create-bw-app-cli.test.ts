@@ -49,7 +49,8 @@ async function scaffoldConsumerWorkspace() {
   const latest = manifest.migrationCursor.admin;
   const currentFile = (await fs.readdir(migrationsDir)).find((name) => name.endsWith(`_admin__${latest}`));
   await fs.rm(path.join(migrationsDir, currentFile!));
-  manifest.migrationCursor.admin = "20260906101616_atomic_admin_invitation_acceptance.sql";
+  const adminMigrations = (await fs.readdir(path.join(REPO_ROOT, "supabase/modules/admin/migrations"))).filter(name => name.endsWith(".sql")).toSorted();
+  manifest.migrationCursor.admin = adminMigrations.at(-2)!;
   await writeJson(manifestPath, manifest);
   return { root, workspace, targetDir, migrationsDir, manifestPath, latest };
 }
@@ -759,7 +760,7 @@ test("bw add projects resolves orgs, writes overlays, migrations, and manifest s
   const release = await readJson(path.join(REPO_ROOT, "brightweb-release.json"));
   assert.equal(updated.modules.orgs.version, release.packages["@brightweblabs/module-orgs"]);
   assert.equal(updated.modules.projects.version, release.packages["@brightweblabs/module-projects"]);
-  assert.equal(updated.migrationCursor.projects, "20260815133000_project_admin_creation_and_task_permissions.sql");
+  assert.equal(updated.migrationCursor.projects, "20261015143936_client_task_collaboration.sql");
   assert.match(await fs.readFile(path.join(targetDir, "app", "globals.css"), "utf8"), /@source "\.\.\/node_modules\/@brightweblabs\/module-projects\/src";/);
   assert.match(
     await fs.readFile(path.join(targetDir, "config", "module-toolbar-controls.tsx"), "utf8"),
@@ -831,7 +832,7 @@ test("bw upgrade appends and repeats safely with workspace-root migrations", asy
   assert.equal(await fs.readFile(manifestPath, "utf8"), before);
   await assert.rejects(fs.access(dryRun.migrationPlan.writes[0].targetPath), { code: "ENOENT" });
   await upgradeBrightwebApp("admin", { targetDir }, runtime);
-  assert.match(await fs.readFile(dryRun.migrationPlan.writes[0].targetPath, "utf8"), /CREATE POLICY "Admins can view profiles"/);
+  assert.match(await fs.readFile(dryRun.migrationPlan.writes[0].targetPath, "utf8"), /assert_profile_auth_identity_v1/);
   assert.equal((await readJson(manifestPath)).migrationCursor.admin, latest);
   const repeated = await upgradeBrightwebApp("admin", { targetDir, dryRun: true }, runtime);
   assert.equal(repeated.migrationPlan.writes.length, 0);
@@ -945,7 +946,7 @@ test("bw upgrade stops at a safe enforcement boundary and requires explicit dest
 
   const migrationsDir = path.join(targetDir, "supabase", "migrations");
   for (const name of await fs.readdir(migrationsDir)) {
-    if (name.includes("_projects__20260810120000_") || name.includes("_projects__202608111")) {
+    if (name.includes("_projects__") && name.split("_projects__")[1] > manifest.migrationCursor.projects) {
       await fs.rm(path.join(migrationsDir, name));
     }
   }
@@ -960,6 +961,8 @@ test("bw upgrade stops at a safe enforcement boundary and requires explicit dest
   const nextStepsCleanupMigration = "20260811122500_remove_project_client_next_steps.sql";
   const memberRolesMigration = "20260815120000_project_client_access_member_roles.sql";
   const projectPermissionsMigration = "20260815133000_project_admin_creation_and_task_permissions.sql";
+  const relationshipMigration = "20261015135430_enforce_task_milestone_project.sql";
+  const clientTaskMigration = "20261015143936_client_task_collaboration.sql";
   const firstPhase = await upgradeBrightwebApp(
     "projects",
     { targetDir, refreshStarters: true },
@@ -975,6 +978,8 @@ test("bw upgrade stops at a safe enforcement boundary and requires explicit dest
     nextStepsCleanupMigration,
     memberRolesMigration,
     projectPermissionsMigration,
+    relationshipMigration,
+    clientTaskMigration,
   ]);
   assert.ok(firstPhase.plan.packageUpdates.some((entry) => entry.packageName === "@brightweblabs/module-projects"));
   assert.ok(firstPhase.plan.fileWrites.some((entry) => entry.relativePath === setupRoute));
@@ -994,10 +999,12 @@ test("bw upgrade stops at a safe enforcement boundary and requires explicit dest
     nextStepsCleanupMigration,
     memberRolesMigration,
     projectPermissionsMigration,
+    relationshipMigration,
+    clientTaskMigration,
   ]);
   const boundedDoctor = await doctorBrightwebApp({ targetDir }, { workspaceRoot: REPO_ROOT });
   assert.equal(boundedDoctor.checks.find((entry: { id: string }) => entry.id === "migration-provenance-projects")?.status, "PASS");
-  assert.match(boundedDoctor.checks.find((entry: { id: string }) => entry.id === "migration-deferred-projects")?.message ?? "", /4 later package migrations/);
+  assert.match(boundedDoctor.checks.find((entry: { id: string }) => entry.id === "migration-deferred-projects")?.message ?? "", /6 later package migrations/);
 
   const cleanupPhase = await upgradeBrightwebApp(
     "projects",
@@ -1006,10 +1013,10 @@ test("bw upgrade stops at a safe enforcement boundary and requires explicit dest
   );
   assert.deepEqual(
     cleanupPhase.migrationPlan.writes.map((entry) => entry.originalFileName),
-    [identityCleanupMigration, nextStepsCleanupMigration, memberRolesMigration, projectPermissionsMigration],
+    [identityCleanupMigration, nextStepsCleanupMigration, memberRolesMigration, projectPermissionsMigration, relationshipMigration, clientTaskMigration],
   );
   upgradedManifest = await readJson(manifestPath);
-  assert.equal(upgradedManifest.migrationCursor.projects, projectPermissionsMigration);
+  assert.equal(upgradedManifest.migrationCursor.projects, clientTaskMigration);
 });
 
 test("bw upgrade rejects ambiguous, unknown, and backwards migration cutoffs before writing", async (t) => {
@@ -1137,7 +1144,7 @@ test("bw upgrade installs and tracks deletion routes introduced after the origin
   assert.equal(upgradedManifest.scaffoldFiles[organizationRelativePath].status, "current");
 });
 
-test("full bw upgrade includes core migrations recorded outside the optional module map", async (t) => {
+for (const scope of [undefined, "core"]) test(`${scope ?? "full"} bw upgrade includes core migrations recorded outside the optional module map`, async (t) => {
   const { root, targetDir } = await scaffold(["crm"]);
   t.after(() => fs.rm(root, { recursive: true, force: true }));
   const manifestPath = path.join(targetDir, ".brightweb", "app-manifest.json");
@@ -1147,15 +1154,17 @@ test("full bw upgrade includes core migrations recorded outside the optional mod
 
   const migrationsDir = path.join(targetDir, "supabase", "migrations");
   for (const name of await fs.readdir(migrationsDir)) {
-    if (name.includes("_core__20260731130000_profile_search_indexes.sql")) {
+    // A previous release has no SQL beyond its cursor. Leaving later files
+    // while deleting an earlier one models an invalid recovery hole instead.
+    if (name.includes("_core__") && name.split("_core__")[1] > manifest.migrationCursor.core) {
       await fs.rm(path.join(migrationsDir, name));
     }
   }
 
-  const result = await upgradeBrightwebApp(undefined, { targetDir }, { workspaceRoot: REPO_ROOT, fetchImpl: mockNpmFetch });
+  const result = await upgradeBrightwebApp(scope, { targetDir }, { workspaceRoot: REPO_ROOT, fetchImpl: mockNpmFetch });
   assert.ok(result.migrationPlan.writes.some((entry) => entry.moduleKey === "core"));
   const updated = await readJson(manifestPath);
-  assert.equal(updated.migrationCursor.core, "20260906111323_restrict_profile_identity_sync.sql");
+  assert.equal(updated.migrationCursor.core, "20261014183138_protect_profile_identity.sql");
 });
 
 test("bw upgrade never refreshes an owned scaffold file", async (t) => {

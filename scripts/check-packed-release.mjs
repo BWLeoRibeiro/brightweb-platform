@@ -1,4 +1,5 @@
 import { spawn } from "node:child_process";
+import { createHash } from "node:crypto";
 import fs from "node:fs/promises";
 import net from "node:net";
 import os from "node:os";
@@ -131,7 +132,100 @@ async function assertPackedEdges(tarballs, versions) {
   }
 }
 
+async function assertInstalledVersions(appRoot, versions) {
+  const manifest = JSON.parse(await fs.readFile(path.join(appRoot, "package.json"), "utf8"));
+  for (const name of Object.keys(manifest.dependencies ?? {}).filter(name => name.startsWith("@brightweblabs/"))) {
+    const installed = JSON.parse(await fs.readFile(path.join(appRoot, "node_modules", name, "package.json"), "utf8"));
+    if (installed.version !== versions[name]) throw new Error(`${name}: installed ${installed.version}, expected ${versions[name]}`);
+  }
+}
+
+async function migrationSnapshot(directory) {
+  return Object.fromEntries(await Promise.all((await fs.readdir(directory)).sort().map(async name => [name, await fs.readFile(path.join(directory, name), "utf8")])));
+}
+
+async function verifyHistoricalUpgrade({ tempRoot, registryUrl, registryEnv, versions, layout, cliRoot }) {
+  const root = path.join(tempRoot, `historical-${layout}`);
+  await fs.mkdir(root);
+  const fixtureRoot = path.join(repoRoot, "tests/fixtures/published-upgrade");
+  const archive = path.join(fixtureRoot, "create-bw-app-0.27.1.tgz");
+  const provenance = JSON.parse(await fs.readFile(path.join(fixtureRoot, "provenance.json"), "utf8"));
+  if (createHash("sha256").update(await fs.readFile(archive)).digest("hex") !== provenance.fixtureSha256) throw new Error("Historical consumer archive differs from recorded provenance");
+  await run("tar", ["-xzf", archive, "-C", root], { quiet: true });
+  const appRoot = path.join(root, "historical-client");
+  const manifestPath = path.join(appRoot, "package.json");
+  const historical = JSON.parse(await fs.readFile(manifestPath, "utf8"));
+  await run("npx", ["--yes", "pnpm@11", "install", "--frozen-lockfile", "--ignore-scripts"], {
+    cwd: appRoot, quiet: true, env: { npm_config_registry: "https://registry.npmjs.org/" },
+  });
+  await assertInstalledVersions(appRoot, historical.dependencies);
+  let migrationsDir = path.join(appRoot, "supabase/migrations");
+  if (layout === "parent") {
+    await fs.writeFile(path.join(root, "package.json"), JSON.stringify({ private: true }));
+    await fs.writeFile(path.join(root, "pnpm-workspace.yaml"), "packages:\n  - historical-client\n");
+    await fs.rename(path.join(appRoot, "supabase"), path.join(root, "supabase"));
+    migrationsDir = path.join(root, "supabase/migrations");
+  }
+  const before = await migrationSnapshot(migrationsDir);
+  const ownedPath = "app/(shell)/account/perfil/page.tsx";
+  const skippedPath = "app/(shell)/account/projetos/loading.tsx";
+  const customization = await fs.readFile(path.join(appRoot, ownedPath), "utf8");
+  // Release-pinned overrides establish the old installed baseline; remove that
+  // pin before exercising the real updater's candidate dependency resolution.
+  delete historical.pnpm;
+  const knownReleasePackages = [
+    ...Object.entries(historical.dependencies).filter(([name]) => name.startsWith("@brightweblabs/")),
+    ["create-bw-app", historical.devDependencies["create-bw-app"]],
+    ...Object.entries(versions),
+  ].map(([name, version]) => `${name}@${version}`);
+  // The isolated registry has only candidate versions and publishes them now.
+  // Exempt these exact previously verified/candidate packages from pnpm's age
+  // recheck; keep age policy active for all other third-party dependencies.
+  await fs.writeFile(path.join(appRoot, "pnpm-workspace.yaml"), JSON.stringify({
+    allowBuilds: { sharp: false },
+    minimumReleaseAgeExclude: [...new Set(knownReleasePackages)],
+  }));
+  historical.devDependencies["create-bw-app"] = versions["create-bw-app"];
+  await fs.writeFile(manifestPath, `${JSON.stringify(historical, null, 2)}\n`);
+  await fs.writeFile(path.join(appRoot, ".npmrc"), `registry=${registryUrl}\n`);
+  const invoke = (args) => run(path.join(cliRoot, "node_modules/.bin/bw"), args, {
+    cwd: appRoot,
+    env: { ...registryEnv, PATH: `${path.join(cliRoot, "node_modules/.bin")}${path.delimiter}${process.env.PATH}` },
+    quiet: true,
+  });
+  await invoke(["upgrade", "--refresh-starters", "--install", "--package-manager", "pnpm"]);
+  await assertInstalledVersions(appRoot, versions);
+  const after = await migrationSnapshot(migrationsDir);
+  for (const [name, content] of Object.entries(before)) {
+    if (after[name] !== content) throw new Error(`${layout}: historical migration changed: ${name}`);
+  }
+  if (Object.keys(after).length <= Object.keys(before).length) throw new Error(`${layout}: prior release upgrade did not exercise a migration append`);
+  if (await fs.readFile(path.join(appRoot, ownedPath), "utf8") !== customization) throw new Error(`${layout}: owned customization changed`);
+  if (await fs.stat(path.join(appRoot, skippedPath)).catch(() => null)) throw new Error(`${layout}: skipped scaffold was recreated`);
+  const upgradedManifest = JSON.parse(await fs.readFile(path.join(appRoot, ".brightweb/app-manifest.json"), "utf8"));
+  if (upgradedManifest.scaffoldFiles[ownedPath]?.intent !== "owned" || upgradedManifest.scaffoldFiles[skippedPath]?.intent !== "skipped") throw new Error(`${layout}: upgrade discarded customization ownership intent`);
+  await invoke(["doctor"]);
+  const second = await invoke(["upgrade", "--refresh-starters", "--install", "--package-manager", "pnpm"]);
+  if (!second.stdout.includes("Applied 0 managed changes, removed 0 obsolete managed files, and added 0 new migrations.")) throw new Error(`${layout}: second upgrade was not a no-op:\n${second.stdout}`);
+  if (JSON.stringify(await migrationSnapshot(migrationsDir)) !== JSON.stringify(after)) throw new Error(`${layout}: retry changed migration history`);
+  await run("npx", ["--yes", "pnpm@11", "lint"], { cwd: appRoot, env: registryEnv, quiet: true });
+  await run("npx", ["--yes", "pnpm@11", "build"], { cwd: appRoot, env: registryEnv, quiet: true });
+  console.log(`Historical published 0.27.1 ${layout} migration layout: old install, candidate upgrade, customization preservation, doctor, second no-op, lint and build passed (${Object.keys(after).length - Object.keys(before).length} new migrations).`);
+}
+
 async function main() {
+  const args = process.argv.slice(2);
+  const driverIndex = args.indexOf("--consumer-driver");
+  const driver = driverIndex < 0 ? null : args[driverIndex + 1];
+  const flags = args.filter((_, index) => driverIndex < 0 || (index !== driverIndex && index !== driverIndex + 1));
+  if (flags.some(arg => !["--historical-only", "--external-only"].includes(arg))
+    || (driverIndex >= 0 && (!driver || !path.isAbsolute(driver)))
+    || (args.includes("--external-only") && !driver)) {
+    throw new Error("Usage: check-packed-release.mjs [--historical-only | --external-only] [--consumer-driver /absolute/driver.mjs]");
+  }
+  const externalOnly = flags.includes("--external-only");
+  const historicalOnly = flags.includes("--historical-only");
+  console.log(`Packed verification scope: ${externalOnly ? "external consumer driver only; built-in checks omitted" : historicalOnly ? "historical upgrades only; fresh consumer checks omitted" : "fresh consumers and historical upgrades"}.`);
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), "bw-packed-release-"));
   const candidateRoot = path.join(tempRoot, "candidate");
   const tarballRoot = path.join(tempRoot, "tarballs");
@@ -209,44 +303,69 @@ async function main() {
       await run("npm", ["publish", tarball, "--registry", registryUrl, "--ignore-scripts"], { quiet: true, env: registryEnv });
     }
 
-    const outputRoot = path.join(tempRoot, "consumer");
-    await fs.mkdir(outputRoot, { recursive: true });
-    await run("npm", [
-      "exec",
-      "--yes",
-      `--registry=${registryUrl}`,
-      `--package=create-bw-app@${versions["create-bw-app"]}`,
-      "--",
-      "create-bw-app",
-      "--name", "packed-candidate",
-      "--template", "platform",
-      "--modules", "admin,crm,marketing,projects",
-      "--package-manager", "pnpm",
-      "--output-dir", outputRoot,
-      "--no-install",
-      "--yes",
-    ], { env: registryEnv });
+    for (const fixture of (historicalOnly || externalOnly ? [] : [
+      { name: "packed-candidate", template: "platform", modules: "admin,crm,marketing,projects" },
+      { name: "packed-core", template: "platform", modules: "" },
+      { name: "packed-site", template: "site", modules: "" },
+    ])) {
+      const outputRoot = path.join(tempRoot, "consumer");
+      await fs.mkdir(outputRoot, { recursive: true });
+      await run("npm", [
+        "exec",
+        "--yes",
+        `--registry=${registryUrl}`,
+        `--package=create-bw-app@${versions["create-bw-app"]}`,
+        "--",
+        "create-bw-app",
+        "--name", fixture.name,
+        "--template", fixture.template,
+        "--modules", fixture.modules,
+        "--package-manager", "pnpm",
+        "--output-dir", outputRoot,
+        "--no-install",
+        "--yes",
+      ], { env: registryEnv });
 
-    const appRoot = path.join(outputRoot, "packed-candidate");
-    const generatedManifest = JSON.parse(await fs.readFile(path.join(appRoot, "package.json"), "utf8"));
-    if (generatedManifest.scripts?.build !== "next build --webpack") {
-      throw new Error(`Packed create-bw-app generated an unexpected build script: ${generatedManifest.scripts?.build}`);
-    }
-    await fs.writeFile(path.join(appRoot, ".npmrc"), `registry=${registryUrl}\n`);
-    const pnpm11 = ["--yes", "pnpm@11", "--"];
-    await run("npx", [...pnpm11, "install"], { cwd: appRoot, env: { npm_config_registry: registryUrl } });
-    await run("npx", [...pnpm11, "lint"], { cwd: appRoot, env: { npm_config_registry: registryUrl } });
-    const buildResult = await run("npx", [...pnpm11, "build"], {
-      cwd: appRoot,
-      env: { npm_config_registry: registryUrl },
-      quiet: true,
-    });
-    const buildOutput = `${buildResult.stdout}\n${buildResult.stderr}`;
-    if (buildOutput.includes("Unsupported metadata")) {
-      throw new Error(`Packed scaffold build emitted an unsupported metadata warning.\n${buildOutput}`);
+      const appRoot = path.join(outputRoot, fixture.name);
+      const generatedManifest = JSON.parse(await fs.readFile(path.join(appRoot, "package.json"), "utf8"));
+      const expectedBuild = fixture.template === "site" ? "next build" : "next build --webpack";
+      if (generatedManifest.scripts?.build !== expectedBuild) {
+        throw new Error(`Packed create-bw-app generated an unexpected build script: ${generatedManifest.scripts?.build}`);
+      }
+      await fs.writeFile(path.join(appRoot, ".npmrc"), `registry=${registryUrl}\n`);
+      const pnpm11 = ["--yes", "pnpm@11"];
+      await run("npx", [...pnpm11, "install"], { cwd: appRoot, env: { npm_config_registry: registryUrl } });
+      await run("npx", [...pnpm11, "lint"], { cwd: appRoot, env: { npm_config_registry: registryUrl } });
+      const buildResult = await run("npx", [...pnpm11, "build"], {
+        cwd: appRoot,
+        env: { npm_config_registry: registryUrl },
+        quiet: true,
+      });
+      const buildOutput = `${buildResult.stdout}\n${buildResult.stderr}`;
+      if (buildOutput.includes("Unsupported metadata")) {
+        throw new Error(`Packed scaffold build emitted an unsupported metadata warning.\n${buildOutput}`);
+      }
+
+      console.log(`${fixture.name}: independently installed, typechecked, and built.`);
     }
 
-    console.log(`Packed release ${versions["create-bw-app"]} installed and built from an isolated local registry with pnpm 11.`);
+    // A separate installed CLI avoids npm exec selecting the old consumer's bw
+    // executable from its local node_modules/.bin during the first upgrade.
+    const cliRoot = path.join(tempRoot, "candidate-cli");
+    await run("npm", ["install", "--prefix", cliRoot, "--ignore-scripts", "--no-audit", "--no-fund", `create-bw-app@${versions["create-bw-app"]}`, "pnpm@11.25.0"], { env: registryEnv, quiet: true });
+    for (const layout of (externalOnly ? [] : ["local", "parent"])) {
+      await verifyHistoricalUpgrade({ tempRoot, registryUrl, registryEnv, versions, layout, cliRoot });
+    }
+
+    if (driver) {
+      // The driver owns disposable consumer scenarios. It receives the same
+      // packed bytes and live loopback registry as the canonical checks.
+      const sessionPath = path.join(tempRoot, "consumer-session.json");
+      const packedArtifacts = await Promise.all(tarballs.map(async file => ({ path: file, sha256: createHash("sha256").update(await fs.readFile(file)).digest("hex") })));
+      await fs.writeFile(sessionPath, JSON.stringify({ contractVersion: 1, registryUrl, versions, cliRoot, packedArtifacts, installEnv: registryEnv }, null, 2));
+      await run(process.execPath, [driver, "--session", sessionPath], { env: registryEnv });
+    }
+    console.log(`${externalOnly ? "External consumer driver" : historicalOnly ? "Historical upgrade cohorts" : "Full packed release matrix"} for ${versions["create-bw-app"]} passed from an isolated local registry with pnpm 11.`);
   } finally {
     registryProcess?.kill("SIGTERM");
     await fs.rm(tempRoot, { recursive: true, force: true });

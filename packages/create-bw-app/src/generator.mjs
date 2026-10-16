@@ -1,3 +1,4 @@
+import { orderFreshMigrationSources } from "./migration-order.mjs";
 import { fileOwnership, assertGeneratedFileInventory, MANAGED_PLATFORM_FILES, MODULE_SELECTED_FILES } from "./file-policy.mjs";
 import fs from "node:fs/promises";
 import path from "node:path";
@@ -1388,7 +1389,7 @@ async function writeSupabaseCliMigrations({ targetDir, dbInstallPlan }) {
   await ensureDirectory(targetMigrationsDir);
   await fs.writeFile(path.join(targetSupabaseDir, "config.toml"), createGeneratedSupabaseConfig(path.basename(targetDir)), "utf8");
 
-  let sequence = 1;
+  const sources = [];
   for (const moduleKey of dbInstallPlan.resolvedOrder) {
     const sourceModuleDir = path.join(TEMPLATE_SUPABASE_ROOT, "modules", moduleKey, "migrations");
     if (!(await pathExists(sourceModuleDir))) {
@@ -1400,13 +1401,12 @@ async function writeSupabaseCliMigrations({ targetDir, dbInstallPlan }) {
       .sort();
 
     for (const fileName of fileNames) {
-      const targetFileName = `${String(sequence).padStart(4, "0")}_${moduleKey}__${fileName}`;
-      await fs.copyFile(
-        path.join(sourceModuleDir, fileName),
-        path.join(targetMigrationsDir, targetFileName),
-      );
-      sequence += 1;
+      sources.push({ moduleKey, fileName, sourcePath: path.join(sourceModuleDir, fileName) });
     }
+  }
+  for (const [index, source] of orderFreshMigrationSources(sources).entries()) {
+    const targetFileName = `${String(index + 1).padStart(4, "0")}_${source.moduleKey}__${source.fileName}`;
+    await fs.copyFile(source.sourcePath, path.join(targetMigrationsDir, targetFileName));
   }
 }
 
@@ -1449,9 +1449,13 @@ async function writeBundledSupabaseBaseline({
   await writeSupabaseCliMigrations({ targetDir, dbInstallPlan });
 }
 
-export async function runInstall(command, cwd) {
+export async function runInstall(command, cwd, { updateLockfile = false } = {}) {
+  // Explicit upgrades change dependency inputs and must reconcile their lockfile,
+  // including in CI. Ordinary/scaffold installs retain the caller's policy.
+  const args = ["install"];
+  if (command === "pnpm" && updateLockfile) args.push("--no-frozen-lockfile");
   return new Promise((resolve, reject) => {
-    const child = spawn(command, ["install"], {
+    const child = spawn(command, args, {
       cwd,
       stdio: "inherit",
       shell: process.platform === "win32",

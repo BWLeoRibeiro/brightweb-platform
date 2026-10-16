@@ -22,3 +22,5 @@ docs/internal/audit/
 .agents/
 .claude/
 skills-lock.json
+
+verification-results/

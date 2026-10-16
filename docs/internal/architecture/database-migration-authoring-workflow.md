@@ -54,9 +54,9 @@ After authoring new shared SQL, run `pnpm db:sync` to copy it into the CLI's dis
 
 ## Apply order
 
-1. `core`
-2. enabled shared modules in dependency order
-3. client-only migrations
+For fresh assemblies, resolve Core and selected module dependencies, then merge their SQL by authored timestamp. Preserve dependency order when timestamps match. Append client-only migrations afterward. Later Core changes may depend on an earlier Admin baseline, so do not apply each module’s entire history as a block.
+
+Existing numbered client migrations remain immutable; upgrades append new files.
 
 ## Rules
 

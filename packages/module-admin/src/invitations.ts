@@ -119,17 +119,42 @@ async function logAdminInvitationEvent(
   if (error) console.error("Error logging admin invitation event:", error);
 }
 
-async function findAuthUserIdByEmail(supabase: SupabaseClient, email: string): Promise<string | null> {
-  const target = normalizeEmail(email);
-  const perPage = 1000;
-  for (let page = 1; page <= 20; page += 1) {
-    const { data, error } = await supabase.auth.admin.listUsers({ page, perPage });
-    if (error) throw new Error(error.message);
-    const match = data.users.find((user) => normalizeEmail(user.email ?? "") === target);
-    if (match?.id) return match.id;
-    if (data.users.length < perPage) return null;
+function throwIdentityError(error: { code?: string; message?: string }): never {
+  const message = error.code === "42883" || error.code === "PGRST202"
+    ? "IDENTITY_MIGRATION_REQUIRED: Aplique as migrations de identidade de Core e Admin antes de gerir convites."
+    : error.message ?? "Não foi possível confirmar a identidade da conta.";
+  throw Object.assign(new Error(message), { code: error.code });
+}
+
+async function assertIdentityReadiness(supabase: SupabaseClient): Promise<void> {
+  const { error } = await supabase.rpc("assert_admin_auth_identity_v1");
+  if (error) throwIdentityError(error);
+}
+
+type AuthIdentity = {
+  userId: string;
+  profileId: string | null;
+  email: string;
+  confirmed: boolean;
+};
+
+async function resolveAuthIdentity(supabase: SupabaseClient, email: string): Promise<AuthIdentity | null> {
+  const normalizedEmail = normalizeEmail(email);
+  const { data, error } = await supabase.rpc("resolve_auth_identity", { p_email: normalizedEmail });
+  if (error) throwIdentityError(error);
+  if (data === null) return null;
+  if (!data || Array.isArray(data) || typeof data !== "object"
+      || typeof data.userId !== "string" || !data.userId.trim()
+      || typeof data.email !== "string" || normalizeEmail(data.email) !== normalizedEmail
+      || typeof data.confirmed !== "boolean"
+      || !(data.profileId === null || (typeof data.profileId === "string" && data.profileId.trim().length > 0))) {
+    throw new Error("AUTH_IDENTITY_INVALID_RESPONSE");
   }
-  return null;
+  return data as AuthIdentity;
+}
+
+async function findAuthUserIdByEmail(supabase: SupabaseClient, email: string): Promise<string | null> {
+  return (await resolveAuthIdentity(supabase, email))?.userId ?? null;
 }
 
 async function ensureInvitationProfile(
@@ -141,7 +166,7 @@ async function ensureInvitationProfile(
     p_email: params.email,
     p_metadata: { first_name: params.firstName || null, last_name: params.lastName || null },
   });
-  if (syncError) throw new Error(syncError.message);
+  if (syncError) throwIdentityError(syncError);
   const { data, error } = await supabase.from("profiles").select("id")
     .eq("user_id", params.userId).maybeSingle<{ id: string }>();
   if (error) throw new Error(error.message);
@@ -184,6 +209,7 @@ export async function createAdminUserInvitation(
 ): Promise<AdminUserInvitation> {
   const email = normalizeEmail(params.email);
   if (!email) throw new Error("EMAIL_REQUIRED");
+  await assertIdentityReadiness(supabase);
   if (await findAuthUserIdByEmail(supabase, email)) throw new Error("ACCOUNT_ALREADY_EXISTS");
   await expirePendingAdminUserInvitations(supabase, email);
   const { data, error } = await supabase.from("admin_user_invitations").insert({
@@ -244,12 +270,13 @@ export async function acceptAdminUserInvitation(
   supabase: SupabaseClient,
   params: { invitationId: string; profileId: string; userEmail: string },
 ): Promise<{ role: AdminInviteRole }> {
+  await assertIdentityReadiness(supabase);
   const { data, error } = await supabase.rpc("accept_admin_user_invitation", {
     p_invitation_id: params.invitationId,
     p_profile_id: params.profileId,
     p_user_email: normalizeEmail(params.userEmail),
   });
-  if (error) throw new Error(error.message);
+  if (error) throwIdentityError(error);
   if (data?.status === "expired") throw new Error("Este convite expirou.");
   if (data?.status !== "accepted" || !["client", "staff", "admin"].includes(data.role)) {
     throw new Error("Não foi possível confirmar a aceitação do convite.");
@@ -261,6 +288,7 @@ export async function registerUserFromAdminInvitation(
   supabase: SupabaseClient,
   params: { invitationId: string; firstName: string; lastName: string; password: string },
 ): Promise<{ email: string; role: AdminInviteRole }> {
+  await assertIdentityReadiness(supabase);
   const invitation = await getAdminUserInvitationDetails(supabase, params.invitationId);
   if (!invitation) throw new Error("INVITATION_NOT_FOUND");
   if (invitation.status !== "pending" && invitation.status !== "accepted") throw new Error("INVITATION_NOT_AVAILABLE");
