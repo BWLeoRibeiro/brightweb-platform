@@ -135,15 +135,16 @@ export async function runConsumerChecks({ appUrl, backend, user, project, staffP
   const closeSheet = async (page) => {
     // A mutation temporarily unmounts the sheet while rereading its resource.
     // Wait for that real readiness boundary before asking to dismiss it.
-    await expect(page.getByRole("button", { name: "Atualizar tarefas para membros", exact: true, includeHidden: true })).toBeEnabled();
-    await expect(page.getByRole("dialog")).toBeVisible();
+    await expect(page.getByRole("dialog").getByRole("button", { name: "Editar configuração", exact: true })).toBeEnabled();
     await page.keyboard.press("Escape");
     await expect(page.getByRole("dialog")).toBeHidden();
   };
   const openStaffTask = async () => {
     await staffPage.bringToFront();
-    await staffPage.getByRole("button", { name: "Atualizar tarefas para membros", exact: true }).click();
-    await staffPage.locator(`[data-staff-client-task-id="${task.id}"]`).click();
+    await staffPage.goto(`${appUrl}${staffPath}`);
+    // The full board also retains accepted tasks and their submission history.
+    await staffPage.getByRole("link", { name: /^Ver todas as tarefas/ }).click();
+    await staffPage.getByRole("button").filter({ has: staffPage.getByText(title, { exact: true }) }).click();
     await expect(staffPage.getByRole("dialog")).toBeVisible();
     return staffPage.getByRole("dialog");
   };
@@ -182,16 +183,16 @@ export async function runConsumerChecks({ appUrl, backend, user, project, staffP
 
     await stage("contributor creates internal work without project, milestone or member management", async () => {
       await staffPage.bringToFront();
-      await expect(staffPage.getByRole("button", { name: "Nova tarefa para membros", exact: true })).toBeVisible();
-      await expect(staffPage.getByRole("button", { name: "Nova tarefa interna", exact: true })).toBeVisible();
+      await expect(staffPage.getByRole("button", { name: "Nova tarefa", exact: true })).toBeVisible();
       for (const name of ["Editar projeto", "Adicionar meta", "Gerir acesso", "Gerir equipa"]) await expect(staffPage.getByRole("button", { name, exact: true })).toHaveCount(0);
       for (const [method, endpoint, data] of [["PATCH", `/api/projects/${project.projectId}`, { name: "Denied contributor project edit" }], ["POST", `/api/projects/${project.projectId}/milestones`, { title: "Denied contributor milestone" }], ["PUT", `/api/projects/${project.projectId}/members`, { members: [] }]]) {
         const response = await staffContext.request.fetch(`${appUrl}${endpoint}`, { method, data });
         assert.equal(response.status(), 403, `Contributor cannot ${method} ${endpoint.split("/").at(-1)}`);
       }
       await screen(staffPage, "01-contributor-task-controls");
-      await staffPage.getByRole("button", { name: "Nova tarefa interna", exact: true }).click();
+      await staffPage.getByRole("button", { name: "Nova tarefa", exact: true }).click();
       const sheet = staffPage.getByRole("dialog");
+      await expect(sheet.getByRole("radio", { name: "Equipa interna", exact: true })).toBeChecked();
       await sheet.getByLabel("Título", { exact: true }).fill("Tarefa interna criada pelo colaborador");
       const pending = staffPage.waitForResponse((response) => new URL(response.url()).pathname === `/api/projects/${project.projectId}/tasks` && response.request().method() === "POST");
       await sheet.getByRole("button", { name: "Criar tarefa", exact: true }).click();
@@ -201,16 +202,17 @@ export async function runConsumerChecks({ appUrl, backend, user, project, staffP
       assert.equal(internal.data.length, 1); assert.equal(internal.data[0].task_kind, "internal");
     });
     await stage("contributor saves deliberately authored selected-audience client draft", async () => {
-      await staffPage.getByRole("button", { name: "Nova tarefa para membros", exact: true }).click();
+      await staffPage.getByRole("button", { name: "Nova tarefa", exact: true }).click();
       const sheet = staffPage.getByRole("dialog");
-      await sheet.getByLabel("Título para o membro", { exact: true }).fill(title);
+      await sheet.getByRole("radio", { name: "Membros da organização", exact: true }).check();
+      await sheet.getByLabel("Título", { exact: true }).fill(title);
       await sheet.getByLabel("Instruções para o membro", { exact: true }).fill(instructions);
       await sheet.getByLabel("Organização destinatária", { exact: true }).click();
       await staffPage.getByRole("option", { name: "Consumer regression organization", exact: true }).click();
       await sheet.getByLabel("Quem pode ver e responder", { exact: true }).click();
       await staffPage.getByRole("option", { name: "Pessoas selecionadas", exact: true }).click();
       await sheet.getByRole("checkbox", { name: "Cliente de prova", exact: true }).check();
-      await sheet.getByLabel("Membro responsável (opcional)", { exact: true }).click();
+      await sheet.getByLabel("Responsável (opcional)", { exact: true }).click();
       await staffPage.getByRole("option", { name: "Cliente de prova", exact: true }).click();
       await sheet.getByLabel("Meta partilhada (opcional)", { exact: true }).click();
       await staffPage.getByRole("option", { name: "Meta partilhada de prova", exact: true }).click();

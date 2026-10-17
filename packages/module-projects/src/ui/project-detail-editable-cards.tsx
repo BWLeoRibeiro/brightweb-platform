@@ -52,7 +52,8 @@ import { ProjectMilestonesAndTasksLists } from "./project-milestone-task-lists";
 import { TaskPriorityTag, TaskStatusTag } from "./shared/task-tags";
 import type { ProjectMilestone, ProjectTask } from "../types";
 import { defaultProjectsUiDictionary } from "./dictionary";
-import { openClientTaskPanel } from "./client-tasks/staff-client-tasks";
+import { TaskRecipientSelector } from "./task-recipient-fields";
+import { openClientTaskPanel, usePresentedProjectTasks } from "./client-tasks/staff-client-tasks";
 
 type ProjectMilestonesAndTasksCardsProps = {
   projectId: string;
@@ -125,7 +126,8 @@ export function ProjectMilestonesAndTasksCards({
   const client = useProjectsUiClient();
   const dictionary = useProjectsUiDictionary();
   const router = useRouter();
-  const { milestones, tasks, members } = useProjectDetailData();
+  const { milestones, tasks: storedTasks, members } = useProjectDetailData();
+  const tasks = usePresentedProjectTasks(storedTasks);
   const [isSavingMilestone, setIsSavingMilestone] = useState(false);
   const [isSavingTask, setIsSavingTask] = useState(false);
   const [isDeletingMilestone, setIsDeletingMilestone] = useState(false);
@@ -698,6 +700,7 @@ export function ProjectMilestonesAndTasksCards({
               ) : null}
               </SheetSection>
               <SheetSection title={dictionary.board.planningSection} editing={taskMode !== "view" && canManageItems} bodyClassName="space-y-3 px-4 py-3">
+              <TaskRecipientSelector value="internal" locked />
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
                   <label className={sheetFieldLabelClassName} htmlFor="task-edit-milestone">{dictionary.create.milestoneOptional}</label>
