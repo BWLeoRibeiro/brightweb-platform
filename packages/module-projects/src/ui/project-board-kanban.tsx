@@ -1,5 +1,6 @@
 "use client";
-import { clientTasksDictionary as copy } from "./client-tasks/dictionary";
+import { TaskRecipientTags, TaskRecipientFilter, matchesTaskRecipient, type TaskRecipientFilterValue } from "./shared/task-recipient-tags";
+import { TaskRecipientSelector } from "./task-recipient-fields";
 
 import { toIsoDate, parseIsoDate } from "./project-detail-create-sheets/date-utils";
 
@@ -42,7 +43,7 @@ import { useProjectBoardMilestoneEvents } from "./hooks/use-project-board-milest
 import { cn } from "./utils";
 import { isProjectDatePast } from "./shared/formatters";
 import { useProjectsNow } from "./shared/use-projects-now";
-import { openClientTaskPanel } from "./client-tasks/staff-client-tasks";
+import { openClientTaskPanel, usePresentedProjectTasks, MemberTaskLoadStatus } from "./client-tasks/staff-client-tasks";
 
 type ProjectBoardKanbanProps = {
   canManageItems: boolean;
@@ -104,7 +105,9 @@ export function ProjectBoardKanban({ canManageItems, canUpdateAssignedTasks = fa
   const client = useProjectsUiClient();
   const data = useProjectDetailData();
   const { replaceDashboard } = useProjectDetailActions();
-  const { project, tasks, milestones, members } = data;
+  const { project, tasks: storedTasks, milestones, members } = data;
+  const tasks = usePresentedProjectTasks(storedTasks);
+  const [recipientFilter, setRecipientFilter] = useState<TaskRecipientFilterValue>("all");
   const [milestoneFilter, setMilestoneFilter] = useState<MilestoneFilterValue>("all");
   const [dragTaskId, setDragTaskId] = useState<string | null>(null);
   const [dropTarget, setDropTarget] = useState<TaskStatus | null>(null);
@@ -132,7 +135,7 @@ export function ProjectBoardKanban({ canManageItems, canUpdateAssignedTasks = fa
   const taskStartDateValue = useMemo(() => parseIsoDate(taskStartDate), [taskStartDate]);
   const taskDueDateValue = useMemo(() => parseIsoDate(taskDueDate), [taskDueDate]);
   const milestoneById = useMemo(() => new Map(milestones.map((milestone) => [milestone.id, milestone])), [milestones]);
-  const filteredTasks = useMemo(() => tasks.filter((task) => milestoneFilter === "all" ? true : milestoneFilter === "__none__" ? !task.milestoneId : task.milestoneId === milestoneFilter), [milestoneFilter, tasks]);
+  const filteredTasks = useMemo(() => tasks.filter((task) => matchesTaskRecipient(task, recipientFilter) && (milestoneFilter === "all" ? true : milestoneFilter === "__none__" ? !task.milestoneId : task.milestoneId === milestoneFilter)), [milestoneFilter, recipientFilter, tasks]);
   const assignableMembers = useMemo(
     () => members.filter((member) => member.role === "owner" || member.role === "contributor"),
     [members],
@@ -292,6 +295,8 @@ export function ProjectBoardKanban({ canManageItems, canUpdateAssignedTasks = fa
   return (
     <TooltipProvider>
       <>
+        <TaskRecipientFilter value={recipientFilter} onChange={setRecipientFilter} />
+        <MemberTaskLoadStatus />
         <section className="dashboard-reveal grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           {columns.map((column) => {
             const columnTasks = filteredTasks.filter((task) => task.status === column.key).sort((a, b) => a.position - b.position || a.createdAt.localeCompare(b.createdAt));
@@ -324,8 +329,8 @@ export function ProjectBoardKanban({ canManageItems, canUpdateAssignedTasks = fa
                         className={cn("w-full rounded-[var(--radius-card)] border border-[color:var(--border)] bg-[color:var(--card)] p-2.5 text-left shadow-[var(--project-board-card-shadow)] transition hover:border-[color:var(--project-board-card-hover-border)] hover:shadow-[var(--project-board-card-hover-shadow)]", movingTaskId === task.id ? "cursor-wait opacity-70" : canUpdateTask(task) ? "cursor-grab active:cursor-grabbing" : "cursor-pointer")}
                         data-status={column.key}
                       >
-                        <div className="flex items-start justify-between gap-2"><p className="text-body text-foreground min-w-0 flex-1 font-semibold leading-snug line-clamp-2" title={task.title}>{task.title}</p><TaskPriorityTag task={task} /></div>
-                        <span className="text-label font-semibold text-muted-foreground">{task.kind === "client" ? copy.clientKind : copy.internalKind}</span>
+                        <div className="flex items-start justify-between gap-2"><p className="text-body text-foreground min-w-0 flex-1 font-semibold leading-snug line-clamp-2" title={task.title}>{task.title}</p>{task.kind !== "client" ? <TaskPriorityTag task={task} /> : null}</div>
+                        <div className="mt-2 flex flex-wrap items-center gap-1.5"><TaskRecipientTags task={task} /></div>
                         {task.description?.trim() ? <p className="text-meta text-muted-foreground mt-1 line-clamp-2 text-[color:var(--muted-foreground)]" title={task.description}>{task.description}</p> : null}
                         <div className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1"><TaskDueMeta dueDate={task.dueDate} isOverdue={isTaskOverdue(task, now)} /><TaskMilestoneMeta title={milestone?.title ?? null} /></div>
                         <div className="mt-1.5"><TaskAssigneeMeta label={task.assigneeLabel} /></div>
@@ -356,6 +361,7 @@ export function ProjectBoardKanban({ canManageItems, canUpdateAssignedTasks = fa
                   {taskStatus === "blocked" ? <div><label className={sheetFieldLabelClassName} htmlFor="board-task-blocked">{dictionary.forms.blockedReason}</label>{taskMode === "view" ? <p className="mt-1.5 rounded-md border border-[color:var(--project-board-blocked-reason-border)] bg-[color:var(--project-board-blocked-reason-surface)] px-3 py-2 text-body text-[color:var(--project-risk-at-risk-strong)]">{taskBlockedReason.trim() || dictionary.board.noBlockedReason}</p> : <Input id="board-task-blocked" value={taskBlockedReason} onChange={(event) => setTaskBlockedReason(event.target.value)} required className={cn(sheetEditControlClassName, "mt-1.5")} />}</div> : null}
                 </SheetSection>
                 <SheetSection title={dictionary.board.planningSection} editing={taskMode === "edit" && canManageItems} bodyClassName="space-y-3 px-4 py-3">
+                  <TaskRecipientSelector value="internal" locked />
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div><label className={sheetFieldLabelClassName} htmlFor="board-task-milestone">{dictionary.board.optionalMilestone}</label>{taskMode === "view" || !canManageItems ? <p className={sheetViewValueClassName}>{milestones.find((item) => item.id === taskMilestoneId)?.title ?? dictionary.board.noMilestone}</p> : <StyledSelect id="board-task-milestone" value={taskMilestoneId} onChange={(event) => setTaskMilestoneId(event.target.value)} className={cn(sheetEditControlClassName, "mt-1.5 block w-full text-foreground outline-none")}><option value="">{dictionary.board.noMilestone}</option>{milestones.map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}</StyledSelect>}</div>
                     <div><label className={sheetFieldLabelClassName} htmlFor="board-task-assignee">{dictionary.board.optionalAssignee}</label>{taskMode === "view" || !canManageItems ? <p className={sheetViewValueClassName}>{members.find((item) => item.profileId === taskAssigneeProfileId)?.label ?? dictionary.board.noAssignee}</p> : <StyledSelect id="board-task-assignee" value={taskAssigneeProfileId} onChange={(event) => setTaskAssigneeProfileId(event.target.value)} className={cn(sheetEditControlClassName, "mt-1.5 block w-full text-foreground outline-none")}><option value="">{dictionary.board.noAssignee}</option>{assignableMembers.map((item) => <option key={item.profileId} value={item.profileId}>{item.label}</option>)}</StyledSelect>}</div>

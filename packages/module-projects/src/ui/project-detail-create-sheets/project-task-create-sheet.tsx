@@ -1,5 +1,9 @@
 "use client";
 
+import { clientTasksDictionary as copy } from "../client-tasks/dictionary";
+import { useOptionalMemberTasks, MemberTaskLoadStatus } from "../client-tasks/staff-client-tasks";
+import { TaskRecipientSelector, MemberTaskResponsibleField, MemberTaskAudienceFields, useMemberTaskRecipients, type TaskRecipient } from "../task-recipient-fields";
+
 import { useTaskSubmission } from "../use-task-submission";
 
 import { validateTaskDraft } from "../task-form";
@@ -33,7 +37,7 @@ import { cn } from "../utils";
 
 type ProjectTaskCreateSheetProps = {
   projectId: string;
-  milestones: Array<{ id: string; title: string }>;
+  milestones: Array<{ id: string; title: string; visibility?: string }>;
   members: Array<{ profileId: string; label: string; role?: "owner" | "contributor" | "observer" }>;
   initialOpen?: boolean;
 };
@@ -47,6 +51,11 @@ export function ProjectTaskCreateSheet({
   const client = useProjectsUiClient();
   const dictionary = useProjectsUiDictionary();
   const router = useRouter();
+  const memberTasks = useOptionalMemberTasks();
+  const organizations = memberTasks?.resource.data?.organizations ?? [];
+  const recipients = useMemberTaskRecipients(null, organizations);
+  const [recipient, setRecipient] = useState<TaskRecipient>("internal");
+  const isMemberTask = recipient === "client";
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [status, setStatus] = useState("todo");
@@ -57,6 +66,7 @@ export function ProjectTaskCreateSheet({
   const [dueDate, setDueDate] = useState("");
   const [blockedReason, setBlockedReason] = useState("");
   const { open, onOpenChange, isSubmitting, submit } = useTaskSubmission(client, projectId, initialOpen);
+  const busy = isSubmitting || Boolean(isMemberTask && memberTasks?.resource.busy);
   const taskDraft = validateTaskDraft({ projectId, title, status, blockedReason, startDate, dueDate });
   useEffect(() => { if (status !== "blocked") setBlockedReason(""); }, [status]);
   const startDateValue = useMemo(() => parseIsoDate(startDate), [startDate]);
@@ -101,44 +111,72 @@ export function ProjectTaskCreateSheet({
     setBlockedReason("");
   };
 
+  const canSave = isMemberTask
+    ? Boolean(memberTasks?.canCreateMemberTasks && title.trim() && description.trim() && recipients.valid)
+    : taskDraft.valid;
+  const changeRecipient = (next: TaskRecipient) => {
+    if (busy || (next === "client" && !memberTasks?.canCreateMemberTasks)) return;
+    setRecipient(next);
+    setAssigneeProfileId("");
+    recipients.reset();
+    // A private milestone must never cross into member-facing configuration.
+    if (next === "client" && !milestones.some((milestone) => milestone.id === milestoneId && milestone.visibility === "client")) setMilestoneId("");
+  };
+  const changeOpen = (next: boolean) => {
+    if (isMemberTask && busy) return;
+    onOpenChange(next);
+    if (!next && isMemberTask) {
+      resetForm();
+      recipients.reset();
+      setRecipient("internal");
+    }
+  };
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (isSubmitting || !taskDraft.valid) return;
-
+    if (busy || !canSave) return;
     await submit({
-      save: () => createTask(client, projectId, {
-        ...taskDraft.input,
-        description: description.trim() || undefined,
-        status,
-        priority,
-        milestoneId: milestoneId || undefined,
-        assigneeProfileId: assigneeProfileId || undefined,
-      }),
-      onPersisted: () => router.refresh(),
+      save: async () => {
+        if (isMemberTask) {
+          const saved = await memberTasks?.createMemberTask({
+            clientTitle: title.trim(), clientInstructions: description.trim(), ...recipients.input,
+            milestoneId: milestones.some((milestone) => milestone.id === milestoneId && milestone.visibility === "client") ? milestoneId : null,
+            dueDate: dueDate || null,
+          });
+          if (!saved) throw new Error(copy.saveError);
+          return;
+        }
+        return createTask(client, projectId, {
+          ...taskDraft.input, description: description.trim() || undefined, status, priority,
+          milestoneId: milestoneId || undefined, assigneeProfileId: memberOptions.some((member) => member.profileId === assigneeProfileId) ? assigneeProfileId : undefined,
+        });
+      },
+      onPersisted: () => { if (!isMemberTask) router.refresh(); },
       onSuccess: () => {
-        toast.success(dictionary.create.taskCreated);
+        if (!isMemberTask) toast.success(dictionary.create.taskCreated);
         onOpenChange(false);
         resetForm();
+        recipients.reset();
+        setRecipient("internal");
       },
       onError: (error) => {
-        toast.error(error instanceof Error ? error.message : dictionary.create.taskCreateFallbackError);
+        if (!isMemberTask) toast.error(error instanceof Error ? error.message : dictionary.create.taskCreateFallbackError);
       },
     });
   };
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
+    <Sheet open={open} onOpenChange={changeOpen}>
       <SheetContent className={sheetShellClassName}>
         <AppSheetHeader
           icon={ListChecks}
           editing
           eyebrow={dictionary.create.creatingEyebrow}
           title={dictionary.forms.newTask}
-          description={dictionary.create.taskDescription}
+          description={isMemberTask ? copy.draftHint : dictionary.create.taskDescription}
         />
 
         <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
-          <div className={`${sheetBodyClassName} space-y-4`}>
+          <fieldset disabled={busy} className={`${sheetBodyClassName} min-w-0 space-y-4`}>
             <SheetSection title={dictionary.board.contentSection} editing bodyClassName="space-y-3 px-4 py-3">
               <div>
                 <label className={sheetFieldLabelClassName} htmlFor="task-create-title">{dictionary.forms.title}</label>
@@ -147,21 +185,50 @@ export function ProjectTaskCreateSheet({
                   value={title}
                   onChange={(event) => setTitle(event.target.value)}
                   required
+                  maxLength={isMemberTask ? 240 : undefined}
                   className={cn(sheetEditControlClassName, "mt-1.5")}
                 />
               </div>
               <div>
-                <label className={sheetFieldLabelClassName} htmlFor="task-create-desc">{dictionary.create.optionalDescription}</label>
+                <label className={sheetFieldLabelClassName} htmlFor="task-create-desc">{isMemberTask ? copy.instructions : dictionary.create.optionalDescription}</label>
                 <textarea
                   id="task-create-desc"
                   value={description}
                   onChange={(event) => setDescription(event.target.value)}
+                  required={isMemberTask}
+                  maxLength={isMemberTask ? 20000 : undefined}
                   rows={3}
                   className={cn("mt-1.5 min-h-[72px]", sheetAccentTextareaClassName)}
                 />
               </div>
             </SheetSection>
 
+            <SheetSection title={dictionary.board.planningSection} editing bodyClassName="space-y-4 px-4 py-3">
+              <TaskRecipientSelector value={recipient} onChange={changeRecipient} canCreateMemberTasks={Boolean(memberTasks?.canCreateMemberTasks)} />
+              {isMemberTask ? <MemberTaskResponsibleField recipients={recipients} id="task-create-member-assignee" /> : (
+                <div>
+                  <label className={sheetFieldLabelClassName} htmlFor="task-create-assignee">{dictionary.create.assigneeOptional}</label>
+                  <StyledSelect
+                    id="task-create-assignee"
+                    value={assigneeProfileId}
+                    onChange={(event) => setAssigneeProfileId(event.target.value)}
+                    className={cn(sheetEditControlClassName, "mt-1.5 text-foreground outline-none")}
+                  >
+                    <option value="">{dictionary.board.noAssignee}</option>
+                    {memberOptions.map((member) => (
+                      <option key={member.profileId} value={member.profileId}>
+                        {member.label}
+                      </option>
+                    ))}
+                  </StyledSelect>
+                </div>
+              )}
+              {isMemberTask ? <>
+                <MemberTaskLoadStatus />
+                <MemberTaskAudienceFields recipients={recipients} organizations={organizations} id="task-create-member" />
+              </> : <p className="text-meta text-muted-foreground">{copy.staffAssigneeHint}</p>}
+            </SheetSection>
+            {!isMemberTask ? <>
             <SheetSection title={dictionary.board.executionSection} editing bodyClassName="space-y-3 px-4 py-3">
               <div className="grid gap-3 sm:grid-cols-2">
                 <div>
@@ -201,46 +268,20 @@ export function ProjectTaskCreateSheet({
               ) : null}
             </SheetSection>
 
+            </> : null}
             <SheetSection title={dictionary.board.planningSection} editing bodyClassName="space-y-3 px-4 py-3">
-              <div className="grid gap-3 sm:grid-cols-2">
-                <div>
-                  <label className={sheetFieldLabelClassName} htmlFor="task-create-milestone">{dictionary.create.milestoneOptional}</label>
-                  <StyledSelect
-                    id="task-create-milestone"
-                    value={milestoneId}
-                    onChange={(event) => setMilestoneId(event.target.value)}
-                    className={cn(sheetEditControlClassName, "mt-1.5 text-foreground outline-none")}
-                  >
-                    <option value="">{dictionary.board.noMilestone}</option>
-                    {milestones.map((milestone) => (
-                      <option key={milestone.id} value={milestone.id}>
-                        {milestone.title}
-                      </option>
-                    ))}
-                  </StyledSelect>
-                </div>
-                <div>
-                  <label className={sheetFieldLabelClassName} htmlFor="task-create-assignee">{dictionary.create.assigneeOptional}</label>
-                  <StyledSelect
-                    id="task-create-assignee"
-                    value={assigneeProfileId}
-                    onChange={(event) => setAssigneeProfileId(event.target.value)}
-                    className={cn(sheetEditControlClassName, "mt-1.5 text-foreground outline-none")}
-                  >
-                    <option value="">{dictionary.board.noAssignee}</option>
-                    {memberOptions.map((member) => (
-                      <option key={member.profileId} value={member.profileId}>
-                        {member.label}
-                      </option>
-                    ))}
-                  </StyledSelect>
-                </div>
+              <div>
+                <label className={sheetFieldLabelClassName} htmlFor="task-create-milestone">{isMemberTask ? copy.milestoneOptional : dictionary.create.milestoneOptional}</label>
+                <StyledSelect id="task-create-milestone" value={milestoneId} onChange={(event) => setMilestoneId(event.target.value)} className={cn(sheetEditControlClassName, "mt-1.5 text-foreground outline-none")}>
+                  <option value="">{dictionary.board.noMilestone}</option>
+                  {milestones.filter((milestone) => !isMemberTask || milestone.visibility === "client").map((milestone) => <option key={milestone.id} value={milestone.id}>{milestone.title}</option>)}
+                </StyledSelect>
               </div>
             </SheetSection>
 
             <SheetSection title={dictionary.board.calendarSection} editing bodyClassName="px-4 py-3">
               <div className="grid gap-3 sm:grid-cols-2">
-              <div>
+              {!isMemberTask ? <div>
                 <label className={sheetFieldLabelClassName} htmlFor="task-create-start">{dictionary.create.startDateOptional}</label>
                 <Popover>
                   <PopoverTrigger asChild>
@@ -253,7 +294,7 @@ export function ProjectTaskCreateSheet({
                     <Calendar mode="single" captionLayout="dropdown" className="rounded-lg border" selected={startDateValue} onSelect={(date) => setStartDate(toIsoDate(date))} initialFocus />
                   </PopoverContent>
                 </Popover>
-              </div>
+              </div> : null}
               <div>
                 <label className={sheetFieldLabelClassName} htmlFor="task-create-due">{dictionary.create.dueDateOptional}</label>
                 <Popover>
@@ -286,13 +327,14 @@ export function ProjectTaskCreateSheet({
               </div>
               </div>
             </SheetSection>
-          </div>
-          <SheetFooter className={`${sheetFooterClassName} flex-row gap-2`}>
-            <Button type="submit" className="flex-1" disabled={isSubmitting || !taskDraft.valid}>
+          </fieldset>
+          <SheetFooter className={`${sheetFooterClassName} flex-row flex-wrap gap-2`}>
+            <p className="w-full text-meta text-muted-foreground">{isMemberTask ? copy.draftHint : copy.internalRecipientHint}</p>
+            <Button type="submit" className="flex-1" disabled={busy || !canSave}>
               <Save className="mr-2 h-4 w-4" />
-              {isSubmitting ? dictionary.create.creating : dictionary.create.createTask}
+              {busy ? dictionary.create.creating : isMemberTask ? copy.saveDraft : dictionary.create.createTask}
             </Button>
-            <Button type="button" variant="outline" className="flex-1" onClick={() => onOpenChange(false)}>
+            <Button type="button" variant="outline" className="flex-1" disabled={isMemberTask && busy} onClick={() => changeOpen(false)}>
               {dictionary.actions.cancel}
             </Button>
           </SheetFooter>

@@ -7,7 +7,7 @@ import { PROJECTS_EVENTS } from "../events";
 import { useOptionalProjectDetailData } from "../project-detail-data-provider";
 import { useWindowEventBridge } from "../window-events";
 
-type MilestoneOption = { id: string; title: string };
+type MilestoneOption = { id: string; title: string; visibility?: string };
 type MemberOption = { profileId: string; label: string; role?: "owner" | "contributor" | "observer" };
 
 type ProjectDetailCreateSheetsMountProps = {
@@ -91,7 +91,7 @@ export function ProjectDetailCreateSheetsMount({
 }: ProjectDetailCreateSheetsMountProps) {
   const detailData = useOptionalProjectDetailData();
   const milestoneOptions = detailData
-    ? detailData.milestones.map((milestone) => ({ id: milestone.id, title: milestone.title }))
+    ? detailData.milestones.map((milestone) => ({ id: milestone.id, title: milestone.title, visibility: milestone.visibility }))
     : milestoneProps;
   const memberOptions = detailData
     ? detailData.members

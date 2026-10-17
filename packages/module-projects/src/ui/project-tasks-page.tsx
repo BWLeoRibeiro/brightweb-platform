@@ -1,5 +1,4 @@
 "use client";
-import { clientTasksDictionary as copy } from "./client-tasks/dictionary";
 
 import type { ProjectDashboardData } from "../types";
 import { ProjectsUiProvider } from "./context";
@@ -9,7 +8,7 @@ import { ProjectDetailCreateSheetsMount } from "./project-detail-create-sheets/p
 import { ProjectDetailDataProvider } from "./project-detail-data-provider";
 import { ProjectEditSheetLazy } from "./project-lazy-panels";
 import type { ProjectsNavigationConfig, ProjectsUiClient, ProjectsUiDictionary } from "./types";
-import { StaffClientTasks } from "./client-tasks/staff-client-tasks";
+import { ProjectClientTasksProvider } from "./client-tasks/staff-client-tasks";
 import { PROJECTS_EVENTS, dispatchProjectsEvent } from "./events";
 import { Button } from "@brightweblabs/ui";
 
@@ -33,13 +32,14 @@ export function ProjectTasksPage({ client, initialData, permissions, projectRole
   return (
     <ProjectsUiProvider client={client} dictionary={dictionary} navigation={navigation}>
       <ProjectDetailDataProvider initialData={initialData}>
+        <ProjectClientTasksProvider key={initialData.project.id} projectId={initialData.project.id} capabilities={{ canCreateTasks, canShareClientTasks: access.canShareClientTasks ?? access.canEditProjectItems, canReviewClientTasks: access.canReviewClientTasks ?? access.canEditProjectItems }}>
         <div className="mx-auto flex w-full max-w-[1360px] flex-col gap-6">
-          {canCreateTasks ? <div><Button type="button" variant="outline" onClick={() => dispatchProjectsEvent(PROJECTS_EVENTS.openNewTask)}>{copy.createInternalTask}</Button></div> : null}
+          {canCreateTasks ? <div><Button type="button" variant="outline" onClick={() => dispatchProjectsEvent(PROJECTS_EVENTS.openNewTask)}>{dictionary.forms.newTask}</Button></div> : null}
           <ProjectBoardKanban canManageItems={access.canEditProjectItems} canUpdateAssignedTasks={access.canUpdateAssignedTasks} viewerProfileId={viewerProfileId} />
-          <StaffClientTasks key={initialData.project.id} projectId={initialData.project.id} capabilities={{ canCreateTasks, canShareClientTasks: access.canShareClientTasks ?? access.canEditProjectItems, canReviewClientTasks: access.canReviewClientTasks ?? access.canEditProjectItems }} />
           {access.canOpenEditProject ? <ProjectEditSheetLazy projectId={initialData.project.id} projectRole={projectRole} /> : null}
           <ProjectDetailCreateSheetsMount projectId={initialData.project.id} canCreateMilestonesAndTasks={access.canEditProjectItems} canCreateTasks={canCreateTasks} canCreateLinks={access.canCreateProjectLinks} canManageClientContent={access.canManageClientContent} />
         </div>
+        </ProjectClientTasksProvider>
       </ProjectDetailDataProvider>
     </ProjectsUiProvider>
   );
