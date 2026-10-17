@@ -10,6 +10,9 @@ app/
 ├── globals.css
 ├── theme.css
 ├── crm/page.tsx                  # when CRM is selected
+├── marketing/page.tsx            # when Marketing is selected
+├── projetos/page.tsx             # when Projects is selected
+├── account/projetos/page.tsx     # client-safe Projects account area
 ├── admin/users/page.tsx          # when Admin is selected
 └── api/                          # direct package handler aliases
 config/
@@ -27,7 +30,7 @@ postcss.config.mjs
 tsconfig.json
 ```
 
-CRM and Admin route files mount package surfaces. Projects contributes settings, dependency wiring, and migrations, but no route or generated navigation until its package exports default UI.
+CRM, Marketing, Projects, and Admin route files mount package surfaces. Marketing and Projects also contribute complete package-backed API route families; Projects adds staff and client-safe account pages.
 
 ## Site app
 

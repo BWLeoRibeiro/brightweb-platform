@@ -8,6 +8,8 @@ const packageDirectoryByName = {
   "@brightweblabs/core-auth": "packages/core-auth",
   "@brightweblabs/module-admin": "packages/module-admin",
   "@brightweblabs/module-crm": "packages/module-crm",
+  "@brightweblabs/module-marketing": "packages/module-marketing",
+  "@brightweblabs/module-orgs": "packages/module-orgs",
   "@brightweblabs/module-projects": "packages/module-projects",
 } as const;
 
@@ -17,7 +19,9 @@ const docModulePackages = {
     { label: "Admin", packageName: "@brightweblabs/module-admin" },
     { label: "App Shell", packageName: "@brightweblabs/app-shell" },
   ],
+  "/docs/modules/orgs": [{ label: "Organizations", packageName: "@brightweblabs/module-orgs" }],
   "/docs/modules/crm": [{ label: "CRM", packageName: "@brightweblabs/module-crm" }],
+  "/docs/modules/marketing": [{ label: "Marketing", packageName: "@brightweblabs/module-marketing" }],
   "/docs/modules/projects": [{ label: "Projects", packageName: "@brightweblabs/module-projects" }],
 } as const;
 

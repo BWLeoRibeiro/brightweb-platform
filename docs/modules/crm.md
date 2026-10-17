@@ -8,16 +8,18 @@ Use [Base Contract](./base-contract.md) for the support-tier rules and [base-con
 
 ## What schema it installs
 
-- Baseline tables: crm_contacts and crm_status_log
-- Integration migration: invitation acceptance linkage and primary-contact membership synchronization after Organizations is installed
+- Baseline tables: `crm_contacts` and `crm_status_log`
+- Organization integration: invitation acceptance linkage and primary-contact membership synchronization after Organizations is installed
+- Multi-organization compatibility: `crm_contact_organizations` records every contact-to-organization relationship while `crm_contacts.organization_id` remains the primary organization projection for existing consumers
 
 ## What package and domain logic it provides
 
 | Concern | Current behavior |
 | --- | --- |
 | CRM package | `@brightweblabs/module-crm` exports server/data contracts; `@brightweblabs/module-crm/ui` exports the default CRM screen and its focused surfaces. |
-| Server helpers | The package exports reusable CRM read helpers, the complete `getCrmReportData()` aggregate, contact create/update/delete operations, SQL-backed single and bulk status transitions, plus the starter `getCrmDashboardData()` helper. |
+| Server helpers | The package exports reusable CRM read helpers, profile-to-contact synchronization, the complete `getCrmReportData()` aggregate, contact create/update/delete operations, SQL-backed single and bulk status transitions, plus the starter `getCrmDashboardData()` helper. |
 | Route handlers | The package exports package-owned CRM reads and report handlers plus staff-only POST, PATCH, and DELETE handlers for contacts. |
+| Route pages | `@brightweblabs/module-crm/routes` exports authenticated dashboard, organization list/detail, and report server components for thin app routes. |
 | Shared dependencies | The package depends on `@brightweblabs/module-orgs` and also reads shared platform tables such as `profiles` and `user_role_assignments`. |
 
 ## Whether it adds starter routes and wiring
@@ -53,14 +55,17 @@ The current CRM contract is intentionally small:
 - `@brightweblabs/module-crm/server`: `setCrmContactStatus()`
 - `@brightweblabs/module-crm/server`: `bulkSetCrmContactStatus()`
 - `@brightweblabs/module-crm/server`: `deleteCrmContact()`
+- `@brightweblabs/module-crm/server`: `ensureCrmContactForProfile()`
 - `@brightweblabs/module-crm`: `handleCrmContactsPostRequest()`
 - `@brightweblabs/module-crm`: `handleCrmContactsPatchRequest()`
+- `@brightweblabs/module-crm`: `handleCrmOrganizationsPostRequest()`, `handleCrmOrganizationPatchRequest()`, and `handleCrmOrganizationInvitationsPostRequest()`
 
 ### Starter
 
 - `@brightweblabs/module-crm`: `getCrmDashboardData()`
 - `@brightweblabs/module-crm`: `getCrmReportData()`, `handleCrmReportGetRequest()`, and `handleCrmContactsDeleteRequest()`
 - `@brightweblabs/module-crm/ui`: `CrmDashboard`, `CrmReport`, `CrmReportPage`, organization/timeline browsers, dialogs, Portuguese dictionary, stage metadata, and default client
+- `@brightweblabs/module-crm/routes`: `CrmDashboardRoutePage`, `CrmOrganizationsRoutePage`, `CrmOrganizationRoutePage`, and `CrmReportRoutePage`
 
 The dashboard helper and default UI are marked `starter`: they are supported fast-start surfaces, but their composition may evolve before becoming stable. The smaller server helper and request-handler contracts remain stable.
 
@@ -183,6 +188,34 @@ Use these helpers when you want reusable CRM primitives that an app or AI agent 
 Keep authentication at the page or route boundary, then pass the authenticated server Supabase client into the helpers you need. This lets larger apps progressively load sections and avoid dashboard-only overfetch. For example, an initial contacts page can load `listCrmContacts()`, `listCrmOrganizations()`, `getCrmContactStatusStats()`, and `listCrmStatusTimeline()` without also loading `listCrmOwnerOptions()` or `listCrmPrimaryContacts()`. Apps with custom ownership or role rules can replace `listCrmOwnerOptions()` with app-owned logic while still using the other CRM helpers.
 
 `getCrmDashboardData()` remains backward-compatible and now composes these helpers internally. Treat it as starter page glue for generated apps, not as the only supported CRM loading shape.
+
+### Link profiles and organizations to CRM contacts
+
+`ensureCrmContactForProfile()` is the server-only bridge used by organization access flows. It finds or creates the CRM contact for a profile, refuses to take over a contact already linked to another profile, and optionally links an additional organization through the service-role-only `link_crm_contact_organization` database function.
+
+The `crm_contact_organizations` table is additive. `crm_contacts.organization_id` remains the primary relationship and existing contact reads continue to join it explicitly through `crm_contacts_organization_id_fkey`. Additional organization memberships do not silently replace that primary organization.
+
+```ts
+import { ensureCrmContactForProfile } from "@brightweblabs/module-crm/server";
+
+const result = await ensureCrmContactForProfile(profileId, {
+  source: "organization_invitation",
+  organizationId,
+  serviceClient,
+});
+```
+
+Treat a `success: false` result as an incomplete access workflow. Organization invitation handlers use this outcome to report or roll back the associated membership operation where possible.
+
+### Mount package-owned CRM pages
+
+Thin app routes can re-export authenticated package pages:
+
+```tsx
+export { CrmDashboardRoutePage as default } from "@brightweblabs/module-crm/routes";
+```
+
+The route components enforce `admin` or `staff` access and render the package-owned dashboard, organization list/detail, or report surface.
 
 ### Write contacts and funnel status
 

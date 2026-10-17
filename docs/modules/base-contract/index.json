@@ -7,7 +7,7 @@
       "title": "Platform Base",
       "file": "platform-base.json",
       "doc": "../platform-base.md",
-      "entryCount": 65,
+      "entryCount": 90,
       "summary": "Core auth and admin-backed platform base surfaces."
     },
     {
@@ -15,7 +15,7 @@
       "title": "Admin",
       "file": "admin.json",
       "doc": "../platform-base.md",
-      "entryCount": 13,
+      "entryCount": 22,
       "summary": "Admin server helpers, handlers, and packaged users, invitations, and toolbar UI."
     },
     {
@@ -23,7 +23,7 @@
       "title": "CRM",
       "file": "crm.json",
       "doc": "../crm.md",
-      "entryCount": 55,
+      "entryCount": 63,
       "summary": "CRM shell registration, stable read/write helpers, package-owned request handlers, and starter dashboard glue."
     },
     {
@@ -31,15 +31,23 @@
       "title": "Organizations",
       "file": "orgs.json",
       "doc": "../orgs.md",
-      "entryCount": 6,
+      "entryCount": 29,
       "summary": "Organization data, membership helpers, and hidden shell registration."
+    },
+    {
+      "moduleKey": "marketing",
+      "title": "Marketing",
+      "file": "marketing.json",
+      "doc": "../marketing.md",
+      "entryCount": 74,
+      "summary": "Consent, campaigns, segments, workflows, analytics, delivery, handlers, and package-owned Marketing UI."
     },
     {
       "moduleKey": "projects",
       "title": "Projects",
       "file": "projects.json",
       "doc": "../projects.md",
-      "entryCount": 48,
+      "entryCount": 82,
       "summary": "Projects shell registration, stable portfolio helpers, package-owned list and detail UI, and starter portfolio glue."
     }
   ]

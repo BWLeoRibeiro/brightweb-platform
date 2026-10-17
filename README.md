@@ -40,7 +40,7 @@ pnpm build:docs
 Public docs live under `docs/` and are organized into:
 
 - `docs/foundations`: install flow, template choice, and generated project structure
-- `docs/modules`: platform base behavior plus CRM and Projects module boundaries
+- `docs/modules`: platform base behavior plus Admin, Organizations, CRM, Marketing, and Projects module boundaries
 - `docs/recipes`: practical workflows and manual follow-up tasks
 
 Maintainer-only notes live under `docs/internal/` and are intentionally excluded from the normal docs app navigation.
@@ -68,7 +68,7 @@ Current scaffold behavior:
 
 - prompts for `platform` or `site`
 - prompts for the project name
-- supports optional platform module selection for `admin`, `crm`, and `projects`
+- supports optional platform module selection for `admin`, `crm`, `marketing`, and `projects`
 - writes `package.json`, `next.config.ts`, `.gitignore`, and `README.md` for both templates
 - writes `.env.local`, shell wiring, and module flags for platform apps
 - keeps repo-local generated apps on `workspace:*` dependencies in workspace mode
@@ -77,7 +77,7 @@ In workspace mode the generator creates the app under `apps/<slug>`. For platfor
 
 Platform mode always resolves to the `Core + Admin` database baseline. Selecting `admin` only controls whether the Admin starter UI and package wiring are scaffolded.
 
-Published usage after npm release:
+Published usage:
 
 ```bash
 pnpm dlx create-bw-app
@@ -110,26 +110,23 @@ The shared registry lives in `supabase/module-registry.json`. Client-specific pl
 
 ## Publishing
 
-This repo is prepared to publish the `@brightweblabs/*` packages and the unscoped `create-bw-app` CLI.
+This repo publishes the `@brightweblabs/*` packages and the unscoped `create-bw-app` CLI.
 
 Release flow:
 
-```bash
-pnpm changeset
-pnpm release:version
-pnpm install
-git add .
-git commit -m "Version packages"
-git push
-```
+1. Add a changeset with the package change using `pnpm changeset`, then open a feature PR.
+2. Merge the feature PR after CI passes. Successful main CI triggers `.github/workflows/release.yml`, which creates or updates the automated version PR.
+3. Review and merge the version PR after its checks pass. The release workflow publishes only after CI succeeds for that versioned commit and confirms it is still current main.
 
-GitHub Actions then publishes packages from `main` when the release PR lands.
+Changesets runs `pnpm release:version` inside the version PR workflow. This also synchronizes `brightweb-release.json` and the generated app dependency defaults.
 
 Because the current packages publish TypeScript source, consuming Next.js apps should keep the relevant `transpilePackages` entries for the `@brightweblabs/*` packages they install.
 
-Before the first publish, you still need to:
+Publishing requires:
 
-1. Create or claim the `@brightweblabs` npm scope.
-2. Create an npm automation token with publish access.
-3. Add `NPM_TOKEN` as a GitHub Actions secret in the repository.
-4. Run one initial release with Changesets.
+1. npm ownership or publish access for the scoped packages and `create-bw-app`.
+2. A trusted publisher configured for each npm package, authorizing this GitHub repository and the `release.yml` workflow.
+3. The existing workflow's `id-token: write` permission and GitHub-hosted runner for OIDC authentication. The normal release does not require an `NPM_TOKEN` secret.
+4. Passing CI and the Changesets version PR flow above.
+
+See [npm Publishing Setup](docs/internal/operations/npm-publishing.md) for the trusted-publisher configuration and manual-release policy.

@@ -55,6 +55,9 @@ importers:
 
   apps/dev-docs:
     dependencies:
+      '@brightweblabs/theme':
+        specifier: workspace:*
+        version: link:../../packages/theme
       '@brightweblabs/ui':
         specifier: workspace:*
         version: link:../../packages/ui
