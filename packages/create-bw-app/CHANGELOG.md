@@ -1,5 +1,11 @@
 # create-bw-app
 
+## 0.27.8
+
+### Patch Changes
+
+- d5e1d3b: Document published usage and package and migration provenance checks while retaining the current ownership, destructive-migration and live-database verification safeguards. No runtime behavior changes.
+
 ## 0.27.7
 
 ### Patch Changes
