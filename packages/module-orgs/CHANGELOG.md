@@ -1,5 +1,30 @@
 # @brightweblabs/module-orgs
 
+## 0.7.6
+
+### Patch Changes
+
+- fabd657: Clarify copy for CRM records, organisation membership, internal project teams, project sharing and invitation acceptance. Explain queued member additions, immediate versus invited access, future-member project sharing and separately saved organisations. Show the selected invitation scope and distinguish portal profiles from organisation roles without changing permissions, defaults or invitation delivery behaviour.
+- Updated dependencies [fabd657]
+- Updated dependencies [fabd657]
+- Updated dependencies [fabd657]
+  - @brightweblabs/core-auth@0.12.3
+  - @brightweblabs/ui@1.5.7
+  - @brightweblabs/app-shell@0.16.5
+
+## 0.7.5
+
+### Patch Changes
+
+- 75841f5: Protect profile identity across browser insert, update and upsert; resolve grants from current confirmed Auth identity and recheck it under transaction locks. Require confirmed first-admin setup and fail closed on conflicting identities. Apply Core/Admin/Orgs identity migrations atomically with checked prerequisites, and refuse invitation operations until their required SQL is installed.
+
+## 0.7.4
+
+### Patch Changes
+
+- Updated dependencies [a7dbad1]
+  - @brightweblabs/app-shell@0.16.4
+
 ## 0.7.3
 
 ### Patch Changes

@@ -276,32 +276,35 @@ test("published platform scaffolds resolved supabase migrations for the selected
     (await fs.readdir(path.join(targetDir, "supabase", "migrations"))).filter((fileName) => fileName.endsWith(".sql")),
     [
       "0001_core__20260316090000_core_v1.sql",
-      "0002_core__20260726180000_enable_rate_limit_counters_rls.sql",
-      "0003_core__20260731120000_core_notifications.sql",
-      "0004_core__20260731122000_core_realtime_activity.sql",
-      "0005_core__20260731130000_profile_search_indexes.sql",
-      "0006_core__20260801120000_core_notification_dismissals.sql",
-      "0007_core__20260906111323_restrict_profile_identity_sync.sql",
-      "0008_admin__20260316091000_admin_v1.sql",
-      "0009_admin__20260724121000_admin_user_invitations.sql",
+      "0002_admin__20260316091000_admin_v1.sql",
+      "0003_orgs__20260316091500_orgs_v1.sql",
+      "0004_crm__20260316092000_crm_v1.sql",
+      "0005_crm__20260316092010_crm_org_integration.sql",
+      "0006_crm__20260421201523_portal_read_indexes.sql",
+      "0007_crm__20260724120000_crm_status_authorization.sql",
+      "0008_admin__20260724121000_admin_user_invitations.sql",
+      "0009_core__20260726180000_enable_rate_limit_counters_rls.sql",
       "0010_admin__20260729120000_bootstrap_first_admin.sql",
       "0011_admin__20260729150000_bootstrap_first_admin_remove_force.sql",
-      "0012_admin__20260731122500_admin_activity_visibility.sql",
-      "0013_admin__20260814100000_admin_client_invitations.sql",
-      "0014_admin__20260906101616_atomic_admin_invitation_acceptance.sql",
-      "0015_admin__20260908120000_admin_profile_directory_visibility.sql",
-      "0016_orgs__20260316091500_orgs_v1.sql",
-      "0017_orgs__20260731130100_organization_search_indexes.sql",
-      "0018_orgs__20260812120000_staff_only_organization_access_management.sql",
-      "0019_orgs__20260906101616_atomic_organization_invitation_acceptance.sql",
-      "0020_orgs__20260906113855_atomic_organization_member_assignment.sql",
-      "0021_crm__20260316092000_crm_v1.sql",
-      "0022_crm__20260316092010_crm_org_integration.sql",
-      "0023_crm__20260421201523_portal_read_indexes.sql",
-      "0024_crm__20260724120000_crm_status_authorization.sql",
-      "0025_crm__20260731130200_crm_collection_indexes.sql",
-      "0026_crm__20260816120000_crm_contact_organizations.sql",
-      "0027_crm__20260906101616_atomic_invitation_contact_link.sql",
+      "0012_core__20260731120000_core_notifications.sql",
+      "0013_core__20260731122000_core_realtime_activity.sql",
+      "0014_admin__20260731122500_admin_activity_visibility.sql",
+      "0015_core__20260731130000_profile_search_indexes.sql",
+      "0016_orgs__20260731130100_organization_search_indexes.sql",
+      "0017_crm__20260731130200_crm_collection_indexes.sql",
+      "0018_core__20260801120000_core_notification_dismissals.sql",
+      "0019_orgs__20260812120000_staff_only_organization_access_management.sql",
+      "0020_admin__20260814100000_admin_client_invitations.sql",
+      "0021_crm__20260816120000_crm_contact_organizations.sql",
+      "0022_admin__20260906101616_atomic_admin_invitation_acceptance.sql",
+      "0023_orgs__20260906101616_atomic_organization_invitation_acceptance.sql",
+      "0024_crm__20260906101616_atomic_invitation_contact_link.sql",
+      "0025_core__20260906111323_restrict_profile_identity_sync.sql",
+      "0026_orgs__20260906113855_atomic_organization_member_assignment.sql",
+      "0027_admin__20260908120000_admin_profile_directory_visibility.sql",
+      "0028_core__20261014183138_protect_profile_identity.sql",
+      "0029_admin__20261014183138_auth_verified_admin_acceptance.sql",
+      "0030_orgs__20261014183138_auth_verified_organization_membership.sql",
     ],
   );
 
@@ -373,44 +376,49 @@ test("projects scaffolding resolves organizations without CRM", async (t) => {
     .filter((fileName) => fileName.endsWith(".sql"));
   assert.deepEqual(migrations, [
     "0001_core__20260316090000_core_v1.sql",
-    "0002_core__20260726180000_enable_rate_limit_counters_rls.sql",
-    "0003_core__20260731120000_core_notifications.sql",
-    "0004_core__20260731122000_core_realtime_activity.sql",
-    "0005_core__20260731130000_profile_search_indexes.sql",
-    "0006_core__20260801120000_core_notification_dismissals.sql",
-    "0007_core__20260906111323_restrict_profile_identity_sync.sql",
-    "0008_admin__20260316091000_admin_v1.sql",
-    "0009_admin__20260724121000_admin_user_invitations.sql",
-    "0010_admin__20260729120000_bootstrap_first_admin.sql",
-    "0011_admin__20260729150000_bootstrap_first_admin_remove_force.sql",
-    "0012_admin__20260731122500_admin_activity_visibility.sql",
-    "0013_admin__20260814100000_admin_client_invitations.sql",
-    "0014_admin__20260906101616_atomic_admin_invitation_acceptance.sql",
-    "0015_admin__20260908120000_admin_profile_directory_visibility.sql",
-    "0016_orgs__20260316091500_orgs_v1.sql",
+    "0002_admin__20260316091000_admin_v1.sql",
+    "0003_orgs__20260316091500_orgs_v1.sql",
+    "0004_projects__20260316093000_projects_v1.sql",
+    "0005_projects__20260421201528_portal_read_indexes.sql",
+    "0006_admin__20260724121000_admin_user_invitations.sql",
+    "0007_core__20260726180000_enable_rate_limit_counters_rls.sql",
+    "0008_admin__20260729120000_bootstrap_first_admin.sql",
+    "0009_admin__20260729150000_bootstrap_first_admin_remove_force.sql",
+    "0010_core__20260731120000_core_notifications.sql",
+    "0011_projects__20260731121000_project_notification_audiences.sql",
+    "0012_core__20260731122000_core_realtime_activity.sql",
+    "0013_admin__20260731122500_admin_activity_visibility.sql",
+    "0014_projects__20260731123000_project_realtime_visibility.sql",
+    "0015_projects__20260731124000_project_task_stats.sql",
+    "0016_core__20260731130000_profile_search_indexes.sql",
     "0017_orgs__20260731130100_organization_search_indexes.sql",
-    "0018_orgs__20260812120000_staff_only_organization_access_management.sql",
-    "0019_orgs__20260906101616_atomic_organization_invitation_acceptance.sql",
-    "0020_orgs__20260906113855_atomic_organization_member_assignment.sql",
-    "0021_projects__20260316093000_projects_v1.sql",
-    "0022_projects__20260421201528_portal_read_indexes.sql",
-    "0023_projects__20260731121000_project_notification_audiences.sql",
-    "0024_projects__20260731123000_project_realtime_visibility.sql",
-    "0025_projects__20260731124000_project_task_stats.sql",
-    "0026_projects__20260731130300_project_collection_indexes.sql",
-    "0027_projects__20260801122000_project_member_sync.sql",
-    "0028_projects__20260804120000_project_task_start_date.sql",
-    "0029_projects__20260804123000_project_start_date.sql",
-    "0030_projects__20260810120000_project_client_access.sql",
-    "0031_projects__20260811120000_project_client_access_expand.sql",
-    "0032_projects__20260811120500_project_member_sync_hardening.sql",
-    "0033_projects__20260811121000_project_client_access_enforcement.sql",
-    "0034_projects__20260811121500_project_client_organization_memberships.sql",
-    "0035_projects__20260811121700_project_client_meta_preview.sql",
-    "0036_projects__20260811122000_project_client_access_identity_cleanup.sql",
-    "0037_projects__20260811122500_remove_project_client_next_steps.sql",
-    "0038_projects__20260815120000_project_client_access_member_roles.sql",
-    "0039_projects__20260815133000_project_admin_creation_and_task_permissions.sql",
+    "0018_projects__20260731130300_project_collection_indexes.sql",
+    "0019_core__20260801120000_core_notification_dismissals.sql",
+    "0020_projects__20260801122000_project_member_sync.sql",
+    "0021_projects__20260804120000_project_task_start_date.sql",
+    "0022_projects__20260804123000_project_start_date.sql",
+    "0023_projects__20260810120000_project_client_access.sql",
+    "0024_projects__20260811120000_project_client_access_expand.sql",
+    "0025_projects__20260811120500_project_member_sync_hardening.sql",
+    "0026_projects__20260811121000_project_client_access_enforcement.sql",
+    "0027_projects__20260811121500_project_client_organization_memberships.sql",
+    "0028_projects__20260811121700_project_client_meta_preview.sql",
+    "0029_projects__20260811122000_project_client_access_identity_cleanup.sql",
+    "0030_projects__20260811122500_remove_project_client_next_steps.sql",
+    "0031_orgs__20260812120000_staff_only_organization_access_management.sql",
+    "0032_admin__20260814100000_admin_client_invitations.sql",
+    "0033_projects__20260815120000_project_client_access_member_roles.sql",
+    "0034_projects__20260815133000_project_admin_creation_and_task_permissions.sql",
+    "0035_admin__20260906101616_atomic_admin_invitation_acceptance.sql",
+    "0036_orgs__20260906101616_atomic_organization_invitation_acceptance.sql",
+    "0037_core__20260906111323_restrict_profile_identity_sync.sql",
+    "0038_orgs__20260906113855_atomic_organization_member_assignment.sql",
+    "0039_admin__20260908120000_admin_profile_directory_visibility.sql",
+    "0040_core__20261014183138_protect_profile_identity.sql",
+    "0041_admin__20261014183138_auth_verified_admin_acceptance.sql",
+    "0042_orgs__20261014183138_auth_verified_organization_membership.sql",
+    "0043_projects__20261015135430_enforce_task_milestone_project.sql",
+    "0044_projects__20261015143936_client_task_collaboration.sql",
   ]);
   assert.equal(migrations.some((fileName) => fileName.includes("_crm__")), false);
 
@@ -891,7 +899,7 @@ test("apply rewrites only managed files and leaves app-owned pages alone", async
   );
 });
 
-test("install runner is called only when requested and package.json changed", async (t) => {
+test("explicit installation runs after updating dependencies", async (t) => {
   const { tempRoot, targetDir } = await scaffoldPlatformApp({
     modules: ["crm"],
     workspaceRoot: REPO_ROOT,
@@ -914,3 +922,125 @@ test("install runner is called only when requested and package.json changed", as
 
   assert.deepEqual(calls, [{ packageManager: "pnpm", cwd: await fs.realpath(targetDir) }]);
 });
+
+for (const operation of ["update", "upgrade"] as const) {
+  test(`${operation} retries failed installation even after package requirements were written`, async (t) => {
+    const { tempRoot, targetDir } = await scaffoldPlatformApp({ modules: ["crm"], workspaceRoot: REPO_ROOT });
+    t.after(() => fs.rm(tempRoot, { recursive: true, force: true }));
+    await updateBrightwebDependencyVersion(targetDir, "@brightweblabs/core-auth", "^0.0.1");
+    const migrationsDir = path.join(targetDir, "supabase", "migrations");
+    const snapshot = async () => Object.fromEntries(await Promise.all((await fs.readdir(migrationsDir)).sort().map(async name => [name, await fs.readFile(path.join(migrationsDir, name), "utf8")])));
+    const before = await snapshot();
+    let attempts = 0;
+    const runtime = {
+      workspaceRoot: REPO_ROOT,
+      fetchImpl: await createMockNpmFetch(),
+      installRunner: async () => {
+        attempts += 1;
+        if (attempts === 1) throw new Error("Synthetic installer failure");
+      },
+    };
+    const invoke = async (install = true, dryRun = false) => operation === "update"
+      ? updateBrightwebApp({ targetDir, install, dryRun }, runtime)
+      : (await import("../packages/create-bw-app/src/upgrade.mjs")).upgradeBrightwebApp(undefined, { targetDir, install, dryRun }, runtime);
+    await assert.rejects(invoke(), /Synthetic installer failure/);
+    assert.equal((await readJson(path.join(targetDir, "package.json"))).dependencies["@brightweblabs/core-auth"], `^${await releaseVersion("@brightweblabs/core-auth")}`);
+    await invoke();
+    assert.equal(attempts, 2, "Retry must perform the installation that previously failed");
+    assert.deepEqual(await snapshot(), before, "Retry preserves historical migration bytes and does not append duplicates");
+    await invoke(false);
+    await invoke(true, true);
+    assert.equal(attempts, 2, "Omitted installation and dry run must not invoke installer");
+  });
+}
+
+test("upgrade metadata uses the explicitly configured installation registry", async (t) => {
+  const { tempRoot, targetDir } = await scaffoldPlatformApp({ modules: ["crm"], workspaceRoot: REPO_ROOT });
+  t.after(() => fs.rm(tempRoot, { recursive: true, force: true }));
+  const previous = process.env.npm_config_registry;
+  process.env.npm_config_registry = "https://registry.fixture.invalid/";
+  t.after(() => {
+    if (previous === undefined) delete process.env.npm_config_registry;
+    else process.env.npm_config_registry = previous;
+  });
+  const fetchPackage = await createMockNpmFetch();
+  let lookups = 0;
+  await updateBrightwebApp({ targetDir, dryRun: true }, {
+    workspaceRoot: REPO_ROOT,
+    fetchImpl: async (url: string) => {
+      assert.equal(new URL(url).origin, "https://registry.fixture.invalid");
+      lookups += 1;
+      return fetchPackage(url);
+    },
+  });
+  assert.ok(lookups > 0);
+});
+
+for (const operation of ["update", "upgrade"] as const) {
+  test(`${operation} reuses verified install and recovers lock or installed-package drift`, async t => {
+    const { tempRoot, targetDir } = await scaffoldPlatformApp({ modules: ["crm"], workspaceRoot: REPO_ROOT });
+    t.after(() => fs.rm(tempRoot, { recursive: true, force: true }));
+    const writeJson = (file: string, value: unknown) => fs.writeFile(file, JSON.stringify(value));
+    let attempts = 0, failNext = false;
+    const lock = path.join(targetDir, "pnpm-lock.yaml");
+    const manifestPath = path.join(targetDir, ".brightweb/app-manifest.json");
+    const runtime = {
+      workspaceRoot: REPO_ROOT, fetchImpl: await createMockNpmFetch(),
+      installRunner: async () => {
+        attempts++;
+        if (failNext) { failNext = false; throw new Error("Synthetic incomplete installation"); }
+        const pkg = await readJson(path.join(targetDir, "package.json"));
+        for (const [name, range] of Object.entries(pkg.dependencies)) {
+          if (!name.startsWith("@brightweblabs/")) continue;
+          const directory = path.join(targetDir, "node_modules", ...name.split("/"));
+          await fs.mkdir(directory, { recursive: true });
+          await writeJson(path.join(directory, "package.json"), { name, version: String(range).replace(/^[~^]/, "") });
+        }
+        await fs.writeFile(lock, "lockfileVersion: '9.0'\n# synthetic completed install\n");
+      },
+    };
+    const invoke = () => operation === "update"
+      ? updateBrightwebApp({ targetDir, install: true }, runtime)
+      : import("../packages/create-bw-app/src/upgrade.mjs").then(({ upgradeBrightwebApp }) => upgradeBrightwebApp(undefined, { targetDir, install: true }, runtime));
+    await invoke();
+    assert.equal(attempts, 1);
+    const manifest = await fs.readFile(manifestPath, "utf8"), lockBytes = await fs.readFile(lock, "utf8");
+    await invoke();
+    assert.equal(attempts, 1, "An identical successful upgrade must not launch another installation");
+    assert.equal(await fs.readFile(manifestPath, "utf8"), manifest);
+    assert.equal(await fs.readFile(lock, "utf8"), lockBytes);
+    const installed = path.join(targetDir, "node_modules/@brightweblabs/core-auth/package.json");
+    for (const drift of ["version", "missing", "malformed"]) {
+      if (drift === "version") await writeJson(installed, { version: "0.0.1" });
+      else if (drift === "missing") await fs.rm(installed);
+      else await fs.writeFile(installed, "{incomplete");
+      const before = attempts;
+      await invoke();
+      assert.equal(attempts, before + 1, `Installed ${drift} drift requires reconciliation`);
+    }
+    const patch = path.join(targetDir, "patches/shared.patch");
+    await fs.mkdir(path.dirname(patch), { recursive: true });
+    await fs.writeFile(patch, "synthetic patch v1\n");
+    for (const [file, bytes] of [
+      [path.join(targetDir, "pnpm-workspace.yaml"), "allowBuilds:\n  sharp: true\noverrides:\n  react: 19.2.5\npatchedDependencies:\n  synthetic: patches/shared.patch\n"],
+      [path.join(targetDir, ".npmrc"), "registry=https://registry.npmjs.org/\n"],
+      [patch, "synthetic patch v2\n"],
+    ]) {
+      await fs.writeFile(file, bytes);
+      const before = attempts;
+      await invoke();
+      assert.equal(attempts, before + 1, "Changed package-manager configuration or patch must invalidate install proof");
+      await invoke();
+      assert.equal(attempts, before + 1);
+    }
+    await fs.appendFile(lock, "# changed input\n");
+    failNext = true;
+    await assert.rejects(invoke(), /Synthetic incomplete installation/);
+    assert.equal((await readJson(manifestPath)).lastSuccessfulInstall, undefined, "A failed retry must revoke earlier install proof");
+    const failedAttempts = attempts;
+    await invoke();
+    assert.equal(attempts, failedAttempts + 1);
+    await invoke();
+    assert.equal(attempts, failedAttempts + 1);
+  });
+}

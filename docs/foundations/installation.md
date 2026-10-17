@@ -21,12 +21,12 @@ Common variants:
 
 - Show all options: `pnpm dlx create-bw-app --help`
 - Start from the site template directly: `pnpm dlx create-bw-app --template site`
-- Preconfigure a platform app and skip install: `pnpm dlx create-bw-app --name client-portal --modules crm,projects --no-install`
+- Preconfigure a platform app and skip install: `pnpm dlx create-bw-app --name client-portal --modules crm,marketing,projects --no-install`
 - Use npm instead of pnpm: `npm create bw-app@latest -- --template site`
 
 ## Choose the right template
 
-- **Platform app**: authenticated BrightWeb app shell with optional shared business modules such as CRM and Projects.
+- **Platform app**: authenticated BrightWeb app shell with optional shared business modules such as CRM, Marketing, and Projects.
 - **Site app**: lighter standalone Next.js site starter without the full BrightWeb platform runtime.
 
 If you are unsure, start with `platform` only when you need shared platform auth, shell, or module-backed product work. Otherwise choose `site`.

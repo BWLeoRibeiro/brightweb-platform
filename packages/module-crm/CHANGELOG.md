@@ -1,5 +1,34 @@
 # @brightweblabs/module-crm
 
+## 0.18.7
+
+### Patch Changes
+
+- fabd657: Clarify copy for CRM records, organisation membership, internal project teams, project sharing and invitation acceptance. Explain queued member additions, immediate versus invited access, future-member project sharing and separately saved organisations. Show the selected invitation scope and distinguish portal profiles from organisation roles without changing permissions, defaults or invitation delivery behaviour.
+- Updated dependencies [fabd657]
+- Updated dependencies [fabd657]
+- Updated dependencies [fabd657]
+  - @brightweblabs/module-orgs@0.7.6
+  - @brightweblabs/core-auth@0.12.3
+  - @brightweblabs/ui@1.5.7
+  - @brightweblabs/app-shell@0.16.5
+
+## 0.18.6
+
+### Patch Changes
+
+- a0b27d1: Match CRM contacts by moving the organization workspace Edit action to the full-width sheet footer and exposing organization deletion in the edit sheet. Connect deletion in the workspace and detail page, remove deleted organizations from the list, and show API rejection errors in the confirmation dialog.
+- Updated dependencies [75841f5]
+  - @brightweblabs/module-orgs@0.7.5
+
+## 0.18.5
+
+### Patch Changes
+
+- Updated dependencies [a7dbad1]
+  - @brightweblabs/app-shell@0.16.4
+  - @brightweblabs/module-orgs@0.7.4
+
 ## 0.18.4
 
 ### Patch Changes

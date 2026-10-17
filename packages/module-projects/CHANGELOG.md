@@ -1,5 +1,46 @@
 # @brightweblabs/module-projects
 
+## 0.21.0
+
+### Minor Changes
+
+- d5ea645: Unify internal and member tasks in the project task panel and creation form. Select the task recipient before its responsible person, filter tasks by recipient, and show member publication and review status while preserving existing authorization and explicit draft/publish workflows.
+
+## 0.20.1
+
+### Patch Changes
+
+- fabd657: Clarify copy for CRM records, organisation membership, internal project teams, project sharing and invitation acceptance. Explain queued member additions, immediate versus invited access, future-member project sharing and separately saved organisations. Show the selected invitation scope and distinguish portal profiles from organisation roles without changing permissions, defaults or invitation delivery behaviour.
+- fabd657: Use neutral member-facing copy for sign-in, unfinished milestones and projects without shared milestones. Localize the member project search clear action through an optional label while preserving the shared component's default. Permissions, actions, milestone selection and invitation behaviour are unchanged.
+- fabd657: Use member terminology for portal accounts and organisation access while retaining CRM contacts and organisations. Make project access and team management actions visible, highlight selected members, and show member identities to existing access managers without changing permissions or role identifiers.
+- Updated dependencies [fabd657]
+- Updated dependencies [fabd657]
+- Updated dependencies [fabd657]
+  - @brightweblabs/module-orgs@0.7.6
+  - @brightweblabs/core-auth@0.12.3
+  - @brightweblabs/ui@1.5.7
+  - @brightweblabs/app-shell@0.16.5
+
+## 0.20.0
+
+### Minor Changes
+
+- 75841f5: Add deliberately authored client tasks within each project's existing organization audience. Draft publication, current-role task capabilities, versioned client submissions and exact-version staff return/accept preserve private internal work and existing project, milestone and member management permissions. Forward SQL keeps legacy tasks internal, retains the same-project milestone invariant and revokes stale selected task grants.
+
+### Patch Changes
+
+- 75841f5: Refuse client-task migration atomically when any API role is a direct or indirect member of an existing task executor, including SET-only role chains. Existing task data, guards and permissions remain unchanged on refusal; removing the unsafe role grant allows the migration to retry normally.
+- Updated dependencies [75841f5]
+  - @brightweblabs/module-orgs@0.7.5
+
+## 0.19.4
+
+### Patch Changes
+
+- Updated dependencies [a7dbad1]
+  - @brightweblabs/app-shell@0.16.4
+  - @brightweblabs/module-orgs@0.7.4
+
 ## 0.19.3
 
 ### Patch Changes

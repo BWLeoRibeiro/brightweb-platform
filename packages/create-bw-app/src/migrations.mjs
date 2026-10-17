@@ -1,4 +1,6 @@
 import semver from "semver";
+import { load as loadYaml } from "js-yaml";
+import { assertMutationTargets } from "./mutation-paths.mjs";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { createHash } from "node:crypto";
@@ -14,6 +16,39 @@ export async function findAppMigrationsDirectory(targetDir) {
     if (parent === current) return path.join(path.resolve(targetDir), "supabase", "migrations");
     current = parent;
   }
+}
+
+// Database migrations may belong to the containing consumer workspace, while
+// app files remain bounded to the app itself. Never realpath the migration
+// directory: that would hide links below the legitimate workspace boundary.
+export async function assertMigrationMutationTargets(targetDir, writes) {
+  if (writes.length === 0) return;
+  const appRoot = await fs.realpath(path.resolve(targetDir));
+  let boundary = appRoot;
+  let current = appRoot;
+  while (true) {
+    const workspacePath = path.join(current, "pnpm-workspace.yaml");
+    const workspaceConfig = await pathExists(workspacePath)
+      ? loadYaml(await fs.readFile(workspacePath, "utf8")) : null;
+    const manifestPath = path.join(current, "package.json");
+    const manifest = await pathExists(manifestPath)
+      ? JSON.parse(await fs.readFile(manifestPath, "utf8")) : null;
+    if ((workspaceConfig != null && Object.hasOwn(workspaceConfig, "packages"))
+      || manifest?.workspaces || await pathExists(path.join(current, ".git"))) {
+      boundary = current;
+      break;
+    }
+    const parent = path.dirname(current);
+    if (parent === current) break;
+    current = parent;
+  }
+  const migrationsDir = await findAppMigrationsDirectory(appRoot);
+  for (const write of writes) {
+    if (path.dirname(write.targetPath) !== migrationsDir) {
+      throw new Error("Migration write must target the app's discovered migrations directory.");
+    }
+  }
+  await assertMutationTargets(boundary, writes.map((write) => path.relative(boundary, write.targetPath)));
 }
 
 export async function getModuleMigrations(moduleKey, catalogEntry = {}) {
@@ -62,8 +97,11 @@ export async function planMigrationAppends({
     return Math.max(maximum, Number(match?.[1] || 0));
   }, 0);
   const appends = [];
+  const recovered = [];
   const deferred = [];
   const nextCursor = { ...migrationCursor };
+  let pendingGap = false;
+  let lastRecoveredFileName = null;
   for (const moduleKey of moduleKeys) {
     const migrations = await getModuleMigrations(moduleKey, catalog[moduleKey]);
     const cursor = migrationCursor[moduleKey];
@@ -90,10 +128,39 @@ export async function planMigrationAppends({
       ? migrationsInScope.filter((entry) => entry.fileName > cursor)
       : migrationsInScope;
     for (const entry of pending) {
-      sequence += 1;
-      const targetFileName = `${String(sequence).padStart(4, "0")}_${moduleKey}__${entry.fileName}`;
       const source = await fs.readFile(entry.sourcePath, "utf8");
       const version = catalog[moduleKey]?.version || "unknown";
+      const headerPattern = /^[ \t]*--[ \t]*bw-module:\s*([^@\s]+)@([^\s]+)\s+([^\s]+)[ \t]*\r?\n/;
+      const matches = existing.filter(file => {
+        const header = file.content.match(headerPattern);
+        return file.fileName === entry.fileName
+          || file.fileName.endsWith(`_${moduleKey}__${entry.fileName}`)
+          || (header?.[1] === moduleKey && header?.[3] === entry.fileName);
+      });
+      if (matches.length) {
+        if (matches.length !== 1) throw new Error(`Cannot recover migration ${moduleKey}/${entry.fileName}: multiple files claim the same source.`);
+        const previous = matches[0];
+        if (pendingGap || (lastRecoveredFileName && previous.fileName <= lastRecoveredFileName)) {
+          throw new Error(`Cannot recover migration ${moduleKey}/${entry.fileName}: existing SQL is not a contiguous ordered prefix. Reconcile interrupted history before upgrading.`);
+        }
+        lastRecoveredFileName = previous.fileName;
+        const header = previous.content.match(headerPattern);
+        const comparison = header && catalog[moduleKey]?.version ? compareSemver(header[2], version) : 0;
+        const sameIdentity = !header || (header[1] === moduleKey && header[3] === entry.fileName);
+        const previousSource = header ? previous.content.slice(header[0].length) : previous.content;
+        if (!sameIdentity || comparison == null || comparison > 0 || sha256(previousSource) !== sha256(source)) {
+          throw new Error(`Cannot recover migration ${moduleKey}/${entry.fileName}: existing source bytes or provenance conflict. Existing SQL was left untouched.`);
+        }
+        const owner = path.dirname(path.dirname(migrationsDir));
+        await assertMutationTargets(owner, [path.relative(owner, previous.targetPath)]);
+        // The previous attempt may have persisted SQL before its cursor write.
+        // Recover only an exact source match; never rewrite or duplicate history.
+        recovered.push({ moduleKey, originalFileName: entry.fileName, targetPath: previous.targetPath });
+        continue;
+      }
+      pendingGap = true;
+      sequence += 1;
+      const targetFileName = `${String(sequence).padStart(4, "0")}_${moduleKey}__${entry.fileName}`;
       appends.push({
         moduleKey,
         originalFileName: entry.fileName,
@@ -104,13 +171,13 @@ export async function planMigrationAppends({
     }
     if (migrationsInScope.length > 0) nextCursor[moduleKey] = migrationsInScope.at(-1).fileName;
   }
-  return { writes: appends, repairs: [], appends, deferred, nextCursor };
+  return { writes: appends, repairs: [], appends, recovered, deferred, nextCursor };
 }
 
 export async function applyMigrationWrites(writes) {
   for (const write of writes) {
     await fs.mkdir(path.dirname(write.targetPath), { recursive: true });
-    await fs.writeFile(write.targetPath, write.content, "utf8");
+    await fs.writeFile(write.targetPath, write.content, { encoding: "utf8", flag: "wx" });
   }
 }
 
@@ -186,7 +253,7 @@ export async function exactMigrationCompatibilityStatus({ targetDir, moduleKey, 
   const legacyEquivalent = [];
   for (const entry of migrationsInScope) {
     const matches = installed.filter(({ fileName, content }) => {
-      const header = content.match(/^\s*--\s*bw-module:\s*([^@\s]+)@([^\s]+)\s+([^\s]+)\s*\n/im);
+      const header = content.match(/^\s*--\s*bw-module:\s*([^@\s]+)@([^\s]+)\s+([^\s]+)[ \t]*\r?\n/im);
       return (header?.[1] === moduleKey && header?.[3] === entry.fileName)
         || fileName === entry.fileName
         || fileName.endsWith(`_${moduleKey}__${entry.fileName}`);
@@ -200,7 +267,7 @@ export async function exactMigrationCompatibilityStatus({ targetDir, moduleKey, 
       continue;
     }
     const [{ fileName, content }] = matches;
-    const header = content.match(/^\s*--\s*bw-module:\s*([^@\s]+)@([^\s]+)\s+([^\s]+)\s*\n/im);
+    const header = content.match(/^\s*--\s*bw-module:\s*([^@\s]+)@([^\s]+)\s+([^\s]+)[ \t]*\r?\n/im);
     const expectedVersion = catalogEntry?.version;
     if (expectedVersion && header) {
       const comparison = compareSemver(header[2], expectedVersion);

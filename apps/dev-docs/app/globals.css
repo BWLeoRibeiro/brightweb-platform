@@ -1,36 +1,14 @@
 @import "tailwindcss";
-
-@theme inline {
-  --font-sans: var(--font-sans);
-  --font-display: var(--font-display);
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-border: var(--border);
-  --color-panel: var(--panel);
-  --color-panel-strong: var(--panel-strong);
-  --color-accent: var(--accent);
-  --color-accent-soft: var(--accent-soft);
-  --color-danger: var(--danger);
-  --color-success: var(--success);
-  --color-ring: var(--ring);
-}
+@import "@brightweblabs/theme/css";
 
 :root {
   color-scheme: light;
-  --font-sans: "IBM Plex Sans", "Segoe UI", sans-serif;
-  --font-display: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif;
-  --background: #f2ede2;
-  --foreground: #19211d;
-  --muted-foreground: #556157;
-  --border: rgba(25, 33, 29, 0.14);
-  --panel: rgba(255, 255, 255, 0.74);
-  --panel-strong: rgba(255, 255, 255, 0.9);
-  --accent: #0e6a5f;
-  --accent-soft: rgba(14, 106, 95, 0.12);
-  --danger: #9d413e;
-  --success: #2d7c52;
-  --ring: rgba(14, 106, 95, 0.24);
+  --docs-panel: var(--card);
+  --docs-panel-strong: var(--popover);
+  --docs-accent: var(--primary);
+  --docs-accent-soft: color-mix(in srgb, var(--primary) 9%, transparent);
+  --docs-danger: var(--semantic-danger);
+  --docs-success: var(--semantic-success);
 }
 
 * {
@@ -44,25 +22,13 @@ html {
 body {
   margin: 0;
   min-height: 100vh;
-  background:
-    radial-gradient(circle at 12% 10%, rgba(117, 164, 120, 0.14), transparent 20rem),
-    radial-gradient(circle at 86% 12%, rgba(181, 141, 90, 0.16), transparent 18rem),
-    linear-gradient(180deg, #f8f4eb 0%, var(--background) 46%, #e8dfcf 100%);
+  background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-sans), sans-serif;
+  font-family: var(--font-body);
 }
 
 body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  background-image:
-    linear-gradient(rgba(25, 33, 29, 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(25, 33, 29, 0.03) 1px, transparent 1px);
-  background-size: 6rem 6rem;
-  mask-image: radial-gradient(circle at center, black, transparent 82%);
-  opacity: 0.55;
+  content: none;
 }
 
 a {
@@ -71,7 +37,7 @@ a {
 }
 
 ::selection {
-  background: rgba(14, 106, 95, 0.2);
+  background: color-mix(in srgb, var(--primary) 20%, transparent);
 }
 
 .eyebrow {
@@ -79,8 +45,8 @@ a {
   width: fit-content;
   padding: 0.38rem 0.7rem;
   border-radius: 999px;
-  background: var(--accent-soft);
-  color: var(--accent);
+  background: var(--docs-accent-soft);
+  color: var(--docs-accent);
   font-size: 0.75rem;
   font-weight: 700;
   letter-spacing: 0.08em;
@@ -132,7 +98,7 @@ a {
 .doc-prose-link:hover,
 .docs-inline-action:hover,
 .docs-secondary-link:hover {
-  color: var(--accent);
+  color: var(--docs-accent);
 }
 
 .docs-home-hero {
@@ -158,8 +124,7 @@ a {
 .doc-neighbor-card,
 .docs-mobile-pill {
   border: 1px solid var(--border);
-  backdrop-filter: blur(12px);
-  box-shadow: 0 16px 48px rgba(25, 33, 29, 0.08);
+  box-shadow: none;
 }
 
 .docs-home-copy {
@@ -195,8 +160,8 @@ a {
 }
 
 .docs-primary-link {
-  background: var(--foreground);
-  color: #f7f3eb;
+  background: var(--primary);
+  color: var(--primary-foreground);
 }
 
 .docs-primary-link:hover,
@@ -208,7 +173,7 @@ a {
 
 .docs-secondary-link,
 .docs-inline-action {
-  background: rgba(255, 255, 255, 0.62);
+  background: var(--secondary);
   color: var(--foreground);
 }
 
@@ -225,9 +190,7 @@ a {
 .source-note,
 .doc-neighbor-card,
 .docs-mobile-pill {
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.88), rgba(248, 243, 233, 0.72)),
-    radial-gradient(circle at top right, rgba(14, 106, 95, 0.1), transparent 42%);
+  background: var(--docs-panel);
 }
 
 .docs-home-hero-panel {
@@ -265,7 +228,7 @@ a {
   display: inline-flex;
   align-items: center;
   gap: 0.45rem;
-  color: var(--accent);
+  color: var(--docs-accent);
   font-size: 0.76rem;
   font-weight: 700;
   letter-spacing: 0.08em;
@@ -397,40 +360,44 @@ a {
 
 .docs-shell {
   display: grid;
-  grid-template-columns: 280px minmax(0, 1fr);
-  gap: 1.15rem;
+  grid-template-columns: 18rem minmax(0, 1fr);
+  gap: 0;
   min-height: 100vh;
-  padding: 1.1rem;
+  padding: 0;
 }
 
 .docs-sidebar {
   position: sticky;
-  top: 1.1rem;
+  top: 0;
   align-self: start;
-  max-height: calc(100vh - 2.2rem);
-  border-radius: 1.2rem;
+  height: 100vh;
+  max-height: 100vh;
+  border-width: 0 1px 0 0;
+  border-radius: 0;
   overflow: hidden;
 }
 
 .docs-sidebar-inner {
   display: grid;
-  gap: 1rem;
+  grid-template-rows: auto auto minmax(0, 1fr);
+  gap: 1.25rem;
   height: 100%;
-  padding: 1rem 0.95rem 1rem 1rem;
+  padding: 1.5rem 1.25rem;
 }
 
 .docs-brand {
   display: flex;
   align-items: center;
   gap: 0.85rem;
-  padding: 0 0.2rem 0.35rem;
+  padding: 0 0 1.25rem;
+  border-bottom: 1px solid var(--border);
 }
 
 .docs-brand strong {
   display: block;
-  font-family: var(--font-display), serif;
-  font-size: 1.25rem;
-  letter-spacing: -0.03em;
+  font-family: var(--font-heading);
+  font-size: 1rem;
+  letter-spacing: -0.015em;
 }
 
 .docs-brand small {
@@ -444,9 +411,9 @@ a {
   place-items: center;
   width: 2.8rem;
   height: 2.8rem;
-  border-radius: 1rem;
-  background: var(--foreground);
-  color: #f7f3eb;
+  border-radius: var(--radius);
+  background: var(--primary);
+  color: var(--primary-foreground);
   font-weight: 700;
   letter-spacing: 0.04em;
 }
@@ -462,7 +429,7 @@ a {
   grid-template-columns: auto minmax(0, 1fr);
   gap: 0.7rem;
   align-items: center;
-  padding: 0.8rem 0.2rem;
+  padding: 0;
 }
 
 .docs-sidebar-meta-card strong {
@@ -483,14 +450,15 @@ a {
   place-items: center;
   width: 2.2rem;
   height: 2.2rem;
-  border-radius: 0.8rem;
-  border: 1px solid rgba(14, 106, 95, 0.18);
-  background: rgba(14, 106, 95, 0.08);
-  color: var(--accent);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--muted);
+  color: var(--muted-foreground);
 }
 
 .docs-sidebar-sections {
   display: grid;
+  align-content: start;
   overflow-y: auto;
   padding: 0.25rem 0.15rem 0 0.2rem;
   gap: 0;
@@ -505,22 +473,21 @@ a {
   align-items: center;
   padding: 0.1rem;
   border: 1px solid transparent;
-  border-radius: 1rem;
-  transition: background 140ms ease, color 140ms ease, border-color 140ms ease, transform 140ms ease;
+  border-radius: var(--radius);
+  transition: background 140ms ease, color 140ms ease, border-color 140ms ease;
 }
 
 .docs-sidebar-section-header.active,
 .docs-sidebar-section-header.open {
-  color: var(--accent);
-  background: rgba(14, 106, 95, 0.06);
-  border-color: rgba(14, 106, 95, 0.16);
+  color: var(--docs-accent);
+  background: var(--docs-accent-soft);
+  border-color: var(--border);
 }
 
 .docs-sidebar-section-header:hover,
 .docs-sidebar-section-header:focus-within {
-  background: rgba(14, 106, 95, 0.05);
-  border-color: rgba(14, 106, 95, 0.12);
-  transform: translateY(-1px);
+  background: var(--muted);
+  border-color: var(--border);
 }
 
 .docs-sidebar-section-button {
@@ -530,7 +497,7 @@ a {
   width: 100%;
   padding: 0.55rem 0.7rem;
   border: 0;
-  border-radius: 0.9rem;
+  border-radius: calc(var(--radius) - 2px);
   background: transparent;
   color: var(--foreground);
   text-align: left;
@@ -540,12 +507,12 @@ a {
 
 .docs-sidebar-section-header.active .docs-sidebar-section-button,
 .docs-sidebar-section-header.open .docs-sidebar-section-button {
-  color: var(--accent);
+  color: var(--docs-accent);
 }
 
 .docs-sidebar-section-button:hover,
 .docs-sidebar-section-button:focus-visible {
-  color: var(--accent);
+  color: var(--docs-accent);
 }
 
 .docs-sidebar-section-trigger-copy {
@@ -584,24 +551,24 @@ a {
 .docs-sidebar-link {
   display: block;
   padding: 0.52rem 0.65rem;
-  border-radius: 0.8rem;
+  min-height: 2.5rem;
+  border-radius: var(--radius);
   color: var(--muted-foreground);
   font-size: 0.92rem;
   line-height: 1.35;
-  transition: color 140ms ease, background 140ms ease, transform 140ms ease;
+  transition: color 140ms ease, background 140ms ease;
 }
 
 .docs-sidebar-link.active,
 .docs-mobile-pill.active {
-  background: var(--accent-soft);
-  color: var(--accent);
+  background: var(--docs-accent-soft);
+  color: var(--docs-accent);
   font-weight: 600;
 }
 
 .docs-sidebar-link:hover {
-  background: rgba(14, 106, 95, 0.06);
+  background: var(--muted);
   color: var(--foreground);
-  transform: translateX(2px);
 }
 
 .docs-main {
@@ -609,8 +576,12 @@ a {
 }
 
 .docs-main-inner {
-  border-radius: 1.8rem;
-  padding: 1.55rem;
+  width: min(100%, 82rem);
+  margin: 0 auto;
+  border: 0;
+  border-radius: 0;
+  padding: 3.5rem clamp(2rem, 5vw, 5rem) 5rem;
+  background: transparent;
 }
 
 .docs-brand > span,
@@ -626,8 +597,10 @@ a {
 
 .doc-page-header {
   display: grid;
-  gap: 0.45rem;
-  margin-bottom: 1.1rem;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid var(--border);
 }
 
 .doc-page-meta {
@@ -650,9 +623,9 @@ a {
 .doc-page-meta-label {
   display: inline-flex;
   padding: 0.22rem 0.55rem;
-  border-radius: 999px;
-  background: var(--accent-soft);
-  color: var(--accent);
+  border-radius: var(--radius);
+  background: var(--muted);
+  color: var(--muted-foreground);
   font-size: 0.72rem;
   font-weight: 700;
   letter-spacing: 0.08em;
@@ -663,15 +636,15 @@ a {
   display: inline-grid;
   gap: 0.3rem;
   margin: 0 0 1.2rem;
-  border-radius: 1rem;
-  padding: 0.85rem 1rem;
-  background: rgba(255, 255, 255, 0.72);
-  border: 1px solid rgba(25, 33, 29, 0.08);
+  border-radius: var(--radius);
+  padding: 0.75rem 0.875rem;
+  background: var(--muted);
+  border: 1px solid var(--border);
 }
 
 .docs-repo-doc-label {
   margin: 0;
-  color: var(--accent);
+  color: var(--docs-accent);
   font-size: 0.76rem;
   font-weight: 700;
   letter-spacing: 0.08em;
@@ -680,39 +653,48 @@ a {
 
 .docs-prose-heading {
   scroll-margin-top: 5rem;
-  font-family: var(--font-display), serif;
-  letter-spacing: -0.04em;
+  font-family: var(--font-heading);
+  letter-spacing: -0.025em;
   color: var(--foreground);
   text-wrap: balance;
 }
 
 .doc-prose-h1 {
-  margin: 0.9rem 0 0;
-  font-size: clamp(2.7rem, 5vw, 4.6rem);
-  line-height: 0.95;
+  max-width: 22ch;
+  margin: 0;
+  font-size: clamp(2.25rem, 4vw, 3.25rem);
+  line-height: 1.05;
+  font-weight: var(--type-weight-bold);
 }
 
 .doc-prose-h2 {
-  margin: 2rem 0 0.85rem;
-  font-size: clamp(1.8rem, 3vw, 2.55rem);
+  max-width: 30ch;
+  margin: 2.75rem 0 0.85rem;
+  font-size: clamp(1.55rem, 2.5vw, 2rem);
+  line-height: 1.2;
+  font-weight: var(--type-weight-bold);
 }
 
 .doc-prose-h3 {
-  margin: 1.4rem 0 0.55rem;
-  font-size: 1.35rem;
+  margin: 2rem 0 0.55rem;
+  font-size: 1.25rem;
+  line-height: 1.3;
+  font-weight: var(--type-weight-bold);
 }
 
 .doc-prose-paragraph,
 .doc-callout-body,
 .doc-command-note,
 .source-note li {
+  max-width: 76ch;
   color: var(--muted-foreground);
-  line-height: 1.75;
+  line-height: 1.7;
   text-wrap: pretty;
   overflow-wrap: anywhere;
 }
 
 .doc-prose-list {
+  max-width: 76ch;
   display: grid;
   gap: 0.6rem;
   margin: 1rem 0;
@@ -730,9 +712,9 @@ a {
 }
 
 .doc-prose-link {
-  color: var(--accent);
+  color: var(--docs-accent);
   text-decoration: underline;
-  text-decoration-color: rgba(14, 106, 95, 0.28);
+  text-decoration-color: color-mix(in srgb, var(--docs-accent) 35%, transparent);
   text-decoration-thickness: 1px;
   text-underline-offset: 0.18em;
 }
@@ -742,10 +724,12 @@ a {
 }
 
 .doc-prose-quote {
+  max-width: 76ch;
   margin: 1rem 0;
   padding: 1rem 1.2rem;
-  border-left: 3px solid rgba(14, 106, 95, 0.28);
-  background: rgba(255, 255, 255, 0.62);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--muted);
   color: var(--muted-foreground);
   text-wrap: pretty;
   overflow-wrap: anywhere;
@@ -759,11 +743,11 @@ a {
 
 .doc-inline-code {
   display: inline;
-  border: 1px solid rgba(25, 33, 29, 0.1);
-  border-radius: 0.7rem;
-  padding: 0.14rem 0.48rem;
-  background: rgba(255, 255, 255, 0.82);
-  font-family: "IBM Plex Mono", "SFMono-Regular", ui-monospace, monospace;
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius) - 2px);
+  padding: 0.12rem 0.4rem;
+  background: var(--muted);
+  font-family: var(--font-code);
   font-size: 0.92em;
   color: var(--foreground);
   text-wrap: pretty;
@@ -775,10 +759,10 @@ a {
 .doc-code-shell {
   margin: 1rem 0;
   overflow: hidden;
-  border: 1px solid rgba(25, 33, 29, 0.12);
-  border-radius: 1.2rem;
-  background: rgba(255, 255, 255, 0.9);
-  box-shadow: 0 10px 24px rgba(25, 33, 29, 0.05);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  background: var(--card);
+  box-shadow: none;
 }
 
 .doc-code-block,
@@ -788,8 +772,8 @@ a {
   border-radius: 0;
   padding: 1.1rem 1.2rem 1.25rem;
   background: transparent;
-  color: #1f2522;
-  font-family: "IBM Plex Mono", "SFMono-Regular", ui-monospace, monospace;
+  color: var(--foreground);
+  font-family: var(--font-code);
   font-size: 0.93rem;
   line-height: 1.7;
   white-space: pre-wrap;
@@ -803,8 +787,8 @@ a {
   justify-content: space-between;
   gap: 0.8rem;
   padding: 0.9rem 1rem;
-  border-bottom: 1px solid rgba(25, 33, 29, 0.08);
-  background: rgba(249, 247, 242, 0.96);
+  border-bottom: 1px solid var(--border);
+  background: var(--muted);
 }
 
 .doc-code-header-label,
@@ -877,16 +861,16 @@ a {
   align-items: flex-start;
   justify-content: space-between;
   gap: 1rem;
-  border-radius: 1.35rem;
+  border-radius: var(--radius-card);
   padding: 1rem 1.05rem;
   transition: transform 160ms ease, border-color 160ms ease;
 }
 
 .doc-link-card-title {
   margin: 0;
-  font-family: var(--font-display), serif;
-  font-size: 1.3rem;
-  letter-spacing: -0.03em;
+  font-family: var(--font-heading);
+  font-size: 1.125rem;
+  letter-spacing: -0.015em;
 }
 
 .doc-link-card-summary,
@@ -900,22 +884,23 @@ a {
 
 .doc-link-card-icon,
 .doc-inline-icon {
-  color: var(--accent);
+  color: var(--docs-accent);
 }
 
 .doc-callout,
 .doc-command-block,
 .source-note {
   margin: 1rem 0;
-  border-radius: 1.3rem;
+  max-width: 76ch;
+  border-radius: var(--radius-card);
   padding: 1rem;
 }
 
 .doc-command-block {
   overflow: hidden;
-  border: 1px solid rgba(25, 33, 29, 0.12);
-  background: rgba(255, 255, 255, 0.9);
-  box-shadow: 0 10px 24px rgba(25, 33, 29, 0.05);
+  border: 1px solid var(--border);
+  background: var(--card);
+  box-shadow: none;
 }
 
 .doc-callout.warn {
@@ -949,14 +934,15 @@ a {
   border-collapse: collapse;
   border-spacing: 0;
   overflow: hidden;
-  border-radius: 1.15rem;
-  background: rgba(255, 255, 255, 0.75);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  background: var(--card);
 }
 
 .doc-table th,
 .doc-table td {
   padding: 0.9rem 0.95rem;
-  border-bottom: 1px solid rgba(25, 33, 29, 0.08);
+  border-bottom: 1px solid var(--border);
   text-align: left;
   vertical-align: top;
   text-wrap: pretty;
@@ -1160,13 +1146,13 @@ a {
 
 .dependency-card,
 .install-order-card {
-  border-radius: 1.3rem;
+  border-radius: var(--radius-card);
   padding: 1rem;
 }
 
 .dependency-label {
   margin: 0;
-  font-family: var(--font-display), serif;
+  font-family: var(--font-heading);
   font-size: 1.25rem;
   letter-spacing: -0.03em;
 }
@@ -1182,7 +1168,7 @@ a {
 .dependency-arrow {
   display: grid;
   place-items: center;
-  color: var(--accent);
+  color: var(--docs-accent);
 }
 
 .install-order-card ol {
@@ -1212,15 +1198,24 @@ a {
 .doc-neighbors {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 1rem;
-  margin-top: 2rem;
+  gap: 0;
+  margin-top: 3rem;
+  border-top: 1px solid var(--border);
 }
 
 .doc-neighbor-card {
   flex-direction: column;
+  min-height: 8.5rem;
+  border-width: 0 1px 0 0;
+  border-radius: 0;
+  padding: 1.25rem 1rem 1.25rem 0;
+  background: transparent;
 }
 
 .doc-neighbor-card.align-right {
+  border-right: 0;
+  padding-right: 0;
+  padding-left: 1rem;
   text-align: right;
 }
 
@@ -1243,20 +1238,33 @@ a {
 
   .docs-mobile-nav {
     position: sticky;
-    top: 0.7rem;
+    top: 0;
     z-index: 10;
     display: flex;
-    gap: 0.7rem;
+    gap: 0;
     overflow-x: auto;
-    padding-bottom: 0.25rem;
-    margin-bottom: 1rem;
+    margin: 0;
+    border-bottom: 1px solid var(--border);
+    background: color-mix(in srgb, var(--background) 94%, transparent);
+    backdrop-filter: blur(12px);
   }
 
   .docs-mobile-pill {
     flex: 0 0 auto;
-    border-radius: 999px;
-    padding: 0.7rem 0.95rem;
+    min-height: 3rem;
+    border-width: 0 1px 0 0;
+    border-radius: 0;
+    padding: 0.85rem 1rem;
+    background: transparent;
     white-space: nowrap;
+  }
+
+  .docs-mobile-pill.active {
+    box-shadow: inset 0 -2px 0 var(--primary);
+  }
+
+  .docs-main-inner {
+    padding: 2rem clamp(1.25rem, 5vw, 2.5rem) 4rem;
   }
 }
 
@@ -1276,5 +1284,16 @@ a {
   .docs-home-copy h1,
   .doc-prose-h1 {
     max-width: none;
+  }
+
+  .doc-neighbors {
+    border-top: 0;
+  }
+
+  .doc-neighbor-card,
+  .doc-neighbor-card.align-right {
+    border: 1px solid var(--border);
+    padding: 1rem;
+    text-align: left;
   }
 }

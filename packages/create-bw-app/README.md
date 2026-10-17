@@ -18,7 +18,7 @@ The workspace wrapper delegates to this package with `workspace:*` dependency wi
 
 ## Published usage
 
-Once this package is published to npm:
+Use the published package from npm:
 
 ```bash
 pnpm dlx create-bw-app
@@ -40,7 +40,7 @@ bw admin create --email owner@example.com
 - `bw add <moduleKey>` resolves requirements, installs thin package mounts and module wiring, and appends migrations.
 - `bw upgrade [moduleKey]` includes the existing managed update flow plus forward-only module migrations. For a staged database rollout, `bw upgrade <moduleKey> --through-migration <filename>` still updates packages and managed files but appends and records that module only through the named migration.
 - Destructive migrations are held at the preceding safe boundary. After compatible code is deployed and affected data is backed up, apply a held migration with an explicit module-scoped `bw upgrade <moduleKey> --include-destructive-migrations`. A destructive `--through-migration` target also requires that opt-in.
-- `bw doctor` checks package, config, scaffold, environment-name, migration, configured function-region, and deployed function-region consistency. App-owned scaffold files are preserved on upgrade; doctor warns when their recorded template baseline is outdated and their contents differ from the current template. Use `bw diff`, reconcile relevant changes, and verify behavior before recording the reviewed baseline with `bw scaffold manage <path>` followed by `bw scaffold own <path>` (neither replaces file contents). Live database objects, applied migrations, and authenticated permissions are explicitly **NOT VERIFIED** by doctor; a successful local result does not certify deployed behavior. Pass `--deployment-url` to inspect the deployed `x-vercel-id`; add `--report` to stamp the result in the app manifest.
+- `bw doctor` checks exact BrightWeb package and lockfile provenance, config, scaffold, environment-name, migration content and provenance, configured function-region, and deployed function-region consistency. Exact package provenance requires installed dependencies and a pnpm lockfile; migration provenance verifies compatible headers, source filenames, cursors, and SHA-256 content. App-owned scaffold files are preserved on upgrade; doctor warns when their recorded template baseline is outdated and their contents differ from the current template. Use `bw diff`, reconcile relevant changes, and verify behavior before recording the reviewed baseline with `bw scaffold manage <path>` followed by `bw scaffold own <path>` (neither replaces file contents). Live database objects, applied migrations, and authenticated permissions are explicitly **NOT VERIFIED** by doctor; a successful local result does not certify deployed behavior. Pass `--deployment-url` to inspect the deployed `x-vercel-id`; add `--report` to stamp the result in the app manifest.
 - `bw admin create --email <email>` creates a passwordless Supabase Auth user, transactionally ensures its profile and `admin` assignment, then sends the Core Auth `/reset-password` flow. It always refuses when the project already has an admin (use the in-app admin role controls to add administrators) and never promotes an existing Auth user.
 - All mutating commands support `--dry-run`.
 
@@ -82,7 +82,7 @@ Current updater behavior:
 - writes `package.json`, `next.config.ts`, `.gitignore`, and `README.md` for both templates
 - platform apps also write `.env.local`, `AGENTS.md`, `docs/ai/README.md`, `docs/ai/examples.md`, `docs/ai/app-context.json`, and generated config files for brand and module state
 - site apps also write `AGENTS.md`, `docs/ai/README.md`, `docs/ai/examples.md`, and `docs/ai/app-context.json` for app-local AI handoff
-- supports repo-local `workspace:*` wiring and future published dependency wiring
+- supports repo-local `workspace:*` wiring and published semver dependency wiring
 - writes `.brightweb/app-manifest.json` as the machine-authoritative scaffold and module record
 
 ## Workspace mode extras

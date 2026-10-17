@@ -98,8 +98,8 @@ export function CrmOrganizationsPage({ client: providedClient, navigation }: { c
       : { organization: await client.createOrganization(input), outcomes: [] };
     const created = result.organization;
     for (const outcome of result.outcomes) {
-      const message = outcome.status === "immediate_access" ? `Acesso imediato concedido a ${outcome.email}.`
-        : outcome.status === "membership_updated" ? `Função atualizada para ${outcome.email}.`
+      const message = outcome.status === "immediate_access" ? `Acesso à organização concedido imediatamente a ${outcome.email}.`
+        : outcome.status === "membership_updated" ? `Função nesta organização atualizada para ${outcome.email}.`
           : outcome.status === "already_member" ? `${outcome.email} já era membro.`
             : outcome.status === "pending_invitation" ? `Convite enviado para ${outcome.email}.`
               : outcome.status === "duplicate_pending" ? `Já existia um convite pendente para ${outcome.email}.`
@@ -122,7 +122,7 @@ export function CrmOrganizationsPage({ client: providedClient, navigation }: { c
         {visible.length > 0 ? <TablePagination page={1} totalPages={1} onPageChange={() => undefined} summary={`${visible.length} organizações`} previousLabel="Anterior" nextLabel="Seguinte" pageLabel={(page, totalPages) => `Página ${page} de ${totalPages}`} /> : null}
       </SurfaceCard>
       <CrmOrganizationSheet open={createOpen} onOpenChange={setOrganizationCreateOpen} onSubmit={createOrganization} />
-      <CrmOrganizationWorkspaceSheet open={selected !== null} organization={selected} client={client} onOpenChange={(open) => { if (!open) selectOrganization(null); }} onOpenContact={openContact} onOrganizationChange={(updated) => { setSelected(updated); setOrganizations((items) => items.map((item) => item.id === updated.id ? updated : item)); }} />
+      <CrmOrganizationWorkspaceSheet open={selected !== null} organization={selected} client={client} onOpenChange={(open) => { if (!open) selectOrganization(null); }} onOpenContact={openContact} onOrganizationDelete={(deleted) => { setOrganizations((items) => items.filter((item) => item.id !== deleted.id)); selectOrganization(null); }} onOrganizationChange={(updated) => { setSelected(updated); setOrganizations((items) => items.map((item) => item.id === updated.id ? updated : item)); }} />
     </div>
   );
 }

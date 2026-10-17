@@ -165,7 +165,7 @@ export function ProjectLinkCreateSheet({
                     className={cn(sheetEditControlClassName, "mt-1.5 text-foreground outline-none")}
                   >
                     <option value="staff">{dictionary.create.internalTeam}</option>
-                    <option value="client">{dictionary.people.client}</option>
+                    <option value="client">{dictionary.milestoneVisibility.client}</option>
                   </StyledSelect>
                 </div> : null}
               </div>

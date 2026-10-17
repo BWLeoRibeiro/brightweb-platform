@@ -23,6 +23,11 @@ for (const transactionSucceeds of [true, false]) test(`direct membership ${trans
       return query;
     },
     async rpc(name: string, args: Record<string, unknown>) {
+      if (name === "assert_orgs_auth_identity_v1") return { data: null, error: null };
+      if (name === "resolve_auth_identity") {
+        assert.deepEqual(args, { p_email: "person@example.invalid" });
+        return { data: { userId: "user-1", profileId: "profile-1", email: "person@example.invalid", confirmed: true }, error: null };
+      }
       transactionCalls += 1;
       assert.equal(name, "assign_organization_member_atomic");
       assert.deepEqual(args, {

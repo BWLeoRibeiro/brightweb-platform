@@ -9,7 +9,7 @@ BrightWeb modules extend the platform through shared schema, domain logic, packa
 The `platform` template has two layers:
 
 - the platform base, which always resolves to the `Core + Admin` database baseline
-- optional package wiring and mounts, which may add Admin, CRM, and Projects; CRM and Projects auto-include the hidden Organizations foundation
+- optional package wiring and mounts, which may add Admin, CRM, Marketing, and Projects; CRM and Projects auto-include the hidden Organizations foundation, while Marketing resolves its full CRM and Organizations dependency chain
 
 Selecting `admin` in the scaffold affects the Admin package mount and wiring. It does not remove the Admin database baseline from platform mode.
 
@@ -30,8 +30,9 @@ Use [Base Contract](./base-contract.md) for the canonical support-tier rules and
 | Platform Base | Core auth/profile foundations plus the Admin-backed database baseline that platform apps depend on. | Every `platform` app gets this runtime and database baseline. | No. It is the base runtime, not a finished product surface. |
 | Admin | Governance helpers, RBAC package wiring, and package-owned users, roles, invitations, and toolbar UI. | Selecting `admin` adds `/admin/users`, direct package-owned API handler aliases, and the Admin UI token source. | Yes, for the default users and invitations surface. |
 | Organizations | Organizations, membership, invitations, and organization access helpers. | Auto-included when CRM or Projects is selected; hidden in navigation. | No. It is a shared domain foundation. |
-| CRM | CRM contacts and status logs, plus CRM-to-organizations integration. | Selecting CRM adds package wiring, shell registration, env flags, and `/crm`. | Yes, for the package-owned default dashboard. |
-| Projects | `projects`, `project_members`, `project_milestones`, `project_tasks`, `project_links`, `project_status_log`, plus follow-up access and activity behavior. | Selecting `projects` adds package wiring and env flags, but no route or generated nav. | No default UI yet. |
+| CRM | CRM contacts and status logs, plus CRM-to-organizations integration. | Selecting CRM adds package wiring, shell registration, env flags, `/crm`, organization routes, reports, and API mounts. | Yes, for the package-owned dashboard and organization/report surfaces. |
+| Marketing | Consent topics, campaigns, segments, workflows, delivery queues, message events, suppressions, and analytics. | Selecting Marketing resolves CRM and Organizations, then adds `/marketing`, the complete API route family, worker, webhook, and unsubscribe mounts. | Yes, for the package-owned marketing workspace. |
+| Projects | `projects`, `project_members`, `project_milestones`, `project_tasks`, `project_links`, `project_status_log`, plus follow-up access and activity behavior. | Selecting Projects adds package wiring, navigation, staff project routes, client account routes, and package-owned API adapters. | Yes, for staff and client project workspaces. |
 
 ## Pages in this section
 
@@ -40,7 +41,8 @@ Use [Base Contract](./base-contract.md) for the canonical support-tier rules and
 - [Platform Base](./platform-base.md)
 - [Organizations](./orgs.md): shared organization schema, membership, and package helpers.
 - [CRM](./crm.md): CRM-owned schema, runtime wiring, and CRM package behavior.
-- [Marketing — Delivery & Scheduler](./marketing-delivery.md): design reference for how the forthcoming Marketing module sends email (queue + worker + webhooks), delivery ownership, scheduler options (GitHub cron vs pg_cron), costs, resources, and per-client setup.
+- [Marketing](./marketing.md): schema, supported package entrypoints, scaffolded routes, UI, handlers, and delivery invariants.
+- [Marketing — Delivery & Scheduler](./marketing-delivery.md): operational reference for queue workers, webhooks, scheduler options, resources, and per-client setup.
 - [Projects](./projects.md): Projects-owned schema, runtime wiring, and project package behavior.
 
 ## What module selection affects in the scaffold
@@ -64,9 +66,11 @@ Use [Base Contract](./base-contract.md) for the canonical support-tier rules and
 - `packages/module-admin/src`
 - `packages/module-crm/src`
 - `packages/module-orgs/src`
+- `packages/module-marketing/src`
 - `packages/module-projects/src`
 - `supabase/module-registry.json`
 - `supabase/modules/admin/migrations`
 - `supabase/modules/crm/migrations`
 - `supabase/modules/orgs/migrations`
+- `supabase/modules/marketing/migrations`
 - `supabase/modules/projects/migrations`

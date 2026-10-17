@@ -142,17 +142,42 @@ function isExistingAccountError(error: { message?: string } | null): boolean {
   return message.includes("already") || message.includes("exists") || message.includes("registered");
 }
 
-async function findAuthUserIdByEmail(supabase: SupabaseClient, email: string): Promise<string | null> {
-  const target = normalizeEmail(email);
-  const perPage = 1000;
-  for (let page = 1; page <= 20; page += 1) {
-    const { data, error } = await supabase.auth.admin.listUsers({ page, perPage });
-    if (error) throw new Error(error.message);
-    const match = data.users.find((user) => normalizeEmail(user.email ?? "") === target);
-    if (match?.id) return match.id;
-    if (data.users.length < perPage) return null;
+function throwIdentityError(error: { code?: string; message?: string }): never {
+  const message = error.code === "42883" || error.code === "PGRST202"
+    ? "IDENTITY_MIGRATION_REQUIRED: Aplique as migrations de identidade de Core e Orgs antes de gerir convites."
+    : error.message ?? "Não foi possível confirmar a identidade da conta.";
+  throw Object.assign(new Error(message), { code: error.code });
+}
+
+async function assertIdentityReadiness(supabase: SupabaseClient): Promise<void> {
+  const { error } = await supabase.rpc("assert_orgs_auth_identity_v1");
+  if (error) throwIdentityError(error);
+}
+
+type AuthIdentity = {
+  userId: string;
+  profileId: string | null;
+  email: string;
+  confirmed: boolean;
+};
+
+async function resolveAuthIdentity(supabase: SupabaseClient, email: string): Promise<AuthIdentity | null> {
+  const normalizedEmail = normalizeEmail(email);
+  const { data, error } = await supabase.rpc("resolve_auth_identity", { p_email: normalizedEmail });
+  if (error) throwIdentityError(error);
+  if (data === null) return null;
+  if (!data || Array.isArray(data) || typeof data !== "object"
+      || typeof data.userId !== "string" || !data.userId.trim()
+      || typeof data.email !== "string" || normalizeEmail(data.email) !== normalizedEmail
+      || typeof data.confirmed !== "boolean"
+      || !(data.profileId === null || (typeof data.profileId === "string" && data.profileId.trim().length > 0))) {
+    throw new Error("AUTH_IDENTITY_INVALID_RESPONSE");
   }
-  return null;
+  return data as AuthIdentity;
+}
+
+async function findAuthUserIdByEmail(supabase: SupabaseClient, email: string): Promise<string | null> {
+  return (await resolveAuthIdentity(supabase, email))?.userId ?? null;
 }
 
 async function ensureInvitationProfile(
@@ -164,7 +189,7 @@ async function ensureInvitationProfile(
     p_email: params.email,
     p_metadata: { first_name: params.firstName || null, last_name: params.lastName || null },
   });
-  if (syncError) throw new Error(syncError.message);
+  if (syncError) throwIdentityError(syncError);
   const { data, error } = await supabase
     .from("profiles")
     .select("id")
@@ -282,13 +307,23 @@ export async function inviteOrganizationMembers(
     failedApiOperations: 0,
   };
   if (normalized.length === 0) return { invitations: [], outcomes: [], summary: emptySummary };
+  await assertIdentityReadiness(supabase);
 
   const emails = normalized.map((invite) => invite.email);
-  const [{ data: profiles, error: profileError }, { data: existingInvitations, error: invitationError }] = await Promise.all([
-    supabase.from("profiles").select("id, email").in("email", emails),
+  const [identities, { data: existingInvitations, error: invitationError }] = await Promise.all([
+    Promise.all(emails.map(async (email) => {
+      try {
+        const identity = await resolveAuthIdentity(supabase, email);
+        return { email, profileId: identity?.confirmed === true ? identity.profileId : null, reconciliationRequired: false };
+      } catch (error) {
+        if (error instanceof Error && "code" in error && error.code === "BW002") {
+          return { email, profileId: null, reconciliationRequired: true };
+        }
+        throw error;
+      }
+    })),
     supabase.from("organization_invitations").select("id, invited_email, role, status, expires_at").eq("organization_id", organizationId).in("invited_email", emails),
   ]);
-  if (profileError) throw new Error(profileError.message);
   if (invitationError) throw new Error(invitationError.message);
   const { data: organization, error: organizationError } = await supabase
     .from("organizations")
@@ -298,11 +333,10 @@ export async function inviteOrganizationMembers(
   if (organizationError) throw new Error(organizationError.message);
   const organizationName = organization?.name?.trim() || "Organização";
 
+  const reconciliationEmails = new Set(identities.filter((identity) => identity.reconciliationRequired).map((identity) => identity.email));
   const profileByEmail = new Map<string, string>();
-  for (const profile of profiles ?? []) {
-    if (typeof profile.id === "string" && typeof profile.email === "string") {
-      profileByEmail.set(normalizeEmail(profile.email), profile.id);
-    }
+  for (const identity of identities) {
+    if (identity.profileId) profileByEmail.set(identity.email, identity.profileId);
   }
   const pendingInvitationByEmail = new Map<string, { id: string; role: OrganizationMemberRole }>();
   for (const invitation of existingInvitations ?? []) {
@@ -324,6 +358,13 @@ export async function inviteOrganizationMembers(
   let updatedExistingMembers = 0;
   let unchangedExistingMembers = 0;
   for (const invite of normalized) {
+    if (reconciliationEmails.has(invite.email)) {
+      outcomes.push({
+        email: invite.email, role: invite.role, status: "api_failed", failureKind: "membership",
+        message: "A identidade da conta precisa de reconciliação antes de conceder acesso. Nenhum convite foi criado.",
+      });
+      continue;
+    }
     const profileId = profileByEmail.get(invite.email);
     if (profileId) {
       // The database resolves current membership under lock and rolls back only
@@ -338,11 +379,14 @@ export async function inviteOrganizationMembers(
       const status = data?.status;
       if (error || !["immediate_access", "membership_updated", "already_member"].includes(status)) {
         const contactFailure = error?.code === "BW001";
+        const reconciliationRequired = error?.code === "BW002";
         outcomes.push({
           email: invite.email, role: invite.role, status: "api_failed", profileId,
           message: contactFailure
             ? "Não foi possível ligar o contacto CRM. Nenhuma alteração de acesso foi guardada."
-            : "Não foi possível confirmar a alteração de acesso à organização. Tente novamente.",
+            : reconciliationRequired
+              ? "A identidade da conta precisa de reconciliação antes de conceder acesso. Nenhuma alteração foi guardada."
+              : "Não foi possível confirmar a alteração de acesso à organização. Tente novamente.",
           failureKind: contactFailure ? "crm_link" : "membership",
         });
         continue;
@@ -520,12 +564,13 @@ export async function acceptOrganizationInvitation(
   },
 ): Promise<{ organizationId: string }> {
   assertInvitationContactIntegration(params);
+  await assertIdentityReadiness(supabase);
   const { data, error } = await supabase.rpc("accept_organization_invitation", {
     p_invitation_id: params.invitationId,
     p_profile_id: params.profileId,
     p_user_email: normalizeEmail(params.userEmail),
   });
-  if (error) throw new Error(error.message);
+  if (error) throwIdentityError(error);
   if (data?.status === "expired") throw new Error("Este convite expirou.");
   if (data?.status !== "accepted" || typeof data.organizationId !== "string") {
     throw new Error("Não foi possível confirmar a aceitação do convite.");
@@ -545,6 +590,7 @@ export async function registerUserFromOrganizationInvitation(
   },
 ): Promise<{ email: string; organizationId: string }> {
   assertInvitationContactIntegration(params);
+  await assertIdentityReadiness(supabase);
   const invitation = await getOrganizationInvitationDetails(supabase, params.invitationId);
   if (!invitation) throw new Error("INVITATION_NOT_FOUND");
   if (invitation.status !== "pending" && invitation.status !== "accepted") throw new Error("INVITATION_NOT_AVAILABLE");

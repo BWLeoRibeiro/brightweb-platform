@@ -1,4 +1,7 @@
 "use client";
+import { TaskRecipientTags, TaskRecipientFilter, matchesTaskRecipient, type TaskRecipientFilterValue } from "./shared/task-recipient-tags";
+import { clientTasksDictionary as copy } from "./client-tasks/dictionary";
+import { MemberTaskLoadStatus } from "./client-tasks/staff-client-tasks";
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
@@ -13,7 +16,6 @@ import {
   TaskDueMeta,
   TaskMilestoneMeta,
   TaskPriorityTag,
-  TaskStatusTag,
 } from "./shared/task-tags";
 import { TooltipProvider } from "@brightweblabs/ui";
 import type { ProjectMilestone, ProjectTask } from "../types";
@@ -33,6 +35,7 @@ import { useProjectsNow } from "./shared/use-projects-now";
 type ProjectMilestonesAndTasksListsProps = {
   projectId: string;
   canEditItems: boolean;
+  canCreateTasks?: boolean;
   milestones: ProjectMilestone[];
   tasks: ProjectTask[];
   onEditMilestone: (milestone: ProjectMilestone) => void;
@@ -224,8 +227,8 @@ function ProjectTaskRow({
 
       {/* Tertiary: signal tags */}
       <div className="mt-0.5 flex min-w-0 flex-wrap items-center gap-1.5">
-        <TaskPriorityTag task={task} />
-        <TaskStatusTag task={task} />
+        <TaskRecipientTags task={task} />
+        {task.kind !== "client" ? <TaskPriorityTag task={task} /> : null}
         <TaskMilestoneMeta title={milestoneTitle} />
         <TaskAssigneeMeta label={task.assigneeLabel} className="ml-auto max-w-[7rem] pl-1" />
       </div>
@@ -288,6 +291,7 @@ function ProjectTaskGroupRows({
 export function ProjectMilestonesAndTasksLists({
   projectId,
   canEditItems,
+  canCreateTasks = canEditItems,
   milestones,
   tasks,
   onEditMilestone,
@@ -297,10 +301,11 @@ export function ProjectMilestonesAndTasksLists({
   const dictionary = useProjectsUiDictionary();
   const now = useProjectsNow();
   const milestoneStatusLabels: Record<string, string> = { pending: dictionary.status.pending, in_progress: dictionary.status.in_progress, achieved: dictionary.status.achieved, delayed: dictionary.status.delayed };
+  const [recipientFilter, setRecipientFilter] = useState<TaskRecipientFilterValue>("all");
   const [collapsedTaskGroups, setCollapsedTaskGroups] = useState<CollapsedTaskGroupsState>(initialCollapsedTaskGroups);
 
   const milestoneById = useMemo(() => new Map(milestones.map((m) => [m.id, m])), [milestones]);
-  const visibleTasks = useMemo(() => tasks.filter((task) => task.status !== "done"), [tasks]);
+  const visibleTasks = useMemo(() => tasks.filter((task) => task.status !== "done" && matchesTaskRecipient(task, recipientFilter)), [tasks, recipientFilter]);
 
   // Child-task progress per milestone — expresses the milestone → tasks relationship.
   const taskProgressByMilestone = useMemo(() => {
@@ -357,6 +362,7 @@ export function ProjectMilestonesAndTasksLists({
 
   const shownTaskCount = visibleTaskGroups.reduce((total, group) => total + group.tasks.length, 0);
   const hiddenTaskCount = visibleTasks.length - shownTaskCount;
+  const completedTaskCount = tasks.filter((task) => task.status === "done").length;
 
   return (
     <TooltipProvider>
@@ -448,7 +454,7 @@ export function ProjectMilestonesAndTasksLists({
                       {milestone.visibility === "client" ? (
                         <>
                           <span className="text-foreground/25">·</span>
-                          <span className="rounded-full border border-primary/20 bg-primary/5 px-2 py-0.5 text-micro font-semibold text-primary">Cliente</span>
+                          <span className="rounded-full border border-primary/20 bg-primary/5 px-2 py-0.5 text-micro font-semibold text-primary">{dictionary.milestoneVisibility.client}</span>
                         </>
                       ) : null}
                       {relativeDue ? (
@@ -470,13 +476,17 @@ export function ProjectMilestonesAndTasksLists({
             icon={ListChecks}
             title={dictionary.detail.tasks}
             subtitle={dictionary.detail.tasksSubtitle}
-            rightSlot={canEditItems ? (
+            rightSlot={canCreateTasks ? (
               <SectionAddButton
-                label={dictionary.detail.addTask}
+                label={dictionary.forms.newTask}
                 onClick={() => dispatchProjectsEvent(PROJECTS_EVENTS.openNewTask)}
               />
             ) : null}
           />
+          <div className="mt-4 space-y-3">
+            <TaskRecipientFilter value={recipientFilter} onChange={setRecipientFilter} />
+            <MemberTaskLoadStatus />
+          </div>
           <div className="portal-scroll mt-4 rounded-[var(--radius-card)] border border-[color:var(--border)] xl:max-h-[28rem]">
             {visibleTasks.length === 0 ? (
               <ProjectSectionEmptyState
@@ -504,15 +514,14 @@ export function ProjectMilestonesAndTasksLists({
                 />
               );
             })}
-            {hiddenTaskCount > 0 ? (
-              <Link
+            <Link
                 href={navigation.boardHref(projectId)}
                 className="text-meta text-muted-foreground flex items-center justify-center gap-1.5 border-t border-[color:var(--border)] px-3 py-2 font-semibold text-[color:var(--muted-foreground)] transition-colors hover:bg-[color:var(--project-ui-color-09)] hover:text-[color:var(--accent)]"
               >
                 <SquareKanban className="size-3.5" />
-                {dictionary.detail.moreTasks(hiddenTaskCount)}
-              </Link>
-            ) : null}
+                {hiddenTaskCount > 0 ? dictionary.detail.moreTasks(hiddenTaskCount) : copy.viewAllTasks}
+                {completedTaskCount > 0 ? <span>· {copy.completedCount(completedTaskCount)}</span> : null}
+            </Link>
           </div>
         </ProjectSurfaceCard>
       </>

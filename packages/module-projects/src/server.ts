@@ -438,9 +438,17 @@ function normalizeTaskRow(row: Record<string, unknown>): ProjectTask {
 
   return {
     id: String(row.id),
+    kind: row.task_kind === "client" ? "client" : "internal",
+    ...(row.task_kind === "client" ? {
+      clientPublication: row.client_publication as ProjectTask["clientPublication"],
+      clientWorkflow: row.client_workflow as ProjectTask["clientWorkflow"],
+      clientRevision: Number(row.client_revision),
+    } : {}),
     projectId: String(row.project_id),
     milestoneId: typeof row.milestone_id === "string" ? row.milestone_id : null,
-    title: typeof row.title === "string" ? row.title : "",
+    title: row.task_kind === "client" && typeof row.client_title === "string"
+      ? row.client_title
+      : typeof row.title === "string" ? row.title : "",
     description: typeof row.description === "string" ? row.description : null,
     status: String(row.status) as ProjectTask["status"],
     health: deriveTaskHealth({
@@ -497,7 +505,7 @@ export async function listProjectTasks(supabase: SupabaseClient, projectId: stri
   const { data, error } = await fetchAllRows((from, to) => supabase
     .from("project_tasks")
     .select(
-      "id, project_id, milestone_id, title, description, status, priority, assignee_profile_id, reporter_profile_id, start_date, due_date, position, blocked_reason, created_at, updated_at, assignee:profiles!project_tasks_assignee_profile_id_fkey(first_name, last_name, email), reporter:profiles!project_tasks_reporter_profile_id_fkey(first_name, last_name, email)", { count: "exact" },
+      "id, project_id, milestone_id, task_kind, client_title, client_publication, client_workflow, client_revision, title, description, status, priority, assignee_profile_id, reporter_profile_id, start_date, due_date, position, blocked_reason, created_at, updated_at, assignee:profiles!project_tasks_assignee_profile_id_fkey(first_name, last_name, email), reporter:profiles!project_tasks_reporter_profile_id_fkey(first_name, last_name, email)", { count: "exact" },
     )
     .eq("project_id", projectId)
     .order("position", { ascending: true })
@@ -1111,6 +1119,9 @@ export async function getProjectAccess(
     canOpenEditProject: boolean;
     canEditProjectItems: boolean;
     canUpdateAssignedTasks: boolean;
+    canCreateTasks: boolean;
+    canShareClientTasks: boolean;
+    canReviewClientTasks: boolean;
     canCreateProjectLinks: boolean;
     canManageProjectLinks: boolean;
     canManageClientContent: boolean;
@@ -1144,6 +1155,7 @@ export async function getProjectAccess(
   }
 
   const canManageProject = projectRole === "admin" || projectRole === "owner";
+  const canCreateTasks = globalRole === "admin" || (globalRole === "staff" && (projectRole === "owner" || projectRole === "contributor"));
   return {
     projectRole,
     viewerProfileId: profileId,
@@ -1151,6 +1163,9 @@ export async function getProjectAccess(
       canOpenEditProject: canManageProject,
       canEditProjectItems: canManageProject,
       canUpdateAssignedTasks: projectRole === "contributor",
+      canCreateTasks,
+      canShareClientTasks: canCreateTasks,
+      canReviewClientTasks: canCreateTasks,
       canCreateProjectLinks: canManageProject,
       canManageProjectLinks: canManageProject,
       canManageClientContent: canManageProject,
@@ -1216,7 +1231,7 @@ export async function createProjectTask(supabase: SupabaseClient, projectId: str
     .from("project_tasks")
     .insert(payload)
     .select(
-      "id, project_id, milestone_id, title, description, status, priority, assignee_profile_id, reporter_profile_id, start_date, due_date, position, blocked_reason, created_at, updated_at, assignee:profiles!project_tasks_assignee_profile_id_fkey(first_name, last_name, email), reporter:profiles!project_tasks_reporter_profile_id_fkey(first_name, last_name, email)",
+      "id, project_id, milestone_id, task_kind, client_title, client_publication, client_workflow, client_revision, title, description, status, priority, assignee_profile_id, reporter_profile_id, start_date, due_date, position, blocked_reason, created_at, updated_at, assignee:profiles!project_tasks_assignee_profile_id_fkey(first_name, last_name, email), reporter:profiles!project_tasks_reporter_profile_id_fkey(first_name, last_name, email)",
     )
     .single();
   if (error) throw new Error(error.message);

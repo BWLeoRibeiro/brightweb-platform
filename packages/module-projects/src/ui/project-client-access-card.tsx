@@ -18,7 +18,6 @@ import {
   SheetFooter,
   Skeleton,
   StatusPill,
-  TooltipProvider,
 } from "@brightweblabs/ui";
 import { sheetBodyClassName, sheetFooterClassName, sheetShellClassName } from "./constants";
 import { AppSheetHeader, SheetSection } from "./shared/app-sheet";
@@ -33,9 +32,10 @@ import { useProjectClientAccess } from "./use-project-client-access";
 import { cn } from "./utils";
 import type { ProjectClientAccessMode } from "../contracts";
 import { projectAccessDictionary } from "./project-access-dictionary";
-import { SectionIconButton } from "./shared/section-icon-button";
+import { ProjectOwnerAvatar } from "./shared/project-owner-avatar";
 import { SectionEmptyState } from "./shared/section-feedback";
 import { compactCollectionRevealClassName } from "./shared/compact-collection";
+import { getCompactCollectionPreview } from "./shared/compact-collection-model";
 
 export type ProjectClientAccessReadSummary = {
   mode: ProjectClientAccessMode;
@@ -79,6 +79,7 @@ export function ProjectClientAccessCard({
 }) {
   const resource = useProjectClientAccess(projectId, canManage);
   const [open, setOpen] = useState(false);
+  const [showAllMembers, setShowAllMembers] = useState(false);
   const [draft, setDraft] = useState<ClientAccessDraft | null>(null);
   const [confirmIntent, setConfirmIntent] = useState<"discard" | "revoke" | null>(null);
   const sheetRef = useRef<HTMLDivElement>(null);
@@ -142,7 +143,7 @@ export function ProjectClientAccessCard({
 
   return (
     <>
-      <ProjectSurfaceCard className="self-start">
+      <ProjectSurfaceCard className="min-w-0 self-start">
         <ProjectSurfaceSectionHeader
           icon={ShieldCheck}
           title={projectAccessDictionary.card.title}
@@ -151,17 +152,19 @@ export function ProjectClientAccessCard({
             : canManage && resource.loadError
               ? projectAccessDictionary.card.verifyError
               : projectAccessDictionary.card.areaSubtitle}
-          rightSlot={canManage ? (
-            <TooltipProvider>
-              <SectionIconButton
-                icon={Pencil}
-                label={projectAccessDictionary.card.manage}
-                disabled={!resource.data || resource.isLoading}
-                onClick={openEditor}
-              />
-            </TooltipProvider>
-          ) : null}
         />
+        {canManage ? (
+          <Button
+            type="button"
+            variant="outline"
+            className="mt-4 min-h-11 w-full"
+            disabled={!resource.data || resource.isLoading}
+            onClick={openEditor}
+          >
+            <Pencil className="mr-2 size-4" aria-hidden="true" />
+            {projectAccessDictionary.card.manage}
+          </Button>
+        ) : null}
 
         {canManage && resource.isLoading ? (
           <div className="mt-4 space-y-2 rounded-[var(--radius-card)] border border-[color:var(--border)] px-3.5 py-3.5">
@@ -190,12 +193,12 @@ export function ProjectClientAccessCard({
           <div className="mt-4">
             <ul className={`${compactCollectionRevealClassName} overflow-hidden rounded-[var(--radius-card)] border border-[color:var(--border)]`}>
               {displayedOrganizations.map((organization) => (
-                <li key={organization.key} className="flex min-h-[3.25rem] items-center gap-3 border-t border-[color:var(--border)] px-3 py-2 first:border-t-0">
+                <li key={organization.key} className="grid min-h-[3.25rem] grid-cols-[2rem_minmax(0,1fr)] items-center gap-x-3 gap-y-1.5 border-t border-[color:var(--border)] px-3 py-3 first:border-t-0">
                   <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-[color:var(--project-ui-color-74)] text-[color:var(--role-client-strong)]">
                     <Building2 className="size-4" aria-hidden="true" />
                   </span>
-                  <p className="min-w-0 flex-1 truncate text-body font-semibold text-foreground">{organization.name}</p>
-                  <StatusPill token="--role-client">
+                  <p className="min-w-0 break-words text-body font-semibold text-foreground">{organization.name}</p>
+                  <StatusPill token="--role-client" className="col-start-2 h-auto min-h-5 max-w-full justify-self-start whitespace-normal py-1 text-left">
                     {displayMode === "all_org_clients"
                       ? CLIENT_ACCESS_MODE_COPY.all_org_clients.title
                       : organization.selectedClientCount === null
@@ -205,6 +208,34 @@ export function ProjectClientAccessCard({
                 </li>
               ))}
             </ul>
+            {canManage && resource.data ? selectedOrganizations.map((organization) => {
+              const selectedIds = new Set(organization.selectedProfileIds);
+              const members = organization.eligibleClients.filter((member) => displayMode === "all_org_clients" || selectedIds.has(member.profileId));
+              const visibleMembers = showAllMembers ? members : getCompactCollectionPreview(members);
+              if (members.length === 0) return null;
+
+              return (
+                <div key={organization.organizationId} className="mt-4">
+                  <p className="text-label font-semibold text-foreground">{projectAccessDictionary.card.membersWithAccess}</p>
+                  <ul className="mt-2 divide-y divide-border overflow-hidden rounded-xl border border-border">
+                    {visibleMembers.map((member) => (
+                      <li key={member.profileId} className="flex items-center gap-3 px-3 py-3">
+                        <ProjectOwnerAvatar label={member.label} size="md" roleColor="client" />
+                        <div className="min-w-0 flex-1">
+                          <p className="break-words text-body font-semibold text-foreground">{member.label}</p>
+                          {member.email ? <p className="break-all text-meta text-muted-foreground">{member.email}</p> : null}
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                  {members.length > visibleMembers.length || showAllMembers ? (
+                    <Button type="button" variant="ghost" className="mt-2 min-h-11 w-full" aria-expanded={showAllMembers} onClick={() => setShowAllMembers((current) => !current)}>
+                      {showAllMembers ? projectAccessDictionary.card.showFewerMembers : projectAccessDictionary.card.viewAllMembers(members.length)}
+                    </Button>
+                  ) : null}
+                </div>
+              );
+            }) : null}
             {clientPreviewHref ? <a href={clientPreviewHref} className="mt-2 inline-flex text-meta font-semibold text-[color:var(--primary)] hover:underline">{projectAccessDictionary.card.preview}</a> : null}
             {!canManage ? <p className="mt-2 text-micro text-muted-foreground">{projectAccessDictionary.card.managersOnly}</p> : null}
           </div>

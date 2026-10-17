@@ -15,7 +15,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         companyName: starterBrandConfig.companyName,
         helpHref: "mailto:support@example.com",
         splitHeadline: "Operações claras. Decisões com contexto.",
-        splitDescription: "Um espaço reservado para equipas e clientes acompanharem projetos, relações e trabalho em curso.",
+        splitDescription: "Um espaço reservado para equipas e membros acompanharem projetos, relações e trabalho em curso.",
         logo: <img src="/brand/logo-dark.svg" alt={starterBrandConfig.companyName} width={176} height={44} />,
       }}
     >

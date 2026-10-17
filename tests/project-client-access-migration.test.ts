@@ -38,14 +38,14 @@ function readMigrationPair(name: string) {
   return { canonical, template };
 }
 
-test("project client access migration stays aligned with the app template", () => {
+test("SQL structure: project client access migration stays aligned with the app template", () => {
   const canonical = readFileSync(canonicalPath, "utf8");
   const template = readFileSync(templatePath, "utf8");
 
   assert.equal(template, canonical);
 });
 
-test("project client access candidates expose their real organization role", () => {
+test("SQL structure: project client access candidates expose their real organization role", () => {
   const { canonical, template } = readMigrationPair(memberRolesMigrationName);
   assert.equal(template, canonical);
   assert.match(canonical, /'organization_role', org_member\.role/);
@@ -54,7 +54,7 @@ test("project client access candidates expose their real organization role", () 
   assert.match(canonical, /GRANT EXECUTE ON FUNCTION public\.get_project_access_configuration\(uuid\)[\s\S]*TO authenticated/);
 });
 
-test("project permissions keep creation administrative and task work project-scoped", () => {
+test("SQL structure: project permissions keep creation administrative and task work project-scoped", () => {
   const { canonical, template } = readMigrationPair(projectPermissionsMigrationName);
   assert.equal(template, canonical);
   assert.match(canonical, /v_actor_role <> 'admin'/);
@@ -68,7 +68,7 @@ test("project permissions keep creation administrative and task work project-sco
   assert.match(canonical, /CREATE POLICY "Project team update permitted tasks"/);
 });
 
-test("project client access migration defaults to private and enforces explicit audiences", () => {
+test("SQL structure: project client access migration defaults to private and enforces explicit audiences", () => {
   const source = readFileSync(canonicalPath, "utf8");
 
   assert.match(source, /client_access_mode text NOT NULL DEFAULT 'hidden'/);
@@ -86,7 +86,7 @@ test("project client access migration defaults to private and enforces explicit 
   assert.match(source, /project\.client_access_mode = 'selected_clients'/);
 });
 
-test("project security migration keeps internal work staff-only", () => {
+test("SQL structure: project security migration keeps internal work staff-only", () => {
   const { canonical: source } = readMigrationPair(enforcementMigrationName);
 
   assert.match(source, /CREATE POLICY "Project staff view project tasks"[\s\S]*public\.is_staff\(\)/);
@@ -99,7 +99,7 @@ test("project security migration keeps internal work staff-only", () => {
   );
 });
 
-test("team synchronization is atomic, explicitly authorized, and blocks unsafe role downgrades", () => {
+test("SQL structure: team synchronization is atomic, explicitly authorized, and blocks unsafe role downgrades", () => {
   const { canonical, template } = readMigrationPair(memberSyncMigrationName);
   assert.equal(template, canonical);
   assert.match(canonical, /CREATE OR REPLACE FUNCTION public\.sync_project_members_exact/);
@@ -117,7 +117,7 @@ test("team synchronization is atomic, explicitly authorized, and blocks unsafe r
   );
 });
 
-test("client access management is limited to project owners and administrators", () => {
+test("SQL structure: client access management is limited to project owners and administrators", () => {
   const source = readFileSync(canonicalPath, "utf8");
   const organizationsPolicy = source.match(
     /CREATE POLICY "Staff manage project client organizations"[\s\S]*?WITH CHECK \([\s\S]*?\n  \);/,
@@ -146,7 +146,7 @@ test("client access management is limited to project owners and administrators",
   );
 });
 
-test("participation and client-safe expansion stays aligned and fail-closed", () => {
+test("SQL structure: participation and client-safe expansion stays aligned and fail-closed", () => {
   const { canonical, template } = readMigrationPair(expandMigrationName);
   assert.equal(template, canonical);
   assert.match(canonical, /ON CONFLICT ON CONSTRAINT project_organizations_pkey/);
@@ -189,7 +189,7 @@ test("participation and client-safe expansion stays aligned and fail-closed", ()
   );
 });
 
-test("client-visible milestones replace the free-text next-steps field", () => {
+test("SQL structure: client-visible milestones replace the free-text next-steps field", () => {
   const { canonical, template } = readMigrationPair(nextStepsCleanupMigrationName);
   assert.equal(template, canonical);
   assert.match(canonical, /-- bw-migration-safety: destructive/);
@@ -217,7 +217,7 @@ test("client-visible milestones replace the free-text next-steps field", () => {
   }
 });
 
-test("management functions validate participation, memberships, and authenticated ownership", () => {
+test("SQL structure: management functions validate participation, memberships, and authenticated ownership", () => {
   const { canonical } = readMigrationPair(expandMigrationName);
   const setter = canonical.match(
     /CREATE OR REPLACE FUNCTION public\.set_project_client_access\([\s\S]*?\n\$\$;/,
@@ -245,7 +245,7 @@ test("management functions validate participation, memberships, and authenticate
   assert.match(creator, /jsonb_to_recordset\(p_members\)/);
 });
 
-test("enforcement closes reads and publishing without destructive cleanup", () => {
+test("SQL structure: enforcement closes reads and publishing without destructive cleanup", () => {
   const { canonical, template } = readMigrationPair(enforcementMigrationName);
   const foundation = readFileSync(canonicalPath, "utf8");
   const { canonical: expansion } = readMigrationPair(expandMigrationName);
@@ -271,7 +271,7 @@ test("enforcement closes reads and publishing without destructive cleanup", () =
   );
 });
 
-test("identity cleanup is isolated in a later migration", () => {
+test("SQL structure: identity cleanup is isolated in a later migration", () => {
   const { canonical, template } = readMigrationPair(identityCleanupMigrationName);
   assert.equal(template, canonical);
   assert.match(canonical, /^-- bw-migration-safety: destructive$/m);
@@ -289,7 +289,7 @@ test("identity cleanup is isolated in a later migration", () => {
   assert.match(canonical, /project primary organization must be its only primary participant/);
 });
 
-test("client organization membership projection is narrow and precedes destructive cleanup", () => {
+test("SQL structure: client organization membership projection is narrow and precedes destructive cleanup", () => {
   const { canonical, template } = readMigrationPair(clientOrganizationsMigrationName);
   assert.equal(template, canonical);
   assert.match(canonical, /CREATE OR REPLACE FUNCTION public\.list_current_client_organizations\(\)/);
@@ -304,7 +304,7 @@ test("client organization membership projection is narrow and precedes destructi
   assert.ok(clientOrganizationsMigrationName < identityCleanupMigrationName);
 });
 
-test("safe-boundary client RPCs add meta previews while retaining legacy output", () => {
+test("SQL structure: safe-boundary client RPCs add meta previews while retaining legacy output", () => {
   const { canonical, template } = readMigrationPair(metaPreviewMigrationName);
   assert.equal(template, canonical);
   assert.doesNotMatch(canonical, /bw-migration-safety: destructive/);

@@ -58,6 +58,10 @@ export type ProjectMilestone = {
 };
 
 export type ProjectTask = {
+  kind?: "internal" | "client";
+  clientPublication?: "draft" | "published" | "withdrawn";
+  clientWorkflow?: import("./client-tasks-contracts").ClientTaskWorkflow;
+  clientRevision?: number;
   id: string;
   projectId: string;
   milestoneId: string | null;

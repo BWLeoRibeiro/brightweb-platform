@@ -6,8 +6,8 @@ export const defaultAccountUiDictionary: AccountUiDictionary = {
     kicker: "A tua conta",
     fallbackName: "Utilizador",
     roleLabels: {
-      client: "Cliente",
-      staff: "Equipa",
+      client: "Membro",
+      staff: "Colaborador",
       admin: "Administrador",
     },
   },

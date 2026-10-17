@@ -14,9 +14,10 @@ The command resolves transitive requirements, updates package and shell settings
 
 - CRM: `app/crm/page.tsx` plus direct package handler aliases under `app/api/crm/`.
 - Admin: `app/admin/users/page.tsx` plus direct package handler aliases under `app/api/admin/users/`.
-- Projects: no route until `@brightweblabs/module-projects` exports a default UI surface.
+- Marketing: `app/marketing/page.tsx` plus campaign, topic, segment, workflow, analytics, worker, webhook, and unsubscribe routes under `app/api/marketing/`.
+- Projects: package-owned staff routes under `app/projetos/`, client account routes, and direct adapters under `app/api/projects/` and `app/api/account/projects/`.
 
-Do not create a placeholder Projects page. If a product needs Projects UI, implement it in the package first and mount the exported surface from a one-line route.
+Generated product pages remain thin direct package mounts. Customize reusable behavior in the owning package, or mark an app route as owned before replacing its starter composition.
 
 ## Validation checks
 

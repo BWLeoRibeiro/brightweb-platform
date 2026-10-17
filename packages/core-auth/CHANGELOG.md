@@ -1,5 +1,15 @@
 # @brightweblabs/core-auth
 
+## 0.12.3
+
+### Patch Changes
+
+- fabd657: Clarify copy for CRM records, organisation membership, internal project teams, project sharing and invitation acceptance. Explain queued member additions, immediate versus invited access, future-member project sharing and separately saved organisations. Show the selected invitation scope and distinguish portal profiles from organisation roles without changing permissions, defaults or invitation delivery behaviour.
+- fabd657: Use neutral member-facing copy for sign-in, unfinished milestones and projects without shared milestones. Localize the member project search clear action through an optional label while preserving the shared component's default. Permissions, actions, milestone selection and invitation behaviour are unchanged.
+- fabd657: Use member terminology for portal accounts and organisation access while retaining CRM contacts and organisations. Make project access and team management actions visible, highlight selected members, and show member identities to existing access managers without changing permissions or role identifiers.
+- Updated dependencies [fabd657]
+  - @brightweblabs/ui@1.5.7
+
 ## 0.12.2
 
 ### Patch Changes

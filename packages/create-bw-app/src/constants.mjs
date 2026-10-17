@@ -140,6 +140,10 @@ export const MODULE_STARTER_FILES = {
     "app/api/projects/[id]/milestones/[itemId]/route.ts",
     "app/api/projects/[id]/tasks/route.ts",
     "app/api/projects/[id]/tasks/[itemId]/route.ts",
+    "app/api/projects/[id]/client-tasks/route.ts",
+    "app/api/projects/[id]/client-tasks/[itemId]/route.ts",
+    "app/api/account/projects/[id]/tasks/route.ts",
+    "app/api/account/projects/[id]/tasks/[itemId]/route.ts",
   ],
 };
 
@@ -187,16 +191,16 @@ export const PLATFORM_STARTER_FILES = [
 ];
 
 export const APP_DEPENDENCY_DEFAULTS = {
-  "@brightweblabs/app-shell": "^0.16.3",
-  "@brightweblabs/core-auth": "^0.12.2",
+  "@brightweblabs/app-shell": "^0.16.5",
+  "@brightweblabs/core-auth": "^0.12.3",
   "@brightweblabs/infra": "^0.7.0",
-  "@brightweblabs/module-admin": "^0.9.7",
-  "@brightweblabs/module-crm": "^0.18.4",
-  "@brightweblabs/module-marketing": "^0.5.2",
-  "@brightweblabs/module-orgs": "^0.7.3",
-  "@brightweblabs/module-projects": "^0.19.3",
+  "@brightweblabs/module-admin": "^0.9.10",
+  "@brightweblabs/module-crm": "^0.18.7",
+  "@brightweblabs/module-marketing": "^0.5.4",
+  "@brightweblabs/module-orgs": "^0.7.6",
+  "@brightweblabs/module-projects": "^0.21.0",
   "@brightweblabs/theme": "^0.8.4",
-  "@brightweblabs/ui": "^1.5.6",
+  "@brightweblabs/ui": "^1.5.7",
   "geist": "1.7.2",
   "lucide-react": "^1.8.0",
   "next": "^16.0.0",

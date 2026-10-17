@@ -35,7 +35,12 @@ That means BrightWeb module usage is primarily a package and wiring model. The s
 | `@brightweblabs/core-auth/client` | `useCooldownTimer()` | `stable` | Client-side auth UI behavior such as resend cooldowns. |
 | `@brightweblabs/core-auth/server` | `requireServerPageAccess()`, `requireServerPageRoleAccess()`, `getServerAccess()` | `stable` | Server-side auth and role gating in pages, layouts, and handlers. |
 | `@brightweblabs/infra/server` | `resendApiRequest()`, `verifyResendWebhookSignature()`, `getTransactionalSender()`, `getMarketingSender()`, `getContactDestination()`, `getResendWebhookSecret()` | `stable` | Canonical app-owned Resend transport and webhook verification helpers. |
+| `@brightweblabs/infra/client` | `createBrowserSupabaseClient()` | `stable` | Browser Supabase client with BrightWeb environment resolution. |
+| `@brightweblabs/infra/realtime` | `subscribeToAppActivityEvents()` | `stable` | Authenticated, domain-filtered activity invalidation hints. |
+| `@brightweblabs/infra/request-observability` | `createLatestRequestController()`, `observedFetch()`, `appendServerTiming()` | `stable` | Abort stale collection requests and record privacy-safe client/server timing. |
+| `@brightweblabs/infra/robustness` | `publicError()`, `readPublicError()`, `sanitizePublicError()`, `validateBoundedUuidBatch()` | `stable` | Public error envelopes and bounded mutation validation. |
 | `@brightweblabs/module-admin` | `listAdminUsers()`, `handleAdminUsersGetRequest()`, `handleAdminUsersRoleChangeRequest()` | `stable` | Reusable admin listing plus package-owned admin HTTP handlers. |
+| `@brightweblabs/module-admin` | invitation list/create/revoke/accept/registration helpers and handlers | `stable` | Fourteen-day portal invitations for client, staff, and admin roles. Client invitations do not require an organization. |
 | `@brightweblabs/module-admin` | `getAdminUsersPageData()` | `starter` | Starter admin page payload for the scaffolded users screen. |
 | `@brightweblabs/module-admin/registration` | `adminModuleRegistration` | `stable` | Admin app-shell navigation and toolbar registration. |
 | `@brightweblabs/module-admin/ui` | `AdminUsersClient`, `AdminToolbarControls`, `createAdminUiClient()` | `stable` | Packaged users, roles, invitations, and shell toolbar UI with injectable data access. |
@@ -47,6 +52,11 @@ That means BrightWeb module usage is primarily a package and wiring model. The s
 | `@brightweblabs/module-crm` | `handleCrmContactsGetRequest()`, `handleCrmOrganizationsGetRequest()`, `handleCrmStatsGetRequest()`, `handleCrmOwnersGetRequest()` | `stable` | Package-owned CRM GET handlers that can be mounted directly from Next.js routes. |
 | `@brightweblabs/module-crm` | `getCrmDashboardData()` | `starter` | Starter CRM dashboard payload for the scaffolded CRM page. |
 | `@brightweblabs/module-crm/registration` | `crmModuleRegistration` | `stable` | CRM app-shell navigation groups and toolbar registration. |
+| `@brightweblabs/module-marketing` | campaign, workflow, analytics, webhook, and handler-composition helpers | `stable` | Consent-aware marketing domain behavior and package-owned HTTP composition. |
+| `@brightweblabs/module-marketing/server` | topics, subscriptions, suppressions, and unsubscribe helpers | `stable` | Consent and contact communication preferences. |
+| `@brightweblabs/module-marketing/campaigns` | campaign CRUD, recipient expansion, scheduling, sending, retry, and test delivery | `stable` | Campaign lifecycle and delivery orchestration. |
+| `@brightweblabs/module-marketing/ui` | `MarketingClient`, `MarketingUiProvider`, `createMarketingUiClient()`, `MarketingToolbarControls` | `starter` | Package-owned marketing workspace with injectable data access. |
+| `@brightweblabs/module-marketing/registration` | `marketingModuleRegistration` | `stable` | Marketing navigation and toolbar registration. |
 | `@brightweblabs/module-projects` | `listProjects()`, `getProjectPortfolioStats()`, `getProjectDashboard()`, `listProjectTasks()`, `listProjectMilestones()`, `listProjectLinks()`, `listClientProjects()`, `getClientProject()` | `stable` | Reusable internal project workspaces plus narrow client-safe account reads. |
 | `@brightweblabs/module-projects` | `createProject()`, `createProjectOrganization()`, `updateProject()`, `deleteProject()`, `createProjectTask()`, `updateProjectTask()`, `deleteProjectTask()`, `createProjectMilestone()`, `updateProjectMilestone()`, `deleteProjectMilestone()`, `createProjectLink()`, `updateProjectLink()`, `deleteProjectLink()`, `listProjectAssignableProfiles()`, `syncProjectMembers()`, `listOrgAdminProjectsByProfile()` | `stable` | App-owned project write flows and assignment helpers. |
 | `@brightweblabs/module-projects` | `getProjectsPortfolioPageData()` | `starter` | Starter portfolio payload for the scaffolded projects page. |
@@ -117,6 +127,7 @@ If your app uses `@brightweblabs/app-shell`, wire the module registrations into 
 ```ts
 import type { ShellContextualAction, ShellModuleRegistration } from "@brightweblabs/app-shell";
 import { crmModuleRegistration } from "@brightweblabs/module-crm/registration";
+import { marketingModuleRegistration } from "@brightweblabs/module-marketing/registration";
 import { projectsModuleRegistration } from "@brightweblabs/module-projects/registration";
 import { adminModuleRegistration } from "@brightweblabs/module-admin/registration";
 
@@ -129,6 +140,7 @@ const dashboardModuleRegistration: ShellModuleRegistration<ShellContextualAction
 const modules = [
   dashboardModuleRegistration,
   crmModuleRegistration,
+  marketingModuleRegistration,
   projectsModuleRegistration,
   adminModuleRegistration,
 ];
@@ -247,12 +259,21 @@ Auth email flows should stay on `supabase.auth.*` and Supabase Auth SMTP/project
 - Treat `getCrmDashboardData()` as `starter` page glue for the scaffolded CRM screen.
 - Build reusable forms, tables, actions, and workflows in the CRM package, then keep the app route as a thin mount.
 
+### Marketing
+
+- Mount `MarketingPage` for the complete staff workspace or inject `createMarketingUiClient()` into package UI surfaces.
+- Keep Resend credentials, worker secrets, and webhook secrets in the generated server-only `_handlers.ts` composition.
+- Use the domain subpaths for custom products: `/server` for consent, `/campaigns` for campaign lifecycle, `/segments` for audiences, `/worker` for bounded delivery, and `/email` for the injected sender.
+- Treat the generated worker, webhook, and unsubscribe routes as one operational unit; a campaign UI without those routes is not a complete delivery installation.
+- Follow [Marketing Delivery & Scheduler](./marketing-delivery.md) before enabling production sends.
+
 ### Projects
 
 - Build on `listProjects()` and `getProjectPortfolioStats()` when you need reusable project listing and metrics helpers.
 - Use `getProjectDashboard()` for internal detail views. Client-facing routes must use `listClientProjects()` and `getClientProject()`; never project the full internal dashboard into a client response.
 - Use the task, milestone, link, and member helpers when your app owns project write flows.
-- Treat `getProjectsPortfolioPageData()` as `starter` package glue; the scaffold ships no Projects page until package-owned UI exists.
+- Treat `getProjectsPortfolioPageData()` as `starter` package glue. New scaffolds mount package-owned Projects UI through `@brightweblabs/module-projects/routes`; host apps can use those route components directly or build custom pages on the lower-level helpers.
+- Use `@brightweblabs/module-projects/route-handlers` for thin generated API routes and the package-root `handle*Request()` exports when composing host-owned request behavior.
 - Use `projectsModuleRegistration` when you want project navigation and toolbar behavior in the shell.
 
 ## Related contract docs
@@ -267,6 +288,7 @@ Auth email flows should stay on `supabase.auth.*` and Supabase Auth SMTP/project
 - [Base Contract](./base-contract.md)
 - [Platform Base](./platform-base.md)
 - [CRM](./crm.md)
+- [Marketing](./marketing.md)
 - [Projects](./projects.md)
 - [Project Structure](../foundations/project-structure.md)
 

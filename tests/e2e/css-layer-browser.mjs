@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { observeBrowserErrors } from "./browser-errors.mjs";
 
 // Self-contained, read-only DOM measurement; also callable with CUA tab.evaluate.
 export function cssLayerSnapshot() {
@@ -50,12 +51,14 @@ export function assertCssLayerSnapshot(snapshot, kind) {
   assert.ok(snapshot.pageWidth <= snapshot.viewport + 1, "page does not overflow viewport horizontally");
 }
 
-export async function runCssLayerBrowser({ appUrl, cookies }) {
+export async function runCssLayerBrowser({ appUrl, cookies, setupContext = async () => {} }) {
   const { chromium } = await import("playwright");
   const browser = await chromium.launch();
   try {
     const context = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
+    await setupContext(context);
     const page = await context.newPage();
+    const assertNoErrors = observeBrowserErrors(page, { appUrl });
     const verify = async (kind) => {
       await page.locator(kind === "auth" ? ".auth-vessel h1" : kind === "editorial" ? ".social-workspace header h2" : ".social-calendar").waitFor();
       await page.evaluate(() => document.fonts.ready);
@@ -74,7 +77,7 @@ export async function runCssLayerBrowser({ appUrl, cookies }) {
     await page.locator('a[href="/login"]').click();
     await page.waitForURL(`${appUrl}/login`);
     await verify("auth");
-    await context.addCookies(cookies.map(cookie => ({ ...cookie, url: appUrl })));
+    await context.addCookies(cookies.map(cookie => ({ name: cookie.name, value: cookie.value, url: appUrl })));
     for (const [query, kind] of [["", "calendar"], ["#plano", "editorial"]]) {
       await page.goto(`${appUrl}/marketing/social-media${query}`);
       await verify(kind);
@@ -101,6 +104,7 @@ export async function runCssLayerBrowser({ appUrl, cookies }) {
     await context.clearCookies();
     await page.goto(`${appUrl}/login`);
     await verify("auth");
+    assertNoErrors();
     console.log("[smoke] CSS rendered regression passed: auth/editorial/calendar direct loads, refresh, navigation and mobile");
   } finally {
     await browser.close();

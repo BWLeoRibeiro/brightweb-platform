@@ -1,5 +1,11 @@
 # @brightweblabs/ui
 
+## 1.5.7
+
+### Patch Changes
+
+- fabd657: Use neutral member-facing copy for sign-in, unfinished milestones and projects without shared milestones. Localize the member project search clear action through an optional label while preserving the shared component's default. Permissions, actions, milestone selection and invitation behaviour are unchanged.
+
 ## 1.5.6
 
 ### Patch Changes

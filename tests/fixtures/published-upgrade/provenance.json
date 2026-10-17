@@ -1,0 +1,14 @@
+{
+  "source": "https://registry.npmjs.org/create-bw-app/0.27.1",
+  "cliVersion": "0.27.1",
+  "cliIntegrity": "sha512-UgjM2EzKCQL7bKpRbzMc0i1nPpFrKdF0HALq1kHnJxzRpmUfMBNXHSq6r7PhpYj0/XLgDbjrRCstNw5IBNJV+g==",
+  "fixtureSha256": "1e702cab8b8da3432b2dc2063f3572e1fcf1e305efcd9094879b85c41e6cd02e",
+  "generatedAt": "2026-09-06",
+  "modules": [
+    "admin",
+    "crm",
+    "marketing",
+    "projects"
+  ],
+  "packageManager": "pnpm@11.25.0"
+}

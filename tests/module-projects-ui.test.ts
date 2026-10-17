@@ -49,6 +49,9 @@ import {
 } from "../packages/module-projects/src/ui/shared/compact-collection-model.ts";
 import { formatNaturalDisplayName } from "../packages/module-projects/src/ui/shared/natural-display-name.ts";
 import { DashboardProjectAttentionCard } from "../packages/module-projects/src/ui/shared/dashboard-project-attention-card.tsx";
+import { ProjectsUiProvider } from "../packages/module-projects/src/ui/context.tsx";
+import { ProjectDetailDataProvider } from "../packages/module-projects/src/ui/project-detail-data-provider.tsx";
+import { ProjectDetailTeamCard } from "../packages/module-projects/src/ui/project-detail-team-card.tsx";
 
 function collectDictionaryStrings(value: unknown): string[] {
   if (typeof value === "string") return [value];
@@ -503,11 +506,11 @@ test("internal team candidates appear by default and search only filters them", 
 });
 
 test("internal team picker stages additions and transfers responsibility without invalid drafts", () => {
-  assert.equal(defaultProjectsUiDictionary.team.addSelectedMembers(0), "Adicionar membros");
-  assert.equal(defaultProjectsUiDictionary.team.addSelectedMembers(1), "Adicionar 1 membro");
-  assert.equal(defaultProjectsUiDictionary.team.addSelectedMembers(2), "Adicionar 2 membros");
-  assert.equal(defaultProjectsUiDictionary.team.membersRemoved(1), "Membro removido da equipa.");
-  assert.equal(defaultProjectsUiDictionary.team.membersRemoved(2), "2 membros removidos da equipa.");
+  assert.equal(defaultProjectsUiDictionary.team.addSelectedMembers(0), "Adicionar à equipa");
+  assert.equal(defaultProjectsUiDictionary.team.addSelectedMembers(1), "Adicionar 1 pessoa");
+  assert.equal(defaultProjectsUiDictionary.team.addSelectedMembers(2), "Adicionar 2 pessoas");
+  assert.equal(defaultProjectsUiDictionary.team.membersRemoved(1), "Pessoa removida da equipa deste projeto.");
+  assert.equal(defaultProjectsUiDictionary.team.membersRemoved(2), "2 pessoas removidas da equipa deste projeto.");
   assert.deepEqual(applyProjectTeamMemberRoles({ sara: "owner" }, { tiago: "observer" }), {
     sara: "owner",
     tiago: "observer",
@@ -573,13 +576,18 @@ test("internal project detail hydrates only already-visible owner and member pro
   assert.doesNotMatch(data, /@brightweblabs\/infra\/server|createServiceRoleClient/);
 });
 
-test("internal team role pills share one action row with contact controls", () => {
-  const card = readFileSync(
-    join(process.cwd(), "packages/module-projects/src/ui/project-detail-team-card.tsx"),
-    "utf8",
-  );
-  assert.match(card, /className="ml-auto flex shrink-0 items-center gap-2"[\s\S]*<MemberRoleBadge[\s\S]*<ContactActionButtons/);
-  assert.doesNotMatch(card, /absolute right-3 top-1\/2/);
+test("internal team keeps each member's identity, project role and contact action together", () => {
+  const html = renderToStaticMarkup(createElement(ProjectsUiProvider, null,
+    createElement(ProjectDetailDataProvider, { initialData: {
+      ...dashboard,
+      members: [{ id: "member-ana", projectId: project.id, profileId: "ana", role: "owner", createdAt: project.createdAt, label: "Ana Martins", email: "ana@example.test", phone: null }],
+    } }, createElement(ProjectDetailTeamCard, { canManageMembers: false, memberColorRoles: { ana: "manager" } })),
+  ));
+  const memberRow = html.match(/<li\b[^>]*>[\s\S]*?<\/li>/)?.[0] ?? "";
+  assert.match(memberRow, /Ana Martins/);
+  assert.match(memberRow, /ana@example.test/);
+  assert.match(memberRow, /Gestor de projeto/);
+  assert.match(memberRow, /aria-label="Enviar email para Ana Martins"/);
 });
 
 test("Projects detail provider accepts package dashboard payloads", () => {

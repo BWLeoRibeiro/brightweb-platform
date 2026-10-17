@@ -23,7 +23,6 @@ import {
   Skeleton,
   TooltipProvider,
 } from "@brightweblabs/ui";
-import { SectionIconButton } from "./shared/section-icon-button";
 import type { ProjectMemberRole } from "../contracts";
 import { parseProjectBoardApiError } from "./project-board-response-parser";
 import {
@@ -279,7 +278,10 @@ export function ProjectMembersEditSheet({
   if (!isClientMounted) {
     return (
       <TooltipProvider>
-        <SectionIconButton icon={Pencil} label={dictionary.team.edit} disabled />
+        <Button type="button" variant="outline" className="min-h-11 w-full" disabled>
+          <Pencil className="mr-2 size-4" aria-hidden="true" />
+          {dictionary.team.edit}
+        </Button>
       </TooltipProvider>
     );
   }
@@ -290,7 +292,10 @@ export function ProjectMembersEditSheet({
   return (
     <TooltipProvider>
       <Sheet open={open} onOpenChange={setOpen}>
-        <SectionIconButton icon={Pencil} label={dictionary.team.edit} onClick={() => setOpen(true)} />
+        <Button type="button" variant="outline" className="min-h-11 w-full" onClick={() => setOpen(true)}>
+          <Pencil className="mr-2 size-4" aria-hidden="true" />
+          {dictionary.team.edit}
+        </Button>
         <SheetContent className={sheetShellClassName}>
           <AppSheetHeader
             icon={view === "allocated" ? Users : UserPlus}

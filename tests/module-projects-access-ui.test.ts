@@ -20,7 +20,7 @@ test("project creation is one four-step local-state wizard with one aggregate su
   const wizard = source("create-project-sheet.tsx");
   const copy = source("project-access-dictionary.ts");
 
-  for (const label of ["Projeto e organização", "Equipa interna", "Acesso de clientes", "Rever e criar"]) {
+  for (const label of ["Projeto e organização", "Equipa interna", "Acesso ao projeto", "Rever e criar"]) {
     assert.match(copy, new RegExp(label));
   }
   assert.match(wizard, /projectAccessDictionary\.wizard\.steps/);
@@ -76,10 +76,10 @@ test("client access editor keeps external grants separate and supports all three
   const editor = source("project-client-access-editor.tsx");
   const copy = source("project-access-dictionary.ts");
 
-  assert.match(copy, /title: "Todos os clientes"/);
-  assert.match(copy, /title: "Clientes selecionados"/);
+  assert.match(copy, /title: "Todos os membros da organização"/);
+  assert.match(copy, /title: "Membros selecionados"/);
   assert.match(copy, /title: "Privado"/);
-  assert.match(copy, /Dar acesso a um cliente não o adiciona à equipa/);
+  assert.match(copy, /Dar acesso ao projeto a um membro da organização permite consultar a informação partilhada/);
   assert.match(editor, /all_org_clients:[\s\S]*selected_clients:[\s\S]*hidden:/);
   assert.match(editor, /projectAccessDictionary\.editor/);
   assert.match(editor, /organizations\.find\(\(item\) => item\.isPrimary\)/);
@@ -140,11 +140,11 @@ test("selected-client access requires an audience in the project organization", 
   };
 
   assert.equal(hasSelectedClientOrganizationWithoutAudience(draft.mode, draft.organizations), true);
-  assert.match(getClientAccessDraftError(draft) ?? "", /pelo menos um cliente/);
+  assert.match(getClientAccessDraftError(draft) ?? "", /pelo menos um membro/);
   const html = renderToStaticMarkup(createElement(ProjectClientAccessEditor, { value: draft, onChange() {} }));
-  assert.match(html, /Organização do projeto/);
+  assert.match(html, /Membros da organização/);
   assert.match(html, /Administrador/);
-  assert.match(html, /Seleciona pelo menos um cliente/);
+  assert.match(html, /Seleciona pelo menos um membro/);
   assert.equal((html.match(/role="alert"/g) ?? []).length, 1);
 });
 

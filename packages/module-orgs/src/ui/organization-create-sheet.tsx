@@ -74,6 +74,8 @@ export type OrganizationCreateSheetDictionary = {
   companySize: string;
   budgetRange: string;
   members: string;
+  memberEmailLabel?: string;
+  memberRoleLabel?: string;
   emailPlaceholder: string;
   member: string;
   admin: string;
@@ -95,7 +97,7 @@ export type OrganizationCreateSheetDictionary = {
 export const defaultOrganizationCreateSheetDictionary: OrganizationCreateSheetDictionary = {
   eyebrow: "A criar",
   title: "Nova organização",
-  description: "Cria a organização e, opcionalmente, convida os seus membros.",
+  description: "Cria uma organização e, opcionalmente, adiciona ou convida os seus membros.",
   identity: "Identificação",
   name: "Nome",
   namePlaceholder: "Empresa Verde, Lda.",
@@ -115,21 +117,23 @@ export const defaultOrganizationCreateSheetDictionary: OrganizationCreateSheetDi
   profile: "Perfil",
   companySize: "Dimensão",
   budgetRange: "Orçamento",
-  members: "Membros",
+  members: "Membros da organização — opcional",
+  memberEmailLabel: "Email da pessoa a adicionar",
+  memberRoleLabel: "Função na organização",
   emailPlaceholder: "email@empresa.pt",
   member: "Membro",
   admin: "Administrador",
-  add: "Adicionar",
-  remove: "Remover",
-  optionalInvites: "Os convites são opcionais.",
-  inviteHint: "Os membros existentes são adicionados diretamente; os restantes recebem um convite.",
+  add: "Adicionar à lista",
+  remove: "Retirar da lista",
+  optionalInvites: "Podes criar a organização sem adicionar pessoas a esta lista.",
+  inviteHint: "Ao criar a organização, as contas existentes podem receber acesso imediato; as restantes pessoas recebem um convite. O acesso inclui os projetos partilhados com todos os membros da organização.",
   invalidEmail: "Introduz um email válido.",
   create: "Criar organização",
   creating: "A criar…",
   cancel: "Cancelar",
   createError: "Não foi possível criar a organização.",
   discardTitle: "Descartar alterações?",
-  discardDescription: "Os dados desta nova organização ainda não foram guardados.",
+  discardDescription: "Esta organização ainda não foi criada. A lista de pessoas será descartada e nenhum acesso ou convite será criado a partir desta lista.",
   continueEditing: "Continuar a editar",
   discard: "Descartar",
 };
@@ -258,18 +262,25 @@ export function OrganizationCreateSheet({ open, onOpenChange, onSubmit, dictiona
               </FieldGroup>
             </SheetSection>
             <SheetSection title={dictionary.members} editing bodyClassName="space-y-3 px-4 py-3">
-              <div className="grid gap-2 sm:grid-cols-[1fr_auto_auto]">
-                <Input type="email" value={inviteDraft.email} onChange={(event) => setInviteDraft({ ...inviteDraft, email: event.target.value })} placeholder={dictionary.emailPlaceholder} className="h-8" />
-                <SheetSelect
-                  aria-label={dictionary.members}
-                  className="h-8"
-                  value={inviteDraft.role}
-                  onValueChange={(role) => setInviteDraft({ ...inviteDraft, role: role === "admin" ? "admin" : "member" })}
-                  options={[
-                    { value: "member", label: dictionary.member },
-                    { value: "admin", label: dictionary.admin },
-                  ]}
-                />
+              <div className="grid items-end gap-2 sm:grid-cols-[minmax(0,1fr)_auto_auto]">
+                <Field className="min-w-0 gap-1.5">
+                  <FieldLabel htmlFor={`${fieldId}-member-email`} className={sheetFieldLabelClassName}>{dictionary.memberEmailLabel ?? dictionary.emailPlaceholder}</FieldLabel>
+                  <Input id={`${fieldId}-member-email`} type="email" value={inviteDraft.email} onChange={(event) => setInviteDraft({ ...inviteDraft, email: event.target.value })} placeholder={dictionary.emailPlaceholder} className="h-8" />
+                </Field>
+                <Field className="min-w-0 gap-1.5">
+                  <FieldLabel htmlFor={`${fieldId}-member-role`} className={sheetFieldLabelClassName}>{dictionary.memberRoleLabel ?? dictionary.members}</FieldLabel>
+                  <SheetSelect
+                    id={`${fieldId}-member-role`}
+                    aria-label={dictionary.memberRoleLabel ?? dictionary.members}
+                    className="h-8"
+                    value={inviteDraft.role}
+                    onValueChange={(role) => setInviteDraft({ ...inviteDraft, role: role === "admin" ? "admin" : "member" })}
+                    options={[
+                      { value: "member", label: dictionary.member },
+                      { value: "admin", label: dictionary.admin },
+                    ]}
+                  />
+                </Field>
                 <Button type="button" variant="outline" size="sm" className="h-8" onClick={addInvitation}><Plus className="mr-1 size-3" />{dictionary.add}</Button>
               </div>
               {invitations.length === 0 ? <p className="text-meta text-foreground/55">{dictionary.optionalInvites}</p> : <div className="space-y-1.5">{invitations.map((invitation) => <div key={invitation.email} className="flex items-center justify-between rounded-lg border border-black/8 bg-background/60 px-2.5 py-1.5 text-meta dark:border-white/12"><span className="truncate">{invitation.email}</span><div className="flex items-center gap-2"><span className="rounded-full border px-2 py-0.5 text-micro font-semibold">{invitation.role === "admin" ? dictionary.admin : dictionary.member}</span><button type="button" className="text-destructive" onClick={() => setInvitations((current) => current.filter((item) => item.email !== invitation.email))}>{dictionary.remove}</button></div></div>)}</div>}

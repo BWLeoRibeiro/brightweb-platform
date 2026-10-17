@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Building2, Eye, EyeOff, Search, ShieldCheck, Users } from "lucide-react";
+import { Building2, Eye, EyeOff, ShieldCheck, Users } from "lucide-react";
 import { Checkbox, RoleBadge, SearchField } from "@brightweblabs/ui";
 import type { ProjectClientAccessMode } from "../contracts";
 import type { ProjectClientAccessEligibleClient } from "../client-contracts";
@@ -205,18 +205,18 @@ export function ProjectClientAccessEditor({
           </div>
 
           {value.mode === "selected_clients" && organization ? (
-            <div className="space-y-1.5">
+            <div className="space-y-3">
+              <p aria-live="polite" aria-atomic="true" className="inline-flex items-center gap-2 rounded-lg bg-primary/10 px-3 py-2 text-body font-semibold text-primary">
+                <Users className="size-4" aria-hidden="true" />
+                {projectAccessDictionary.editor.selectedClients(selectedClientCount)}
+              </p>
               <SearchField
-                size="sm"
                 value={search}
                 onChange={setSearch}
                 onClear={() => setSearch("")}
                 placeholder={projectAccessDictionary.editor.searchClients}
+                inputClassName="h-11 text-body"
               />
-              <p className="inline-flex items-center gap-1.5 text-meta text-muted-foreground">
-                <Search className="size-3.5" aria-hidden="true" />
-                {projectAccessDictionary.editor.selectedClients(selectedClientCount)}
-              </p>
             </div>
           ) : null}
 
@@ -249,7 +249,10 @@ export function ProjectClientAccessEditor({
                       {visibleClients.map((client) => {
                         const checked = organization.selectedProfileIds.includes(client.profileId);
                         return (
-                          <label key={client.profileId} className="flex cursor-pointer items-center gap-3 rounded-lg px-2 py-2 hover:bg-[color:var(--muted)]/50">
+                          <label key={client.profileId} className={cn(
+                            "grid min-h-14 cursor-pointer grid-cols-[1.25rem_1.75rem_minmax(0,1fr)] items-center gap-x-3 gap-y-1.5 rounded-lg border px-3 py-3 transition-colors hover:bg-[color:var(--muted)]/50 sm:grid-cols-[1.25rem_1.75rem_minmax(0,1fr)_auto]",
+                            checked ? "border-primary/40 bg-primary/10" : "border-transparent",
+                          )}>
                             <Checkbox
                               checked={checked}
                               disabled={disabled}
@@ -264,8 +267,8 @@ export function ProjectClientAccessEditor({
                               {client.label.trim().slice(0, 1).toLocaleUpperCase("pt-PT") || "?"}
                             </span>
                             <span className="min-w-0 flex-1">
-                              <span className="block truncate text-body font-semibold text-foreground">{client.label}</span>
-                              {client.email ? <span className="block truncate text-meta text-muted-foreground">{client.email}</span> : null}
+                              <span className="block break-words text-body font-semibold text-foreground">{client.label}</span>
+                              {client.email ? <span className="block break-all text-meta text-muted-foreground">{client.email}</span> : null}
                             </span>
                             {client.organizationRole ? (
                               <RoleBadge
@@ -274,7 +277,7 @@ export function ProjectClientAccessEditor({
                                   ? projectAccessDictionary.editor.organizationAdmin
                                   : projectAccessDictionary.editor.organizationMember}
                                 tokenMap={ORGANIZATION_ROLE_TOKENS}
-                                className="shrink-0"
+                                className="col-start-3 justify-self-start sm:col-auto"
                               />
                             ) : null}
                           </label>

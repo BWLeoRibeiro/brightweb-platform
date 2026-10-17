@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
+import { readFile, mkdtemp, writeFile, rm, readdir } from "node:fs/promises";
+import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 import ts from "typescript";
@@ -224,4 +225,65 @@ test("every declared AppHeader prop is passed by both shells or explicitly allow
   }
 
   assert.deepEqual(problems, [], `AppHeader prop coverage failed:\n${problems.join("\n")}`);
+});
+
+const forwardingRoute = `export const dynamic = "force-dynamic";
+export async function POST(request: Request, context: { params: Promise<{ id: string }> }) {
+  const { handleRequest } = await import("@brightweblabs/module-admin");
+  return handleRequest(request, context);
+}`;
+
+for (const [name, mutate] of Object.entries({
+  "early return": (s: string) => s.replace("  const {", '  return new Response("broken", { status: 503 });\n  const {'),
+  "branch": (s: string) => s.replace("  const {", '  if (request.method === "POST") return new Response("broken");\n  const {'),
+  "extra call": (s: string) => s.replace("  const {", "  console.log(request);\n  const {"),
+  "wrong arguments": (s: string) => s.replace("handleRequest(request, context)", "handleRequest(context, request)"),
+  "helper indirection": (s: string) => s.replace("  return handleRequest(request, context);", "  const helper = () => handleRequest(request, context);\n  return helper();"),
+})) {
+  test(`thin route validator rejects ${name}`, async (t) => {
+    const root = await mkdtemp(path.join(os.tmpdir(), "bw-thin-route-"));
+    t.after(() => rm(root, { recursive: true, force: true }));
+    await writeFile(path.join(root, "route.ts"), forwardingRoute);
+    assert.deepEqual(await findTemplateThinnessViolations(root), []);
+    await writeFile(path.join(root, "route.ts"), mutate(forwardingRoute));
+    assert.ok((await findTemplateThinnessViolations(root)).length > 0);
+  });
+}
+
+test("generated dynamic HTTP adapters preserve request, context, response, and rejection", async () => {
+  const root = path.join(REPO_ROOT, "packages/create-bw-app/template");
+  let checked = 0;
+  for (const relative of await readdir(root, { recursive: true })) {
+    if (!relative.endsWith("/route.ts")) continue;
+    const source = await readFile(path.join(root, relative), "utf8");
+    if (!source.includes("await import(")) continue;
+    const js = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
+    const exports: Record<string, unknown> = {};
+    const response = new Response("synthetic package response", { status: 202 });
+    let received: unknown[] = [];
+    let rejection: Error | undefined;
+    const fakePackage = new Proxy({}, { get: (_target, key) => key === "then" ? undefined : (...args: unknown[]) => {
+      received = args;
+      if (rejection) throw rejection;
+      return response;
+    } });
+    new Function("require", "exports", js)((name: string) => {
+      assert.ok(name.startsWith("@brightweblabs/"));
+      return fakePackage;
+    }, exports);
+    for (const [method, handler] of Object.entries(exports)) {
+      if (typeof handler !== "function") continue;
+      const request = new Request("https://fixture.invalid/resource", { method });
+      const context = { params: Promise.resolve({ id: "synthetic-id", invitationId: "synthetic-invite" }) };
+      const args = [request, context].slice(0, handler.length);
+      assert.equal(await handler(...args), response, relative);
+      assert.deepEqual(received, args, `${relative} ${method} forwards all inputs`);
+      args.forEach((arg, index) => assert.equal(received[index], arg));
+      rejection = new Error("Synthetic package rejection");
+      await assert.rejects(handler(...args), (error: unknown) => error === rejection);
+      rejection = undefined;
+      checked += 1;
+    }
+  }
+  assert.ok(checked >= 8, "The generated dynamic HTTP adapter inventory must be exercised");
 });

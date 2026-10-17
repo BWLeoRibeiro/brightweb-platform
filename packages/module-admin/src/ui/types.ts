@@ -100,6 +100,7 @@ export type AdminUiDictionary = {
     organizationLabel: string;
     organizationPlaceholder: string;
     organizationRoleLabel: string;
+    scopeSummary?: (profile: string, organization: string | null, role: string | null) => string;
     organizationRoles: Record<"admin" | "member", string>;
     sending: string;
     send: string;

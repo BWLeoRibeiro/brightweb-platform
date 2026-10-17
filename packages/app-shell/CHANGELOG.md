@@ -1,5 +1,19 @@
 # @brightweblabs/app-shell
 
+## 0.16.5
+
+### Patch Changes
+
+- fabd657: Use member terminology for portal accounts and organisation access while retaining CRM contacts and organisations. Make project access and team management actions visible, highlight selected members, and show member identities to existing access managers without changing permissions or role identifiers.
+- Updated dependencies [fabd657]
+  - @brightweblabs/ui@1.5.7
+
+## 0.16.4
+
+### Patch Changes
+
+- a7dbad1: Display the configured company name beside the client portal logo instead of a hardcoded BrightWeb title. Update the starter compatibility defaults to consume the corrected shell package.
+
 ## 0.16.3
 
 ### Patch Changes

@@ -43,15 +43,15 @@ Brightweb is now the source of truth for future shared database work in:
 ### New client
 
 - provision from Brightweb-owned module structure
-- apply `core`
-- apply enabled module migrations in dependency order
+- resolve Core and enabled module dependencies
+- merge fresh shared migrations by authored timestamp, using module dependency order for ties
 - apply client-only migrations only if needed
 
 ## Adoption rule for shared module work
 
 When a new shared schema change is needed:
 
-1. classify the change by owner: `core`, `admin`, `crm`, `projects`, or `client`
+1. classify the change by owner: `core`, `admin`, `orgs`, `crm`, `marketing`, `projects`, or `client`
 2. create a new forward migration in Brightweb
 3. apply it only to clients that need that module
 4. never “back-edit” already-applied history to pretend the structure existed earlier

@@ -1,5 +1,57 @@
 # create-bw-app
 
+## 0.27.8
+
+### Patch Changes
+
+- d5e1d3b: Document published usage and package and migration provenance checks while retaining the current ownership, destructive-migration and live-database verification safeguards. No runtime behavior changes.
+
+## 0.27.7
+
+### Patch Changes
+
+- 1bad396: Keep generated app dependency defaults and the upgrade compatibility bundle aligned with the unified Projects task UI release.
+
+## 0.27.6
+
+### Patch Changes
+
+- fabd657: Use member terminology for portal accounts and organisation access while retaining CRM contacts and organisations. Make project access and team management actions visible, highlight selected members, and show member identities to existing access managers without changing permissions or role identifiers.
+
+## 0.27.5
+
+### Patch Changes
+
+- 75841f5: Add deliberately authored client tasks within each project's existing organization audience. Draft publication, current-role task capabilities, versioned client submissions and exact-version staff return/accept preserve private internal work and existing project, milestone and member management permissions. Forward SQL keeps legacy tasks internal, retains the same-project milestone invariant and revokes stale selected task grants.
+- 75841f5: Retry explicit installation after a failed or incomplete update/upgrade even when package requirements are unchanged. Reuse a completed install only while package, lock, configuration/patch inputs and installed shared versions still match.
+
+  Validate monorepo migration writes under their Supabase owner directory while retaining symlink and traversal protection. Respect the npm registry environment when resolving upgrade versions, aligning metadata with the installation registry.
+
+  Use migration sources matching the requested package release when existing installed modules still contain the previous SQL bundle; refuse unavailable source versions before writing.
+
+  Order fresh SQL assemblies by authored timestamps, preserving dependency order on equal timestamps, so later Core indexes run after the Admin baseline they reference. Existing numbered SQL files are never reordered.
+
+  Recover interrupted migration appends only when the existing file matches the pending module/source and exact SQL hash. Conflicting or duplicate source files reject before further writes; appends refuse to overwrite a concurrently created file.
+
+  Refuse recovery across missing or reordered SQL sources and confine ancestor migration writes to the declared workspace. Preserve leading blank lines during exact-source recovery.
+
+  Preflight app-owned pnpm patch selectors against target shared package versions before any package, scaffold, manifest or SQL writes. Preserve incompatible patches and partial prior state; require a reviewed compatible app patch before installed retry.
+
+- bc43aa4: Reconcile pnpm lockfiles during explicit update and upgrade installations in CI, where an existing lockfile otherwise defaults to frozen mode after dependency inputs change. Keep ordinary and scaffold installation policy unchanged.
+- 75841f5: Protect profile identity across browser insert, update and upsert; resolve grants from current confirmed Auth identity and recheck it under transaction locks. Require confirmed first-admin setup and fail closed on conflicting identities. Apply Core/Admin/Orgs identity migrations atomically with checked prerequisites, and refuse invitation operations until their required SQL is installed.
+- 75841f5: Ship a forward Projects migration enforcing that each task's optional milestone belongs to the same project, including direct writes and milestone reassignment. Milestone deletion still unlinks tasks without clearing their required project. Invalid existing relationships stop migration with an aggregate preflight result and require a separately reviewed data remediation.
+- 75841f5: Include the Projects profile page in the tracked starter inventory so upgrades
+  with `--refresh-starters` restore a missing `/account/perfil` route. Preserve
+  drifted, app-owned and intentionally skipped pages; refuse untracked custom
+  profile conflicts before writing app files.
+
+## 0.27.4
+
+### Patch Changes
+
+- a7dbad1: Display the configured company name beside the client portal logo instead of a hardcoded BrightWeb title. Update the starter compatibility defaults to consume the corrected shell package.
+- 0f721b9: Allow module upgrades and additions to append migrations in the containing workspace’s canonical Supabase directory. Keep app writes bounded to the app and reject migration writes outside the nearest workspace/repository boundary or through symlinks.
+
 ## 0.27.3
 
 ### Patch Changes

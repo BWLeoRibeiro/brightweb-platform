@@ -18,6 +18,7 @@ import type { RoleColor } from "./shared/role-colors";
 import { CompactCollectionCardSkeleton } from "./shared/compact-collection-skeleton";
 import type { ProjectDetailPermissions, ProjectDetailSlots, ProjectsNavigationConfig, ProjectsUiClient, ProjectsUiDictionary } from "./types";
 import { projectAccessDictionary } from "./project-access-dictionary";
+import { ProjectClientTasksProvider } from "./client-tasks/staff-client-tasks";
 
 const DEFAULT_PERMISSIONS: ProjectDetailPermissions = { canOpenEditProject: false, canEditProjectItems: false, canUpdateAssignedTasks: false, canCreateProjectLinks: false, canManageProjectLinks: false, canManageClientContent: false, canManageMembers: false, canViewOrganization: true };
 
@@ -37,14 +38,17 @@ function LowerCardFallback() { return <CompactCollectionCardSkeleton />; }
 
 export function ProjectDetailPage({ client, initialData, permissions, projectRole = "observer", viewerProfileId, memberColorRoles = {}, dictionary = defaultProjectsUiDictionary, navigation, slots }: ProjectDetailPageProps) {
   const access = { ...DEFAULT_PERMISSIONS, ...permissions };
+  const canCreateTasks = access.canCreateTasks ?? access.canEditProjectItems;
+  const taskCapabilities = { canCreateTasks, canShareClientTasks: access.canShareClientTasks ?? access.canEditProjectItems, canReviewClientTasks: access.canReviewClientTasks ?? access.canEditProjectItems };
   return <ProjectsUiProvider client={client} dictionary={dictionary} navigation={navigation}>
     <ProjectDetailDataProvider initialData={initialData}>
+      <ProjectClientTasksProvider key={initialData.project.id} projectId={initialData.project.id} capabilities={taskCapabilities}>
       <div className="mx-auto flex w-full max-w-[1260px] flex-col gap-lg pb-lg pt-0 md:pb-xl">
         <section className="dashboard-reveal w-full min-w-0 self-stretch overflow-hidden rounded-[var(--radius-card)] border border-[color:var(--project-hero-border)] bg-[color:var(--project-hero-base)] bg-[image:var(--project-hero-surface)] shadow-[var(--project-hero-shadow)]">
           <ProjectDetailHero canOpenEditProject={access.canOpenEditProject} canViewOrganization={access.canViewOrganization} />
         </section>
         {slots?.afterHero}
-        <section className="grid items-stretch gap-lg xl:grid-cols-3"><ProjectMilestonesAndTasksCards projectId={initialData.project.id} canManageItems={access.canEditProjectItems} canUpdateAssignedTasks={access.canUpdateAssignedTasks} viewerProfileId={viewerProfileId} canManageClientContent={access.canManageClientContent} /></section>
+        <section className="grid items-stretch gap-lg xl:grid-cols-3"><ProjectMilestonesAndTasksCards projectId={initialData.project.id} canManageItems={access.canEditProjectItems} canCreateTasks={canCreateTasks} canUpdateAssignedTasks={access.canUpdateAssignedTasks} viewerProfileId={viewerProfileId} canManageClientContent={access.canManageClientContent} /></section>
         <section aria-labelledby="project-people-access-heading" className="space-y-3">
           <div className="flex items-end justify-between gap-4 px-0.5">
             <div>
@@ -70,8 +74,9 @@ export function ProjectDetailPage({ client, initialData, permissions, projectRol
         {slots?.beforeMetadata}
         <ProjectDetailMetadataStrip />
         <ProjectEditSheetLazy projectId={initialData.project.id} projectRole={projectRole} />
-        <ProjectDetailCreateSheetsMount projectId={initialData.project.id} canCreateMilestonesAndTasks={access.canEditProjectItems} canCreateLinks={access.canCreateProjectLinks} canManageClientContent={access.canManageClientContent} />
+        <ProjectDetailCreateSheetsMount projectId={initialData.project.id} canCreateMilestonesAndTasks={access.canEditProjectItems} canCreateTasks={canCreateTasks} canCreateLinks={access.canCreateProjectLinks} canManageClientContent={access.canManageClientContent} />
       </div>
+      </ProjectClientTasksProvider>
     </ProjectDetailDataProvider>
   </ProjectsUiProvider>;
 }

@@ -34,7 +34,7 @@ test("project creation follows project, internal team, client access, and review
   const headings = [
     'title: "Projeto e organização"',
     'title: "Equipa interna"',
-    'title: "Acesso de clientes"',
+    'title: "Acesso ao projeto"',
     'title: "Rever e criar"',
   ];
   const wizardDictionary = dictionary.slice(dictionary.indexOf("wizard: {"));

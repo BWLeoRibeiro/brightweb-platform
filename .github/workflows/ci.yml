@@ -16,6 +16,7 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -37,7 +38,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 24
           cache: pnpm
 
       - name: Install dependencies
@@ -88,15 +89,19 @@ jobs:
       - name: Build docs
         run: pnpm build:docs
 
+      - name: Check docs runtime sources
+        run: node scripts/check-docs-runtime-files.mjs
+
       - name: Audit production dependencies
         run: pnpm audit --prod --audit-level high
 
   # Authenticated runtime smoke of a generated app (issue #77): generates a
-  # platform fixture, builds and serves it against a local Supabase stub, signs
-  # in for real, and asserts page renders plus dashboard API contracts that
-  # build-time gates cannot see. Parallel to `build`; not on the critical path.
+  # platform fixture, builds and serves it against a local Supabase stub, and
+  # asserts authenticated page renders plus dashboard API wiring contracts.
+  # The consumer job separately verifies real authentication and persistence.
   runtime-smoke:
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -109,7 +114,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 24
           cache: pnpm
 
       - name: Install dependencies
@@ -131,3 +136,56 @@ jobs:
           node-version: 22
       - name: Verify admin directory on real PostgreSQL
         run: node tests/database/admin-profile-visibility.mjs
+
+  database:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.28.1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Execute database permissions, transactions and upgrades
+        run: pnpm test:database
+
+  required-verification:
+    if: always()
+    needs: [build, runtime-smoke, database, consumer]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Reject incomplete verification and record tested inputs
+        env:
+          BW_REQUIRED_JOBS: build,runtime-smoke,database,consumer
+          BW_JOB_RESULTS: ${{ toJSON(needs) }}
+        run: node scripts/verification-receipt.mjs
+      - uses: actions/upload-artifact@v4
+        with:
+          name: verification-receipt
+          path: verification-results/receipt.json
+          if-no-files-found: error
+
+  consumer:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.28.1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec playwright install --with-deps chromium
+      - name: Real Supabase and production browser acceptance
+        run: pnpm test:consumer

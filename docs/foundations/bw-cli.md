@@ -122,7 +122,7 @@ Removal never touches the database or migration history. It prints the module's 
 
 ### Check app health
 
-`bw doctor` prints `PASS`, `WARN`, and `FAIL` checks for manifest validity, package/module agreement, exposure flags, module requirements, scaffold drift, required environment names, and migration files. It never prints environment values.
+`bw doctor` prints `PASS`, `WARN`, and `FAIL` checks for manifest validity, package/module agreement, exposure flags, module requirements, scaffold drift, required environment names, package provenance, and migration provenance. It never prints environment values.
 
 ```bash
 bw doctor --report
@@ -130,6 +130,10 @@ bw doctor --strict
 ```
 
 `--report` records the timestamp and result in the app manifest. `--strict` makes warnings fail, including the current `db-objects` skip; live database checks are reserved for a later release.
+
+Package provenance requires installed dependencies and a `pnpm-lock.yaml`. For each BrightWeb package, doctor verifies the exact version from the current compatibility set, the importer resolution, and a registry `sha512` integrity record. Workspace, file, link, and patch dependencies are rejected for this published-app check. If dependencies or the lockfile are missing, the check is reported as `INFO` because exact registry provenance is not available yet.
+
+Migration provenance goes beyond checking that a filename exists. For every migration through the recorded cursor, doctor verifies the module provenance header when present, a compatible package version, the original source filename, and the SHA-256 content against the installed package. It also validates recorded destructive deferrals and reports reviewed legacy-equivalent hashes separately. An uncursored adopted module cannot receive exact provenance verification.
 
 Scaffold health follows the recorded per-file decision:
 

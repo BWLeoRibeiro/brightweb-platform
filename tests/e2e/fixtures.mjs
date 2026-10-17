@@ -365,6 +365,8 @@ export const tables = {
   project_task_stats: projectTaskStats,
   project_milestones: projectMilestones,
   project_members: [],
+  project_links: [],
+  project_organizations: [],
   organization_members: [],
   crm_contacts: crmContacts,
   crm_status_log: crmStatusLog,
@@ -387,6 +389,22 @@ export const tables = {
 
 export const rpcResults = {
   current_global_role: "admin",
+  log_app_activity_event: null,
+  get_project_client_access_summary: [],
+  get_project_access_configuration: { mode: "hidden", organizations: [] },
+  get_project_client_task_workbench: {
+    tasks: [],
+    organizations: [],
+    capabilities: {
+      can_create_tasks: true,
+      can_share_client_tasks: true,
+      can_review_client_tasks: true,
+    },
+  },
+  current_notification_summary: { unread_count: 0, seen_at: null },
+  get_crm_contact_stats: [{ total_count: crmContacts.length, lead_count: crmContacts.filter(row => row.status === "lead").length }],
+  get_marketing_overview_metrics: [],
+  get_marketing_campaign_metrics: [],
 };
 
 export const CRM_TOTAL_CONTACTS = crmContacts.length;

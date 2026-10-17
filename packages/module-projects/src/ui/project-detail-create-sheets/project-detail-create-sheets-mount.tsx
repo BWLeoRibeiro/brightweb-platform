@@ -7,7 +7,7 @@ import { PROJECTS_EVENTS } from "../events";
 import { useOptionalProjectDetailData } from "../project-detail-data-provider";
 import { useWindowEventBridge } from "../window-events";
 
-type MilestoneOption = { id: string; title: string };
+type MilestoneOption = { id: string; title: string; visibility?: string };
 type MemberOption = { profileId: string; label: string; role?: "owner" | "contributor" | "observer" };
 
 type ProjectDetailCreateSheetsMountProps = {
@@ -15,6 +15,7 @@ type ProjectDetailCreateSheetsMountProps = {
   milestones?: MilestoneOption[];
   members?: MemberOption[];
   canCreateMilestonesAndTasks?: boolean;
+  canCreateTasks?: boolean;
   canCreateLinks?: boolean;
   canManageClientContent?: boolean;
 };
@@ -84,12 +85,13 @@ export function ProjectDetailCreateSheetsMount({
   milestones: milestoneProps = [],
   members: memberProps = [],
   canCreateMilestonesAndTasks = true,
+  canCreateTasks = canCreateMilestonesAndTasks,
   canCreateLinks = true,
   canManageClientContent = false,
 }: ProjectDetailCreateSheetsMountProps) {
   const detailData = useOptionalProjectDetailData();
   const milestoneOptions = detailData
-    ? detailData.milestones.map((milestone) => ({ id: milestone.id, title: milestone.title }))
+    ? detailData.milestones.map((milestone) => ({ id: milestone.id, title: milestone.title, visibility: milestone.visibility }))
     : milestoneProps;
   const memberOptions = detailData
     ? detailData.members
@@ -100,7 +102,7 @@ export function ProjectDetailCreateSheetsMount({
   return (
     <>
       {canCreateMilestonesAndTasks ? <ProjectMilestoneCreateSheetLazy projectId={projectId} canManageClientContent={canManageClientContent} /> : null}
-      {canCreateMilestonesAndTasks ? (
+      {canCreateTasks ? (
         <ProjectTaskCreateSheetLazy projectId={projectId} milestones={milestoneOptions} members={memberOptions} />
       ) : null}
       {canCreateLinks ? <ProjectLinkCreateSheetLazy projectId={projectId} canManageClientContent={canManageClientContent} /> : null}

@@ -1,4 +1,5 @@
 // Presentation-only substitutes: the production sheets own state and submissions.
+export const Checkbox='Checkbox';
 export const StyledSelect='StyledSelect',Button='Button',Input='Input',Field='Field',FieldContent='FieldContent',FieldGroup='FieldGroup',FieldLabel='FieldLabel',Popover='Popover',PopoverContent='PopoverContent',PopoverTrigger='PopoverTrigger',Sheet='Sheet',SheetContent='SheetContent',SheetFooter='SheetFooter',AppSheetHeader='AppSheetHeader',SheetSection='SheetSection',ProjectCalendar='Calendar';
 export function useShellAction() {}
 export function useRouter() { return { refresh() { globalThis.projectsFormRefreshes = (globalThis.projectsFormRefreshes ?? 0) + 1; } }; }

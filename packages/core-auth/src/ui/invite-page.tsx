@@ -218,7 +218,7 @@ export function InvitePage({ invitationId, kind = "organization" }: InvitePagePr
             {sameEmail ? (
               <Button asChild className="h-11 w-full">
                 <Link href={`/auth/post-login?invitationId=${encodeURIComponent(invitationId)}&invitationKind=${kind}`}>
-                  {acceptanceFailed ? acceptanceErrorCopy.retry : dictionary.common.continue}
+                  {acceptanceFailed ? acceptanceErrorCopy.retry : d.accept ?? dictionary.common.continue}
                 </Link>
               </Button>
             ) : (
