@@ -51,7 +51,7 @@ Brightweb is now the source of truth for future shared database work in:
 
 When a new shared schema change is needed:
 
-1. classify the change by owner: `core`, `admin`, `crm`, `projects`, or `client`
+1. classify the change by owner: `core`, `admin`, `orgs`, `crm`, `marketing`, `projects`, or `client`
 2. create a new forward migration in Brightweb
 3. apply it only to clients that need that module
 4. never “back-edit” already-applied history to pretend the structure existed earlier

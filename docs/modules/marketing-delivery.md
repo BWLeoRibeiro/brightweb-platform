@@ -2,7 +2,7 @@
 
 How `module-marketing` sends email, how the moving parts fit together, how to set it up for a client app, and what it costs to run.
 
-> **Status:** design reference for the Marketing module (in development). This page is the source of truth for the delivery architecture and per-app setup. Read it before wiring Marketing into a client app.
+> **Status:** operational reference for the shipped Marketing module. Use [Marketing](./marketing.md) for the package and scaffold contract, then use this page for delivery architecture and per-app setup.
 
 ---
 
@@ -178,6 +178,6 @@ To enable Marketing on a client app:
 
 ## See also
 
-- Marketing schema & consent model — *(schema doc, forthcoming)*
+- [Marketing module and consent model](./marketing.md)
 - [Environment and services](../foundations/environment-and-services.md)
 - [Using modules](./using-modules.md)

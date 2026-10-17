@@ -19,7 +19,7 @@ BrightWeb does not require a private workspace checkout for the public scaffold 
 
 | Template | Choose it when | What you get on day 1 | Services required to fully validate the starter |
 | --- | --- | --- | --- |
-| `platform` | You need shared auth, app-shell wiring, and optional BrightWeb business modules such as CRM or Projects. | A thin authenticated shell with settings, `.env.local`, migrations, and direct CRM/Admin package mounts when selected. | Supabase and Resend. Optional modules also need the matching database schema available in the target client database. |
+| `platform` | You need shared auth, app-shell wiring, and optional BrightWeb business modules such as CRM, Marketing, or Projects. | A thin authenticated shell with settings, `.env.local`, migrations, and direct package mounts for the selected modules. | Supabase and Resend. Optional modules also need the matching database schema available in the target client database. |
 | `site` | You need a standalone marketing or editorial site without the heavier platform runtime. | A thin Next.js App Router shell with `config/site.ts`, theme tokens, and no default feature page. | None for the shell itself. |
 
 ## Service expectations by template
@@ -38,9 +38,10 @@ BrightWeb does not require a private workspace checkout for the public scaffold 
 
 ## Module selection expectations
 
-- `crm`, `projects`, and `admin` control package wiring, generated runtime config, and available package mounts.
+- `crm`, `marketing`, `projects`, and `admin` control package wiring, generated runtime config, and available package mounts.
 - The platform database baseline always includes `Core + Admin`. Selecting `admin` controls whether the Admin package mount and wiring are scaffolded.
 - Projects build on the Core + Admin + Organizations database baseline without requiring CRM.
+- Marketing resolves Core + Admin + Organizations + CRM because its consent and audience model targets CRM contacts.
 
 ## Recommended first path
 

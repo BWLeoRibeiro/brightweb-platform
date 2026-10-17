@@ -60,9 +60,9 @@ The live preview app now lives separately at `apps/platform-preview`. It is a sm
 - the package has a publishable `bin` entry
 - the template is isolated from the live preview app
 - the CLI now supports two scaffold types:
-  - `platform`: auth-first BrightWeb app with optional `crm`, `projects`, and `admin`
+  - `platform`: auth-first BrightWeb app with optional `crm`, `marketing`, `projects`, and `admin`
   - `site`: thin standalone Next.js + Tailwind shell with settings and no default feature page
-- module selection now controls copied module playground files, generated `next.config.ts`, generated `config/shell.ts`, and dependency wiring
+- module selection now controls thin module route mounts, generated `next.config.ts`, generated `config/shell.ts`, and dependency wiring
 - published platform scaffolds also ship the resolved Supabase module baseline and client stack metadata for the selected modules
 - generated apps now get generated config files, `.gitignore`, `README.md`, `package.json`, and `next.config.ts`
 - platform apps also get `.env.local` for service values
@@ -71,14 +71,14 @@ The live preview app now lives separately at `apps/platform-preview`. It is a sm
 - the interactive flow is simplified to app type, project name, template-specific prompts, and install confirmation
 - the CLI supports two dependency modes:
   - `workspace`: generates `workspace:*` internal dependencies for repo-local client apps
-  - `published`: generates npm-ready internal dependency versions for future external usage
+  - `published`: generates npm-ready internal dependency versions for external usage
 
 ## Current scaffold behavior
 
 | Concern | Current behavior |
 | --- | --- |
 | Templates | Prompts for either a platform app or a standalone site starter. |
-| Modules | For platform apps, prompts for optional modules: CRM, Projects, and Admin. |
+| Modules | For platform apps, prompts for optional modules: CRM, Marketing, Projects, and Admin. |
 | Dependency wiring | Selected modules affect package dependencies, copied module starter files, generated `next.config.ts`, and generated shell/config wiring. |
 | Environment scaffold | Platform apps generate `.env.local` for service values, while starter identity and module state live in generated config files. |
 | Agent docs | Generated apps copy `AGENTS.md`, `docs/ai/README.md`, `docs/ai/examples.md`, and `docs/ai/app-context.json` into the project for local AI-agent orientation. |
@@ -103,9 +103,9 @@ Workspace behavior:
 - the old entrypoint still works through a thin compatibility wrapper
 - stack metadata may still be written under `supabase/clients/<slug>`, but repo-level `db:materialize` is deprecated
 
-## Future published usage
+## Published usage
 
-Once `create-bw-app` is published to npm:
+`create-bw-app` is published to npm:
 
 ```bash
 pnpm dlx create-bw-app
@@ -120,9 +120,10 @@ Published behavior:
 - site apps stay standalone and do not depend on internal BrightWeb runtime packages
 - the generated app is intended to run as a standalone Next.js project
 
-## Remaining gaps before broader public rollout
+## Current verification
 
-- publish `create-bw-app` to npm
-- confirm the unscoped npm package name `create-bw-app` is available
-- add CI smoke tests that scaffold and build a sample app in both workspace and published modes
-- decide whether the site template should keep the default Turbopack production build or pin `next build --webpack` until Tailwind/PostCSS validation is covered in CI
+- `pnpm check:create-bw-app-templates` validates the generated starter contracts.
+- `pnpm check:packed-release` verifies packed-package installation and both starter templates.
+- `pnpm test:runtime` builds and runs a generated platform app, including rendered CSS checks.
+- `pnpm test:consumer` verifies real authentication, persistence, authorization and critical browser workflows against a disposable backend.
+- The main CI workflow also runs unit tests, database checks, the starter build and docs validation. Release automation requires successful CI for the current main commit.

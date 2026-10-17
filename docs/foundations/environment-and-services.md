@@ -29,27 +29,30 @@ The current public scaffold only generates `.env.local` for the `platform` templ
 | Key | Scope | Required for | Purpose | Where the real value comes from |
 | --- | --- | --- | --- | --- |
 | `NEXT_PUBLIC_APP_URL` | public | `core-auth` | Canonical base URL used by auth callbacks and platform links. | The public URL for the current environment: local URL in `.env.local`, dev/staging domain in dev env vars, and the final domain in production env vars. |
-| `NEXT_PUBLIC_SUPABASE_URL` | public | `crm`, `projects`, `admin` | Supabase project URL used by client-side and server-side API access. | The target Supabase project settings. |
-| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY` | public | `crm`, `projects`, `admin` | Browser-safe Supabase key for auth and RPC access. | The target Supabase project settings. |
-| `SUPABASE_SECRET_DEFAULT_KEY` | server | `crm`, `projects`, `admin` | Privileged server key for admin, CRM, and projects actions. | The target Supabase project settings. |
-| `RESEND_API_KEY` | server | `admin` | API key used by app-owned email transport calls. | Your Resend account. |
+| `NEXT_PUBLIC_SUPABASE_URL` | public | platform | Supabase project URL used by auth plus client-side and server-side module access. | The target Supabase project settings. |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY` | public | platform | Browser-safe Supabase key for auth, RLS-backed reads, and RPC access. | The target Supabase project settings. |
+| `SUPABASE_SECRET_DEFAULT_KEY` | server | `crm`, `marketing`, `projects`, `admin` | Privileged server key for Admin, CRM, Marketing, Organizations, and Projects actions. | The target Supabase project settings. |
+| `SUPABASE_KEEPALIVE_SECRET` | server | optional platform operation | Bearer secret for `/api/cron/keepalive`. | A project-owned random secret. |
+| `RESEND_API_KEY` | server | `admin`, `marketing` | API key used by app-owned invitation and Marketing delivery calls. | Your Resend account. |
 | `RESEND_FROM_TRANSACTIONAL` | server | `admin` | Sender identity for app-owned transactional flows. | A verified sender/domain in Resend. |
 | `EMAIL_BRAND_NAME` | server | optional | Brand name shown in transactional invitation emails. Falls back to the sender display name. | Your product or company name. |
 | `EMAIL_BRAND_LOGO_URL` | server | optional | Absolute or app-relative PNG logo used in transactional invitation emails. | A publicly reachable email-safe logo. |
 | `EMAIL_BRAND_COLOR_*` | server | optional | Semantic `#RRGGBB` colors used by invitation emails (`CANVAS`, `SURFACE`, `HEADER`, `HEADER_TEXT`, `HEADER_MUTED_TEXT`, `ACCENT`, `TEXT`, `MUTED_TEXT`, `BORDER`, `PANEL`, `BUTTON`, `BUTTON_TEXT`, and `WARNING`). Invalid values fall back safely. | Map the project's theme tokens to the email palette. |
-| `RESEND_FROM_MARKETING` | server | `admin` | Sender identity for app-owned marketing flows. | A verified sender/domain in Resend. |
+| `MARKETING_FROM_EMAIL` | server | `marketing` | Primary verified sender address for Marketing campaigns; generated handler composition falls back to `RESEND_FROM_EMAIL`. | A verified sender/domain in Resend. |
+| `MARKETING_FROM_NAME` | server | `marketing` | Display name for Marketing campaigns. | Your product or company name. |
+| `RESEND_FROM_MARKETING` | server | legacy infra helper | Compatibility value read by `getMarketingSender()`; new Marketing handlers use `MARKETING_FROM_EMAIL`. | A verified sender/domain in Resend. |
 | `CONTACT_TO_EMAIL` | server | `admin` | Destination inbox for app-owned contact notifications. | Inbox address owned by the client. |
-| `RESEND_WEBHOOK_SECRET` | server | `admin` | Secret used to verify inbound Resend webhook signatures. | The webhook secret configured in Resend. |
-| `MARKETING_WORKER_SECRET` | server | `admin` | Shared secret for internal marketing worker endpoints. | A project-owned random secret. |
-| `MARKETING_TEST_EMAIL` | server | `admin` | Recipient for admin marketing test sends. | A test mailbox controlled by the project team. |
+| `RESEND_WEBHOOK_SECRET` | server | `marketing` | Svix secret used to verify inbound Resend webhook signatures. | The webhook secret configured in Resend. |
+| `MARKETING_WORKER_SECRET` | server | `marketing` | Shared bearer secret for the internal Marketing worker endpoint. | A project-owned random secret. |
+| `MARKETING_TEST_EMAIL` | server | optional Marketing operation | Default recipient for app-owned Marketing test-send tooling. | A test mailbox controlled by the project team. |
 
-## Current marketing data boundary
+## Current Marketing data boundary
 
-- The current platform starter uses Resend as an email delivery transport, not as the source of truth for marketing audience state.
-- The generated env contract does not include topic-ID variables, and the current starter does not create or manage ESP topic resources.
-- Operational contact data lives in Supabase CRM tables such as `crm_contacts`; organization invitation data lives in the Organizations module.
-- Global user preference state lives in Supabase core tables such as `user_preferences` and `user_notification_state`.
-- If a project later syncs app-owned subscription state to an ESP such as Resend, that mapping is app-specific and not part of the current BrightWeb scaffold contract.
+- Supabase is the source of truth for Marketing topics, contact subscriptions, unsubscribe tokens, suppressions, campaigns, segments, workflows, recipients, and message events.
+- Resend is the injected delivery provider. Provider message and webhook identifiers are recorded against the Supabase-owned delivery rows; Resend Topics are not the BrightWeb consent model.
+- Operational contact identity lives in CRM, while organization membership and invitations live in Organizations. Selecting Marketing resolves both dependencies.
+- Global application notification preferences in Core remain separate from consent to Marketing topics.
+- Provider secrets stay in the generated server-only handler composition. Browser UI receives only the package's HTTP client contract.
 
 ## Auth email delivery vs app-owned email delivery
 
@@ -104,7 +107,7 @@ its branded templates.
 
 ### `config/modules.ts`
 
-- Holds module metadata plus the enabled state for CRM, Projects, and Admin.
+- Holds module metadata plus the enabled state for CRM, Marketing, Projects, and Admin.
 - Generated from the module choices you made during scaffold time.
 - Edit this file when you want package mounts and shell wiring to reflect a different module set.
 

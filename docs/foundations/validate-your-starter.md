@@ -12,10 +12,11 @@ A generated app is deliberately thin. Validate settings, dependency wiring, migr
 | Module | Generated route | Expected result |
 | --- | --- | --- |
 | CRM | `/crm` | The package-owned CRM dashboard loads with configured auth and schema. |
+| Marketing | `/marketing` | The package-owned campaign, topic, segment, workflow, and analytics workspace loads for staff or admin users. |
 | Admin | `/admin/users` | The package-owned users surface loads for an admin user. |
-| Projects | None | Package and migrations are installed; no default UI or generated navigation ships yet. |
+| Projects | `/projetos` and `/account/projetos` | Staff project routes and the client-safe account workspace load with role-appropriate data. |
 
-The generated CRM and Admin API routes are direct aliases of package-owned handlers. Auth ships as package wiring only and has no playground.
+The generated CRM, Marketing, Projects, Organizations, and Admin API routes are direct aliases or thin compositions of package-owned handlers. Auth ships as package wiring only and has no playground.
 
 ## Site validation
 

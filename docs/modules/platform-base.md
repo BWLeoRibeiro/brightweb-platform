@@ -8,7 +8,7 @@ If you scaffold a standalone `site` app, this page does not apply. It applies to
 
 The practical platform base is currently **Core + Admin**.
 
-That means the baseline platform install is already module-backed before optional business modules such as CRM or Projects are added.
+That means the baseline platform install is already module-backed before optional business modules such as CRM, Marketing, or Projects are added.
 
 Use [Base Contract](./base-contract.md) for the support-tier rules and [base-contract.json](./base-contract.json) for the canonical symbol inventory.
 
@@ -30,7 +30,7 @@ Use [Base Contract](./base-contract.md) for the support-tier rules and [base-con
 | --- | --- |
 | Core helpers | The Core layer provides shared database helpers such as `current_profile_id()`, plus placeholder role helpers later replaced by Admin. |
 | Auth package | `@brightweblabs/core-auth` provides the shared auth package used by platform apps for callback flows, reset-password flows, shared auth validation utilities, and shared client/server auth helpers. |
-| Infra package | `@brightweblabs/infra` provides shared Supabase clients plus the canonical app-owned Resend transport and webhook signature verification helpers. It does not add a marketing-subscription or Resend Topics data model to the platform base. |
+| Infra package | `@brightweblabs/infra` provides browser, server, and service-role Supabase clients; Resend transport and webhook verification; realtime activity subscriptions; public error boundaries; bounded bulk validation; request cancellation; and client/server timing metrics. It does not add Marketing schema to the platform base. |
 | Admin package | `@brightweblabs/module-admin` provides governance surfaces, admin handlers, role-aware server helpers, and injectable users/invitations UI. |
 | Shell runtime | The baseline platform shell wiring is composed around `@brightweblabs/app-shell`, with Core auth and optional Admin UI surfaces attached to that runtime. |
 
@@ -52,6 +52,11 @@ The current platform-base contract is intentionally split into reusable and star
 - `@brightweblabs/core-auth/shared`: shared validation, URL helpers, and auth constants
 - `@brightweblabs/core-auth/client`: `useCooldownTimer()`
 - `@brightweblabs/core-auth/server`: `requireServerPageAccess()`, `requireServerPageRoleAccess()`, `getServerAccess()`
+- `@brightweblabs/infra/client`: browser Supabase client creation
+- `@brightweblabs/infra/server`: server and service-role Supabase clients, Resend transport/configuration, webhook verification, and the keepalive handler
+- `@brightweblabs/infra/realtime`: `subscribeToAppActivityEvents()` for authenticated invalidation hints
+- `@brightweblabs/infra/request-observability`: latest-request cancellation, observed fetch metrics, and `Server-Timing` helpers
+- `@brightweblabs/infra/robustness`: public error envelopes, error sanitization, and bounded UUID-batch validation
 - `@brightweblabs/ui`: shared avatar, search, skeleton, phone-input, and badge recipe surfaces
 - `@brightweblabs/app-shell`: shell composition plus the platform theme controller and pre-hydration script
 - `@brightweblabs/module-admin`: `listAdminUsers()`, `handleAdminUsersGetRequest()`, `handleAdminUsersRoleChangeRequest()`
@@ -79,6 +84,9 @@ The platform base is mostly consumed through package entrypoints rather than thr
 - `@brightweblabs/core-auth/client` is for client-only React hooks such as resend cooldown behavior.
 - `@brightweblabs/core-auth/server` is for page guards and current-user access on the server.
 - `@brightweblabs/infra/server` is for app-owned Resend transport and webhook verification.
+- `@brightweblabs/infra/realtime` treats activity rows as invalidation hints; consumers refetch authoritative data after an insert.
+- `@brightweblabs/infra/request-observability` owns cancellable latest-request behavior and optional timing observers for collection UI.
+- `@brightweblabs/infra/robustness` keeps internal errors out of public responses and bounds bulk UUID mutations.
 
 Auth email sending remains Supabase-owned (`supabase.auth.*` + Supabase Auth SMTP settings).
 
@@ -109,6 +117,10 @@ export { AdminUsersPage as default } from "@brightweblabs/module-admin";
 
 Treat `getAdminUsersPageData()` as package page glue. Build reusable admin surfaces in the package on `listAdminUsers()` and the stable handlers.
 
+The Admin package also owns the portal invitation lifecycle: list, create, revoke, inspect, accept, and first-registration completion. New portal clients can be invited without an organization; organization membership is a separate Organizations workflow and its role selector stays inactive until an organization is selected. New invitations expire after 14 days and refuse existing Auth accounts and duplicate pending invitations. If email delivery fails, the package attempts to delete the pending invitation and reports delivery, cleanup, or concurrent-state failure explicitly.
+
+Generated apps mount `handleAdminUserInvitationsGetRequest`, `handleAdminUserInvitationsPostRequest`, and `handleAdminUserInvitationDeleteRequest` under `/api/admin/users/invitations`.
+
 ### Shell registration
 
 If your app uses `@brightweblabs/app-shell`, the Admin starter also wires `adminModuleRegistration` into the shell configuration so admin nav and toolbar surfaces appear in the platform runtime.
@@ -129,6 +141,8 @@ const built = buildClientAppShellRegistration(registration);
   viewerFirstName={viewer.firstName}
 />
 ```
+
+Dashboard project contributions must pass the consumer's route bases through `DashboardProjectComponents`. The shell resolves project attention links from `projectBaseHref` and passes the final `href` into an injected `ProjectAttentionCard`; task actions use `tasksBaseHref` with `projectBaseHref` as their fallback. This keeps shared dashboard cards from assuming the preview app's route language.
 
 ### Not-found and error routes
 

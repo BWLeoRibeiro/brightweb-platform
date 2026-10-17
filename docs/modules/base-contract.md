@@ -38,9 +38,9 @@ It is broader than just HTTP endpoints, and narrower than a full developer platf
 ## What To Read Next
 
 - Start with [base-contract/index.json](./base-contract/index.json) if you want the split inventory.
-- Open [base-contract/platform-base.json](./base-contract/platform-base.json), [base-contract/admin.json](./base-contract/admin.json), [base-contract/crm.json](./base-contract/crm.json), or [base-contract/projects.json](./base-contract/projects.json) when you only need one module slice.
+- Open [base-contract/platform-base.json](./base-contract/platform-base.json), [base-contract/admin.json](./base-contract/admin.json), [base-contract/orgs.json](./base-contract/orgs.json), [base-contract/crm.json](./base-contract/crm.json), [base-contract/marketing.json](./base-contract/marketing.json), or [base-contract/projects.json](./base-contract/projects.json) when you only need one module slice.
 - Use [base-contract.json](./base-contract.json) when you want the full inventory in one file.
 - Read [Using BrightWeb Modules](./using-modules.md) for shell wiring, route mounting, and starter integration patterns.
-- Read [Platform Base](./platform-base.md), [CRM](./crm.md), and [Projects](./projects.md) for module-specific boundaries and extension guidance.
+- Read [Platform Base](./platform-base.md), [Organizations](./orgs.md), [CRM](./crm.md), [Marketing](./marketing.md), and [Projects](./projects.md) for module-specific boundaries and extension guidance.
 
 This page is intentionally short. It defines the contract model; the other pages explain how to use it.
