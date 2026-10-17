@@ -1,5 +1,11 @@
 # create-bw-app
 
+## 0.27.7
+
+### Patch Changes
+
+- 1bad396: Keep generated app dependency defaults and the upgrade compatibility bundle aligned with the unified Projects task UI release.
+
 ## 0.27.6
 
 ### Patch Changes
