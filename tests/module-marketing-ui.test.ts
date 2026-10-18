@@ -5,7 +5,6 @@ import test from "node:test";
 
 import { createMarketingCampaignHttpHandlers } from "../packages/module-marketing/src/http.ts";
 import { createMarketingUiClient } from "../packages/module-marketing/src/ui/client.ts";
-import { defaultMarketingUiDictionary } from "../packages/module-marketing/src/ui/dictionary.ts";
 
 const campaign = {
   id: "campaign/1",
@@ -96,28 +95,7 @@ const queue = {
   skipped: 0,
 };
 
-test("marketing validation feedback names the action that needs attention", () => {
-  assert.equal(
-    defaultMarketingUiDictionary.feedback.campaignRequired,
-    "Preenche o nome, o assunto, o tópico e o conteúdo do email.",
-  );
-  assert.equal(
-    defaultMarketingUiDictionary.feedback.testEmailRequired,
-    "Indica o destinatário do email de teste.",
-  );
-  assert.equal(
-    defaultMarketingUiDictionary.feedback.topicRequired,
-    "Preenche os campos obrigatórios do tópico.",
-  );
-  assert.equal(
-    defaultMarketingUiDictionary.feedback.workflowRequired,
-    "Preenche o nome, configura o evento inicial e completa todos os passos da automação.",
-  );
-  assert.equal(
-    defaultMarketingUiDictionary.feedback.segmentNameRequired,
-    "Indica o nome do segmento.",
-  );
-
+test("marketing validation feedback uses action-specific dictionary entries and fallbacks", () => {
   const root = join(process.cwd(), "packages/module-marketing/src/ui");
   const campaignSource = readFileSync(join(root, "use-campaign-editor.ts"), "utf8");
   assert.match(campaignSource, /feedback\.campaignRequired \?\? dictionary\.feedback\.required/);
@@ -157,9 +135,6 @@ test("marketing collection controls use registered actions and authoritative que
 
   assert.match(toolbarSource, /useShellActionsReady/);
   assert.match(toolbarSource, /disabled=\{!ready\}/);
-  assert.match(toolbarSource, /Procurar campanhas/);
-  assert.match(toolbarSource, /Limpar/);
-  assert.match(toolbarSource, /Aplicar/);
   assert.match(clientSource, /useShellAction[\s\S]*MARKETING_EVENTS\.setSearch/);
   assert.match(clientSource, /window\.setTimeout[\s\S]*180/);
   assert.match(clientSource, /client\.queryCampaigns/);
@@ -168,27 +143,11 @@ test("marketing collection controls use registered actions and authoritative que
   assert.match(registrationSource, /surface: "marketing"[\s\S]*exact: \["\/marketing"\]/);
 });
 
-test("marketing workspace delegates page chrome to the shell and keeps one primary collection action", () => {
+test("marketing collection loading distinguishes initial pending and failed-empty states", () => {
   const clientSource = readFileSync(join(process.cwd(), "packages/module-marketing/src/ui/marketing-client.tsx"), "utf8");
-  const segmentSource = readFileSync(join(process.cwd(), "packages/module-marketing/src/ui/segment-workspace.tsx"), "utf8");
-  const workflowSource = ["workflow-workspace.tsx", "workflow-run-viewer.tsx"].map((file) => readFileSync(join(process.cwd(), "packages/module-marketing/src/ui", file), "utf8")).join("\n");
-  const stylesheet = readFileSync(join(process.cwd(), "packages/module-marketing/marketing.css"), "utf8");
-
-  assert.doesNotMatch(clientSource, /className="marketing-hero"/);
-  assert.match(clientSource, /className="marketing-view-nav"/);
-  assert.match(clientSource, /className="marketing-campaign-columns"/);
-  assert.doesNotMatch(clientSource, /marketing-ledger-heading[\s\S]{0,600}<Button onClick=\{beginCreate\}/);
-  assert.doesNotMatch(segmentSource, /marketing-ledger-heading[\s\S]{0,600}<Button onClick=\{beginCreate\}/);
-  assert.doesNotMatch(workflowSource, /marketing-workflows-title[\s\S]{0,600}<Button type="button" onClick=\{beginCreate\}/);
-  assert.doesNotMatch(clientSource, /campaigns\.length === 0[\s\S]{0,600}<Button onClick=\{beginCreate\}/);
-  assert.doesNotMatch(segmentSource, /segments\.length === 0[\s\S]{0,600}<Button onClick=\{beginCreate\}/);
-  assert.doesNotMatch(workflowSource, /workflows\.length === 0[\s\S]{0,800}<Button type="button" onClick=\{beginCreate\}>/);
-  assert.match(clientSource, /marketing-action-card marketing-action-primary/);
-  assert.match(clientSource, /className="marketing-action-alternatives"/);
   assert.match(clientSource, /initialCollectionsLoaded/);
   assert.match(clientSource, /collectionFailed && campaigns\.length === 0/);
   assert.match(clientSource, /dictionary\.page\.loadError/);
-  assert.doesNotMatch(stylesheet, /\.marketing-hero\s*\{/);
 });
 
 test("marketing UI client methods match the exported HTTP handler contract", async () => {

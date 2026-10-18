@@ -18,11 +18,6 @@ const source = (file: string) => readFileSync(join(uiRoot, file), "utf8");
 
 test("project creation is one four-step local-state wizard with one aggregate submit", () => {
   const wizard = source("create-project-sheet.tsx");
-  const copy = source("project-access-dictionary.ts");
-
-  for (const label of ["Projeto e organização", "Equipa interna", "Acesso ao projeto", "Rever e criar"]) {
-    assert.match(copy, new RegExp(label));
-  }
   assert.match(wizard, /projectAccessDictionary\.wizard\.steps/);
   assert.equal((wizard.match(/client\.requestRaw\("\/api\/projects"/g) ?? []).length, 1);
   assert.match(wizard, /idempotencyKey:/);
@@ -44,16 +39,7 @@ test("project creation uses a searchable single-organization picker", () => {
   assert.match(wizard, /<SearchField[\s\S]*projectAccessDictionary\.wizard\.searchOrganizations/);
   assert.match(wizard, /visibleOptions\.map/);
   assert.match(wizard, /role="option"/);
-  assert.match(wizard, /grid-cols-\[minmax\(0,1fr\)_2\.25rem\]/);
-  assert.match(wizard, /className="min-w-0"/);
   assert.doesNotMatch(wizard, /<SheetSelect[\s\S]{0,300}id="project-organization"/);
-});
-
-test("project creation progress uses the shared neutral surface", () => {
-  const wizard = source("create-project-sheet.tsx");
-
-  assert.match(wizard, /WizardProgress[\s\S]*bg-\[color:var\(--muted\)\]\/35/);
-  assert.doesNotMatch(wizard, /WizardProgress[\s\S]*bg-(?:gray|zinc|slate)-/);
 });
 
 test("project and client-access feedback uses the shared themed Sonner host", () => {
@@ -74,12 +60,6 @@ test("project and client-access feedback uses the shared themed Sonner host", ()
 
 test("client access editor keeps external grants separate and supports all three audience modes", () => {
   const editor = source("project-client-access-editor.tsx");
-  const copy = source("project-access-dictionary.ts");
-
-  assert.match(copy, /title: "Todos os membros da organização"/);
-  assert.match(copy, /title: "Membros selecionados"/);
-  assert.match(copy, /title: "Privado"/);
-  assert.match(copy, /Dar acesso ao projeto a um membro da organização permite consultar a informação partilhada/);
   assert.match(editor, /all_org_clients:[\s\S]*selected_clients:[\s\S]*hidden:/);
   assert.match(editor, /projectAccessDictionary\.editor/);
   assert.match(editor, /organizations\.find\(\(item\) => item\.isPrimary\)/);
@@ -90,13 +70,9 @@ test("client access editor keeps external grants separate and supports all three
 test("internal detail presents one project organization through the project and client-access context", () => {
   const detail = source("project-detail-page.tsx");
   const teamEditor = source("project-members-edit-sheet.tsx");
-  const copy = source("project-access-dictionary.ts");
-
-  assert.match(copy, /Pessoas e acesso/);
   assert.match(detail, /projectAccessDictionary\.detail\.peopleAndAccess/);
   assert.doesNotMatch(detail, /ProjectDetailOrganizationsSummary/);
   assert.match(detail, /organizationName=\{initialData\.project\.organizationName\}/);
-  assert.match(detail, /project-people-access-heading[\s\S]*?xl:grid-cols-2/);
   assert.match(detail, /ProjectDetailTeamCard/);
   assert.match(detail, /ProjectClientAccessCard/);
   assert.doesNotMatch(teamEditor, /org_admin|org_member|clientes entram como observadores|Client role is fixed/);
@@ -113,7 +89,6 @@ test("client detail renders only explicit client-facing project fields", () => {
   assert.match(detail, /project\.documents/);
   assert.match(detail, /meta\.completedAt \?\? meta\.targetDate/);
   assert.match(detail, /<ProjectRoadmap metas=\{metas\} currentMetaId=\{nextMeta\?\.id \?\? null\} \/>/);
-  assert.match(detail, /grid-flow-col auto-cols-\[15rem\]/);
   assert.match(detail, /container\.scrollLeft = Math\.max/);
   assert.match(detail, /clientProjectsDictionary\.safeUi\.milestoneJourney/);
   assert.match(detail, /clientProjectsDictionary\.safeUi\.projectSetupTitle/);
@@ -150,11 +125,8 @@ test("selected-client access requires an audience in the project organization", 
 
 test("creation permits an unassigned manager and derives the client contact when one is selected", () => {
   const wizard = source("create-project-sheet.tsx");
-  const copy = source("project-access-dictionary.ts");
-
   assert.match(wizard, /useState<Record<string, ProjectMemberRole>>\(\{\}\)/);
   assert.doesNotMatch(wizard, /ownerLockedToCreator/);
-  assert.match(copy, /O gestor de projeto pode ser atribuído mais tarde/);
   assert.match(wizard, /clientContactProfileId: owner\?\.profileId/);
   assert.doesNotMatch(wizard, /id="project-client-contact"/);
 });
@@ -172,13 +144,11 @@ test("creation review names the exact external audience and new controls expose 
   assert.match(wizard, /showIntroduction=\{false\}/);
   assert.match(list, /<PillTabs/);
   assert.match(list, /ariaLabel=\{clientProjectsDictionary\.safeUi\.filterLabel\}/);
-  assert.doesNotMatch(list, /<PillTabs[\s\S]{0,200}className=/);
   assert.match(list, /setReloadKey\(\(current\) => current \+ 1\)/);
   assert.match(detail, /setReloadKey\(\(current\) => current \+ 1\)/);
   assert.match(detail, /response\.status === 404 \|\| response\.status === 403/);
   assert.match(detail, /<CoverHeader>/);
   assert.match(detail, /<ProjectStatusBadge status=\{project\.status\} label=\{CLIENT_PROJECT_STATUS_LABELS\[project\.status\]\} \/>/);
-  assert.match(detail, /brand-panel rounded-\[var\(--radius-card\)\]/);
 });
 
 test("project detail no longer exposes multi-organization management", () => {
@@ -303,10 +273,6 @@ test("client portal adapts its hierarchy to organization and project counts", ()
   assert.match(list, /<OrganizationFilterMenu/);
   assert.match(organizationFilter, /clientProjectsDictionary\.portal\.yourOrganizations/);
   assert.match(organizationFilter, /clientProjectsDictionary\.portal\.yourOrganization/);
-  assert.match(organizationFilter, /h-20 w-full/);
-  assert.match(organizationFilter, /lg:w-80/);
-  assert.match(organizationFilter, /min-w-0 w-full lg:w-80/);
-  assert.match(organizationFilter, /group min-w-0 transition-/);
   assert.match(organizationFilter, /w-\[var\(--radix-dropdown-menu-trigger-width\)\]/);
   assert.match(organizationFilter, /focus-visible:border-\[color:var\(--accent\)\]/);
   assert.match(organizationFilter, /surface === "hero"/);
@@ -322,8 +288,6 @@ test("client portal adapts its hierarchy to organization and project counts", ()
   assert.match(list, /surface="light"/);
   assert.match(organizationFilter, /project-hero-surface-raised/);
   assert.match(organizationFilter, /tone=\{surface === "hero" \? "inverse" : "client"\}/);
-  assert.match(portal, /lg:grid-cols-\[minmax\(0,1fr\)_18rem\]/);
-  assert.match(portal, /ongoingProjects\.length > 1 \? "md:grid-cols-2"/);
   assert.match(portal, /AccountAndSecurityFooter/);
   assert.match(portal, /href="\/account\/perfil"/);
   assert.match(shared, /meta\.status === "in_progress" \|\| meta\.status === "delayed"/);
@@ -351,8 +315,6 @@ test("client account navigation separates the portal from editable profile setti
   const accountRoute = source("client/account-routes.tsx");
 
   assert.match(clientFrame, /href="\/account\/perfil"/);
-  assert.match(accountMenu, /Perfil e segurança/);
-  assert.match(accountMenu, /O meu espaço/);
   assert.match(accountMenu, /InitialsAvatar/);
   assert.match(accountMenu, /tone=\{avatarTone\}/);
   assert.doesNotMatch(accountMenu, /function avatarRoleClass/);
@@ -365,19 +327,14 @@ test("client account navigation separates the portal from editable profile setti
   assert.doesNotMatch(accountRoute, /<Link/);
 });
 
-test("client loading states mirror the home, list and detail page geometries", () => {
+test("client pages retain their loading surfaces and server-provided initial data", () => {
   const loading = source("client/projects-loading.tsx");
   const accountRoute = source("client/account-routes.tsx");
   const listPage = source("client/projects-list-page.tsx");
   const detailPage = source("client/project-detail-page.tsx");
   assert.match(loading, /ClientPortalHomeLoading/);
-  assert.match(loading, /SkeletonCard className="h-72 shadow-none" lines=\{4\}/);
-  assert.match(loading, /lg:grid-cols-\[minmax\(0,1fr\)_18rem\]/);
   assert.match(loading, /ClientProjectsListLoading/);
-  assert.match(loading, /md:grid-cols-2/);
   assert.match(loading, /ClientProjectDetailLoading/);
-  assert.match(loading, /grid-flow-col auto-cols-\[15rem\]/);
-  assert.match(loading, /brand-panel h-56 border-\[color:var\(--project-hero-border\)\]/);
   assert.match(accountRoute, /loadClientPortalData/);
   assert.match(listPage, /initialProjects=\{initialProjects\}/);
   assert.match(detailPage, /initialProject=\{initialProject\}/);

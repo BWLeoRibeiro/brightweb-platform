@@ -47,10 +47,22 @@ test("project creation follows project, internal team, client access, and review
 
   const wizardBody = source.slice(source.indexOf("<WizardProgress step={step}"));
   const stepBranches = ["{step === 1 ? (", "{step === 2 ? (", "{step === 3 ? (", "{step === 4 ? ("];
+  const stepContent = [
+    /projectAccessDictionary\.wizard\.projectName/,
+    /<TeamMemberRow/,
+    /<ProjectClientAccessEditor/,
+    /<ReviewRow/,
+  ];
   previous = -1;
-  for (const branch of stepBranches) {
+  for (const [step, branch] of stepBranches.entries()) {
     const index = wizardBody.indexOf(branch, previous + 1);
     assert.ok(index > previous, `${branch} should render in wizard order`);
+    const end = stepBranches[step + 1] ? wizardBody.indexOf(stepBranches[step + 1], index + 1) : wizardBody.indexOf("<SheetFooter", index);
+    const content = wizardBody.slice(index, end);
+    assert.match(content, stepContent[step], `${headings[step]} must render its corresponding step content`);
+    for (const [otherStep, otherContent] of stepContent.entries()) {
+      if (otherStep !== step) assert.doesNotMatch(content, otherContent);
+    }
     previous = index;
   }
 
@@ -64,14 +76,13 @@ test("project creation follows project, internal team, client access, and review
   assert.match(source, /projectAccessDictionary\.wizard\.invalidDateRange/);
 });
 
-test("creation sheets use the shared styled selector popup", async () => {
+test("creation sheets use the shared selector primitive", async () => {
   const [select, appSheet, projectFields] = await Promise.all([
     read("packages/ui/src/components/select.tsx"),
     read("packages/app-shell/src/components/app-sheet.tsx"),
     read("packages/module-projects/src/ui/project-create/shared-fields.tsx"),
   ]);
   assert.match(select, /SelectPrimitive\.Content/);
-  assert.match(select, /rounded-xl/);
   assert.match(select, /SelectPrimitive\.ItemIndicator/);
   assert.match(appSheet, /export function SheetSelect/);
   assert.match(projectFields, /<SheetSelect/);

@@ -4,7 +4,9 @@
     "deploymentEnabled": {
       "codex/release-security-client-tasks": false,
       "main": false,
-      "changeset-release/main": false
+      "changeset-release/main": false,
+      "codex/selective-test-cleanup": false,
+      "development": false
     }
   }
 }

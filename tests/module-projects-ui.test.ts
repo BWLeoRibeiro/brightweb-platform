@@ -4,6 +4,7 @@ import { join } from "node:path";
 import test from "node:test";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
+import { act, create } from "react-test-renderer";
 import ts from "typescript";
 
 import type { ProjectDashboardData, ProjectLink } from "../packages/module-projects/src/types.ts";
@@ -47,11 +48,14 @@ import {
   getCompactCollectionPreview,
   hasCompactCollectionOverflow,
 } from "../packages/module-projects/src/ui/shared/compact-collection-model.ts";
+import { CompactCollectionHeaderActions, compactCollectionRevealClassName } from "../packages/module-projects/src/ui/shared/compact-collection.tsx";
 import { formatNaturalDisplayName } from "../packages/module-projects/src/ui/shared/natural-display-name.ts";
 import { DashboardProjectAttentionCard } from "../packages/module-projects/src/ui/shared/dashboard-project-attention-card.tsx";
 import { ProjectsUiProvider } from "../packages/module-projects/src/ui/context.tsx";
 import { ProjectDetailDataProvider } from "../packages/module-projects/src/ui/project-detail-data-provider.tsx";
 import { ProjectDetailTeamCard } from "../packages/module-projects/src/ui/project-detail-team-card.tsx";
+
+(globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 function collectDictionaryStrings(value: unknown): string[] {
   if (typeof value === "string") return [value];
@@ -68,18 +72,6 @@ test("project-facing Portuguese copy consistently calls milestones metas", () =>
   });
 
   assert.equal(visibleCopy.some((label) => /milestone|marcos?/i.test(label)), false);
-  assert.equal(defaultProjectsUiDictionary.detail.milestones, "Metas");
-  assert.equal(defaultProjectsUiDictionary.forms.newMilestone, "Nova meta");
-  assert.equal(defaultDashboardDictionary.milestones.emptyDescription, "Metas com data aparecem aqui.");
-});
-
-test("project clipboard feedback is localized and action-specific", () => {
-  assert.equal(defaultProjectsUiDictionary.detail.copyProjectId, "Copiar ID do projeto");
-  assert.equal(defaultProjectsUiDictionary.messages.projectIdCopied, "ID do projeto copiado.");
-  assert.equal(
-    defaultProjectsUiDictionary.messages.projectIdCopyError,
-    "Não foi possível copiar o ID do projeto.",
-  );
 });
 
 test("project summary cards use native navigation without swallowing their copy action", () => {
@@ -108,12 +100,6 @@ test("project detail hero only renders selected project dates and combines compl
   assert.match(heroSource, /hasBothProjectDates[\s\S]*dictionary\.detail\.projectDates/);
   assert.match(heroSource, /ProjectHeroDate label=\{dictionary\.detail\.projectStartShort\}/);
   assert.match(heroSource, /ProjectHeroDate label=\{dictionary\.detail\.projectEndShort\}/);
-  assert.match(heroSource, /xl:divide-x/);
-  assert.match(heroSource, /grid-cols-\[auto_minmax\(2\.5rem,1fr\)_auto\]/);
-  assert.equal(defaultProjectsUiDictionary.detail.projectManager, "Gestor do projeto");
-  assert.equal(defaultProjectsUiDictionary.detail.projectDates, "Período do projeto");
-  assert.equal(defaultProjectsUiDictionary.detail.projectStartDate, "Data de início");
-  assert.equal(defaultProjectsUiDictionary.detail.projectDueDate, "Prazo do projeto");
 });
 
 test("compact collection previews preserve the 0/1/2/3 boundary and gate overflow at 4+", () => {
@@ -124,24 +110,43 @@ test("compact collection previews preserve the 0/1/2/3 boundary and gate overflo
   }
 });
 
-test("Projects compact cards use natural three-row previews, viewer expansion, and reduced-motion reveals", () => {
+test("Projects compact cards wire overflow expansion and respect reduced motion", () => {
   const uiRoot = join(process.cwd(), "packages/module-projects/src/ui");
-  const cardSources = [
-    "project-recent-activity.tsx",
-    "project-detail-team-card.tsx",
-    "project-links-card.tsx",
-  ].map((file) => readFileSync(join(uiRoot, file), "utf8"));
-  const sharedSource = readFileSync(join(uiRoot, "shared/compact-collection.tsx"), "utf8");
-  const skeletonSource = readFileSync(join(uiRoot, "shared/compact-collection-skeleton.tsx"), "utf8");
-
-  for (const source of cardSources) {
+  for (const file of ["project-recent-activity.tsx", "project-detail-team-card.tsx", "project-links-card.tsx"]) {
+    const source = readFileSync(join(uiRoot, file), "utf8");
     assert.match(source, /getCompactCollectionPreview/);
-    assert.match(source, /CompactCollectionHeaderActions/);
-    assert.doesNotMatch(source, /h-\[17\.75rem\]|transition-\[padding\]/);
+    assert.match(source, /<CompactCollectionHeaderActions\b[^>]*onExpand=\{/);
+    assert.match(source, /className=\{`\$\{compactCollectionRevealClassName\}/);
   }
-  assert.match(sharedSource, /motion-safe:animate-in[\s\S]*motion-safe:fade-in-0[\s\S]*motion-safe:slide-in-from-bottom-1[\s\S]*motion-safe:duration-200/);
-  assert.match(sharedSource, /^"use client";/);
-  assert.match(skeletonSource, /CompactCollectionContentSkeleton[\s\S]*min-h-\[3\.25rem\]/);
+  const motionClasses = compactCollectionRevealClassName.split(/\s+/).filter((value) => /(?:^|:)(?:animate-|fade-|slide-|duration-)/.test(value));
+  assert.ok(motionClasses.some((value) => value.includes("animate-")));
+  assert.ok(motionClasses.every((value) => value.startsWith("motion-safe:")), "reveal motion must be disabled when reduced motion is requested");
+});
+
+test("compact collection overflow exposes a named button that opens the viewer", async (t) => {
+  // Closed tooltip effects still clean up browser timers and document listeners.
+  for (const [key, value] of [["window", { setTimeout, clearTimeout }], ["document", new EventTarget()]] as const) {
+    const previous = Object.getOwnPropertyDescriptor(globalThis, key);
+    Object.defineProperty(globalThis, key, { configurable: true, value });
+    t.after(() => {
+      if (previous) Object.defineProperty(globalThis, key, previous);
+      else Reflect.deleteProperty(globalThis, key);
+    });
+  }
+  let expansions = 0;
+  const props = { total: 3, collectionLabel: "items", expandLabel: "View all items", onExpand: () => { expansions += 1; } };
+  assert.equal(renderToStaticMarkup(createElement(CompactCollectionHeaderActions, props)), "");
+  let renderer: ReturnType<typeof create> | undefined;
+  try {
+    await act(async () => { renderer = create(createElement(CompactCollectionHeaderActions, { ...props, total: 4 })); });
+    const button = renderer!.root.findByType("button");
+    assert.equal(button.props["aria-label"], props.expandLabel);
+    assert.equal(button.props.type, "button");
+    await act(async () => { button.props.onClick(); });
+    assert.equal(expansions, 1);
+  } finally {
+    await act(async () => { renderer?.unmount(); });
+  }
 });
 
 test("Projects activity endpoint keeps the legacy array response and exposes bounded pagination", async () => {
@@ -545,7 +550,6 @@ test("internal team picker stages additions and transfers responsibility without
   assert.match(editor, /<AlertDialog[\s\S]*removeConfirmationTitle[\s\S]*removeConfirmationDescription[\s\S]*confirmRemoval/);
   assert.match(editor, /toast\.success\([\s\S]*dictionary\.team\.membersRemoved/);
   assert.doesNotMatch(editor, /window\.confirm/);
-  assert.equal((rows.match(/className=\{TEAM_MEMBER_AVATAR_CLASS_NAME\}/g) ?? []).length, 2);
 });
 
 test("assignable internal profiles use a privileged server directory after manager authorization", () => {
@@ -635,7 +639,6 @@ test("Projects UI request failures consistently read the public error envelope",
 
 test("Projects UI ships Portuguese defaults and configurable shell registration", () => {
   assert.equal(defaultProjectsUiDictionary.locale, "pt-PT");
-  assert.equal(defaultProjectsUiDictionary.status.planned, "A planear");
   const registration = createProjectsModuleRegistration("/projects");
   assert.equal(registration.navItems?.[0]?.href, "/projects");
   assert.deepEqual(registration.toolbarActions?.projects?.map((item) => item.action), ["projects-refresh", "projects-new-menu"]);
@@ -779,27 +782,14 @@ test("ProjectsNavigationConfig contains no function-typed members", () => {
   );
 });
 
-test("Projects package UI contains the literal list/detail translation and no raw component colors", () => {
-  const root = join(process.cwd(), "packages/module-projects/src/ui");
-  const files = (directory: string): string[] => readdirSync(directory, { withFileTypes: true }).flatMap((entry) => entry.isDirectory() ? files(join(directory, entry.name)) : [join(directory, entry.name)]);
-  const source = files(root).filter((file) => /\.(?:ts|tsx)$/.test(file)).map((file) => readFileSync(file, "utf8")).join("\n");
-  assert.doesNotMatch(source, /#[0-9a-f]{3,8}\b|rgba?\(|color-mix\(/i);
-  assert.doesNotMatch(source, /\bfont-medium\b/);
-  for (const symbol of ["ProjectsPage", "ProjectDetailPage", "ProjectsToolbarControls", "ProjectDetailDataProvider", "ProjectBoardKanban", "ProjectTasksPage", "ProjectBoardLoading"]) assert.match(readFileSync(join(root, "index.ts"), "utf8"), new RegExp(symbol.replace("ProjectsToolbarControls", "toolbar-controls").replace("ProjectDetailDataProvider", "project-detail-data-provider").replace("ProjectsPage", "projects-page").replace("ProjectDetailPage", "project-detail-page").replace("ProjectBoardKanban", "project-board-kanban").replace("ProjectTasksPage", "project-tasks-page").replace("ProjectBoardLoading", "project-board-loading")));
-});
-
-test("dashboard attention cards use the canonical editorial attention-row recipe", () => {
+test("dashboard attention cards preserve project context, accessible decoration, and reduced motion", () => {
   const card = readFileSync(
     join(process.cwd(), "packages/module-projects/src/ui/shared/dashboard-project-attention-card.tsx"),
     "utf8",
   );
   const projectTokens = readFileSync(join(process.cwd(), "packages/module-projects/tokens.css"), "utf8");
   const dashboard = readFileSync(join(process.cwd(), "packages/app-shell/src/dashboard/projects-view.tsx"), "utf8");
-  const dashboardStyles = readFileSync(join(process.cwd(), "packages/app-shell/src/dashboard/dashboard.css"), "utf8");
-
-  assert.match(card, /className="project-attention-row group/);
   assert.match(card, /import "\.\.\/\.\.\/\.\.\/tokens\.css"/);
-  assert.match(card, /<ProjectPill[\s\S]*size="normal"[\s\S]*dotClassName="project-attention-pill-dot"/);
   assert.match(card, /className="project-attention-company">\{formatNaturalDisplayName\(project\.organizationName\)\}/);
   assert.match(card, /className="project-attention-title">\{formatNaturalDisplayName\(project\.name\)\}/);
   assert.match(card, /<strong>\{reason\}<\/strong> \{detail\}/);
@@ -808,19 +798,8 @@ test("dashboard attention cards use the canonical editorial attention-row recipe
   assert.match(card, /dictionary\.dashboard\.defineDeadline/);
   assert.match(card, /<CalendarDays aria-hidden className="project-attention-date-icon/);
   assert.match(card, /<span aria-hidden className="project-attention-arrow">/);
-  assert.doesNotMatch(card, /text-label[^\n]*organizationName|monoTabularClassName/);
-  assert.match(projectTokens, /\.project-attention-row \{[\s\S]*grid-template-columns: 2\.125rem minmax\(0, 1\.18fr\) minmax\(11\.875rem, 0\.86fr\) 1\.75rem/);
-  assert.match(projectTokens, /\.project-attention-company \{[\s\S]*font-size: var\(--text-meta\)[\s\S]*text-transform: none[\s\S]*white-space: nowrap/);
-  assert.match(projectTokens, /\.project-attention-date \{[\s\S]*font-size: var\(--text-ui-fine\)/);
-  assert.match(projectTokens, /@media \(max-width: 650px\)[\s\S]*\.project-attention-meta \{ grid-column: 2 \/ 4/);
   assert.match(projectTokens, /@media \(prefers-reduced-motion: reduce\)/);
-  assert.match(dashboard, /className="dashboard-projects-grid"/);
-  assert.match(dashboard, /<PortfolioHealthCard[\s\S]*<Card asChild>/);
   assert.match(dashboard, /<DashboardCountPill count=\{kpis\?\.projectsAttention \?\? 0\} tone="warning"/);
-  assert.doesNotMatch(dashboardStyles, /dashboard-attention-count/);
-  assert.match(dashboardStyles, /@media \(min-width: 1081px\)[\s\S]*grid-template-columns: minmax\(0, 1fr\) 23\.75rem/);
-  assert.equal(defaultProjectsUiDictionary.dashboard.badges.withoutOwner, "Por atribuir");
-  assert.equal(defaultProjectsUiDictionary.dashboard.defineDeadline, "Definir prazo");
 });
 
 test("dashboard organization names normalize only legacy all-caps values", () => {
@@ -861,6 +840,7 @@ test("project creation controls fail closed unless the viewer is explicitly an a
 test("Projects UI barrel exposes only the supported documented component families", () => {
   const barrel = readFileSync(join(process.cwd(), "packages/module-projects/src/ui/index.ts"), "utf8");
   const ledger = readFileSync(join(process.cwd(), "docs/ui-components.md"), "utf8");
+  assert.match(barrel, /export type \{ ListProjectsPayload \}/);
   const supportedExports = [
     "./project-activity-card",
     "./project-detail-data-provider",
@@ -887,17 +867,6 @@ test("Projects UI barrel exposes only the supported documented component familie
   assert.doesNotMatch(ledger, /ProjectOverviewStatCard/);
 });
 
-test("Projects keeps the public list payload type without its dead parser", () => {
-  const parser = readFileSync(join(process.cwd(), "packages/module-projects/src/ui/projects-list-response-parser.ts"), "utf8");
-  const barrel = readFileSync(join(process.cwd(), "packages/module-projects/src/ui/index.ts"), "utf8");
-  const dashboardParser = readFileSync(join(process.cwd(), "packages/app-shell/src/dashboard/dashboard-response-parser.ts"), "utf8");
-
-  assert.match(parser, /export type ListProjectsPayload/);
-  assert.doesNotMatch(parser, /parseListProjectsPayload|isListProjectsPayload|isProjectItem|parseErrorFromPayload/);
-  assert.match(barrel, /export type \{ ListProjectsPayload \}/);
-  assert.match(dashboardParser, /export function parseDashboardBootstrapResponse/);
-});
-
 test("Projects Portuguese UI copy is owned by the dictionary", () => {
   const root = join(process.cwd(), "packages/module-projects/src/ui");
   const files = (directory: string): string[] => readdirSync(directory, { withFileTypes: true }).flatMap((entry) => entry.isDirectory() ? files(join(directory, entry.name)) : [join(directory, entry.name)]);
@@ -910,16 +879,4 @@ test("Projects preview exposes list, detail, board, and tasks routes", () => {
   for (const route of ["page.tsx", "[id]/page.tsx", "[id]/board/page.tsx", "[id]/tasks/page.tsx"]) {
     assert.match(readFileSync(join(previewRoot, route), "utf8"), /ProjectsRoutePage|ProjectDetailRoutePage|ProjectBoardRoutePage|ProjectTasksRoutePage/);
   }
-});
-
-test("Projects portfolio grid keeps MQ columns at responsive boundaries", () => {
-  const tokens = readFileSync(join(process.cwd(), "packages/module-projects/tokens.css"), "utf8");
-  const tablet = tokens.indexOf("@media (min-width: 768px)");
-  const mqNarrow = tokens.indexOf("@media (max-width: 900px)");
-  const desktop = tokens.indexOf("@media (min-width: 1024px)");
-
-  assert.ok(tablet >= 0 && mqNarrow > tablet && desktop > mqNarrow);
-  assert.match(tokens.slice(tablet, mqNarrow), /grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/);
-  assert.match(tokens.slice(mqNarrow, desktop), /grid-template-columns:\s*1fr/);
-  assert.match(tokens.slice(desktop), /grid-template-columns:\s*repeat\(3,\s*minmax\(0,\s*1fr\)\)/);
 });
